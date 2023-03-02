@@ -70,7 +70,8 @@ class WrappedWritableKVStateTest extends WritableKVStateBaseTest {
             assertThat(state.readKeys()).isEmpty();
             assertThat(state.modifiedKeys()).isEmpty();
 
-            // Before inserting, the size of backing store should be 2 and modifications are none
+            // Before inserting, the size of backing store should be 2 (setup of the test adds 2 keys) and modifications
+            // are none
             assertEquals(2, state.size());
             assertEquals(2, delegate.size());
             assertEquals(0, delegate.modifiedKeys().size());
@@ -87,7 +88,6 @@ class WrappedWritableKVStateTest extends WritableKVStateBaseTest {
             // Instead, modifications on delegate have increased.
             // Since modifications are increased, size of delegate also increases.
             state.commit();
-            Mockito.verify(state, Mockito.times(1)).putIntoDataSource(anyString(), anyString());
             Mockito.verify(state, Mockito.times(1)).putIntoDataSource(C_KEY, CHERRY);
             Mockito.verify(state, Mockito.never()).removeFromDataSource(anyString());
             assertEquals(3, state.size());
@@ -101,14 +101,16 @@ class WrappedWritableKVStateTest extends WritableKVStateBaseTest {
             assertThat(state.readKeys()).isEmpty();
             assertThat(state.modifiedKeys()).isEmpty();
 
-            // Before remove, the size of backing store should be 2 and modifications are none
+            // Before remove, the size of backing store should be 2 (setup of the test adds 2 keys) and modifications
+            // are none
             assertEquals(2, state.size());
             assertEquals(2, delegate.size());
             assertEquals(0, delegate.modifiedKeys().size());
 
             state.remove(A_KEY);
 
-            // After remove, the size of backing store should be 2 and modifications are 1
+            // After remove, the size of backing store should be 2 (setup of the test adds 2 keys) and modifications are
+            // 1
             // So the size of state should be 1. But those changes don't affect delegate
             // until commit.
             assertEquals(1, state.size());

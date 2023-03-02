@@ -24,6 +24,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalLong;
 
 /**
  * Base class for {@link ReadableTopicStore} and {@link WritableTopicStore}.
@@ -36,8 +37,8 @@ public class TopicStore {
                 Optional.ofNullable(topic.getSubmitKey()),
                 topic.getAutoRenewDurationSeconds(),
                 topic.getAutoRenewAccountId().num() == 0
-                        ? Optional.empty()
-                        : Optional.of(topic.getAutoRenewAccountId().num()),
+                        ? OptionalLong.empty()
+                        : OptionalLong.of(topic.getAutoRenewAccountId().num()),
                 topic.getExpirationTimestamp().toGrpc(),
                 topic.getSequenceNumber(),
                 topic.getRunningHash(),
@@ -82,7 +83,7 @@ public class TopicStore {
             Optional<HederaKey> adminKey,
             Optional<HederaKey> submitKey,
             long autoRenewDurationSeconds,
-            Optional<Long> autoRenewAccountId,
+            OptionalLong autoRenewAccountId,
             Timestamp expirationTimestamp,
             long sequenceNumber,
             byte[] runningHash,
