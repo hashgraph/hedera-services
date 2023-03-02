@@ -91,8 +91,6 @@ class AccountImplTest {
         assertEquals(1_000L, subject.stakeAtStartOfLastRewardedPeriod());
         assertEquals(3_000L, subject.autoRenewAccountNumber());
         assertEquals(360_000, subject.autoRenewSecs());
-        assertEquals(0, subject.shardNumber());
-        assertEquals(0, subject.realmNumber());
         assertFalse(subject.isHollow());
     }
 

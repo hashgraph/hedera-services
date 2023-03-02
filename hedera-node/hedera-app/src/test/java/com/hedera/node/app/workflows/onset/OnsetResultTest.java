@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.Test;
 
@@ -30,21 +31,24 @@ class OnsetResultTest {
     @Test
     void checkConstructorWithIllegalArguments() {
         // given
+        final var txn = Transaction.getDefaultInstance();
         final var txBody = TransactionBody.getDefaultInstance();
         final var bytes = new byte[0];
         final var signatureMap = SignatureMap.getDefaultInstance();
         final var functionality = HederaFunctionality.NONE;
 
         // then
-        assertThatThrownBy(() -> new OnsetResult(null, bytes, OK, signatureMap, functionality))
+        assertThatThrownBy(() -> new OnsetResult(null, txBody, bytes, OK, signatureMap, functionality))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new OnsetResult(txBody, null, OK, signatureMap, functionality))
+        assertThatThrownBy(() -> new OnsetResult(txn, null, bytes, OK, signatureMap, functionality))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new OnsetResult(txBody, bytes, null, signatureMap, functionality))
+        assertThatThrownBy(() -> new OnsetResult(txn, txBody, null, OK, signatureMap, functionality))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new OnsetResult(txBody, bytes, OK, null, functionality))
+        assertThatThrownBy(() -> new OnsetResult(txn, txBody, bytes, null, signatureMap, functionality))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new OnsetResult(txBody, bytes, OK, signatureMap, null))
+        assertThatThrownBy(() -> new OnsetResult(txn, txBody, bytes, OK, null, functionality))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new OnsetResult(txn, txBody, bytes, OK, signatureMap, null))
                 .isInstanceOf(NullPointerException.class);
     }
 }

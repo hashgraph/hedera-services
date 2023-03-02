@@ -39,12 +39,11 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class does some pre-processing before each workflow. It parses the provided {@link
- * ByteBuffer} and checks it.
+ * This class does some pre-processing before each workflow. It parses the provided {@link ByteBuffer} and checks it.
  *
  * <p>This is used in every workflow that deals with transactions, i.e. in all workflows except the
- * query workflow. And even in the query workflow, it is used when dealing with the contained {@link
- * com.hederahashgraph.api.proto.java.CryptoTransfer}.
+ * query workflow. And even in the query workflow, it is used when dealing with the contained
+ * {@link com.hederahashgraph.api.proto.java.CryptoTransfer}.
  */
 @Singleton
 public class WorkflowOnset {
@@ -66,8 +65,7 @@ public class WorkflowOnset {
      * Parse the given {@link ByteBuffer} and check its validity.
      *
      * <p>The checks are very general: syntax checks, size limit checks, and some general semantic
-     * checks that apply to all transactions (e.g. does the transaction have a payer, are the
-     * timestamps valid).
+     * checks that apply to all transactions (e.g. does the transaction have a payer, are the timestamps valid).
      *
      * @param ctx the {@link SessionContext}
      * @param buffer the {@code ByteBuffer} with the serialized transaction
@@ -87,8 +85,7 @@ public class WorkflowOnset {
      * Parse the given {@link ByteBuffer} and check its validity
      *
      * <p>The checks are very general: syntax checks, size limit checks, and some general semantic
-     * checks that apply to all transactions (e.g. does the transaction have a payer, are the
-     * timestamps valid).
+     * checks that apply to all transactions (e.g. does the transaction have a payer, are the timestamps valid).
      *
      * @param ctx the {@link SessionContext}
      * @param buffer the {@code ByteBuffer} with the serialized transaction
@@ -108,8 +105,7 @@ public class WorkflowOnset {
      * Check the validity of the provided {@link Transaction}
      *
      * <p>The checks are very general: syntax checks, size limit checks, and some general semantic
-     * checks that apply to all transactions (e.g. does the transaction have a payer, are the
-     * timestamps valid).
+     * checks that apply to all transactions (e.g. does the transaction have a payer, are the timestamps valid).
      *
      * @param ctx the {@link SessionContext}
      * @param transaction the {@link Transaction} that needs to be checked
@@ -168,7 +164,7 @@ public class WorkflowOnset {
         }
 
         // 4. return TransactionBody
-        return new OnsetResult(txBody, bodyBytes.toByteArray(), errorCode, signatureMap, functionality);
+        return new OnsetResult(tx, txBody, bodyBytes.toByteArray(), errorCode, signatureMap, functionality);
     }
 
     @FunctionalInterface
