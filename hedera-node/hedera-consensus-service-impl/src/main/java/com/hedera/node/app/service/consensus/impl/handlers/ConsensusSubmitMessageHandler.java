@@ -185,7 +185,16 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         final var topicId = txn.getConsensusSubmitMessage().getTopicID();
         final var message = txn.getConsensusSubmitMessage().getMessage().toByteArray();
 
-        final var topicBuilder = topic.copyBuilder();
+//        final var topicBuilder = topic.copyBuilder();
+        final var topicBuilder = new Topic.Builder()
+                .topicNumber(topic.topicNumber())
+                .adminKey(topic.adminKey())
+                .submitKey(topic.submitKey())
+                .autoRenewAccountNumber(topic.autoRenewAccountNumber())
+                .autoRenewPeriod(topic.autoRenewPeriod())
+                .expiry(topic.expiry())
+                .deleted(topic.deleted())
+                .memo(topic.memo());
 
         if (null == consensusNow) {
             consensusNow = Instant.ofEpochSecond(0);
