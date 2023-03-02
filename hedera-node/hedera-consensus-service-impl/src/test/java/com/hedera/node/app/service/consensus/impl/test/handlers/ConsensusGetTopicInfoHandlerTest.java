@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
-import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.utils.TxnUtils.payerSponsoredTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
@@ -25,14 +24,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
-import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
-import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusGetTopicInfoHandler;
-import com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
-import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hederahashgraph.api.proto.java.*;
@@ -118,7 +112,8 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
     void validatesQueryIfDeletedTopic() throws Throwable {
         givenValidTopic(autoRenewId.getAccountNum(), true);
         readableTopicState = readableTopicState();
-        given(readableStates.<EntityNum, com.hedera.hapi.node.state.consensus.Topic>get(TOPICS)).willReturn(readableTopicState);
+        given(readableStates.<EntityNum, com.hedera.hapi.node.state.consensus.Topic>get(TOPICS))
+                .willReturn(readableTopicState);
         readableStore = new ReadableTopicStore(readableStates);
 
         final var query = createGetTopicInfoQuery(topicEntityNum.intValue());

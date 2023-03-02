@@ -19,17 +19,12 @@ package com.hedera.node.app.service.consensus.impl;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
-import com.hedera.node.app.service.mono.state.submerkle.EntityId;
-import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -63,9 +58,7 @@ public class WritableTopicStore extends TopicStore {
      * @param topic - the topic to be mapped onto a new {@link MerkleTopic} and persisted.
      */
     public void put(@NonNull final Topic topic) {
-        Objects.requireNonNull(topicState).put(
-                EntityNum.fromLong(topic.topicNumber()),
-                Objects.requireNonNull(topic));
+        Objects.requireNonNull(topicState).put(EntityNum.fromLong(topic.topicNumber()), Objects.requireNonNull(topic));
     }
 
     /**

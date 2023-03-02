@@ -24,7 +24,6 @@ import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.TopicStore.TopicMetadata;
 import com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusHandlerTestBase;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
-import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -104,7 +103,8 @@ class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
     void getsTopicMetadataIfTopicExistsWithNoAutoRenewAccount() {
         givenValidTopic(0L);
         readableTopicState = readableTopicState();
-        given(readableStates.<EntityNum, com.hedera.hapi.node.state.consensus.Topic>get(TOPICS)).willReturn(readableTopicState);
+        given(readableStates.<EntityNum, com.hedera.hapi.node.state.consensus.Topic>get(TOPICS))
+                .willReturn(readableTopicState);
         readableStore = new ReadableTopicStore(readableStates);
         subject = new ReadableTopicStore(readableStates);
 

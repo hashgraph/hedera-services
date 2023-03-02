@@ -17,6 +17,7 @@
 package com.hedera.node.app.fees;
 
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -26,5 +27,6 @@ import com.hederahashgraph.api.proto.java.Timestamp;
  * will be enhanced to be used for transactions as well in the future.
  */
 public interface FeeAccumulator {
-    FeeObject computePayment(final HederaFunctionality functionality, final Query query, Timestamp now);
+    FeeObject computePayment(
+            ReadableStoreFactory readableStoreFactory, HederaFunctionality functionality, Query query, Timestamp now);
 }

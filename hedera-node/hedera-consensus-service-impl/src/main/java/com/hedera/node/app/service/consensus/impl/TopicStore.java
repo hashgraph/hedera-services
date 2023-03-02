@@ -16,31 +16,31 @@
 
 package com.hedera.node.app.service.consensus.impl;
 
+import static com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils.fromPbjKey;
+
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.Timestamp;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 
-import static com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils.fromPbjKey;
-
 /**
  * Base class for {@link ReadableTopicStore} and {@link WritableTopicStore}.
  */
 public class TopicStore {
-    protected TopicMetadata topicMetaFrom(final Topic topic) {
+    public static TopicMetadata topicMetaFrom(final Topic topic) {
         try {
             final var runningHash = new byte[topic.runningHash().getLength()];
             topic.runningHash().getBytes(0, runningHash);
             final var maybeAutoRenewNum = topic.autoRenewAccountNumber() == 0
-                    ? Optional.<Long>empty() : Optional.of(topic.autoRenewAccountNumber());
+                    ? Optional.<Long>empty()
+                    : Optional.of(topic.autoRenewAccountNumber());
             return new TopicMetadata(
                     Optional.of(topic.memo()),
                     fromPbjKey(topic.adminKey()),
-                    fromPbjKey(topic.adminKey()),
+                    fromPbjKey(topic.submitKey()),
                     topic.autoRenewPeriod(),
                     maybeAutoRenewNum,
                     Timestamp.newBuilder().setSeconds(topic.expiry()).build(),

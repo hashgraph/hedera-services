@@ -22,14 +22,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TopicID;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Objects;
 import java.util.Optional;
 
@@ -73,7 +71,7 @@ public class ReadableTopicStore extends TopicStore {
         return withTopicMeta(topicMetaFrom(topic.get()));
     }
 
-    private Optional<Topic> getTopicLeaf(TopicID id) {
+    public Optional<Topic> getTopicLeaf(TopicID id) {
         return Optional.ofNullable(Objects.requireNonNull(topicState).get(EntityNum.fromTopicId(id)));
     }
 

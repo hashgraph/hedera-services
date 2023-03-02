@@ -356,7 +356,7 @@ class QueryWorkflowImplTest {
 
     @Test
     void testSuccessIfPaymentRequired() throws InvalidProtocolBufferException, PreCheckException {
-        given(feeAccumulator.computePayment(any(), any(), any())).willReturn(new FeeObject(100L, 0L, 100L));
+        given(feeAccumulator.computePayment(any(), any(), any(), any())).willReturn(new FeeObject(100L, 0L, 100L));
         given(handler.requiresNodePayment(any())).willReturn(true);
         given(dispatcher.validate(any(), any())).willReturn(OK);
         given(dispatcher.getResponse(any(), any(), any(), any()))
@@ -681,7 +681,7 @@ class QueryWorkflowImplTest {
         doThrow(new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED))
                 .when(submissionManager)
                 .submit(txBody, payment.toByteArray(), ctx.txBodyParser());
-        given(feeAccumulator.computePayment(any(), any(), any())).willReturn(new FeeObject(100L, 0L, 100L));
+        given(feeAccumulator.computePayment(any(), any(), any(), any())).willReturn(new FeeObject(100L, 0L, 100L));
         final var responseBuffer = ByteBuffer.allocate(BUFFER_SIZE);
 
         // when

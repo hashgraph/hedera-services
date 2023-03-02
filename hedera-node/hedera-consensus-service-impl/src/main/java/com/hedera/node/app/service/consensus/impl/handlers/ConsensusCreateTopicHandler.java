@@ -16,8 +16,7 @@
 
 package com.hedera.node.app.service.consensus.impl.handlers;
 
-import com.hedera.hapi.node.base.parser.KeyProtoParser;
-
+import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.RUNNING_HASH_BYTE_ARRAY_SIZE;
 import static com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils.fromGrpcKey;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
@@ -25,6 +24,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_I
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.hashgraph.pbj.runtime.io.Bytes;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
@@ -39,7 +39,6 @@ import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -50,8 +49,7 @@ import javax.inject.Singleton;
 @Singleton
 public class ConsensusCreateTopicHandler implements TransactionHandler {
     @Inject
-    public ConsensusCreateTopicHandler() {
-    }
+    public ConsensusCreateTopicHandler() {}
 
     /**
      * This method is called during the pre-handle workflow.
@@ -136,6 +134,8 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
 
         /* --- Add topic number to topic builder --- */
         builder.topicNumber(handleContext.newEntityNumSupplier().getAsLong());
+
+        builder.runningHash(Bytes.wrap(new byte[RUNNING_HASH_BYTE_ARRAY_SIZE]));
 
         /* --- Put the final topic. It will be in underlying state's modifications map.
         It will not be committed to state until commit is called on the state.--- */
