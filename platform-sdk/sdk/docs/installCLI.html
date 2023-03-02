@@ -1,0 +1,134 @@
+<!--
+  ~ Copyright 2016-2022 Hedera Hashgraph, LLC
+  ~
+  ~ This software is the confidential and proprietary information of
+  ~ Hedera Hashgraph, LLC. ("Confidential Information"). You shall not
+  ~ disclose such Confidential Information and shall use it only in
+  ~ accordance with the terms of the license agreement you entered into
+  ~ with Hedera Hashgraph.
+  ~
+  ~ HEDERA HASHGRAPH MAKES NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF
+  ~ THE SOFTWARE, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+  ~ TO THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+  ~ PARTICULAR PURPOSE, OR NON-INFRINGEMENT. HEDERA HASHGRAPH SHALL NOT BE LIABLE FOR
+  ~ ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING OR
+  ~ DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
+  -->
+
+<html>
+<head>
+	<style>
+		pre {
+			font-family: "Courier 10 Pitch", Courier, monospace;
+			margin-bottom: 1.6em;
+			max-width: 100%;
+			overflow: auto;
+			background-color: #efefef;
+		}
+	</style>
+</head>
+<body>
+
+<h1>How to install / recompile the example apps from the command line</h1>
+
+These versions (or later) should be downloaded and installed:
+
+<ul>
+	<li>OpenJDK Java 12: <a href="https://jdk.java.net/archive/">
+		OpenJDK Java Development Kit 12.0.2</a></li>
+
+	<li>Maven 3.6.2 <a href="https://maven.apache.org/download.cgi">Maven</a></li>
+
+	<li>Swirlds SDK: <a href="http://www.swirlds.com/download/">Swirlds SDK</a></li>
+
+</ul>
+
+<!--<p>The JCE Jurisdiction files must be installed in the correct location. The easiest way to find that location is to run the Swirlds platform. If it needs those files, then it will display a message telling where to install them.</p>-->
+<p>The above link is to OpenJDK 12, which is free. Oracle JDK 11+ requires a paid license.</p>
+
+<p>If the Swirlds browser freezes when it is first launched, it is possible that the operating system needs a utility
+	installed to collect entropy, such as the utilities for
+	<a href="installDebian.html">Debian</a>
+	or
+	<a href="installRaspbian.html">Raspbian</a>.
+
+
+<p>These examples will uses slashes in paths, but on Windows they will be backslashes.</p>
+
+<p>Download and unzip the SDK. This gives a directory with a number of files and subdirectories, including these:</p>
+<pre>
+    sdk/data/apps/ 
+    sdk/swirlds.jar 
+    sdk/config.txt 
+</pre>
+
+
+<p>The last one, <b>config.txt</b>, is used to make the Swirlds browser automatically run a particular app. It can even
+	make multiple instances of it run and communicate with each other, as if they were on multiple machines. The
+	comments in the file explain how to change it.</p>
+
+<p>The demo apps are now <a href="runBrowser.html">ready to run</a>. </p>
+
+<p>The apps come with source code, and can be recompiled from the command line, by executing <b>mvn install</b> in the
+	directory of a demo, then running swirlds.jar. The following walks through an example of doing this.</p>
+
+<ul>
+
+	<li>From the command line, change directory into <b>sdk</b></li>
+
+	<li>Run the hashgraph demo by typing:</li>
+	<pre>
+    java -jar swirlds.jar
+</pre>
+
+	<li>Edit the <b>config.txt</b> file with any text editor, such as by typing:</li>
+	<pre>
+    nano config.txt
+</pre>
+
+	<li>The file has a line near the top starting with <b>HashgraphDemo</b>, and another line near it starting with <b>#
+		HelloSwirldDemo</b>. Add a <b>#</b> character at the start of the HashgraphDemo line to comment it out, and
+		delete the <b>#</b> from the start of the HelloSwirldDemo line to uncomment it.
+	</li>
+
+	<li>Run the Hello Swirld demo by typing:</li>
+	<pre>
+    java -jar swirlds.jar
+</pre>
+
+	<li>Now edit the source file of the demo, to change what it does (instead of nano, this can be done with emacs or vi
+		or any other text editor):
+	</li>
+	<pre>
+    cd source/HelloSwirldDemo
+    nano HelloSwirldDemoMain.java
+</pre>
+	<li>Make a change to the string in this line, which is near the top of the <b>run()</b> method:</li>
+	<pre>
+    console.out.println("Hello Swirld from " + myName);
+</pre>
+
+	<li>Recompile and run it, to see the new effect of the change:</li>
+	<pre>
+    mvn install
+    cd ../..
+    java -jar swirlds.jar
+</pre>
+
+	<li>That should now reflect the change that was made. After the line that was changed, insert this new line:</li>
+	<pre>
+    System.out.println("printing to the command line console");
+</pre>
+	<li>Recompile and run as above, and the string should print to the command line console where it was run. So to see
+		that output, it needs to be run from a console rather than by double clicking on the swirlds.jar file icon.
+	</li>
+	<li>The above steps can be repeated to develop a new app, entirely from the command line. Though it may be easier to
+		use an Integrated Development Environment (IDE), such as <a href="installEclipse.html">developing the app in
+			Eclipse</a>.
+	</li>
+</ul>
+
+<p>
+	<a href="index.html">Back</a>
+</p>
+</body>

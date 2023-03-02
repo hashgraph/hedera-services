@@ -19,6 +19,7 @@ package com.hedera.node.app.service.mono.state.migration;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.forEach;
 
 import com.hedera.node.app.service.mono.ServicesState;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
@@ -52,7 +53,7 @@ public class UniqueTokensMigrator {
                 virtualMapFactory.newVirtualizedUniqueTokenStorage();
         final AtomicInteger count = new AtomicInteger();
 
-        forEach(legacyUniqueTokens, (entityNumPair, legacyToken) -> {
+        forEach(MerkleMapLike.from(legacyUniqueTokens), (entityNumPair, legacyToken) -> {
             final var numSerialPair = entityNumPair.asTokenNumAndSerialPair();
             final var newTokenKey = new UniqueTokenKey(numSerialPair.getLeft(), numSerialPair.getRight());
             final var newTokenValue = UniqueTokenValue.from(legacyToken);

@@ -52,6 +52,7 @@ import com.hedera.node.app.service.mono.state.forensics.HashLogger;
 import com.hedera.node.app.service.mono.state.initialization.SystemAccountsCreator;
 import com.hedera.node.app.service.mono.state.initialization.SystemFilesManager;
 import com.hedera.node.app.service.mono.state.initialization.TreasuryCloner;
+import com.hedera.node.app.service.mono.state.logic.LastStepModule;
 import com.hedera.node.app.service.mono.state.logic.NetworkCtxManager;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.migration.MigrationRecordsManager;
@@ -114,7 +115,8 @@ import javax.inject.Singleton;
             ThrottlingModule.class,
             SubmissionModule.class,
             TransactionsModule.class,
-            ExpiryModule.class
+            ExpiryModule.class,
+            LastStepModule.class
         })
 public interface ServicesApp {
     /* Needed by ServicesState */

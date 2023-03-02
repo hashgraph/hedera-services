@@ -35,6 +35,7 @@ import static org.mockito.BDDMockito.verify;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -57,7 +58,7 @@ class MerkleTopicDeleteTransitionLogicTest {
     private TransactionBody transactionBody;
     private TransactionContext transactionContext;
     private SignedTxnAccessor accessor;
-    private MerkleMap<EntityNum, MerkleTopic> topics = new MerkleMap<>();
+    private MerkleMapLike<EntityNum, MerkleTopic> topics = MerkleMapLike.from(new MerkleMap<>());
     private OptionValidator validator;
     private TopicDeleteTransitionLogic subject;
     private SigImpactHistorian sigImpactHistorian;
@@ -74,7 +75,6 @@ class MerkleTopicDeleteTransitionLogicTest {
         accessor = mock(SignedTxnAccessor.class);
         validator = mock(OptionValidator.class);
         sigImpactHistorian = mock(SigImpactHistorian.class);
-        topics.clear();
 
         subject = new TopicDeleteTransitionLogic(() -> topics, validator, sigImpactHistorian, transactionContext);
     }
@@ -116,7 +116,7 @@ class MerkleTopicDeleteTransitionLogicTest {
         given(validator.queryableTopicStatus(any(), any())).willReturn(OK);
         givenTransaction(getBasicValidTransactionBodyBuilder());
 
-        topics = (MerkleMap<EntityNum, MerkleTopic>) mock(MerkleMap.class);
+        topics = (MerkleMapLike<EntityNum, MerkleTopic>) mock(MerkleMapLike.class);
 
         given(topics.get(topicFcKey)).willReturn(deletableTopic);
         given(topics.getForModify(topicFcKey)).willReturn(deletableTopic);

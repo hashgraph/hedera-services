@@ -23,6 +23,7 @@ import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.queries.AnswerService;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -35,7 +36,6 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.Optional;
@@ -53,13 +53,13 @@ public class GetTopicInfoAnswer implements AnswerService {
 
     @Override
     public ResponseCodeEnum checkValidity(final Query query, final StateView view) {
-        final MerkleMap<EntityNum, MerkleTopic> topics = view.topics();
+        final var topics = view.topics();
         final ConsensusGetTopicInfoQuery op = query.getConsensusGetTopicInfo();
         return validityOf(op, topics);
     }
 
     private ResponseCodeEnum validityOf(
-            final ConsensusGetTopicInfoQuery op, final MerkleMap<EntityNum, MerkleTopic> topics) {
+            final ConsensusGetTopicInfoQuery op, final MerkleMapLike<EntityNum, MerkleTopic> topics) {
         if (op.hasTopicID()) {
             return optionValidator.queryableTopicStatus(op.getTopicID(), topics);
         } else {

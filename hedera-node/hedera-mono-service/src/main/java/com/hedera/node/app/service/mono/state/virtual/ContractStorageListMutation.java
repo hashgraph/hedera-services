@@ -16,16 +16,16 @@
 
 package com.hedera.node.app.service.mono.state.virtual;
 
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.utils.MapValueListMutation;
-import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 public class ContractStorageListMutation implements MapValueListMutation<ContractKey, IterableContractValue> {
     final long contractId;
-    final VirtualMap<ContractKey, IterableContractValue> storage;
+    final VirtualMapLike<ContractKey, IterableContractValue> storage;
 
     public ContractStorageListMutation(
-            final long contractId, final VirtualMap<ContractKey, IterableContractValue> storage) {
+            final long contractId, final VirtualMapLike<ContractKey, IterableContractValue> storage) {
         this.contractId = contractId;
         this.storage = storage;
     }

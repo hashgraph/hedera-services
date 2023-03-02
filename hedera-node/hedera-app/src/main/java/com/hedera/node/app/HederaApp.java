@@ -17,6 +17,7 @@
 package com.hedera.node.app;
 
 import com.hedera.node.app.annotations.MaxSignedTxnSize;
+import com.hedera.node.app.components.IngestComponent;
 import com.hedera.node.app.components.QueryComponent;
 import com.hedera.node.app.service.mono.ServicesApp;
 import com.hedera.node.app.service.mono.config.ConfigModule;
@@ -42,7 +43,8 @@ import com.hedera.node.app.service.mono.throttling.ThrottlingModule;
 import com.hedera.node.app.service.mono.txns.TransactionsModule;
 import com.hedera.node.app.service.mono.txns.submission.SubmissionModule;
 import com.hedera.node.app.services.ServiceModule;
-import com.hedera.node.app.workflows.query.QueryModule;
+import com.hedera.node.app.workflows.handle.HandleWorkflowModule;
+import com.hedera.node.app.workflows.query.QueryWorkflowModule;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.Platform;
@@ -52,10 +54,12 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 
-/** The infrastructure used to implement the platform contract for a Hedera Services node.
+/**
+ * The infrastructure used to implement the platform contract for a Hedera Services node.
  * This is needed for adding dagger subcomponents.
  * Currently, it extends {@link com.hedera.node.app.service.mono.ServicesApp}. But,
- * in the future this class will be cleaned up to not have multiple module dependencies */
+ * in the future this class will be cleaned up to not have multiple module dependencies
+ */
 @Singleton
 @Component(
         modules = {
@@ -80,12 +84,14 @@ import javax.inject.Singleton;
             TransactionsModule.class,
             ExpiryModule.class,
             ServiceModule.class,
-            QueryModule.class
+            QueryWorkflowModule.class,
+            HandleWorkflowModule.class
         })
 public interface HederaApp extends ServicesApp {
     /* Needed by ServicesState */
-
     Provider<QueryComponent.Factory> queryComponentFactory();
+
+    Provider<IngestComponent.Factory> ingestComponentFactory();
 
     @Component.Builder
     interface Builder {

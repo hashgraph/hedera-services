@@ -32,6 +32,7 @@ dependencies {
   api(project(":hedera-node:hedera-consensus-service"))
   implementation(project(":hedera-node:hedera-mono-service"))
   implementation(libs.bundles.di)
+  implementation(libs.swirlds.common)
   testImplementation(testLibs.bundles.testing)
   testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
   testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))

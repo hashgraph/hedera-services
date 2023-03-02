@@ -27,22 +27,19 @@ import java.util.stream.Stream;
 
 public class NodeConnectInfo {
     public static int NEXT_DEFAULT_ACCOUNT_NUM = 3;
-
-    private final int DEFAULT_PORT = 50211;
-    private final int DEFAULT_TLS_PORT = 50212;
-    private final String DEFAULT_HOST = "localhost";
+    private static final int DEFAULT_PORT = 50211;
+    private static final int DEFAULT_TLS_PORT = 50212;
+    private static final int DEFAULT_WORKFLOW_PORT = 60211;
+    private static final int DEFAULT_WORKFLOW_TLS_PORT = 60212;
+    private static final String DEFAULT_HOST = "localhost";
+    private static final String FORMATTER = "%s:%d";
 
     private final String host;
     private final int port;
     private final int tlsPort;
+    private final int workflowPort = DEFAULT_WORKFLOW_PORT;
+    private final int workflowTlsPort = DEFAULT_WORKFLOW_TLS_PORT;
     private final AccountID account;
-
-    public NodeConnectInfo(String host, int port, int tlsPort, AccountID account) {
-        this.host = host;
-        this.port = port;
-        this.tlsPort = tlsPort;
-        this.account = account;
-    }
 
     public NodeConnectInfo(String inString) {
         String[] aspects = inString.split(":");
@@ -72,11 +69,19 @@ public class NodeConnectInfo {
     }
 
     public String uri() {
-        return String.format("%s:%d", host, port);
+        return String.format(FORMATTER, host, port);
     }
 
     public String tlsUri() {
-        return String.format("%s:%d", host, tlsPort);
+        return String.format(FORMATTER, host, tlsPort);
+    }
+
+    public String workflowUri() {
+        return String.format(FORMATTER, host, workflowPort);
+    }
+
+    public String workflowTlsUri() {
+        return String.format(FORMATTER, host, workflowTlsPort);
     }
 
     public String getHost() {
@@ -91,6 +96,14 @@ public class NodeConnectInfo {
         return tlsPort;
     }
 
+    public int getWorkflowPort() {
+        return workflowPort;
+    }
+
+    public int getWorkflowTlsPort() {
+        return workflowTlsPort;
+    }
+
     public AccountID getAccount() {
         return account;
     }
@@ -101,6 +114,8 @@ public class NodeConnectInfo {
                 .add("host", host)
                 .add("port", port)
                 .add("tlsPort", tlsPort)
+                .add("workflowPort", workflowPort)
+                .add("workflowTlsPort", workflowTlsPort)
                 .add("account", HapiPropertySource.asAccountString(account))
                 .toString();
     }

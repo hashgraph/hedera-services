@@ -35,6 +35,8 @@ configurations.all {
 
 dependencies {
   implementation(libs.grpc.stub)
+  implementation(libs.swirlds.virtualmap)
+  implementation(libs.swirlds.jasperdb)
   implementation(libs.swirlds.common)
   api(libs.hapi)
   api(libs.helidon.io.grpc)
@@ -46,4 +48,5 @@ dependencies {
 
   testFixturesCompileOnly(libs.spotbugs.annotations)
   testFixturesCompileOnly(testLibs.assertj.core)
+  testFixturesApi(libs.swirlds.common)
 }

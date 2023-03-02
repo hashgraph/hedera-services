@@ -27,7 +27,6 @@ import java.util.ServiceLoader;
  * Service</a>.
  */
 public interface NetworkService extends Service {
-
     String NAME = "NetworkService";
 
     @NonNull

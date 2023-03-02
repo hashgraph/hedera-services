@@ -25,6 +25,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.expiry.TokenRelsListMutation;
 import com.hedera.node.app.service.mono.state.expiry.classification.EntityLookup;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
@@ -76,7 +77,12 @@ class TreasuryReturnsTest {
     @BeforeEach
     void setUp() {
         subject = new TreasuryReturns(
-                entityLookup, () -> tokens, () -> nfts, () -> tokenRels, expiryThrottle, returnHelper);
+                entityLookup,
+                () -> MerkleMapLike.from(tokens),
+                () -> nfts,
+                () -> tokenRels,
+                expiryThrottle,
+                returnHelper);
     }
 
     @Test

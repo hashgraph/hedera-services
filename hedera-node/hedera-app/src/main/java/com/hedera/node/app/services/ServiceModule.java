@@ -16,7 +16,10 @@
 
 package com.hedera.node.app.services;
 
+import com.hedera.node.app.components.IngestComponent;
 import com.hedera.node.app.components.QueryComponent;
+import com.hedera.node.app.service.admin.impl.components.AdminComponent;
+import com.hedera.node.app.service.admin.impl.components.DaggerAdminComponent;
 import com.hedera.node.app.service.consensus.impl.components.ConsensusComponent;
 import com.hedera.node.app.service.consensus.impl.components.DaggerConsensusComponent;
 import com.hedera.node.app.service.contract.impl.components.ContractComponent;
@@ -29,12 +32,26 @@ import com.hedera.node.app.service.schedule.impl.components.DaggerScheduleCompon
 import com.hedera.node.app.service.schedule.impl.components.ScheduleComponent;
 import com.hedera.node.app.service.token.impl.components.DaggerTokenComponent;
 import com.hedera.node.app.service.token.impl.components.TokenComponent;
+import com.hedera.node.app.service.util.impl.components.DaggerUtilComponent;
+import com.hedera.node.app.service.util.impl.components.UtilComponent;
 import dagger.Module;
 import dagger.Provides;
 import javax.inject.Singleton;
 
-@Module(subcomponents = {QueryComponent.class})
+@Module(subcomponents = {QueryComponent.class, IngestComponent.class})
 public interface ServiceModule {
+    @Provides
+    @Singleton
+    static UtilComponent provideUtilComponent() {
+        return DaggerUtilComponent.create();
+    }
+
+    @Provides
+    @Singleton
+    static AdminComponent provideAdminComponent() {
+        return DaggerAdminComponent.create();
+    }
+
     @Provides
     @Singleton
     static ConsensusComponent provideConsensusComponent() {
