@@ -22,14 +22,14 @@ import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.utils.KeyUtils.sanityRestored;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.mono.Utils;
+import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
-import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -63,7 +63,7 @@ public final class ConsensusTestUtils {
         assertThat(context.failed()).isFalse();
     }
 
-    static HederaKey mockPayerLookup(Key key, AccountID accountId, AccountAccess keyLookup) {
+    static HederaKey mockPayerLookup(Key key, AccountID accountId, AccountKeyLookup keyLookup) {
         final var returnKey = Utils.asHederaKey(key).orElseThrow();
         given(keyLookup.getKey(accountId)).willReturn(KeyOrLookupFailureReason.withKey(returnKey));
         return returnKey;
@@ -90,7 +90,7 @@ public final class ConsensusTestUtils {
     }
 
     static void mockTopicLookup(Key adminKey, Key submitKey, ReadableTopicStore topicStore) {
-        given(topicStore.getTopicMetadata(any()))
+        given(topicStore.getTopicMetadata(notNull()))
                 .willReturn(ReadableTopicStore.TopicMetaOrLookupFailureReason.withTopicMeta(newTopicMeta(
                         adminKey != null ? Utils.asHederaKey(adminKey).get() : null,
                         submitKey != null ? Utils.asHederaKey(submitKey).get() : null)));
