@@ -24,8 +24,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JHollowKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JWildcardECDSAKey;
 import com.hedera.node.app.service.mono.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
 import com.hedera.node.app.service.mono.sigs.order.SigRequirements;
@@ -108,20 +108,20 @@ class Expansion {
      * <p> If {@link HollowScreening#pendingCompletionsFrom} returns a non-empty list of {@link PendingCompletion}s,
      * cache the completions in the txn accessor via {@link SwirldsTxnAccessor#setPendingCompletions}.
      *
-     * <p> Also try to replace any {@link JHollowKey}s present in the
+     * <p> Also try to replace any {@link JWildcardECDSAKey}s present in the
      *      {@link Expansion#payerKey} and {@link Expansion#otherPartyKeys} with its corresponding
      *      {@link JECDSASecp256k1Key} using the {@link HollowScreening} instance, if such replacement is possible.
      *
-     * <p>Note that this method tries to replace {@link JHollowKey}s present in the {@link Expansion#otherPartyKeys}
+     * <p>Note that this method tries to replace {@link JWildcardECDSAKey}s present in the {@link Expansion#otherPartyKeys}
      * even if no pending completions are present. That's because a CryptoCreate with an evm address alias, derived from
-     * a key, different than the key being set for the account, also adds a {@link JHollowKey} to the {@link Expansion#otherPartyKeys},
-     * <strong>but that {@link JHollowKey} may not be connected to a finalization.</strong>
+     * a key, different than the key being set for the account, also adds a {@link JWildcardECDSAKey} to the {@link Expansion#otherPartyKeys},
+     * <strong>but that {@link JWildcardECDSAKey} may not be connected to a finalization.</strong>
      *
      */
     private void maybePerformHollowScreening() {
         if (HollowScreening.atLeastOneWildcardKeyIn(payerKey, otherPartyKeys) && pkToSigFn.hasAtLeastOneEcdsaSig()) {
             final var hollowScreenResult =
-                    HollowScreening.performForVersion2(expandedSigs, payerKey, otherPartyKeys, aliasManager);
+                    HollowScreening.performFor(expandedSigs, payerKey, otherPartyKeys, aliasManager);
             if (hollowScreenResult.pendingCompletions() != null) {
                 txnAccessor.setPendingCompletions(hollowScreenResult.pendingCompletions());
             }

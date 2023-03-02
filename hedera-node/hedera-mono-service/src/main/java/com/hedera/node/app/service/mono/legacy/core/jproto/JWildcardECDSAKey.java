@@ -18,26 +18,21 @@ package com.hedera.node.app.service.mono.legacy.core.jproto;
 
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 
-public class JHollowKey extends JKey {
-    private final boolean isHollow;
-    private byte[] evmAddress;
+public class JWildcardECDSAKey extends JKey {
+    private final boolean isForHollowAccount;
+    private final byte[] evmAddress;
 
     public byte[] getEvmAddress() {
         return evmAddress;
     }
 
-    public JHollowKey(final byte[] evmAddress) {
+    public JWildcardECDSAKey(final byte[] evmAddress, boolean isForHollowAccount) {
         this.evmAddress = evmAddress;
-        this.isHollow = true;
-    }
-
-    public JHollowKey(final byte[] evmAddress, final boolean isHollow) {
-        this.evmAddress = evmAddress;
-        this.isHollow = false;
+        this.isForHollowAccount = isForHollowAccount;
     }
 
     public boolean isForHollowAccount() {
-        return isHollow;
+        return isForHollowAccount;
     }
 
     @Override
@@ -56,7 +51,7 @@ public class JHollowKey extends JKey {
     }
 
     @Override
-    public JHollowKey getHollowKey() {
+    public JWildcardECDSAKey getHollowKey() {
         return this;
     }
 }

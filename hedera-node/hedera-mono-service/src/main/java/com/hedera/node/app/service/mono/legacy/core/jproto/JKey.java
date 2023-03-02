@@ -308,7 +308,7 @@ public abstract class JKey implements HederaKey {
         return null;
     }
 
-    public JHollowKey getHollowKey() {
+    public JWildcardECDSAKey getHollowKey() {
         return null;
     }
 
