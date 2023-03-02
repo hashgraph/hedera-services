@@ -119,6 +119,9 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             /* --- Put the modified topic. It will be in underlying state's modifications map.
             It will not be committed to state until commit is called on the state.--- */
             topicStore.put(updatedTopic);
+
+            recordBuilder.setNewTopicMetadata(
+                    unwrapPbj(updatedTopic.runningHash()), updatedTopic.sequenceNumber(), RUNNING_HASH_VERSION);
         } catch (IOException e) {
             throw new HandleStatusException(INVALID_TRANSACTION);
         }
@@ -148,7 +151,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         }
 
         /* Check if the topic exists */
-        if (topic == null || topic.isEmpty()) {
+        if (topic.isEmpty()) {
             throw new HandleStatusException(INVALID_TOPIC_ID);
         }
         /* If the message is too large, user will be able to submit the message fragments in chunks. Validate if chunk info is correct */
