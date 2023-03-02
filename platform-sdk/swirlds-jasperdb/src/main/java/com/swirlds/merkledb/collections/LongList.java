@@ -292,7 +292,7 @@ public abstract class LongList implements CASableLongIndex, Closeable {
 
     /**
      * Write all longs in this LongList into a file
-     *
+     * <p>
      * <b> It is not guaranteed what version of data will be written if the LongList is changed
      * via put methods while this LongList is being written to a file. If you need consistency while
      * calling put concurrently then use a BufferedLongListWrapper. </b>
@@ -385,18 +385,8 @@ public abstract class LongList implements CASableLongIndex, Closeable {
     }
 
     /**
-     * Current min valid index in the list. By default, it's zero, but some implementations may provide
-     * more fine grained values.
-     *
-     * @return min valid index
-     */
-    protected long getCurrentMin() {
-        return 0;
-    }
-
-    /**
      * Current max valid index in the list. By default, it's equal to the size of the list, but some
-     * implementations may provide more fine grained values.
+     * implementations may provide more fine-grained values.
      *
      * @return max valid index
      */
@@ -408,7 +398,7 @@ public abstract class LongList implements CASableLongIndex, Closeable {
     @Override
     public <T extends Throwable> void forEach(final LongAction<T> action) throws InterruptedException, T {
         final long max = getCurrentMax();
-        for (long i = getCurrentMin(); i < max; i++) {
+        for (long i = minValidIndex.get(); i < max; i++) {
             final long value = get(i);
             if (value != IMPERMISSIBLE_VALUE) {
                 action.handle(i, value);

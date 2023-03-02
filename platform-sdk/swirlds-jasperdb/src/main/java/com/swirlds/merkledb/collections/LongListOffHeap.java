@@ -393,30 +393,6 @@ public final class LongListOffHeap extends LongList {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override
-    protected long getCurrentMin() {
-        long minIndex = 0;
-        for (int i = 0; i < chunkList.length(); i++) {
-            final ByteBuffer chunk = chunkList.get(i);
-            if (chunk != null) {
-                int indexInChunk = 0;
-                while (indexInChunk < numLongsPerChunk) {
-                    final long value = lookupInChunk(chunk, indexInChunk);
-                    if (value != IMPERMISSIBLE_VALUE) {
-                        break;
-                    }
-                    indexInChunk++;
-                }
-                // Either the first non-null index in the chunk, or the first index in the
-                // next chunk, if the current chunk was not null for reserved needs only
-                return minIndex + indexInChunk;
-            }
-            minIndex += numLongsPerChunk;
-        }
-        return 0;
-    }
-
     /**
      * This method returns a snapshot of the current {@link data}. FOR TEST PURPOSES ONLY. NOT
      * THREAD SAFE
