@@ -17,9 +17,17 @@
 package com.hedera.node.app.spi.state.serdes;
 
 import com.hedera.hashgraph.pbj.runtime.io.DataInput;
+import com.hedera.node.app.spi.state.Serdes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 
+/**
+ * Defines a parser from a PBJ {@link DataInput}; helpful for building {@link Serdes}
+ * implementations from a method reference to a PBJ-generated {@code ProtoParser}
+ * implementation.
+ *
+ * @param <T> the type of object being parsed
+ */
 @FunctionalInterface
 public interface PbjParser<T> {
     @NonNull

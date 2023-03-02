@@ -17,9 +17,17 @@
 package com.hedera.node.app.spi.state.serdes;
 
 import com.hedera.hashgraph.pbj.runtime.io.DataOutput;
+import com.hedera.node.app.spi.state.Serdes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 
+/**
+ * Defines a writer to a PBJ {@link DataOutput}; helpful for building {@link Serdes}
+ * implementations from a method reference to a PBJ-generated {@code Writer}
+ * implementation.
+ *
+ * @param <T> the type of object being written
+ */
 @FunctionalInterface
 public interface PbjWriter<T> {
     void write(@NonNull T item, @NonNull DataOutput output) throws IOException;

@@ -57,14 +57,7 @@ public class MonoFeeAccumulator implements FeeAccumulator {
     }
 
     /**
-     * Computes the required fees for the given query using the given readable states, the
-     * pre-determined functionality of the query, and the estimated current consensus time.
-     *
-     * @param readableStoreFactory the readable states
-     * @param functionality the pre-determined functionality of the query
-     * @param query the query
-     * @param now the estimated current consensus time
-     * @return the fees for the query, assuming it has the given functionality
+     * {@inheritDoc}
      */
     @Override
     public FeeObject computePayment(

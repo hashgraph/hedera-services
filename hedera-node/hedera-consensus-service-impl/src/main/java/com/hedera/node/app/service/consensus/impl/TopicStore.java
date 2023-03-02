@@ -19,9 +19,9 @@ package com.hedera.node.app.service.consensus.impl;
 import static com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils.fromPbjKey;
 
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
@@ -31,41 +31,37 @@ import java.util.Optional;
  */
 public class TopicStore {
     public static TopicMetadata topicMetaFrom(final Topic topic) {
-        try {
-            final var runningHash = new byte[topic.runningHash().getLength()];
-            topic.runningHash().getBytes(0, runningHash);
-            final var maybeAutoRenewNum = topic.autoRenewAccountNumber() == 0
-                    ? Optional.<Long>empty()
-                    : Optional.of(topic.autoRenewAccountNumber());
-            return new TopicMetadata(
-                    Optional.of(topic.memo()),
-                    fromPbjKey(topic.adminKey()),
-                    fromPbjKey(topic.submitKey()),
-                    topic.autoRenewPeriod(),
-                    maybeAutoRenewNum,
-                    Timestamp.newBuilder().setSeconds(topic.expiry()).build(),
-                    topic.sequenceNumber(),
-                    runningHash,
-                    topic.topicNumber(),
-                    topic.deleted());
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
+        final var maybeAutoRenewNum = topic.autoRenewAccountNumber() == 0
+                ? Optional.<Long>empty()
+                : Optional.of(topic.autoRenewAccountNumber());
+        return new TopicMetadata(
+                Optional.of(topic.memo()),
+                fromPbjKey(topic.adminKey()),
+                fromPbjKey(topic.submitKey()),
+                topic.autoRenewPeriod(),
+                maybeAutoRenewNum,
+                Timestamp.newBuilder().setSeconds(topic.expiry()).build(),
+                topic.sequenceNumber(),
+                TemporaryUtils.unwrapPbj(topic.runningHash()),
+                topic.topicNumber(),
+                topic.deleted());
     }
 
     // TODO : Remove use of TopicMetadata and change to use Topic instead
+
     /**
      * Topic metadata
-     * @param memo topic's memo
-     * @param adminKey topic's admin key
-     * @param submitKey topic's submit key
+     *
+     * @param memo                     topic's memo
+     * @param adminKey                 topic's admin key
+     * @param submitKey                topic's submit key
      * @param autoRenewDurationSeconds topic's auto-renew duration in seconds
-     * @param autoRenewAccountId topic's auto-renew account id
-     * @param expirationTimestamp topic's expiration timestamp
-     * @param sequenceNumber topic's sequence number
-     * @param runningHash topic's running hash
-     * @param key topic's key
-     * @param isDeleted topic's deleted flag
+     * @param autoRenewAccountId       topic's auto-renew account id
+     * @param expirationTimestamp      topic's expiration timestamp
+     * @param sequenceNumber           topic's sequence number
+     * @param runningHash              topic's running hash
+     * @param key                      topic's key
+     * @param isDeleted                topic's deleted flag
      */
     public record TopicMetadata(
             Optional<String> memo,
