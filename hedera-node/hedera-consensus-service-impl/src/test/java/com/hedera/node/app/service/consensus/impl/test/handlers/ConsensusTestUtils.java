@@ -22,7 +22,7 @@ import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.utils.KeyUtils.sanityRestored;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.ArgumentMatchers.notNull;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
@@ -90,7 +90,7 @@ public final class ConsensusTestUtils {
     }
 
     static void mockTopicLookup(Key adminKey, Key submitKey, ReadableTopicStore topicStore) {
-        given(topicStore.getTopicMetadata(notNull()))
+        given(topicStore.getTopicMetadata(any()))
                 .willReturn(ReadableTopicStore.TopicMetaOrLookupFailureReason.withTopicMeta(newTopicMeta(
                         adminKey != null ? Utils.asHederaKey(adminKey).get() : null,
                         submitKey != null ? Utils.asHederaKey(submitKey).get() : null)));

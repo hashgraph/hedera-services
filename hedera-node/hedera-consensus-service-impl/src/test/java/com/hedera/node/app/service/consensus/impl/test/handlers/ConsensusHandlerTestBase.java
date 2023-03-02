@@ -122,6 +122,11 @@ public class ConsensusHandlerTestBase {
                 .build();
     }
 
+    @NonNull
+    protected MapReadableKVState<EntityNum, MerkleTopic> emptyReadableTopicState() {
+        return MapReadableKVState.<EntityNum, MerkleTopic>builder("TOPICS").build();
+    }
+
     protected void givenValidTopic() {
         given(topic.getMemo()).willReturn(memo);
         given(topic.getAdminKey()).willReturn((JKey) adminKey);
@@ -146,6 +151,7 @@ public class ConsensusHandlerTestBase {
                 .sequenceNumber(sequenceNumber)
                 .memo(memo)
                 .deleted(true)
+                .runningHash(new byte[48])
                 .build();
     }
 

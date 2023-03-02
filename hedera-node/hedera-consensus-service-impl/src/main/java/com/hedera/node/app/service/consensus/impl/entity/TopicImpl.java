@@ -74,12 +74,13 @@ public record TopicImpl(
                 && Objects.equals(adminKey, topic.adminKey)
                 && Objects.equals(submitKey, topic.submitKey)
                 && Objects.equals(memo, topic.memo)
+                && sequenceNumber == topic.sequenceNumber
                 && Arrays.equals(runningHash, topic.runningHash);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(
+        var code = Objects.hash(
                 topicNumber,
                 adminKey,
                 submitKey,
@@ -88,8 +89,8 @@ public record TopicImpl(
                 autoRenewSecs,
                 expiry,
                 deleted,
-                sequenceNumber,
-                runningHash);
+                sequenceNumber);
+        return code * 31 + Arrays.hashCode(runningHash);
     }
 
     @Override
@@ -104,6 +105,6 @@ public record TopicImpl(
                 + expiry + ", deleted="
                 + deleted + ", sequenceNumber="
                 + sequenceNumber + ", runningHash="
-                + ((runningHash != null) ? hex(runningHash) : "<N/A>") + '}';
+                + hex(runningHash) + '}';
     }
 }

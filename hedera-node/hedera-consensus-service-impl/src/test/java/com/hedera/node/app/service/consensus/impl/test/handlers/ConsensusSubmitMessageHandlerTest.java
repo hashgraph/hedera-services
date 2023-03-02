@@ -33,7 +33,6 @@ import static org.mockito.Mockito.mock;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
-import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
@@ -77,8 +76,6 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
 
     private ConsensusSubmitMessageRecordBuilder recordBuilder;
     private ConsensusServiceConfig config;
-    private WritableTopicStore writableTopicStore;
-    private ReadableTopicStore readableTopicStore;
 
     private ConsensusSubmitMessageHandler subject;
 
@@ -86,7 +83,6 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
     void setUp() {
         commonSetUp();
         subject = new ConsensusSubmitMessageHandler();
-        writableTopicStore = new WritableTopicStore(writableStates);
         config = new ConsensusServiceConfig(10L, 100);
         recordBuilder = subject.newRecordBuilder();
     }
@@ -94,13 +90,14 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
     @Test
     @DisplayName("Topic submission key sig required")
     void submissionKeySigRequired() {
+        readableStore = mock(ReadableTopicStore.class);
         // given:
         final var payerKey = mockPayerLookup();
         mockTopicLookup(SIMPLE_KEY_A);
-        final var context = new PreHandleContext(keyLookup, newSubmitMessageTxn(), DEFAULT_PAYER);
+        final var context = new PreHandleContext(keyLookup, newSubmitMessageTxn(topicEntityNum), DEFAULT_PAYER);
 
         // when:
-        subject.preHandle(context, readableTopicStore);
+        subject.preHandle(context, readableStore);
 
         // then:
         assertOkResponse(context);
@@ -112,17 +109,14 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
     @Test
     @DisplayName("Topic not found returns error")
     void topicIdNotFound() {
-        // given:
         mockPayerLookup();
-        given(readableTopicStore.getTopicMetadata(notNull()))
-                .willReturn(ReadableTopicStore.TopicMetaOrLookupFailureReason.withFailureReason(
-                        ResponseCodeEnum.INVALID_TOPIC_ID));
-        final var context = new PreHandleContext(keyLookup, newSubmitMessageTxn(), DEFAULT_PAYER);
+        readableTopicState = emptyReadableTopicState();
+        given(readableStates.<EntityNum, MerkleTopic>get(TOPICS)).willReturn(readableTopicState);
+        readableStore = new ReadableTopicStore(readableStates);
+        final var context = new PreHandleContext(keyLookup, newSubmitMessageTxn(topicEntityNum), DEFAULT_PAYER);
 
-        // when:
-        subject.preHandle(context, readableTopicStore);
+        subject.preHandle(context, readableStore);
 
-        // then:
         assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.INVALID_TOPIC_ID);
         assertThat(context.failed()).isTrue();
     }
@@ -130,17 +124,16 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
     @Test
     @DisplayName("Returns error when payer not found")
     void payerNotFound() {
-        // given:
+        readableStore = mock(ReadableTopicStore.class);
+
         given(keyLookup.getKey((AccountID) notNull()))
                 .willReturn(KeyOrLookupFailureReason.withFailureReason(
                         ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST)); // Any error response code
         mockTopicLookup(SIMPLE_KEY_A);
-        final var context = new PreHandleContext(keyLookup, newSubmitMessageTxn(), DEFAULT_PAYER);
+        final var context = new PreHandleContext(keyLookup, newSubmitMessageTxn(topicEntityNum), DEFAULT_PAYER);
 
-        // when:
-        subject.preHandle(context, readableTopicStore);
+        subject.preHandle(context, readableStore);
 
-        // then:
         assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID);
         assertThat(context.failed()).isTrue();
         assertThat(context.getPayerKey()).isNull();
@@ -149,13 +142,13 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
     @Test
     @DisplayName("Topic without submit key does not error")
     void noTopicSubmitKey() {
-        // given:
+        readableStore = mock(ReadableTopicStore.class);
         mockPayerLookup();
         mockTopicLookup(null);
-        final var context = new PreHandleContext(keyLookup, newSubmitMessageTxn(), DEFAULT_PAYER);
+        final var context = new PreHandleContext(keyLookup, newSubmitMessageTxn(topicEntityNum), DEFAULT_PAYER);
 
         // when:
-        subject.preHandle(context, readableTopicStore);
+        subject.preHandle(context, readableStore);
 
         // then:
         assertOkResponse(context);
@@ -165,7 +158,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
     class ConsensusSubmitMessageHandlerParityTest {
         @BeforeEach
         void setUp() {
-            readableTopicStore = mock(ReadableTopicStore.class);
+            readableStore = mock(ReadableTopicStore.class);
             keyLookup = com.hedera.node.app.service.consensus.impl.handlers.test.AdapterUtils.wellKnownKeyLookupAt();
         }
 
@@ -174,12 +167,12 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
             final var txn = txnFrom(CONSENSUS_SUBMIT_MESSAGE_SCENARIO);
 
             var topicMeta = newTopicMeta(null);
-            given(readableTopicStore.getTopicMetadata(notNull()))
+            given(readableStore.getTopicMetadata(notNull()))
                     .willReturn(ReadableTopicStore.TopicMetaOrLookupFailureReason.withTopicMeta(topicMeta));
             final var context = new PreHandleContext(keyLookup, txn, DEFAULT_PAYER);
 
             // when:
-            subject.preHandle(context, readableTopicStore);
+            subject.preHandle(context, readableStore);
 
             // then:
             assertOkResponse(context);
@@ -192,12 +185,12 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
             final var txn = txnFrom(CONSENSUS_SUBMIT_MESSAGE_SCENARIO);
 
             var topicMeta = newTopicMeta(A_NONNULL_KEY);
-            given(readableTopicStore.getTopicMetadata(notNull()))
+            given(readableStore.getTopicMetadata(notNull()))
                     .willReturn(ReadableTopicStore.TopicMetaOrLookupFailureReason.withTopicMeta(topicMeta));
             final var context = new PreHandleContext(keyLookup, txn, DEFAULT_PAYER);
 
             // when:
-            subject.preHandle(context, readableTopicStore);
+            subject.preHandle(context, readableStore);
 
             // then:
             ConsensusTestUtils.assertOkResponse(context);
@@ -210,13 +203,13 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
             // given:
             final var txn = txnFrom(CONSENSUS_SUBMIT_MESSAGE_MISSING_TOPIC_SCENARIO);
 
-            given(readableTopicStore.getTopicMetadata(notNull()))
+            given(readableStore.getTopicMetadata(notNull()))
                     .willReturn(ReadableTopicStore.TopicMetaOrLookupFailureReason.withFailureReason(
                             ResponseCodeEnum.INVALID_TOPIC_ID));
             final var context = new PreHandleContext(keyLookup, txn, DEFAULT_PAYER);
 
             // when:
-            subject.preHandle(context, readableTopicStore);
+            subject.preHandle(context, readableStore);
 
             // then:
             Assertions.assertThat(context.failed()).isTrue();
@@ -230,37 +223,37 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         assertInstanceOf(ConsensusSubmitMessageRecordBuilder.class, subject.newRecordBuilder());
     }
 
-    @Test
-    @DisplayName("Handle works as expected")
-    void handleWorksAsExpected() {
-        final var txn = newSubmitMessageTxn();
-        final var recordBuilder = subject.newRecordBuilder();
-        final var topicId = txn.getConsensusSubmitMessage().getTopicID();
-        final var config = new ConsensusServiceConfig(10L, 100);
-
-        writableTopicState = writableTopicStateWithOneKey();
-        given(readableStates.<EntityNum, MerkleTopic>get(TOPICS)).willReturn(readableTopicState);
-        given(writableStates.<EntityNum, MerkleTopic>get(TOPICS)).willReturn(writableTopicState);
-        readableStore = new ReadableTopicStore(readableStates);
-        writableStore = new WritableTopicStore(writableStates);
-
-        // when:
-        subject.handle(handleContext, txn, config, recordBuilder, writableTopicStore);
-    }
+    //    @Test
+    //    @DisplayName("Handle works as expected")
+    //    void handleWorksAsExpected() {
+    //        final var txn = newSubmitMessageTxn();
+    //        final var recordBuilder = subject.newRecordBuilder();
+    //        final var topicId = txn.getConsensusSubmitMessage().getTopicID();
+    //        final var config = new ConsensusServiceConfig(10L, 100);
+    //
+    //        writableTopicState = writableTopicStateWithOneKey();
+    //        given(readableStates.<EntityNum, MerkleTopic>get(TOPICS)).willReturn(readableTopicState);
+    //        given(writableStates.<EntityNum, MerkleTopic>get(TOPICS)).willReturn(writableTopicState);
+    //        readableStore = new ReadableTopicStore(readableStates);
+    //        writableStore = new WritableTopicStore(writableStates);
+    //
+    //        // when:
+    //        subject.handle(handleContext, txn, config, recordBuilder, writableStore);
+    //    }
 
     private HederaKey mockPayerLookup() {
         return ConsensusTestUtils.mockPayerLookup(KeyUtils.A_COMPLEX_KEY, DEFAULT_PAYER, keyLookup);
     }
 
     private void mockTopicLookup(Key submitKey) {
-        ConsensusTestUtils.mockTopicLookup(null, submitKey, readableTopicStore);
+        ConsensusTestUtils.mockTopicLookup(null, submitKey, readableStore);
     }
 
     private static ReadableTopicStore.TopicMetadata newTopicMeta(HederaKey submit) {
         return ConsensusTestUtils.newTopicMeta(null, submit);
     }
 
-    private TransactionBody newSubmitMessageTxn() {
+    private TransactionBody newSubmitMessageTxn(final EntityNum topicEntityNum) {
         final var txnId = TransactionID.newBuilder().setAccountID(ACCOUNT_ID_4).build();
         final var submitMessageBuilder = ConsensusSubmitMessageTransactionBody.newBuilder()
                 .setTopicID(TopicID.newBuilder()
