@@ -130,6 +130,20 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
             Query query, FeeData usagePrices, Timestamp at, Function<QueryResourceUsageEstimator, FeeData> usageFn) {
         var usageEstimator = getQueryUsageEstimator(query);
         var queryUsage = usageFn.apply(usageEstimator);
+        return computeFromQueryResourceUsage(queryUsage, usagePrices, at);
+    }
+
+    /**
+     * Computes the fees for a query, given the query's resource usage, the current prices,
+     * and the estimated consensus time.
+     *
+     * @param queryUsage the resource usage of the query
+     * @param usagePrices the current prices
+     * @param at the estimated consensus time
+     * @return the fees for the query
+     */
+    public FeeObject computeFromQueryResourceUsage(
+            final FeeData queryUsage, final FeeData usagePrices, final Timestamp at) {
         return getFeeObject(usagePrices, queryUsage, exchange.rate(at));
     }
 

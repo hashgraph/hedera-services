@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.test;
+package com.hedera.node.app.service.consensus.impl.test;
 
-import com.hedera.node.app.spi.state.serdes.MonoMapSerdesAdapter;
-import com.hedera.node.app.spi.state.serdes.SerdesFactory;
+import com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -26,8 +25,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class UtilsConstructorTest {
-    private static final Set<Class<?>> toBeTested =
-            new HashSet<>(Arrays.asList(MonoMapSerdesAdapter.class, SerdesFactory.class));
+    private static final Set<Class<?>> toBeTested = new HashSet<>(Arrays.asList(TemporaryUtils.class));
 
     @Test
     void throwsInConstructor() {

@@ -177,6 +177,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
 
             final var state = wrappedState.get();
+            final var storeFactory = new ReadableStoreFactory(state);
             final var paymentRequired = handler.requiresNodePayment(responseType);
             Transaction allegedPayment = null;
             TransactionBody txBody = null;
@@ -190,7 +191,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 checker.checkPermissions(payer, function);
 
                 // 3.iii Calculate costs
-                final var feeData = feeAccumulator.computePayment(function, query, asTimestamp(Instant.now()));
+                final var feeData =
+                        feeAccumulator.computePayment(storeFactory, function, query, asTimestamp(Instant.now()));
                 fee = totalFee(feeData);
 
                 // 3.iv Check account balances
@@ -202,7 +204,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
 
             // 4. Check validity
-            final var storeFactory = new ReadableStoreFactory(state);
             final var validity = dispatcher.validate(storeFactory, query);
 
             // 5. Submit payment to platform
@@ -212,7 +213,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
 
             if (handler.needsAnswerOnlyCost(responseType)) {
                 // 6.i Estimate costs
-                final var feeData = feeAccumulator.computePayment(function, query, asTimestamp(Instant.now()));
+                final var feeData =
+                        feeAccumulator.computePayment(storeFactory, function, query, asTimestamp(Instant.now()));
                 fee = totalFee(feeData);
 
                 final var header = createResponseHeader(responseType, validity, fee);

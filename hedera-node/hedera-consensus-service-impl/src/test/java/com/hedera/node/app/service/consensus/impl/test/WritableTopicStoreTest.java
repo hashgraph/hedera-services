@@ -22,11 +22,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.node.app.service.consensus.entity.Topic;
+import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
-import com.hedera.node.app.service.consensus.impl.entity.TopicImpl;
 import com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusHandlerTestBase;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -55,34 +53,8 @@ class WritableTopicStoreTest extends ConsensusHandlerTestBase {
         writableStore.put(topic);
 
         assertTrue(writableTopicState.contains(topicEntityNum));
-        final var merkleTopic = writableTopicState.get(topicEntityNum);
-
-        assertEquals(topic.getAdminKey().get(), merkleTopic.getAdminKey());
-        assertEquals(topic.getSubmitKey().get(), merkleTopic.getSubmitKey());
-        assertEquals(topic.autoRenewSecs(), merkleTopic.getAutoRenewDurationSeconds());
-        assertEquals(
-                topic.autoRenewAccountNumber(),
-                merkleTopic.getAutoRenewAccountId().num());
-        assertEquals(topic.expiry(), merkleTopic.getExpirationTimestamp().getSeconds());
-        assertEquals(topic.sequenceNumber(), merkleTopic.getSequenceNumber());
-        assertEquals(topic.memo(), merkleTopic.getMemo());
-        assertEquals(topic.deleted(), merkleTopic.isDeleted());
-
-        assertTrue(writableTopicState.modifiedKeys().contains(topicEntityNum));
-
-        final var expectedTopic = new TopicImpl(
-                topicEntityNum.longValue(),
-                topic.getAdminKey().get(),
-                topic.getSubmitKey().get(),
-                topic.memo(),
-                topic.autoRenewAccountNumber(),
-                topic.autoRenewSecs(),
-                topic.expiry(),
-                topic.deleted(),
-                topic.sequenceNumber(),
-                topic.runningHash());
-
-        assertEquals(Optional.of(expectedTopic), writableStore.get(topicEntityNum.longValue()));
+        final var writtenTopic = writableTopicState.get(topicEntityNum);
+        assertEquals(topic, writtenTopic);
     }
 
     @Test
@@ -90,15 +62,10 @@ class WritableTopicStoreTest extends ConsensusHandlerTestBase {
         topic = createTopic();
         writableStore.put(topic);
 
-        final var topicFromStore = writableStore.get(topicEntityNum.longValue());
+        final var maybeReadTopic = writableStore.get(topicEntityNum.longValue());
 
-        assertTrue(topicFromStore.isPresent());
-        final var actualTopic = topicFromStore.get();
-        assertEquals(actualTopic.memo(), topic.memo());
-        assertEquals(actualTopic.autoRenewSecs(), topic.autoRenewSecs());
-        assertEquals(actualTopic.autoRenewAccountNumber(), topic.autoRenewAccountNumber());
-        assertEquals(actualTopic.getAdminKey().get(), topic.getAdminKey().get());
-        assertEquals(actualTopic.getSubmitKey().get(), topic.getSubmitKey().get());
-        assertEquals(actualTopic.sequenceNumber(), topic.sequenceNumber());
+        assertTrue(maybeReadTopic.isPresent());
+        final var readTopic = maybeReadTopic.get();
+        assertEquals(topic, readTopic);
     }
 }

@@ -10,8 +10,10 @@ module com.hedera.node.app.service.consensus.impl {
     requires com.google.protobuf;
     requires com.hedera.node.app.service.token;
     requires com.swirlds.config;
+    requires com.hedera.node.hapi;
     requires com.hedera.node.app.service.evm;
     requires com.hedera.node.app.hapi.utils;
+    requires com.hedera.hashgraph.pbj.runtime;
 
     provides com.hedera.node.app.service.consensus.ConsensusService with
             ConsensusServiceImpl;
@@ -22,7 +24,9 @@ module com.hedera.node.app.service.consensus.impl {
     exports com.hedera.node.app.service.consensus.impl.handlers;
     exports com.hedera.node.app.service.consensus.impl.components;
     exports com.hedera.node.app.service.consensus.impl.serdes;
-    exports com.hedera.node.app.service.consensus.impl.entity;
     exports com.hedera.node.app.service.consensus.impl.config;
     exports com.hedera.node.app.service.consensus.impl.records;
+
+    opens com.hedera.node.app.service.consensus.impl.handlers to
+            com.hedera.node.app.service.consensus.impl.test;
 }

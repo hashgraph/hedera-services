@@ -16,21 +16,18 @@
 
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
+import static com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils.fromGrpcKey;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.service.consensus.entity.Topic;
+import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.hashgraph.pbj.runtime.io.Bytes;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
-import com.hedera.node.app.service.consensus.impl.entity.TopicBuilderImpl;
-import com.hedera.node.app.service.consensus.impl.entity.TopicImpl;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
-import com.hedera.node.app.service.mono.state.submerkle.EntityId;
-import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
+import com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
@@ -40,7 +37,6 @@ import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,17 +49,10 @@ public class ConsensusHandlerTestBase {
     protected static final String TOPICS = "TOPICS";
     protected final Key key = A_COMPLEX_KEY;
     protected final String payerId = "0.0.3";
-    protected final AccountID payer = asAccount(payerId);
     protected final AccountID autoRenewId = asAccount("0.0.4");
-    protected final Timestamp consensusTimestamp =
-            Timestamp.newBuilder().setSeconds(1_234_567L).build();
+    protected final byte[] runningHash = "runningHash".getBytes();
 
-    protected final HederaKey hederaKey = asHederaKey(Key.newBuilder()
-                    .setEd25519(ByteString.copyFrom("01234567890123456789012345678901".getBytes()))
-                    .build())
-            .get();
     protected final HederaKey adminKey = asHederaKey(key).get();
-    protected final Long payerNum = payer.getAccountNum();
     protected final EntityNum topicEntityNum = EntityNum.fromLong(1L);
     protected final TopicID topicId =
             TopicID.newBuilder().setTopicNum(topicEntityNum.longValue()).build();
@@ -75,8 +64,7 @@ public class ConsensusHandlerTestBase {
     protected final long sequenceNumber = 1L;
     protected final long autoRenewSecs = 100L;
 
-    @Mock
-    protected MerkleTopic topic;
+    protected Topic topic;
 
     @Mock
     protected ReadableStates readableStates;
@@ -87,37 +75,38 @@ public class ConsensusHandlerTestBase {
     @Mock
     protected QueryContext queryContext;
 
-    protected MapReadableKVState<EntityNum, MerkleTopic> readableTopicState;
-    protected MapWritableKVState<EntityNum, MerkleTopic> writableTopicState;
+    protected MapReadableKVState<EntityNum, Topic> readableTopicState;
+    protected MapWritableKVState<EntityNum, Topic> writableTopicState;
 
     protected ReadableTopicStore readableStore;
     protected WritableTopicStore writableStore;
 
     @BeforeEach
     void commonSetUp() {
+        givenValidTopic();
         readableTopicState = readableTopicState();
         writableTopicState = emptyWritableTopicState();
-        given(readableStates.<EntityNum, MerkleTopic>get(TOPICS)).willReturn(readableTopicState);
-        given(writableStates.<EntityNum, MerkleTopic>get(TOPICS)).willReturn(writableTopicState);
+        given(readableStates.<EntityNum, Topic>get(TOPICS)).willReturn(readableTopicState);
+        given(writableStates.<EntityNum, Topic>get(TOPICS)).willReturn(writableTopicState);
         readableStore = new ReadableTopicStore(readableStates);
         writableStore = new WritableTopicStore(writableStates);
     }
 
     @NonNull
-    protected MapWritableKVState<EntityNum, MerkleTopic> emptyWritableTopicState() {
-        return MapWritableKVState.<EntityNum, MerkleTopic>builder("TOPICS").build();
+    protected MapWritableKVState<EntityNum, Topic> emptyWritableTopicState() {
+        return MapWritableKVState.<EntityNum, Topic>builder("TOPICS").build();
     }
 
     @NonNull
-    protected MapWritableKVState<EntityNum, MerkleTopic> writableTopicStateWithOneKey() {
-        return MapWritableKVState.<EntityNum, MerkleTopic>builder("TOPICS")
+    protected MapWritableKVState<EntityNum, Topic> writableTopicStateWithOneKey() {
+        return MapWritableKVState.<EntityNum, Topic>builder("TOPICS")
                 .value(topicEntityNum, topic)
                 .build();
     }
 
     @NonNull
-    protected MapReadableKVState<EntityNum, MerkleTopic> readableTopicState() {
-        return MapReadableKVState.<EntityNum, MerkleTopic>builder("TOPICS")
+    protected MapReadableKVState<EntityNum, Topic> readableTopicState() {
+        return MapReadableKVState.<EntityNum, Topic>builder("TOPICS")
                 .value(topicEntityNum, topic)
                 .build();
     }
@@ -128,44 +117,39 @@ public class ConsensusHandlerTestBase {
     }
 
     protected void givenValidTopic() {
-        given(topic.getMemo()).willReturn(memo);
-        given(topic.getAdminKey()).willReturn((JKey) adminKey);
-        given(topic.getSubmitKey()).willReturn((JKey) adminKey);
-        given(topic.getAutoRenewDurationSeconds()).willReturn(autoRenewSecs);
-        given(topic.getAutoRenewAccountId()).willReturn(EntityId.fromGrpcAccountId(autoRenewId));
-        given(topic.getExpirationTimestamp()).willReturn(RichInstant.MISSING_INSTANT);
-        given(topic.getSequenceNumber()).willReturn(sequenceNumber);
-        given(topic.getRunningHash()).willReturn(new byte[48]);
-        given(topic.getKey()).willReturn(topicEntityNum);
-        given(topic.isDeleted()).willReturn(false);
+        givenValidTopic(autoRenewId.getAccountNum());
+    }
+
+    protected void givenValidTopic(long autoRenewAccountNumber) {
+        givenValidTopic(autoRenewAccountNumber, false);
+    }
+
+    protected void givenValidTopic(long autoRenewAccountNumber, boolean deleted) {
+        topic = new Topic(
+                topicId.getTopicNum(),
+                sequenceNumber,
+                expirationTime,
+                autoRenewSecs,
+                autoRenewAccountNumber,
+                deleted,
+                Bytes.wrap(runningHash),
+                memo,
+                TemporaryUtils.fromGrpcKey(key),
+                TemporaryUtils.fromGrpcKey(key));
     }
 
     protected Topic createTopic() {
-        return new TopicBuilderImpl()
+        return new Topic.Builder()
                 .topicNumber(topicId.getTopicNum())
-                .adminKey(asHederaKey(key).get())
-                .submitKey(asHederaKey(key).get())
-                .autoRenewSecs(autoRenewSecs)
+                .adminKey(fromGrpcKey(key))
+                .submitKey(fromGrpcKey(key))
+                .autoRenewPeriod(autoRenewSecs)
                 .autoRenewAccountNumber(autoRenewId.getAccountNum())
                 .expiry(expirationTime)
                 .sequenceNumber(sequenceNumber)
                 .memo(memo)
                 .deleted(true)
-                .runningHash(new byte[48])
+                .runningHash(Bytes.wrap(runningHash))
                 .build();
-    }
-
-    protected TopicImpl setUpTopicImpl() {
-        return new TopicImpl(
-                topicId.getTopicNum(),
-                hederaKey,
-                hederaKey,
-                memo,
-                autoRenewId.getAccountNum(),
-                autoRenewSecs,
-                expirationTime,
-                true,
-                sequenceNumber,
-                new byte[48]);
     }
 }
