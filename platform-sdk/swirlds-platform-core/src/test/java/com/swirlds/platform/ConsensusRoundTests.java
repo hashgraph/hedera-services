@@ -16,20 +16,19 @@
 
 package com.swirlds.platform;
 
-import com.swirlds.common.test.RandomUtils;
-import com.swirlds.platform.consensus.GraphGenerations;
-import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
-import org.junit.jupiter.api.Test;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import com.swirlds.common.test.RandomUtils;
+import com.swirlds.platform.consensus.GraphGenerations;
+import com.swirlds.platform.internal.ConsensusRound;
+import com.swirlds.platform.internal.EventImpl;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import org.junit.jupiter.api.Test;
 
 class ConsensusRoundTests {
 
