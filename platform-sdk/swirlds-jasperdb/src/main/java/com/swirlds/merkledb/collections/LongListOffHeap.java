@@ -265,32 +265,40 @@ public final class LongListOffHeap extends LongList {
     }
 
     /**
-     * Lookup a long in data
+     * Lookup a long in a data chunk with the given chunk ID.
      *
-     * @param chunkIndex the index of the chunk the long is contained in
+     * @param chunkIndex The index of the chunk the long is contained in
      * @param subIndex   The sub index of the long in that chunk
      * @return The stored long value at given index
      */
     @Override
     protected long lookupInChunk(final long chunkIndex, final long subIndex) {
+        final ByteBuffer chunk = chunkList.get((int) chunkIndex);
+        return lookupInChunk(chunk, subIndex);
+    }
+
+    /**
+     * Lookup a long in a data chunk.
+     *
+     * @param chunk The data chunk
+     * @param subIndex The sub index of the long in that chunk
+     * @return The stored long value at given index
+     */
+    private static long lookupInChunk(final ByteBuffer chunk, final long subIndex) {
+        if (chunk == null) {
+            // a chunk was either removed by the memory optimization or never existed
+            return LongList.IMPERMISSIBLE_VALUE;
+        }
         try {
-            final int subIndexOffset = (int) (subIndex * Long.BYTES);
-            final ByteBuffer chunk = chunkList.get((int) chunkIndex);
-            if (chunk == null) {
-                // a chunk was either removed by the memory optimization or never existed
-                return LongList.IMPERMISSIBLE_VALUE;
-            }
             /* Do a volatile memory read from off-heap memory */
             final long chunkPointer = address(chunk);
+            final int subIndexOffset = (int) (subIndex * Long.BYTES);
             return UNSAFE.getLongVolatile(null, chunkPointer + subIndexOffset);
         } catch (final IndexOutOfBoundsException e) {
             logger.error(
                     EXCEPTION.getMarker(),
-                    "Index out of bounds in lookupInChunk, "
-                            + "buf={}, offset={}, chunkIndex={}, chunkIndex={}, subIndex={}",
-                    chunkList.get((int) chunkIndex),
-                    ((int) subIndex * Long.BYTES),
-                    chunkIndex,
+                    "Index out of bounds in lookupInChunk: buf={}, offset={}, subIndex={}",
+                    chunk,
                     subIndex,
                     e);
             throw e;
@@ -381,6 +389,30 @@ public final class LongListOffHeap extends LongList {
             // cleans up all values up to newMinValidIndex in the first chunk
             UNSAFE.setMemory(chunkPointer, elementsToCleanUp * Long.BYTES, (byte) 0);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    protected long getCurrentMin() {
+        long minIndex = 0;
+        for (int i = 0; i < chunkList.length(); i++) {
+            final ByteBuffer chunk = chunkList.get(i);
+            if (chunk != null) {
+                int indexInChunk = 0;
+                while (indexInChunk < numLongsPerChunk) {
+                    final long value = lookupInChunk(chunk, indexInChunk);
+                    if (value != IMPERMISSIBLE_VALUE) {
+                        break;
+                    }
+                    indexInChunk++;
+                }
+                // Either the first non-null index in the chunk, or the first index in the
+                // next chunk, if the current chunk was not null for reserved needs only
+                return minIndex + indexInChunk;
+            }
+            minIndex += numLongsPerChunk;
+        }
+        return 0;
     }
 
     /**
