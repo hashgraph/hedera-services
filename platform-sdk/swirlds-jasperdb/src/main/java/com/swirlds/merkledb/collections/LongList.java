@@ -149,7 +149,7 @@ public abstract class LongList implements CASableLongIndex, Closeable {
         this.fileChannel = fileChannel;
         if (fileChannel.size() > 0) {
             // read header from existing file
-            final ByteBuffer versionBuffer = readFromFileChanel(fileChannel, VERSION_METADATA_SIZE);
+            final ByteBuffer versionBuffer = readFromFileChannel(fileChannel, VERSION_METADATA_SIZE);
             final int formatVersion = versionBuffer.getInt();
             final int formatMetadataSize;
             if (formatVersion == INITIAL_VERSION) {
@@ -166,12 +166,12 @@ public abstract class LongList implements CASableLongIndex, Closeable {
                         + "].");
             }
 
-            final ByteBuffer headerBuffer = readFromFileChanel(fileChannel, formatMetadataSize);
+            final ByteBuffer headerBuffer = readFromFileChannel(fileChannel, formatMetadataSize);
             numLongsPerChunk = headerBuffer.getInt();
             memoryChunkSize = numLongsPerChunk * Long.BYTES;
             maxIndexThatCanBeStored.set(headerBuffer.getLong());
             maxLongs = headerBuffer.getLong();
-            if (formatVersion > INITIAL_VERSION) {
+            if (formatVersion >= MIN_VALID_INDEX_SUPPORT_VERSION) {
                 minValidIndex.set(headerBuffer.getLong());
                 // "inflating" the size by number of indices that are to the left of the min valid index
                 size.set(minValidIndex.get() + (fileChannel.size() - currentFileHeaderSize) / Long.BYTES);
@@ -188,7 +188,7 @@ public abstract class LongList implements CASableLongIndex, Closeable {
         }
     }
 
-    private static ByteBuffer readFromFileChanel(final FileChannel fileChannel, final int bytesToRead)
+    private static ByteBuffer readFromFileChannel(final FileChannel fileChannel, final int bytesToRead)
             throws IOException {
         final ByteBuffer headerBuffer = ByteBuffer.allocate(bytesToRead);
         MerkleDbFileUtils.completelyRead(fileChannel, headerBuffer);
