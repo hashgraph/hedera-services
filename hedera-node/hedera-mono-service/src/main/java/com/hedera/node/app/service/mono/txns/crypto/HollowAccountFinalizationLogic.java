@@ -52,7 +52,7 @@ import javax.inject.Singleton;
 /**
  * <p>Encapsulates the logic that finalizes all hollow accounts based on the list of {@code PendingCompletion} returned
  * by calling {@link SwirldsTxnAccessor#getPendingCompletions} on the current transaction, possibly adding to this list
- * the wrapped hollow sender of an EthereumTransaction.</p>
+ * the wrapped hollow sender of an EthereumTransaction.
  *
  * <p>This logic includes:
  * <ul>
@@ -61,7 +61,6 @@ import javax.inject.Singleton;
  *     <li>exporting the preceding child records</li>
  *     <li>marking the entity as changed in the {@link SigImpactHistorian}</li>
  * </ul>
- * </p>
  */
 @Singleton
 public class HollowAccountFinalizationLogic {
