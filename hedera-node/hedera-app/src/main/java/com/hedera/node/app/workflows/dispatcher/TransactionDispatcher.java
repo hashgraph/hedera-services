@@ -270,5 +270,8 @@ public class TransactionDispatcher {
                 recordBuilder,
                 topicStore);
         txnCtx.setTopicRunningHash(recordBuilder.getNewTopicRunningHash(), recordBuilder.getNewTopicSequenceNumber());
+        // TODO: Commit will be called in workflow or some other place when handle workflow is implemented
+        // This is temporary solution to make sure that topic is created
+        topicStore.commit();
     }
 }
