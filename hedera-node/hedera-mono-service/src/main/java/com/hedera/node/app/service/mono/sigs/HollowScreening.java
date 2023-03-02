@@ -21,8 +21,6 @@ import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JHollowKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.sigs.metadata.SigMetadataLookup;
-import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
 import com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.PendingCompletion;
@@ -33,6 +31,7 @@ import com.swirlds.common.crypto.TransactionSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,19 +47,34 @@ import org.apache.tuweni.bytes.Bytes;
  * This process is also referred to as "de-hollowing". The {@code payerReqSig} and {@code otherReqSigs} contained
  * in the {@link RationalizedSigMeta} must be free of
  * {@link JHollowKey}s, so that subsequent key activation tests pass, so this de-hollow process is essential.
- *
  */
 public class HollowScreening {
 
-    private Map<Bytes, JECDSASecp256k1Key> evmAddressToECDSAKey;
+    record HollowScreenResult(
+            @Nullable List<PendingCompletion> pendingCompletions,
+            @Nullable JKey deHollowedPayerKey,
+            @Nullable List<JKey> deHollowedOtherKeys) {}
 
-    public List<PendingCompletion> pendingCompletionsFrom(
+    static boolean atLeastOneWildcardKeyIn(@NonNull final JKey payerKey, @NonNull List<JKey> otherPartyKeys) {
+        if (payerKey.hasHollowKey()) {
+            return true;
+        }
+        for (final var otherReqKey : otherPartyKeys) {
+            if (otherReqKey.hasHollowKey()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static HollowScreenResult performFor(
             @NonNull final List<TransactionSignature> txnSigs,
-            @NonNull final SigMetadataLookup sigMetaLookup,
-            @Nullable final LinkedRefs linkedRefs,
+            @NonNull final JKey payerKey,
+            @NonNull final List<JKey> otherKeys,
             @NonNull final AliasManager aliasManager) {
-        evmAddressToECDSAKey = new HashMap<>();
-        final List<PendingCompletion> pendingCompletions = new ArrayList<>();
+        List<PendingCompletion> pendingCompletions = null;
+        JKey deHollowedPayerKey = null;
+        List<JKey> deHollowedOtherKeys = null;
         for (final var sig : txnSigs) {
             if (sig.getSignatureType() != SignatureType.ECDSA_SECP256K1) {
                 continue;
@@ -69,83 +83,119 @@ public class HollowScreening {
             final var evmAddress = MiscCryptoUtils.extractEvmAddressFromDecompressedECDSAKey(expandedPublicKeyDirect);
             final var compressedSecp256k1 = MiscCryptoUtils.compressSecp256k1(expandedPublicKeyDirect);
             final var key = new JECDSASecp256k1Key(compressedSecp256k1);
-            // remember all evmAddress <-> ECDSA key pairs for subsequent "de-hollowing"
-            evmAddressToECDSAKey.putIfAbsent(Bytes.of(evmAddress), key);
 
-            final var alias = ByteStringUtils.wrapUnsafely(evmAddress);
-            final var entityNum = aliasManager.lookupIdBy(alias);
-            if (entityNum == EntityNum.MISSING_NUM) {
-                if (linkedRefs != null) {
-                    // there may be a yet-to-be-executed transaction that will create a hollow account linked to this
-                    // alias and this might be the finalizing transaction
-                    linkedRefs.link(alias);
+            if (deHollowedPayerKey == null && payerKey.hasHollowKey()) {
+                final var payerEvmAddress = payerKey.getHollowKey().getEvmAddress();
+                if (Arrays.equals(evmAddress, payerEvmAddress)) {
+                    if (payerKey.getHollowKey().isForHollowAccount()) {
+                        if (pendingCompletions == null) {
+                            pendingCompletions = new ArrayList<>();
+                        }
+                        maybeAddToCompletions(evmAddress, key, pendingCompletions, aliasManager);
+                    }
+                    deHollowedPayerKey = key;
                 }
-            } else {
-                // in pre-handle context, where we are working with a `SigMetadataLookup` from the latest immutable
-                // state,
-                // the sig meta lookup may fail if the account is in the working state, but not in the latest immutable
-                // state
-                // in pre-handle context, make sure to update the `linkedRefs` so we handle hollow account’s sig
-                // metadata changes from another txn until `handle()` of the current one;
-                final var lookupResult = sigMetaLookup.accountSigningMetaFor(alias, linkedRefs);
-                if (lookupResult.succeeded()) {
-                    final var accountKey = lookupResult.metadata().key();
-                    if (accountKey.hasHollowKey()) {
-                        pendingCompletions.add(new PendingCompletion(key, entityNum));
+            }
+
+            for (int i = 0; i < otherKeys.size(); i++) {
+                final var otherKey = otherKeys.get(i);
+                if (otherKey.hasHollowKey()) {
+                    final var otherEvmAddress = otherKey.getHollowKey().getEvmAddress();
+                    if (Arrays.equals(evmAddress, otherEvmAddress)) {
+                        if (deHollowedOtherKeys == null) {
+                            deHollowedOtherKeys = new ArrayList<>(otherKeys);
+                        }
+                        if (otherKey.getHollowKey().isForHollowAccount()) {
+                            if (pendingCompletions == null) {
+                                pendingCompletions = new ArrayList<>();
+                            }
+                            maybeAddToCompletions(evmAddress, key, pendingCompletions, aliasManager);
+                        }
+                        deHollowedOtherKeys.set(i, key);
+                        break;
                     }
                 }
             }
         }
-        return pendingCompletions;
+        return new HollowScreenResult(pendingCompletions, deHollowedPayerKey, deHollowedOtherKeys);
     }
 
-    /**
-     * Given a {@link JHollowKey},
-     * tries to return it's corresponding {@link JECDSASecp256k1Key}.
-     *
-     * <p>NOTE this method should be called after {@link HollowScreening#pendingCompletionsFrom}, because it depends on the collected
-     * {@link JECDSASecp256k1Key} keys from iterating through all the sigs
-     * during {@link HollowScreening#pendingCompletionsFrom}, in order to perform the "de-hollowing"
-     *
-     * @param key the instance of {@link JHollowKey}
-     *            to (possibly) convert to corresponding {@link JECDSASecp256k1Key}
-     * @return The corresponding {@link JECDSASecp256k1Key} key for
-     * the evm address in the key param. If no match, returns the key param.
-     */
-    public JKey maybeDeHollowKey(final JKey key) {
-        final var correspondingECDSAKey =
-                evmAddressToECDSAKey.get(Bytes.of(key.getHollowKey().getEvmAddress()));
-        return correspondingECDSAKey != null ? correspondingECDSAKey : key;
-    }
+    static HollowScreenResult performForVersion2(
+            @NonNull final List<TransactionSignature> txnSigs,
+            @NonNull final JKey payerKey,
+            @NonNull final List<JKey> otherKeys,
+            @NonNull final AliasManager aliasManager) {
+        final var evmAddressToEcdsaKeyIndex = createEvmAddressToEcdsaKeyIndexFrom(txnSigs);
 
-    /**
-     * Given a (possibly immutable) list of keys, tries to "de-hollow" any JHollowKeys to it's corresponding JECDSASecp256k1Key.
-     *
-     * <p>NOTE this method should be called after {@link HollowScreening#pendingCompletionsFrom}, since it depends on the collected
-     * {@link JECDSASecp256k1Key} keys from iterating through all
-     * the sigs during {@link HollowScreening#pendingCompletionsFrom}, in order to be able to perform the "de-hollowing"
-     *
-     * @param keys the (possibly immutable) list of keys to "de-hollow"
-     * @return If there are no hollow keys in the list or the method could not de-hollow any of the present
-     * {@link JHollowKey}, returns the same list.
-     * Otherwise, returns a new list where all possible de-hollowings were performed.
-     */
-    public List<JKey> maybeDeHollowKeys(final List<JKey> keys) {
-        List<JKey> deHollowedKeys = null;
-        for (int i = 0; i < keys.size(); i++) {
-            final var key = keys.get(i);
-            if (!key.hasHollowKey()) {
-                continue;
-            }
-            final var ecdsaKey =
-                    evmAddressToECDSAKey.get(Bytes.of(key.getHollowKey().getEvmAddress()));
-            if (ecdsaKey != null) {
-                if (deHollowedKeys == null) {
-                    deHollowedKeys = new ArrayList<>(keys);
+        List<PendingCompletion> pendingCompletions = null;
+        JKey deHollowedPayerKey = null;
+        if (payerKey.hasHollowKey()) {
+            final var hollowKey = payerKey.getHollowKey();
+            final var payerEvmAddress = hollowKey.getEvmAddress();
+            final var correspondingKey = evmAddressToEcdsaKeyIndex.get(Bytes.of(payerEvmAddress));
+            if (correspondingKey != null) {
+                deHollowedPayerKey = correspondingKey;
+                if (hollowKey.isForHollowAccount()) {
+                    pendingCompletions =
+                            maybeAddToCompletions(payerEvmAddress, correspondingKey, pendingCompletions, aliasManager);
                 }
-                deHollowedKeys.set(i, ecdsaKey);
             }
         }
-        return deHollowedKeys != null ? deHollowedKeys : keys;
+
+        List<JKey> deHollowedOtherKeys = null;
+        for (int i = 0; i < otherKeys.size(); i++) {
+            final var otherKey = otherKeys.get(i);
+            if (otherKey.hasHollowKey()) {
+                final var hollowKey = otherKey.getHollowKey();
+                final var evmAddress = hollowKey.getEvmAddress();
+                final var correspondingKey = evmAddressToEcdsaKeyIndex.get(Bytes.of(evmAddress));
+                if (correspondingKey != null) {
+                    if (deHollowedOtherKeys == null) {
+                        deHollowedOtherKeys = new ArrayList<>(otherKeys);
+                    }
+                    deHollowedOtherKeys.set(i, correspondingKey);
+
+                    if (hollowKey.isForHollowAccount()) {
+                        pendingCompletions =
+                                maybeAddToCompletions(evmAddress, correspondingKey, pendingCompletions, aliasManager);
+                    }
+                }
+            }
+        }
+        return new HollowScreenResult(pendingCompletions, deHollowedPayerKey, deHollowedOtherKeys);
+    }
+
+    private static Map<Bytes, JECDSASecp256k1Key> createEvmAddressToEcdsaKeyIndexFrom(
+            final List<TransactionSignature> txnSigs) {
+        final Map<Bytes, JECDSASecp256k1Key> evmAddressToEcdsaKeyIndex = new HashMap<>();
+        for (final var sig : txnSigs) {
+            if (sig.getSignatureType() != SignatureType.ECDSA_SECP256K1) {
+                continue;
+            }
+            final var expandedPublicKeyDirect = sig.getExpandedPublicKeyDirect();
+            final var evmAddress = MiscCryptoUtils.extractEvmAddressFromDecompressedECDSAKey(expandedPublicKeyDirect);
+            final var compressedSecp256k1 = MiscCryptoUtils.compressSecp256k1(expandedPublicKeyDirect);
+            final var key = new JECDSASecp256k1Key(compressedSecp256k1);
+
+            evmAddressToEcdsaKeyIndex.put(Bytes.of(evmAddress), key);
+        }
+        return evmAddressToEcdsaKeyIndex;
+    }
+
+    private static List<PendingCompletion> maybeAddToCompletions(
+            byte[] payerEvmAddress,
+            JECDSASecp256k1Key correspondingKey,
+            List<PendingCompletion> pendingCompletions,
+            AliasManager aliasManager) {
+        final var accountNum = aliasManager.lookupIdBy(ByteStringUtils.wrapUnsafely(payerEvmAddress));
+        // a hollow account cannot be CryptoDelete-d, but it may have expired since the latest
+        // immutable state
+        if (accountNum != EntityNum.MISSING_NUM) {
+            if (pendingCompletions == null) {
+                pendingCompletions = new ArrayList<>();
+            }
+            pendingCompletions.add(new PendingCompletion(accountNum, correspondingKey));
+        }
+        return pendingCompletions;
     }
 }

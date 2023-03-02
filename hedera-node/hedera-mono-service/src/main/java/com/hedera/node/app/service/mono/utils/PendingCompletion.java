@@ -18,4 +18,4 @@ package com.hedera.node.app.service.mono.utils;
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
 
-public record PendingCompletion(JECDSASecp256k1Key key, EntityNum hollowAccountNum) {}
+public record PendingCompletion(EntityNum hollowAccountNum, JECDSASecp256k1Key key) {}

@@ -39,11 +39,6 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JHollowKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.node.app.service.mono.sigs.factories.TxnScopedPlatformSigFactory;
-import com.hedera.node.app.service.mono.sigs.metadata.AccountSigningMetadata;
-import com.hedera.node.app.service.mono.sigs.metadata.SafeLookupResult;
-import com.hedera.node.app.service.mono.sigs.metadata.SigMetadataLookup;
-import com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure;
-import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
 import com.hedera.node.app.service.mono.sigs.order.SigRequirements;
 import com.hedera.node.app.service.mono.sigs.order.SigningOrderResult;
 import com.hedera.node.app.service.mono.sigs.sourcing.KeyType;
@@ -98,9 +93,6 @@ class ExpandHandleHollowScreeningTest {
     private AliasManager aliasManager;
 
     @Mock
-    private SigMetadataLookup sigMetadataLookup;
-
-    @Mock
     private SyncVerifier syncVerifier;
 
     @Mock
@@ -111,7 +103,6 @@ class ExpandHandleHollowScreeningTest {
 
     private MockedStatic<MiscCryptoUtils> miscStatic;
     private ArgumentCaptor<List<PendingCompletion>> pendingCompletionCaptor;
-    private ArgumentCaptor<LinkedRefs> linkedRefsCaptor;
 
     @BeforeEach
     void setUp() {
@@ -127,7 +118,7 @@ class ExpandHandleHollowScreeningTest {
     @SuppressWarnings("unchecked")
     void preHandlePayerHollowKeyGetsReplacedAndPutInPendingFinalizationWhenECDSASigIsPresent() {
         setupHollowScreeningTest(false);
-        final var alias = ByteStringUtils.wrapUnsafely(evmAddressForKey1);
+        givenEcdsaSigs();
         final var num = EntityNum.fromLong(666L);
         given(aliasManager.lookupIdBy(alias)).willReturn(num);
         final var key = mock(JKey.class);
@@ -135,15 +126,8 @@ class ExpandHandleHollowScreeningTest {
         final var jHollowKey = mock(JHollowKey.class);
         given(key.getHollowKey()).willReturn(jHollowKey);
         given(jHollowKey.getEvmAddress()).willReturn(evmAddressForKey1);
+        given(jHollowKey.isForHollowAccount()).willReturn(true);
         setupDegenerateMocks(new SigningOrderResult<>(List.of(key)), mockOtherPartiesResponse);
-        willAnswer(inv -> {
-                    final var linkedRefs = (LinkedRefs) inv.getArgument(1);
-                    linkedRefs.link(alias);
-                    linkedRefs.link(num.longValue());
-                    return new SafeLookupResult<>(new AccountSigningMetadata(key, false));
-                })
-                .given(sigMetadataLookup)
-                .accountSigningMetaFor(eq(alias), any(LinkedRefs.class));
         willCallRealMethod().given(txnAccessor).setSigMeta(any(RationalizedSigMeta.class));
         willCallRealMethod().given(txnAccessor).getSigMeta();
 
@@ -152,30 +136,46 @@ class ExpandHandleHollowScreeningTest {
         subject.execute();
 
         final ArgumentCaptor<List<PendingCompletion>> pendingCompletionCaptor = forClass(List.class);
-        final ArgumentCaptor<LinkedRefs> linkedRefsCaptor = forClass(LinkedRefs.class);
         verify(txnAccessor).setPendingCompletions(pendingCompletionCaptor.capture());
-        verify(txnAccessor).setLinkedRefs(linkedRefsCaptor.capture());
         // verify payer key in meta has been replaced
         final var expectedFinalKey = new JECDSASecp256k1Key(decompressedKeyBytes);
         assertEquals(expectedFinalKey, txnAccessor.getSigMeta().payerKey());
         // verify pending completions in txn accessor
-        final var expectedPendingCompletions = List.of(new PendingCompletion(expectedFinalKey, num));
+        final var expectedPendingCompletions = List.of(new PendingCompletion(num, expectedFinalKey));
         assertEquals(expectedPendingCompletions, pendingCompletionCaptor.getValue());
-        // verify linked refs
-        final var linkedRefsCaptorValue = linkedRefsCaptor.getValue();
-        assertEquals(num.longValue(), linkedRefsCaptorValue.linkedNumbers()[0]);
-        assertEquals(1, linkedRefsCaptorValue.linkedNumbers().length);
-        final var linkedAliases = linkedRefsCaptorValue.linkedAliases();
-        assertEquals(1, linkedAliases.size());
-        assertEquals(alias, linkedAliases.get(0));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void preHandlePayerHollowKeyGetsReplacedButNotPutInPendingFinalizationWhenNotNeeded() {
+        setupHollowScreeningTest(false);
+        givenEcdsaSigs();
+        final var key = mock(JKey.class);
+        given(key.hasHollowKey()).willReturn(true);
+        final var jHollowKey = mock(JHollowKey.class);
+        given(key.getHollowKey()).willReturn(jHollowKey);
+        given(jHollowKey.getEvmAddress()).willReturn(evmAddressForKey1);
+        given(jHollowKey.isForHollowAccount()).willReturn(false);
+        setupDegenerateMocks(new SigningOrderResult<>(List.of(key)), mockOtherPartiesResponse);
+        willCallRealMethod().given(txnAccessor).setSigMeta(any(RationalizedSigMeta.class));
+        willCallRealMethod().given(txnAccessor).getSigMeta();
+
+        final var subject =
+                new Expansion(txnAccessor, sigReqs, pkToSigFn, cryptoSigsCreation, sigFactory, aliasManager);
+        subject.execute();
+
+        final ArgumentCaptor<List<PendingCompletion>> pendingCompletionCaptor = forClass(List.class);
+        verify(txnAccessor, never()).setPendingCompletions(pendingCompletionCaptor.capture());
+        // verify payer key in meta has been replaced
+        final var expectedFinalKey = new JECDSASecp256k1Key(decompressedKeyBytes);
+        assertEquals(expectedFinalKey, txnAccessor.getSigMeta().payerKey());
     }
 
     @Test
     @SuppressWarnings("unchecked")
     void handlePayerHollowKeyGetsReplacedAndPutInPendingFinalizationWhenECDSASigIsPresent() {
         setupHollowScreeningTest(true);
-
-        final var alias = ByteStringUtils.wrapUnsafely(evmAddressForKey1);
+        givenEcdsaSigs();
         final var num = EntityNum.fromLong(666L);
         given(aliasManager.lookupIdBy(alias)).willReturn(num);
         final var key = mock(JKey.class);
@@ -183,8 +183,7 @@ class ExpandHandleHollowScreeningTest {
         final var jHollowKey = mock(JHollowKey.class);
         given(key.getHollowKey()).willReturn(jHollowKey);
         given(jHollowKey.getEvmAddress()).willReturn(evmAddressForKey1);
-        given(sigMetadataLookup.accountSigningMetaFor(alias, null))
-                .willReturn(new SafeLookupResult<>(new AccountSigningMetadata(key, false)));
+        given(jHollowKey.isForHollowAccount()).willReturn(true);
         final var mockOtherKey = mock(JKey.class);
         setupDegenerateMocks(new SigningOrderResult<>(List.of(key)), new SigningOrderResult<>(List.of(mockOtherKey)));
         willCallRealMethod().given(txnAccessor).setSigMeta(any(RationalizedSigMeta.class));
@@ -195,7 +194,7 @@ class ExpandHandleHollowScreeningTest {
         subject.performFor(txnAccessor);
 
         final var finalKey = new JECDSASecp256k1Key(decompressedKeyBytes);
-        final var allPretendCompletions = List.of(new PendingCompletion(finalKey, num));
+        final var allPretendCompletions = List.of(new PendingCompletion(num, finalKey));
         verify(txnAccessor).setPendingCompletions(pendingCompletionCaptor.capture());
         assertEquals(allPretendCompletions, pendingCompletionCaptor.getValue());
         assertEquals(finalKey, txnAccessor.getSigMeta().payerKey());
@@ -203,9 +202,34 @@ class ExpandHandleHollowScreeningTest {
 
     @Test
     @SuppressWarnings("unchecked")
+    void handlePayerHollowKeyGetsReplacedButNotPutInPendingFinalizationWhenNotNeeded() {
+        setupHollowScreeningTest(true);
+        givenEcdsaSigs();
+        final var key = mock(JKey.class);
+        given(key.hasHollowKey()).willReturn(true);
+        final var jHollowKey = mock(JHollowKey.class);
+        given(key.getHollowKey()).willReturn(jHollowKey);
+        given(jHollowKey.getEvmAddress()).willReturn(evmAddressForKey1);
+        given(jHollowKey.isForHollowAccount()).willReturn(false);
+        final var mockOtherKey = mock(JKey.class);
+        setupDegenerateMocks(new SigningOrderResult<>(List.of(key)), new SigningOrderResult<>(List.of(mockOtherKey)));
+        willCallRealMethod().given(txnAccessor).setSigMeta(any(RationalizedSigMeta.class));
+        willCallRealMethod().given(txnAccessor).getSigMeta();
+
+        final var subject =
+                new Rationalization(syncVerifier, sigImpactHistorian, sigReqs, handleSigFactory, aliasManager);
+        subject.performFor(txnAccessor);
+
+        final var finalKey = new JECDSASecp256k1Key(decompressedKeyBytes);
+        verify(txnAccessor, never()).setPendingCompletions(pendingCompletionCaptor.capture());
+        assertEquals(finalKey, txnAccessor.getSigMeta().payerKey());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
     void handleOtherReqHollowKeyGetsReplacedAndPutInPendingFinalizationWhenECDSASigIsPresent() {
         setupHollowScreeningTest(true);
-        final var alias = ByteStringUtils.wrapUnsafely(evmAddressForKey1);
+        givenEcdsaSigs();
         final var num = EntityNum.fromLong(666L);
         given(aliasManager.lookupIdBy(alias)).willReturn(num);
         final var key = mock(JKey.class);
@@ -213,8 +237,7 @@ class ExpandHandleHollowScreeningTest {
         final var jHollowKey = mock(JHollowKey.class);
         given(key.getHollowKey()).willReturn(jHollowKey);
         given(jHollowKey.getEvmAddress()).willReturn(evmAddressForKey1);
-        given(sigMetadataLookup.accountSigningMetaFor(alias, null))
-                .willReturn(new SafeLookupResult<>(new AccountSigningMetadata(key, false)));
+        given(jHollowKey.isForHollowAccount()).willReturn(true);
         final var payerKey = mock(JKey.class);
         given(payerKey.hasHollowKey()).willReturn(true);
         final var payerHollowKey = mock(JHollowKey.class);
@@ -229,7 +252,7 @@ class ExpandHandleHollowScreeningTest {
         subject.performFor(txnAccessor);
 
         final var finalKey = new JECDSASecp256k1Key(decompressedKeyBytes);
-        final var allPretendCompletions = List.of(new PendingCompletion(finalKey, num));
+        final var allPretendCompletions = List.of(new PendingCompletion(num, finalKey));
         verify(txnAccessor).setPendingCompletions(pendingCompletionCaptor.capture());
         assertEquals(allPretendCompletions, pendingCompletionCaptor.getValue());
         assertEquals(finalKey, txnAccessor.getSigMeta().othersReqSigs().get(0));
@@ -237,36 +260,18 @@ class ExpandHandleHollowScreeningTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void handleDoesNotAddPendingHollowCompletionFromUnusedFullPrefixECDSASigIfAliasManagerShowsMissingEntity() {
+    void handleDoesNotAddPendingHollowCompletionIfAliasManagerShowsMissingEntity() {
         setupHollowScreeningTest(true);
-        final var alias = ByteStringUtils.wrapUnsafely(evmAddressForKey1);
+        givenEcdsaSigs();
+        final var key = mock(JKey.class);
+        given(key.hasHollowKey()).willReturn(true);
+        final var jHollowKey = mock(JHollowKey.class);
+        given(key.getHollowKey()).willReturn(jHollowKey);
+        given(jHollowKey.getEvmAddress()).willReturn(evmAddressForKey1);
+        given(jHollowKey.isForHollowAccount()).willReturn(true);
         given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
-        final var degenTxnBody = TransactionBody.getDefaultInstance();
-        given(txnAccessor.getTxn()).willReturn(degenTxnBody);
-        final var mockOtherKey = mock(JKey.class);
-        final var response = new SigningOrderResult<ResponseCodeEnum>(List.of(mockOtherKey));
-        setupDegenerateMocks(response, response);
-
-        final var subject =
-                new Rationalization(syncVerifier, sigImpactHistorian, sigReqs, handleSigFactory, aliasManager);
-        subject.performFor(txnAccessor);
-
-        verify(txnAccessor, never()).setPendingCompletions(any());
-    }
-
-    @Test
-    @SuppressWarnings("unchecked")
-    void handleHollowScreenOnUnsuccessfulMetadataLookup() {
-        setupHollowScreeningTest(true);
-
-        final var alias = ByteStringUtils.wrapUnsafely(evmAddressForKey1);
-        final var num = EntityNum.fromLong(666L);
-        given(aliasManager.lookupIdBy(alias)).willReturn(num);
-        given(sigMetadataLookup.accountSigningMetaFor(alias, null))
-                .willReturn(SafeLookupResult.failure(KeyOrderingFailure.MISSING_ACCOUNT));
-        JKey mockOtherKey = mock(JKey.class);
-        final var response = new SigningOrderResult<ResponseCodeEnum>(List.of(mockOtherKey));
-        setupDegenerateMocks(response, response);
+        setupDegenerateMocks(
+                new SigningOrderResult<>(List.of(key)), new SigningOrderResult<>(List.of(mock(JKey.class))));
 
         final var subject =
                 new Rationalization(syncVerifier, sigImpactHistorian, sigReqs, handleSigFactory, aliasManager);
@@ -280,8 +285,8 @@ class ExpandHandleHollowScreeningTest {
     void preHandleOtherReqKeyHollowKeyGetsReplacedAndPutInPendingFinalizationWhenECDSASigIsPresent() {
         // mock out a ECDSA key + sig
         setupHollowScreeningTest(false);
+        givenEcdsaSigs();
         // mock account and returned key
-        final var alias = ByteStringUtils.wrapUnsafely(evmAddressForKey1);
         final var num = EntityNum.fromLong(666L);
         given(aliasManager.lookupIdBy(alias)).willReturn(num);
         final var key = mock(JKey.class);
@@ -289,17 +294,8 @@ class ExpandHandleHollowScreeningTest {
         given(key.hasHollowKey()).willReturn(true);
         final var jHollowKey = mock(JHollowKey.class);
         given(key.getHollowKey()).willReturn(jHollowKey);
+        given(jHollowKey.isForHollowAccount()).willReturn(true);
         given(jHollowKey.getEvmAddress()).willReturn(evmAddressForKey1);
-        given(sigReqs.getSigMetaLookup()).willReturn(sigMetadataLookup);
-        willAnswer(inv -> {
-                    final var linkedRefs = (LinkedRefs) inv.getArgument(1);
-                    linkedRefs.link(alias);
-                    linkedRefs.link(num.longValue());
-                    return new SafeLookupResult<>(new AccountSigningMetadata(key, false));
-                })
-                .given(sigMetadataLookup)
-                .accountSigningMetaFor(eq(alias), any(LinkedRefs.class));
-        // mock txn and sig reqs
         willCallRealMethod().given(txnAccessor).setSigMeta(any(RationalizedSigMeta.class));
         willCallRealMethod().given(txnAccessor).getSigMeta();
 
@@ -308,41 +304,46 @@ class ExpandHandleHollowScreeningTest {
         subject.execute();
 
         final ArgumentCaptor<List<PendingCompletion>> pendingCompletionCaptor = forClass(List.class);
-        final ArgumentCaptor<LinkedRefs> linkedRefsCaptor = forClass(LinkedRefs.class);
         verify(txnAccessor).setPendingCompletions(pendingCompletionCaptor.capture());
-        verify(txnAccessor).setLinkedRefs(linkedRefsCaptor.capture());
         // verify payer key in meta has been replaced
         final var expectedFinalKey = new JECDSASecp256k1Key(decompressedKeyBytes);
         assertEquals(expectedFinalKey, txnAccessor.getSigMeta().othersReqSigs().get(0));
         // verify pending completions in txn accessor
-        final var expectedPendingCompletions = List.of(new PendingCompletion(expectedFinalKey, num));
+        final var expectedPendingCompletions = List.of(new PendingCompletion(num, expectedFinalKey));
         assertEquals(expectedPendingCompletions, pendingCompletionCaptor.getValue());
-        // verify linked refs
-        final var linkedRefsCaptorValue = linkedRefsCaptor.getValue();
-        assertEquals(num.longValue(), linkedRefsCaptorValue.linkedNumbers()[0]);
-        assertEquals(1, linkedRefsCaptorValue.linkedNumbers().length);
-        final var linkedAliases = linkedRefsCaptorValue.linkedAliases();
-        assertEquals(1, linkedAliases.size());
-        assertEquals(alias, linkedAliases.get(0));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void preHandleOtherReqKeyHollowKeyGetsReplacedButNotPutInPendingFinalizationWhenNotNeeded() {
+        // mock out a ECDSA key + sig
+        setupHollowScreeningTest(false);
+        givenEcdsaSigs();
+        // mock account and returned key
+        final var key = mock(JKey.class);
+        setupDegenerateMocks(mockPayerResponse, new SigningOrderResult<>(List.of(key)));
+        given(key.hasHollowKey()).willReturn(true);
+        final var jHollowKey = mock(JHollowKey.class);
+        given(key.getHollowKey()).willReturn(jHollowKey);
+        given(jHollowKey.isForHollowAccount()).willReturn(false);
+        given(jHollowKey.getEvmAddress()).willReturn(evmAddressForKey1);
+        willCallRealMethod().given(txnAccessor).setSigMeta(any(RationalizedSigMeta.class));
+        willCallRealMethod().given(txnAccessor).getSigMeta();
+
+        final var subject =
+                new Expansion(txnAccessor, sigReqs, pkToSigFn, cryptoSigsCreation, sigFactory, aliasManager);
+        subject.execute();
+
+        final ArgumentCaptor<List<PendingCompletion>> pendingCompletionCaptor = forClass(List.class);
+        verify(txnAccessor, never()).setPendingCompletions(pendingCompletionCaptor.capture());
+        // verify payer key in meta has been replaced
+        final var expectedFinalKey = new JECDSASecp256k1Key(decompressedKeyBytes);
+        assertEquals(expectedFinalKey, txnAccessor.getSigMeta().othersReqSigs().get(0));
     }
 
     @Test
     @SuppressWarnings("unchecked")
     void preHandlePayerHollowKeyDoesNotGetReplacedWhenNoMatchingECDSAKey() {
-        final var alias = ByteStringUtils.wrapUnsafely(evmAddressForKey1);
-        final var num = EntityNum.fromLong(666L);
-        given(aliasManager.lookupIdBy(alias)).willReturn(num);
-        final var key = mock(JKey.class);
-        given(key.hasHollowKey()).willReturn(true);
-        willAnswer(inv -> {
-                    final var linkedRefs = (LinkedRefs) inv.getArgument(1);
-                    linkedRefs.link(alias);
-                    linkedRefs.link(num.longValue());
-                    return new SafeLookupResult<>(new AccountSigningMetadata(key, false));
-                })
-                .given(sigMetadataLookup)
-                .accountSigningMetaFor(eq(alias), any(LinkedRefs.class));
-
         final JKey payerKey = mock(JKey.class);
         given(payerKey.hasHollowKey()).willReturn(true);
         final JHollowKey payerHollowKey = mock(JHollowKey.class);
@@ -352,33 +353,22 @@ class ExpandHandleHollowScreeningTest {
         willCallRealMethod().given(txnAccessor).setSigMeta(any(RationalizedSigMeta.class));
         willCallRealMethod().given(txnAccessor).getSigMeta();
         setupHollowScreeningTest(false);
+        givenEcdsaSigs();
 
         final var subject =
                 new Expansion(txnAccessor, sigReqs, pkToSigFn, cryptoSigsCreation, sigFactory, aliasManager);
         subject.execute();
 
-        verify(txnAccessor).setPendingCompletions(pendingCompletionCaptor.capture());
-        verify(txnAccessor).setLinkedRefs(linkedRefsCaptor.capture());
+        verify(txnAccessor, never()).setPendingCompletions(any());
         // verify payer key in meta has NOT been replaced
         assertEquals(payerKey, txnAccessor.getSigMeta().payerKey());
-        // verify pending completions in txn accessor
-        final var expectedFinalKey = new JECDSASecp256k1Key(decompressedKeyBytes);
-        final var expectedPendingCompletions = List.of(new PendingCompletion(expectedFinalKey, num));
-        assertEquals(expectedPendingCompletions, pendingCompletionCaptor.getValue());
-        // verify linked refs
-        final var linkedRefsCaptorValue = linkedRefsCaptor.getValue();
-        assertEquals(num.longValue(), linkedRefsCaptorValue.linkedNumbers()[0]);
-        assertEquals(1, linkedRefsCaptorValue.linkedNumbers().length);
-        final var linkedAliases = linkedRefsCaptorValue.linkedAliases();
-        assertEquals(1, linkedAliases.size());
-        assertEquals(alias, linkedAliases.get(0));
     }
 
     @Test
     @SuppressWarnings("unchecked")
     void preHandleHollowKeyInTheOtherReqKeysWithoutCorrespondingECDSAKeyInSigsIsNotReplaced() {
         setupHollowScreeningTest(false);
-        final var alias = ByteStringUtils.wrapUnsafely(evmAddressForKey1);
+        givenEcdsaSigs();
         final var num = EntityNum.fromLong(666L);
         given(aliasManager.lookupIdBy(alias)).willReturn(num);
         final var key = mock(JKey.class);
@@ -386,14 +376,7 @@ class ExpandHandleHollowScreeningTest {
         final var jHollowKey = mock(JHollowKey.class);
         given(key.getHollowKey()).willReturn(jHollowKey);
         given(jHollowKey.getEvmAddress()).willReturn(evmAddressForKey1);
-        willAnswer(inv -> {
-                    final var linkedRefs = (LinkedRefs) inv.getArgument(1);
-                    linkedRefs.link(alias);
-                    linkedRefs.link(num.longValue());
-                    return new SafeLookupResult<>(new AccountSigningMetadata(key, false));
-                })
-                .given(sigMetadataLookup)
-                .accountSigningMetaFor(eq(alias), any(LinkedRefs.class));
+        given(jHollowKey.isForHollowAccount()).willReturn(true);
         final var payerKey = mock(JKey.class);
         given(payerKey.hasHollowKey()).willReturn(true);
         final var payerHollowKey = mock(JHollowKey.class);
@@ -415,91 +398,74 @@ class ExpandHandleHollowScreeningTest {
         subject.execute();
 
         final var finalKey = new JECDSASecp256k1Key(decompressedKeyBytes);
-        final var allPretendCompletions = List.of(new PendingCompletion(finalKey, num));
         verify(txnAccessor).setPendingCompletions(pendingCompletionCaptor.capture());
-        verify(txnAccessor).setLinkedRefs(linkedRefsCaptor.capture());
-        assertEquals(allPretendCompletions, pendingCompletionCaptor.getValue());
-        final LinkedRefs linkedRefsCaptorValue = linkedRefsCaptor.getValue();
-        assertEquals(num.longValue(), linkedRefsCaptorValue.linkedNumbers()[0]);
-        final List<ByteString> linkedAliases = linkedRefsCaptorValue.linkedAliases();
-        assertEquals(1, linkedAliases.size());
-        assertEquals(alias, linkedAliases.get(0));
+        assertEquals(1, pendingCompletionCaptor.getValue().size());
+        final PendingCompletion pendingCompletion =
+                pendingCompletionCaptor.getValue().get(0);
+        assertEquals(new PendingCompletion(num, finalKey), pendingCompletion);
         assertEquals(finalKey, txnAccessor.getSigMeta().othersReqSigs().get(0));
+        assertEquals(lonelyKey, txnAccessor.getSigMeta().othersReqSigs().get(1));
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    void preHandleDoesNotAddPendingHollowCompletionFromUnusedFullPrefixECDSASigIfAliasManagerShowsMissingEntity() {
+    void preHandleDoesNotAddPendingHollowCompletionIfAliasManagerShowsMissingEntity() {
         setupHollowScreeningTest(false);
-        setupDegenerateMocks(mockPayerResponse, mockOtherPartiesResponse);
-        final var alias = ByteStringUtils.wrapUnsafely(evmAddressForKey1);
+        final var key = mock(JKey.class);
+        given(key.hasHollowKey()).willReturn(true);
+        final var jHollowKey = mock(JHollowKey.class);
+        given(key.getHollowKey()).willReturn(jHollowKey);
+        given(jHollowKey.getEvmAddress()).willReturn(evmAddressForKey1);
+        given(jHollowKey.isForHollowAccount()).willReturn(true);
         given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
+        setupDegenerateMocks(new SigningOrderResult<>(List.of(key)), mockOtherPartiesResponse);
+        givenEcdsaSigs();
 
         final var subject =
                 new Expansion(txnAccessor, sigReqs, pkToSigFn, cryptoSigsCreation, sigFactory, aliasManager);
         subject.execute();
 
         verify(txnAccessor, never()).setPendingCompletions(any());
-        verify(txnAccessor).setLinkedRefs(linkedRefsCaptor.capture());
-        final LinkedRefs linkedRefsCaptorValue = linkedRefsCaptor.getValue();
-        assertEquals(0, linkedRefsCaptorValue.linkedNumbers()[0]);
-        final List<ByteString> linkedAliases = linkedRefsCaptorValue.linkedAliases();
-        assertEquals(1, linkedAliases.size());
-        assertEquals(alias, linkedAliases.get(0));
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    void preHandleHollowScreenOnUnsuccessfulMetadataLookup() {
-        setupDegenerateMocks(mockPayerResponse, mockOtherPartiesResponse);
+    void preHandleNoHollowScreeningIfNoEcdsaWildcardKeysArePresent() {
         setupHollowScreeningTest(false);
-
-        final var num = EntityNum.fromLong(666L);
-        given(aliasManager.lookupIdBy(alias)).willReturn(num);
-        willAnswer(inv -> {
-                    final var linkedRefs = (LinkedRefs) inv.getArgument(1);
-                    linkedRefs.link(alias);
-                    linkedRefs.link(num.longValue());
-                    return SafeLookupResult.failure(KeyOrderingFailure.MISSING_ACCOUNT);
-                })
-                .given(sigMetadataLookup)
-                .accountSigningMetaFor(eq(alias), any(LinkedRefs.class));
+        setupDegenerateMocks(mockPayerResponse, mockOtherPartiesResponse);
+        final var screeningMockedStatic = mockStatic(HollowScreening.class);
+        screeningMockedStatic
+                .when(() -> HollowScreening.atLeastOneWildcardKeyIn(
+                        mockEd25519FullKey, List.of(mockEd25519FullKey, mockEd25519FullKey)))
+                .thenReturn(false);
 
         final var subject =
                 new Expansion(txnAccessor, sigReqs, pkToSigFn, cryptoSigsCreation, sigFactory, aliasManager);
         subject.execute();
 
         verify(txnAccessor, never()).setPendingCompletions(any());
-        verify(txnAccessor).setLinkedRefs(linkedRefsCaptor.capture());
-        final LinkedRefs linkedRefsCaptorValue = linkedRefsCaptor.getValue();
-        assertEquals(num.longValue(), linkedRefsCaptorValue.linkedNumbers()[0]);
-        final List<ByteString> linkedAliases = linkedRefsCaptorValue.linkedAliases();
-        assertEquals(1, linkedAliases.size());
-        assertEquals(alias, linkedAliases.get(0));
+        screeningMockedStatic.verify(() -> HollowScreening.performForVersion2(any(), any(), any(), any()), never());
+        screeningMockedStatic.close();
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    void handleNonHollowAccountsAreNotAddedToPendingCompletions() {
+    void handleNoHollowScreeningIfNoEcdsaWildcardKeysArePresent() {
         setupHollowScreeningTest(true);
-
-        final var alias = ByteStringUtils.wrapUnsafely(evmAddressForKey1);
-        final var num = EntityNum.fromLong(666L);
-        given(aliasManager.lookupIdBy(alias)).willReturn(num);
-        given(sigMetadataLookup.accountSigningMetaFor(alias, null))
-                .willReturn(new SafeLookupResult<>(
-                        new AccountSigningMetadata(new JECDSASecp256k1Key("someBytesForKey".getBytes()), false)));
-        // mock txn and sig reqs
-        willCallRealMethod().given(txnAccessor).setSigMeta(any(RationalizedSigMeta.class));
-        final var mockOtherKey = mock(JKey.class);
-        final var response = new SigningOrderResult<ResponseCodeEnum>(List.of(mockOtherKey));
-        setupDegenerateMocks(response, response);
+        final var result = new SigningOrderResult<ResponseCodeEnum>(List.of(mock(JKey.class)));
+        setupDegenerateMocks(result, result);
+        final var screeningMockedStatic = mockStatic(HollowScreening.class);
+        screeningMockedStatic
+                .when(() -> HollowScreening.atLeastOneWildcardKeyIn(any(), any()))
+                .thenCallRealMethod();
 
         final var subject =
                 new Rationalization(syncVerifier, sigImpactHistorian, sigReqs, handleSigFactory, aliasManager);
         subject.performFor(txnAccessor);
 
         verify(txnAccessor, never()).setPendingCompletions(any());
+        screeningMockedStatic.verify(() -> HollowScreening.performForVersion2(any(), any(), any(), any()), never());
+        screeningMockedStatic.close();
     }
 
     private void setupDegenerateMocks(
@@ -514,15 +480,14 @@ class ExpandHandleHollowScreeningTest {
         given(txnAccessor.getPayer()).willReturn(payer);
     }
 
+    private void givenEcdsaSigs() {
+        given(secp256k1Sig.getSignatureType()).willReturn(SignatureType.ECDSA_SECP256K1);
+        given(secp256k1Sig.getExpandedPublicKeyDirect()).willReturn(pretendSecp256k1FullKey);
+        given(pkToSigFn.hasAtLeastOneEcdsaSig()).willReturn(true);
+    }
+
     private void setupHollowScreeningTest(boolean isForHandle) {
         pendingCompletionCaptor = forClass(List.class);
-        linkedRefsCaptor = forClass(LinkedRefs.class);
-
-        given(secp256k1Sig.getSignatureType()).willReturn(SignatureType.ECDSA_SECP256K1);
-        given(secp256k1Sig.getExpandedPublicKeyDirect()).willReturn(pretendSecp256k1FullKey);
-
-        given(secp256k1Sig.getSignatureType()).willReturn(SignatureType.ECDSA_SECP256K1);
-        given(secp256k1Sig.getExpandedPublicKeyDirect()).willReturn(pretendSecp256k1FullKey);
 
         miscStatic
                 .when(() -> MiscCryptoUtils.compressSecp256k1(pretendSecp256k1FullKey))
@@ -530,8 +495,6 @@ class ExpandHandleHollowScreeningTest {
         miscStatic
                 .when(() -> MiscCryptoUtils.extractEvmAddressFromDecompressedECDSAKey(pretendSecp256k1FullKey))
                 .thenReturn(evmAddressForKey1);
-
-        given(sigReqs.getSigMetaLookup()).willReturn(sigMetadataLookup);
         given(pkToSigFn.hasAtLeastOneUnusedSigWithFullPrefix()).willReturn(true);
 
         final var pretendEd25519FullKey = "COMPLETE".getBytes(StandardCharsets.UTF_8);
@@ -545,10 +508,8 @@ class ExpandHandleHollowScreeningTest {
                 })
                 .given(pkToSigFn)
                 .forEachUnusedSigWithFullPrefix(any());
-        given(pkToSigFn.hasAtLeastOneEcdsaSig()).willReturn(true);
 
         if (isForHandle) {
-
             given(txnAccessor.getPkToSigsFn()).willReturn(pkToSigFn);
             given(handleSigFactory.signAppropriately(
                             KeyType.ECDSA_SECP256K1, pretendSecp256k1FullKey, pretendSecp256k1FullSig))

@@ -151,7 +151,7 @@ public class HollowAccountFinalizationLogic {
                 final var hederaAccount = accountsSupplier.get().get(accountNum);
                 if (EMPTY_KEY.equals(hederaAccount.getAccountKey())) {
                     final var key = new JECDSASecp256k1Key(ethTxSigs.publicKey());
-                    pendingFinalizations.add(new PendingCompletion(key, accountNum));
+                    pendingFinalizations.add(new PendingCompletion(accountNum, key));
                 }
             }
         }

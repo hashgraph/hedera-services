@@ -21,9 +21,7 @@ import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.*;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.*;
 import static com.hedera.node.app.service.mono.utils.EntityNum.*;
 
-import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
-import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.node.app.service.mono.context.StateChildren;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -128,28 +126,22 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
             final AccountID idOrAlias, final @Nullable LinkedRefs linkedRefs) {
         if (isAlias(idOrAlias)) {
             final var alias = idOrAlias.getAlias();
-            return accountSigningMetaFor(alias, linkedRefs);
+            if (alias.size() == EVM_ADDRESS_SIZE) {
+                final var evmAddress = alias.toByteArray();
+                if (aliasManager.isMirror(evmAddress)) {
+                    return lookupAccountByNumber(EntityNum.fromMirror(evmAddress), linkedRefs);
+                }
+            }
+            if (linkedRefs != null) {
+                linkedRefs.link(alias);
+            }
+            final var explicitId = aliasManager.lookupIdBy(alias);
+            return (explicitId == MISSING_NUM)
+                    ? SafeLookupResult.failure(MISSING_ACCOUNT)
+                    : lookupAccountByNumber(explicitId, linkedRefs);
         } else {
             return lookupAccountByNumber(fromAccountId(idOrAlias), linkedRefs);
         }
-    }
-
-    @Override
-    public SafeLookupResult<AccountSigningMetadata> accountSigningMetaFor(
-            final ByteString alias, final LinkedRefs linkedRefs) {
-        if (alias.size() == EVM_ADDRESS_SIZE) {
-            final var evmAddress = alias.toByteArray();
-            if (HederaEvmContractAliases.isMirror(evmAddress)) {
-                return lookupAccountByNumber(EntityNum.fromMirror(evmAddress), linkedRefs);
-            }
-        }
-        if (linkedRefs != null) {
-            linkedRefs.link(alias);
-        }
-        final var explicitId = aliasManager.lookupIdBy(alias);
-        return (explicitId == MISSING_NUM)
-                ? SafeLookupResult.failure(MISSING_ACCOUNT)
-                : lookupAccountByNumber(explicitId, linkedRefs);
     }
 
     @Override

@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.mono.sigs.metadata;
 
-import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.*;
@@ -55,6 +54,4 @@ public interface SigMetadataLookup {
      * @return the unaliased account
      */
     EntityNum unaliasedAccount(AccountID idOrAlias, @Nullable LinkedRefs linkedRefs);
-
-    SafeLookupResult<AccountSigningMetadata> accountSigningMetaFor(ByteString alias, LinkedRefs linkedRefs);
 }

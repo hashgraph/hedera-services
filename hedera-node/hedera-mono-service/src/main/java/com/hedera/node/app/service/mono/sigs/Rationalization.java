@@ -220,25 +220,18 @@ public class Rationalization {
      *
      */
     private void maybePerformHollowScreening() {
-        if (pkToSigFn.hasAtLeastOneEcdsaSig()) {
-            final var hollowScreening = new HollowScreening();
-            final var pendingCompletions =
-                    hollowScreening.pendingCompletionsFrom(txnSigs, sigReqs.getSigMetaLookup(), null, aliasManager);
-            if (!pendingCompletions.isEmpty()) {
-                txnAccessor.setPendingCompletions(pendingCompletions);
-                maybeUpdateHolowPayerKeyFrom(hollowScreening);
+        if (HollowScreening.atLeastOneWildcardKeyIn(reqPayerSig, reqOthersSigs) && pkToSigFn.hasAtLeastOneEcdsaSig()) {
+            final var hollowScreenResult =
+                    HollowScreening.performForVersion2(txnSigs, reqPayerSig, reqOthersSigs, aliasManager);
+            if (hollowScreenResult.pendingCompletions() != null) {
+                txnAccessor.setPendingCompletions(hollowScreenResult.pendingCompletions());
             }
-            maybeUpdateHollowOtherPartyKeysFrom(hollowScreening);
-        }
-    }
-
-    private void maybeUpdateHollowOtherPartyKeysFrom(HollowScreening hollowScreening) {
-        reqOthersSigs = hollowScreening.maybeDeHollowKeys(reqOthersSigs);
-    }
-
-    private void maybeUpdateHolowPayerKeyFrom(HollowScreening hollowScreening) {
-        if (reqPayerSig.hasHollowKey()) {
-            reqPayerSig = hollowScreening.maybeDeHollowKey(reqPayerSig);
+            if (hollowScreenResult.deHollowedPayerKey() != null) {
+                reqPayerSig = hollowScreenResult.deHollowedPayerKey();
+            }
+            if (hollowScreenResult.deHollowedOtherKeys() != null) {
+                reqOthersSigs = hollowScreenResult.deHollowedOtherKeys();
+            }
         }
     }
 

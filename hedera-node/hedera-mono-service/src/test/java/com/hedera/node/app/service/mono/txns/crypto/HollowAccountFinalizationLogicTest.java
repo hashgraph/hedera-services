@@ -149,7 +149,7 @@ class HollowAccountFinalizationLogicTest {
         final var evmAddress = "addres".getBytes();
         final var hollowNum = EntityNum.fromLong(5L);
 
-        given(swirldsTxnAccessor.getPendingCompletions()).willReturn(List.of(new PendingCompletion(key, hollowNum)));
+        given(swirldsTxnAccessor.getPendingCompletions()).willReturn(List.of(new PendingCompletion(hollowNum, key)));
 
         given(accountsSupplier.get()).willReturn(accountStorageAdapter);
         given(accountStorageAdapter.getForModify(hollowNum)).willReturn(hederaAccount);
@@ -158,8 +158,6 @@ class HollowAccountFinalizationLogicTest {
         given(syntheticTxnFactory.updateHollowAccount(hollowNum, asKeyUnchecked(key)))
                 .willReturn(txnBodyBuilder);
         given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(expirableTxnRecordBuilder);
-        given(expirableTxnRecordBuilder.getReceiptBuilder()).willReturn(txnReceiptBuilder);
-        given(txnReceiptBuilder.getAccountId()).willReturn(hollowNum.toEntityId());
 
         final var result = subject.perform();
 
@@ -190,8 +188,6 @@ class HollowAccountFinalizationLogicTest {
         given(syntheticTxnFactory.updateHollowAccount(hollowNum, asKeyUnchecked(key)))
                 .willReturn(txnBodyBuilder);
         given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(expirableTxnRecordBuilder);
-        given(expirableTxnRecordBuilder.getReceiptBuilder()).willReturn(txnReceiptBuilder);
-        given(txnReceiptBuilder.getAccountId()).willReturn(hollowNum.toEntityId());
 
         final var result = subject.perform();
 
@@ -249,7 +245,7 @@ class HollowAccountFinalizationLogicTest {
         final var key = new JECDSASecp256k1Key(keyBytes);
         final var hollowNum = EntityNum.fromLong(5L);
         final var pendingCompletions = new ArrayList<PendingCompletion>();
-        pendingCompletions.add(new PendingCompletion(key, hollowNum));
+        pendingCompletions.add(new PendingCompletion(hollowNum, key));
 
         given(swirldsTxnAccessor.getPendingCompletions()).willReturn(pendingCompletions);
         given(accountsSupplier.get()).willReturn(accountStorageAdapter);
@@ -259,8 +255,6 @@ class HollowAccountFinalizationLogicTest {
         given(syntheticTxnFactory.updateHollowAccount(hollowNum, asKeyUnchecked(key)))
                 .willReturn(txnBodyBuilder);
         given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(expirableTxnRecordBuilder);
-        given(expirableTxnRecordBuilder.getReceiptBuilder()).willReturn(txnReceiptBuilder);
-        given(txnReceiptBuilder.getAccountId()).willReturn(hollowNum.toEntityId());
 
         given(txnCtx.accessor()).willReturn(txnAccessor);
         given(spanMapAccessor.getEthTxExpansion(txnAccessor)).willReturn(new EthTxExpansion(null, OK));
@@ -278,9 +272,6 @@ class HollowAccountFinalizationLogicTest {
         given(hollowAccount2.getEntityNum()).willReturn(hollowNum2);
         given(syntheticTxnFactory.updateHollowAccount(hollowNum2, asKeyUnchecked(key2)))
                 .willReturn(txnBodyBuilder);
-        given(txnReceiptBuilder.getAccountId())
-                .willReturn(hollowNum.toEntityId())
-                .willReturn(hollowNum2.toEntityId());
         given(properties.maxPrecedingRecords()).willReturn(2L);
 
         final var result = subject.perform();
@@ -323,7 +314,7 @@ class HollowAccountFinalizationLogicTest {
         final var hollowNum2 = EntityNum.fromLong(6L);
 
         given(swirldsTxnAccessor.getPendingCompletions())
-                .willReturn(List.of(new PendingCompletion(key, hollowNum), new PendingCompletion(key2, hollowNum2)));
+                .willReturn(List.of(new PendingCompletion(hollowNum, key), new PendingCompletion(hollowNum2, key2)));
         given(properties.maxPrecedingRecords()).willReturn(1L);
 
         final var result = subject.perform();

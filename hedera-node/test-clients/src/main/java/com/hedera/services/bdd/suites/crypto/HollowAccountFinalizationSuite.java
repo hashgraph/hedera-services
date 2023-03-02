@@ -55,8 +55,11 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TransferList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -97,7 +100,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 hollowAccountCompletionWithContractCall(),
                 hollowAccountCompletionWithTokenAssociation(),
                 hollowAccountCompletionWithTokenTransfer(),
-                hollowAccountCompletionViaSignatureInSigMap(),
+                hollowAccountCompletionViaSignatureInSigMapIsNotAllowed(),
                 hollowAccountCompletionWhenHollowAccountSigRequiredInOtherReqSigs(),
                 tooManyHollowAccountFinalizationsShouldFail(),
                 completedHollowAccountsTransfer(),
@@ -546,9 +549,9 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
-    private HapiSpec hollowAccountCompletionViaSignatureInSigMap() {
+    private HapiSpec hollowAccountCompletionViaSignatureInSigMapIsNotAllowed() {
         final long DEPOSIT_AMOUNT = 1000;
-        return defaultHapiSpec("hollowAccountCompletionViaSignatureInSigMap")
+        return defaultHapiSpec("hollowAccountCompletionViaSignatureInSigMapIsNotAllowed")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
@@ -577,27 +580,27 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                             .via(TRANSFER_TXN_2);
                     final var op3 = getAliasedAccountInfo(evmAddress)
                             .has(accountWith()
-                                    .key(SECP_256K1_SOURCE_KEY)
+                                    .key(EMPTY_KEY)
                                     .evmAddress(evmAddress)
                                     .noAlias());
-                    final var checkRecords = childRecordsCheck(
-                            TRANSFER_TXN_2, SUCCESS, recordWith().status(SUCCESS));
+                    final var checkRecords = emptyChildRecordsCheck(TRANSFER_TXN_2, SUCCESS);
                     allRunFor(spec, op2, op3, checkRecords);
                 }));
     }
 
     private HapiSpec tooManyHollowAccountFinalizationsShouldFail() {
-        final var DEPOSIT_AMOUNT = 1000;
         final var ECDSA_KEY_1 = "ECDSA_KEY_1";
         final var ECDSA_KEY_2 = "ECDSA_KEY_2";
         final var ECDSA_KEY_3 = "ECDSA_KEY_3";
         final var ECDSA_KEY_4 = "ECDSA_KEY_4";
+        final var RECIPIENT_KEY = "ECDSA_KEY_5";
         return defaultHapiSpec("tooManyHollowAccountFinalizationsShouldFail")
                 .given(
                         newKeyNamed(ECDSA_KEY_1).shape(SECP_256K1_SHAPE),
                         newKeyNamed(ECDSA_KEY_2).shape(SECP_256K1_SHAPE),
                         newKeyNamed(ECDSA_KEY_3).shape(SECP_256K1_SHAPE),
                         newKeyNamed(ECDSA_KEY_4).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(RECIPIENT_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
                         newKeyNamed(ADMIN_KEY),
                         uploadInitCode(PAY_RECEIVABLE),
@@ -611,10 +614,18 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                             sendToEvmAddressFromECDSAKey(spec, ECDSA_KEY_2),
                             sendToEvmAddressFromECDSAKey(spec, ECDSA_KEY_3),
                             sendToEvmAddressFromECDSAKey(spec, ECDSA_KEY_4));
-                    // send a ContractCall signed by all the ecdsa
+                    // send a CryptoTransfer signed by all the ecdsa
                     // keys of the hollow accounts;
-                    final var op2 = contractCall(PAY_RECEIVABLE)
-                            .sending(DEPOSIT_AMOUNT)
+                    final var op2 = cryptoTransfer(sendFromEvmAddressFromECDSAKey(
+                                            spec,
+                                            spec.registry()
+                                                    .getKey(RECIPIENT_KEY)
+                                                    .toByteString(),
+                                            ECDSA_KEY_1,
+                                            ECDSA_KEY_2,
+                                            ECDSA_KEY_3,
+                                            ECDSA_KEY_4)
+                                    .toArray(Function[]::new))
                             .signedBy(GENESIS, ECDSA_KEY_1, ECDSA_KEY_2, ECDSA_KEY_3, ECDSA_KEY_4)
                             .sigMapPrefixes(
                                     uniqueWithFullPrefixesFor(ECDSA_KEY_1, ECDSA_KEY_2, ECDSA_KEY_3, ECDSA_KEY_4))
@@ -729,6 +740,17 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
         return cryptoTransfer(tinyBarsFromTo(LAZY_CREATE_SPONSOR, evmAddress, ONE_HBAR))
                 .hasKnownStatus(SUCCESS)
                 .via(TRANSFER_TXN);
+    }
+
+    private List<Function<HapiSpec, TransferList>> sendFromEvmAddressFromECDSAKey(
+            final HapiSpec spec, final ByteString recipient, final String... keys) {
+        List<Function<HapiSpec, TransferList>> transfers = new ArrayList<>();
+        for (final var key : keys) {
+            final var ecdsaKey = spec.registry().getKey(key).getECDSASecp256K1().toByteArray();
+            final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+            transfers.add(tinyBarsFromTo(evmAddress, recipient, ONE_HBAR));
+        }
+        return transfers;
     }
 
     private HapiGetAccountInfo assertStillHollow(final HapiSpec spec, final String key) {

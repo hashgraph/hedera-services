@@ -6003,14 +6003,6 @@ public class SigRequirementsTest {
         assertThat(sanityRestored(summary.getOrderedKeys()), contains(SCHEDULE_ADMIN_KT.asKey()));
     }
 
-    @Test
-    void sigMetadataLookupGetterWorks() throws Throwable {
-        final var sigMetadataLookup = mock(SigMetadataLookup.class);
-        setupFor(CONSENSUS_DELETE_TOPIC_SCENARIO, Optional.of(sigMetadataLookup), null);
-
-        assertEquals(sigMetadataLookup, subject.getSigMetaLookup());
-    }
-
     private void setupFor(TxnHandlingScenario scenario) throws Throwable {
         setupFor(scenario, Optional.empty(), mockSignatureWaivers);
     }

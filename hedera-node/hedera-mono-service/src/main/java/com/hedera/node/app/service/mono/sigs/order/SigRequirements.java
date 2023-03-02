@@ -1392,8 +1392,4 @@ public class SigRequirements {
         }
         return factory.forValidOrder(required);
     }
-
-    public SigMetadataLookup getSigMetaLookup() {
-        return sigMetaLookup;
-    }
 }
