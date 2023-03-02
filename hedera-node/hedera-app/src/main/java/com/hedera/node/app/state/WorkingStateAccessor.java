@@ -16,9 +16,15 @@
 
 package com.hedera.node.app.state;
 
+import static java.util.Objects.requireNonNull;
+
+import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * A singleton class that provides access to the working {@link HederaState}.
+ */
 @Singleton
 public class WorkingStateAccessor {
     private HederaState hederaState = null;
@@ -28,11 +34,21 @@ public class WorkingStateAccessor {
         // Default constructor
     }
 
+    /**
+     * Returns the working {@link HederaState}.
+     * @return the working {@link HederaState}.
+     */
+    @Nullable
     public HederaState getHederaState() {
         return hederaState;
     }
 
+    /**
+     * Sets the working {@link HederaState}.
+     * @param hederaState the working {@link HederaState}.
+     */
     public void setHederaState(HederaState hederaState) {
+        requireNonNull(hederaState);
         this.hederaState = hederaState;
     }
 }

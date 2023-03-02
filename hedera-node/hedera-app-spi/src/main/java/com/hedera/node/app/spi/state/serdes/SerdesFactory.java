@@ -30,7 +30,7 @@ import java.io.IOException;
  * <p>Mostly useful for packaging a PBJ {@code Writer} and {@code ProtoParser} into
  * a {@link Serdes} implementation.
  */
-public class SerdesFactory {
+public final class SerdesFactory {
     private SerdesFactory() {
         throw new UnsupportedOperationException("Utility class");
     }
