@@ -70,7 +70,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
-    private static final AccountID ACCOUNT_ID_3 = IdUtils.asAccount("0.0.3");
+    static final AccountID ACCOUNT_ID_3 = IdUtils.asAccount("0.0.3");
     private static final AccountID AUTO_RENEW_ACCOUNT = IdUtils.asAccount("0.0.4");
 
     @Mock

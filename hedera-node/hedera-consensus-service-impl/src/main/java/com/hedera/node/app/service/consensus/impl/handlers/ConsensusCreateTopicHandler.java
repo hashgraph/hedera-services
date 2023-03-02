@@ -122,9 +122,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
                 op.hasAutoRenewAccount() ? op.getAutoRenewAccount().getAccountNum() : NA;
 
         final var entityExpiryMeta = new ExpiryMeta(
-                NA, // expiry not set explicitly
-                autoRenewPeriod,
-                autoRenewAccountId);
+                handleContext.consensusNow().getEpochSecond() + autoRenewPeriod, autoRenewPeriod, autoRenewAccountId);
 
         final var effectiveExpiryMeta =
                 handleContext.expiryValidator().validateCreationAttempt(false, entityExpiryMeta);
