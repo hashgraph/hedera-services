@@ -315,7 +315,6 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
 
         consensusTimingStat.setTimePoint(1);
 
-        updatePlatformState(round);
         swirldStateManager.handleConsensusRound(round);
 
         consensusTimingStat.setTimePoint(2);
@@ -349,6 +348,12 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
         // newSignedStateCycleTiming in Statistics
         consensusTimingStat.setTimePoint(5);
 
+        // remove events and generations that are not needed
+        eventsAndGenerations.expire();
+        updatePlatformState(round);
+
+        consensusTimingStat.setTimePoint(6);
+
         // If the round is complete and it should be signed (either because it has a shutdown event or the settings say
         // so), create the signed state
         if (round.isComplete() && (round.hasShutdownEvent() || timeToSignState(round.getRoundNum()))) {
@@ -362,11 +367,6 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
             }
             createSignedState();
         }
-
-        consensusTimingStat.setTimePoint(6);
-
-        // remove events and generations that are not needed
-        eventsAndGenerations.expire();
 
         consensusTimingStat.stopCycle();
     }
@@ -397,14 +397,17 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
         final EventImpl[] events = eventsAndGenerations.getEventsForSignedState();
         final List<MinGenInfo> minGen = eventsAndGenerations.getMinGenForSignedState();
 
-        swirldStateManager.updatePlatformState(
-                round.getRoundNum(),
-                numEventsCons.get(),
-                runningHash,
-                events,
-                round.getLastEvent().getLastTransTime(),
-                minGen,
-                softwareVersion);
+        swirldStateManager
+                .getConsensusState()
+                .getPlatformState()
+                .getPlatformData()
+                .setRound(round.getRoundNum())
+                .setNumEventsCons(numEventsCons.get())
+                .setHashEventsCons(runningHash)
+                .setEvents(events)
+                .setConsensusTimestamp(round.getLastEvent().getLastTransTime())
+                .setMinGenInfo(minGen)
+                .setCreationSoftwareVersion(softwareVersion);
     }
 
     private void createSignedState() throws InterruptedException {

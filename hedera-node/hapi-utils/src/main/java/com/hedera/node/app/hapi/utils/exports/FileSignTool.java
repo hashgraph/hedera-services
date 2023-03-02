@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.hapi.utils.exports;
 
+import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.readMaybeCompressedRecordStreamFile;
 import static com.hedera.services.stream.proto.SignatureType.SHA_384_WITH_RSA;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.utility.CommonUtils.hex;
@@ -44,7 +45,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.InvalidKeyException;
@@ -254,15 +254,6 @@ public class FileSignTool {
         }
     }
 
-    private static Pair<Integer, Optional<RecordStreamFile>> readUncompressedRecordStreamFile(final String fileLoc)
-            throws IOException {
-        try (final FileInputStream fin = new FileInputStream(fileLoc)) {
-            final int recordFileVersion = ByteBuffer.wrap(fin.readNBytes(4)).getInt();
-            final RecordStreamFile recordStreamFile = RecordStreamFile.parseFrom(fin);
-            return Pair.of(recordFileVersion, Optional.ofNullable(recordStreamFile));
-        }
-    }
-
     private static ByteString wrapUnsafely(@NonNull final byte[] bytes) {
         return UnsafeByteOperations.unsafeWrap(bytes);
     }
@@ -322,7 +313,8 @@ public class FileSignTool {
                 final SerializableDataOutputStream dos = new SerializableDataOutputStream(
                         new BufferedOutputStream(new HashingOutputStream(streamDigest)))) {
             // parse record file
-            final Pair<Integer, Optional<RecordStreamFile>> recordResult = readUncompressedRecordStreamFile(recordFile);
+            final Pair<Integer, Optional<RecordStreamFile>> recordResult =
+                    readMaybeCompressedRecordStreamFile(recordFile);
             final long blockNumber = recordResult.getValue().get().getBlockNumber();
             final byte[] startRunningHash = recordResult
                     .getValue()
@@ -375,7 +367,11 @@ public class FileSignTool {
                 SignatureFile.newBuilder().setFileSignature(fileSignature).setMetadataSignature(metadataSignature);
 
         // create signature file
-        final String sigFilePath = recordFile + "_sig";
+        final String sigFilePath = (recordFile.endsWith(".gz")
+                        ? Paths.get("").toAbsolutePath().toString() + File.separator + "tmp" + File.separator
+                                + Paths.get(recordFile.replace(".gz", "")).getFileName()
+                        : recordFile)
+                + "_sig";
         try (final FileOutputStream fos =
                 new FileOutputStream(destSigFilePath + File.separator + (new File(sigFilePath)).getName())) {
             // version in signature files is 1 byte, compared to 4 in record files

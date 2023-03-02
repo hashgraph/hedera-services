@@ -16,39 +16,41 @@
 
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
+import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.ACCOUNT_ID_4;
+import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.A_NONNULL_KEY;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_A;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_B;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertDefaultPayer;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertOkResponse;
+import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.newTopicMeta;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.txnFrom;
 import static com.hedera.test.factories.scenarios.ConsensusDeleteTopicScenarios.CONSENSUS_DELETE_TOPIC_MISSING_TOPIC_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusDeleteTopicScenarios.CONSENSUS_DELETE_TOPIC_SCENARIO;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.EXISTING_TOPIC;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_TOPIC_ADMIN_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
 import static com.hedera.test.utils.KeyUtils.sanityRestored;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
+import com.hedera.node.app.service.consensus.impl.records.ConsensusDeleteTopicRecordBuilder;
 import com.hedera.node.app.service.mono.Utils;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.PreHandleContext;
-import com.hedera.test.utils.IdUtils;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.test.utils.KeyUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import java.time.Instant;
-import java.util.Optional;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -59,10 +61,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ConsensusDeleteTopicHandlerTest {
-    private static final HederaKey A_NONNULL_KEY = new HederaKey() {};
-    static final TopicID TOPIC_ID_1357 =
-            TopicID.newBuilder().setShardNum(0).setRealmNum(0).setTopicNum(1357).build();
-    private static final AccountID ACCOUNT_ID_4 = IdUtils.asAccount("0.0.4");
     private AccountKeyLookup keyLookup;
     private ReadableTopicStore topicStore;
 
@@ -91,6 +89,11 @@ class ConsensusDeleteTopicHandlerTest {
         assertThat(context.getPayerKey()).isEqualTo(payerKey);
         final var expectedHederaAdminKey = Utils.asHederaKey(SIMPLE_KEY_A).orElseThrow();
         assertThat(context.getRequiredNonPayerKeys()).containsExactly(expectedHederaAdminKey);
+    }
+
+    @Test
+    void returnsExpectedRecordBuilderType() {
+        assertInstanceOf(ConsensusDeleteTopicRecordBuilder.class, subject.newRecordBuilder());
     }
 
     @Test
@@ -231,31 +234,14 @@ class ConsensusDeleteTopicHandlerTest {
         return ConsensusTestUtils.mockPayerLookup(KeyUtils.A_COMPLEX_KEY, DEFAULT_PAYER, keyLookup);
     }
 
-    private void mockTopicLookup(Key adminKey, Key submitKey) {
-        given(topicStore.getTopicMetadata(notNull()))
-                .willReturn(ReadableTopicStore.TopicMetaOrLookupFailureReason.withTopicMeta(newTopicMeta(
-                        adminKey != null ? Utils.asHederaKey(adminKey).get() : null,
-                        submitKey != null ? Utils.asHederaKey(submitKey).get() : null)));
-    }
-
-    private static ReadableTopicStore.TopicMetadata newTopicMeta(HederaKey admin, HederaKey submit) {
-        return new ReadableTopicStore.TopicMetadata(
-                Optional.of(Instant.now() + ""),
-                Optional.ofNullable(admin),
-                Optional.ofNullable(submit),
-                -1L,
-                Optional.of(1234567L),
-                null,
-                -1,
-                null,
-                TOPIC_ID_1357.getTopicNum(),
-                false);
+    private void mockTopicLookup(final Key adminKey, final Key submitKey) {
+        ConsensusTestUtils.mockTopicLookup(adminKey, submitKey, topicStore);
     }
 
     private static TransactionBody newDeleteTxn() {
         final var txnId = TransactionID.newBuilder().setAccountID(ACCOUNT_ID_4).build();
         final var deleteTopicBuilder =
-                ConsensusDeleteTopicTransactionBody.newBuilder().setTopicID(TOPIC_ID_1357);
+                ConsensusDeleteTopicTransactionBody.newBuilder().setTopicID(EXISTING_TOPIC);
         return TransactionBody.newBuilder()
                 .setTransactionID(txnId)
                 .setConsensusDeleteTopic(deleteTopicBuilder.build())
