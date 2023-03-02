@@ -34,6 +34,7 @@ import static org.mockito.Mockito.mock;
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
+import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
@@ -42,6 +43,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -224,23 +226,51 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         assertInstanceOf(ConsensusSubmitMessageRecordBuilder.class, subject.newRecordBuilder());
     }
 
-    //    @Test
-    //    @DisplayName("Handle works as expected")
-    //    void handleWorksAsExpected() {
-    //        final var txn = newSubmitMessageTxn();
-    //        final var recordBuilder = subject.newRecordBuilder();
-    //        final var topicId = txn.getConsensusSubmitMessage().getTopicID();
-    //        final var config = new ConsensusServiceConfig(10L, 100);
-    //
-    //        writableTopicState = writableTopicStateWithOneKey();
-    //        given(readableStates.<EntityNum, MerkleTopic>get(TOPICS)).willReturn(readableTopicState);
-    //        given(writableStates.<EntityNum, MerkleTopic>get(TOPICS)).willReturn(writableTopicState);
-    //        readableStore = new ReadableTopicStore(readableStates);
-    //        writableStore = new WritableTopicStore(writableStates);
-    //
-    //        // when:
-    //        subject.handle(handleContext, txn, config, recordBuilder, writableStore);
-    //    }
+    @Test
+    @DisplayName("Handle works as expected")
+    void handleWorksAsExpected() {
+        givenValidTopic();
+        final var txn = newSubmitMessageTxn(topicEntityNum);
+
+        final var recordBuilder = subject.newRecordBuilder();
+        given(handleContext.consensusNow()).willReturn(consensusTimestamp);
+
+        writableTopicState = writableTopicStateWithOneKey();
+        given(readableStates.<EntityNum, Topic>get(TOPICS)).willReturn(readableTopicState);
+        given(writableStates.<EntityNum, Topic>get(TOPICS)).willReturn(writableTopicState);
+        readableStore = new ReadableTopicStore(readableStates);
+        writableStore = new WritableTopicStore(writableStates);
+
+        final var initialTopic = writableTopicState.get(topicEntityNum);
+        subject.handle(handleContext, txn, config, recordBuilder, writableStore);
+
+        final var expectedTopic = writableTopicState.get(topicEntityNum);
+        assertNotEquals(initialTopic, expectedTopic);
+        assertEquals(initialTopic.sequenceNumber() + 1, expectedTopic.sequenceNumber());
+        assertNotEquals(
+                initialTopic.runningHash().toString(),
+                expectedTopic.runningHash().toString());
+    }
+
+    @Test
+    @DisplayName("Handle fails if submit message is empty")
+    void failsIfMessageIsEmpty() {
+        givenValidTopic();
+        final var txn = newEmptyMessageSubmitMessageTxn(topicEntityNum);
+
+        final var recordBuilder = subject.newRecordBuilder();
+
+        writableTopicState = writableTopicStateWithOneKey();
+        given(readableStates.<EntityNum, Topic>get(TOPICS)).willReturn(readableTopicState);
+        given(writableStates.<EntityNum, Topic>get(TOPICS)).willReturn(writableTopicState);
+        readableStore = new ReadableTopicStore(readableStates);
+        writableStore = new WritableTopicStore(writableStates);
+
+        final var msg = assertThrows(
+                HandleStatusException.class,
+                () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
+        assertEquals(ResponseCodeEnum.INVALID_TOPIC_MESSAGE, msg.getStatus());
+    }
 
     private HederaKey mockPayerLookup() {
         return ConsensusTestUtils.mockPayerLookup(KeyUtils.A_COMPLEX_KEY, DEFAULT_PAYER, keyLookup);
@@ -262,6 +292,19 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
                         .build())
                 .setMessage(ByteString.copyFromUtf8("Message for test-" + Instant.now() + "."
                         + Instant.now().getNano()));
+        return TransactionBody.newBuilder()
+                .setTransactionID(txnId)
+                .setConsensusSubmitMessage(submitMessageBuilder.build())
+                .build();
+    }
+
+    private TransactionBody newEmptyMessageSubmitMessageTxn(final EntityNum topicEntityNum) {
+        final var txnId = TransactionID.newBuilder().setAccountID(ACCOUNT_ID_4).build();
+        final var submitMessageBuilder = ConsensusSubmitMessageTransactionBody.newBuilder()
+                .setTopicID(TopicID.newBuilder()
+                        .setTopicNum(topicEntityNum.longValue())
+                        .build())
+                .setMessage(ByteString.copyFromUtf8(""));
         return TransactionBody.newBuilder()
                 .setTransactionID(txnId)
                 .setConsensusSubmitMessage(submitMessageBuilder.build())

@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.consensus.impl.handlers;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
+import static com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils.unwrapPbj;
 import static com.hedera.node.app.service.mono.state.merkle.MerkleTopic.RUNNING_HASH_VERSION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID;
@@ -141,7 +142,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             throw new HandleStatusException(MESSAGE_SIZE_TOO_LARGE);
         }
 
-        if (topic == null) {
+        if (topic == null || topic.isEmpty()) {
             throw new HandleStatusException(INVALID_TOPIC_ID);
         }
         validateChunkInfo(txnId, payer, op);
@@ -185,7 +186,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         final var topicId = txn.getConsensusSubmitMessage().getTopicID();
         final var message = txn.getConsensusSubmitMessage().getMessage().toByteArray();
 
-//        final var topicBuilder = topic.copyBuilder();
+        //        final var topicBuilder = topic.copyBuilder();
         final var topicBuilder = new Topic.Builder()
                 .topicNumber(topic.topicNumber())
                 .adminKey(topic.adminKey())
@@ -205,7 +206,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
 
         final var boas = new ByteArrayOutputStream();
         try (final var out = new ObjectOutputStream(boas)) {
-            out.writeObject(runningHash);
+            out.writeObject(unwrapPbj(runningHash));
             out.writeLong(RUNNING_HASH_VERSION);
             out.writeLong(payer.getShardNum());
             out.writeLong(payer.getRealmNum());

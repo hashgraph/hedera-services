@@ -27,6 +27,7 @@ import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hashgraph.pbj.runtime.io.Bytes;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
+import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
@@ -39,6 +40,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TopicID;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -63,6 +65,9 @@ public class ConsensusHandlerTestBase {
     protected final long expirationTime = 1_234_567L;
     protected final long sequenceNumber = 1L;
     protected final long autoRenewSecs = 100L;
+    protected final Instant consensusTimestamp = Instant.ofEpochSecond(1_234_567L);
+
+    protected final ConsensusServiceConfig config = new ConsensusServiceConfig(10L, 100);
 
     protected Topic topic;
 
