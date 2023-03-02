@@ -198,7 +198,8 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         final var topicId = txn.getConsensusSubmitMessage().getTopicID();
         final var message = txn.getConsensusSubmitMessage().getMessage().toByteArray();
 
-        //        final var topicBuilder = topic.copyBuilder();
+        // This line will be uncommented once there is PBJ fix to make copyBuilder() public
+        // final var topicBuilder = topic.copyBuilder();
         final var topicBuilder = new Topic.Builder()
                 .topicNumber(topic.topicNumber())
                 .adminKey(topic.adminKey())
