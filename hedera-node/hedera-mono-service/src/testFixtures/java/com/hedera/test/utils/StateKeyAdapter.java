@@ -45,7 +45,6 @@ public class StateKeyAdapter<K1 extends Comparable<K1>, K2 extends Comparable<? 
     }
 
     /** {@inheritDoc} */
-    @NonNull
     @Override
     public long size() {
         return delegate.size();
