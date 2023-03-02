@@ -26,6 +26,10 @@ import static org.mockito.Mockito.verify;
 import com.hedera.node.app.spi.state.Serdes;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -69,11 +73,25 @@ class SerdesFactoryTest {
     }
 
     @Test
+    void failsOnWrongDataOutput() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> subject.write("B", new DataOutputStream(new ByteArrayOutputStream())));
+    }
+
+    @Test
     void delegatesParse() throws IOException {
         given(parser.parse(any())).willReturn("C");
 
         final var value = subject.parse(input);
 
         assertEquals("C", value);
+    }
+
+    @Test
+    void failsOnWrongDataInput() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> subject.parse(new DataInputStream(new ByteArrayInputStream(new byte[0]))));
     }
 }

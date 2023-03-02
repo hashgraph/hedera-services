@@ -40,6 +40,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.OptionalLong;
 import org.assertj.core.api.Assertions;
 
 public final class ConsensusTestUtils {
@@ -102,7 +103,7 @@ public final class ConsensusTestUtils {
                 Optional.ofNullable(admin),
                 Optional.ofNullable(submit),
                 -1L,
-                Optional.of(1234567L),
+                OptionalLong.of(1234567L),
                 null,
                 -1,
                 null,

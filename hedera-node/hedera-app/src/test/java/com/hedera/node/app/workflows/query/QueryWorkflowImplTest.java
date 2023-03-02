@@ -378,6 +378,29 @@ class QueryWorkflowImplTest {
     }
 
     @Test
+    void testSuccessIfAnswerOnlyCostRequired() throws InvalidProtocolBufferException, PreCheckException {
+        given(feeAccumulator.computePayment(any(), any(), any(), any())).willReturn(new FeeObject(100L, 0L, 100L));
+        given(handler.needsAnswerOnlyCost(any())).willReturn(true);
+        given(dispatcher.validate(any(), any())).willReturn(OK);
+        given(dispatcher.getResponse(any(), any(), any(), any()))
+                .willReturn(Response.newBuilder().build());
+        // given
+        final var responseBuffer = ByteBuffer.allocate(BUFFER_SIZE);
+        // when
+        workflow.handleQuery(ctx, requestBuffer, responseBuffer);
+
+        // then
+        final var response = parseResponse(responseBuffer);
+        assertThat(response.getFileGetInfo()).isNotNull();
+        final var header = response.getFileGetInfo().getHeader();
+        assertThat(header.getNodeTransactionPrecheckCode()).isEqualTo(OK);
+        assertThat(header.getResponseType()).isEqualTo(ANSWER_ONLY);
+        assertThat(header.getCost()).isEqualTo(200);
+        verify(opCounters).countReceived(FileGetInfo);
+        verify(opCounters).countAnswered(FileGetInfo);
+    }
+
+    @Test
     void testParsingFails(@Mock Parser<Query> localQueryParser) throws InvalidProtocolBufferException {
         // given
         when(localQueryParser.parseFrom(requestBuffer))

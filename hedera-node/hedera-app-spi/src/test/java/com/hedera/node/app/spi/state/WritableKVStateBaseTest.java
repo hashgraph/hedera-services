@@ -283,7 +283,7 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
             assertThat(state.readKeys()).isEmpty();
             assertThat(state.modifiedKeys()).isEmpty();
 
-            // Before doing put, the size should be 2
+            // Before doing put, the size should be 2 (setup of the test adds 2 keys)
             assertEquals(2, state.size());
             state.put(C_KEY, CHERRY);
 
@@ -304,7 +304,7 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
             assertThat(state.readKeys()).isEmpty();
             assertThat(state.modifiedKeys()).isEmpty();
 
-            // Before remove, the size should be 2
+            // Before remove, the size should be 2 (setup of the test adds 2 keys)
             assertEquals(2, state.size());
 
             state.remove(A_KEY);
@@ -325,7 +325,7 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
             assertThat(state.modifiedKeys()).isEmpty();
 
             state.get(A_KEY);
-            // Before commit, the size should be 2
+            // Before commit, the size should be 2 (setup of the test adds 2 keys)
             assertEquals(2, state.size());
 
             // Commit should not have any effect on size
@@ -342,7 +342,7 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
             assertThat(state.modifiedKeys()).isEmpty();
 
             state.getForModify(A_KEY);
-            // Before commit, the size should be 2
+            // Before commit, the size should be 2 (setup of the test adds 2 keys)
             assertEquals(2, state.size());
 
             // Commit should not have any effect on size
