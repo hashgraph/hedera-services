@@ -85,14 +85,10 @@ public class WritableTopicStore extends TopicStore {
      * @param topicNum - the number of the topic to be retrieved.
      */
     public Optional<Topic> getForModify(@NonNull final long topicNum) {
-        requireNonNull(topicState);
         requireNonNull(topicNum);
-        final var topic = topicState.getForModify(EntityNum.fromLong(topicNum));
-
-        if (topic == null) {
-            return Optional.empty();
-        }
-        return Optional.of(topicFrom(topic));
+        final var topic = Objects.requireNonNull(topicState)
+                .getForModify(EntityNum.fromLong(topicNum));
+        return Optional.ofNullable(topic);
     }
 
     /**

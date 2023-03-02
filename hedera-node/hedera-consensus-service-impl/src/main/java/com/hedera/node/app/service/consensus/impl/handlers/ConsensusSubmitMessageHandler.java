@@ -26,7 +26,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.service.consensus.entity.Topic;
+import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.hashgraph.pbj.runtime.io.Bytes;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
@@ -124,7 +125,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
      * Validates te transaction body. Throws {@link HandleStatusException} if any of the validations fail.
      * @param txn the {@link TransactionBody} of the active transaction
      * @param config the {@link ConsensusServiceConfig}
-     * @param topic the {@link Topic} to which the message is being submitted
+     * @param topic the topic to which the message is being submitted
      */
     private void validateTransaction(
             final TransactionBody txn, final ConsensusServiceConfig config, final Optional<Topic> topic) {
@@ -173,9 +174,9 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
     /**
      * Updates the running hash and sequence number of the topic.
      * @param txn the {@link TransactionBody} of the active transaction
-     * @param topic the {@link Topic} to which the message is being submitted
+     * @param topic the topic to which the message is being submitted
      * @param consensusNow the consensus time of the active transaction
-     * @return the updated {@link Topic}
+     * @return the updated topic
      * @throws IOException if there is an error while updating the running hash
      */
     public Topic updateRunningHashAndSequenceNumber(final TransactionBody txn, final Topic topic, Instant consensusNow)
@@ -184,7 +185,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         final var topicId = txn.getConsensusSubmitMessage().getTopicID();
         final var message = txn.getConsensusSubmitMessage().getMessage().toByteArray();
 
-        final var topicBuilder = topic.copy();
+        final var topicBuilder = topic.copyBuilder();
 
         if (null == consensusNow) {
             consensusNow = Instant.ofEpochSecond(0);
@@ -211,7 +212,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             out.writeLong(sequenceNumber);
             out.writeObject(noThrowSha384HashOf(message));
             out.flush();
-            runningHash = noThrowSha384HashOf(boas.toByteArray());
+            runningHash = Bytes.wrap(noThrowSha384HashOf(boas.toByteArray()));
 
             topicBuilder.runningHash(runningHash);
         }

@@ -32,6 +32,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.google.protobuf.ByteString;
+import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
@@ -111,7 +112,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
     void topicIdNotFound() {
         mockPayerLookup();
         readableTopicState = emptyReadableTopicState();
-        given(readableStates.<EntityNum, MerkleTopic>get(TOPICS)).willReturn(readableTopicState);
+        given(readableStates.<EntityNum, Topic>get(TOPICS)).willReturn(readableTopicState);
         readableStore = new ReadableTopicStore(readableStates);
         final var context = new PreHandleContext(keyLookup, newSubmitMessageTxn(topicEntityNum), DEFAULT_PAYER);
 

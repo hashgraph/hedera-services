@@ -112,8 +112,8 @@ public class ConsensusHandlerTestBase {
     }
 
     @NonNull
-    protected MapReadableKVState<EntityNum, MerkleTopic> emptyReadableTopicState() {
-        return MapReadableKVState.<EntityNum, MerkleTopic>builder("TOPICS").build();
+    protected MapReadableKVState<EntityNum, Topic> emptyReadableTopicState() {
+        return MapReadableKVState.<EntityNum, Topic>builder("TOPICS").build();
     }
 
     protected void givenValidTopic() {
