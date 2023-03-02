@@ -26,6 +26,7 @@ import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JWildcardECDSAKey;
+import com.hedera.node.app.service.mono.sigs.HollowScreening.HollowScreenResult;
 import com.hedera.node.app.service.mono.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
 import com.hedera.node.app.service.mono.sigs.order.SigRequirements;
@@ -101,35 +102,28 @@ class Expansion {
     }
 
     /**
-     * Hollow accounts may be finalized by *any* signature in the sig map, so
-     * if any ECDSA sigs are present in {@link Expansion#expandedSigs}, execute a {@link HollowScreening}, scoped
-     * to those {@link Expansion#expandedSigs}.
+     * If there are any {@link JWildcardECDSAKey}s
+     * in the req keys and if any ECDSA sigs are present in {@link Expansion#expandedSigs}, we need to replace those
+     * {@link JWildcardECDSAKey}s with their corresponding {@link JECDSASecp256k1Key}s for further key activation checks,
+     * and add all {@link PendingCompletion}s to the txn accessor, if such are present.
      *
-     * <p> If {@link HollowScreening#pendingCompletionsFrom} returns a non-empty list of {@link PendingCompletion}s,
-     * cache the completions in the txn accessor via {@link SwirldsTxnAccessor#setPendingCompletions}.
-     *
-     * <p> Also try to replace any {@link JWildcardECDSAKey}s present in the
-     *      {@link Expansion#payerKey} and {@link Expansion#otherPartyKeys} with its corresponding
-     *      {@link JECDSASecp256k1Key} using the {@link HollowScreening} instance, if such replacement is possible.
-     *
-     * <p>Note that this method tries to replace {@link JWildcardECDSAKey}s present in the {@link Expansion#otherPartyKeys}
-     * even if no pending completions are present. That's because a CryptoCreate with an evm address alias, derived from
-     * a key, different than the key being set for the account, also adds a {@link JWildcardECDSAKey} to the {@link Expansion#otherPartyKeys},
-     * <strong>but that {@link JWildcardECDSAKey} may not be connected to a finalization.</strong>
+     * <p>Execute a {@link HollowScreening}, scoped
+     * to those {@link Expansion#expandedSigs}, and apply all needed changes according to the returnes {@link HollowScreenResult}.
      *
      */
     private void maybePerformHollowScreening() {
-        if (HollowScreening.atLeastOneWildcardKeyIn(payerKey, otherPartyKeys) && pkToSigFn.hasAtLeastOneEcdsaSig()) {
+        if (HollowScreening.atLeastOneWildcardECDSAKeyIn(payerKey, otherPartyKeys)
+                && pkToSigFn.hasAtLeastOneEcdsaSig()) {
             final var hollowScreenResult =
                     HollowScreening.performFor(expandedSigs, payerKey, otherPartyKeys, aliasManager);
             if (hollowScreenResult.pendingCompletions() != null) {
                 txnAccessor.setPendingCompletions(hollowScreenResult.pendingCompletions());
             }
-            if (hollowScreenResult.deHollowedPayerKey() != null) {
-                payerKey = hollowScreenResult.deHollowedPayerKey();
+            if (hollowScreenResult.replacedPayerKey() != null) {
+                payerKey = hollowScreenResult.replacedPayerKey();
             }
-            if (hollowScreenResult.deHollowedOtherKeys() != null) {
-                otherPartyKeys = hollowScreenResult.deHollowedOtherKeys();
+            if (hollowScreenResult.replacedOtherKeys() != null) {
+                otherPartyKeys = hollowScreenResult.replacedOtherKeys();
             }
         }
     }

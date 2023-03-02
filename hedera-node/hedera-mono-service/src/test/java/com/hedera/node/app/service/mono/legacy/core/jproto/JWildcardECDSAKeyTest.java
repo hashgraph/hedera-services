@@ -57,12 +57,12 @@ class JWildcardECDSAKeyTest {
         var subject = new JWildcardECDSAKey(bytes, true);
 
         assertTrue(subject.isValid());
-        assertTrue(subject.hasHollowKey());
-        assertEquals(bytes, subject.getHollowKey().getEvmAddress());
+        assertTrue(subject.hasWildcardECDSAKey());
+        assertEquals(bytes, subject.getWildcardECDSAKey().getEvmAddress());
     }
 
     @Test
     void getterWorks() {
-        assertEquals(bytes, subject.getHollowKey().getEvmAddress());
+        assertEquals(bytes, subject.getWildcardECDSAKey().getEvmAddress());
     }
 }

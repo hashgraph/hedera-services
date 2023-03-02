@@ -46,12 +46,12 @@ public class JWildcardECDSAKey extends JKey {
     }
 
     @Override
-    public boolean hasHollowKey() {
+    public boolean hasWildcardECDSAKey() {
         return true;
     }
 
     @Override
-    public JWildcardECDSAKey getHollowKey() {
+    public JWildcardECDSAKey getWildcardECDSAKey() {
         return this;
     }
 }

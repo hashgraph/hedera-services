@@ -202,35 +202,28 @@ public class Rationalization {
     }
 
     /**
-     * Hollow accounts may be finalized by *any* signature in the sig map, so
-     * if any ECDSA sigs are present in {@link Rationalization#txnSigs}, execute a {@link HollowScreening}, scoped
-     * to those {@link Rationalization#txnSigs}.
+     * If there are any {@link JWildcardECDSAKey}s
+     * in the req keys and if any ECDSA sigs are present in {@link Rationalization#txnSigs}, we need to replace those
+     * {@link JWildcardECDSAKey}s with their corresponding {@link JECDSASecp256k1Key}s for further key activation checks,
+     * and add all {@link PendingCompletion}s to the txn accessor, if such are present.
      *
-     * <p> If {@link HollowScreening#pendingCompletionsFrom} returns a non-empty list of {@link PendingCompletion}s,
-     * cache the completions in the txn accessor via {@link SwirldsTxnAccessor#setPendingCompletions}.
-     *
-     * <p> Also try to replace any {@link JWildcardECDSAKey}s present in the
-     *      {@link Rationalization#reqPayerSig} and {@link Rationalization#reqOthersSigs} with its corresponding
-     *      {@link JECDSASecp256k1Key} using the {@link HollowScreening} instance, if such replacement is possible.
-     *
-     * <p>Note that this method tries to replace {@link JWildcardECDSAKey}s present in the {@link Rationalization#reqOthersSigs}
-     * even if no pending completions are present. That's because a CryptoCreate with an evm address alias, derived from
-     * a key, different than the key being set for the account, also adds a {@link JWildcardECDSAKey} to the {@link Rationalization#reqOthersSigs},
-     * <strong>but that {@link JWildcardECDSAKey} may not be connected to a finalization.</strong>
+     * <p>Execute a {@link HollowScreening}, scoped
+     * to those {@link Rationalization#txnSigs}, and apply all needed changes according to the returnes {@link HollowScreening.HollowScreenResult}.
      *
      */
     private void maybePerformHollowScreening() {
-        if (HollowScreening.atLeastOneWildcardKeyIn(reqPayerSig, reqOthersSigs) && pkToSigFn.hasAtLeastOneEcdsaSig()) {
+        if (HollowScreening.atLeastOneWildcardECDSAKeyIn(reqPayerSig, reqOthersSigs)
+                && pkToSigFn.hasAtLeastOneEcdsaSig()) {
             final var hollowScreenResult =
                     HollowScreening.performFor(txnSigs, reqPayerSig, reqOthersSigs, aliasManager);
             if (hollowScreenResult.pendingCompletions() != null) {
                 txnAccessor.setPendingCompletions(hollowScreenResult.pendingCompletions());
             }
-            if (hollowScreenResult.deHollowedPayerKey() != null) {
-                reqPayerSig = hollowScreenResult.deHollowedPayerKey();
+            if (hollowScreenResult.replacedPayerKey() != null) {
+                reqPayerSig = hollowScreenResult.replacedPayerKey();
             }
-            if (hollowScreenResult.deHollowedOtherKeys() != null) {
-                reqOthersSigs = hollowScreenResult.deHollowedOtherKeys();
+            if (hollowScreenResult.replacedOtherKeys() != null) {
+                reqOthersSigs = hollowScreenResult.replacedOtherKeys();
             }
         }
     }

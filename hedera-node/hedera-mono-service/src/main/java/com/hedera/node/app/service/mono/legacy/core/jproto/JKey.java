@@ -264,7 +264,7 @@ public abstract class JKey implements HederaKey {
         return false;
     }
 
-    public boolean hasHollowKey() {
+    public boolean hasWildcardECDSAKey() {
         return false;
     }
 
@@ -308,7 +308,7 @@ public abstract class JKey implements HederaKey {
         return null;
     }
 
-    public JWildcardECDSAKey getHollowKey() {
+    public JWildcardECDSAKey getWildcardECDSAKey() {
         return null;
     }
 

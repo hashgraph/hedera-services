@@ -122,11 +122,10 @@ class ExpandHandleHollowScreeningTest {
         final var num = EntityNum.fromLong(666L);
         given(aliasManager.lookupIdBy(alias)).willReturn(num);
         final var key = mock(JKey.class);
-        given(key.hasHollowKey()).willReturn(true);
+        given(key.hasWildcardECDSAKey()).willReturn(true);
         final var jHollowKey = mock(JWildcardECDSAKey.class);
-        given(key.getHollowKey()).willReturn(jHollowKey);
+        given(key.getWildcardECDSAKey()).willReturn(jHollowKey);
         given(jHollowKey.getEvmAddress()).willReturn(evmAddressForKey1);
-        given(jHollowKey.isForHollowAccount()).willReturn(true);
         setupDegenerateMocks(new SigningOrderResult<>(List.of(key)), mockOtherPartiesResponse);
         willCallRealMethod().given(txnAccessor).setSigMeta(any(RationalizedSigMeta.class));
         willCallRealMethod().given(txnAccessor).getSigMeta();
@@ -147,43 +146,16 @@ class ExpandHandleHollowScreeningTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void preHandlePayerHollowKeyGetsReplacedButNotPutInPendingFinalizationWhenNotNeeded() {
-        setupHollowScreeningTest(false);
-        givenEcdsaSigs();
-        final var key = mock(JKey.class);
-        given(key.hasHollowKey()).willReturn(true);
-        final var jHollowKey = mock(JWildcardECDSAKey.class);
-        given(key.getHollowKey()).willReturn(jHollowKey);
-        given(jHollowKey.getEvmAddress()).willReturn(evmAddressForKey1);
-        given(jHollowKey.isForHollowAccount()).willReturn(false);
-        setupDegenerateMocks(new SigningOrderResult<>(List.of(key)), mockOtherPartiesResponse);
-        willCallRealMethod().given(txnAccessor).setSigMeta(any(RationalizedSigMeta.class));
-        willCallRealMethod().given(txnAccessor).getSigMeta();
-
-        final var subject =
-                new Expansion(txnAccessor, sigReqs, pkToSigFn, cryptoSigsCreation, sigFactory, aliasManager);
-        subject.execute();
-
-        final ArgumentCaptor<List<PendingCompletion>> pendingCompletionCaptor = forClass(List.class);
-        verify(txnAccessor, never()).setPendingCompletions(pendingCompletionCaptor.capture());
-        // verify payer key in meta has been replaced
-        final var expectedFinalKey = new JECDSASecp256k1Key(decompressedKeyBytes);
-        assertEquals(expectedFinalKey, txnAccessor.getSigMeta().payerKey());
-    }
-
-    @Test
-    @SuppressWarnings("unchecked")
     void handlePayerHollowKeyGetsReplacedAndPutInPendingFinalizationWhenECDSASigIsPresent() {
         setupHollowScreeningTest(true);
         givenEcdsaSigs();
         final var num = EntityNum.fromLong(666L);
         given(aliasManager.lookupIdBy(alias)).willReturn(num);
         final var key = mock(JKey.class);
-        given(key.hasHollowKey()).willReturn(true);
+        given(key.hasWildcardECDSAKey()).willReturn(true);
         final var jHollowKey = mock(JWildcardECDSAKey.class);
-        given(key.getHollowKey()).willReturn(jHollowKey);
+        given(key.getWildcardECDSAKey()).willReturn(jHollowKey);
         given(jHollowKey.getEvmAddress()).willReturn(evmAddressForKey1);
-        given(jHollowKey.isForHollowAccount()).willReturn(true);
         final var mockOtherKey = mock(JKey.class);
         setupDegenerateMocks(new SigningOrderResult<>(List.of(key)), new SigningOrderResult<>(List.of(mockOtherKey)));
         willCallRealMethod().given(txnAccessor).setSigMeta(any(RationalizedSigMeta.class));
@@ -202,46 +174,21 @@ class ExpandHandleHollowScreeningTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void handlePayerHollowKeyGetsReplacedButNotPutInPendingFinalizationWhenNotNeeded() {
-        setupHollowScreeningTest(true);
-        givenEcdsaSigs();
-        final var key = mock(JKey.class);
-        given(key.hasHollowKey()).willReturn(true);
-        final var jHollowKey = mock(JWildcardECDSAKey.class);
-        given(key.getHollowKey()).willReturn(jHollowKey);
-        given(jHollowKey.getEvmAddress()).willReturn(evmAddressForKey1);
-        given(jHollowKey.isForHollowAccount()).willReturn(false);
-        final var mockOtherKey = mock(JKey.class);
-        setupDegenerateMocks(new SigningOrderResult<>(List.of(key)), new SigningOrderResult<>(List.of(mockOtherKey)));
-        willCallRealMethod().given(txnAccessor).setSigMeta(any(RationalizedSigMeta.class));
-        willCallRealMethod().given(txnAccessor).getSigMeta();
-
-        final var subject =
-                new Rationalization(syncVerifier, sigImpactHistorian, sigReqs, handleSigFactory, aliasManager);
-        subject.performFor(txnAccessor);
-
-        final var finalKey = new JECDSASecp256k1Key(decompressedKeyBytes);
-        verify(txnAccessor, never()).setPendingCompletions(pendingCompletionCaptor.capture());
-        assertEquals(finalKey, txnAccessor.getSigMeta().payerKey());
-    }
-
-    @Test
-    @SuppressWarnings("unchecked")
     void handleOtherReqHollowKeyGetsReplacedAndPutInPendingFinalizationWhenECDSASigIsPresent() {
         setupHollowScreeningTest(true);
         givenEcdsaSigs();
         final var num = EntityNum.fromLong(666L);
         given(aliasManager.lookupIdBy(alias)).willReturn(num);
         final var key = mock(JKey.class);
-        given(key.hasHollowKey()).willReturn(true);
+        given(key.hasWildcardECDSAKey()).willReturn(true);
         final var jHollowKey = mock(JWildcardECDSAKey.class);
-        given(key.getHollowKey()).willReturn(jHollowKey);
+        given(key.getWildcardECDSAKey()).willReturn(jHollowKey);
         given(jHollowKey.getEvmAddress()).willReturn(evmAddressForKey1);
         given(jHollowKey.isForHollowAccount()).willReturn(true);
         final var payerKey = mock(JKey.class);
-        given(payerKey.hasHollowKey()).willReturn(true);
+        given(payerKey.hasWildcardECDSAKey()).willReturn(true);
         final var payerHollowKey = mock(JWildcardECDSAKey.class);
-        given(payerKey.getHollowKey()).willReturn(payerHollowKey);
+        given(payerKey.getWildcardECDSAKey()).willReturn(payerHollowKey);
         given(payerHollowKey.getEvmAddress()).willReturn("onodsnaod".getBytes());
         setupDegenerateMocks(new SigningOrderResult<>(List.of(payerKey)), new SigningOrderResult<>(List.of(key)));
         willCallRealMethod().given(txnAccessor).setSigMeta(any(RationalizedSigMeta.class));
@@ -264,11 +211,10 @@ class ExpandHandleHollowScreeningTest {
         setupHollowScreeningTest(true);
         givenEcdsaSigs();
         final var key = mock(JKey.class);
-        given(key.hasHollowKey()).willReturn(true);
+        given(key.hasWildcardECDSAKey()).willReturn(true);
         final var jHollowKey = mock(JWildcardECDSAKey.class);
-        given(key.getHollowKey()).willReturn(jHollowKey);
+        given(key.getWildcardECDSAKey()).willReturn(jHollowKey);
         given(jHollowKey.getEvmAddress()).willReturn(evmAddressForKey1);
-        given(jHollowKey.isForHollowAccount()).willReturn(true);
         given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
         setupDegenerateMocks(
                 new SigningOrderResult<>(List.of(key)), new SigningOrderResult<>(List.of(mock(JKey.class))));
@@ -291,9 +237,9 @@ class ExpandHandleHollowScreeningTest {
         given(aliasManager.lookupIdBy(alias)).willReturn(num);
         final var key = mock(JKey.class);
         setupDegenerateMocks(mockPayerResponse, new SigningOrderResult<>(List.of(key)));
-        given(key.hasHollowKey()).willReturn(true);
+        given(key.hasWildcardECDSAKey()).willReturn(true);
         final var jHollowKey = mock(JWildcardECDSAKey.class);
-        given(key.getHollowKey()).willReturn(jHollowKey);
+        given(key.getWildcardECDSAKey()).willReturn(jHollowKey);
         given(jHollowKey.isForHollowAccount()).willReturn(true);
         given(jHollowKey.getEvmAddress()).willReturn(evmAddressForKey1);
         willCallRealMethod().given(txnAccessor).setSigMeta(any(RationalizedSigMeta.class));
@@ -322,9 +268,9 @@ class ExpandHandleHollowScreeningTest {
         // mock account and returned key
         final var key = mock(JKey.class);
         setupDegenerateMocks(mockPayerResponse, new SigningOrderResult<>(List.of(key)));
-        given(key.hasHollowKey()).willReturn(true);
+        given(key.hasWildcardECDSAKey()).willReturn(true);
         final var jHollowKey = mock(JWildcardECDSAKey.class);
-        given(key.getHollowKey()).willReturn(jHollowKey);
+        given(key.getWildcardECDSAKey()).willReturn(jHollowKey);
         given(jHollowKey.isForHollowAccount()).willReturn(false);
         given(jHollowKey.getEvmAddress()).willReturn(evmAddressForKey1);
         willCallRealMethod().given(txnAccessor).setSigMeta(any(RationalizedSigMeta.class));
@@ -345,9 +291,9 @@ class ExpandHandleHollowScreeningTest {
     @SuppressWarnings("unchecked")
     void preHandlePayerHollowKeyDoesNotGetReplacedWhenNoMatchingECDSAKey() {
         final JKey payerKey = mock(JKey.class);
-        given(payerKey.hasHollowKey()).willReturn(true);
+        given(payerKey.hasWildcardECDSAKey()).willReturn(true);
         final JWildcardECDSAKey payerHollowKey = mock(JWildcardECDSAKey.class);
-        given(payerKey.getHollowKey()).willReturn(payerHollowKey);
+        given(payerKey.getWildcardECDSAKey()).willReturn(payerHollowKey);
         given(payerHollowKey.getEvmAddress()).willReturn("onodsnaod".getBytes());
         setupDegenerateMocks(new SigningOrderResult<>(List.of(payerKey)), mockOtherPartiesResponse);
         willCallRealMethod().given(txnAccessor).setSigMeta(any(RationalizedSigMeta.class));
@@ -372,20 +318,20 @@ class ExpandHandleHollowScreeningTest {
         final var num = EntityNum.fromLong(666L);
         given(aliasManager.lookupIdBy(alias)).willReturn(num);
         final var key = mock(JKey.class);
-        given(key.hasHollowKey()).willReturn(true);
+        given(key.hasWildcardECDSAKey()).willReturn(true);
         final var jHollowKey = mock(JWildcardECDSAKey.class);
-        given(key.getHollowKey()).willReturn(jHollowKey);
+        given(key.getWildcardECDSAKey()).willReturn(jHollowKey);
         given(jHollowKey.getEvmAddress()).willReturn(evmAddressForKey1);
         given(jHollowKey.isForHollowAccount()).willReturn(true);
         final var payerKey = mock(JKey.class);
-        given(payerKey.hasHollowKey()).willReturn(true);
+        given(payerKey.hasWildcardECDSAKey()).willReturn(true);
         final var payerHollowKey = mock(JWildcardECDSAKey.class);
-        given(payerKey.getHollowKey()).willReturn(payerHollowKey);
+        given(payerKey.getWildcardECDSAKey()).willReturn(payerHollowKey);
         given(payerHollowKey.getEvmAddress()).willReturn("onodsnaod".getBytes());
         final var lonelyKey = mock(JKey.class);
-        given(lonelyKey.hasHollowKey()).willReturn(true);
+        given(lonelyKey.hasWildcardECDSAKey()).willReturn(true);
         final var lonelyHollowKey = mock(JWildcardECDSAKey.class);
-        given(lonelyKey.getHollowKey()).willReturn(lonelyHollowKey);
+        given(lonelyKey.getWildcardECDSAKey()).willReturn(lonelyHollowKey);
         given(lonelyHollowKey.getEvmAddress()).willReturn("onodsnaod".getBytes());
         setupDegenerateMocks(
                 new SigningOrderResult<>(List.of(payerKey)), new SigningOrderResult<>(List.of(key, lonelyKey)));
@@ -412,11 +358,10 @@ class ExpandHandleHollowScreeningTest {
     void preHandleDoesNotAddPendingHollowCompletionIfAliasManagerShowsMissingEntity() {
         setupHollowScreeningTest(false);
         final var key = mock(JKey.class);
-        given(key.hasHollowKey()).willReturn(true);
+        given(key.hasWildcardECDSAKey()).willReturn(true);
         final var jHollowKey = mock(JWildcardECDSAKey.class);
-        given(key.getHollowKey()).willReturn(jHollowKey);
+        given(key.getWildcardECDSAKey()).willReturn(jHollowKey);
         given(jHollowKey.getEvmAddress()).willReturn(evmAddressForKey1);
-        given(jHollowKey.isForHollowAccount()).willReturn(true);
         given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
         setupDegenerateMocks(new SigningOrderResult<>(List.of(key)), mockOtherPartiesResponse);
         givenEcdsaSigs();
@@ -435,7 +380,7 @@ class ExpandHandleHollowScreeningTest {
         setupDegenerateMocks(mockPayerResponse, mockOtherPartiesResponse);
         final var screeningMockedStatic = mockStatic(HollowScreening.class);
         screeningMockedStatic
-                .when(() -> HollowScreening.atLeastOneWildcardKeyIn(
+                .when(() -> HollowScreening.atLeastOneWildcardECDSAKeyIn(
                         mockEd25519FullKey, List.of(mockEd25519FullKey, mockEd25519FullKey)))
                 .thenReturn(false);
 
@@ -456,7 +401,7 @@ class ExpandHandleHollowScreeningTest {
         setupDegenerateMocks(result, result);
         final var screeningMockedStatic = mockStatic(HollowScreening.class);
         screeningMockedStatic
-                .when(() -> HollowScreening.atLeastOneWildcardKeyIn(any(), any()))
+                .when(() -> HollowScreening.atLeastOneWildcardECDSAKeyIn(any(), any()))
                 .thenCallRealMethod();
 
         final var subject =

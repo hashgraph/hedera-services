@@ -49,23 +49,52 @@ import org.apache.tuweni.bytes.Bytes;
  */
 public class HollowScreening {
 
-    record HollowScreenResult(
-            @Nullable List<PendingCompletion> pendingCompletions,
-            @Nullable JKey deHollowedPayerKey,
-            @Nullable List<JKey> deHollowedOtherKeys) {}
-
-    static boolean atLeastOneWildcardKeyIn(@NonNull final JKey payerKey, @NonNull List<JKey> otherPartyKeys) {
-        if (payerKey.hasHollowKey()) {
+    static boolean atLeastOneWildcardECDSAKeyIn(@NonNull final JKey payerKey, @NonNull List<JKey> otherPartyKeys) {
+        if (payerKey.hasWildcardECDSAKey()) {
             return true;
         }
         for (final var otherReqKey : otherPartyKeys) {
-            if (otherReqKey.hasHollowKey()) {
+            if (otherReqKey.hasWildcardECDSAKey()) {
                 return true;
             }
         }
         return false;
     }
 
+    /**
+     * Encapsulates the result of a hollow screening.
+     *
+     * @param pendingCompletions a list of {@link PendingCompletion} if there the hollow screening found possible
+     *                           hollow account completions. {@code null} otherwise
+     * @param replacedPayerKey a {@link JECDSASecp256k1Key} if payer key was {@link JWildcardECDSAKey} and a corresponding
+     * {@link JECDSASecp256k1Key} was found in the txn sigs. {@code null} otherwise
+     * @param replacedOtherKeys a list of all other req keys, where possible {@link JWildcardECDSAKey} -> {@link JECDSASecp256k1Key}
+     *                          conversions were made; {@code null} if no conversions were made
+     */
+    record HollowScreenResult(
+            @Nullable List<PendingCompletion> pendingCompletions,
+            @Nullable JKey replacedPayerKey,
+            @Nullable List<JKey> replacedOtherKeys) {}
+
+    /**
+     * <strong>NOTE</strong>- should be called only if {@link HollowScreening#atLeastOneWildcardECDSAKeyIn} for the same
+     * {@code payerKey} and {@code otherKeys} returned true
+     *
+     * For each {@link JWildcardECDSAKey} in {@code payerKey} and {@code otherKeys}, tries to find its corresponding
+     * {@link JECDSASecp256k1Key} from the {@code txnSigs}, and also construct a {@link PendingCompletion} if a hollow
+     * account is linked to the evm address from the {@link JWildcardECDSAKey};
+     *
+     * <p>Note that this method tries to replace {@link JWildcardECDSAKey}s present in {@code otherKeys}
+     * even if no pending completions are present. That's because a CryptoCreate with an evm address alias, derived from
+     * a key, different than the key being set for the account, also adds a {@link JWildcardECDSAKey} to the {@code otherKeys},
+     *  <strong>but that {@link JWildcardECDSAKey} may not be connected to a finalization.</strong>
+     *
+     * @param txnSigs the list of transaction signatures
+     * @param payerKey the payer key of the current txn
+     * @param otherKeys the other req keys for the current txn
+     * @param aliasManager an alias resolver
+     * @return an instance of {@link HollowScreenResult}
+     */
     static HollowScreenResult performFor(
             @NonNull final List<TransactionSignature> txnSigs,
             @NonNull final JKey payerKey,
@@ -74,33 +103,30 @@ public class HollowScreening {
         final var evmAddressToEcdsaKeyIndex = createEvmAddressToEcdsaKeyIndexFrom(txnSigs);
 
         List<PendingCompletion> pendingCompletions = null;
-        JKey deHollowedPayerKey = null;
-        if (payerKey.hasHollowKey()) {
-            final var hollowKey = payerKey.getHollowKey();
+        JKey replacedPayerKey = null;
+        if (payerKey.hasWildcardECDSAKey()) {
+            final var hollowKey = payerKey.getWildcardECDSAKey();
             final var payerEvmAddress = hollowKey.getEvmAddress();
             final var correspondingKey = evmAddressToEcdsaKeyIndex.get(Bytes.of(payerEvmAddress));
             if (correspondingKey != null) {
-                deHollowedPayerKey = correspondingKey;
-                if (hollowKey.isForHollowAccount()) {
-                    pendingCompletions =
-                            maybeAddToCompletions(payerEvmAddress, correspondingKey, pendingCompletions, aliasManager);
-                }
+                replacedPayerKey = correspondingKey;
+                pendingCompletions =
+                        maybeAddToCompletions(payerEvmAddress, correspondingKey, pendingCompletions, aliasManager);
             }
         }
 
-        List<JKey> deHollowedOtherKeys = null;
+        List<JKey> replacedOtherKeys = null;
         for (int i = 0; i < otherKeys.size(); i++) {
             final var otherKey = otherKeys.get(i);
-            if (otherKey.hasHollowKey()) {
-                final var hollowKey = otherKey.getHollowKey();
+            if (otherKey.hasWildcardECDSAKey()) {
+                final var hollowKey = otherKey.getWildcardECDSAKey();
                 final var evmAddress = hollowKey.getEvmAddress();
                 final var correspondingKey = evmAddressToEcdsaKeyIndex.get(Bytes.of(evmAddress));
                 if (correspondingKey != null) {
-                    if (deHollowedOtherKeys == null) {
-                        deHollowedOtherKeys = new ArrayList<>(otherKeys);
+                    if (replacedOtherKeys == null) {
+                        replacedOtherKeys = new ArrayList<>(otherKeys);
                     }
-                    deHollowedOtherKeys.set(i, correspondingKey);
-
+                    replacedOtherKeys.set(i, correspondingKey);
                     if (hollowKey.isForHollowAccount()) {
                         pendingCompletions =
                                 maybeAddToCompletions(evmAddress, correspondingKey, pendingCompletions, aliasManager);
@@ -108,9 +134,19 @@ public class HollowScreening {
                 }
             }
         }
-        return new HollowScreenResult(pendingCompletions, deHollowedPayerKey, deHollowedOtherKeys);
+        return new HollowScreenResult(pendingCompletions, replacedPayerKey, replacedOtherKeys);
     }
 
+    /**
+     * Given a list of {@link TransactionSignature}, go through the signatures, and construct a
+     * look-up table for all present evm address <-> ECDSA key pairs in the sigs.
+     *
+     * <p>Serves as an efficient way of obtaining a {@link JECDSASecp256k1Key} corresponding to {@link JWildcardECDSAKey}
+     * in subsequent logic.
+     *
+     * @param txnSigs a list of {@link TransactionSignature}
+     * @return a {@code Map} of all present evm addresses <-> {@link JECDSASecp256k1Key} pairs in the {@code txnSigs}
+     */
     private static Map<Bytes, JECDSASecp256k1Key> createEvmAddressToEcdsaKeyIndexFrom(
             final List<TransactionSignature> txnSigs) {
         final Map<Bytes, JECDSASecp256k1Key> evmAddressToEcdsaKeyIndex = new HashMap<>();
