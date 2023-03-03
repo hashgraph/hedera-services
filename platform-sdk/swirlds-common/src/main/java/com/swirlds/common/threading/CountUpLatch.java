@@ -7,6 +7,8 @@ import com.swirlds.common.time.Time;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.Phaser;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -17,7 +19,6 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class CountUpLatch {
 
-    private final Time time;
     private final AtomicLong currentCount;
     private final Phaser phaser;
 
@@ -25,7 +26,7 @@ public class CountUpLatch {
      * Create a new CountUpLatch with an initial count of 0.
      */
     public CountUpLatch() {
-        this(0, OSTime.getInstance());
+        this(0);
     }
 
     /**
@@ -34,17 +35,6 @@ public class CountUpLatch {
      * @param initialCount the initial count
      */
     public CountUpLatch(final long initialCount) {
-        this(initialCount, OSTime.getInstance());
-    }
-
-    /**
-     * Create a new CountUpLatch with the given initial count.
-     *
-     * @param initialCount the initial count
-     * @param time         provides wall clock time
-     */
-    public CountUpLatch(final long initialCount, final Time time) {
-        this.time = time;
         this.currentCount = new AtomicLong(initialCount);
         this.phaser = new Phaser(1);
     }
@@ -126,12 +116,24 @@ public class CountUpLatch {
             return true;
         }
 
-        final Instant start = time.now();
+        final Instant start = Instant.now();
         phaser.register();
         try {
-            while (currentCount.get() < count && isLessThan(Duration.between(start, time.now()), timeToWait)) {
-                phaser.arriveAndAwaitAdvance();
+            while (currentCount.get() < count) {
+
+                final Instant now = Instant.now();
+                final Duration elapsed = Duration.between(start, now);
+                if (isLessThan(timeToWait, elapsed)) {
+                    break;
+                }
+
+                final long remainingMillis = timeToWait.minus(elapsed).toMillis();
+                final int phase = phaser.arrive();
+
+                phaser.awaitAdvanceInterruptibly(phase, remainingMillis, TimeUnit.MILLISECONDS);
             }
+        } catch (final TimeoutException e) {
+            // ignore
         } finally {
             phaser.arriveAndDeregister();
         }

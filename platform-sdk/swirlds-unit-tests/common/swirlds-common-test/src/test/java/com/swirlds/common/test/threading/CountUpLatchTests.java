@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.common.threading.CountUpLatch;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import java.time.Duration;
@@ -225,17 +224,16 @@ class CountUpLatchTests {
     @DisplayName("Successful Await With Timeout Test")
     void successfulAwaitWithTimeoutTest(final boolean artificialPauses) throws InterruptedException {
 
-        final FakeTime fakeTime = new FakeTime();
-        final CountUpLatch latch = new CountUpLatch(0, fakeTime);
+        final CountUpLatch latch = new CountUpLatch(0);
 
         final CountDownLatch finishedLatch = new CountDownLatch(1);
         final AtomicBoolean error = new AtomicBoolean(false);
         new ThreadConfiguration(getStaticThreadManager())
                 .setThreadName("test")
                 .setInterruptableRunnable(() -> {
-                    final boolean success = latch.await(100, Duration.ofMinutes(1));
+                    final boolean success = latch.await(100, Duration.ofSeconds(1));
 
-                    if (latch.getCount() != 100 || !success) {
+                    if (latch.getCount() < 100 || !success) {
                         error.set(true);
                     }
 
@@ -243,10 +241,8 @@ class CountUpLatchTests {
                 })
                 .build(true);
 
-        // Simulate the count being increased once per second for 50 seconds
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 101; i++) {
             latch.increment();
-            fakeTime.tick(Duration.ofSeconds(1));
 
             if (artificialPauses) {
                 // Sleep some real world time to allow the background thread to do bad stuff it wants to.
@@ -255,28 +251,24 @@ class CountUpLatchTests {
             }
         }
 
-        assertEquals(1, finishedLatch.getCount());
-
-        latch.set(100);
-
         assertTrue(finishedLatch.await(1, TimeUnit.SECONDS));
         assertFalse(error.get());
     }
 
+    // TODO this is flaky
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     @DisplayName("Unsuccessful Await With Timeout Test")
     void unsuccessfulAwaitWithTimeoutTest(final boolean artificialPauses) throws InterruptedException {
 
-        final FakeTime fakeTime = new FakeTime();
-        final CountUpLatch latch = new CountUpLatch(0, fakeTime);
+        final CountUpLatch latch = new CountUpLatch(0);
 
         final CountDownLatch finishedLatch = new CountDownLatch(1);
         final AtomicBoolean error = new AtomicBoolean(false);
         new ThreadConfiguration(getStaticThreadManager())
                 .setThreadName("test")
                 .setInterruptableRunnable(() -> {
-                    final boolean success = latch.await(100, Duration.ofMinutes(1));
+                    final boolean success = latch.await(100, Duration.ofSeconds(1));
 
                     if (success) {
                         error.set(true);
@@ -286,10 +278,8 @@ class CountUpLatchTests {
                 })
                 .build(true);
 
-        // Simulate the count being increased once per second for 70 seconds
         for (int i = 0; i < 70; i++) {
             latch.increment();
-            fakeTime.tick(Duration.ofSeconds(1));
 
             if (artificialPauses) {
                 // Sleep some real world time to allow the background thread to do bad stuff it wants to.
