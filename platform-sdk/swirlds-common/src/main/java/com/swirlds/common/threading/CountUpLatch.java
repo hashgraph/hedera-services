@@ -89,6 +89,7 @@ public class CountUpLatch {
      */
     public void add(final long delta) {
         currentCount.addAndGet(delta);
+        phaser.arriveAndAwaitAdvance();
     }
 
     /**
