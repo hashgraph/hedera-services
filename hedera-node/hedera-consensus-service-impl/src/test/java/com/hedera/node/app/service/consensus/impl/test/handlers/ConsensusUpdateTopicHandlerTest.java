@@ -35,7 +35,7 @@ import static org.mockito.BDDMockito.willThrow;
 
 import com.google.protobuf.StringValue;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusUpdateTopicHandler;
-import com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils;
+import com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusUpdateTopicRecordBuilder;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.exceptions.HandleStatusException;
@@ -145,7 +145,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         subject.handle(handleContext, op, writableStore);
 
         final var newTopic = writableTopicState.get(topicEntityNum);
-        final var expectedKey = TemporaryUtils.fromGrpcKey(anotherKey);
+        final var expectedKey = PbjKeyConverter.fromGrpcKey(anotherKey);
         assertEquals(expectedKey, newTopic.adminKey());
     }
 
@@ -176,7 +176,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         subject.handle(handleContext, op, writableStore);
 
         final var newTopic = writableTopicState.get(topicEntityNum);
-        final var expectedKey = TemporaryUtils.fromGrpcKey(anotherKey);
+        final var expectedKey = PbjKeyConverter.fromGrpcKey(anotherKey);
         assertEquals(expectedKey, newTopic.submitKey());
     }
 

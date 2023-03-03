@@ -37,8 +37,8 @@ import java.util.Optional;
  * Some temporary utilities to help with the transition from gRPC-generated to
  * PBJ-generated objects.
  */
-public final class TemporaryUtils {
-    private TemporaryUtils() {
+public final class PbjKeyConverter {
+    private PbjKeyConverter() {
         throw new UnsupportedOperationException("Utility class");
     }
 

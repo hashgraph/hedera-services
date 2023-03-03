@@ -25,7 +25,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hashgraph.pbj.runtime.io.Bytes;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
-import com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils;
+import com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter;
 import com.hedera.node.app.service.mono.fees.calculation.consensus.queries.GetTopicInfoResourceUsage;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
@@ -78,8 +78,8 @@ class MonoGetTopicInfoUsageTest {
             deleted,
             Bytes.wrap(runningHash),
             memo,
-            TemporaryUtils.fromGrpcKey(key),
-            TemporaryUtils.fromGrpcKey(key));
+            PbjKeyConverter.fromGrpcKey(key),
+            PbjKeyConverter.fromGrpcKey(key));
 
     private final MerkleTopic adapterTopic = new MerkleTopic(
             memo,

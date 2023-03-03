@@ -23,7 +23,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 
 import com.hedera.hashgraph.pbj.runtime.io.Bytes;
-import com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils;
+import com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter;
 import java.io.IOException;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -32,7 +32,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class TemporaryUtilsTest {
+class PbjKeyConverterTest {
     @Mock
     private Bytes bytes;
 
@@ -45,18 +45,18 @@ class TemporaryUtilsTest {
         given(bytes.getLength()).willReturn(7);
         willThrow(expected).given(bytes).getBytes(eq(0), any(byte[].class));
 
-        assertThrows(IllegalStateException.class, () -> TemporaryUtils.unwrapPbj(bytes));
+        assertThrows(IllegalStateException.class, () -> PbjKeyConverter.unwrapPbj(bytes));
     }
 
     @Test
     void nullPbjKeyReturnsEmptyOptional() {
-        assertEquals(Optional.empty(), TemporaryUtils.fromPbjKey(null));
+        assertEquals(Optional.empty(), PbjKeyConverter.fromPbjKey(null));
     }
 
     @Test
     void translatesExceptionFromProtoParser() {
         given(grpcKey.toByteArray()).willReturn("NONSENSE".getBytes());
 
-        assertThrows(IllegalStateException.class, () -> TemporaryUtils.fromGrpcKey(grpcKey));
+        assertThrows(IllegalStateException.class, () -> PbjKeyConverter.fromGrpcKey(grpcKey));
     }
 }

@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.fees;
 
-import static com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils.fromPbjKey;
-import static com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils.unwrapPbj;
+import static com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter.fromPbjKey;
+import static com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter.unwrapPbj;
 
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;

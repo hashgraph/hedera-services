@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.consensus.impl.handlers;
 
-import static com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils.fromGrpcKey;
+import static com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter.fromGrpcKey;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.spi.exceptions.HandleStatusException.validateFalse;
 import static com.hedera.node.app.spi.exceptions.HandleStatusException.validateTrue;

@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
-import static com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils.fromGrpcKey;
+import static com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter.fromGrpcKey;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
@@ -28,7 +28,7 @@ import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hashgraph.pbj.runtime.io.Bytes;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
-import com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils;
+import com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
@@ -160,8 +160,8 @@ public class ConsensusHandlerTestBase {
                 deleted,
                 Bytes.wrap(runningHash),
                 memo,
-                withAdminKey ? TemporaryUtils.fromGrpcKey(key) : null,
-                withSubmitKey ? TemporaryUtils.fromGrpcKey(key) : null);
+                withAdminKey ? PbjKeyConverter.fromGrpcKey(key) : null,
+                withSubmitKey ? PbjKeyConverter.fromGrpcKey(key) : null);
     }
 
     protected Topic createTopic() {

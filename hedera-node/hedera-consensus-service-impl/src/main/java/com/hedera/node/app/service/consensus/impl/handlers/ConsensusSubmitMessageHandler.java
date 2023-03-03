@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.consensus.impl.handlers;
 
-import static com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils.unwrapPbj;
+import static com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter.unwrapPbj;
 import static com.hedera.node.app.service.mono.state.merkle.MerkleTopic.RUNNING_HASH_VERSION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID;
