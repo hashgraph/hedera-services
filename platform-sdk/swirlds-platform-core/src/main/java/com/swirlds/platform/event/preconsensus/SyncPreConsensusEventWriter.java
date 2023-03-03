@@ -151,43 +151,58 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      */
     @Override
     public synchronized void writeEvent(final EventImpl event) {
+        validateSequenceNumber(event);
+        if (event.getGeneration() >= minimumGenerationNonAncient) {
+            writeEventToStream(event);
+            flushIfNeeded();
+        } else {
+            event.setStreamSequenceNumber(EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER);
+        }
+    }
+
+    /**
+     * Make sure that the event has a valid stream sequence number.
+     */
+    private static void validateSequenceNumber(final EventImpl event) {
         if (event.getStreamSequenceNumber() == EventImpl.NO_STREAM_SEQUENCE_NUMBER
                 || event.getStreamSequenceNumber() == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
             throw new IllegalStateException("Event must have a valid stream sequence number");
         }
+    }
 
-        if (event.getGeneration() >= minimumGenerationNonAncient) {
-
-            // TODO could we catch exceptions deeper?
-            try {
-                prepareOutputStream(event);
-                currentMutableFile.writeEvent(event);
-            } catch (final IOException e) {
-                throw new UncheckedIOException(e);
-            }
-
-            lastWrittenEvent = event.getStreamSequenceNumber();
-
-            // TODO extract this to a method
-            // Remove all events that have already been flushed. This may happen when a file is closed.
-            while (!flushableEvents.isEmpty() && flushableEvents.peek() < lastWrittenEvent) {
+    /**
+     * Flush the stream if needed. Should be called after each event is written.
+     */
+    private void flushIfNeeded() {
+        // Remove all events that have already been flushed. This scenario is relevant after a file is closed.
+        while (!flushableEvents.isEmpty() && flushableEvents.peek() < lastWrittenEvent) {
+            flushableEvents.remove();
+        }
+        if (!flushableEvents.isEmpty()) {
+            final long nextFlushableEvent = flushableEvents.peek();
+            if (nextFlushableEvent == lastWrittenEvent) {
+                try {
+                    currentMutableFile.flush();
+                } catch (final IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+                markEventsAsFlushed();
                 flushableEvents.remove();
             }
-            if (!flushableEvents.isEmpty()) {
-                final long nextFlushableEvent = flushableEvents.peek();
-                if (nextFlushableEvent == lastWrittenEvent) {
-                    try {
-                        currentMutableFile.flush();
-                    } catch (final IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
-                    markEventsAsFlushed();
-                    flushableEvents.remove();
-                }
-            }
+        }
+    }
 
-        } else {
-            event.setStreamSequenceNumber(EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER);
+    /**
+     * Write an event to the file stream.
+     * @param event the event to write
+     */
+    private void writeEventToStream(final EventImpl event) {
+        try {
+            prepareOutputStream(event);
+            currentMutableFile.writeEvent(event);
+            lastWrittenEvent = event.getStreamSequenceNumber();
+        } catch (final IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
