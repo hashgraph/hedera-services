@@ -317,9 +317,10 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         if (stateRoundIsTooOld(signedState)) {
             return; // do not process older states.
         }
+        signedStateHasher.hashState(signedState);
+
         newSignedStateBeingTracked(signedState, SourceOfSignedState.TRANSACTIONS);
 
-        signedStateHasher.hashState(signedState);
         final Signature signature = signer.sign(signedState.getState().getHash());
         signatureTransmitter.transmitSignature(
                 signedState.getRound(), signature, signedState.getState().getHash());

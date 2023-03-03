@@ -20,12 +20,10 @@ import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.SPECIAL_DELETE_
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.merkledb.ExampleLongKeyFixedSize;
 import com.swirlds.merkledb.ExampleLongKeyVariableSize;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.virtualmap.VirtualLongKey;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -218,12 +216,11 @@ class BucketTest {
         final byte[] goodBytes = new byte[size];
         System.arraycopy(bucket.getBucketBuffer().array(), 0, goodBytes, 0, size);
         final String goodBytesStr = Arrays.toString(goodBytes);
-        // now test write to stream
-        final ByteArrayOutputStream bOut = new ByteArrayOutputStream(size);
-        final SerializableDataOutputStream sOut = new SerializableDataOutputStream(bOut);
-        bucket.writeToOutputStream(sOut);
-        sOut.flush();
-        assertEquals(goodBytesStr, Arrays.toString(bOut.toByteArray()), "Expect bytes to match");
+        // now test write to buffer
+        final ByteBuffer bbuf = ByteBuffer.allocate(size);
+        bucket.writeToByteBuffer(bbuf);
+        bbuf.flip();
+        assertEquals(goodBytesStr, Arrays.toString(bbuf.array()), "Expect bytes to match");
 
         // create new bucket with good bytes and check it is the same
         final Bucket<VirtualLongKey> bucket2 = new Bucket<>(keyType.keySerializer);
@@ -252,11 +249,10 @@ class BucketTest {
         bucket.putValue(key.hashCode(), key, 5124);
         bucket.setBucketIndex(0);
         final String nonEmptyBucketRepr = "Bucket{bucketIndex=0, entryCount=1, size=32\n"
-                + "    ENTRY[0] value= 5124 keyHashCode=2056 keyVer=3054 key=LongVirtualKey{value=5124, hashCode=5124} "
-                + "keySize=8\n"
-                + "} RAW DATA = 00 00 00 00 00 00 00 20 00 00 00 01 00 00 08 08 00 00 00 00 00 00 14 04 00 00 00 00 00 "
-                + "00"
-                + " 08 08 ";
+                + "    ENTRY[0] value= 5124 keyHashCode=2056 keyVer=3054"
+                + " key=LongVirtualKey{value=5124, hashCode=5124} keySize=8\n"
+                + "} RAW DATA = 00 00 00 00 00 00 00 20 00 00 00 01 00 00 08 08 00 00 00 00 00"
+                + " 00 14 04 00 00 00 00 00 00 08 08 ";
         assertEquals(nonEmptyBucketRepr, bucket.toString(), "Non-empty bucket represent as expected");
     }
 

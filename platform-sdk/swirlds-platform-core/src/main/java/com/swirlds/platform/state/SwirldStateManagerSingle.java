@@ -25,9 +25,7 @@ import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.state.SwirldStateManagerUtils.fastCopy;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.SwirldState1;
@@ -54,7 +52,6 @@ import com.swirlds.platform.state.signed.SignedState;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
@@ -294,23 +291,6 @@ public class SwirldStateManagerSingle implements SwirldStateManager {
      */
     public SwirldStateSingleTransactionPool getTransactionPool() {
         return transactionPool;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void updatePlatformState(
-            final long round,
-            final long numEventsCons,
-            final Hash hashEventsCons,
-            final EventImpl[] events,
-            final Instant consensusTimestamp,
-            final List<MinGenInfo> minGenInfo,
-            final SoftwareVersion softwareVersion) {
-        // We are not currently supporting this class --
-        // if we ever start supporting it again we will need to implement this.
-        throw new UnsupportedOperationException("implement this when we decide to support this class again");
     }
 
     /**
