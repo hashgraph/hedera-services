@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.token.impl.entity;
 
-import com.hedera.node.app.service.token.entity.Account;
-import com.hedera.node.app.service.token.entity.AccountBuilder;
+import com.hedera.node.app.spi.accounts.Account;
+import com.hedera.node.app.spi.accounts.AccountBuilder;
 import com.hedera.node.app.spi.key.HederaKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

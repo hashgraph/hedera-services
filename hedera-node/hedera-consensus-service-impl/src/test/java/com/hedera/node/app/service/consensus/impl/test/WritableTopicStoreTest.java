@@ -24,7 +24,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.node.app.service.consensus.entity.Topic;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
+import com.hedera.node.app.service.consensus.impl.entity.TopicImpl;
 import com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusHandlerTestBase;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -48,12 +50,12 @@ class WritableTopicStoreTest extends ConsensusHandlerTestBase {
     @Test
     void commitsTopicChanges() {
         topic = createTopic();
-        assertFalse(writableTopicState.contains(topicNum));
+        assertFalse(writableTopicState.contains(topicEntityNum));
 
         writableStore.put(topic);
 
-        assertTrue(writableTopicState.contains(topicNum));
-        final var merkleTopic = writableTopicState.get(topicNum);
+        assertTrue(writableTopicState.contains(topicEntityNum));
+        final var merkleTopic = writableTopicState.get(topicEntityNum);
 
         assertEquals(topic.getAdminKey().get(), merkleTopic.getAdminKey());
         assertEquals(topic.getSubmitKey().get(), merkleTopic.getSubmitKey());
@@ -66,6 +68,36 @@ class WritableTopicStoreTest extends ConsensusHandlerTestBase {
         assertEquals(topic.memo(), merkleTopic.getMemo());
         assertEquals(topic.deleted(), merkleTopic.isDeleted());
 
-        assertTrue(writableTopicState.modifiedKeys().contains(topicNum));
+        assertTrue(writableTopicState.modifiedKeys().contains(topicEntityNum));
+
+        final var expectedTopic = new TopicImpl(
+                topicEntityNum.longValue(),
+                topic.getAdminKey().get(),
+                topic.getSubmitKey().get(),
+                topic.memo(),
+                topic.autoRenewAccountNumber(),
+                topic.autoRenewSecs(),
+                topic.expiry(),
+                topic.deleted(),
+                topic.sequenceNumber());
+
+        assertEquals(Optional.of(expectedTopic), writableStore.get(topicEntityNum.longValue()));
+    }
+
+    @Test
+    void getReturnsTopic() {
+        topic = createTopic();
+        writableStore.put(topic);
+
+        final var topicFromStore = writableStore.get(topicEntityNum.longValue());
+
+        assertTrue(topicFromStore.isPresent());
+        final var actualTopic = topicFromStore.get();
+        assertEquals(actualTopic.memo(), topic.memo());
+        assertEquals(actualTopic.autoRenewSecs(), topic.autoRenewSecs());
+        assertEquals(actualTopic.autoRenewAccountNumber(), topic.autoRenewAccountNumber());
+        assertEquals(actualTopic.getAdminKey().get(), topic.getAdminKey().get());
+        assertEquals(actualTopic.getSubmitKey().get(), topic.getSubmitKey().get());
+        assertEquals(actualTopic.sequenceNumber(), topic.sequenceNumber());
     }
 }

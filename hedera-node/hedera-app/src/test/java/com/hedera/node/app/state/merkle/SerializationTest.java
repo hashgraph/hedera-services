@@ -93,7 +93,7 @@ class SerializationTest extends MerkleTestBase {
         final var v1 = version(1, 0, 0);
         final var dir = TemporaryFileBuilder.buildTemporaryDirectory();
         final var originalTree =
-                new MerkleHederaState(tree -> {}, (evt, meta, provider) -> {}, (round, dual, metadata) -> {});
+                new MerkleHederaState(tree -> {}, (evt, meta, provider) -> {}, (round, state, dual, metadata) -> {});
         final var originalRegistry = new MerkleSchemaRegistry(registry, dir, FIRST_SERVICE);
         final var schemaV1 = createV1Schema();
         originalRegistry.register(schemaV1);
@@ -111,7 +111,7 @@ class SerializationTest extends MerkleTestBase {
         final Supplier<RuntimeConstructable> constructor = () -> new MerkleHederaState(
                 tree -> newRegistry.migrate(tree, v1, v1),
                 (event, meta, provider) -> {},
-                (round, dualState, metadata) -> {});
+                (round, state, dualState, metadata) -> {});
         final var pair = new ClassConstructorPair(MerkleHederaState.class, constructor);
         registry.registerConstructable(pair);
 
