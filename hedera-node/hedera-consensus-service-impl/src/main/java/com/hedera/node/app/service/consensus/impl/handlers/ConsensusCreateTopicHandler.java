@@ -79,11 +79,10 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
     /**
      * Given the appropriate context, creates a new topic.
      *
-     *
-     * @param handleContext          the {@link HandleContext} for the active transaction
-     * @param op                     the {@link ConsensusCreateTopicTransactionBody} of the active transaction
+     * @param handleContext the {@link HandleContext} for the active transaction
+     * @param op the {@link ConsensusCreateTopicTransactionBody} of the active transaction
      * @param consensusServiceConfig the {@link ConsensusServiceConfig} for the active transaction
-     * @param recordBuilder          the {@link ConsensusCreateTopicRecordBuilder} for the active transaction
+     * @param recordBuilder the {@link ConsensusCreateTopicRecordBuilder} for the active transaction
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void handle(
