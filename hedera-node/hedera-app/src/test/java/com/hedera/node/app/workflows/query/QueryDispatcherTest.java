@@ -49,7 +49,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenGetNftInfosHandler;
 import com.hedera.node.app.spi.meta.QueryContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryHandler;
-import com.hedera.node.app.workflows.dispatcher.StoreFactory;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoQuery;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractGetBytecodeQuery;
@@ -232,7 +232,7 @@ class QueryDispatcherTest {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    void testDispatchValidateWithIllegalParameters(@Mock final StoreFactory storeFactory) {
+    void testDispatchValidateWithIllegalParameters(@Mock final ReadableStoreFactory storeFactory) {
         // given
         final var query = Query.newBuilder().build();
 
@@ -242,7 +242,7 @@ class QueryDispatcherTest {
     }
 
     @Test
-    void testDispatchValidateWithNoQuerySet(@Mock final StoreFactory storeFactory) {
+    void testDispatchValidateWithNoQuerySet(@Mock final ReadableStoreFactory storeFactory) {
         // given
         final var query = Query.newBuilder().build();
 
@@ -257,7 +257,7 @@ class QueryDispatcherTest {
             final Query query, final Function<QueryHandlers, QueryHandler> ignore, final Verification verifyValidate)
             throws PreCheckException {
         // given
-        final var storeFactory = mock(StoreFactory.class);
+        final var storeFactory = mock(ReadableStoreFactory.class);
 
         // when
         dispatcher.validate(storeFactory, query);
@@ -268,7 +268,7 @@ class QueryDispatcherTest {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    void testDispatchFindResponseWithIllegalParameters(@Mock final StoreFactory storeFactory) {
+    void testDispatchFindResponseWithIllegalParameters(@Mock final ReadableStoreFactory storeFactory) {
         // given
         final var query = Query.newBuilder().build();
         final var header = ResponseHeader.newBuilder().build();
@@ -285,7 +285,7 @@ class QueryDispatcherTest {
     }
 
     @Test
-    void testDispatchFindResponseWithNoQuerySet(@Mock final StoreFactory storeFactory) {
+    void testDispatchFindResponseWithNoQuerySet(@Mock final ReadableStoreFactory storeFactory) {
         // given
         final var query = Query.newBuilder().build();
         final var header = ResponseHeader.newBuilder().build();
@@ -304,7 +304,7 @@ class QueryDispatcherTest {
             final Verification verifyFindResponse)
             throws PreCheckException {
         // given
-        final var storeFactory = mock(StoreFactory.class);
+        final var storeFactory = mock(ReadableStoreFactory.class);
         final var header = ResponseHeader.newBuilder().build();
 
         // when

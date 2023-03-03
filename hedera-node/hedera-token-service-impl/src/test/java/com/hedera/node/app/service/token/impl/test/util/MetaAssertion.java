@@ -18,7 +18,7 @@ package com.hedera.node.app.service.token.impl.test.util;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.node.app.spi.meta.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 public class MetaAssertion {

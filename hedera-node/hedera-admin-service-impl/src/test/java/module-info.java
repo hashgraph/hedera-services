@@ -8,6 +8,9 @@ module com.hedera.node.app.service.admin.impl.test {
     opens com.hedera.node.app.service.admin.impl.test to
             org.junit.platform.commons,
             org.mockito;
+    opens com.hedera.node.app.service.admin.impl.test.handlers to
+            org.junit.platform.commons,
+            org.mockito;
 
     exports com.hedera.node.app.service.admin.impl.test to
             org.mockito;

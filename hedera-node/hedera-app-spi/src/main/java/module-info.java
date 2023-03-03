@@ -13,11 +13,15 @@ module com.hedera.node.app.spi {
     exports com.hedera.node.app.spi.meta;
     exports com.hedera.node.app.spi.numbers;
     exports com.hedera.node.app.spi.workflows;
+    exports com.hedera.node.app.spi.exceptions;
 
     opens com.hedera.node.app.spi to
-            com.hedera.node.app.spi.test,
+            com.hedera.node.app.service.mono.testFixtures;
+    opens com.hedera.node.app.spi.workflows to
             com.hedera.node.app.service.mono.testFixtures;
 
     exports com.hedera.node.app.spi.state.serdes;
     exports com.hedera.node.app.spi.config;
+    exports com.hedera.node.app.spi.records;
+    exports com.hedera.node.app.spi.validation;
 }

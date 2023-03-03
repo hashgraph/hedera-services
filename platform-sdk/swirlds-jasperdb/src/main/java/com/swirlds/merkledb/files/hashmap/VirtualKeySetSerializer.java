@@ -28,59 +28,39 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
- * A key serializer used by {@link HalfDiskVirtualKeySet} when MerkleDb is operating in long key mode.
- * This key serializer only implements methods require to serialize a long key, and is not a general
- * purpose key serializer.
+ * A key serializer used by {@link HalfDiskVirtualKeySet} when MerkleDb is operating in long key
+ * mode. This key serializer only implements methods require to serialize a long key, and is not a
+ * general purpose key serializer.
  */
 @ConstructableIgnored
 public class VirtualKeySetSerializer implements KeySerializer<VirtualKey<VirtualLongKey>> {
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public int getSerializedSize() {
         return BYTES_PER_LONG;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public int serialize(final VirtualKey<VirtualLongKey> data, final ByteBuffer buffer) throws IOException {
         buffer.putLong(((VirtualLongKey) data).getKeyAsLong());
         return BYTES_PER_LONG;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int serialize(final VirtualKey<VirtualLongKey> data, final SerializableDataOutputStream outputStream)
-            throws IOException {
-        outputStream.writeLong(((VirtualLongKey) data).getKeyAsLong());
-        return BYTES_PER_LONG;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public VirtualKey<VirtualLongKey> deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
         throw new UnsupportedOperationException();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public long getCurrentDataVersion() {
         return 0;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public int deserializeKeySize(final ByteBuffer buffer) {
         return BYTES_PER_LONG;
@@ -106,9 +86,7 @@ public class VirtualKeySetSerializer implements KeySerializer<VirtualKey<Virtual
         throw new UnsupportedOperationException();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public boolean equals(final ByteBuffer buffer, final int dataVersion, final VirtualKey<VirtualLongKey> keyToCompare)
             throws IOException {

@@ -19,9 +19,7 @@ package com.swirlds.platform.state;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.platform.state.SwirldStateManagerUtils.fastCopy;
 
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.SwirldState2;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
@@ -34,7 +32,6 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.state.signed.SignedState;
 import java.time.Instant;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import org.apache.logging.log4j.LogManager;
@@ -145,31 +142,6 @@ public class SwirldStateManagerDouble implements SwirldStateManager {
         systemTransactionHandler.handlePreConsensusSystemTransactions(event);
 
         stats.preConsensusHandleTime(startTime, System.nanoTime());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void updatePlatformState(
-            final long round,
-            final long numEventsCons,
-            final Hash hashEventsCons,
-            final EventImpl[] events,
-            final Instant consensusTimestamp,
-            final List<MinGenInfo> minGenInfo,
-            final SoftwareVersion softwareVersion) {
-
-        stateRef.get()
-                .getPlatformState()
-                .getPlatformData()
-                .setRound(round)
-                .setNumEventsCons(numEventsCons)
-                .setHashEventsCons(hashEventsCons)
-                .setEvents(events)
-                .setConsensusTimestamp(consensusTimestamp)
-                .setMinGenInfo(minGenInfo)
-                .setCreationSoftwareVersion(softwareVersion);
     }
 
     /**
