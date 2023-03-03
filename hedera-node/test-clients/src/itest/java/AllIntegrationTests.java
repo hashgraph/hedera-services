@@ -17,9 +17,12 @@
 import com.hedera.services.bdd.junit.BalanceReconciliationValidator;
 import com.hedera.services.bdd.junit.ExpiryRecordsValidator;
 import com.hedera.services.bdd.junit.validators.BlockNoValidator;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicContainer;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.MethodOrderer;
@@ -74,11 +77,20 @@ class AllIntegrationTests extends IntegrationTestBase {
     @Tag("integration")
     @Order(4)
     @TestFactory
+    Collection<DynamicContainer> justFreezeSpec() {
+        return Stream.<Supplier<HapiSuite>>of(SimpleFreezeOnly::new)
+                .map(this::extractSpecsFromSuite).toList();
+    }
+
+    @Tag("integration")
+    @Order(5)
+    @TestFactory
     List<DynamicTest> recordStreamValidation() {
         return List.of(recordStreamValidation(
                 TEST_CONTAINER_NODE0_STREAMS,
                 new BalanceReconciliationValidator(),
                 new BlockNoValidator(),
-                new ExpiryRecordsValidator()));
+                new ExpiryRecordsValidator() // ,
+                /*new StateAccess()*/ ));
     }
 }
