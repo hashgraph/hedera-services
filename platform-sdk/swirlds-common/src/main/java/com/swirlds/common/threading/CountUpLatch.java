@@ -1,5 +1,6 @@
 package com.swirlds.common.threading;
 
+import static com.swirlds.common.utility.CompareTo.isGreaterThan;
 import static com.swirlds.common.utility.CompareTo.isLessThan;
 
 import com.swirlds.common.time.OSTime;
@@ -7,13 +8,15 @@ import com.swirlds.common.time.Time;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.Phaser;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Similar to a {@link java.util.concurrent.CountDownLatch}, but counts up instead.
  * <p>
- * Note: this may not be performant if waiting for a very large number of count increases
- * or for very high frequency updates. Each time the count increases we touch concurrency objects.
+ * Note: this may not be performant if waiting for a very large number of count increases or for very high frequency
+ * updates. Each time the count increases we touch concurrency objects.
  */
 public class CountUpLatch {
 
@@ -105,10 +108,7 @@ public class CountUpLatch {
 
         phaser.register();
         try {
-            while (getCount() < count) {
-                if (currentCount.get() >= count) {
-                    return;
-                }
+            while (currentCount.get() < count) {
                 phaser.arriveAndAwaitAdvance();
             }
         } finally {
@@ -132,10 +132,7 @@ public class CountUpLatch {
         final Instant start = time.now();
         phaser.register();
         try {
-            while (getCount() < count && isLessThan(Duration.between(start, time.now()), timeToWait)) {
-                if (currentCount.get() >= count) {
-                    return true;
-                }
+            while (currentCount.get() < count && isLessThan(Duration.between(start, time.now()), timeToWait)) {
                 phaser.arriveAndAwaitAdvance();
             }
         } finally {
