@@ -43,7 +43,7 @@ public class EventStreamSingleFileRepairIterator implements Iterator<SelfSeriali
      */
     private final Logger logger = LogManager.getLogger(EventStreamSingleFileRepairIterator.class);
     /**
-     * The sequence of SelfSerializables to repair if it is missing a final hash.
+     * The sequence of SelfSerializables that may need a final hash added.
      */
     private final IOIterator<SelfSerializable> eventStreamIterator;
     /**
@@ -63,9 +63,9 @@ public class EventStreamSingleFileRepairIterator implements Iterator<SelfSeriali
      */
     private int hashCount = 0;
     /**
-     * A boolean to indicate if we needed to compute a new final hash for the event stream iterator.
+     * A boolean to indicate if we provided a new final hash for the event stream iterator.
      */
-    private boolean finalHashComputed = false;
+    private boolean finalHashAdded = false;
     /**
      * The count of events in the event stream.
      */
@@ -74,7 +74,7 @@ public class EventStreamSingleFileRepairIterator implements Iterator<SelfSeriali
     /**
      * Constructs a repairing iterator for the given event stream iterator.
      *
-     * @param eventStream The event stream to be repaired if it is missing a final hash.
+     * @param eventStream The event stream iterator that may be missing a final hash.
      */
     public EventStreamSingleFileRepairIterator(final IOIterator<SelfSerializable> eventStream) {
         this.eventStreamIterator = Objects.requireNonNull(eventStream, "The eventStream iterator must not be null.");
@@ -124,17 +124,16 @@ public class EventStreamSingleFileRepairIterator implements Iterator<SelfSeriali
      * Assumption: that there are no more elements in the event stream iterator. We repair the event stream sequence if
      * it is missing a final hash by setting the next to the running hash of the previous event returned.
      */
-    private void attemptRepair() {
+    private void determineFinalHash() {
         if (prev.getClassId() == Hash.CLASS_ID) {
             if (hashCount == 1 && eventCount == 0) {
-                logger.error(EXCEPTION.getMarker(), "Cannot repair, no events in sequence.");
+                logger.error(EXCEPTION.getMarker(), "No events in sequence.");
             }
         } else if (prev instanceof DetailedConsensusEvent dce) {
-            // event stream did not have a final hash.
-            // repaired by providing the final running hash as the next element in the sequence.
+            // the final hash is the running hash of the last event returned.
             try {
                 next = dce.getRunningHash().getFutureHash().getAndRethrow();
-                finalHashComputed = true;
+                finalHashAdded = true;
             } catch (final InterruptedException ex) {
                 logger.error(EXCEPTION.getMarker(), "Interrupted Exception while waiting for running hash.", ex);
                 Thread.currentThread().interrupt();
@@ -157,8 +156,8 @@ public class EventStreamSingleFileRepairIterator implements Iterator<SelfSeriali
      */
     private boolean findNextWithRepair() {
         setNextAndUpdateRunningHash();
-        if (next == null && !finalHashComputed) {
-            attemptRepair();
+        if (next == null && !finalHashAdded) {
+            determineFinalHash();
         }
         return next != null;
     }
@@ -177,12 +176,13 @@ public class EventStreamSingleFileRepairIterator implements Iterator<SelfSeriali
     }
 
     /**
-     * Indicates if the event stream has been repaired.
+     * Indicates if the wrapped event stream did not have a final hash and the final hash was added to the resulting
+     * event stream.
      *
-     * @return false until and unless the event stream has been repaired, then true is returned.
+     * @return false until and unless this iterator has added a final hash to the original event stream, then true is returned.
      */
-    public boolean wasRepaired() {
-        return finalHashComputed;
+    public boolean finalHashAdded() {
+        return finalHashAdded;
     }
 
     /**

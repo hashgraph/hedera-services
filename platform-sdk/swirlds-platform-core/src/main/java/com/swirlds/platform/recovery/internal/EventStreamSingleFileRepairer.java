@@ -108,7 +108,7 @@ public class EventStreamSingleFileRepairer {
                 out.writeSerializable(repairIterator.next(), true);
             }
         }
-        return repairIterator.wasRepaired();
+        return repairIterator.finalHashAdded();
     }
 
     /**
@@ -138,10 +138,7 @@ public class EventStreamSingleFileRepairer {
         }
 
         if (repaired) {
-            if (damagedFile.exists() && !damagedFile.delete()) {
-                throw new IOException("Not able to delete backup damaged file: " + damagedFile.getAbsolutePath());
-            }
-            Files.copy(originalFile.toPath(), damagedFile.toPath());
+            Files.copy(originalFile.toPath(), damagedFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
             Files.copy(repairedFile.toPath(), originalFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         }
         // this file is always created and should be deleted in all cases
