@@ -151,7 +151,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         if (op.hasSubmitKey()) {
             builder.submitKey(fromGrpcKey(op.getSubmitKey()));
         } else {
-            builder.submitKey(topic.adminKey());
+            builder.submitKey(topic.submitKey());
         }
         if (op.hasMemo()) {
             builder.memo(op.getMemo().getValue());

@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.deleteTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 
@@ -83,6 +84,18 @@ public class TopicGetInfoSuite extends HapiSuite {
                         getTopicInfo("testTopic")
                                 .hasExpectedLedgerId("0x03")
                                 .hasMemo("testmemo")
+                                .hasAdminKey("adminKey")
+                                .hasSubmitKey("submitKey")
+                                .hasAutoRenewAccount("autoRenewAccount")
+                                .hasSeqNo(1)
+                                .logged(),
+                        updateTopic("testTopic")
+                                .topicMemo("Don't worry about the vase")
+                                .via("updateTopic"),
+                        getTxnRecord("updateTopic").logged(),
+                        getTopicInfo("testTopic")
+                                .hasExpectedLedgerId("0x03")
+                                .hasMemo("Don't worry about the vase")
                                 .hasAdminKey("adminKey")
                                 .hasSubmitKey("submitKey")
                                 .hasAutoRenewAccount("autoRenewAccount")
