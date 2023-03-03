@@ -14,16 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.mono.txns;
-
-import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
-import edu.umd.cs.findbugs.annotations.NonNull;
+package com.hedera.services.bdd.junit.validators;
 
 /**
- * A temporary interface to let us toggle between {@link TransitionRunner} and
- * {@code AdaptedMonoTransitionRunner} implementations at the end of the
- * {@code mono-service} handle workflow.
+ * Contains a single account number and a single associated token number.
  */
-public interface TransactionLastStep {
-    boolean tryTransition(@NonNull TxnAccessor accessor);
-}
+public record AccountNumTokenNum(Long accountNum, Long tokenNum) {}

@@ -16,7 +16,6 @@
 
 package com.swirlds.benchmark;
 
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -59,8 +58,8 @@ public class BenchmarkValueMerkleDbSerializer implements ValueSerializer<Benchma
     }
 
     @Override
-    public int serialize(final BenchmarkValue data, final SerializableDataOutputStream out) throws IOException {
-        data.serialize(out);
+    public int serialize(final BenchmarkValue data, final ByteBuffer buffer) throws IOException {
+        data.serialize(buffer);
         return getSerializedSize();
     }
 

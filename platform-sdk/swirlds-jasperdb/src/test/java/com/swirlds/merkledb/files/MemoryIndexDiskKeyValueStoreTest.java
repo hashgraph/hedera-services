@@ -34,7 +34,6 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
@@ -46,9 +45,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 class MemoryIndexDiskKeyValueStoreTest {
 
-    /**
-     * Temporary directory provided by JUnit
-     */
+    /** Temporary directory provided by JUnit */
     @SuppressWarnings("unused")
     @TempDir
     Path testDirectory;
@@ -57,16 +54,14 @@ class MemoryIndexDiskKeyValueStoreTest {
     // Helper Methods
 
     /**
-     * For tests, we want to have all different dta sizes, so we use this function to choose how many times to repeat
-     * the data value long
+     * For tests, we want to have all different dta sizes, so we use this function to choose how
+     * many times to repeat the data value long
      */
     private static int getRepeatCountForKey(final long key) {
         return (int) (key % 20L);
     }
 
-    /**
-     * Create an example variable sized data item with lengths of data from 0 to 20.
-     */
+    /** Create an example variable sized data item with lengths of data from 0 to 20. */
     private static long[] getVariableSizeDataForI(final int i, final int valueAddition) {
         final int repeatCount = getRepeatCountForKey(i);
         final long[] dataValue = new long[1 + repeatCount];
@@ -167,7 +162,8 @@ class MemoryIndexDiskKeyValueStoreTest {
         assertTrue(
                 checkDirectMemoryIsCleanedUpToLessThanBaseUsage(directMemoryUsedAtStart),
                 "Direct Memory used is more than base usage even after 20 gc() calls. At start was "
-                        + (directMemoryUsedAtStart * Units.BYTES_TO_MEBIBYTES) + "MB and is now "
+                        + (directMemoryUsedAtStart * Units.BYTES_TO_MEBIBYTES)
+                        + "MB and is now "
                         + (getDirectMemoryUsedBytes() * Units.BYTES_TO_MEBIBYTES)
                         + "MB");
     }
@@ -188,7 +184,7 @@ class MemoryIndexDiskKeyValueStoreTest {
         // check number of files created
         assertEquals(3, Files.list(tempDir).count(), "unexpected # of files #1");
         // merge all files
-        store.merge(dataFileReaders -> dataFileReaders, new Semaphore(1), 2);
+        store.merge(dataFileReaders -> dataFileReaders, 2);
         // check number of files after merge
         assertEquals(1, Files.list(tempDir).count(), "unexpected # of files #2");
         // check all data
@@ -212,7 +208,7 @@ class MemoryIndexDiskKeyValueStoreTest {
                 }
             } else {
                 try {
-                    store.merge(dataFileReaders -> dataFileReaders, new Semaphore(1), 2);
+                    store.merge(dataFileReaders -> dataFileReaders, 2);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -290,9 +286,9 @@ class MemoryIndexDiskKeyValueStoreTest {
         store.startWriting();
         writeDataBatch(testType, store, 10, 30, 5678);
         // heck the index to put in bad data so that logging conditions are met
-        index.put(9, DataFileCommon.dataLocation(0, 0));
+        index.put(9, DataFileCommon.dataLocation(1000, 0));
         // merge all files
-        store.merge(dataFileReaders -> dataFileReaders, new Semaphore(1), 2);
+        store.merge(dataFileReaders -> dataFileReaders, 2);
         // finish writing range
         store.endWriting(10, 30);
         checkRange(testType, store, 10, 20, 5678);

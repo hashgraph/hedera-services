@@ -40,6 +40,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.crypto.Cryptography;
@@ -103,9 +104,17 @@ class PreHandleWorkflowImplTest {
                 .setTransactionID(transactionID)
                 .setConsensusCreateTopic(content)
                 .build();
+        final com.hederahashgraph.api.proto.java.Transaction txn =
+                com.hederahashgraph.api.proto.java.Transaction.newBuilder()
+                        .setSignedTransactionBytes(SignedTransaction.newBuilder()
+                                .setBodyBytes(txBody.toByteString())
+                                .build()
+                                .toByteString())
+                        .build();
         final SignatureMap signatureMap = SignatureMap.newBuilder().build();
         final HederaFunctionality functionality = HederaFunctionality.ConsensusCreateTopic;
-        final OnsetResult onsetResult = new OnsetResult(txBody, txBody.toByteArray(), OK, signatureMap, functionality);
+        final OnsetResult onsetResult =
+                new OnsetResult(txn, txBody, txBody.toByteArray(), OK, signatureMap, functionality);
         when(onset.parseAndCheck(any(), any(byte[].class))).thenReturn(onsetResult);
 
         final Iterator<Transaction> iterator =
@@ -207,10 +216,17 @@ class PreHandleWorkflowImplTest {
                 .setTransactionID(transactionID)
                 .setConsensusCreateTopic(content)
                 .build();
+        final com.hederahashgraph.api.proto.java.Transaction txn =
+                com.hederahashgraph.api.proto.java.Transaction.newBuilder()
+                        .setSignedTransactionBytes(SignedTransaction.newBuilder()
+                                .setBodyBytes(txBody.toByteString())
+                                .build()
+                                .toByteString())
+                        .build();
         final SignatureMap signatureMap = SignatureMap.newBuilder().build();
         final HederaFunctionality functionality = HederaFunctionality.ConsensusCreateTopic;
         final OnsetResult onsetResult =
-                new OnsetResult(txBody, txBody.toByteArray(), DUPLICATE_TRANSACTION, signatureMap, functionality);
+                new OnsetResult(txn, txBody, txBody.toByteArray(), DUPLICATE_TRANSACTION, signatureMap, functionality);
         when(localOnset.parseAndCheck(any(), any(byte[].class))).thenReturn(onsetResult);
 
         workflow = new PreHandleWorkflowImpl(dispatcher, localOnset, signaturePreparer, cryptography, RUN_INSTANTLY);
