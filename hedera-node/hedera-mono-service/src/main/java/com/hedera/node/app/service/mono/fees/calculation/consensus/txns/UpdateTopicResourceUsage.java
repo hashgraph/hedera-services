@@ -70,7 +70,8 @@ public final class UpdateTopicResourceUsage implements TxnResourceUsageEstimator
     public FeeData usageGivenExplicit(
             @NonNull final TransactionBody txnBody,
             @NonNull final SigValueObj sigUsage,
-            @Nullable final MerkleTopic merkleTopic) throws InvalidTxBodyException {
+            @Nullable final MerkleTopic merkleTopic)
+            throws InvalidTxBodyException {
         long rbsIncrease = 0;
         if (merkleTopic != null && merkleTopic.hasAdminKey()) {
             final var expiry = Timestamp.newBuilder()

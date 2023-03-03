@@ -16,14 +16,8 @@
 
 package com.hedera.node.app.workflows.ingest;
 
-import com.hedera.node.app.state.HederaState;
-import com.swirlds.common.system.Platform;
-import com.swirlds.common.utility.AutoCloseableWrapper;
 import dagger.Binds;
 import dagger.Module;
-import dagger.Provides;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.function.Supplier;
 
 /**
  * Module for Ingest processing.
@@ -32,5 +26,4 @@ import java.util.function.Supplier;
 public interface IngestModule {
     @Binds
     IngestWorkflow bindIngestWorkflow(IngestWorkflowImpl ingestWorkflow);
-
 }

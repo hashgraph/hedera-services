@@ -46,7 +46,6 @@ import com.hedera.node.app.service.mono.txns.submission.SubmissionModule;
 import com.hedera.node.app.services.ServiceModule;
 import com.hedera.node.app.state.HederaStateModule;
 import com.hedera.node.app.state.WorkingStateAccessor;
-import com.hedera.node.app.workflows.handle.AdaptedMonoFeeCalculator;
 import com.hedera.node.app.workflows.handle.HandleWorkflowModule;
 import com.hedera.node.app.workflows.prehandle.AdaptedMonoEventExpansion;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflowModule;

@@ -244,10 +244,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
     }
 
     public FeeObject feesIncludingCongestion(
-            final FeeData usage,
-            final FeeData typedPrices,
-            final TxnAccessor accessor,
-            final ExchangeRate rate) {
+            final FeeData usage, final FeeData typedPrices, final TxnAccessor accessor, final ExchangeRate rate) {
         return getFeeObject(typedPrices, usage, rate, feeMultiplierSource.currentMultiplier(accessor));
     }
 
