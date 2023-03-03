@@ -78,10 +78,6 @@ public interface FeesModule {
 
     @Binds
     @Singleton
-    FeeCalculator bindFeeCalculator(UsageBasedFeeCalculator usageBasedFeeCalculator);
-
-    @Binds
-    @Singleton
     UsagePricesProvider bindUsagePricesProvider(BasicFcfsUsagePrices basicFcfsUsagePrices);
 
     @Binds

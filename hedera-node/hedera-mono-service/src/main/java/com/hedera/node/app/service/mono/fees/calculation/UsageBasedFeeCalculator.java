@@ -204,7 +204,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
         return Math.max(priceInTinyBars, 1L);
     }
 
-    private Map<SubType, FeeData> uncheckedPricesGiven(TxnAccessor accessor, Timestamp at) {
+    public Map<SubType, FeeData> uncheckedPricesGiven(TxnAccessor accessor, Timestamp at) {
         try {
             return usagePrices.pricesGiven(accessor.getFunction(), at);
         } catch (Exception e) {
@@ -232,7 +232,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
             try {
                 final var usage = usageEstimator.usageGiven(accessor.getTxn(), sigUsage, view);
                 final var applicablePrices = prices.get(usage.getSubType());
-                return getFeeObject(applicablePrices, usage, rate, feeMultiplierSource.currentMultiplier(accessor));
+                return feesIncludingCongestion(usage, applicablePrices, accessor, rate);
             } catch (InvalidTxBodyException e) {
                 log.warn(
                         "Argument accessor={} malformed for implied estimator {}!",
@@ -241,6 +241,14 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
                 throw new IllegalArgumentException(e);
             }
         }
+    }
+
+    public FeeObject feesIncludingCongestion(
+            final FeeData usage,
+            final FeeData typedPrices,
+            final TxnAccessor accessor,
+            final ExchangeRate rate) {
+        return getFeeObject(typedPrices, usage, rate, feeMultiplierSource.currentMultiplier(accessor));
     }
 
     private QueryResourceUsageEstimator getQueryUsageEstimator(Query query) {
@@ -264,7 +272,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
         throw new NoSuchElementException("No estimator exists for the given transaction");
     }
 
-    private SigValueObj getSigUsage(TxnAccessor accessor, JKey payerKey) {
+    public SigValueObj getSigUsage(TxnAccessor accessor, JKey payerKey) {
         int numPayerKeys = numSimpleKeys(payerKey);
         final var sigUsage = accessor.usageGiven(numPayerKeys);
         return new SigValueObj(sigUsage.numSigs(), numPayerKeys, sigUsage.sigsSize());

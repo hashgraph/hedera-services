@@ -30,6 +30,7 @@ import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertiesModule;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.contracts.ContractsModule;
+import com.hedera.node.app.service.mono.fees.FeeCalculatorModule;
 import com.hedera.node.app.service.mono.fees.FeesModule;
 import com.hedera.node.app.service.mono.files.FilesModule;
 import com.hedera.node.app.service.mono.grpc.GrpcModule;
@@ -118,7 +119,8 @@ import javax.inject.Singleton;
             TransactionsModule.class,
             ExpiryModule.class,
             LastStepModule.class,
-            ProcessLogicModule.class
+            ProcessLogicModule.class,
+            FeeCalculatorModule.class
         })
 public interface ServicesApp {
     /* Needed by ServicesState */

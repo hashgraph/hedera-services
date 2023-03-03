@@ -33,10 +33,4 @@ public interface IngestModule {
     @Binds
     IngestWorkflow bindIngestWorkflow(IngestWorkflowImpl ingestWorkflow);
 
-    @Provides
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    static Supplier<AutoCloseableWrapper<HederaState>> provideStateSupplier(@NonNull final Platform platform) {
-        // Always return the latest immutable state until we support state proofs
-        return () -> (AutoCloseableWrapper) platform.getLatestImmutableState();
-    }
 }

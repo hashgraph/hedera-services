@@ -19,6 +19,7 @@ package com.hedera.node.app;
 import com.hedera.node.app.annotations.MaxSignedTxnSize;
 import com.hedera.node.app.components.IngestComponent;
 import com.hedera.node.app.components.QueryComponent;
+import com.hedera.node.app.fees.AdaptedFeeCalculatorModule;
 import com.hedera.node.app.service.mono.ServicesApp;
 import com.hedera.node.app.service.mono.config.ConfigModule;
 import com.hedera.node.app.service.mono.context.ContextModule;
@@ -45,6 +46,7 @@ import com.hedera.node.app.service.mono.txns.submission.SubmissionModule;
 import com.hedera.node.app.services.ServiceModule;
 import com.hedera.node.app.state.HederaStateModule;
 import com.hedera.node.app.state.WorkingStateAccessor;
+import com.hedera.node.app.workflows.handle.AdaptedMonoFeeCalculator;
 import com.hedera.node.app.workflows.handle.HandleWorkflowModule;
 import com.hedera.node.app.workflows.prehandle.AdaptedMonoEventExpansion;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflowModule;
@@ -91,7 +93,8 @@ import javax.inject.Singleton;
             QueryWorkflowModule.class,
             HandleWorkflowModule.class,
             PreHandleWorkflowModule.class,
-            HederaStateModule.class
+            HederaStateModule.class,
+            AdaptedFeeCalculatorModule.class
         })
 public interface HederaApp extends ServicesApp {
     /* Needed by ServicesState */

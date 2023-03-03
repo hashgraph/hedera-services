@@ -64,7 +64,7 @@ public class MonoGetTopicInfoUsage {
         final var responseType = topicInfoQuery.getHeader().getResponseType();
         final var maybeTopic = topicStore.getTopicLeaf(topicId);
         return delegate.usageGivenTypeAndTopic(
-                maybeTopic.map(this::monoTopicFrom).orElse(null), responseType);
+                maybeTopic.map(MonoGetTopicInfoUsage::monoTopicFrom).orElse(null), responseType);
     }
 
     /**
@@ -75,7 +75,7 @@ public class MonoGetTopicInfoUsage {
      * @return the Merkle topic
      */
     @SuppressWarnings("unchecked")
-    private MerkleTopic monoTopicFrom(@NonNull final Topic topic) {
+    public static MerkleTopic monoTopicFrom(@NonNull final Topic topic) {
         final var monoTopic = new MerkleTopic(
                 topic.memo(),
                 (JKey) fromPbjKey(topic.adminKey()).orElse(null),

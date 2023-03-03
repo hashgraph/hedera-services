@@ -35,14 +35,18 @@ import com.hedera.node.app.service.token.impl.components.TokenComponent;
 import com.hedera.node.app.service.util.impl.components.UtilComponent;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
+import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.dispatcher.TransactionHandlers;
 import com.hedera.node.app.workflows.handle.validation.MonoExpiryValidator;
 import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.swirlds.common.system.Platform;
+import com.swirlds.common.utility.AutoCloseableWrapper;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import javax.inject.Singleton;
 
 @Module
@@ -73,6 +77,13 @@ public interface HandleWorkflowModule {
     @Binds
     @Singleton
     ExpiryValidator bindEntityExpiryValidator(MonoExpiryValidator monoEntityExpiryValidator);
+
+    @Provides
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    static Supplier<AutoCloseableWrapper<HederaState>> provideStateSupplier(@NonNull final Platform platform) {
+        // Always return the latest immutable state until we support state proofs
+        return () -> (AutoCloseableWrapper) platform.getLatestImmutableState();
+    }
 
     @Provides
     @Singleton
