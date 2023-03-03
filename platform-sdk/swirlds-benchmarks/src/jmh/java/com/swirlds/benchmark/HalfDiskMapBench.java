@@ -16,9 +16,8 @@
 
 package com.swirlds.benchmark;
 
-import com.swirlds.jasperdb.files.hashmap.HalfDiskHashMap;
+import com.swirlds.merkledb.files.hashmap.HalfDiskHashMap;
 import java.util.Arrays;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicLong;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -49,8 +48,8 @@ public class HalfDiskMapBench extends BaseBench {
         final long[] map = new long[verify ? maxKey : 0];
         Arrays.fill(map, INVALID_PATH);
 
-        final var store =
-                new HalfDiskHashMap<>(maxKey, new BenchmarkKeySerializer(), getTestDir(), "mergeBench", null, false);
+        final var store = new HalfDiskHashMap<>(
+                maxKey, new BenchmarkKeyMerkleDbSerializer(), getTestDir(), "mergeBench", null, false);
         System.out.println();
 
         // Write files
@@ -71,14 +70,12 @@ public class HalfDiskMapBench extends BaseBench {
 
         // Merge files
         start = System.currentTimeMillis();
-        final Semaphore pauseMerging = new Semaphore(1);
         final AtomicLong count = new AtomicLong(0);
         store.merge(
                 list -> {
                     count.set(list.size());
                     return list;
                 },
-                pauseMerging,
                 2);
         System.out.println("Merged " + count.get() + " files in " + (System.currentTimeMillis() - start) + "ms");
 

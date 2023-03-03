@@ -75,7 +75,8 @@ class MerkleDbDataSourceTest {
     }
 
     /**
-     * Keep track of initial direct memory used already, so we can check if we leek over and above what we started with
+     * Keep track of initial direct memory used already, so we can check if we leek over and above
+     * what we started with
      */
     private long directMemoryUsedAtStart;
 
@@ -90,7 +91,8 @@ class MerkleDbDataSourceTest {
         assertTrue(
                 checkDirectMemoryIsCleanedUpToLessThanBaseUsage(directMemoryUsedAtStart),
                 "Direct Memory used is more than base usage even after 20 gc() calls. At start was "
-                        + (directMemoryUsedAtStart * Units.BYTES_TO_MEBIBYTES) + "MB and is now "
+                        + (directMemoryUsedAtStart * Units.BYTES_TO_MEBIBYTES)
+                        + "MB and is now "
                         + (getDirectMemoryUsedBytes() * Units.BYTES_TO_MEBIBYTES)
                         + "MB");
     }
@@ -328,7 +330,8 @@ class MerkleDbDataSourceTest {
         // check 250 and 500
         assertLeaf(testType, dataSource, 250, 250);
         assertLeaf(testType, dataSource, 500, 500);
-        // move a leaf from 500 to 250, under new API there is no move as such, so we just write 500 leaf at 250 path
+        // move a leaf from 500 to 250, under new API there is no move as such, so we just write 500
+        // leaf at 250 path
         final VirtualLeafRecord<VirtualLongKey, ExampleByteArrayVirtualValue> vlr500 =
                 testType.dataType().createVirtualLeafRecord(500);
         vlr500.setPath(250);
@@ -580,7 +583,9 @@ class MerkleDbDataSourceTest {
                         1000,
                         2000,
                         IntStream.range(1, 5).mapToObj(i -> {
-                            System.out.println("SLOWLY loading record #" + i + " in "
+                            System.out.println("SLOWLY loading record #"
+                                    + i
+                                    + " in "
                                     + Thread.currentThread().getName());
                             sleepUnchecked(50L);
                             return createVirtualInternalRecord(i);

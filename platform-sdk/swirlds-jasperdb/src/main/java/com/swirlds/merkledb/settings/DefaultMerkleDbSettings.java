@@ -48,9 +48,9 @@ public class DefaultMerkleDbSettings implements MerkleDbSettings {
     public static final int DEFAULT_ITERATOR_INPUT_BUFFER_BYTES = 1024 * 1024;
     public static final int DEFAULT_WRITER_OUTPUT_BUFFER_BYTES = 4 * 1024 * 1024;
     public static final int DEFAULT_MOVE_LIST_CHUNK_SIZE = 500_000;
-    public static final int DEFAULT_MAX_NUMBER_OF_FILES_IN_MERGE = 64;
+    public static final int DEFAULT_MAX_NUMBER_OF_FILES_IN_MERGE = 1024;
     public static final int DEFAULT_MIN_NUMBER_OF_FILES_IN_MERGE = 8;
-    public static final long DEFAULT_MERGE_ACTIVATED_PERIOD = 1L; // 1 seconds
+    public static final long DEFAULT_MERGE_ACTIVATE_PERIOD = 1L; // 1 seconds
     public static final long DEFAULT_MEDIUM_MERGE_PERIOD = 60L; // 1h
     public static final long DEFAULT_FULL_MERGE_PERIOD = 1440L; // 24h in min
     public static final long DEFAULT_MAX_FILE_SIZE_BYTES = 64L * 1024 * 1024 * 1024;
@@ -112,7 +112,7 @@ public class DefaultMerkleDbSettings implements MerkleDbSettings {
     /** {@inheritDoc} */
     @Override
     public long getMergeActivatePeriod() {
-        return DEFAULT_MERGE_ACTIVATED_PERIOD;
+        return DEFAULT_MERGE_ACTIVATE_PERIOD;
     }
 
     /** {@inheritDoc} */
