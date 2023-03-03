@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.workflows.prehandle;
 
-import static com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils.mirrorTxnId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static java.util.Objects.requireNonNull;
@@ -189,14 +188,6 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
                 cryptography.verifyAsync(cryptoSigs);
             }
         }
-
-        LOG.info(
-                "Expanded {} crypto signatures for {} payer key and {} other party keys; status is now {} for {}",
-                cryptoSigs.size(),
-                (context.getPayerKey() == null ? "N/A" : "known"),
-                context.getRequiredNonPayerKeys().size(),
-                context.getStatus(),
-                mirrorTxnId(onsetResult.txBody().getTransactionID()));
 
         // TODO - prepare and verify signatures of inner transaction, if present
 

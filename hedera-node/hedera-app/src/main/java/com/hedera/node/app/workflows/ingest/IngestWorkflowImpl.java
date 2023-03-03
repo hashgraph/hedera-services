@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.workflows.ingest;
 
-import static com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils.mirrorTxnId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -167,11 +166,6 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
                 checker.checkSolvency(onsetResult.transaction());
 
                 // 7. Submit to platform
-                // TODO - figure out how to get just the user transaction from the requestBuffer array
-                log.info(
-                        "Submitting {} transaction {} to platform",
-                        functionality,
-                        mirrorTxnId(txBody.getTransactionID()));
                 submissionManager.submit(txBody, onsetResult.transaction().toByteArray(), ctx.txBodyParser());
 
                 opCounters.countSubmitted(functionality);

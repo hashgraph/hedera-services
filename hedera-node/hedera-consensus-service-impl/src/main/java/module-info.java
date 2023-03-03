@@ -12,7 +12,6 @@ module com.hedera.node.app.service.consensus.impl {
     requires com.swirlds.config;
     requires com.hedera.node.hapi;
     requires com.hedera.node.app.service.evm;
-    requires com.hedera.node.app.hapi.utils;
     requires com.hedera.hashgraph.pbj.runtime;
 
     provides com.hedera.node.app.service.consensus.ConsensusService with

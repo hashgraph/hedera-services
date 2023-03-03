@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
+import static com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler.noThrowSha384HashOf;
 import static com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils.unwrapPbj;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusCreateTopicHandlerTest.ACCOUNT_ID_3;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.ACCOUNT_ID_4;
@@ -31,6 +32,7 @@ import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenario
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -326,6 +328,12 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
+    void failsOnUnavailableDigest() {
+        final var raw = NONSENSE.toByteArray();
+        assertDoesNotThrow(() -> noThrowSha384HashOf(raw));
+    }
+
+    @Test
     @DisplayName("Handle fails if submit message chunk number is invalid")
     void failsIfChunkNumberIsInvalid() {
         givenValidTopic();
@@ -444,4 +452,6 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
                 .setConsensusSubmitMessage(submitMessageBuilder.build())
                 .build();
     }
+
+    private static final ByteString NONSENSE = ByteString.copyFromUtf8("NONSENSE");
 }

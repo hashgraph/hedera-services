@@ -26,7 +26,6 @@ import com.hedera.hashgraph.pbj.runtime.io.DataInputStream;
 import com.hedera.hashgraph.pbj.runtime.io.DataOutputStream;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayInputStream;
@@ -97,19 +96,5 @@ public final class TemporaryUtils {
         } catch (final IOException e) {
             throw new IllegalStateException(e);
         }
-    }
-
-    /**
-     * Minor helper to facilitate logging transaction ids in the format used by mirror node.
-     *
-     * @param txnId a transaction id
-     * @return the mirror node format of the transaction id
-     */
-    public static String mirrorTxnId(final TransactionID txnId) {
-        return String.format(
-                "0.0.%d-%d-%d",
-                txnId.getAccountID().getAccountNum(),
-                txnId.getTransactionValidStart().getSeconds(),
-                txnId.getTransactionValidStart().getNanos());
     }
 }

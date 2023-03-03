@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.consensus.impl.handlers;
 
-import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils.unwrapPbj;
 import static com.hedera.node.app.service.mono.state.merkle.MerkleTopic.RUNNING_HASH_VERSION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
@@ -47,6 +46,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Optional;
 import javax.inject.Inject;
@@ -253,5 +254,13 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
     @Override
     public ConsensusSubmitMessageRecordBuilder newRecordBuilder() {
         return new SubmitMessageRecordBuilder();
+    }
+
+    public static byte[] noThrowSha384HashOf(final byte[] byteArray) {
+        try {
+            return MessageDigest.getInstance("SHA-384").digest(byteArray);
+        } catch (final NoSuchAlgorithmException fatal) {
+            throw new IllegalStateException(fatal);
+        }
     }
 }

@@ -18,7 +18,6 @@ package com.hedera.node.app.workflows.handle;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-import com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalStaticProperties;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
@@ -70,17 +69,10 @@ public class AdaptedMonoTransitionRunner extends TransitionRunner {
     public boolean tryTransition(final @NonNull TxnAccessor accessor) {
         final var function = accessor.getFunction();
         if (functionsToDispatch.contains(function)) {
-            // Temporary logging for demo
-            log.info(
-                    "Dispatching {} handle last step for {} to workflow",
-                    function,
-                    TemporaryUtils.mirrorTxnId(accessor.getTxnId()));
             try {
                 dispatcher.dispatchHandle(function, accessor.getTxn(), writableStoreFactory);
                 txnCtx.setStatus(SUCCESS);
-                log.info("SUCCESS for {}", TemporaryUtils.mirrorTxnId(accessor.getTxnId()));
             } catch (final HandleStatusException e) {
-                log.info("{} for {}", e.getStatus(), TemporaryUtils.mirrorTxnId(accessor.getTxnId()));
                 super.resolveFailure(e.getStatus(), accessor, e);
             }
             return true;

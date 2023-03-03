@@ -37,7 +37,6 @@ import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -83,7 +82,6 @@ class AdaptedMonoTransitionRunnerTest {
     void delegatesConsensusCreateAndTracksSuccess() {
         given(accessor.getFunction()).willReturn(ConsensusCreateTopic);
         given(accessor.getTxn()).willReturn(mockTxn);
-        given(accessor.getTxnId()).willReturn(TransactionID.getDefaultInstance());
 
         subject.tryTransition(accessor);
 
@@ -95,7 +93,6 @@ class AdaptedMonoTransitionRunnerTest {
     void delegatesConsensusCreateAndTracksFailureIfThrows() {
         given(accessor.getFunction()).willReturn(ConsensusCreateTopic);
         given(accessor.getTxn()).willReturn(mockTxn);
-        given(accessor.getTxnId()).willReturn(TransactionID.getDefaultInstance());
         willThrow(new HandleStatusException(INVALID_EXPIRATION_TIME))
                 .given(dispatcher)
                 .dispatchHandle(ConsensusCreateTopic, mockTxn, storeFactory);
