@@ -527,7 +527,6 @@ class TransactionDispatcherTest {
     void dispatchesDeleteTopicAsExpected() {
         final var deleteBuilder = mock(ConsensusDeleteTopicRecordBuilder.class);
 
-        given(consensusDeleteTopicHandler.newRecordBuilder()).willReturn(deleteBuilder);
         given(writableStoreFactory.createTopicStore()).willReturn(writableTopicStore);
 
         doAnswer(invocation -> {

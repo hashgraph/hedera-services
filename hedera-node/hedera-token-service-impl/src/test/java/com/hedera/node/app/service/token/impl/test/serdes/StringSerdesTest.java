@@ -32,6 +32,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class StringSerdesTest {
     private static final String SOME_STRING = "TestString";
+
     @Mock
     private DataInput in;
 
