@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.consensus.impl.handlers;
 
 import static com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils.fromGrpcKey;
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.spi.exceptions.HandleStatusException.validateFalse;
 import static com.hedera.node.app.spi.exceptions.HandleStatusException.validateTrue;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
@@ -25,6 +26,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusUpdateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.UpdateTopicRecordBuilder;
@@ -35,7 +37,9 @@ import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -64,9 +68,40 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
      *                passed to {@code #handle()}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(@NonNull final PreHandleContext context) {
+    public void preHandle(@NonNull final PreHandleContext context, @NonNull ReadableTopicStore topicStore) {
         requireNonNull(context);
-        throw new UnsupportedOperationException("Not implemented");
+        final var op = context.getTxn().getConsensusUpdateTopic();
+
+        if (onlyExtendsExpiry(op)) {
+            return;
+        }
+
+        final var topicMeta = topicStore.getTopicMetadata(op.getTopicID());
+        if (topicMeta.failed()) {
+            context.status(ResponseCodeEnum.INVALID_TOPIC_ID);
+            return;
+        }
+
+        final var adminKey = topicMeta.metadata().adminKey();
+        if (adminKey.isPresent()) {
+            context.addToReqNonPayerKeys(adminKey.get());
+        }
+
+        if (op.hasAdminKey()) {
+            context.addToReqNonPayerKeys(asHederaKey(op.getAdminKey()).get());
+        }
+        if (op.hasAutoRenewAccount() && !AccountID.getDefaultInstance().equals(op.getAutoRenewAccount())) {
+            context.addNonPayerKey(op.getAutoRenewAccount(), ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
+        }
+    }
+
+    private boolean onlyExtendsExpiry(final ConsensusUpdateTopicTransactionBody op) {
+        return op.hasExpirationTime()
+                && !op.hasMemo()
+                && !op.hasAdminKey()
+                && !op.hasSubmitKey()
+                && !op.hasAutoRenewPeriod()
+                && !op.hasAutoRenewAccount();
     }
 
     /**

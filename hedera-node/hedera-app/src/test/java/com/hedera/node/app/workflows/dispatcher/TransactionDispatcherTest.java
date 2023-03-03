@@ -605,7 +605,7 @@ class TransactionDispatcherTest {
                                 .setConsensusUpdateTopic(ConsensusUpdateTopicTransactionBody.getDefaultInstance())
                                 .build(),
                         (BiConsumer<TransactionHandlers, PreHandleContext>) (handlers, meta) ->
-                                verify(handlers.consensusUpdateTopicHandler()).preHandle(meta)),
+                                verify(handlers.consensusUpdateTopicHandler()).preHandle(eq(meta), any()),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setConsensusDeleteTopic(ConsensusDeleteTopicTransactionBody.getDefaultInstance())
@@ -898,6 +898,6 @@ class TransactionDispatcherTest {
                                         .build())
                                 .build(),
                         (BiConsumer<TransactionHandlers, PreHandleContext>) (handlers, meta) ->
-                                verify(handlers.fileSystemUndeleteHandler()).preHandle(meta)));
+                                verify(handlers.fileSystemUndeleteHandler()).preHandle(meta))));
     }
 }

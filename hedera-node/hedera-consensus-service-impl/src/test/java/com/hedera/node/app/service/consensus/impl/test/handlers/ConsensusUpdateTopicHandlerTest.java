@@ -16,7 +16,11 @@
 
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
+import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertOkResponse;
+import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withFailureReason;
+import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
+import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
@@ -24,6 +28,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
@@ -32,17 +37,21 @@ import com.google.protobuf.StringValue;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusUpdateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusUpdateTopicRecordBuilder;
+import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -59,6 +68,9 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
 
     @Mock
     private HandleContext handleContext;
+
+    @Mock
+    private AccountAccess accountAccess;
 
     @Mock
     private ExpiryValidator expiryValidator;
@@ -371,6 +383,106 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
                 .setExpirationTime(Timestamp.newBuilder().setSeconds(123L))
                 .build();
         assertFalse(ConsensusUpdateTopicHandler.wantsToMutateNonExpiryField(op));
+    }
+
+    @Test
+    void noneOfFieldsSetHaveNoRequiredKeys() {
+        given(accountAccess.getKey(asAccount(payerId))).willReturn(withKey(adminKey));
+
+        final var op =
+                OP_BUILDER.setExpirationTime(Timestamp.newBuilder().build()).build();
+        final var context = new PreHandleContext(accountAccess, txnWith(op));
+
+        subject.preHandle(context, readableStore);
+
+        assertOkResponse(context);
+        assertThat(context.getPayerKey()).isEqualTo(adminKey);
+
+        assertThat(context.getRequiredNonPayerKeys()).isEmpty();
+    }
+
+    @Test
+    void missingTopicFails() {
+        given(accountAccess.getKey(asAccount(payerId))).willReturn(withKey(adminKey));
+
+        final var op = OP_BUILDER
+                .setTopicID(TopicID.newBuilder().setTopicNum(123L).build())
+                .build();
+        final var context = new PreHandleContext(accountAccess, txnWith(op));
+
+        subject.preHandle(context, readableStore);
+
+        assertThat(context.getPayerKey()).isEqualTo(adminKey);
+        assertTrue(context.failed());
+        assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.INVALID_TOPIC_ID);
+        assertThat(context.getRequiredNonPayerKeys()).isEmpty();
+    }
+
+    @Test
+    void adminKeyAndOpAdminKeyAdded() {
+        given(accountAccess.getKey(asAccount(payerId))).willReturn(withKey(adminKey));
+
+        final var op = OP_BUILDER
+                .setAdminKey(key)
+                .setTopicID(TopicID.newBuilder().setTopicNum(1L).build())
+                .build();
+        final var context = new PreHandleContext(accountAccess, txnWith(op));
+
+        subject.preHandle(context, readableStore);
+
+        assertThat(context.getPayerKey()).isEqualTo(adminKey);
+        assertFalse(context.failed());
+        assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.OK);
+        // adminKey and op admin key
+        assertEquals(2, context.getRequiredNonPayerKeys().size());
+        //        assertSame(context.getRequiredNonPayerKeys().get(0), asHederaKey(key).get());
+    }
+
+    @Test
+    void autoRenewAccountKeyAdded() {
+        given(accountAccess.getKey(asAccount(payerId))).willReturn(withKey(adminKey));
+        given(accountAccess.getKey(autoRenewId)).willReturn(withKey(adminKey));
+
+        final var op = OP_BUILDER
+                .setAutoRenewAccount(autoRenewId)
+                .setTopicID(TopicID.newBuilder().setTopicNum(1L).build())
+                .build();
+        final var context = new PreHandleContext(accountAccess, txnWith(op));
+
+        subject.preHandle(context, readableStore);
+
+        assertThat(context.getPayerKey()).isEqualTo(adminKey);
+        assertFalse(context.failed());
+        assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.OK);
+        // adminKey and auto-renew key
+        assertEquals(2, context.getRequiredNonPayerKeys().size());
+    }
+
+    @Test
+    void missingAutoREnewAccountFails() {
+        given(accountAccess.getKey(asAccount(payerId))).willReturn(withKey(adminKey));
+        given(accountAccess.getKey(autoRenewId)).willReturn(withFailureReason(INVALID_AUTORENEW_ACCOUNT));
+
+        final var op = OP_BUILDER
+                .setAutoRenewAccount(autoRenewId)
+                .setTopicID(TopicID.newBuilder().setTopicNum(1L).build())
+                .build();
+        final var context = new PreHandleContext(accountAccess, txnWith(op));
+
+        subject.preHandle(context, readableStore);
+
+        assertThat(context.getPayerKey()).isEqualTo(adminKey);
+        assertTrue(context.failed());
+        assertThat(context.getStatus()).isEqualTo(INVALID_AUTORENEW_ACCOUNT);
+        // adminKey
+        assertEquals(1, context.getRequiredNonPayerKeys().size());
+    }
+
+    private TransactionBody txnWith(final ConsensusUpdateTopicTransactionBody op) {
+        return TransactionBody.newBuilder()
+                .setTransactionID(TransactionID.newBuilder().setAccountID(asAccount(payerId)))
+                .setConsensusUpdateTopic(op)
+                .build();
     }
 
     private TopicID wellKnownId() {
