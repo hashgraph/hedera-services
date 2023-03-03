@@ -146,18 +146,10 @@ public final class LongListOffHeap extends LongList {
     }
 
     /**
-     * @return number of memory chunks that this list may have
-     */
-    private int calculateNumberOfChunks(final long rightBoundary) {
-        return (int) ((rightBoundary - 1) / numLongsPerChunk + 1);
-    }
-
-    /**
      * Close and clean up resources
      */
     @Override
     public void close() {
-        maxIndexThatCanBeStored.set(0);
         size.set(0);
         for (int i = 0; i < chunkList.length(); i++) {
             final ByteBuffer directBuffer = chunkList.get(i);

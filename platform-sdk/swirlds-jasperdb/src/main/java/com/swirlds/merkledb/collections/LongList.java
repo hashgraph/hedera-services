@@ -66,11 +66,10 @@ public abstract class LongList implements CASableLongIndex, Closeable {
     protected static final int FORMAT_METADATA_SIZE_V1 = Integer.BYTES + Long.BYTES + Long.BYTES;
     /** The number of bytes to read for format metadata, v2:
      * - number of longs per chunk<br>
-     * - max index that can be stored<br>
      * - max number of longs supported by the list<br>
      * - min valid index<br>
      */
-    protected static final int FORMAT_METADATA_SIZE_V2 = Integer.BYTES + Long.BYTES + Long.BYTES + Long.BYTES;
+    protected static final int FORMAT_METADATA_SIZE_V2 = Integer.BYTES + Long.BYTES + Long.BYTES;
     /** The number for bytes to read for file header, v1 */
     protected static final int FILE_HEADER_SIZE_V1 = VERSION_METADATA_SIZE + FORMAT_METADATA_SIZE_V1;
     /** The number for bytes to read for file header, v2 */
@@ -91,14 +90,6 @@ public abstract class LongList implements CASableLongIndex, Closeable {
     protected final int numLongsPerChunk;
     /** Size in bytes for each memory chunk to allocate */
     protected final int memoryChunkSize;
-    /**
-     * The current maximum index that can be stored. This is determined dynamically based on the
-     * actual indexes used. It will grow, but never shrinks. Ultimately it would be nice to have
-     * some way to shrink this based on knowledge other parts of the system have about how many
-     * hashes need to be stored, but in the real system, this isn't important because we don't
-     * shrink the state size that dramatically, and on a reboot, this would be reset anyway.
-     */
-    protected final AtomicLong maxIndexThatCanBeStored = new AtomicLong(-1);
     /** The number of longs contained in this LongList. */
     protected final AtomicLong size = new AtomicLong(0);
     /**
@@ -169,7 +160,11 @@ public abstract class LongList implements CASableLongIndex, Closeable {
             final ByteBuffer headerBuffer = readFromFileChannel(fileChannel, formatMetadataSize);
             numLongsPerChunk = headerBuffer.getInt();
             memoryChunkSize = numLongsPerChunk * Long.BYTES;
-            maxIndexThatCanBeStored.set(headerBuffer.getLong());
+            if (formatVersion == INITIAL_VERSION) {
+                // skip the maxIndexThatCanBeStored field as it's no longer used
+                headerBuffer.getLong();
+            }
+
             maxLongs = headerBuffer.getLong();
             if (formatVersion >= MIN_VALID_INDEX_SUPPORT_VERSION) {
                 minValidIndex.set(headerBuffer.getLong());
@@ -321,7 +316,6 @@ public abstract class LongList implements CASableLongIndex, Closeable {
         headerBuffer.rewind();
         headerBuffer.putInt(CURRENT_FILE_FORMAT_VERSION);
         headerBuffer.putInt(getNumLongsPerChunk());
-        headerBuffer.putLong(maxIndexThatCanBeStored.get());
         headerBuffer.putLong(maxLongs);
         headerBuffer.putLong(minValidIndex.get());
         headerBuffer.flip();
@@ -365,6 +359,13 @@ public abstract class LongList implements CASableLongIndex, Closeable {
      */
     protected void onUpdateMinValidIndex(final long newMinValidIndex) {
         // no op
+    }
+
+    /**
+     * @return number of memory chunks that this list may have
+     */
+    protected int calculateNumberOfChunks(final long rightBoundary) {
+        return (int) ((rightBoundary - 1) / numLongsPerChunk + 1);
     }
 
     /**

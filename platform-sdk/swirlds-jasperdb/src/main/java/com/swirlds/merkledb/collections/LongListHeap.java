@@ -107,7 +107,6 @@ public final class LongListHeap extends LongList {
     /** Close and free all resources */
     @Override
     public void close() {
-        maxIndexThatCanBeStored.set(0);
         size.set(0);
         data.clear();
     }
@@ -182,10 +181,9 @@ public final class LongListHeap extends LongList {
         // the buffer is bigger than needed. Because the index for inserting the value is fixed,
         // there is no contention
         // over the index only over the size of the buffer.
-        while (newIndex > maxIndexThatCanBeStored.get()) {
+        while (calculateNumberOfChunks(newIndex) > data.size()) {
             // need to expand
             data.add(new AtomicLongArray(numLongsPerChunk));
-            maxIndexThatCanBeStored.addAndGet(numLongsPerChunk);
         }
 
         // updates the index to the max of new index and its current value. If two threads are
