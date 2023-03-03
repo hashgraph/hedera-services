@@ -24,6 +24,9 @@ import static org.mockito.BDDMockito.willThrow;
 
 import com.hedera.hashgraph.pbj.runtime.io.Bytes;
 import com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,5 +55,17 @@ class TemporaryUtilsTest {
         given(grpcKey.toByteArray()).willReturn("NONSENSE".getBytes());
 
         assertThrows(IllegalStateException.class, () -> TemporaryUtils.fromGrpcKey(grpcKey));
+    }
+
+    @Test
+    void formatsTransactionId() {
+        final var txnId = TransactionID.newBuilder()
+                .setAccountID(AccountID.newBuilder().setAccountNum(666).build())
+                .setTransactionValidStart(Timestamp.newBuilder()
+                        .setSeconds(1_234_567)
+                        .setNanos(890)
+                        .build())
+                .build();
+        assertEquals("0.0.666-1234567-890", TemporaryUtils.mirrorTxnId(txnId));
     }
 }
