@@ -219,7 +219,6 @@ public class TransactionDispatcher {
             @NonNull final ConsensusDeleteTopicTransactionBody topicDeletion,
             @NonNull final WritableTopicStore topicStore) {
         final var handler = handlers.consensusDeleteTopicHandler();
-        final var recordBuilder = handler.newRecordBuilder();
         handler.handle(topicDeletion, topicStore);
         // TODO: Commit will be called in workflow or some other place when handle workflow is implemented
         // This is temporary solution to make sure that topic is created

@@ -83,6 +83,7 @@ public class MonoExpiryValidator implements ExpiryValidator {
         try {
             validExpiry = validator.isValidExpiry(effectiveExpiry);
         } catch (final DateTimeException ignore) {
+            // ignore
         }
         if (!validExpiry) {
             throw new HandleStatusException(INVALID_EXPIRATION_TIME);

@@ -33,8 +33,6 @@ import java.util.Objects;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * A {@link TransitionRunner} that delegates to a {@link TransactionDispatcher} for
@@ -42,8 +40,6 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class AdaptedMonoTransitionRunner extends TransitionRunner {
-    private static final Logger log = LogManager.getLogger(AdaptedMonoTransitionRunner.class);
-
     private final TransactionDispatcher dispatcher;
     private final Set<HederaFunctionality> functionsToDispatch;
     private final WritableStoreFactory writableStoreFactory;
