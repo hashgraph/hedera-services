@@ -86,9 +86,7 @@ public interface ReadableKVState<K extends Comparable<K>, V> {
     Set<K> readKeys();
 
     /**
-     * Gets the size of the backing store in case of {@link ReadableKVState}.
-     * In case of {@link WritableKVState} it returns the size of the backing source and
-     * any modifications (additions or removals) on state.
+     * Gets the number of keys in the {@link ReadableKVState}.
      * @return size of the data source.
      */
     @NonNull
