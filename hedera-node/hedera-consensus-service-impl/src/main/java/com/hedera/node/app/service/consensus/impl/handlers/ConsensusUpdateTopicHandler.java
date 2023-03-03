@@ -88,7 +88,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         }
 
         if (op.hasAdminKey()) {
-            context.addToReqNonPayerKeys(asHederaKey(op.getAdminKey()).get());
+            asHederaKey(op.getAdminKey()).ifPresent(context::addToReqNonPayerKeys);
         }
         if (op.hasAutoRenewAccount() && !AccountID.getDefaultInstance().equals(op.getAutoRenewAccount())) {
             context.addNonPayerKey(op.getAutoRenewAccount(), ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);

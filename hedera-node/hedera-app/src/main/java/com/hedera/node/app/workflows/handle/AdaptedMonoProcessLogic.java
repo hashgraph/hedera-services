@@ -29,7 +29,6 @@ import com.hedera.node.app.service.mono.txns.ProcessLogic;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -38,13 +37,10 @@ import javax.inject.Singleton;
 
 @Singleton
 public class AdaptedMonoProcessLogic implements ProcessLogic {
-    private final PreHandleWorkflow preHandleWorkflow;
     private final StandardProcessLogic monoProcessLogic;
 
     @Inject
-    public AdaptedMonoProcessLogic(
-            @NonNull final PreHandleWorkflow preHandleWorkflow, @NonNull final StandardProcessLogic monoProcessLogic) {
-        this.preHandleWorkflow = preHandleWorkflow;
+    public AdaptedMonoProcessLogic(@NonNull final StandardProcessLogic monoProcessLogic) {
         this.monoProcessLogic = monoProcessLogic;
     }
 
@@ -80,8 +76,8 @@ public class AdaptedMonoProcessLogic implements ProcessLogic {
             accessor.setExpandedSigStatus(preHandleStatus);
             accessor.setLinkedRefs(new LinkedRefs());
             return accessor;
-        } catch (InvalidProtocolBufferException e) {
-            throw new AssertionError("Not implemented");
+        } catch (final InvalidProtocolBufferException e) {
+            throw new IllegalStateException("An unparseable transaction was submitted", e);
         }
     }
 }

@@ -28,7 +28,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
@@ -100,11 +99,7 @@ public class TopicUpdateSuite extends HapiSuite {
                         updateTopic("testTopic")
                                 .adminKey(NONSENSE_KEY)
                                 .hasPrecheckFrom(BAD_ENCODING, OK)
-                                // In hedera-app we don't pre-check the admin key encoding,
-                                // so we end up with invalid signature instead; TODO - why
-                                // is this giving INVALID_PAYER_SIGNATURE instead of
-                                // INVALID_SIGNATURE when workflows are enabled?
-                                .hasKnownStatus(INVALID_PAYER_SIGNATURE),
+                                .hasKnownStatus(BAD_ENCODING),
                         updateTopic("testTopic").submitKey(NONSENSE_KEY).hasKnownStatus(BAD_ENCODING),
                         updateTopic("testTopic").topicMemo(longMemo).hasKnownStatus(MEMO_TOO_LONG),
                         updateTopic("testTopic").topicMemo(ZERO_BYTE_MEMO).hasKnownStatus(INVALID_ZERO_BYTE_IN_STRING),
@@ -225,7 +220,7 @@ public class TopicUpdateSuite extends HapiSuite {
                 .then(
                         updateTopic("testTopic")
                                 .expiry(now - 1) // less than consensus time
-                                .hasKnownStatus(INVALID_EXPIRATION_TIME),
+                                .hasKnownStatusFrom(INVALID_EXPIRATION_TIME, EXPIRATION_REDUCTION_NOT_ALLOWED),
                         updateTopic("testTopic")
                                 .expiry(now + 1000) // 1000 < autoRenewPeriod
                                 .hasKnownStatus(EXPIRATION_REDUCTION_NOT_ALLOWED));
