@@ -1,0 +1,10 @@
+apiVersion: 1
+
+providers:
+  - name: System-Dashboard    # A uniquely identifiable name for the provider
+    folder: Services # The folder where to place the dashboards
+    type: file
+    options:
+      path: /etc/grafana/provisioning/dashboards/system-dashboard.json
+      # Default path for Windows: C:/Program Files/GrafanaLabs/grafana/public/dashboards
+      # Default path for Linux is: /var/lib/grafana/dashboards
