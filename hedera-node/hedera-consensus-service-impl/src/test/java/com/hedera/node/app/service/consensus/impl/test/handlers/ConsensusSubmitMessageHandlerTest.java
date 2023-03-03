@@ -305,7 +305,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
                 topicEntityNum, TxnUtils.randomUtf8Bytes(2000).toString());
 
         final var recordBuilder = subject.newRecordBuilder();
-        config = new ConsensusServiceConfig(10, 10);
+        config = new ConsensusServiceConfig(10, 5);
 
         final var msg = assertThrows(
                 HandleStatusException.class,
