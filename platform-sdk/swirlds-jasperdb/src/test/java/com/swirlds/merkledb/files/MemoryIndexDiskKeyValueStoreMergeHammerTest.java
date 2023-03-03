@@ -33,7 +33,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Tag;
@@ -432,7 +431,6 @@ class MemoryIndexDiskKeyValueStoreMergeHammerTest {
     private static final class Merger extends Worker {
         private int iteration = 1;
         private final MemoryIndexDiskKeyValueStore<long[]> coll;
-        private final Semaphore mergingPaused = new Semaphore(1);
 
         Merger(final MemoryIndexDiskKeyValueStore<long[]> coll) {
             this.coll = coll;
@@ -442,14 +440,13 @@ class MemoryIndexDiskKeyValueStoreMergeHammerTest {
         protected void doWork() throws Exception {
             if (iteration % 100 == 0) {
                 // Do a big merge that includes everything
-                coll.merge(list -> list, mergingPaused, 2);
+                coll.merge(list -> list, 2);
             } else if (iteration % 25 == 0) {
                 // Do a medium merge that just has medium size files
                 coll.merge(
                         list -> list.stream()
                                 .filter(file -> file.getSize() > 1_000_000 && file.getSize() < 32_000_000)
                                 .collect(Collectors.toList()),
-                        mergingPaused,
                         2);
             } else if (iteration % 5 == 0) {
                 // Do a small merge
@@ -457,7 +454,6 @@ class MemoryIndexDiskKeyValueStoreMergeHammerTest {
                         list -> list.stream()
                                 .filter(file -> file.getSize() < 1_000_000)
                                 .collect(Collectors.toList()),
-                        mergingPaused,
                         2);
             } else {
                 MILLISECONDS.sleep(10);
