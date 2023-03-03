@@ -1,6 +1,5 @@
 package com.swirlds.common.threading;
 
-import static com.swirlds.common.utility.CompareTo.isGreaterThan;
 import static com.swirlds.common.utility.CompareTo.isLessThan;
 
 import com.swirlds.common.time.OSTime;
@@ -8,8 +7,6 @@ import com.swirlds.common.time.Time;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.Phaser;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -74,7 +71,7 @@ public class CountUpLatch {
      * @param count the new count, must be greater than the current value
      * @throws IllegalArgumentException if the new count is less than the current count
      */
-    public void set(final long count) {
+    public synchronized void set(final long count) {
         this.currentCount.getAndUpdate(original -> {
             if (count < original) {
                 throw new IllegalArgumentException("Current count is " + original +
@@ -90,7 +87,7 @@ public class CountUpLatch {
      *
      * @param delta the amount to increment the count by
      */
-    public void add(final long delta) {
+    public synchronized void add(final long delta) {
         currentCount.addAndGet(delta);
         phaser.arriveAndAwaitAdvance();
     }
