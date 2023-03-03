@@ -26,6 +26,9 @@ import static com.hedera.node.app.service.mono.contracts.execution.traceability.
 import static com.hedera.node.app.service.mono.contracts.execution.traceability.CallOperationType.OP_UNKNOWN;
 import static com.hedera.node.app.service.mono.contracts.execution.traceability.ContractActionType.CALL;
 import static com.hedera.node.app.service.mono.contracts.execution.traceability.ContractActionType.CREATE;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -34,16 +37,33 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.google.common.collect.Sets;
+import com.hedera.node.app.service.mono.contracts.execution.traceability.CallOperationType;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.ContractActionType;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.HederaTracer;
+import com.hedera.node.app.service.mono.contracts.execution.traceability.SolidityAction;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
+import java.util.Collection;
 import java.util.Deque;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.apache.tuweni.bytes.Bytes;
+import org.assertj.core.api.SoftAssertions;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
@@ -60,10 +80,12 @@ import org.hyperledger.besu.evm.operation.Operation.OperationResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class HederaTracerTest {
 
     private static final Code code = CodeFactory.createCode(Bytes.of(4), Hash.EMPTY, 0, false);
@@ -74,6 +96,13 @@ class HederaTracerTest {
     private static final Address originator = Address.fromHexString("0x1");
     private static final Address contract = Address.fromHexString("0x2");
     private static final Address accountReceiver = Address.fromHexString("0x3");
+    private static final Address sender = Address.fromHexString("0x4");
+
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private HederaTracer loggedHederaTracer;
 
     @Mock
     private MessageFrame messageFrame;
@@ -92,6 +121,98 @@ class HederaTracerTest {
     @BeforeEach
     void setUp() {
         subject = new HederaTracer(true);
+    }
+
+    /**
+     * Helper for testing correctness of (what will eventually be) protobuf `oneof` fields
+     *
+     * Add to param `ss` the names of all fields you're setting that belong to the
+     * `oneof` being checked.  Will ensure that only _one_ field is set, and if not,
+     * produce an appropriate diagnostic.
+     *
+     * @param name name of the `oneof`
+     * @param ss names of the _present_ fields that _belong_ to the `oneof`
+     */
+    void oneofChecker(final String name, final Map<String, Boolean> ss) {
+        final var presentFields = ss.entrySet().stream()
+                .filter(Map.Entry::getValue)
+                .map(Map.Entry::getKey)
+                .sorted()
+                .toList();
+        final var presentFieldNames = String.join(", ", presentFields);
+        final var allFieldNames = ss.keySet().stream().sorted().collect(Collectors.joining(", "));
+
+        if (presentFields.size() == 0) {
+            assertThat(presentFields)
+                    .as("%s not supplied, needs one of %s".formatted(name, allFieldNames))
+                    .hasSize(1);
+        } else if (presentFields.size() != 1) {
+            assertThat(presentFields)
+                    .as("%s has more than one field supplied, must have only one of %s"
+                            .formatted(name, presentFieldNames))
+                    .hasSize(1);
+        }
+    }
+    ;
+
+    @Test
+    void oneofCheckerInternalTest() {
+        assertThatNoException().isThrownBy(() -> {
+            oneofChecker("check-ok", Map.of("foo", false, "bar", true, "bear", false));
+        });
+        assertThatExceptionOfType(AssertionError.class)
+                .isThrownBy(() -> {
+                    oneofChecker("check-0-fails", Map.of("foo", false, "bar", false, "bear", false));
+                })
+                .withMessageContaining("check-0-fails not supplied, needs one of bar, bear, foo");
+        assertThatExceptionOfType(AssertionError.class)
+                .isThrownBy(() -> {
+                    oneofChecker("check-2-fails", Map.of("foo", false, "bar", true, "bear", true));
+                })
+                .withMessageContaining(
+                        "check-2-fails has more than one field supplied, must have only one of bar, bear");
+    }
+
+    void validateAllActionFieldsAreSet(final SolidityAction solidityAction) {
+        final var oneof = new TreeMap<String, Boolean>();
+
+        assertThat(solidityAction.getCallType())
+                .as("call_type must have valid enum value")
+                .isNotNull()
+                .isNotEqualTo(ContractActionType.NO_ACTION);
+
+        oneof.clear();
+        oneof.put("calling_account", null != solidityAction.getCallingAccount());
+        oneof.put("calling_contract", null != solidityAction.getCallingContract());
+        oneofChecker("caller", oneof);
+
+        // can't check `gas` - it's a final integer
+
+        assertThat(solidityAction.getInput())
+                .as("input must be non-null (though it can be empty)")
+                .isNotNull();
+
+        oneof.clear();
+        oneof.put("recipient_account", null != solidityAction.getRecipientAccount());
+        oneof.put("recipient_contract", null != solidityAction.getRecipientContract());
+        oneof.put("targeted_address", null != solidityAction.getInvalidSolidityAddress());
+        oneofChecker("recipient", oneof);
+
+        // can't check `value` - it's a final integer
+        // can't check `gas_used` - it's a naked integer that might legitimately be 0
+
+        oneof.clear();
+        oneof.put("output", null != solidityAction.getOutput());
+        oneof.put("revert_reason", null != solidityAction.getRevertReason());
+        oneof.put("error", null != solidityAction.getError());
+        oneofChecker("result_data", oneof);
+
+        // can't check `call_depth` - it's a final integer
+
+        assertThat(solidityAction.getCallOperationType())
+                .as("call_operation_type must have valid enum value")
+                .isNotNull()
+                .isNotEqualTo(CallOperationType.OP_UNKNOWN);
     }
 
     @Test
@@ -214,6 +335,7 @@ class HederaTracerTest {
         // then
         final var actions = subject.getActions();
         final var solidityAction = actions.get(0);
+        validateAllActionFieldsAreSet(solidityAction);
         assertEquals(initialGas - remainingGasAfterExecution, solidityAction.getGasUsed());
         assertEquals(output.toArrayUnsafe(), solidityAction.getOutput());
         assertEquals(OP_CALL, solidityAction.getCallOperationType());
@@ -233,6 +355,7 @@ class HederaTracerTest {
         // then
         final var actions = subject.getActions();
         final var solidityAction = actions.get(0);
+        validateAllActionFieldsAreSet(solidityAction);
         assertEquals(initialGas - remainingGasAfterExecution, solidityAction.getGasUsed());
         assertArrayEquals(new byte[0], solidityAction.getOutput());
         assertEquals(OP_CREATE, solidityAction.getCallOperationType());
@@ -252,6 +375,7 @@ class HederaTracerTest {
         subject.tracePostExecution(messageFrame, operationResult);
         // then
         final var solidityAction = subject.getActions().get(0);
+        validateAllActionFieldsAreSet(solidityAction);
         assertEquals(initialGas - remainingGasAfterExecution, solidityAction.getGasUsed());
         assertEquals(revertReason.toArrayUnsafe(), solidityAction.getRevertReason());
     }
@@ -269,44 +393,56 @@ class HederaTracerTest {
         subject.tracePostExecution(messageFrame, operationResult);
         // then
         final var solidityAction = subject.getActions().get(0);
+        validateAllActionFieldsAreSet(solidityAction);
         assertEquals(initialGas - remainingGasAfterExecution, solidityAction.getGasUsed());
         assertArrayEquals(new byte[0], solidityAction.getRevertReason());
     }
 
-    @Test
-    void finalizesExceptionallyHaltedFrameWithoutHaltReasonAsExpected() {
+    @ParameterizedTest
+    @EnumSource(
+            value = State.class,
+            names = {"EXCEPTIONAL_HALT", "COMPLETED_FAILED"})
+    void finalizesFailedFrameWithoutHaltReasonAsExpected(State state) {
         // given
         givenTracedExecutingFrame(Type.MESSAGE_CALL);
         // when
         subject.init(messageFrame);
-        given(messageFrame.getState()).willReturn(State.EXCEPTIONAL_HALT);
+        given(messageFrame.getState()).willReturn(state);
         subject.tracePostExecution(messageFrame, operationResult);
         // then
         final var solidityAction = subject.getActions().get(0);
+        validateAllActionFieldsAreSet(solidityAction);
         assertEquals(initialGas, solidityAction.getGasUsed());
         assertArrayEquals(new byte[0], solidityAction.getError());
         assertNull(solidityAction.getInvalidSolidityAddress());
     }
 
-    @Test
-    void finalizesExceptionallyHaltedFrameWithHaltReasonAsExpected() {
+    @ParameterizedTest
+    @EnumSource(
+            value = State.class,
+            names = {"EXCEPTIONAL_HALT", "COMPLETED_FAILED"})
+    void finalizesFailedFrameWithHaltReasonAsExpected(State state) {
         // given
         givenTracedExecutingFrame(Type.MESSAGE_CALL);
         subject.init(messageFrame);
         // when
-        given(messageFrame.getState()).willReturn(State.EXCEPTIONAL_HALT);
+        given(messageFrame.getState()).willReturn(state);
         final var codeTooLarge = Optional.of(ExceptionalHaltReason.CODE_TOO_LARGE);
         given(messageFrame.getExceptionalHaltReason()).willReturn(codeTooLarge);
         subject.tracePostExecution(messageFrame, operationResult);
         // then
         final var solidityAction = subject.getActions().get(0);
+        validateAllActionFieldsAreSet(solidityAction);
         assertEquals(initialGas, solidityAction.getGasUsed());
         assertArrayEquals(codeTooLarge.get().name().getBytes(StandardCharsets.UTF_8), solidityAction.getError());
         assertNull(solidityAction.getInvalidSolidityAddress());
     }
 
-    @Test
-    void finalizesExceptionallyHaltedFrameWithInvalidAddressRecipientAsExpected() {
+    @ParameterizedTest
+    @EnumSource(
+            value = State.class,
+            names = {"EXCEPTIONAL_HALT", "COMPLETED_FAILED"})
+    void finalizesFailedFrameWithInvalidAddressRecipientAsExpected(State state) {
         // given
         given(messageFrame.getType()).willReturn(Type.MESSAGE_CALL);
         given(messageFrame.getCode()).willReturn(CodeV0.EMPTY_CODE);
@@ -324,7 +460,7 @@ class HederaTracerTest {
 
         subject.init(messageFrame);
         // when
-        given(messageFrame.getState()).willReturn(State.EXCEPTIONAL_HALT);
+        given(messageFrame.getState()).willReturn(state);
         final var invalidSolidityAddress = Optional.of(INVALID_SOLIDITY_ADDRESS);
         given(messageFrame.getExceptionalHaltReason()).willReturn(invalidSolidityAddress);
         given(messageFrame.getStackItem(1)).willReturn(Bytes.of(contract.toArrayUnsafe()));
@@ -334,6 +470,7 @@ class HederaTracerTest {
         subject.tracePostExecution(messageFrame, operationResult);
         // then
         final var topLevelAction = subject.getActions().get(0);
+        validateAllActionFieldsAreSet(topLevelAction);
         assertEquals(initialGas, topLevelAction.getGasUsed());
         assertArrayEquals(
                 invalidSolidityAddress.get().name().getBytes(StandardCharsets.UTF_8), topLevelAction.getError());
@@ -341,6 +478,7 @@ class HederaTracerTest {
         assertNull(topLevelAction.getRecipientContract());
         assertNull(topLevelAction.getInvalidSolidityAddress());
         final var syntheticInvalidAddressAction = subject.getActions().get(1);
+        validateAllActionFieldsAreSet(syntheticInvalidAddressAction);
         assertEquals(CALL, syntheticInvalidAddressAction.getCallType());
         assertEquals(OP_CALL, syntheticInvalidAddressAction.getCallOperationType());
         assertEquals(0, syntheticInvalidAddressAction.getValue());
@@ -353,8 +491,11 @@ class HederaTracerTest {
         assertEquals(messageFrame.getRemainingGas(), syntheticInvalidAddressAction.getGas());
     }
 
-    @Test
-    void finalizesExceptionallyHaltedCreateFrameWithInvalidAddressReasonAsExpected() {
+    @ParameterizedTest
+    @EnumSource(
+            value = State.class,
+            names = {"EXCEPTIONAL_HALT", "COMPLETED_FAILED"})
+    void finalizesFailedCreateFrameWithInvalidAddressReasonAsExpected(State state) {
         // given
         given(messageFrame.getType()).willReturn(Type.CONTRACT_CREATION);
         given(messageFrame.getCode()).willReturn(CodeV0.EMPTY_CODE);
@@ -371,13 +512,14 @@ class HederaTracerTest {
 
         subject.init(messageFrame);
         // when
-        given(messageFrame.getState()).willReturn(State.EXCEPTIONAL_HALT);
+        given(messageFrame.getState()).willReturn(state);
         final var invalidSolidityAddress = Optional.of(INVALID_SOLIDITY_ADDRESS);
         given(messageFrame.getExceptionalHaltReason()).willReturn(invalidSolidityAddress);
         subject.tracePostExecution(messageFrame, operationResult);
         // then
         assertEquals(1, subject.getActions().size());
         final var topLevelAction = subject.getActions().get(0);
+        validateAllActionFieldsAreSet(topLevelAction);
         assertEquals(initialGas, topLevelAction.getGasUsed());
         assertArrayEquals(
                 invalidSolidityAddress.get().name().getBytes(StandardCharsets.UTF_8), topLevelAction.getError());
@@ -386,16 +528,20 @@ class HederaTracerTest {
         assertNull(topLevelAction.getInvalidSolidityAddress());
     }
 
-    @Test
-    void clearsRecipientOfExceptionallyHaltedCreateFrame() {
+    @ParameterizedTest
+    @EnumSource(
+            value = State.class,
+            names = {"EXCEPTIONAL_HALT", "COMPLETED_FAILED"})
+    void clearsRecipientOfFailedCreateFrame(State state) {
         // given
         givenTracedExecutingFrame(Type.CONTRACT_CREATION);
         subject.init(messageFrame);
         // when
-        given(messageFrame.getState()).willReturn(State.EXCEPTIONAL_HALT);
+        given(messageFrame.getState()).willReturn(state);
         subject.tracePostExecution(messageFrame, operationResult);
         // then
         final var solidityAction = subject.getActions().get(0);
+        // this is a child frame where current frame is CODE_EXECUTING, so we aren't finalized at this time
         assertNull(solidityAction.getRecipientAccount());
         assertNull(solidityAction.getRecipientContract());
     }
@@ -410,6 +556,7 @@ class HederaTracerTest {
         subject.tracePostExecution(messageFrame, operationResult);
         // then
         final var solidityAction = subject.getActions().get(0);
+        // this is a frame where current frame is CODE_EXECUTING, so we aren't finalized at this time
         assertNull(solidityAction.getRecipientAccount());
         assertNull(solidityAction.getRecipientContract());
     }
@@ -437,6 +584,7 @@ class HederaTracerTest {
         subject.tracePrecompileResult(messageFrame, ContractActionType.PRECOMPILE);
         // then
         final var solidityAction = subject.getActions().get(0);
+        validateAllActionFieldsAreSet(solidityAction);
         assertEquals(ContractActionType.PRECOMPILE, solidityAction.getCallType());
         assertNull(solidityAction.getRecipientAccount());
         assertEquals(EntityId.fromAddress(contract), solidityAction.getRecipientContract());
@@ -467,6 +615,7 @@ class HederaTracerTest {
         subject.tracePrecompileResult(messageFrame, ContractActionType.SYSTEM);
         // then
         final var solidityAction = subject.getActions().get(0);
+        validateAllActionFieldsAreSet(solidityAction);
         assertEquals(ContractActionType.SYSTEM, solidityAction.getCallType());
         assertNull(solidityAction.getRecipientAccount());
         assertEquals(EntityId.fromAddress(contract), solidityAction.getRecipientContract());
@@ -522,6 +671,7 @@ class HederaTracerTest {
         // then
         assertEquals(1, subject.getActions().size());
         final var action = subject.getActions().get(0);
+        validateAllActionFieldsAreSet(action);
         assertEquals(contract, action.getRecipientAccount().toEvmAddress());
         assertNull(action.getInvalidSolidityAddress());
         assertNull(action.getRecipientContract());
@@ -554,13 +704,17 @@ class HederaTracerTest {
 
         assertEquals(1, subject.getActions().size());
         final var action = subject.getActions().get(0);
+        validateAllActionFieldsAreSet(action);
         assertEquals(contract, action.getRecipientAccount().toEvmAddress());
         assertNull(action.getInvalidSolidityAddress());
         assertNull(action.getRecipientContract());
     }
 
-    @Test
-    void failedLazyCreationActionsIsFinalizedAsExpected() {
+    @ParameterizedTest
+    @EnumSource(
+            value = State.class,
+            names = {"EXCEPTIONAL_HALT", "COMPLETED_FAILED"})
+    void failedLazyCreationActionsIsFinalizedAsExpected(State state) {
         // given
         given(messageFrame.getType()).willReturn(Type.MESSAGE_CALL);
         given(messageFrame.getOriginatorAddress()).willReturn(originator);
@@ -576,13 +730,14 @@ class HederaTracerTest {
         subject.init(messageFrame);
 
         // when
-        given(messageFrame.getState()).willReturn(State.EXCEPTIONAL_HALT);
+        given(messageFrame.getState()).willReturn(state);
         given(messageFrame.getExceptionalHaltReason()).willReturn(Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
 
         subject.tracePostExecution(messageFrame, operationResult);
 
         assertEquals(1, subject.getActions().size());
         final var action = subject.getActions().get(0);
+        validateAllActionFieldsAreSet(action);
         assertArrayEquals(contract.toArrayUnsafe(), action.getInvalidSolidityAddress());
         assertNull(action.getRecipientAccount());
         assertNull(action.getRecipientContract());
@@ -652,6 +807,7 @@ class HederaTracerTest {
         // assert child frame action is initialized as expected
         assertEquals(2, subject.getActions().size());
         final var childFrame1 = subject.getActions().get(1);
+        // this is a child frame where current frame is CODE_SUSPENDED, so we aren't finalized at this time
         assertEquals(OP_CALL, childFrame1.getCallOperationType());
     }
 
@@ -666,6 +822,7 @@ class HederaTracerTest {
         // assert child frame action is initialized as expected
         assertEquals(2, subject.getActions().size());
         final var childFrame1 = subject.getActions().get(1);
+        // this is a child frame where current frame is CODE_SUSPENDED, so we aren't finalized at this time
         assertEquals(OP_CREATE, childFrame1.getCallOperationType());
     }
 
@@ -680,6 +837,7 @@ class HederaTracerTest {
         // assert child frame action is initialized as expected
         assertEquals(2, subject.getActions().size());
         final var childFrame1 = subject.getActions().get(1);
+        // this is a child frame where current frame is CODE_SUSPENDED, so we aren't finalized at this time
         assertEquals(OP_CALLCODE, childFrame1.getCallOperationType());
     }
 
@@ -694,6 +852,7 @@ class HederaTracerTest {
         // assert child frame action is initialized as expected
         assertEquals(2, subject.getActions().size());
         final var childFrame1 = subject.getActions().get(1);
+        // this is a child frame where current frame is CODE_SUSPENDED, so we aren't finalized at this time
         assertEquals(OP_DELEGATECALL, childFrame1.getCallOperationType());
     }
 
@@ -708,6 +867,7 @@ class HederaTracerTest {
         // assert child frame action is initialized as expected
         assertEquals(2, subject.getActions().size());
         final var childFrame1 = subject.getActions().get(1);
+        // this is a child frame where current frame is CODE_SUSPENDED, so we aren't finalized at this time
         assertEquals(OP_CREATE2, childFrame1.getCallOperationType());
     }
 
@@ -722,6 +882,7 @@ class HederaTracerTest {
         // assert child frame action is initialized as expected
         assertEquals(2, subject.getActions().size());
         final var childFrame1 = subject.getActions().get(1);
+        // this is a child frame where current frame is CODE_SUSPENDED, so we aren't finalized at this time
         assertEquals(OP_STATICCALL, childFrame1.getCallOperationType());
     }
 
@@ -736,6 +897,7 @@ class HederaTracerTest {
         // assert child frame action is initialized as expected
         assertEquals(2, subject.getActions().size());
         final var childFrame1 = subject.getActions().get(1);
+        // this is a child frame where current frame is CODE_SUSPENDED, so we aren't finalized at this time
         assertEquals(OP_UNKNOWN, childFrame1.getCallOperationType());
     }
 
@@ -788,5 +950,158 @@ class HederaTracerTest {
         }
 
         subject.tracePostExecution(messageFrame, operationResult);
+    }
+
+    @Test
+    void finalizeOperationTest() {
+
+        given(messageFrame.getContractAddress()).willReturn(contract);
+        given(messageFrame.getOriginatorAddress()).willReturn(originator);
+        given(messageFrame.getRecipientAddress()).willReturn(accountReceiver);
+        given(messageFrame.getSenderAddress()).willReturn(sender);
+        given(messageFrame.getState()).willReturn(State.CODE_EXECUTING);
+        given(messageFrame.getType()).willReturn(Type.MESSAGE_CALL);
+
+        Function<Collection<SolidityAction>, Collection<SolidityAction>> getOnlyValid =
+                cas -> cas.stream().filter(SolidityAction::isValid).toList();
+        Function<Collection<SolidityAction>, Integer> countValid =
+                cas -> getOnlyValid.apply(cas).size();
+
+        final var badSolidityAction1 = new SolidityAction(CALL, 7, new byte[7], 7, 7);
+        assertThat(badSolidityAction1.isValid()).isFalse();
+        final var badSolidityAction2 = copy(badSolidityAction1);
+        final var badSolidityAction3 = copy(badSolidityAction1);
+        final var goodSolidityAction1 = new SolidityAction(CALL, 7, new byte[7], 7, 7);
+        {
+            goodSolidityAction1.setCallingAccount(new EntityId());
+            goodSolidityAction1.setRecipientAccount(new EntityId());
+            goodSolidityAction1.setGasUsed(7);
+            goodSolidityAction1.setOutput(new byte[7]);
+            goodSolidityAction1.setCallOperationType(OP_CALL);
+        }
+        assertThat(goodSolidityAction1.isValid()).isTrue();
+        final var goodSolidityAction2 = copy(goodSolidityAction1);
+        final var goodSolidityAction3 = copy(goodSolidityAction1);
+
+        final var actions = Set.of(
+                badSolidityAction1,
+                badSolidityAction2,
+                badSolidityAction3,
+                goodSolidityAction1,
+                goodSolidityAction2,
+                goodSolidityAction3);
+        assertThat(countValid.apply(actions)).isEqualTo(3);
+        final var powerActions = Sets.powerSet(actions);
+        assertThat(powerActions).hasSize(64);
+
+        final var namedSAs = Map.of(
+                badSolidityAction1,
+                "bad1",
+                badSolidityAction2,
+                "bad2",
+                badSolidityAction3,
+                "bad3",
+                goodSolidityAction1,
+                "good1",
+                goodSolidityAction2,
+                "good2",
+                goodSolidityAction3,
+                "good3");
+        assertThat(namedSAs).hasSize(6);
+
+        final var softly = new SoftAssertions();
+        for (final var testStackDepth : IntStream.of(0, 1, 3).toArray())
+            for (final var test : powerActions) {
+
+                final var sut = new HederaTracer(true) {
+                    public void setAllActions(final Collection<SolidityAction> sas) {
+                        this.allActions = List.copyOf(sas);
+                    }
+
+                    public Collection<SolidityAction> getAllActions() {
+                        return List.copyOf(allActions);
+                    }
+
+                    public void pushSA() {
+                        currentActionsStack.add(new SolidityAction(CALL, 7, new byte[7], 7, 7));
+                    }
+                };
+
+                Function<Collection<SolidityAction>, String> toString =
+                        sas -> sas.stream().map(namedSAs::get).sorted().collect(Collectors.joining(","));
+
+                final var expectedNActions = test.size();
+                final var expectedNValidActions = countValid.apply(test);
+                final var expectedNInvalidActions = expectedNActions - expectedNValidActions;
+                final var expectedValidActions = getOnlyValid.apply(test);
+                final var expectedTestCaseIsValid = expectedNActions == expectedNValidActions;
+
+                sut.setAllActions(test);
+                for (int k = 0; k < testStackDepth; k++) sut.pushSA();
+                sut.finalizeOperation(messageFrame);
+
+                final var actualActions = sut.getAllActions();
+                softly.assertThat(actualActions).hasSize(expectedNValidActions);
+                softly.assertThat(countValid.apply(actualActions)).isEqualTo(expectedNValidActions);
+                softly.assertThat(actualActions).hasSameElementsAs(expectedValidActions);
+
+                final var testName =
+                        "test case [%s] with %d invalid".formatted(toString.apply(test), expectedNInvalidActions);
+
+                final var actualLogs = Stream.of(
+                                logCaptor.debugLogs().stream(),
+                                logCaptor.infoLogs().stream(),
+                                logCaptor.warnLogs().stream(),
+                                logCaptor.errorLogs().stream())
+                        .flatMap(s -> s)
+                        .toList();
+
+                if (expectedTestCaseIsValid && testStackDepth == 0) {
+                    softly.assertThat(actualLogs).as(testName + " #logs").hasSize(0);
+                } else {
+                    softly.assertThat(actualLogs).as(testName + " #logs").hasSize(1);
+                    final var actualLog = actualLogs.get(0);
+
+                    if (testStackDepth > 0) {
+                        softly.assertThat(actualLog)
+                                .as(testName)
+                                .contains("currentActionsStack not empty")
+                                .contains("has %d elements".formatted(testStackDepth));
+                    } else {
+                        softly.assertThat(actualLog).as(testName).doesNotContain("currentActionsStack not empty");
+                    }
+
+                    if (expectedTestCaseIsValid) {
+                        softly.assertThat(actualLog).as(testName).doesNotContain("were invalid");
+                    } else {
+                        softly.assertThat(actualLog)
+                                .as(testName)
+                                .contains("of %d actions given, %d were invalid"
+                                        .formatted(expectedNActions, expectedNInvalidActions));
+                    }
+                }
+
+                logCaptor.clear();
+            }
+        softly.assertAll();
+    }
+
+    private SolidityAction copy(final SolidityAction sa) {
+        final var r =
+                new SolidityAction(sa.getCallType(), sa.getGas(), sa.getInput(), sa.getValue(), sa.getCallDepth());
+
+        r.setCallOperationType(sa.getCallOperationType());
+        r.setCallingAccount(sa.getCallingAccount());
+        r.setCallingContract(sa.getCallingContract());
+        r.setError(sa.getError());
+        r.setGasUsed(sa.getGasUsed());
+        r.setOutput(sa.getOutput());
+        r.setRecipientAccount(sa.getRecipientAccount());
+        r.setRecipientContract(sa.getRecipientContract());
+        r.setRevertReason(sa.getRevertReason());
+        r.setTargetedAddress(sa.getInvalidSolidityAddress());
+
+        assertThat(r.isValid()).isEqualTo(sa.isValid());
+        return r;
     }
 }
