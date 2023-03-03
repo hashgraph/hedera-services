@@ -160,10 +160,8 @@ public abstract class LongList implements CASableLongIndex, Closeable {
             final ByteBuffer headerBuffer = readFromFileChannel(fileChannel, formatMetadataSize);
             numLongsPerChunk = headerBuffer.getInt();
             memoryChunkSize = numLongsPerChunk * Long.BYTES;
-            if (formatVersion == INITIAL_VERSION) {
-                // skip the maxIndexThatCanBeStored field as it's no longer used
-                headerBuffer.getLong();
-            }
+            // skip the maxIndexThatCanBeStored field as it's no longer used
+            if (formatVersion == INITIAL_VERSION) headerBuffer.getLong();
 
             maxLongs = headerBuffer.getLong();
             if (formatVersion >= MIN_VALID_INDEX_SUPPORT_VERSION) {
