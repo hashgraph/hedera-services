@@ -18,7 +18,7 @@ package com.hedera.node.app.service.token.impl.test;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.service.mono.ledger.accounts.AliasManager.keyAliasToEVMAddress;
-import static com.hedera.node.app.service.token.entity.Account.HBARS_TO_TINYBARS;
+import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
 import static com.hedera.test.utils.IdUtils.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,8 +34,8 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.token.entity.Account;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
+import com.hedera.node.app.spi.accounts.Account;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -509,7 +509,7 @@ class ReadableAccountStoreTest {
         given(account.isSmartContract()).willReturn(true);
 
         // when
-        final var result = subject.getAccount(payer);
+        final var result = subject.getAccountById(payer);
 
         // then
         assertThat(result).isNotEmpty();
@@ -548,7 +548,7 @@ class ReadableAccountStoreTest {
         given(account.getMemo()).willReturn("");
 
         // when
-        final var result = subject.getAccount(payer);
+        final var result = subject.getAccountById(payer);
 
         // then
         assertThat(result).isNotEmpty();
@@ -583,7 +583,7 @@ class ReadableAccountStoreTest {
     void getsEmptyOptionalIfMissingAccount() {
         given(accounts.get(payerNum)).willReturn(null);
 
-        final Optional<Account> result = subject.getAccount(payer);
+        final Optional<Account> result = subject.getAccountById(payer);
 
         assertThat(result).isEmpty();
     }

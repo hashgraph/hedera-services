@@ -35,6 +35,7 @@ import com.hedera.node.app.service.mono.txns.TransitionLogicLookup;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Optional;
 import java.util.Set;
@@ -66,12 +67,15 @@ class AdaptedMonoTransitionRunnerTest {
     @Mock
     private TxnAccessor accessor;
 
+    @Mock
+    private WritableStoreFactory storeFactory;
+
     private AdaptedMonoTransitionRunner subject;
 
     @BeforeEach
     void setUp() {
         given(staticProperties.workflowsEnabled()).willReturn(Set.of(ConsensusCreateTopic));
-        subject = new AdaptedMonoTransitionRunner(ids, txnCtx, dispatcher, lookup, staticProperties);
+        subject = new AdaptedMonoTransitionRunner(ids, txnCtx, dispatcher, lookup, staticProperties, storeFactory);
     }
 
     @Test
@@ -81,7 +85,7 @@ class AdaptedMonoTransitionRunnerTest {
 
         subject.tryTransition(accessor);
 
-        verify(dispatcher).dispatchHandle(ConsensusCreateTopic, mockTxn);
+        verify(dispatcher).dispatchHandle(ConsensusCreateTopic, mockTxn, storeFactory);
         verify(txnCtx).setStatus(SUCCESS);
     }
 
@@ -91,11 +95,11 @@ class AdaptedMonoTransitionRunnerTest {
         given(accessor.getTxn()).willReturn(mockTxn);
         willThrow(new HandleStatusException(INVALID_EXPIRATION_TIME))
                 .given(dispatcher)
-                .dispatchHandle(ConsensusCreateTopic, mockTxn);
+                .dispatchHandle(ConsensusCreateTopic, mockTxn, storeFactory);
 
         assertTrue(subject.tryTransition(accessor));
 
-        verify(dispatcher).dispatchHandle(ConsensusCreateTopic, mockTxn);
+        verify(dispatcher).dispatchHandle(ConsensusCreateTopic, mockTxn, storeFactory);
         verify(txnCtx).setStatus(INVALID_EXPIRATION_TIME);
     }
 

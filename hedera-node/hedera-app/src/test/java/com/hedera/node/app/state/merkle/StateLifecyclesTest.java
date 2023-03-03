@@ -78,7 +78,7 @@ class StateLifecyclesTest extends ResponsibleVMapUser {
                 SemanticVersions.SEMANTIC_VERSIONS.deployedSoftwareVersion().getServices();
         final var migration = Hedera.registerServiceSchemasForMigration(currentVersion);
 
-        final var merkleState = tracked(new MerkleHederaState(migration, (e, m, p) -> {}, (r, ds, m) -> {}));
+        final var merkleState = tracked(new MerkleHederaState(migration, (e, m, p) -> {}, (r, s, ds, m) -> {}));
 
         final var platform = createMockPlatformWithCrypto();
         final var addressBook = createPretendBookFrom(platform, true);

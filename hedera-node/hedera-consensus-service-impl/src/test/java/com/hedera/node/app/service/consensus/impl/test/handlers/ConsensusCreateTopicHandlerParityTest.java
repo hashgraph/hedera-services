@@ -36,7 +36,7 @@ import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.utils.KeyUtils.sanityRestored;
 
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
-import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.assertj.core.api.Assertions;
@@ -45,7 +45,7 @@ import org.junit.jupiter.api.Test;
 
 class ConsensusCreateTopicHandlerParityTest {
     private final ConsensusCreateTopicHandler subject = new ConsensusCreateTopicHandler();
-    private AccountKeyLookup keyLookup;
+    private AccountAccess keyLookup;
 
     @BeforeEach
     void setUp() {
