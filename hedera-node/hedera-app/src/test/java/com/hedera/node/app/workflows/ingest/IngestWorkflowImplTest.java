@@ -43,8 +43,8 @@ import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
-import com.hedera.node.app.service.token.entity.Account;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
+import com.hedera.node.app.spi.accounts.Account;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
@@ -142,7 +142,7 @@ class IngestWorkflowImplTest {
     void setup(@Mock(strictness = LENIENT) HederaState state) throws PreCheckException {
         when(currentPlatformStatus.get()).thenReturn(PlatformStatus.ACTIVE);
         when(stateAccessor.get()).thenReturn(new AutoCloseableWrapper<>(state, () -> {}));
-        when(accountStore.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
+        when(accountStore.getAccountById(ACCOUNT_ID)).thenReturn(Optional.of(account));
 
         requestBuffer = ByteBuffer.wrap(new byte[] {1, 2, 3});
         ctx = new SessionContext(queryParser, txParser, signedParser, txBodyParser);
@@ -382,7 +382,7 @@ class IngestWorkflowImplTest {
     void testPayerAccountNotFoundFails(@Mock ReadableAccountStore localAccountStore)
             throws PreCheckException, InvalidProtocolBufferException {
         // given
-        when(localAccountStore.getAccount(any())).thenReturn(Optional.empty());
+        when(localAccountStore.getAccountById(any())).thenReturn(Optional.empty());
         workflow = new IngestWorkflowImpl(
                 nodeInfo,
                 currentPlatformStatus,

@@ -24,16 +24,18 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
-import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
+import com.hedera.node.app.spi.accounts.Account;
+import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
+import org.apache.commons.lang3.NotImplementedException;
 
-public class TestFixturesKeyLookup implements AccountKeyLookup {
+public class TestFixturesKeyLookup implements AccountAccess {
     private final ReadableKVState<String, Long> aliases;
     private final ReadableKVState<Long, HederaAccount> accounts;
 
@@ -91,6 +93,13 @@ public class TestFixturesKeyLookup implements AccountKeyLookup {
                 return PRESENT_BUT_NOT_REQUIRED;
             }
         }
+    }
+
+    // how to deal this ?
+    @NonNull
+    @Override
+    public Optional<Account> getAccountById(@NonNull AccountID accountOrAlias) {
+        throw new NotImplementedException("getAccountById not implemented");
     }
 
     private KeyOrLookupFailureReason validateKey(final JKey key, final boolean isContractKey) {

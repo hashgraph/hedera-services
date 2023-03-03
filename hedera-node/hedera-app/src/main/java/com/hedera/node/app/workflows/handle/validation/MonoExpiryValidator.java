@@ -62,7 +62,7 @@ public class MonoExpiryValidator implements ExpiryValidator {
      * {@inheritDoc}
      */
     @Override
-    public void validateCreationAttempt(final boolean entityCanSelfFundRenewal, final ExpiryMeta creationMeta) {
+    public ExpiryMeta validateCreationAttempt(final boolean entityCanSelfFundRenewal, final ExpiryMeta creationMeta) {
         if (creationMeta.hasAutoRenewNum()) {
             validateAutoRenewAccount(creationMeta.autoRenewNum());
         }
@@ -85,6 +85,7 @@ public class MonoExpiryValidator implements ExpiryValidator {
         if (creationMeta.hasAutoRenewPeriod() && !validator.isValidAutoRenewPeriod(creationMeta.autoRenewPeriod())) {
             throw new HandleStatusException(AUTORENEW_DURATION_NOT_IN_RANGE);
         }
+        return new ExpiryMeta(effectiveExpiry, creationMeta.autoRenewPeriod(), creationMeta.autoRenewNum());
     }
 
     /**

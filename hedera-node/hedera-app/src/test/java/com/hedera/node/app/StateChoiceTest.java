@@ -20,12 +20,12 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.service.mono.ServicesApp;
 import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.sigs.EventExpansion;
 import com.hedera.node.app.service.mono.state.DualStateAccessor;
 import com.hedera.node.app.service.mono.state.org.StateMetadata;
 import com.hedera.node.app.service.mono.txns.ProcessLogic;
+import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SwirldDualState;
@@ -61,7 +61,10 @@ class StateChoiceTest {
     private DualStateAccessor dualStateAccessor;
 
     @Mock
-    private ServicesApp app;
+    private WorkingStateAccessor workingStateAccessor;
+
+    @Mock
+    private HederaApp app;
 
     @Mock
     private StateMetadata metadata;
@@ -106,11 +109,13 @@ class StateChoiceTest {
 
         given(metadata.app()).willReturn(app);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+        given(app.workingStateAccessor()).willReturn(workingStateAccessor);
         given(app.logic()).willReturn(processLogic);
 
         workflowsState.handleConsensusRound(round, dualState);
 
         verify(dualStateAccessor).setDualState(dualState);
+        verify(workingStateAccessor).setHederaState(workflowsState);
         verify(processLogic).incorporateConsensus(round);
     }
 }

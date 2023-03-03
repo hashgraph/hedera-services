@@ -488,7 +488,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     public void handleConsensusRound(@NonNull final Round round, @NonNull final SwirldDualState swirldDualState) {
         throwIfImmutable();
         if (onHandleConsensusRound != null) {
-            onHandleConsensusRound.accept(round, swirldDualState, metadata);
+            onHandleConsensusRound.accept(round, this, swirldDualState, metadata);
         }
     }
 

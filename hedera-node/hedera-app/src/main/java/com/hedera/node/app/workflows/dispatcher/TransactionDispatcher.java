@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.spi.exceptions.HandleStatusException;
@@ -49,14 +50,13 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TransactionDispatcher {
-
     public static final String TYPE_NOT_SUPPORTED = "This transaction type is not supported";
-
     private final HandleContext handleContext;
     private final TransactionContext txnCtx;
     private final TransactionHandlers handlers;
     private final CryptoSignatureWaivers cryptoSignatureWaivers;
     private final GlobalDynamicProperties dynamicProperties;
+    private final UsageLimits usageLimits;
 
     /**
      * Creates a {@code TransactionDispatcher}.
@@ -73,12 +73,14 @@ public class TransactionDispatcher {
             @NonNull final TransactionContext txnCtx,
             @NonNull final TransactionHandlers handlers,
             @NonNull final HederaAccountNumbers accountNumbers,
-            @NonNull final GlobalDynamicProperties dynamicProperties) {
-        this.txnCtx = txnCtx;
+            @NonNull final GlobalDynamicProperties dynamicProperties,
+            @NonNull final UsageLimits usageLimits) {
+        this.txnCtx = requireNonNull(txnCtx);
         this.handlers = requireNonNull(handlers);
-        this.handleContext = handleContext;
-        this.dynamicProperties = dynamicProperties;
+        this.handleContext = requireNonNull(handleContext);
+        this.dynamicProperties = requireNonNull(dynamicProperties);
         this.cryptoSignatureWaivers = new CryptoSignatureWaiversImpl(requireNonNull(accountNumbers));
+        this.usageLimits = requireNonNull(usageLimits);
     }
 
     /**
@@ -94,9 +96,13 @@ public class TransactionDispatcher {
      * @throws HandleStatusException if the handler fails
      * @throws IllegalArgumentException if there is no handler for the given function type
      */
-    public void dispatchHandle(@NonNull final HederaFunctionality function, @NonNull final TransactionBody txn) {
+    public void dispatchHandle(
+            @NonNull final HederaFunctionality function,
+            @NonNull final TransactionBody txn,
+            @NonNull final WritableStoreFactory writableStoreFactory) {
         switch (function) {
-            case ConsensusCreateTopic -> dispatchConsensusCreateTopic(txn.getConsensusCreateTopic());
+            case ConsensusCreateTopic -> dispatchConsensusCreateTopic(
+                    txn.getConsensusCreateTopic(), writableStoreFactory, usageLimits);
             case ConsensusUpdateTopic -> dispatchConsensusUpdateTopic(txn.getConsensusUpdateTopic());
             case ConsensusDeleteTopic -> dispatchConsensusDeleteTopic(txn.getConsensusDeleteTopic());
             case ConsensusSubmitMessage -> dispatchConsensusSubmitMessage(txn.getConsensusSubmitMessage());
@@ -207,7 +213,7 @@ public class TransactionDispatcher {
         return context -> dispatchPreHandle(storeFactory, context);
     }
 
-    private void dispatchConsensusDeleteTopic(final ConsensusDeleteTopicTransactionBody topicDeletion) {
+    private void dispatchConsensusDeleteTopic(@NonNull final ConsensusDeleteTopicTransactionBody topicDeletion) {
         final var handler = handlers.consensusDeleteTopicHandler();
         final var recordBuilder = handler.newRecordBuilder();
         handler.handle(
@@ -218,7 +224,7 @@ public class TransactionDispatcher {
                 recordBuilder);
     }
 
-    private void dispatchConsensusUpdateTopic(final ConsensusUpdateTopicTransactionBody topicUpdate) {
+    private void dispatchConsensusUpdateTopic(@NonNull final ConsensusUpdateTopicTransactionBody topicUpdate) {
         final var handler = handlers.consensusUpdateTopicHandler();
         final var recordBuilder = handler.newRecordBuilder();
         handler.handle(
@@ -229,21 +235,31 @@ public class TransactionDispatcher {
                 recordBuilder);
     }
 
-    private void dispatchConsensusCreateTopic(final ConsensusCreateTopicTransactionBody topicCreation) {
+    private void dispatchConsensusCreateTopic(
+            @NonNull final ConsensusCreateTopicTransactionBody topicCreation,
+            @NonNull final WritableStoreFactory storeFactory,
+            @NonNull final UsageLimits usageLimits) {
         final var handler = handlers.consensusCreateTopicHandler();
         final var recordBuilder = handler.newRecordBuilder();
+        final var topicStore = storeFactory.createTopicStore();
         handler.handle(
                 handleContext,
                 topicCreation,
                 new ConsensusServiceConfig(
                         dynamicProperties.maxNumTopics(), dynamicProperties.messageMaxBytesAllowed()),
-                recordBuilder);
+                recordBuilder,
+                topicStore);
         txnCtx.setCreated(TopicID.newBuilder()
                 .setTopicNum(recordBuilder.getCreatedTopic())
                 .build());
+        usageLimits.refreshTopics();
+        // TODO: Commit will be called in workflow or some other place when handle workflow is implemented
+        // This is temporary solution to make sure that topic is created
+        topicStore.commit();
     }
 
-    private void dispatchConsensusSubmitMessage(final ConsensusSubmitMessageTransactionBody messageSubmission) {
+    private void dispatchConsensusSubmitMessage(
+            @NonNull final ConsensusSubmitMessageTransactionBody messageSubmission) {
         final var handler = handlers.consensusSubmitMessageHandler();
         final var recordBuilder = handler.newRecordBuilder();
         handler.handle(
