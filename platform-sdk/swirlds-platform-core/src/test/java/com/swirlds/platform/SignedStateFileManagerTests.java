@@ -144,15 +144,17 @@ class SignedStateFileManagerTests {
 
         final DeserializedSignedState deserializedSignedState = readStateFile(stateFile);
         MerkleCryptoFactory.getInstance()
-                .digestTreeSync(deserializedSignedState.signedState().getState());
+                .digestTreeSync(deserializedSignedState.reservedSignedState().getState());
 
         assertNotNull(deserializedSignedState.originalHash(), "hash should not be null");
         assertNotSame(
-                deserializedSignedState.signedState(), originalState, "deserialized object should not be the same");
+                deserializedSignedState.reservedSignedState(),
+                originalState,
+                "deserialized object should not be the same");
 
         assertEquals(
                 originalState.getState().getHash(),
-                deserializedSignedState.signedState().getState().getHash(),
+                deserializedSignedState.reservedSignedState().getState().getHash(),
                 "hash should match");
         assertEquals(originalState.getState().getHash(), deserializedSignedState.originalHash(), "hash should match");
     }
@@ -527,7 +529,7 @@ class SignedStateFileManagerTests {
 
                                 final SignedState stateFromDisk = assertDoesNotThrow(
                                         () -> SignedStateFileReader.readStateFile(savedStateInfo.stateFile())
-                                                .signedState(),
+                                                .reservedSignedState(),
                                         "should be able to read state on disk");
 
                                 final SignedState originalState = savedStates.get(savedStates.size() - index - 1);

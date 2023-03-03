@@ -47,6 +47,8 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+// TODO breaking change: removed setting signedStateSentinelEnabled
+
 /**
  * <p>
  * This is a signed state, in a form that allows those outside the network to verify that it is a legitimate state at a
@@ -145,7 +147,7 @@ public class SignedState implements SignedStateInfo {
         state.reserve();
 
         this.state = state;
-        history = new SignedStateHistory(OSTime.getInstance(), getRound());
+        history = new SignedStateHistory(OSTime.getInstance(), getRound(), false); // TODO use real config
         history.recordAction(CREATION, getReservationCount(), null, null);
         registryRecord = RuntimeObjectRegistry.createRecord(getClass(), history);
     }

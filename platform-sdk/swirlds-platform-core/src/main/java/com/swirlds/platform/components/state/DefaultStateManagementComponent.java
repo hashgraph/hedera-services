@@ -379,17 +379,13 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         signedStateFileManager.start();
         dispatchBuilder.start();
 
-        if (stateConfig.signedStateSentinelEnabled()) {
-            signedStateSentinel.start();
-        }
+        signedStateSentinel.start();
     }
 
     @Override
     public void stop() {
         signedStateFileManager.stop();
-        if (stateConfig.signedStateSentinelEnabled()) {
-            signedStateSentinel.stop();
-        }
+        signedStateSentinel.stop();
         signedStateGarbageCollector.stop();
     }
 

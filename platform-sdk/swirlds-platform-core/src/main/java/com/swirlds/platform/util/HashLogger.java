@@ -108,7 +108,7 @@ public class HashLogger {
     }
 
     /**
-     * Queues the provided signedState for extracting hashes and logging.
+     * Queues the provided reservedSignedState for extracting hashes and logging.
      *
      * @param signedState
      * 		the signed state to retrieve hash information from and log.

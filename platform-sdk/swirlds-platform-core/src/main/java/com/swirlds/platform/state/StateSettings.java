@@ -136,16 +136,7 @@ public class StateSettings extends SubSetting {
     public boolean enableHashStreamLogging = true; // NOSONAR: Value is modified and updated by reflection.
 
     /**
-     * If true, then enable extra debug code that tracks signed states. Very useful for debugging state leaks.
-     * This debug code is relatively expensive (it takes and stores stack traces when operations are
-     * performed on signed state objects).
-     */
-    public boolean signedStateSentinelEnabled = false;
-
-    /**
-     * Ignored if {@link #signedStateSentinelEnabled} is not true. The age of a signed state, in seconds, which is
-     * considered to be suspicious. Suspicious states cause a large amount of data to be logged that helps to
-     * debug the potential state leak.
+     * TODO move this
      */
     public Duration suspiciousSignedStateAge = Duration.ofMinutes(5);
 

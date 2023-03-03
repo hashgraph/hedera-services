@@ -129,7 +129,7 @@ public final class EventRecoveryWorkflow {
         logger.info(STARTUP.getMarker(), "Loading state from {}", signedStateFile);
 
         final SignedState initialState =
-                SignedStateFileReader.readStateFile(signedStateFile).signedState();
+                SignedStateFileReader.readStateFile(signedStateFile).reservedSignedState();
 
         logger.info(STARTUP.getMarker(), "State from round {} loaded.", initialState.getRound());
         logger.info(STARTUP.getMarker(), "Loading event stream at {}", eventStreamDirectory);

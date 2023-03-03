@@ -21,7 +21,6 @@ import com.swirlds.common.utility.StackTrace;
 import java.time.Instant;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Tracks the usage of a signed state over time, storing stack traces that can be used at a later time for debugging.
@@ -100,15 +99,19 @@ public class SignedStateHistory {
     private final Queue<SignedStateActionReport> actions = new ConcurrentLinkedQueue<>();
     private final Time time;
     private final long round;
+    private final boolean stackTracesEnabled;
 
     /**
      * Create a new object to track the history of a signed state.
      *
      * @param time used to access wall clock time
+     * @param round the round number of the signed state
+     * @param stackTracesEnabled whether stack traces should be recorded
      */
-    public SignedStateHistory(final Time time, final long round) {
+    public SignedStateHistory(final Time time, final long round, final boolean stackTracesEnabled) {
         this.time = time;
         this.round = round;
+        this.stackTracesEnabled = stackTracesEnabled;
     }
 
     /**
@@ -120,15 +123,12 @@ public class SignedStateHistory {
      * @param uniqueId     a unique id for the action, may be null for actions that do not require a unique id
      */
     public void recordAction(
-            final SignedStateAction action,
-            int reservations,
-            final String reason,
-            final Long uniqueId) {
+            final SignedStateAction action, int reservations, final String reason, final Long uniqueId) {
         actions.add(new SignedStateActionReport(
                 action,
                 reason,
                 uniqueId,
-                StackTrace.getStackTrace(), // TODO add flag to enable/disable stack traces
+                stackTracesEnabled ? StackTrace.getStackTrace() : null,
                 time.now(),
                 reservations));
     }
@@ -138,7 +138,6 @@ public class SignedStateHistory {
      */
     @Override
     public String toString() {
-        // TODO
         final StringBuilder sb = new StringBuilder();
         sb.append("SignedState history for round ").append(round).append("\n");
         actions.forEach(report -> sb.append(report).append("\n"));

@@ -224,7 +224,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
      * previously saved on disk
      *
      * @param signedState the state to load data from
-     * @param isReconnect if it is true, the signedState is loaded at reconnect; if it is false, the signedState is
+     * @param isReconnect if it is true, the reservedSignedState is loaded at reconnect; if it is false, the reservedSignedState is
      *                    loaded at startup
      */
     public void loadDataFromSignedState(final SignedState signedState, final boolean isReconnect) {
@@ -243,7 +243,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
                 "consensus event handler minGenFamous after startup: {}",
                 () -> Arrays.toString(signedState.getMinGenInfo().toArray()));
 
-        // get startRunningHash from signedState
+        // get startRunningHash from reservedSignedState
         final Hash initialHash = new Hash(signedState.getHashEventsCons());
         eventStreamManager.setInitialHash(initialHash);
 

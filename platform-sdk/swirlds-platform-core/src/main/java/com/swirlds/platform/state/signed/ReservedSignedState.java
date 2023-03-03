@@ -40,7 +40,7 @@ public final class ReservedSignedState implements AutoCloseableNonThrowing {
     /**
      * Create a wrapper around null (for scenarios where we are storing a null signed state).
      */
-    ReservedSignedState() {
+    public ReservedSignedState() {
         this(null, null);
     }
 
@@ -57,6 +57,22 @@ public final class ReservedSignedState implements AutoCloseableNonThrowing {
         // It is safe to "leak this" here.
         // All fields are final, this class is final, and everything has been instantiated.
         signedState.incrementReservationCount(this);
+    }
+
+    /**
+     * Check if the signed state is null.
+     * @return true if the signed state is null, false otherwise
+     */
+    public boolean isNull() {
+        return signedState == null;
+    }
+
+    /**
+     * Check if the signed state is not null.
+     * @return true if the signed state is not null, false otherwise
+     */
+    public boolean isNotNull() {
+        return signedState != null;
     }
 
     /**

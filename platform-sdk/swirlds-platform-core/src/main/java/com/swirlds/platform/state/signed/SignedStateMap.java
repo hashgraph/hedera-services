@@ -65,7 +65,7 @@ public class SignedStateMap {
      *                    reservation bugs easier.
      */
     public synchronized void put(final SignedState signedState, final String reason) {
-        Objects.requireNonNull(signedState, "signedState");
+        Objects.requireNonNull(signedState, "reservedSignedState");
 
         final ReservedSignedState previousState =
                 map.put(signedState.getRound(), new ReservedSignedState(signedState, reason));

@@ -120,7 +120,7 @@ public final class CompareStatesCommand extends AbstractCommand {
     private static SignedState loadAndHashState(final Path statePath) throws IOException {
         System.out.println("Loading state from " + statePath);
         final SignedState signedState =
-                SignedStateFileReader.readStateFile(statePath).signedState();
+                SignedStateFileReader.readStateFile(statePath).reservedSignedState();
         System.out.println("Hashing state");
         try {
             MerkleCryptoFactory.getInstance()

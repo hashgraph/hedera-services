@@ -38,7 +38,7 @@ import org.apache.logging.log4j.Logger;
  * This object is responsible for observing the lifespans of signed states, and taking action
  * if a state suspected of a memory leak is observed.
  */
-public class SignedStateSentinel implements Startable, Stoppable {
+public class SignedStateSentinel implements Startable, Stoppable { // TODO consider making this more generic
 
     private static final Logger logger = LogManager.getLogger(SignedStateSentinel.class);
 

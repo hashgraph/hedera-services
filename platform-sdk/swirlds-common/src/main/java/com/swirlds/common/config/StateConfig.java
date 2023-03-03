@@ -87,10 +87,6 @@ import com.swirlds.config.api.ConfigProperty;
  * @param roundsToKeepForSigning
  * 		The maximum number of rounds that a state will be kept in memory while waiting for it to gather
  * 		enough signatures. If a state becomes fully signed prior to reaching this age it may be removed from memory.
- * @param signedStateSentinelEnabled
- * 		If true, then enable extra debug code that tracks signed states. Very useful for debugging state leaks.
- * 		This debug code is relatively expensive (it takes and stores stack traces when operations are
- * 		performed on signed state objects).
  */
 @ConfigData("state")
 public record StateConfig(
@@ -113,7 +109,7 @@ public record StateConfig(
         @ConfigProperty(defaultValue = "5") int debugHashDepth,
         @ConfigProperty(defaultValue = "1000") int maxAgeOfFutureStateSignatures,
         @ConfigProperty(defaultValue = "26") int roundsToKeepForSigning,
-        @ConfigProperty(defaultValue = "false") boolean signedStateSentinelEnabled) {
+        @ConfigProperty(defaultValue = "false") boolean debugStackTracesEnabled) {
 
     /**
      * Get the main class name that should be used for signed states.

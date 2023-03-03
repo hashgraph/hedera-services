@@ -55,7 +55,7 @@ public class StateEditor {
     public StateEditor(final Path statePath) throws IOException {
         final DeserializedSignedState deserializedSignedState = SignedStateFileReader.readStateFile(statePath);
         System.out.println("\nLoading state from " + statePath);
-        signedState = deserializedSignedState.signedState();
+        signedState = deserializedSignedState.reservedSignedState();
         System.out.println("Hashing state");
         try {
             MerkleCryptoFactory.getInstance()
