@@ -28,6 +28,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -60,6 +61,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -277,9 +279,10 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var submitKey = SIMPLE_KEY_B;
         final var op = newCreateTxn(adminKey, submitKey, true).getConsensusCreateTopic();
 
+        given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        given(expiryValidator.validateCreationAttempt(anyBoolean(), any()))
+        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
                 .willReturn(new ExpiryMeta(
                         1_234_567L + op.getAutoRenewPeriod().getSeconds(),
                         op.getAutoRenewPeriod().getSeconds(),
@@ -296,6 +299,38 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         assertEquals("memo", actualTopic.memo());
         assertEquals(fromGrpcKey(adminKey), actualTopic.adminKey());
         assertEquals(fromGrpcKey(submitKey), actualTopic.submitKey());
+        assertEquals(1244567, actualTopic.expiry());
+        assertEquals(10000, actualTopic.autoRenewPeriod());
+        assertEquals(AUTO_RENEW_ACCOUNT.getAccountNum(), actualTopic.autoRenewAccountNumber());
+        assertEquals(1_234L, recordBuilder.getCreatedTopic());
+        assertTrue(topicStore.get(1234L).isPresent());
+    }
+
+    @Test
+    @DisplayName("Handle works as expected without keys")
+    void handleDoesntRequireKeys() {
+        final var op = newCreateTxn(null, null, true).getConsensusCreateTopic();
+
+        given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
+        given(handleContext.attributeValidator()).willReturn(validator);
+        given(handleContext.expiryValidator()).willReturn(expiryValidator);
+        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
+                .willReturn(new ExpiryMeta(
+                        1_234_567L + op.getAutoRenewPeriod().getSeconds(),
+                        op.getAutoRenewPeriod().getSeconds(),
+                        op.getAutoRenewAccount().getAccountNum()));
+        given(handleContext.newEntityNumSupplier()).willReturn(() -> 1_234L);
+
+        subject.handle(handleContext, op, config, recordBuilder, topicStore);
+
+        final var createdTopic = topicStore.get(1_234L);
+        assertTrue(createdTopic.isPresent());
+
+        final var actualTopic = createdTopic.get();
+        assertEquals(0L, actualTopic.sequenceNumber());
+        assertEquals("memo", actualTopic.memo());
+        assertNull(actualTopic.adminKey());
+        assertNull(actualTopic.submitKey());
         assertEquals(1244567, actualTopic.expiry());
         assertEquals(10000, actualTopic.autoRenewPeriod());
         assertEquals(AUTO_RENEW_ACCOUNT.getAccountNum(), actualTopic.autoRenewAccountNumber());
@@ -366,6 +401,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var op = newCreateTxn(adminKey, submitKey, true).getConsensusCreateTopic();
         final var writableState = writableTopicStateWithOneKey();
 
+        given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(writableStates.<EntityNum, Topic>get(TOPICS)).willReturn(writableState);
         final var topicStore = new WritableTopicStore(writableStates);
         assertEquals(1, topicStore.sizeOfState());
@@ -373,12 +409,12 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         given(handleContext.attributeValidator()).willReturn(validator);
         config = new ConsensusServiceConfig(10, 100);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        doThrow(HandleStatusException.class).when(expiryValidator).validateCreationAttempt(anyBoolean(), any());
+        doThrow(HandleStatusException.class).when(expiryValidator).resolveCreationAttempt(anyBoolean(), any());
 
-        final var msg = assertThrows(
+        final var failure = assertThrows(
                 HandleStatusException.class,
                 () -> subject.handle(handleContext, op, config, recordBuilder, topicStore));
-        assertEquals(HandleStatusException.class, msg.getClass());
+        assertEquals(HandleStatusException.class, failure.getClass());
         assertEquals(0, topicStore.modifiedTopics().size());
     }
 

@@ -41,7 +41,6 @@ import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessag
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusUpdateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusDeleteTopicRecordBuilder;
-import com.hedera.node.app.service.consensus.impl.records.ConsensusUpdateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.SubmitMessageRecordBuilder;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
@@ -510,24 +509,14 @@ class TransactionDispatcherTest {
 
     @Test
     void dispatchesUpdateTopicAsExpected() {
-        final var updateBuilder = mock(ConsensusUpdateTopicRecordBuilder.class);
-
-        given(consensusUpdateTopicHandler.newRecordBuilder()).willReturn(updateBuilder);
-        given(dynamicProperties.maxNumTopics()).willReturn(123L);
-        given(dynamicProperties.messageMaxBytesAllowed()).willReturn(456);
-        final var expectedConfig = new ConsensusServiceConfig(123L, 456);
+        given(writableStoreFactory.createTopicStore()).willReturn(writableTopicStore);
 
         doAnswer(invocation -> {
                     // Nothing to accumulate in the builder for this handler
                     return null;
                 })
                 .when(consensusUpdateTopicHandler)
-                .handle(
-                        eq(handleContext),
-                        eq(transactionBody.getConsensusUpdateTopic()),
-                        eq(expectedConfig),
-                        any(),
-                        any());
+                .handle(eq(handleContext), eq(transactionBody.getConsensusUpdateTopic()), any());
 
         dispatcher.dispatchHandle(ConsensusUpdateTopic, transactionBody, writableStoreFactory);
 
@@ -539,9 +528,7 @@ class TransactionDispatcherTest {
         final var deleteBuilder = mock(ConsensusDeleteTopicRecordBuilder.class);
 
         given(consensusDeleteTopicHandler.newRecordBuilder()).willReturn(deleteBuilder);
-        given(dynamicProperties.maxNumTopics()).willReturn(123L);
-        given(dynamicProperties.messageMaxBytesAllowed()).willReturn(456);
-        final var expectedConfig = new ConsensusServiceConfig(123L, 456);
+        given(writableStoreFactory.createTopicStore()).willReturn(writableTopicStore);
 
         doAnswer(invocation -> {
                     // Nothing to accumulate in the builder for this handler
@@ -566,6 +553,7 @@ class TransactionDispatcherTest {
         given(submitBuilder.getNewTopicRunningHash()).willReturn(newRunningHash);
         given(submitBuilder.getNewTopicSequenceNumber()).willReturn(2L);
         final var expectedConfig = new ConsensusServiceConfig(123L, 456);
+        given(writableStoreFactory.createTopicStore()).willReturn(writableTopicStore);
 
         doAnswer(invocation -> {
                     final var builder = (SubmitMessageRecordBuilder) invocation.getArguments()[3];

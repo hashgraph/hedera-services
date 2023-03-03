@@ -16,14 +16,23 @@
 
 package com.hedera.node.app.service.consensus.impl.handlers;
 
+import static com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils.fromGrpcKey;
+import static com.hedera.node.app.spi.exceptions.HandleStatusException.validateFalse;
+import static com.hedera.node.app.spi.exceptions.HandleStatusException.validateTrue;
+import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
-import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusUpdateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.UpdateTopicRecordBuilder;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.validation.AttributeValidator;
+import com.hedera.node.app.spi.validation.ExpiryMeta;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
@@ -52,7 +61,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
      * change.
      *
      * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@code #handle()}
+     *                passed to {@code #handle()}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void preHandle(@NonNull final PreHandleContext context) {
@@ -62,27 +71,122 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
 
     /**
      * Given the appropriate context, updates a topic.
-     * <p>
-     * TODO: Provide access to writable topic store.
      *
-     * @param handleContext          the {@link HandleContext} for the active transaction
-     * @param topicUpdate            the {@link ConsensusUpdateTopicTransactionBody} of the active transaction
-     * @param consensusServiceConfig the {@link ConsensusServiceConfig} for the active transaction
-     * @param recordBuilder          the {@link ConsensusUpdateTopicRecordBuilder} for the active transaction
-     * @param topicStore
+     * @param handleContext the {@link HandleContext} for the active transaction
+     * @param topicUpdate   the {@link ConsensusUpdateTopicTransactionBody} of the active transaction
+     * @param topicStore    the {@link WritableTopicStore} for the active transaction
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void handle(
             @NonNull final HandleContext handleContext,
             @NonNull final ConsensusUpdateTopicTransactionBody topicUpdate,
-            @NonNull final ConsensusServiceConfig consensusServiceConfig,
-            @NonNull final ConsensusUpdateTopicRecordBuilder recordBuilder,
             @NonNull final WritableTopicStore topicStore) {
-        throw new UnsupportedOperationException("Not implemented");
+        final var maybeTopic =
+                requireNonNull(topicStore).get(topicUpdate.getTopicID().getTopicNum());
+        validateTrue(maybeTopic.isPresent(), INVALID_TOPIC_ID);
+        final var topic = maybeTopic.get();
+        validateFalse(topic.deleted(), INVALID_TOPIC_ID);
+
+        // First validate this topic is mutable; and the pending mutations are allowed
+        validateFalse(topic.adminKey() == null && wantsToMutateNonExpiryField(topicUpdate), UNAUTHORIZED);
+        validateMaybeNewAttributes(handleContext, topicUpdate, topic);
+
+        // Now we apply the mutations to a builder
+        final var builder = new Topic.Builder();
+        // But first copy over the immutable topic attributes to the builder
+        builder.topicNumber(topic.topicNumber());
+        builder.sequenceNumber(topic.sequenceNumber());
+        builder.runningHash(topic.runningHash());
+        builder.deleted(topic.deleted());
+        // And then resolve mutable attributes, and put the new topic back
+        resolveMutableBuilderAttributes(handleContext.expiryValidator(), topicUpdate, builder, topic);
+        topicStore.put(builder.build());
+    }
+
+    private void resolveMutableBuilderAttributes(
+            final ExpiryValidator expiryValidator,
+            final ConsensusUpdateTopicTransactionBody op,
+            final Topic.Builder builder,
+            final Topic topic) {
+        if (op.hasAdminKey()) {
+            builder.adminKey(fromGrpcKey(op.getAdminKey()));
+        } else {
+            builder.adminKey(topic.adminKey());
+        }
+        if (op.hasSubmitKey()) {
+            builder.submitKey(fromGrpcKey(op.getSubmitKey()));
+        } else {
+            builder.submitKey(topic.adminKey());
+        }
+        if (op.hasMemo()) {
+            builder.memo(op.getMemo().getValue());
+        } else {
+            builder.memo(topic.memo());
+        }
+        final var resolvedExpiryMeta = resolvedUpdateMetaFrom(expiryValidator, op, topic);
+        builder.expiry(resolvedExpiryMeta.expiry());
+        builder.autoRenewPeriod(resolvedExpiryMeta.autoRenewPeriod());
+        builder.autoRenewAccountNumber(resolvedExpiryMeta.autoRenewNum());
+    }
+
+    private void validateMaybeNewAttributes(
+            final HandleContext handleContext, final ConsensusUpdateTopicTransactionBody op, final Topic topic) {
+        validateMaybeNewAdminKey(handleContext.attributeValidator(), op);
+        validateMaybeNewSubmitKey(handleContext.attributeValidator(), op);
+        validateMaybeNewMemo(handleContext.attributeValidator(), op);
+        validateMaybeNewExpiry(handleContext.expiryValidator(), op, topic);
+    }
+
+    private void validateMaybeNewExpiry(
+            final ExpiryValidator expiryValidator, final ConsensusUpdateTopicTransactionBody op, final Topic topic) {
+        resolvedUpdateMetaFrom(expiryValidator, op, topic);
+    }
+
+    private ExpiryMeta resolvedUpdateMetaFrom(
+            final ExpiryValidator expiryValidator, final ConsensusUpdateTopicTransactionBody op, final Topic topic) {
+        final var currentMeta = new ExpiryMeta(topic.expiry(), topic.autoRenewPeriod(), topic.autoRenewAccountNumber());
+        if (op.hasExpirationTime() || op.hasAutoRenewPeriod() || op.hasAutoRenewAccount()) {
+            final var updateMeta = new ExpiryMeta(
+                    op.hasExpirationTime() ? op.getExpirationTime().getSeconds() : NA,
+                    op.hasAutoRenewPeriod() ? op.getAutoRenewPeriod().getSeconds() : NA,
+                    op.hasAutoRenewAccount() ? op.getAutoRenewAccount().getAccountNum() : NA);
+            return expiryValidator.resolveUpdateAttempt(currentMeta, updateMeta);
+        } else {
+            return currentMeta;
+        }
+    }
+
+    private void validateMaybeNewMemo(
+            final AttributeValidator attributeValidator, final ConsensusUpdateTopicTransactionBody op) {
+        if (op.hasMemo()) {
+            attributeValidator.validateMemo(op.getMemo().getValue());
+        }
+    }
+
+    private void validateMaybeNewAdminKey(
+            final AttributeValidator attributeValidator, final ConsensusUpdateTopicTransactionBody op) {
+        if (op.hasAdminKey()) {
+            attributeValidator.validateKey(op.getAdminKey());
+        }
+    }
+
+    private void validateMaybeNewSubmitKey(
+            final AttributeValidator attributeValidator, final ConsensusUpdateTopicTransactionBody op) {
+        if (op.hasSubmitKey()) {
+            attributeValidator.validateKey(op.getSubmitKey());
+        }
     }
 
     @Override
     public ConsensusUpdateTopicRecordBuilder newRecordBuilder() {
         return new UpdateTopicRecordBuilder();
+    }
+
+    public static boolean wantsToMutateNonExpiryField(final ConsensusUpdateTopicTransactionBody op) {
+        return op.hasMemo()
+                || op.hasAdminKey()
+                || op.hasSubmitKey()
+                || op.hasAutoRenewPeriod()
+                || op.hasAutoRenewAccount();
     }
 }

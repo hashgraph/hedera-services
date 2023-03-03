@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
+import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
 import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
@@ -27,7 +28,6 @@ import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hashgraph.pbj.runtime.io.Bytes;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
-import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
@@ -50,6 +50,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class ConsensusHandlerTestBase {
     protected static final String TOPICS = "TOPICS";
     protected final Key key = A_COMPLEX_KEY;
+    protected final Key anotherKey = B_COMPLEX_KEY;
     protected final String payerId = "0.0.3";
     protected final AccountID autoRenewId = asAccount("0.0.4");
     protected final byte[] runningHash = "runningHash".getBytes();
@@ -66,8 +67,6 @@ public class ConsensusHandlerTestBase {
     protected final long sequenceNumber = 1L;
     protected final long autoRenewSecs = 100L;
     protected final Instant consensusTimestamp = Instant.ofEpochSecond(1_234_567L);
-
-    protected final ConsensusServiceConfig config = new ConsensusServiceConfig(10L, 100);
 
     protected Topic topic;
 
@@ -89,8 +88,21 @@ public class ConsensusHandlerTestBase {
     @BeforeEach
     void commonSetUp() {
         givenValidTopic();
+        refreshStoresWithCurrentTopicOnlyInReadable();
+    }
+
+    protected void refreshStoresWithCurrentTopicOnlyInReadable() {
         readableTopicState = readableTopicState();
         writableTopicState = emptyWritableTopicState();
+        given(readableStates.<EntityNum, Topic>get(TOPICS)).willReturn(readableTopicState);
+        given(writableStates.<EntityNum, Topic>get(TOPICS)).willReturn(writableTopicState);
+        readableStore = new ReadableTopicStore(readableStates);
+        writableStore = new WritableTopicStore(writableStates);
+    }
+
+    protected void refreshStoresWithCurrentTopicInBothReadableAndWritable() {
+        readableTopicState = readableTopicState();
+        writableTopicState = writableTopicStateWithOneKey();
         given(readableStates.<EntityNum, Topic>get(TOPICS)).willReturn(readableTopicState);
         given(writableStates.<EntityNum, Topic>get(TOPICS)).willReturn(writableTopicState);
         readableStore = new ReadableTopicStore(readableStates);
@@ -130,6 +142,15 @@ public class ConsensusHandlerTestBase {
     }
 
     protected void givenValidTopic(long autoRenewAccountNumber, boolean deleted) {
+        givenValidTopic(autoRenewAccountNumber, deleted, true, true);
+    }
+
+    protected void givenValidTopic(long autoRenewAccountNumber, boolean deleted, boolean withAdminKey) {
+        givenValidTopic(autoRenewAccountNumber, deleted, withAdminKey, true);
+    }
+
+    protected void givenValidTopic(
+            long autoRenewAccountNumber, boolean deleted, boolean withAdminKey, boolean withSubmitKey) {
         topic = new Topic(
                 topicId.getTopicNum(),
                 sequenceNumber,
@@ -139,8 +160,8 @@ public class ConsensusHandlerTestBase {
                 deleted,
                 Bytes.wrap(runningHash),
                 memo,
-                TemporaryUtils.fromGrpcKey(key),
-                TemporaryUtils.fromGrpcKey(key));
+                withAdminKey ? TemporaryUtils.fromGrpcKey(key) : null,
+                withSubmitKey ? TemporaryUtils.fromGrpcKey(key) : null);
     }
 
     protected Topic createTopic() {

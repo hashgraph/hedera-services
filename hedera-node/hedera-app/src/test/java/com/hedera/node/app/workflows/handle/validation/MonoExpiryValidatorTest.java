@@ -74,9 +74,9 @@ class MonoExpiryValidatorTest {
 
         assertFailsWith(
                 INVALID_EXPIRATION_TIME,
-                () -> subject.validateCreationAttempt(false, new ExpiryMeta(NA, NA, anAutoRenewNum)));
+                () -> subject.resolveCreationAttempt(false, new ExpiryMeta(NA, NA, anAutoRenewNum)));
         assertFailsWith(
-                INVALID_EXPIRATION_TIME, () -> subject.validateCreationAttempt(false, new ExpiryMeta(NA, aPeriod, NA)));
+                INVALID_EXPIRATION_TIME, () -> subject.resolveCreationAttempt(false, new ExpiryMeta(NA, aPeriod, NA)));
     }
 
     @Test
@@ -86,7 +86,7 @@ class MonoExpiryValidatorTest {
         given(validator.isValidExpiry(aTime)).willReturn(false);
         assertFailsWith(
                 INVALID_EXPIRATION_TIME,
-                () -> subject.validateCreationAttempt(false, new ExpiryMeta(aTime, NA, anAutoRenewNum)));
+                () -> subject.resolveCreationAttempt(false, new ExpiryMeta(aTime, NA, anAutoRenewNum)));
     }
 
     @Test
@@ -96,7 +96,7 @@ class MonoExpiryValidatorTest {
 
         assertFailsWith(
                 INVALID_AUTORENEW_ACCOUNT,
-                () -> subject.validateCreationAttempt(false, new ExpiryMeta(aTime, aPeriod, anAutoRenewNum)));
+                () -> subject.resolveCreationAttempt(false, new ExpiryMeta(aTime, aPeriod, anAutoRenewNum)));
     }
 
     @Test
@@ -105,7 +105,7 @@ class MonoExpiryValidatorTest {
 
         given(validator.isValidExpiry(now + aPeriod)).willReturn(true);
         given(validator.isValidAutoRenewPeriod(aPeriod)).willReturn(true);
-        assertDoesNotThrow(() -> subject.validateCreationAttempt(true, new ExpiryMeta(NA, aPeriod, NA)));
+        assertDoesNotThrow(() -> subject.resolveCreationAttempt(true, new ExpiryMeta(NA, aPeriod, NA)));
     }
 
     @Test
@@ -115,7 +115,7 @@ class MonoExpiryValidatorTest {
         given(validator.isValidExpiry(now + aPeriod)).willReturn(false);
         assertFailsWith(
                 INVALID_EXPIRATION_TIME,
-                () -> subject.validateCreationAttempt(false, new ExpiryMeta(NA, aPeriod, anAutoRenewNum)));
+                () -> subject.resolveCreationAttempt(false, new ExpiryMeta(NA, aPeriod, anAutoRenewNum)));
     }
 
     @Test
@@ -125,7 +125,7 @@ class MonoExpiryValidatorTest {
         given(validator.isValidExpiry(aTime)).willReturn(true);
         assertFailsWith(
                 AUTORENEW_DURATION_NOT_IN_RANGE,
-                () -> subject.validateCreationAttempt(false, new ExpiryMeta(aTime, aPeriod, NA)));
+                () -> subject.resolveCreationAttempt(false, new ExpiryMeta(aTime, aPeriod, NA)));
     }
 
     @Test
@@ -135,7 +135,7 @@ class MonoExpiryValidatorTest {
         given(validator.isValidExpiry(aTime)).willReturn(true);
         assertFailsWith(
                 AUTORENEW_DURATION_NOT_IN_RANGE,
-                () -> subject.validateCreationAttempt(false, new ExpiryMeta(aTime, aPeriod, NA)));
+                () -> subject.resolveCreationAttempt(false, new ExpiryMeta(aTime, aPeriod, NA)));
     }
 
     @Test
@@ -143,7 +143,7 @@ class MonoExpiryValidatorTest {
         given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(now));
 
         given(validator.isValidExpiry(aTime)).willReturn(true);
-        assertDoesNotThrow(() -> subject.validateCreationAttempt(false, new ExpiryMeta(aTime, NA, NA)));
+        assertDoesNotThrow(() -> subject.resolveCreationAttempt(false, new ExpiryMeta(aTime, NA, NA)));
     }
 
     @Test
@@ -152,7 +152,7 @@ class MonoExpiryValidatorTest {
 
         given(validator.isValidExpiry(aTime)).willReturn(true);
 
-        assertDoesNotThrow(() -> subject.validateCreationAttempt(false, new ExpiryMeta(aTime, NA, anAutoRenewNum)));
+        assertDoesNotThrow(() -> subject.resolveCreationAttempt(false, new ExpiryMeta(aTime, NA, anAutoRenewNum)));
     }
 
     @Test
@@ -161,7 +161,7 @@ class MonoExpiryValidatorTest {
         given(validator.isValidExpiry(aTime)).willReturn(true);
         given(validator.isValidAutoRenewPeriod(aPeriod)).willReturn(true);
 
-        assertDoesNotThrow(() -> subject.validateCreationAttempt(false, new ExpiryMeta(aTime, aPeriod, NA)));
+        assertDoesNotThrow(() -> subject.resolveCreationAttempt(false, new ExpiryMeta(aTime, aPeriod, NA)));
     }
 
     @Test
@@ -171,7 +171,7 @@ class MonoExpiryValidatorTest {
         given(validator.isValidExpiry(now + aPeriod)).willReturn(true);
 
         assertDoesNotThrow(
-                () -> subject.validateCreationAttempt(false, new ExpiryMeta(now + aPeriod, aPeriod, anAutoRenewNum)));
+                () -> subject.resolveCreationAttempt(false, new ExpiryMeta(now + aPeriod, aPeriod, anAutoRenewNum)));
     }
 
     @Test
@@ -229,6 +229,17 @@ class MonoExpiryValidatorTest {
     void canSetEverythingValidly() {
         final var current = new ExpiryMeta(aTime, 0, NA);
         final var update = new ExpiryMeta(bTime, bPeriod, anAutoRenewNum);
+
+        given(validator.isValidExpiry(bTime)).willReturn(true);
+        given(validator.isValidAutoRenewPeriod(bPeriod)).willReturn(true);
+
+        assertEquals(update, subject.resolveUpdateAttempt(current, update));
+    }
+
+    @Test
+    void canUseWildcardForRemovingAutoRenewAccount() {
+        final var current = new ExpiryMeta(aTime, 0, NA);
+        final var update = new ExpiryMeta(bTime, bPeriod, 0);
 
         given(validator.isValidExpiry(bTime)).willReturn(true);
         given(validator.isValidAutoRenewPeriod(bPeriod)).willReturn(true);

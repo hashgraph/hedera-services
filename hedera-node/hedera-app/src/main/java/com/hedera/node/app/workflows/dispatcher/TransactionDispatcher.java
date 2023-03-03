@@ -229,14 +229,7 @@ public class TransactionDispatcher {
             @NonNull final ConsensusUpdateTopicTransactionBody topicUpdate,
             @NonNull final WritableTopicStore topicStore) {
         final var handler = handlers.consensusUpdateTopicHandler();
-        final var recordBuilder = handler.newRecordBuilder();
-        handler.handle(
-                handleContext,
-                topicUpdate,
-                new ConsensusServiceConfig(
-                        dynamicProperties.maxNumTopics(), dynamicProperties.messageMaxBytesAllowed()),
-                recordBuilder,
-                topicStore);
+        handler.handle(handleContext, topicUpdate, topicStore);
         // TODO: Commit will be called in workflow or some other place when handle workflow is implemented
         // This is temporary solution to make sure that topic is created
         topicStore.commit();

@@ -62,7 +62,7 @@ public class MonoExpiryValidator implements ExpiryValidator {
      * {@inheritDoc}
      */
     @Override
-    public ExpiryMeta validateCreationAttempt(final boolean entityCanSelfFundRenewal, final ExpiryMeta creationMeta) {
+    public ExpiryMeta resolveCreationAttempt(final boolean entityCanSelfFundRenewal, final ExpiryMeta creationMeta) {
         if (creationMeta.hasAutoRenewNum()) {
             validateAutoRenewAccount(creationMeta.autoRenewNum());
         }
@@ -150,6 +150,10 @@ public class MonoExpiryValidator implements ExpiryValidator {
      * @throws HandleStatusException if the account number is invalid
      */
     private void validateAutoRenewAccount(final long autoRenewNum) {
+        if (autoRenewNum == 0L) {
+            // 0L is a sentinel number that says to remove the current auto-renew account
+            return;
+        }
         final var autoRenewId = new Id(numbers.shard(), numbers.realm(), autoRenewNum);
         try {
             accountStore.loadAccountOrFailWith(autoRenewId, INVALID_AUTORENEW_ACCOUNT);

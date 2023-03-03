@@ -70,6 +70,7 @@ public class AdaptedMonoTransitionRunner extends TransitionRunner {
     public boolean tryTransition(final @NonNull TxnAccessor accessor) {
         final var function = accessor.getFunction();
         if (functionsToDispatch.contains(function)) {
+            // Temporary logging for demo
             log.info(
                     "Dispatching {} handle last step for {} to workflow",
                     function,
