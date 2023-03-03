@@ -168,13 +168,13 @@ public abstract class WritableKVStateBase<K extends Comparable<K>, V> extends Re
      * For the size of a {@link WritableKVState}, we need to take into account the size of the
      * underlying data source, and the modifications that have been made to the state.
      * <ol>
-     *     <li>if the key is in backing store and is removed in modifications, then it is counted as removed
-     *     <li>if the key is not in backing store and is added in modifications, then it is counted as addition
-     *     <li>if the key is in backing store and is added in modifications, then it is not counted as the
-     *     key already exists in state
-     *     <li>if the key is not in backing store and is being tried to be removed in modifications,
-     *     then it is not counted as the key does not exist in state.
-     *     </ol>
+     * <li>if the key is in backing store and is removed in modifications, then it is counted as removed</li>
+     * <li>if the key is not in backing store and is added in modifications, then it is counted as addition</li>
+     * <li>if the key is in backing store and is added in modifications, then it is not counted as the
+     * key already exists in state</li>
+     * <li>if the key is not in backing store and is being tried to be removed in modifications,
+     * then it is not counted as the key does not exist in state.</li>
+     * </ol>
      * @return The size of the state.
      */
     @NonNull

@@ -409,7 +409,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
-    @DisplayName("Key Validation Failure will throw")
+    @DisplayName("Fails when the allowed topics are already created")
     void failsWhenMaxRegimeExceeds() {
         final var adminKey = SIMPLE_KEY_A;
         final var submitKey = SIMPLE_KEY_B;

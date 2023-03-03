@@ -11,7 +11,6 @@ open module com.hedera.node.app.service.consensus.impl.test {
     requires hedera.services.hedera.node.hedera.app.spi.testFixtures;
     requires com.swirlds.common;
     requires org.apache.commons.codec;
-    requires com.hedera.node.app.service.evm;
     requires com.hedera.node.hapi;
     requires com.hedera.hashgraph.pbj.runtime;
 }
