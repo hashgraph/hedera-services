@@ -16,7 +16,6 @@
 
 package com.swirlds.merkledb.files.hashmap;
 
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import com.swirlds.merkledb.serialize.KeySerializer;
@@ -27,19 +26,25 @@ import java.nio.ByteBuffer;
 /**
  * Serializer for writing buckets into a DataFile.
  *
- * @param <K>
- * 		The map key type stored in the buckets
+ * @param <K> The map key type stored in the buckets
  */
 public class BucketSerializer<K extends VirtualKey<? super K>> implements DataItemSerializer<Bucket<K>> {
     /**
-     * Temporary bucket buffers. There is an open question if this should be static, the reason it is not is we need
-     * different ThreadLocals for each key type.
+     * Cached thread local buckets for fixed size key serializers.
+     *
+     * An open question is if there should be one static temporary bucket for all
+     * serializers, or one bucket per serializer. For now, let's have just two: one for all
+     * fixed size serializers, and another one for variable size ones.
      */
     @SuppressWarnings("rawtypes")
-    private static final ThreadLocal<Bucket> REUSABLE_BUCKETS = new ThreadLocal<>();
+    private static final ThreadLocal<Bucket> REUSABLE_FIXEDSIZE_BUCKET = new ThreadLocal<>();
+    /** Similar thread local buckets to the above, but for variable size key serializers. */
+    @SuppressWarnings("rawtypes")
+    private static final ThreadLocal<Bucket> REUSABLE_VARSIZE_BUCKET = new ThreadLocal<>();
 
     /**
-     * How many of the low-order bytes in the serialization version are devoted to non-key serialization metadata.
+     * How many of the low-order bytes in the serialization version are devoted to non-key
+     * serialization metadata.
      */
     private static final int LOW_ORDER_BYTES_FOR_NON_KEY_SERIALIZATION_VERSION = 32;
     /** The version number for serialization data format for this bucket */
@@ -64,22 +69,27 @@ public class BucketSerializer<K extends VirtualKey<? super K>> implements DataIt
 
     /**
      * Get the key serializer.
+     *
      * @return a key serializer
      */
     public KeySerializer<K> getKeySerializer() {
         return keySerializer;
     }
 
-    /**
-     * Get a reusable bucket for current thread, cleared as an empty bucket
-     */
+    /** Get a reusable bucket for current thread, cleared as an empty bucket */
     @SuppressWarnings({"rawtypes", "unchecked"})
     public Bucket<K> getReusableEmptyBucket() {
-        Bucket reusableBucket = REUSABLE_BUCKETS.get();
+        final boolean isVarSizeKeySerializer = keySerializer.isVariableSize();
+        Bucket reusableBucket =
+                isVarSizeKeySerializer ? REUSABLE_VARSIZE_BUCKET.get() : REUSABLE_FIXEDSIZE_BUCKET.get();
         Bucket<K> bucket;
         if (reusableBucket == null) {
             bucket = new Bucket<>(keySerializer);
-            REUSABLE_BUCKETS.set(bucket);
+            if (isVarSizeKeySerializer) {
+                REUSABLE_VARSIZE_BUCKET.set(bucket);
+            } else {
+                REUSABLE_FIXEDSIZE_BUCKET.set(bucket);
+            }
         } else {
             bucket = reusableBucket;
             bucket.setKeySerializer(keySerializer);
@@ -101,8 +111,7 @@ public class BucketSerializer<K extends VirtualKey<? super K>> implements DataIt
     /**
      * Deserialize data item header from the given byte buffer
      *
-     * @param buffer
-     * 		Buffer to read from
+     * @param buffer Buffer to read from
      * @return The read header
      */
     @Override
@@ -123,8 +132,8 @@ public class BucketSerializer<K extends VirtualKey<? super K>> implements DataIt
     }
 
     /**
-     * Get the current serialization version. This a combination of the bucket header's serialization version and the
-     * KeySerializer's serialization version.
+     * Get the current serialization version. This a combination of the bucket header's
+     * serialization version and the KeySerializer's serialization version.
      */
     @Override
     public long getCurrentDataVersion() {
@@ -134,10 +143,8 @@ public class BucketSerializer<K extends VirtualKey<? super K>> implements DataIt
     /**
      * Deserialize a data item from a byte buffer, that was written with given data version
      *
-     * @param buffer
-     * 		The buffer to read from
-     * @param dataVersion
-     * 		The serialization version the data item was written with
+     * @param buffer The buffer to read from
+     * @param dataVersion The serialization version the data item was written with
      * @return Deserialized data item
      */
     @Override
@@ -149,44 +156,9 @@ public class BucketSerializer<K extends VirtualKey<? super K>> implements DataIt
         return bucket;
     }
 
-    /**
-     * Serialize a data item to the output stream returning the size of the data written
-     *
-     * @param bucket
-     * 		The data item to serialize
-     * @param outputStream
-     * 		Output stream to write to
-     */
+    /** {@inheritDoc} */
     @Override
-    public int serialize(final Bucket<K> bucket, final SerializableDataOutputStream outputStream) throws IOException {
-        return bucket.writeToOutputStream(outputStream);
-    }
-
-    /**
-     * Copy the serialized data item in dataItemData into the writingStream. Important if serializedVersion is not the
-     * same as current serializedVersion then update the data to the latest serialization.
-     *
-     * @param serializedVersion
-     * 		The serialized version of the data item in dataItemData
-     * @param dataItemSize
-     * 		The size in bytes of the data item dataItemData
-     * @param dataItemData
-     * 		Buffer containing complete data item including the data item header
-     * @param writingStream
-     * 		The stream to write data item out to
-     * @return the number of bytes written, this could be the same as dataItemSize or bigger or smaller if
-     * 		serialization version has changed.
-     * @throws IOException
-     * 		if there was a problem writing data item to stream or converting it
-     */
-    @Override
-    public int copyItem(
-            final long serializedVersion,
-            final int dataItemSize,
-            final ByteBuffer dataItemData,
-            final SerializableDataOutputStream writingStream)
-            throws IOException {
-        /* FUTURE WORK - https://github.com/swirlds/swirlds-platform/issues/3942 */
-        return DataItemSerializer.super.copyItem(serializedVersion, dataItemSize, dataItemData, writingStream);
+    public int serialize(final Bucket<K> bucket, final ByteBuffer buffer) throws IOException {
+        return bucket.writeToByteBuffer(buffer);
     }
 }

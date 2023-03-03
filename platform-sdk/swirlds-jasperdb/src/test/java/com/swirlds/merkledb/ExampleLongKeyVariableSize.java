@@ -59,13 +59,19 @@ public class ExampleLongKeyVariableSize implements VirtualLongKey {
         }
     }
 
-    // [0, 0, 0, 98, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    // 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 80, -69, 72, 20, 36,
-    // -106, -79, -64, -127, 4, 49, -84, -102, 77, -47, 70, -106, 113, -70, 8, -66, 43, 86, 116, -25, -12, -1, 75, 14,
+    // [0, 0, 0, 98, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    // 0, 0, 0, 0, 0, 0, 0,
+    // 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 80,
+    // -69, 72, 20, 36,
+    // -106, -79, -64, -127, 4, 49, -84, -102, 77, -47, 70, -106, 113, -70, 8, -66, 43, 86, 116,
+    // -25, -12, -1, 75, 14,
     // -122, -42, 65, 0, 0, +4,194,204 more]
-    // [0, 0, 0, 98, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    // 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, -82, 25, 2, 43, -51,
-    // 119, -30, 62, -66, 52, -42, -36, 32, 11, 0, -36, 48, 117, 27, -16, -81, 9, 126, -25, -116, -124, 27, 32, -44,
+    // [0, 0, 0, 98, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    // 0, 0, 0, 0, 0, 0, 0,
+    // 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, -82,
+    // 25, 2, 43, -51,
+    // 119, -30, 62, -66, 52, -42, -36, 32, 11, 0, -36, 48, 117, 27, -16, -81, 9, 126, -25, -116,
+    // -124, 27, 32, -44,
     // 3, -49, 100]
     @Override
     public void deserialize(final ByteBuffer buffer, final int dataVersion) throws IOException {
@@ -146,9 +152,9 @@ public class ExampleLongKeyVariableSize implements VirtualLongKey {
     /**
      * Compute number of bytes of non-zero data are there from the least significant side of a long.
      *
-     * @param num
-     * 		the long to count non-zero bits for
-     * @return the number of non-zero bytes, Minimum 1, we always write at least 1 byte even for value 0
+     * @param num the long to count non-zero bits for
+     * @return the number of non-zero bytes, Minimum 1, we always write at least 1 byte even for
+     *     value 0
      */
     static byte computeNonZeroBytes(final long num) {
         if (num == 0) {
@@ -165,26 +171,23 @@ public class ExampleLongKeyVariableSize implements VirtualLongKey {
             public static final int ORIGINAL = 1;
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override
         public long getClassId() {
             return CLASS_ID;
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override
         public int getVersion() {
             return ClassVersion.ORIGINAL;
         }
 
         /**
-         * For variable sized data get the typical  number of bytes a data item takes when serialized
+         * For variable sized data get the typical number of bytes a data item takes when serialized
          *
-         * @return Either for fixed size same as getSerializedSize() or an estimated typical size for data items
+         * @return Either for fixed size same as getSerializedSize() or an estimated typical size
+         *     for data items
          */
         @Override
         public int getTypicalSerializedSize() {
@@ -194,9 +197,9 @@ public class ExampleLongKeyVariableSize implements VirtualLongKey {
         /**
          * Deserialize key size from the given byte buffer
          *
-         * @param buffer
-         * 		Buffer to read from
-         * @return The number of bytes used to store the key, including for storing the key size if needed.
+         * @param buffer Buffer to read from
+         * @return The number of bytes used to store the key, including for storing the key size if
+         *     needed.
          */
         @Override
         public int deserializeKeySize(final ByteBuffer buffer) {
@@ -214,21 +217,18 @@ public class ExampleLongKeyVariableSize implements VirtualLongKey {
             return VARIABLE_DATA_SIZE;
         }
 
-        /**
-         * Get the current data item serialization version
-         */
+        /** Get the current data item serialization version */
         @Override
         public long getCurrentDataVersion() {
-            return CURRENT_SERIALIZATION_VERSION; // random so that for testing we are sure we are getting same version
+            return CURRENT_SERIALIZATION_VERSION; // random so that for testing we are sure we are
+            // getting same version
         }
 
         /**
          * Deserialize a data item from a byte buffer, that was written with given data version
          *
-         * @param buffer
-         * 		The buffer to read from containing the data item including its header
-         * @param dataVersion
-         * 		The serialization version the data item was written with
+         * @param buffer The buffer to read from containing the data item including its header
+         * @param dataVersion The serialization version the data item was written with
          * @return Deserialized data item
          */
         @Override
@@ -241,21 +241,6 @@ public class ExampleLongKeyVariableSize implements VirtualLongKey {
             return key;
         }
 
-        /**
-         * Serialize a data item including header to the output stream returning the size of the data written
-         *
-         * @param data
-         * 		The data item to serialize
-         * @param outputStream
-         * 		Output stream to write to
-         */
-        @Override
-        public int serialize(final ExampleLongKeyVariableSize data, final SerializableDataOutputStream outputStream)
-                throws IOException {
-            data.serialize(outputStream);
-            return 1 + computeNonZeroBytes(data.getKeyAsLong());
-        }
-
         @Override
         public int serialize(final ExampleLongKeyVariableSize data, final ByteBuffer buffer) throws IOException {
             data.serialize(buffer);
@@ -263,25 +248,18 @@ public class ExampleLongKeyVariableSize implements VirtualLongKey {
         }
 
         /**
-         * Compare keyToCompare's data to that contained in the given ByteBuffer. The data in the buffer is assumed to
-         * be
-         * starting at the current buffer position and in the format written by this class's serialize() method. The
-         * reason
-         * for this rather than just deserializing then doing an object equals is performance. By doing the comparison
-         * here
-         * you can fail fast on the first byte that does not match. As this is used in a tight loop in searching a hash
-         * map
-         * bucket for a match performance is critical.
+         * Compare keyToCompare's data to that contained in the given ByteBuffer. The data in the
+         * buffer is assumed to be starting at the current buffer position and in the format written
+         * by this class's serialize() method. The reason for this rather than just deserializing
+         * then doing an object equals is performance. By doing the comparison here you can fail
+         * fast on the first byte that does not match. As this is used in a tight loop in searching
+         * a hash map bucket for a match performance is critical.
          *
-         * @param buffer
-         * 		The buffer to read from and compare to
-         * @param dataVersion
-         * 		The serialization dataVersion of the data in the buffer
-         * @param keyToCompare
-         * 		The key to compare with the data in the file.
+         * @param buffer The buffer to read from and compare to
+         * @param dataVersion The serialization dataVersion of the data in the buffer
+         * @param keyToCompare The key to compare with the data in the file.
          * @return true if the content of the buffer matches this class's data
-         * @throws IOException
-         * 		If there was a problem reading from the buffer
+         * @throws IOException If there was a problem reading from the buffer
          */
         @Override
         public boolean equals(ByteBuffer buffer, int dataVersion, ExampleLongKeyVariableSize keyToCompare)
@@ -301,29 +279,21 @@ public class ExampleLongKeyVariableSize implements VirtualLongKey {
             return value == keyToCompare.getKeyAsLong();
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override
         public void serialize(final SerializableDataOutputStream out) throws IOException {}
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override
         public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {}
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override
         public int hashCode() {
             return super.hashCode();
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override
         public boolean equals(final Object obj) {
             // Since there is no class state, objects of the same type are considered to be equal
