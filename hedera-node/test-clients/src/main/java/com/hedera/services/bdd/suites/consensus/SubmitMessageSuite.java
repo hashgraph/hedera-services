@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.consensus;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
