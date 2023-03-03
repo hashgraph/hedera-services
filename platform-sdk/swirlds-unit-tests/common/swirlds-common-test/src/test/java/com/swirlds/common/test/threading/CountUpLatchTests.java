@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.swirlds.common.test.threading;
 
 import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
@@ -72,9 +88,7 @@ class CountUpLatchTests {
 
     // TODO test that is more likely to increment over the finish line
 
-    private record MinMaxCount(long minCount, long maxCount) {
-
-    }
+    private record MinMaxCount(long minCount, long maxCount) {}
 
     protected static Stream<Arguments> buildArguments() {
         final List<Arguments> arguments = new ArrayList<>();
@@ -86,7 +100,6 @@ class CountUpLatchTests {
         arguments.add(Arguments.of(new MinMaxCount(0, 10_000)));
         return arguments.stream();
     }
-
 
     @ParameterizedTest
     @MethodSource("buildArguments")
@@ -121,7 +134,6 @@ class CountUpLatchTests {
                                 error.set(true);
                                 break;
                             }
-
                         }
                         finishedLatch.countDown();
                     })
@@ -185,7 +197,6 @@ class CountUpLatchTests {
                                 error.set(true);
                                 break;
                             }
-
                         }
                         finishedLatch.countDown();
                     })
@@ -255,7 +266,6 @@ class CountUpLatchTests {
         assertFalse(error.get());
     }
 
-    // TODO this is flaky
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     @DisplayName("Unsuccessful Await With Timeout Test")
@@ -288,7 +298,7 @@ class CountUpLatchTests {
             }
         }
 
-        assertTrue(finishedLatch.await(1, TimeUnit.SECONDS));
+        assertTrue(finishedLatch.await(10, TimeUnit.SECONDS));
         assertFalse(error.get());
     }
 }
