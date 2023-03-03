@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.consensus;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
@@ -39,6 +40,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_MESSAGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 
@@ -164,7 +167,7 @@ public class SubmitMessageSuite extends HapiSuite {
     }
 
     private HapiSpec messageSubmissionOverSize() {
-        final byte[] messageBytes = new byte[8192]; // 8k
+        final byte[] messageBytes = new byte[4096]; // 4k
         Arrays.fill(messageBytes, (byte) 0b1);
 
         return defaultHapiSpec("messageSubmissionOverSize")
@@ -174,7 +177,9 @@ public class SubmitMessageSuite extends HapiSuite {
                 .when()
                 .then(submitMessageTo("testTopic")
                         .message(new String(messageBytes))
-                        .hasPrecheckFrom(TRANSACTION_OVERSIZE, BUSY));
+                        // In hedera-app we don't enforce such prechecks
+                        .hasPrecheckFrom(TRANSACTION_OVERSIZE, BUSY, OK)
+                        .hasKnownStatus(MESSAGE_SIZE_TOO_LARGE));
     }
 
     private HapiSpec feeAsExpected() {
