@@ -40,7 +40,7 @@ import sun.misc.Unsafe;
  * A {@link LongList} that stores its contents off-heap via a {@link AtomicReferenceArray} of direct
  * {@link ByteBuffer}s. Each {@link ByteBuffer} is the same size, so the "chunk" containing the
  * value for any given index is easily found using modular arithmetic. Note that <br>
- * to reduce memory consumption one can use {@link LongListOffHeap#updateMinValidIndex(long)}.
+ * to reduce memory consumption one can use {@link LongList#updateValidRange(long, long)}.
  * A call to this method discards memory chunks reserved for the indices that are before the index
  * passed as an argument subtracted by {@link LongListOffHeap#reservedBufferLength}. The idea is to
  * keep the amount of memory defined by {@link LongListOffHeap#reservedBufferLength} reserved even
@@ -70,7 +70,7 @@ public final class LongListOffHeap extends LongList {
 
     /**
      * A length of a buffer that is reserved to remain intact after memory optimization that is
-     * happening in {@link LongListOffHeap#updateMinValidIndex}
+     * happening in {@link LongListOffHeap#updateValidRange}
      */
     private final long reservedBufferLength;
 
@@ -187,22 +187,14 @@ public final class LongListOffHeap extends LongList {
      * Also, a call to this method releases memory taken by unused byte buffers.
      *
      * @param newMinValidIndex minimal valid index of the list
+     * @param maxValidIndex maximal valid index of the list
      */
     @Override
-    public void onUpdateMinValidIndex(final long newMinValidIndex) {
-        if (newMinValidIndex < 0) {
-            throw new IndexOutOfBoundsException("Min valid index " + newMinValidIndex + " must be non-negative");
-        }
-
-        if (newMinValidIndex >= size.get()) {
-            logger.warn("New min valid index cannot exceed current list size, returning.");
-            return;
-        }
-
+    public void onUpdateValidRange(final long newMinValidIndex, long maxValidIndex) {
         // This is an optimization: we know that a memory block for this index must exist,
         // so let's make sure that it's there
         createOrGetChunk(newMinValidIndex);
-        shrinkIfNeeded(newMinValidIndex);
+        shrinkIfNeeded(newMinValidIndex, maxValidIndex);
     }
 
     /** {@inheritDoc} */
@@ -347,46 +339,96 @@ public final class LongListOffHeap extends LongList {
     }
 
     /**
-     * Deletes values up to {@code newMinValidIndex}, releases memory chunks reserved for these
+     * Deletes values outside the provided range, releases memory chunks reserved for these
      * values. Note that it takes {@code reservedBufferOffset} into account to decide if a chunk has
      * to be released.
      *
      * @param newMinValidIndex new minimal valid index, left boundary of the list
+     * @param maxValidIndex new maximal valid index, right boundary of the list
      */
-    private void shrinkIfNeeded(final long newMinValidIndex) {
+    private void shrinkIfNeeded(final long newMinValidIndex, long maxValidIndex) {
+        shrinkTheLeftSideIfNeeded(newMinValidIndex);
+        shrinkTheRightSideIfNeeded(maxValidIndex);
+    }
+
+    /**
+     * Deletes values up to {@code newMinValidIndex}, releases memory chunks reserved for these
+     * values.
+     * @param newMinValidIndex new minimal valid index, left boundary of the list
+    */
+     private void shrinkTheLeftSideIfNeeded(final long newMinValidIndex) {
         final int firstValidChunkWithBuffer =
                 (int) Math.max((newMinValidIndex - reservedBufferLength) / numLongsPerChunk, 0);
         final int firstChunkIndexToDelete = firstValidChunkWithBuffer - 1;
         for (int i = firstChunkIndexToDelete; i >= 0; i--) {
-            final ByteBuffer byteBuffer = chunkList.get(i);
-            if (byteBuffer != null) {
-                if (chunkList.compareAndSet(i, byteBuffer, null)) {
-                    // clean up off-heap memory reserved for the byte buffer
-                    UNSAFE.invokeCleaner(byteBuffer);
-                }
-            }
+            cleanUpBufferAt(i);
         }
 
         // clean up a chunk with data
         final int firstChunkWithData = (int) (newMinValidIndex / numLongsPerChunk);
         final long numberOfElementsToCleanUp = (newMinValidIndex % numLongsPerChunk);
-        cleanupChunk(firstChunkWithData, numberOfElementsToCleanUp);
+        cleanupChunk(firstChunkWithData, 0, numberOfElementsToCleanUp);
 
         // clean up chunk(s) reserved for buffer
         for (int i = firstValidChunkWithBuffer; i < firstChunkWithData; i++) {
-            cleanupChunk(i, numLongsPerChunk);
+            cleanupChunk(i, 0, numLongsPerChunk);
+        }
+    }
+
+    /**
+     * Deletes values after {@code maxValidIndex}, releases memory chunks reserved for these
+     * values.
+     * @param maxValidIndex new minimal valid index, right boundary of the list
+     */
+    private void shrinkTheRightSideIfNeeded(final long maxValidIndex) {
+        final int lastValidChunkWithBuffer =
+                (int) Math.max((maxValidIndex + reservedBufferLength) / numLongsPerChunk, 0);
+        final int firstChunkIndexToDelete = lastValidChunkWithBuffer + 1;
+        int totalNumberOfChunks = calculateNumberOfChunks(size());
+        for (int i = firstChunkIndexToDelete; i < totalNumberOfChunks; i++) {
+            cleanUpBufferAt(i);
+        }
+        if(firstChunkIndexToDelete >= totalNumberOfChunks) {
+            // nothing to clean up
+            return;
+        }
+
+        // clean up a chunk with data
+        final int firstChunkWithData = (int) (maxValidIndex / numLongsPerChunk);
+        final long firstEntryToCleanup = maxValidIndex % numLongsPerChunk + 1;
+        final long numberOfElementsToCleanUp = numLongsPerChunk - firstEntryToCleanup;
+
+        cleanupChunk(firstChunkWithData, firstEntryToCleanup, numberOfElementsToCleanUp);
+
+        // clean up chunk(s) reserved for buffer
+        for (int i = firstChunkWithData + 1; i <= lastValidChunkWithBuffer; i++) {
+            cleanupChunk(i, 0, numLongsPerChunk);
+        }
+    }
+
+    /**
+     * Releases memory chunk reserved for the buffer at the provided index.
+     * @param i index of the chunk to release
+     */
+    private void cleanUpBufferAt(int i) {
+        final ByteBuffer byteBuffer = chunkList.get(i);
+        if (byteBuffer != null) {
+            if (chunkList.compareAndSet(i, byteBuffer, null)) {
+                // clean up off-heap memory reserved for the byte buffer
+                UNSAFE.invokeCleaner(byteBuffer);
+            }
         }
     }
 
     /**
      * Looks up a chunk by {@code chunkIndex} and, if the chunk exists,
-     * zeros values up to {@code elementsToCleanUp} index.
+     * zeros values up to {@code entriesToCleanUp} index.
      *
      * @param chunkIndex        an index of a chunk to clean up
-     * @param elementsToCleanUp number of elements to clean up starting with 0 index
+     * @param entriesToCleanUp number of elements to clean up starting with 0 index
      */
-    private void cleanupChunk(final int chunkIndex, final long elementsToCleanUp) {
-        if (elementsToCleanUp == 0) {
+    private void cleanupChunk(final int chunkIndex, final long startIndexInChunk, final long entriesToCleanUp) {
+        if (entriesToCleanUp == 0) {
             // nothing to clean up
             return;
         }
@@ -394,7 +436,7 @@ public final class LongListOffHeap extends LongList {
         if (validChunk != null) {
             final long chunkPointer = address(validChunk);
             // cleans up all values up to newMinValidIndex in the first chunk
-            UNSAFE.setMemory(chunkPointer, elementsToCleanUp * Long.BYTES, (byte) 0);
+            UNSAFE.setMemory(chunkPointer + startIndexInChunk * Long.BYTES, entriesToCleanUp * Long.BYTES, (byte) 0);
         }
     }
 

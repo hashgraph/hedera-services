@@ -258,8 +258,8 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
         final DataFileReader<D> dataFileReader = fileCollection.endWriting(minimumValidKey, maximumValidKey);
         // At this point we know exactly what list indices are in use and, therefore,
         // it's a good time to free memory reserved for the unused data.
-        // By calling `updateMinValidIndex` we compact the index if it's applicable.
-        index.updateMinValidIndex(minimumValidKey);
+        // By calling `updateValidRange` we compact the index if it's applicable.
+        index.updateValidRange(minimumValidKey, maximumValidKey);
 
         // we have updated all indexes so the data file can now be included in merges
         dataFileReader.setFileCompleted();

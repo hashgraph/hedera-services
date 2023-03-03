@@ -115,7 +115,7 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
                 list.put(i, i);
             }
 
-            list.updateMinValidIndex(getSampleSize() / 2 + chunkOffset);
+            list.updateValidRange(getSampleSize() / 2 + chunkOffset, list.size() - 1);
 
             final Path file = testDirectory.resolve("LongListOffHeapHalfEmpty.hl");
             // write longList data
@@ -140,7 +140,7 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
                 list.put(i, i + 1);
             }
             final long minIndex = sampleSize / countDivider;
-            list.updateMinValidIndex(minIndex);
+            list.updateValidRange(minIndex, list.size() - 1);
             final AtomicLong count = new AtomicLong(0);
             final Set<Long> keysInForEach = new HashSet<>();
             list.forEach((path, location) -> {

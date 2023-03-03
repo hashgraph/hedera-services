@@ -135,7 +135,7 @@ class LongListDiskTest {
         populateList(list);
         final long originalFileSize = Files.size(listFile);
 
-        list.updateMinValidIndex(SMALL_SAMPLE_SIZE / 2);
+        list.updateValidRange(SMALL_SAMPLE_SIZE / 2, SMALL_SAMPLE_SIZE - 1);
 
         // half-empty
         for (int i = 0; i < SMALL_SAMPLE_SIZE / 2; i++) {

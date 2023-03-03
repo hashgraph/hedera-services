@@ -20,6 +20,9 @@ import static com.swirlds.common.utility.Units.MEBIBYTES_TO_BYTES;
 
 import com.swirlds.merkledb.files.DataFileCommon;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -44,6 +47,9 @@ import java.util.stream.StreamSupport;
  * more like a long-to-long map than a traditional list.
  */
 public abstract class LongList implements CASableLongIndex, Closeable {
+
+    private static final Logger logger = LogManager.getLogger(LongList.class);
+
     /** A suitable default for the maximum number of longs that may be stored (32GB of longs). */
     protected static final long DEFAULT_MAX_LONGS_TO_STORE = 4_000_000_000L;
     /** The maximum number of longs to store per chunk. */
@@ -340,13 +346,28 @@ public abstract class LongList implements CASableLongIndex, Closeable {
     protected abstract long lookupInChunk(final long chunkIndex, final long subIndex);
 
     /**
-     * Calls implementation specific {@link LongList#onUpdateMinValidIndex(long)}
+     * Calls implementation specific {@link LongList#onUpdateValidRange(long, long)}
      * and then updates {@code minValidIndex} parameter
      *
      * @param newMinValidIndex minimal valid index of the list
+     * @param maxValidIndex
      */
-    public final void updateMinValidIndex(final long newMinValidIndex) {
-        onUpdateMinValidIndex(newMinValidIndex);
+    public final void updateValidRange(final long newMinValidIndex, long maxValidIndex) {
+        if (newMinValidIndex < 0) {
+            throw new IndexOutOfBoundsException("Min valid index " + newMinValidIndex + " must be non-negative");
+        }
+        if (maxValidIndex > maxLongs) {
+            throw new IndexOutOfBoundsException("Max valid index " + maxValidIndex + " must be less than max capacity " + maxLongs);
+        }
+
+        if (newMinValidIndex >= size.get()) {
+            logger.warn("New min valid index cannot exceed current list size, returning.");
+            return;
+        }
+
+
+        onUpdateValidRange(newMinValidIndex, maxValidIndex);
+        size.set(maxValidIndex + 1);
         minValidIndex.set(newMinValidIndex);
     }
 
@@ -354,8 +375,9 @@ public abstract class LongList implements CASableLongIndex, Closeable {
      * An action that has to be taken before update of the min valid index
      *
      * @param newMinValidIndex min valid index
+     * @param maxValidIndex
      */
-    protected void onUpdateMinValidIndex(final long newMinValidIndex) {
+    protected void onUpdateValidRange(final long newMinValidIndex, long maxValidIndex) {
         // no op
     }
 

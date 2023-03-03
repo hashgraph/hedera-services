@@ -39,13 +39,14 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 class LongListOffHeapMinValidIndexTest {
 
+    public static final int MAX_LONGS = 1000;
     private LongListOffHeap list;
 
     @BeforeEach
     public void setUp() {
         final int longsPerChunk = 3;
         final int reservedBufferLength = 1;
-        list = new LongListOffHeap(longsPerChunk, 1000, reservedBufferLength);
+        list = new LongListOffHeap(longsPerChunk, MAX_LONGS, reservedBufferLength);
     }
 
     @Tag(TestTypeTags.FUNCTIONAL)
@@ -53,7 +54,11 @@ class LongListOffHeapMinValidIndexTest {
     @Test
     @DisplayName("Update min valid index behavior with invalid boundaries")
     public void testUpdateMinValidIndexNegativeValue() {
-        assertThrows(IndexOutOfBoundsException.class, () -> list.updateMinValidIndex(-1));
+        assertThrows(IndexOutOfBoundsException.class, () -> list.updateValidRange(-1, maxValidIndex()));
+    }
+
+    private long maxValidIndex() {
+        return list.size() - 1;
     }
 
     @Tag(TestTypeTags.FUNCTIONAL)
@@ -63,14 +68,14 @@ class LongListOffHeapMinValidIndexTest {
     public void testUpdateMinValidIndexOnEmptyList() {
         // updateMinValidIndex is no op. It has no effect in this case, new memory chunks are not created
 
-        assertDoesNotThrow(() -> list.updateMinValidIndex(0));
+        assertDoesNotThrow(() -> list.updateValidRange(0, maxValidIndex()));
         assertMemoryChunksNumber(0);
-        assertDoesNotThrow(() -> list.updateMinValidIndex(1));
+        assertDoesNotThrow(() -> list.updateValidRange(1, maxValidIndex()));
         assertMemoryChunksNumber(0);
 
         fill(2);
         assertMemoryChunksNumber(1);
-        assertDoesNotThrow(() -> list.updateMinValidIndex(3));
+        assertDoesNotThrow(() -> list.updateValidRange(3, maxValidIndex()));
         assertMemoryChunksNumber(1);
     }
 
@@ -94,7 +99,7 @@ class LongListOffHeapMinValidIndexTest {
         assertHasValuesInRange(0, 2);
         assertMemoryChunksNumber(1);
 
-        list.updateMinValidIndex(1);
+        list.updateValidRange(1, maxValidIndex());
 
         assertMemoryChunksNumber(1);
         assertEmptyUpToIndex(0);
@@ -111,9 +116,9 @@ class LongListOffHeapMinValidIndexTest {
         assertHasValuesInRange(0, 2);
         assertMemoryChunksNumber(1);
 
-        list.updateMinValidIndex(1);
+        list.updateValidRange(1, maxValidIndex());
         // one more time
-        list.updateMinValidIndex(1);
+        list.updateValidRange(1, maxValidIndex());
 
         assertMemoryChunksNumber(1);
         assertEmptyUpToIndex(0);
@@ -135,7 +140,7 @@ class LongListOffHeapMinValidIndexTest {
         assertMemoryChunksNumber(2);
 
         // 4 is min valid index, 3 is a buffer. 0-2 should be freed
-        list.updateMinValidIndex(4);
+        list.updateValidRange(4, maxValidIndex());
 
         assertEmptyUpToIndex(3);
         assertHasValuesInRange(5, 5);
@@ -149,7 +154,7 @@ class LongListOffHeapMinValidIndexTest {
         // two chunks: 0-2, 3-5
         fill(5);
 
-        list.updateMinValidIndex(5);
+        list.updateValidRange(5, maxValidIndex());
         assertEmptyUpToIndex(4);
 
         assertHasValuesInRange(5, 5);
@@ -165,11 +170,11 @@ class LongListOffHeapMinValidIndexTest {
         // two chunks: 0-2, 3-5
         fill(5);
 
-        list.updateMinValidIndex(5);
+        list.updateValidRange(5, maxValidIndex());
         // shrinks
         assertMemoryChunksNumber(1);
 
-        list.updateMinValidIndex(2);
+        list.updateValidRange(2, maxValidIndex());
         // expands
         assertMemoryChunksNumber(2);
 
@@ -186,7 +191,7 @@ class LongListOffHeapMinValidIndexTest {
         fill(8);
         assertMemoryChunksNumber(3);
 
-        list.updateMinValidIndex(8);
+        list.updateValidRange(8, maxValidIndex());
         assertMemoryChunksNumber(1);
 
         list.put(0, 1);
@@ -210,9 +215,9 @@ class LongListOffHeapMinValidIndexTest {
         fill(8);
         assertMemoryChunksNumber(3);
 
-        list.updateMinValidIndex(6);
+        list.updateValidRange(6, maxValidIndex());
 
-        // one chunk has data, another chunk is kept for the offset
+        // one chunk has data, another chunk is kept for the buffer
         assertMemoryChunksNumber(2);
 
         assertEmptyUpToIndex(5);
@@ -232,7 +237,7 @@ class LongListOffHeapMinValidIndexTest {
         fill(11);
         assertMemoryChunksNumber(4);
 
-        list.updateMinValidIndex(10);
+        list.updateValidRange(10, maxValidIndex());
 
         // one chunk has data, another chunk is kept for the offset
         assertMemoryChunksNumber(3);
@@ -253,7 +258,7 @@ class LongListOffHeapMinValidIndexTest {
         fill(8);
         assertMemoryChunksNumber(3);
 
-        list.updateMinValidIndex(7);
+        list.updateValidRange(7, maxValidIndex());
 
         // one chunk has data, another chunk is kept for the offset
         assertMemoryChunksNumber(2);
@@ -271,8 +276,8 @@ class LongListOffHeapMinValidIndexTest {
         fill(11);
         assertMemoryChunksNumber(4);
 
-        list.updateMinValidIndex(6);
-        list.updateMinValidIndex(10);
+        list.updateValidRange(6, maxValidIndex());
+        list.updateValidRange(10, maxValidIndex());
 
         // one chunk has data, another chunk is kept for the offset
         assertMemoryChunksNumber(1);
@@ -290,7 +295,7 @@ class LongListOffHeapMinValidIndexTest {
         fill(11);
         assertMemoryChunksNumber(4);
 
-        list.updateMinValidIndex(10);
+        list.updateValidRange(10, maxValidIndex());
         // one chunk has data, another chunk is kept for the offset
         assertMemoryChunksNumber(1);
 
@@ -342,7 +347,8 @@ class LongListOffHeapMinValidIndexTest {
                 filledListMemoryAmount,
                 "Unexpected amount of memory consumed by the filled list");
 
-        list.updateMinValidIndex(newMinValidIndex);
+
+        list.updateValidRange(newMinValidIndex, INITIAL_DATA_SIZE - 1);
 
         final long truncatedListMemoryAmount = directPool.getMemoryUsed() - initialMemoryAmount;
 
@@ -375,7 +381,7 @@ class LongListOffHeapMinValidIndexTest {
         assertEquals(96, list.getOffHeapConsumption());
 
         // shrink the list, release three chunks
-        list.updateMinValidIndex(10);
+        list.updateValidRange(10, maxValidIndex());
         // memory consumption reduced to size of a single chunk
         assertEquals(24, list.getOffHeapConsumption());
 
