@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.consensus;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -178,7 +177,7 @@ public class TopicUpdateSuite extends HapiSuite {
     }
 
     private HapiSpec updateAdminKeyToEmpty() {
-        return onlyDefaultHapiSpec("updateAdminKeyToEmpty")
+        return defaultHapiSpec("updateAdminKeyToEmpty")
                 .given(newKeyNamed("adminKey"), createTopic("testTopic").adminKeyName("adminKey"))
                 /* if adminKey is empty list should clear adminKey */
                 .when(updateTopic("testTopic").adminKey(EMPTY_KEY))
