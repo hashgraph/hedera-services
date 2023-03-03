@@ -28,6 +28,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.io.IOException;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -48,6 +49,11 @@ class TemporaryUtilsTest {
         willThrow(expected).given(bytes).getBytes(eq(0), any(byte[].class));
 
         assertThrows(IllegalStateException.class, () -> TemporaryUtils.unwrapPbj(bytes));
+    }
+
+    @Test
+    void nullPbjKeyReturnsEmptyOptional() {
+        assertEquals(Optional.empty(), TemporaryUtils.fromPbjKey(null));
     }
 
     @Test

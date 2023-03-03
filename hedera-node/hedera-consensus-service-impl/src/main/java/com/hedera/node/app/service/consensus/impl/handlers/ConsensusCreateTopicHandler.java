@@ -20,6 +20,8 @@ import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.RU
 import static com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils.fromGrpcKey;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static java.util.Objects.requireNonNull;
 
@@ -113,32 +115,43 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         handleContext.attributeValidator().validateMemo(op.getMemo());
         builder.memo(op.getMemo());
 
-        /* Validate the auto-renewal account */
-        final var autoRenewPeriod =
-                op.hasAutoRenewPeriod() ? op.getAutoRenewPeriod().getSeconds() : NA;
-        final var autoRenewAccountId =
-                op.hasAutoRenewAccount() ? op.getAutoRenewAccount().getAccountNum() : NA;
-
+        final var impliedExpiry = handleContext.consensusNow().getEpochSecond()
+                + op.getAutoRenewPeriod().getSeconds();
         final var entityExpiryMeta = new ExpiryMeta(
-                handleContext.consensusNow().getEpochSecond() + autoRenewPeriod, autoRenewPeriod, autoRenewAccountId);
+                impliedExpiry,
+                op.getAutoRenewPeriod().getSeconds(),
+                // Shard and realm will be ignored if num is NA
+                op.getAutoRenewAccount().getShardNum(),
+                op.getAutoRenewAccount().getRealmNum(),
+                op.hasAutoRenewAccount() ? op.getAutoRenewAccount().getAccountNum() : NA);
 
-        final var effectiveExpiryMeta = handleContext.expiryValidator().resolveCreationAttempt(false, entityExpiryMeta);
-        builder.autoRenewPeriod(effectiveExpiryMeta.autoRenewPeriod());
-        builder.expiry(effectiveExpiryMeta.expiry());
-        builder.autoRenewAccountNumber(effectiveExpiryMeta.autoRenewNum());
+        try {
+            final var effectiveExpiryMeta =
+                    handleContext.expiryValidator().resolveCreationAttempt(false, entityExpiryMeta);
+            builder.autoRenewPeriod(effectiveExpiryMeta.autoRenewPeriod());
+            builder.expiry(effectiveExpiryMeta.expiry());
+            builder.autoRenewAccountNumber(effectiveExpiryMeta.autoRenewNum());
 
-        /* --- Add topic number to topic builder --- */
-        builder.topicNumber(handleContext.newEntityNumSupplier().getAsLong());
+            /* --- Add topic number to topic builder --- */
+            builder.topicNumber(handleContext.newEntityNumSupplier().getAsLong());
 
-        builder.runningHash(Bytes.wrap(new byte[RUNNING_HASH_BYTE_ARRAY_SIZE]));
+            builder.runningHash(Bytes.wrap(new byte[RUNNING_HASH_BYTE_ARRAY_SIZE]));
 
-        /* --- Put the final topic. It will be in underlying state's modifications map.
-        It will not be committed to state until commit is called on the state.--- */
-        final var topic = builder.build();
-        topicStore.put(topic);
+            /* --- Put the final topic. It will be in underlying state's modifications map.
+            It will not be committed to state until commit is called on the state.--- */
+            final var topic = builder.build();
+            topicStore.put(topic);
 
-        /* --- Build the record with newly created topic --- */
-        recordBuilder.setCreatedTopic(topic.topicNumber());
+            /* --- Build the record with newly created topic --- */
+            recordBuilder.setCreatedTopic(topic.topicNumber());
+        } catch (final HandleStatusException e) {
+            if (e.getStatus() == INVALID_EXPIRATION_TIME) {
+                // Since for some reason TopicCreateTransactionBody does not have an expiration time,
+                // it makes more sense to propagate AUTORENEW_DURATION_NOT_IN_RANGE
+                throw new HandleStatusException(AUTORENEW_DURATION_NOT_IN_RANGE);
+            }
+            throw e;
+        }
     }
 
     @Override

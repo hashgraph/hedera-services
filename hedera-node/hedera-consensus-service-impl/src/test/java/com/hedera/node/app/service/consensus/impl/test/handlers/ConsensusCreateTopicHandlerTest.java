@@ -22,7 +22,10 @@ import static com.hedera.node.app.service.consensus.impl.test.handlers.Consensus
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertOkResponse;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -336,6 +339,40 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         assertEquals(AUTO_RENEW_ACCOUNT.getAccountNum(), actualTopic.autoRenewAccountNumber());
         assertEquals(1_234L, recordBuilder.getCreatedTopic());
         assertTrue(topicStore.get(1234L).isPresent());
+    }
+
+    @Test
+    @DisplayName("Translates INVALID_EXPIRATION_TIME to AUTO_RENEW_DURATION_NOT_IN_RANGE")
+    void translatesInvalidExpiryException() {
+        final var op = newCreateTxn(null, null, true).getConsensusCreateTopic();
+
+        given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
+        given(handleContext.attributeValidator()).willReturn(validator);
+        given(handleContext.expiryValidator()).willReturn(expiryValidator);
+        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
+                .willThrow(new HandleStatusException(INVALID_EXPIRATION_TIME));
+
+        final var failure = assertThrows(
+                HandleStatusException.class,
+                () -> subject.handle(handleContext, op, config, recordBuilder, topicStore));
+        assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, failure.getStatus());
+    }
+
+    @Test
+    @DisplayName("Doesnt translate INVALID_AUTORENEW_ACCOUNT")
+    void doesntTranslateInvalidAutoRenewNum() {
+        final var op = newCreateTxn(null, null, true).getConsensusCreateTopic();
+
+        given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
+        given(handleContext.attributeValidator()).willReturn(validator);
+        given(handleContext.expiryValidator()).willReturn(expiryValidator);
+        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
+                .willThrow(new HandleStatusException(INVALID_AUTORENEW_ACCOUNT));
+
+        final var failure = assertThrows(
+                HandleStatusException.class,
+                () -> subject.handle(handleContext, op, config, recordBuilder, topicStore));
+        assertEquals(INVALID_AUTORENEW_ACCOUNT, failure.getStatus());
     }
 
     @Test

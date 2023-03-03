@@ -28,6 +28,7 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -83,7 +84,10 @@ public final class TemporaryUtils {
      * @return the converted {@link JKey} if valid, or an empty optional if invalid
      * @throws IllegalStateException if the conversion fails
      */
-    public static Optional<HederaKey> fromPbjKey(@NonNull final Key pbjKey) {
+    public static Optional<HederaKey> fromPbjKey(@Nullable final Key pbjKey) {
+        if (pbjKey == null) {
+            return Optional.empty();
+        }
         try (final var baos = new ByteArrayOutputStream();
                 final var dos = new DataOutputStream(baos)) {
             KeyWriter.write(pbjKey, dos);
@@ -95,6 +99,12 @@ public final class TemporaryUtils {
         }
     }
 
+    /**
+     * Minor helper to facilitate logging transaction ids in the format used by mirror node.
+     *
+     * @param txnId a transaction id
+     * @return the mirror node format of the transaction id
+     */
     public static String mirrorTxnId(final TransactionID txnId) {
         return String.format(
                 "0.0.%d-%d-%d",

@@ -33,6 +33,7 @@ import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.time.DateTimeException;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -77,6 +78,36 @@ class MonoExpiryValidatorTest {
                 () -> subject.resolveCreationAttempt(false, new ExpiryMeta(NA, NA, anAutoRenewNum)));
         assertFailsWith(
                 INVALID_EXPIRATION_TIME, () -> subject.resolveCreationAttempt(false, new ExpiryMeta(NA, aPeriod, NA)));
+    }
+
+    @Test
+    void translatesDateTimeException() {
+        given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(now));
+
+        given(validator.isValidExpiry(aTime)).willThrow(new DateTimeException("NOPE"));
+        assertFailsWith(
+                INVALID_EXPIRATION_TIME, () -> subject.resolveCreationAttempt(false, new ExpiryMeta(aTime, NA, NA)));
+    }
+
+    @Test
+    void validatesShard() {
+        given(numbers.shard()).willReturn(1L);
+        final var newMeta = new ExpiryMeta(aTime, aPeriod, 2L, 2L, anAutoRenewNum);
+
+        final var failure =
+                assertThrows(HandleStatusException.class, () -> subject.resolveCreationAttempt(false, newMeta));
+        assertEquals(INVALID_AUTORENEW_ACCOUNT, failure.getStatus());
+    }
+
+    @Test
+    void validatesRealm() {
+        given(numbers.shard()).willReturn(1L);
+        given(numbers.realm()).willReturn(2L);
+        final var newMeta = new ExpiryMeta(aTime, aPeriod, 1L, 3L, anAutoRenewNum);
+
+        final var failure =
+                assertThrows(HandleStatusException.class, () -> subject.resolveCreationAttempt(false, newMeta));
+        assertEquals(INVALID_AUTORENEW_ACCOUNT, failure.getStatus());
     }
 
     @Test

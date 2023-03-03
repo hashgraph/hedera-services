@@ -184,6 +184,9 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             final var updateMeta = new ExpiryMeta(
                     op.hasExpirationTime() ? op.getExpirationTime().getSeconds() : NA,
                     op.hasAutoRenewPeriod() ? op.getAutoRenewPeriod().getSeconds() : NA,
+                    // Shard and realm will be ignored if num is NA
+                    op.getAutoRenewAccount().getShardNum(),
+                    op.getAutoRenewAccount().getRealmNum(),
                     op.hasAutoRenewAccount() ? op.getAutoRenewAccount().getAccountNum() : NA);
             return expiryValidator.resolveUpdateAttempt(currentMeta, updateMeta);
         } else {
