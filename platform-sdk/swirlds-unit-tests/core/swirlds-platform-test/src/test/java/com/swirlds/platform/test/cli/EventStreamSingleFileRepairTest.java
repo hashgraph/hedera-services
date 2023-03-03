@@ -199,11 +199,13 @@ class EventStreamSingleFileRepairTest {
      * Repairs the given event stream file using an EventStreamSingleFileRepairer and asserts that the result of
      * repairing the state matches the given expected repair state.
      *
-     * @param lastFile the event stream file to attempt to repair.
-     * @return the EventStreamSingleFileRepairer used to attempt to repair the file.
+     * @param lastFile    the event stream file to attempt to repair.
+     * @param repairState the expected return value from calling
+     *                    {@link EventStreamSingleFileRepairer#repair() repairer.repair()}
+     * @return the {@link EventStreamSingleFileRepairer} used to attempt to repair the file.
      * @throws IOException if attempting to repair the file causes an IOException.
      */
-    private EventStreamSingleFileRepairer attemptRepairOfFile(final File lastFile, boolean repairState)
+    private EventStreamSingleFileRepairer attemptRepairOfFile(final File lastFile, final boolean repairState)
             throws IOException {
         final EventStreamSingleFileRepairer repairer = new EventStreamSingleFileRepairer(lastFile);
         assertDoesNotThrow(
