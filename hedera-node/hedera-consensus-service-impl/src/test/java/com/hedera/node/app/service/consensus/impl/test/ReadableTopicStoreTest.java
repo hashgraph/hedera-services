@@ -28,6 +28,7 @@ import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import java.util.Optional;
+import java.util.OptionalLong;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -68,7 +69,7 @@ class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
                 Optional.of(adminKey),
                 Optional.of(adminKey),
                 100L,
-                Optional.of(autoRenewId.getAccountNum()),
+                OptionalLong.of(autoRenewId.getAccountNum()),
                 Timestamp.newBuilder().setSeconds(100L).build(),
                 1L,
                 new byte[48],
@@ -89,7 +90,7 @@ class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
                 Optional.of(adminKey),
                 Optional.of(adminKey),
                 100L,
-                Optional.of(autoRenewId.getAccountNum()),
+                OptionalLong.of(autoRenewId.getAccountNum()),
                 Timestamp.newBuilder().setSeconds(100L).build(),
                 1L,
                 new byte[48],
