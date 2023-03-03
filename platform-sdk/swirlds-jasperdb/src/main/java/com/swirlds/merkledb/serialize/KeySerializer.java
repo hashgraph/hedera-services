@@ -29,14 +29,13 @@ import java.nio.ByteBuffer;
  * data sources. For example, there is no way to easily get serialized key size in bytes, and there
  * are no methods to serialize / deserialize keys to / from byte buffers.
  *
- * Serialization bytes used by key serializers may or may not be identical to bytes used when keys
- * are self-serialized. In many cases key serializers will just delegate serialization to keys, just
- * returning the size of serialized byte array. On deserialization, typical implementation is to
- * create a new key object and call its {@link SelfSerializable#deserialize(SerializableDataInputStream, int)}
- * method.
+ * Serialization bytes used by key serializers may or may not be identical to bytes used when
+ * keys are self-serialized. In many cases key serializers will just delegate serialization to keys,
+ * just returning the size of serialized byte array. On deserialization, typical implementation is
+ * to create a new key object and call its {@link
+ * SelfSerializable#deserialize(SerializableDataInputStream, int)} method.
  *
- * @param <K>
- *     Virtual key type
+ * @param <K> Virtual key type
  */
 public interface KeySerializer<K extends VirtualKey<?>> extends BaseSerializer<K>, SelfSerializable {
 
@@ -44,14 +43,12 @@ public interface KeySerializer<K extends VirtualKey<?>> extends BaseSerializer<K
      * Get the current key serialization version. Key serializers can only use the lower 32 bits of
      * the version long.
      *
-     * @return
-     *      Current key serialization version
+     * @return Current key serialization version
      */
     long getCurrentDataVersion();
 
     /**
-     * @return
-     *      The index to use for indexing the keys that this KeySerializer creates
+     * @return The index to use for indexing the keys that this KeySerializer creates
      */
     default KeyIndexType getIndexType() {
         return getSerializedSize() == Long.BYTES ? KeyIndexType.SEQUENTIAL_INCREMENTING_LONGS : KeyIndexType.GENERIC;
@@ -60,7 +57,8 @@ public interface KeySerializer<K extends VirtualKey<?>> extends BaseSerializer<K
     /**
      * For variable sized keys get the typical number of bytes a key takes when serialized.
      *
-     * @return Either for fixed size same as getSerializedSize() or an estimated typical size for keys
+     * @return Either for fixed size same as getSerializedSize() or an estimated typical size for
+     *     keys
      */
     default int getTypicalSerializedSize() {
         if (isVariableSize()) {
@@ -72,79 +70,62 @@ public interface KeySerializer<K extends VirtualKey<?>> extends BaseSerializer<K
     /**
      * Deserialize key size from the given byte buffer
      *
-     * @param buffer
-     * 		The byte buffer to read from
-     * @return The number of bytes used to store the key, including for storing the key size if needed.
+     * @param buffer The byte buffer to read from
+     * @return The number of bytes used to store the key, including for storing the key size if
+     *     needed.
      */
     int deserializeKeySize(ByteBuffer buffer);
 
     /**
      * Serialize a key including header to the byte buffer returning the size of the data written.
-     * Serialization format must be identical to {@link #serialize(Object, SerializableDataOutputStream)}.
      * Bytes written using this method will then be used for deserialization with {@link
      * #deserialize(ByteBuffer, long)} method.
      *
-     * This method returns the number of bytes written to the buffer. For fixed-sized keys the size
-     * must be equal to {@link #getSerializedSize()} return value.
+     * This method returns the number of bytes written to the buffer. For fixed-sized keys the
+     * size must be equal to {@link #getSerializedSize()} return value.
      *
-     * @param data
-     * 		The key to serialize
-     * @param buffer
-     * 		The byte buffer to write to
-     * @return
-     *      The size, in bytes, of the serialized key
-     * @throws IOException
-     *      If there was a problem writing to the buffer
+     * @param data The key to serialize
+     * @param buffer The byte buffer to write to
+     * @return The size, in bytes, of the serialized key
+     * @throws IOException If there was a problem writing to the buffer
      */
     int serialize(K data, ByteBuffer buffer) throws IOException;
 
     /**
      * Deserialize a key from the byte buffer, where it was previously written using either {@link
-     * #serialize(VirtualKey, ByteBuffer)} or {@link #serialize(Object, SerializableDataOutputStream)}
-     * method.
+     * #serialize(VirtualKey, ByteBuffer)} or {@link #serialize(VirtualKey, ByteBuffer)} method.
      *
-     * @param buffer
-     * 		The byte buffer to read from
-     * @param dataVersion
-     *      The serialization version of the key to read
-     * @return
-     *      A key deserialized from the buffer
-     * @throws IOException
-     *      If there was a problem reading from the buffer
+     * @param buffer The byte buffer to read from
+     * @param dataVersion The serialization version of the key to read
+     * @return A key deserialized from the buffer
+     * @throws IOException If there was a problem reading from the buffer
      */
     @Override
     K deserialize(ByteBuffer buffer, long dataVersion) throws IOException;
 
     /**
-     * Compare keyToCompare's data to that contained in the given ByteBuffer. The data in the buffer is assumed to be
-     * starting at the current buffer position and in the format written by this class's serialize() method. The reason
-     * for this rather than just deserializing then doing an object equals is performance. By doing the comparison here
-     * you can fail fast on the first byte that does not match. As this is used in a tight loop in searching a hash map
-     * bucket for a match performance is critical.
+     * Compare keyToCompare's data to that contained in the given ByteBuffer. The data in the buffer
+     * is assumed to be starting at the current buffer position and in the format written by this
+     * class's serialize() method. The reason for this rather than just deserializing then doing an
+     * object equals is performance. By doing the comparison here you can fail fast on the first
+     * byte that does not match. As this is used in a tight loop in searching a hash map bucket for
+     * a match performance is critical.
      *
-     * @param buffer
-     * 		The buffer to read from and compare to
-     * @param dataVersion
-     * 		The serialization version of the data in the buffer
-     * @param keyToCompare
-     * 		The key to compare with the data in the file.
+     * @param buffer The buffer to read from and compare to
+     * @param dataVersion The serialization version of the data in the buffer
+     * @param keyToCompare The key to compare with the data in the file.
      * @return true if the content of the buffer matches this class's data
-     * @throws IOException
-     * 		If there was a problem reading from the buffer
+     * @throws IOException If there was a problem reading from the buffer
      */
     boolean equals(ByteBuffer buffer, int dataVersion, K keyToCompare) throws IOException;
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     default void serialize(SerializableDataOutputStream out) throws IOException {
         // most key serializers are stateless, so there is nothing to serialize
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     default void deserialize(SerializableDataInputStream in, int version) throws IOException {
         // most key serializers are staless, so there is nothing to deserialize
