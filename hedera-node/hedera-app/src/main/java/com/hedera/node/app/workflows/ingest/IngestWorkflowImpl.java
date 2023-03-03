@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.ingest;
 
+import static com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils.mirrorTxnId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -42,9 +43,12 @@ import java.nio.ByteBuffer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.inject.Inject;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** Implementation of {@link IngestWorkflow} */
 public final class IngestWorkflowImpl implements IngestWorkflow {
+    private static final Logger log = LogManager.getLogger(IngestWorkflowImpl.class);
 
     private final NodeInfo nodeInfo;
     private final CurrentPlatformStatus currentPlatformStatus;
@@ -164,6 +168,10 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
 
                 // 7. Submit to platform
                 // TODO - figure out how to get just the user transaction from the requestBuffer array
+                log.info(
+                        "Submitting {} transaction {} to platform",
+                        functionality,
+                        mirrorTxnId(txBody.getTransactionID()));
                 submissionManager.submit(txBody, onsetResult.transaction().toByteArray(), ctx.txBodyParser());
 
                 opCounters.countSubmitted(functionality);

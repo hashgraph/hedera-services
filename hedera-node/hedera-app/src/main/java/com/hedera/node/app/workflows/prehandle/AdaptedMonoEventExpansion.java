@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.workflows.prehandle;
 
+import static com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils.mirrorTxnId;
+
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.context.properties.GlobalStaticProperties;
 import com.hedera.node.app.service.mono.sigs.EventExpansion;
@@ -30,12 +32,12 @@ import java.util.List;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class AdaptedMonoEventExpansion {
-    private static final Logger log = LoggerFactory.getLogger(AdaptedMonoEventExpansion.class);
+    private static final Logger log = LogManager.getLogger(AdaptedMonoEventExpansion.class);
 
     private final EventExpansion eventExpansion;
     private final PreHandleWorkflow preHandleWorkflow;
@@ -58,7 +60,10 @@ public class AdaptedMonoEventExpansion {
             try {
                 final var accessor = SignedTxnAccessor.from(txn.getContents());
                 if (typesForWorkflows.contains(accessor.getFunction())) {
-                    log.info("Adding {} txn to pre-handle workflow", accessor.getFunction());
+                    log.info(
+                            "Routing {} txn {} to pre-handle workflow",
+                            accessor.getFunction(),
+                            mirrorTxnId(accessor.getTxnId()));
                     forWorkflows.add(txn);
                 } else {
                     eventExpansion.expandSingle(txn, (MerkleHederaState) state);

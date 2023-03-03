@@ -26,6 +26,7 @@ import com.hedera.hashgraph.pbj.runtime.io.DataInputStream;
 import com.hedera.hashgraph.pbj.runtime.io.DataOutputStream;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -92,5 +93,13 @@ public final class TemporaryUtils {
         } catch (final IOException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    public static String mirrorTxnId(final TransactionID txnId) {
+        return String.format(
+                "0.0.%d-%d-%d",
+                txnId.getAccountID().getAccountNum(),
+                txnId.getTransactionValidStart().getSeconds(),
+                txnId.getTransactionValidStart().getNanos());
     }
 }

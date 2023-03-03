@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.prehandle;
 
+import static com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils.mirrorTxnId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static java.util.Objects.requireNonNull;
@@ -51,14 +52,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** Implementation of {@link PreHandleWorkflow} */
 @Singleton
 public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
-    private static final Logger LOG = LoggerFactory.getLogger(PreHandleWorkflowImpl.class);
+    private static final Logger LOG = LogManager.getLogger(PreHandleWorkflowImpl.class);
 
     /**
      * Per-thread shared resources are shared in a {@link SessionContext}. We store these in a thread local, because we
@@ -175,11 +176,6 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         }
         dispatcher.dispatchPreHandle(storeFactory, context);
 
-        LOG.info(
-                "Got a PreHandleContext with payer key {} and other party keys {}",
-                context.getPayerKey(),
-                context.getRequiredNonPayerKeys());
-
         // Prepare and verify signature-data
         List<TransactionSignature> cryptoSigs = Collections.emptyList();
         if (context.getPayerKey() != null) {
@@ -193,6 +189,14 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
                 cryptography.verifyAsync(cryptoSigs);
             }
         }
+
+        LOG.info(
+                "Expanded {} crypto signatures for {} payer key and {} other party keys; status is now {} for {}",
+                cryptoSigs.size(),
+                (context.getPayerKey() == null ? "N/A" : "known"),
+                context.getRequiredNonPayerKeys().size(),
+                context.getStatus(),
+                mirrorTxnId(onsetResult.txBody().getTransactionID()));
 
         // TODO - prepare and verify signatures of inner transaction, if present
 
