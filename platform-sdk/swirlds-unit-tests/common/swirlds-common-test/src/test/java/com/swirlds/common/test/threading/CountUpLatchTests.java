@@ -228,6 +228,7 @@ class CountUpLatchTests {
         assertFalse(error.get());
     }
 
+    // TODO this test is incomplete
     @ParameterizedTest
     @MethodSource("buildArguments")
     @DisplayName("Increment On Many Threads Test")
@@ -303,8 +304,6 @@ class CountUpLatchTests {
         assertTrue(finishedLatch.await(1, TimeUnit.SECONDS));
         assertFalse(error.get());
     }
-
-    // TODO multiple incrementers
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
