@@ -24,7 +24,7 @@ import java.nio.ByteBuffer;
 
 public class EntityNumValue implements VirtualValue {
     public static final int CURRENT_VERSION = 1;
-    private static final long RUNTIME_CONSTRUCTABLE_ID = 0x2e5eb64ad7cbcfeaL;
+    public static final long RUNTIME_CONSTRUCTABLE_ID = 0x2e5eb64ad7cbcfeaL;
 
     private long num;
 

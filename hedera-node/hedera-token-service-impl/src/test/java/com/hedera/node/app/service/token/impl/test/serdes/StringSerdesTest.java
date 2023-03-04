@@ -18,6 +18,8 @@ package com.hedera.node.app.service.token.impl.test.serdes;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willCallRealMethod;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.token.impl.serdes.StringSerdes;
@@ -51,6 +53,22 @@ class StringSerdesTest {
         given(in.readInt()).willReturn(SOME_STRING.getBytes().length);
         subject.fastEquals(SOME_STRING, in);
         assertEquals(255, subject.typicalSize());
+    }
+
+    @Test
+    void measuresInput() throws IOException {
+        given(in.readInt()).willReturn(SOME_STRING.getBytes().length);
+        assertEquals(SOME_STRING.getBytes().length, subject.measure(in));
+    }
+
+    @Test
+    void providesFastEqualsWhenExceptionThrown() throws IOException {
+        final var s = mock(StringSerdes.class);
+        given(s.parse(in)).willThrow(IOException.class);
+        willCallRealMethod().given(s).fastEquals(SOME_STRING, in);
+
+        final var isFastEquals = s.fastEquals(SOME_STRING, in);
+        assertEquals(false, isFastEquals);
     }
 
     @Test
