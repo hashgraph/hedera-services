@@ -41,6 +41,10 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
+
+    @TempDir
+    Path testDirectory;
+
     @Override
     protected LongListOffHeap createLongList() {
         return new LongListOffHeap();
@@ -73,13 +77,13 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
 
     @Test
     @Order(5)
-    void testCustomNumberOfLongs(@TempDir final Path tempDir) throws IOException {
+    void testCustomNumberOfLongs() throws IOException {
         try (final LongListOffHeap list =
                 createFullyParameterizedLongListWith(DEFAULT_NUM_LONGS_PER_CHUNK, getSampleSize())) {
             for (int i = 0; i < getSampleSize(); i++) {
                 list.put(i, i + 1);
             }
-            final Path file = tempDir.resolve("LongListOffHeapCustomLongCount.hl");
+            final Path file = testDirectory.resolve("LongListOffHeapCustomLongCount.hl");
             // write longList data
             list.writeToFile(file);
 
@@ -101,8 +105,9 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
         assertDoesNotThrow(() -> list.put(maxLongs - 1, 1));
     }
 
-    @Test
-    public void testPersistListWithNonZeroMinValidIndex(@TempDir final Path tempDir) throws IOException {
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1, 5000, 9999, 10000}) // chunk size is 10K longs
+    public void testPersistListWithNonZeroMinValidIndex(final int chunkOffset) throws IOException {
         try (final LongListOffHeap list = createFullyParameterizedLongListWith(
                 getSampleSize() / 100, // 100 chunks
                 getSampleSize())) {
@@ -110,9 +115,9 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
                 list.put(i, i);
             }
 
-            list.updateMinValidIndex(getSampleSize() / 2);
+            list.updateMinValidIndex(getSampleSize() / 2 + chunkOffset);
 
-            final Path file = tempDir.resolve("LongListOffHeapHalfEmpty.hl");
+            final Path file = testDirectory.resolve("LongListOffHeapHalfEmpty.hl");
             // write longList data
             list.writeToFile(file);
 
