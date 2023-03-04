@@ -93,8 +93,8 @@ class CountUpLatchTests {
     protected static Stream<Arguments> buildArguments() {
         final List<Arguments> arguments = new ArrayList<>();
         arguments.add(Arguments.of(new MinMaxCount(Long.MIN_VALUE / 4, Long.MAX_VALUE / 4)));
-        arguments.add(Arguments.of(new MinMaxCount(0, Long.MAX_VALUE)));
-        arguments.add(Arguments.of(new MinMaxCount(Long.MIN_VALUE + 1, 0)));
+        arguments.add(Arguments.of(new MinMaxCount(0, Long.MAX_VALUE / 2)));
+        arguments.add(Arguments.of(new MinMaxCount(Long.MIN_VALUE / 2, 0)));
         arguments.add(Arguments.of(new MinMaxCount(-10_000, 10_000)));
         arguments.add(Arguments.of(new MinMaxCount(-10_000, 0)));
         arguments.add(Arguments.of(new MinMaxCount(0, 10_000)));
@@ -221,6 +221,82 @@ class CountUpLatchTests {
                     incrementLatch.countDown();
                 })
                 .build(true);
+
+        incrementLatch.await();
+
+        assertTrue(finishedLatch.await(1, TimeUnit.SECONDS));
+        assertFalse(error.get());
+    }
+
+    @ParameterizedTest
+    @MethodSource("buildArguments")
+    @DisplayName("Increment On Many Threads Test")
+    void incrementOnManyThreadsTest(final MinMaxCount minMaxCount) throws InterruptedException {
+        final Random random = getRandomPrintSeed();
+
+        final long minCount = minMaxCount.minCount();
+        final long maxCount = minMaxCount.maxCount();
+
+        final int threadCount = 10;
+        final int waitsPerThread = 100;
+        final long maxIncrement = (maxCount - minCount) / 1000;
+
+        final AtomicBoolean error = new AtomicBoolean(false);
+        final CountDownLatch finishedLatch = new CountDownLatch(threadCount);
+
+        final CountUpLatch latch = new CountUpLatch(minCount);
+
+        // Create a bunch of threads that will wait for random counts
+        for (int threadIndex = 0; threadIndex < threadCount; threadIndex++) {
+            final Random threadRandom = new Random(random.nextLong());
+            new ThreadConfiguration(getStaticThreadManager())
+                    .setThreadName("testThread-" + threadIndex)
+                    .setInterruptableRunnable(() -> {
+                        long desiredCount = minCount;
+                        for (int iteration = 0; iteration < waitsPerThread; iteration++) {
+                            desiredCount = threadRandom.nextLong(desiredCount, maxCount);
+
+                            if (threadRandom.nextBoolean()) {
+                                latch.await(desiredCount);
+                            } else {
+                                // Wait for a very long time, much longer than should be needed for this test
+                                if (!latch.await(desiredCount, Duration.ofMinutes(1))) {
+                                    error.set(true);
+                                    break;
+                                }
+                            }
+
+                            if (latch.getCount() < desiredCount) {
+                                error.set(true);
+                                break;
+                            }
+                        }
+                        finishedLatch.countDown();
+                    })
+                    .build(true);
+        }
+
+        final CountDownLatch incrementLatch = new CountDownLatch(threadCount);
+
+        // Create a bunch of threads that will increment
+        for (int threadIndex = 0; threadIndex < threadCount; threadIndex++) {
+            final Random threadRandom = new Random(random.nextLong());
+            new ThreadConfiguration(getStaticThreadManager())
+                    .setThreadName("testThread-" + threadIndex)
+                    .setInterruptableRunnable(() -> {
+                        while (latch.getCount() < maxCount - maxIncrement) {
+                            if (random.nextBoolean()) {
+                                latch.increment();
+                            } else {
+                                latch.add(random.nextLong(maxIncrement));
+                            }
+                        }
+
+                        latch.set(maxCount);
+                        incrementLatch.countDown();
+                    })
+                    .build(true);
+        }
 
         incrementLatch.await();
 
