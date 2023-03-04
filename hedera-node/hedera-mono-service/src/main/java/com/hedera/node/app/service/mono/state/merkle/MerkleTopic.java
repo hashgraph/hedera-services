@@ -243,7 +243,6 @@ public final class MerkleTopic extends PartialMerkleLeaf implements Keyed<Entity
      * @throws IOException when any component fails to write to a temporary stream for computing the
      *     running hash
      */
-    // TODO: This probably should be business logic method in ConsensusSubmitMessageHandler
     public void updateRunningHashAndSequenceNumber(
             final AccountID payer,
             @Nullable byte[] message,

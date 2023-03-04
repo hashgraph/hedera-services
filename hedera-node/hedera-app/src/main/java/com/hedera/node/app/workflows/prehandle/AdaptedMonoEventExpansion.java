@@ -30,9 +30,12 @@ import java.util.List;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class AdaptedMonoEventExpansion {
+    private static final Logger log = LogManager.getLogger(AdaptedMonoEventExpansion.class);
     private final EventExpansion eventExpansion;
     private final PreHandleWorkflow preHandleWorkflow;
     private final GlobalStaticProperties staticProperties;
@@ -59,7 +62,7 @@ public class AdaptedMonoEventExpansion {
                     eventExpansion.expandSingle(txn, (MerkleHederaState) state);
                 }
             } catch (final InvalidProtocolBufferException e) {
-                throw new AssertionError("Not implemented");
+                log.warn("Unable to parse preHandle transaction", e);
             }
         });
         if (!forWorkflows.isEmpty()) {

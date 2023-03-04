@@ -169,6 +169,11 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         final var storeFactory = new ReadableStoreFactory(state);
         final var accountStore = storeFactory.createAccountStore();
         final var context = new PreHandleContext(accountStore, onsetResult.txBody(), onsetResult.errorCode());
+        return dispatchForMetadata(onsetResult, context, storeFactory);
+    }
+
+    TransactionMetadata dispatchForMetadata(
+            final OnsetResult onsetResult, final PreHandleContext context, final ReadableStoreFactory storeFactory) {
         if (context.getStatus() == DUPLICATE_TRANSACTION) {
             // TODO - figure out any other checks above that should be skipped
             context.status(OK);

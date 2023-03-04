@@ -35,6 +35,8 @@ import org.apache.logging.log4j.Logger;
 
 public class TopicGetInfoSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TopicGetInfoSuite.class);
+    public static final String TEST_TOPIC = "testTopic";
+    public static final String TESTMEMO = "testmemo";
 
     public static void main(String... args) {
         new TopicGetInfoSuite().runSuiteAsync();
@@ -58,42 +60,42 @@ public class TopicGetInfoSuite extends HapiSuite {
                         newKeyNamed("submitKey"),
                         cryptoCreate("autoRenewAccount"),
                         cryptoCreate("payer"),
-                        createTopic("testTopic")
-                                .topicMemo("testmemo")
+                        createTopic(TEST_TOPIC)
+                                .topicMemo(TESTMEMO)
                                 .adminKeyName("adminKey")
                                 .submitKeyName("submitKey")
                                 .autoRenewAccountId("autoRenewAccount")
                                 .via("createTopic"))
                 .when()
                 .then(
-                        getTopicInfo("testTopic")
+                        getTopicInfo(TEST_TOPIC)
                                 .hasExpectedLedgerId("0x03")
-                                .hasMemo("testmemo")
+                                .hasMemo(TESTMEMO)
                                 .hasAdminKey("adminKey")
                                 .hasSubmitKey("submitKey")
                                 .hasAutoRenewAccount("autoRenewAccount")
                                 .hasSeqNo(0)
                                 .hasRunningHash(new byte[48]),
                         getTxnRecord("createTopic").logged(),
-                        submitMessageTo("testTopic")
+                        submitMessageTo(TEST_TOPIC)
                                 .blankMemo()
                                 .payingWith("payer")
                                 .message(new String("test".getBytes()))
                                 .via("submitMessage"),
                         getTxnRecord("submitMessage").logged(),
-                        getTopicInfo("testTopic")
+                        getTopicInfo(TEST_TOPIC)
                                 .hasExpectedLedgerId("0x03")
-                                .hasMemo("testmemo")
+                                .hasMemo(TESTMEMO)
                                 .hasAdminKey("adminKey")
                                 .hasSubmitKey("submitKey")
                                 .hasAutoRenewAccount("autoRenewAccount")
                                 .hasSeqNo(1)
                                 .logged(),
-                        updateTopic("testTopic")
+                        updateTopic(TEST_TOPIC)
                                 .topicMemo("Don't worry about the vase")
                                 .via("updateTopic"),
                         getTxnRecord("updateTopic").logged(),
-                        getTopicInfo("testTopic")
+                        getTopicInfo(TEST_TOPIC)
                                 .hasExpectedLedgerId("0x03")
                                 .hasMemo("Don't worry about the vase")
                                 .hasAdminKey("adminKey")
@@ -101,9 +103,9 @@ public class TopicGetInfoSuite extends HapiSuite {
                                 .hasAutoRenewAccount("autoRenewAccount")
                                 .hasSeqNo(1)
                                 .logged(),
-                        deleteTopic("testTopic").via("deleteTopic"),
+                        deleteTopic(TEST_TOPIC).via("deleteTopic"),
                         getTxnRecord("deleteTopic").logged(),
-                        getTopicInfo("testTopic")
+                        getTopicInfo(TEST_TOPIC)
                                 .hasCostAnswerPrecheck(INVALID_TOPIC_ID)
                                 .logged());
     }

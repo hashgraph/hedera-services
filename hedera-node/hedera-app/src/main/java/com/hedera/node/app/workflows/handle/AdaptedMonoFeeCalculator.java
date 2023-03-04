@@ -126,28 +126,6 @@ public class AdaptedMonoFeeCalculator implements FeeCalculator {
         }
     }
 
-    private FeeObject topicUpdateFeeGiven(
-            final TxnAccessor accessor,
-            final JKey payerKey,
-            final HederaState state,
-            final Map<SubType, FeeData> prices,
-            final ExchangeRate rate) {
-        final var storeFactory = new ReadableStoreFactory(state);
-        final var topicStore = storeFactory.createTopicStore();
-        final var topic = topicStore.getTopicLeaf(
-                accessor.getTxn().getConsensusUpdateTopic().getTopicID());
-        try {
-            final var usage = monoUpdateTopicUsage.usageGivenExplicit(
-                    accessor.getTxn(),
-                    monoFeeCalculator.getSigUsage(accessor, payerKey),
-                    topic.map(MonoGetTopicInfoUsage::monoTopicFrom).orElse(null));
-            final var typedPrices = prices.get(accessor.getSubType());
-            return monoFeeCalculator.feesIncludingCongestion(usage, typedPrices, accessor, rate);
-        } catch (final InvalidTxBodyException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
     @Override
     public FeeObject estimatePayment(
             @NonNull final Query query,
@@ -175,5 +153,27 @@ public class AdaptedMonoFeeCalculator implements FeeCalculator {
             @NonNull final Instant now,
             @NonNull final HederaAccount payer) {
         return monoFeeCalculator.assessCryptoAutoRenewal(expiredAccount, requestedRenewal, now, payer);
+    }
+
+    private FeeObject topicUpdateFeeGiven(
+            final TxnAccessor accessor,
+            final JKey payerKey,
+            final HederaState state,
+            final Map<SubType, FeeData> prices,
+            final ExchangeRate rate) {
+        final var storeFactory = new ReadableStoreFactory(state);
+        final var topicStore = storeFactory.createTopicStore();
+        final var topic = topicStore.getTopicLeaf(
+                accessor.getTxn().getConsensusUpdateTopic().getTopicID());
+        try {
+            final var usage = monoUpdateTopicUsage.usageGivenExplicit(
+                    accessor.getTxn(),
+                    monoFeeCalculator.getSigUsage(accessor, payerKey),
+                    topic.map(MonoGetTopicInfoUsage::monoTopicFrom).orElse(null));
+            final var typedPrices = prices.get(accessor.getSubType());
+            return monoFeeCalculator.feesIncludingCongestion(usage, typedPrices, accessor, rate);
+        } catch (final InvalidTxBodyException e) {
+            throw new IllegalStateException(e);
+        }
     }
 }

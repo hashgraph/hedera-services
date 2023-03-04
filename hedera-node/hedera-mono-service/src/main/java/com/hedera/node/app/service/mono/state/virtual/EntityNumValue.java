@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.state.virtual;
 
+import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
@@ -25,6 +26,8 @@ import java.nio.ByteBuffer;
 public class EntityNumValue implements VirtualValue {
     public static final int CURRENT_VERSION = 1;
     public static final long RUNTIME_CONSTRUCTABLE_ID = 0x2e5eb64ad7cbcfeaL;
+    public static final String CANNOT_DESERIALIZE_INTO_AN_IMMUTABLE_ENTITY_NUM_VALUE =
+            "Cannot deserialize into an immutable EntityNumValue";
 
     private long num;
 
@@ -61,16 +64,22 @@ public class EntityNumValue implements VirtualValue {
 
     @Override
     public void deserialize(ByteBuffer byteBuffer, int version) throws IOException {
+        if (isImmutable) {
+            throw new MutabilityException(CANNOT_DESERIALIZE_INTO_AN_IMMUTABLE_ENTITY_NUM_VALUE);
+        }
         num = byteBuffer.getLong();
     }
 
     @Override
-    public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+        if (isImmutable) {
+            throw new MutabilityException(CANNOT_DESERIALIZE_INTO_AN_IMMUTABLE_ENTITY_NUM_VALUE);
+        }
         num = in.readLong();
     }
 
     @Override
-    public void serialize(SerializableDataOutputStream out) throws IOException {
+    public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeLong(num);
     }
 
@@ -81,6 +90,6 @@ public class EntityNumValue implements VirtualValue {
 
     @Override
     public int getVersion() {
-        return 1;
+        return CURRENT_VERSION;
     }
 }

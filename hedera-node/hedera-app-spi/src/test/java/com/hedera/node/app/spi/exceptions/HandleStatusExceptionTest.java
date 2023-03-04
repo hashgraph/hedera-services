@@ -49,4 +49,9 @@ class HandleStatusExceptionTest {
 
         assertEquals(MEMO_TOO_LONG, failure.getStatus());
     }
+
+    @Test
+    void falseIsOkFromOtherPerspective() {
+        assertDoesNotThrow(() -> HandleStatusException.validateFalse(false, MEMO_TOO_LONG));
+    }
 }

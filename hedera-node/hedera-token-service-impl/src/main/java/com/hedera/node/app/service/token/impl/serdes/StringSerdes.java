@@ -54,8 +54,7 @@ public class StringSerdes implements Serdes<String> {
     public boolean fastEquals(@NonNull String value, @NonNull DataInput input) {
         try {
             return value.equals(parse(input));
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (final IOException ignore) {
             return false;
         }
     }

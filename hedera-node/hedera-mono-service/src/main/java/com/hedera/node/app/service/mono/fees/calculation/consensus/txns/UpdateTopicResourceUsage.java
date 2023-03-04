@@ -38,7 +38,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 @Singleton
-public final class UpdateTopicResourceUsage implements TxnResourceUsageEstimator {
+public class UpdateTopicResourceUsage implements TxnResourceUsageEstimator {
     private static final Logger log = LogManager.getLogger(UpdateTopicResourceUsage.class);
 
     @Inject

@@ -19,16 +19,19 @@ package com.hedera.node.app.service.mono.state.virtual;
 import static com.hedera.node.app.service.mono.state.virtual.EntityNumValue.RUNTIME_CONSTRUCTABLE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.swirlds.common.exceptions.MutabilityException;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.junit.jupiter.api.Test;
 
-public class EntityNumValueTest {
+class EntityNumValueTest {
     private EntityNumValue subject = new EntityNumValue(2L);
 
     @Test
@@ -53,7 +56,7 @@ public class EntityNumValueTest {
     }
 
     @Test
-    void deserializeWorks() throws IOException {
+    void deserializeWorksWithBuffer() throws IOException {
         final var bin = mock(ByteBuffer.class);
         final var expectedKey = new EntityNumValue();
         given(bin.getLong()).willReturn(2L);
@@ -61,6 +64,34 @@ public class EntityNumValueTest {
         expectedKey.deserialize(bin, 1);
 
         assertEquals(2L, expectedKey.num());
+    }
+
+    @Test
+    void deserializeWorksWithStream() throws IOException {
+        final var in = mock(SerializableDataInputStream.class);
+        final var expectedKey = new EntityNumValue();
+        given(in.readLong()).willReturn(2L);
+
+        expectedKey.deserialize(in, 1);
+
+        assertEquals(2L, expectedKey.num());
+    }
+
+    @Test
+    void serializeWorksWithBuffer() throws IOException {
+        final var out = mock(ByteBuffer.class);
+
+        subject.serialize(out);
+
+        verify(out).putLong(2L);
+    }
+
+    @Test
+    void cannotDeserializeForImmutableValue() {
+        final var immutable = subject.asReadOnly();
+        assertThrows(MutabilityException.class, () -> immutable.deserialize(ByteBuffer.allocate(0), 1));
+        assertThrows(
+                MutabilityException.class, () -> immutable.deserialize(mock(SerializableDataInputStream.class), 1));
     }
 
     @Test

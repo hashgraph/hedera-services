@@ -42,13 +42,9 @@ import java.nio.ByteBuffer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.inject.Inject;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /** Implementation of {@link IngestWorkflow} */
 public final class IngestWorkflowImpl implements IngestWorkflow {
-    private static final Logger log = LogManager.getLogger(IngestWorkflowImpl.class);
-
     private final NodeInfo nodeInfo;
     private final CurrentPlatformStatus currentPlatformStatus;
     private final Supplier<AutoCloseableWrapper<HederaState>> stateAccessor;
