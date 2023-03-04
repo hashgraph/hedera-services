@@ -16,8 +16,7 @@
 
 package com.swirlds.platform.components.state.query;
 
-import com.swirlds.common.utility.AutoCloseableWrapper;
-import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 
 /**
  * Provides the latest complete signed state, or null if none is available.
@@ -26,10 +25,11 @@ public interface LatestSignedStateProvider {
 
     /**
      * Returns the latest complete (fully signed) state with a reservation that is released when the
-     * {@link AutoCloseableWrapper} is closed.
+     * {@link ReservedSignedState} is closed.
+     * @param reason a short description of why this SignedState is being used. Each location where a SignedState is
+     *               used should attempt to use a unique reason, as this makes debugging reservation bugs easier.
      *
-     * @return an auto-closeable with the latest complete state, or an auto-closeable wrapper with {@code null} if none
-     * is available.
+     * @return a wrapper around a signed state
      */
-    AutoCloseableWrapper<SignedState> getLatestSignedState();
+    ReservedSignedState getLatestSignedState(final String reason);
 }

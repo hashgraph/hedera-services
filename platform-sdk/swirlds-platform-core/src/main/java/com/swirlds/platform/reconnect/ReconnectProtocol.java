@@ -24,7 +24,7 @@ import com.swirlds.platform.Connection;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.protocol.Protocol;
-import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.platform.sync.FallenBehindManager;
 import java.io.IOException;
@@ -42,7 +42,7 @@ public class ReconnectProtocol implements Protocol {
 
     private final NodeId peerId;
     private final ReconnectThrottle teacherThrottle;
-    private final Supplier<SignedState> lastCompleteSignedState;
+    private final Supplier<ReservedSignedState> lastCompleteSignedState;
     private final int reconnectSocketTimeout;
     private final ReconnectMetrics reconnectMetrics;
     private final ReconnectController reconnectController;
@@ -50,7 +50,9 @@ public class ReconnectProtocol implements Protocol {
     private InitiatedBy initiatedBy = InitiatedBy.NO_ONE;
     private final ThreadManager threadManager;
     private final FallenBehindManager fallenBehindManager;
-    private SignedState teacherState;
+    private ReservedSignedState teacherState;
+
+    // TODO: reservation pattern in this class is not ideal
 
     /**
      * @param threadManager           responsible for creating and managing threads
@@ -65,7 +67,7 @@ public class ReconnectProtocol implements Protocol {
             final ThreadManager threadManager,
             final NodeId peerId,
             final ReconnectThrottle teacherThrottle,
-            final Supplier<SignedState> lastCompleteSignedState,
+            final Supplier<ReservedSignedState> lastCompleteSignedState,
             final int reconnectSocketTimeout,
             final ReconnectMetrics reconnectMetrics,
             final ReconnectController reconnectController,
@@ -132,17 +134,17 @@ public class ReconnectProtocol implements Protocol {
             return false;
         }
 
-        if (!teacherState.getState().isInitialized()) {
-            teacherState.release();
+        if (!teacherState.get().getState().isInitialized()) {
+            teacherState.close();
             teacherState = null;
             logger.warn(
                     RECONNECT.getMarker(),
                     "Rejecting reconnect request from node {} " + "due to lack of an initialized signed state.",
                     peerId.getId());
             return false;
-        } else if (!teacherState.isComplete()) {
+        } else if (!teacherState.get().isComplete()) {
             // this is only possible if signed state manager violates its contractual obligations
-            teacherState.release();
+            teacherState.close();
             teacherState = null;
             logger.error(
                     RECONNECT.getMarker(),
@@ -159,7 +161,7 @@ public class ReconnectProtocol implements Protocol {
             initiatedBy = InitiatedBy.PEER;
             return true;
         } else {
-            teacherState.release();
+            teacherState.close();
             teacherState = null;
             return false;
         }
@@ -170,7 +172,7 @@ public class ReconnectProtocol implements Protocol {
      */
     @Override
     public void acceptFailed() {
-        teacherState.release();
+        teacherState.close();
         teacherState = null;
         teacherThrottle.reconnectAttemptFinished();
     }
@@ -228,7 +230,7 @@ public class ReconnectProtocol implements Protocol {
                             reconnectSocketTimeout,
                             connection.getSelfId().getId(),
                             connection.getOtherId().getId(),
-                            teacherState.getRound(),
+                            teacherState.get().getRound(),
                             reconnectMetrics)
                     .execute();
         } finally {

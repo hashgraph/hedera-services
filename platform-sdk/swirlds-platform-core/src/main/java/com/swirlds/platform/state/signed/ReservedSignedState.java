@@ -48,7 +48,8 @@ public final class ReservedSignedState implements AutoCloseableNonThrowing {
      * Create a new reserved signed state.
      *
      * @param signedState the signed state to reserve
-     * @param reason      the reason why this state was reserved
+     * @param reason a short description of why this SignedState is being reserved. Each location where a SignedState is
+     *               reserved should attempt to use a unique reason, as this makes debugging reservation bugs easier.
      */
     ReservedSignedState(final SignedState signedState, final String reason) {
         this.signedState = signedState;
@@ -68,7 +69,8 @@ public final class ReservedSignedState implements AutoCloseableNonThrowing {
     }
 
     /**
-     * Check if the signed state is not null.
+     * Check if the signed state is not null. If this method returns true
+     * then it is not strictly required to call {@link #close} on this object.
      * @return true if the signed state is not null, false otherwise
      */
     public boolean isNotNull() {

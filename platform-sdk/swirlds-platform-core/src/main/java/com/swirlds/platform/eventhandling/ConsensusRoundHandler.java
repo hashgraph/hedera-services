@@ -45,6 +45,7 @@ import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.stats.CycleTimingStat;
 import java.util.Arrays;
@@ -100,7 +101,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
             new RunningHash(new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]));
 
     /** A queue that accepts signed states for hashing and signature collection. */
-    private final BlockingQueue<SignedState> stateHashSignQueue;
+    private final BlockingQueue<ReservedSignedState> stateHashSignQueue;
 
     /** puts the system in a freeze state when executed */
     private final Runnable enterFreezePeriod;
@@ -143,7 +144,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
             final SwirldStateManager swirldStateManager,
             final ConsensusHandlingMetrics consensusHandlingMetrics,
             final EventStreamManager<EventImpl> eventStreamManager,
-            final BlockingQueue<SignedState> stateHashSignQueue,
+            final BlockingQueue<ReservedSignedState> stateHashSignQueue,
             final Runnable enterFreezePeriod,
             final RoundAppliedToStateConsumer roundAppliedToStateConsumer,
             final SoftwareVersion softwareVersion) {
@@ -212,10 +213,8 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
      * Clears and releases any signed states in the {@code stateHashSignQueueThread} queue.
      */
     private void clearStateHashSignQueueThread() {
-        SignedState signedState = stateHashSignQueue.poll();
-        while (signedState != null) {
-            signedState.release();
-            signedState = stateHashSignQueue.poll();
+        while (!stateHashSignQueue.isEmpty()) {
+            stateHashSignQueue.remove().close();
         }
     }
 
@@ -424,7 +423,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
 
         ssTimingStat.setTimePoint(2);
 
-        stateHashSignQueue.put(signedState);
+        stateHashSignQueue.put(signedState.reserve("ConsensusRoundHandler.createSignedState"));
 
         ssTimingStat.stopCycle();
     }

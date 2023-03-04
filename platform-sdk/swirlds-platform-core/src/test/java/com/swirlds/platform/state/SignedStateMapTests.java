@@ -61,15 +61,15 @@ class SignedStateMapTests {
         AutoCloseableWrapper<SignedState> wrapper;
 
         // Get a reference to a round that is not in the map
-        wrapper = map.get(0);
+        wrapper = map.getAndReserve(0);
         assertNull(wrapper.get());
         wrapper.close();
 
-        wrapper = map.get(0);
+        wrapper = map.getAndReserve(0);
         assertNull(wrapper.get());
         wrapper.close();
 
-        wrapper = map.get(round);
+        wrapper = map.getAndReserve(round);
         assertSame(signedState, wrapper.get(), "wrapper returned incorrect object");
         assertEquals(1, references.get(), "invalid reference count");
         wrapper.close();
@@ -192,9 +192,9 @@ class SignedStateMapTests {
         assertEquals(0, referencesHeldByMap2.get(), "invalid reference count");
         assertEquals(0, referencesHeldByMap3.get(), "invalid reference count");
 
-        assertNull(map.get(round1).get(), "state should not be in map");
-        assertNull(map.get(round2).get(), "state should not be in map");
-        assertNull(map.get(round3).get(), "state should not be in map");
+        assertNull(map.getAndReserve(round1).get(), "state should not be in map");
+        assertNull(map.getAndReserve(round2).get(), "state should not be in map");
+        assertNull(map.getAndReserve(round3).get(), "state should not be in map");
         assertEquals(0, map.getSize(), "unexpected size");
         assertEquals(0, referencesHeldByMap1.get(), "invalid reference count");
         assertEquals(0, referencesHeldByMap2.get(), "invalid reference count");
@@ -313,17 +313,17 @@ class SignedStateMapTests {
         assertEquals(1, referencesHeldByMap2.get(), "invalid reference count");
         assertEquals(1, referencesHeldByMap3.get(), "invalid reference count");
 
-        try (final AutoCloseableWrapper<SignedState> foundState1 = map.find(ss -> ss == signedState1)) {
+        try (final AutoCloseableWrapper<SignedState> foundState1 = map.findAndReserve(ss -> ss == signedState1)) {
             assertEquals(signedState1, foundState1.get(), "incorrect state found");
             assertEquals(2, references1.get(), "invalid reference count");
         }
 
-        try (final AutoCloseableWrapper<SignedState> foundState2 = map.find(ss -> ss == signedState2)) {
+        try (final AutoCloseableWrapper<SignedState> foundState2 = map.findAndReserve(ss -> ss == signedState2)) {
             assertEquals(signedState2, foundState2.get(), "incorrect state found");
             assertEquals(2, references2.get(), "invalid reference count");
         }
 
-        try (final AutoCloseableWrapper<SignedState> foundState3 = map.find(ss -> ss == signedState3)) {
+        try (final AutoCloseableWrapper<SignedState> foundState3 = map.findAndReserve(ss -> ss == signedState3)) {
             assertEquals(signedState3, foundState3.get(), "incorrect state found");
             assertEquals(2, references3.get(), "invalid reference count");
         }

@@ -20,11 +20,11 @@ import static com.swirlds.logging.LogMarker.RECONNECT;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.Connection;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.reconnect.ReconnectException;
 import com.swirlds.platform.reconnect.ReconnectTeacher;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import java.io.IOException;
 import org.apache.logging.log4j.LogManager;
@@ -66,37 +66,36 @@ public class EmergencyReconnectTeacher {
         try {
             final long round = connection.getDis().readLong();
             final Hash hash = connection.getDis().readSerializable();
-            try (final AutoCloseableWrapper<SignedState> stateWrapper = stateFinder.find(round, hash)) {
-                final SignedState state = stateWrapper.get();
-                if (state != null) {
-                    writeHasState(connection, true);
-                    logger.info(
-                            RECONNECT.getMarker(),
-                            "Beginning emergency reconnect in the role of teacher for node {}",
-                            connection.getOtherId());
 
-                    // take an explicit reservation because the
-                    // reconnect teacher will release it later
-                    state.reserve();
+            final ReservedSignedState reservedState =
+                    stateFinder.find(round, hash, "EmergencyReconnectTeacher.execute");
 
-                    new ReconnectTeacher(
-                                    threadManager,
-                                    connection,
-                                    state,
-                                    reconnectSocketTimeout,
-                                    connection.getSelfId().getId(),
-                                    connection.getOtherId().getId(),
-                                    state.getRound(),
-                                    reconnectMetrics)
-                            .execute();
-                } else {
-                    writeHasState(connection, false);
-                    logger.info(
-                            RECONNECT.getMarker(),
-                            "Peer {} requested to perform an emergency reconnect but no compatible state was found.",
-                            connection.getOtherId());
-                }
+            if (reservedState.isNotNull()) {
+                final SignedState state = reservedState.get();
+                writeHasState(connection, true);
+                logger.info(
+                        RECONNECT.getMarker(),
+                        "Beginning emergency reconnect in the role of teacher for node {}",
+                        connection.getOtherId());
+
+                new ReconnectTeacher(
+                                threadManager,
+                                connection,
+                                reservedState,
+                                reconnectSocketTimeout,
+                                connection.getSelfId().getId(),
+                                connection.getOtherId().getId(),
+                                state.getRound(),
+                                reconnectMetrics)
+                        .execute();
+            } else {
+                writeHasState(connection, false);
+                logger.info(
+                        RECONNECT.getMarker(),
+                        "Peer {} requested to perform an emergency reconnect but no compatible state was found.",
+                        connection.getOtherId());
             }
+
         } catch (final IOException e) {
             throw new ReconnectException(e);
         }

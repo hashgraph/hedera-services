@@ -26,20 +26,22 @@ public interface StateAccessor {
     /**
      * Get the most recent immutable state. This state may or may not be hashed when it is returned. Wrapper must be
      * closed when use of the state is no longer needed else resources may be leaked.
-     *
+     * @param reason a short description of why this state is being taken. Each location where a state is
+     *               taken should attempt to use a unique reason, as this makes debugging reservation bugs easier.
      * @param <T> the type of the state
      * @return a wrapper around the most recent immutable state
      */
-    <T extends SwirldState> AutoCloseableWrapper<T> getLatestImmutableState();
+    <T extends SwirldState> AutoCloseableWrapper<T> getLatestImmutableState(final String reason);
 
     /**
      * Get the most recent fully signed state. May return a wrapper around null if the platform does not have any fully
      * signed states still in memory (e.g. right after boot or if there is trouble with the collection of state
      * signatures).
-     *
+     * @param reason a short description of why this state is being taken. Each location where a state is
+     *               taken should attempt to use a unique reason, as this makes debugging reservation bugs easier.
      * @param <T> the type of the state
      * @return a wrapper around the most recent fully signed state, or a wrapper around null if there are no available
      * fully signed states
      */
-    <T extends SwirldState> AutoCloseableWrapper<T> getLatestSignedState();
+    <T extends SwirldState> AutoCloseableWrapper<T> getLatestSignedState(final String reason);
 }

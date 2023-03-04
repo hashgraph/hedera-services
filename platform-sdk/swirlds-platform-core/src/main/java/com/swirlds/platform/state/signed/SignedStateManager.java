@@ -347,7 +347,7 @@ public class SignedStateManager implements EmergencyStateFinder {
 
         // The requested round is later than the latest fully signed state.
         // Check if any of the fresh states match the request exactly.
-        return freshUnsignedStates.find(ss -> stateMatches(ss, round, hash), reason);
+        return freshUnsignedStates.findAndReserve(ss -> stateMatches(ss, round, hash), reason);
     }
 
     private static boolean stateMatches(final SignedState signedState, final long round, final Hash hash) {
@@ -436,11 +436,11 @@ public class SignedStateManager implements EmergencyStateFinder {
      * not present
      */
     private ReservedSignedState getIncompleteState(final long round, final String reason) {
-        final ReservedSignedState wrapper = freshUnsignedStates.get(round, reason);
+        final ReservedSignedState wrapper = freshUnsignedStates.getAndReserve(round, reason);
         if (wrapper.get() != null) {
             return wrapper;
         }
-        return staleUnsignedStates.get(round, reason);
+        return staleUnsignedStates.getAndReserve(round, reason);
     }
 
     /**

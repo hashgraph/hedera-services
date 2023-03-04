@@ -47,10 +47,9 @@ public class SignedStateMap {
      * @return an auto-closable object that wraps a signed state. May point to a null state if there is no state for the
      * given round. Will automatically release the state when closed.
      */
-    public synchronized ReservedSignedState get(final long round, final String reason) {
+    public synchronized ReservedSignedState getAndReserve(final long round, final String reason) {
         final ReservedSignedState reservedSignedState = map.get(round);
         if (reservedSignedState == null) {
-            // TODO is this the correct behavior?
             return new ReservedSignedState();
         }
         return reservedSignedState.getAndReserve(reason);
@@ -106,7 +105,8 @@ public class SignedStateMap {
      * @return an {@link AutoCloseableWrapper} with the first matching signed state with the specified reservation take
      * out on it, or an {@link AutoCloseableWrapper} with null if none was found
      */
-    public synchronized ReservedSignedState find(final Predicate<SignedState> predicate, final String reason) {
+    public synchronized ReservedSignedState findAndReserve(
+            final Predicate<SignedState> predicate, final String reason) {
         for (final ReservedSignedState reservedSignedState : map.values()) {
             if (predicate.test(reservedSignedState.get())) {
                 return reservedSignedState.getAndReserve(reason);

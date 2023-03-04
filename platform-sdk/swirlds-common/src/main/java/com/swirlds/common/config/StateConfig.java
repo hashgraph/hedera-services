@@ -105,7 +105,6 @@ public record StateConfig(
         @ConfigProperty(defaultValue = "300") long secondsBetweenIssLogs,
         @ConfigProperty(defaultValue = "60") int stateDeletionErrorLogFrequencySeconds,
         @ConfigProperty(defaultValue = "true") boolean enableHashStreamLogging,
-        @ConfigProperty(defaultValue = "false") boolean backgroundHashChecking,
         @ConfigProperty(defaultValue = "5") int debugHashDepth,
         @ConfigProperty(defaultValue = "1000") int maxAgeOfFutureStateSignatures,
         @ConfigProperty(defaultValue = "26") int roundsToKeepForSigning,
