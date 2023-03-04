@@ -131,10 +131,16 @@ public final class LongListOffHeap extends LongList {
         super(FileChannel.open(file, StandardOpenOption.READ));
         final int totalNumberOfChunks = calculateNumberOfChunks(size());
         final int firstChunkWithDataIndex = (int) (minValidIndex.get() / numLongsPerChunk);
+        final int firstValidIndex = (int) (minValidIndex.get() % numLongsPerChunk);
         chunkList = new AtomicReferenceArray<>(calculateNumberOfChunks(maxLongs));
         reservedBufferLength = DEFAULT_RESERVED_BUFFER_LENGTH;
-        // read data
-        for (int i = firstChunkWithDataIndex; i < totalNumberOfChunks; i++) {
+        // read the first chunk
+        final ByteBuffer firstBuffer = createChunk();
+        firstBuffer.position(firstValidIndex * Long.BYTES).limit(firstBuffer.capacity());
+        MerkleDbFileUtils.completelyRead(fileChannel, firstBuffer);
+        chunkList.set(firstChunkWithDataIndex, firstBuffer);
+        // read the rest of the data
+        for (int i = firstChunkWithDataIndex + 1; i < totalNumberOfChunks; i++) {
             final ByteBuffer directBuffer = createChunk();
             MerkleDbFileUtils.completelyRead(fileChannel, directBuffer);
             directBuffer.position(0);
@@ -233,7 +239,8 @@ public final class LongListOffHeap extends LongList {
     @Override
     protected void writeLongsData(final FileChannel fc) throws IOException {
         final int totalNumOfChunks = calculateNumberOfChunks(size());
-        final int firstChunkWithDataIndex = (int) minValidIndex.get() / numLongsPerChunk;
+        final long currentMinValidIndex = minValidIndex.get();
+        final int firstChunkWithDataIndex = (int) currentMinValidIndex / numLongsPerChunk;
         // write data
         final ByteBuffer emptyBuffer = createChunk();
         try {
@@ -241,7 +248,13 @@ public final class LongListOffHeap extends LongList {
                 final ByteBuffer byteBuffer = chunkList.get(i);
                 final ByteBuffer nonNullBuffer = requireNonNullElse(byteBuffer, emptyBuffer);
                 final ByteBuffer buf = nonNullBuffer.slice(); // slice so we don't mess with state
-                buf.position(0);
+                if (i == firstChunkWithDataIndex) {
+                    // writing starts from the first valid index in the first valid chunk
+                    final int firstValidIndexInChunk = (int) currentMinValidIndex % numLongsPerChunk;
+                    buf.position(firstValidIndexInChunk * Long.BYTES);
+                } else {
+                    buf.position(0);
+                }
                 if (i == (totalNumOfChunks - 1)) {
                     // last array, so set limit to only the data needed
                     final long bytesWrittenSoFar = (long) memoryChunkSize * (long) i;

@@ -120,7 +120,7 @@ abstract class AbstractLongListTest<T extends LongList> {
     @Order(3)
     void writeToFileAndReadBack(@TempDir final Path tempDir) throws IOException {
         final int sampleSize = getSampleSize();
-        final Path file = tempDir.resolve("HashListByteBufferTest.hl");
+        final Path file = tempDir.resolve("LongListByteBufferTest.hl");
         // write longList data
         longList.writeToFile(file);
         // check file exists and contains some data
