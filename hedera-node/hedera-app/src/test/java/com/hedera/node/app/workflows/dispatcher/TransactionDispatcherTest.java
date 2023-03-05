@@ -33,6 +33,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
+import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
@@ -57,6 +58,7 @@ import com.hedera.node.app.service.file.impl.handlers.FileSystemUndeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.network.impl.handlers.NetworkUncheckedSubmitHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleCreateHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
@@ -314,6 +316,15 @@ class TransactionDispatcherTest {
     @Mock
     private GlobalDynamicProperties dynamicProperties;
 
+    @Mock
+    private WritableStoreFactory writableStoreFactory;
+
+    @Mock
+    private WritableTopicStore writableTopicStore;
+
+    @Mock
+    private UsageLimits usageLimits;
+
     private TransactionBody transactionBody = TransactionBody.getDefaultInstance();
 
     private TransactionHandlers handlers;
@@ -373,16 +384,33 @@ class TransactionDispatcherTest {
                 tokenUnpauseHandler,
                 utilPrngHandler);
 
-        dispatcher = new TransactionDispatcher(handleContext, txnCtx, handlers, accountNumbers, dynamicProperties);
+        dispatcher = new TransactionDispatcher(
+                handleContext, txnCtx, handlers, accountNumbers, dynamicProperties, usageLimits);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(
-                        () -> new TransactionDispatcher(handleContext, txnCtx, null, accountNumbers, dynamicProperties))
+        assertThatThrownBy(() -> new TransactionDispatcher(
+                        handleContext, txnCtx, null, accountNumbers, dynamicProperties, usageLimits))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new TransactionDispatcher(handleContext, txnCtx, handlers, null, dynamicProperties))
+        assertThatThrownBy(() -> new TransactionDispatcher(
+                        handleContext, txnCtx, handlers, null, dynamicProperties, usageLimits))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new TransactionDispatcher(
+                        handleContext, txnCtx, handlers, accountNumbers, dynamicProperties, null))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() ->
+                        new TransactionDispatcher(handleContext, txnCtx, handlers, accountNumbers, null, usageLimits))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new TransactionDispatcher(
+                        null, txnCtx, handlers, accountNumbers, dynamicProperties, usageLimits))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new TransactionDispatcher(
+                        handleContext, null, handlers, accountNumbers, dynamicProperties, usageLimits))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new TransactionDispatcher(
+                        handleContext, txnCtx, null, accountNumbers, dynamicProperties, usageLimits))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -459,7 +487,7 @@ class TransactionDispatcherTest {
         given(dynamicProperties.messageMaxBytesAllowed()).willReturn(456);
         given(createBuilder.getCreatedTopic()).willReturn(666L);
         final var expectedConfig = new ConsensusServiceConfig(123L, 456);
-
+        given(writableStoreFactory.createTopicStore()).willReturn(writableTopicStore);
         doAnswer(invocation -> {
                     final var builder =
                             (ConsensusCreateTopicRecordBuilder) invocation.getArguments()[3];
@@ -467,11 +495,17 @@ class TransactionDispatcherTest {
                     return null;
                 })
                 .when(consensusCreateTopicHandler)
-                .handle(eq(handleContext), eq(transactionBody.getConsensusCreateTopic()), eq(expectedConfig), any());
+                .handle(
+                        eq(handleContext),
+                        eq(transactionBody.getConsensusCreateTopic()),
+                        eq(expectedConfig),
+                        any(),
+                        any());
 
-        dispatcher.dispatchHandle(ConsensusCreateTopic, transactionBody);
+        dispatcher.dispatchHandle(ConsensusCreateTopic, transactionBody, writableStoreFactory);
 
         verify(txnCtx).setCreated(TopicID.newBuilder().setTopicNum(666L).build());
+        verify(writableTopicStore).commit();
     }
 
     @Test
@@ -490,7 +524,7 @@ class TransactionDispatcherTest {
                 .when(consensusUpdateTopicHandler)
                 .handle(eq(handleContext), eq(transactionBody.getConsensusUpdateTopic()), eq(expectedConfig), any());
 
-        dispatcher.dispatchHandle(ConsensusUpdateTopic, transactionBody);
+        dispatcher.dispatchHandle(ConsensusUpdateTopic, transactionBody, writableStoreFactory);
 
         verifyNoInteractions(txnCtx);
     }
@@ -511,7 +545,7 @@ class TransactionDispatcherTest {
                 .when(consensusDeleteTopicHandler)
                 .handle(eq(handleContext), eq(transactionBody.getConsensusDeleteTopic()), eq(expectedConfig), any());
 
-        dispatcher.dispatchHandle(ConsensusDeleteTopic, transactionBody);
+        dispatcher.dispatchHandle(ConsensusDeleteTopic, transactionBody, writableStoreFactory);
 
         verifyNoInteractions(txnCtx);
     }
@@ -536,7 +570,7 @@ class TransactionDispatcherTest {
                 .when(consensusSubmitMessageHandler)
                 .handle(eq(handleContext), eq(transactionBody.getConsensusSubmitMessage()), eq(expectedConfig), any());
 
-        dispatcher.dispatchHandle(ConsensusSubmitMessage, transactionBody);
+        dispatcher.dispatchHandle(ConsensusSubmitMessage, transactionBody, writableStoreFactory);
 
         verify(txnCtx).setTopicRunningHash(newRunningHash, 2);
     }
@@ -544,7 +578,8 @@ class TransactionDispatcherTest {
     @Test
     void cannotDispatchUnsupportedOperations() {
         Assertions.assertThrows(
-                IllegalArgumentException.class, () -> dispatcher.dispatchHandle(CryptoTransfer, transactionBody));
+                IllegalArgumentException.class,
+                () -> dispatcher.dispatchHandle(CryptoTransfer, transactionBody, writableStoreFactory));
     }
 
     @ParameterizedTest

@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.consensus;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -56,16 +57,19 @@ public class TopicGetInfoSuite extends HapiSuite {
                                 .topicMemo("testmemo")
                                 .adminKeyName("adminKey")
                                 .submitKeyName("submitKey")
-                                .autoRenewAccountId("autoRenewAccount"))
+                                .autoRenewAccountId("autoRenewAccount")
+                                .via("createTopic"))
                 .when()
-                .then(getTopicInfo("testTopic")
-                        .hasExpectedLedgerId("0x03")
-                        .hasMemo("testmemo")
-                        .hasAdminKey("adminKey")
-                        .hasSubmitKey("submitKey")
-                        .hasAutoRenewAccount("autoRenewAccount")
-                        .hasSeqNo(0)
-                        .hasRunningHash(new byte[48]));
+                .then(
+                        getTopicInfo("testTopic")
+                                .hasExpectedLedgerId("0x03")
+                                .hasMemo("testmemo")
+                                .hasAdminKey("adminKey")
+                                .hasSubmitKey("submitKey")
+                                .hasAutoRenewAccount("autoRenewAccount")
+                                .hasSeqNo(0)
+                                .hasRunningHash(new byte[48]),
+                        getTxnRecord("createTopic").logged());
     }
 
     @Override

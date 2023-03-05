@@ -38,8 +38,8 @@ import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
 import com.hedera.node.app.service.mono.Utils;
-import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
+import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -66,7 +66,7 @@ class ConsensusSubmitMessageHandlerTest {
     private static final ConsensusServiceConfig consensusConfig = new ConsensusServiceConfig(1234L, 5678);
 
     @Mock
-    private AccountKeyLookup keyLookup;
+    private AccountAccess keyLookup;
 
     @Mock
     private ReadableTopicStore topicStore;

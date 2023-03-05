@@ -17,13 +17,19 @@
 package com.hedera.node.app.service.consensus.impl.handlers;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
+import com.hedera.node.app.service.consensus.impl.entity.TopicBuilderImpl;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.CreateTopicRecordBuilder;
+import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
@@ -53,7 +59,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
      * change.
      *
      * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@code handle()}
+     *     passed to the handle stage
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void preHandle(@NonNull final PreHandleContext context) {
@@ -73,20 +79,66 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
     /**
      * Given the appropriate context, creates a new topic.
      *
-     * TODO: Provide access to writable topic store.
-     *
      * @param handleContext the {@link HandleContext} for the active transaction
-     * @param topicCreation the {@link ConsensusCreateTopicTransactionBody} for the active transaction
+     * @param op the {@link ConsensusCreateTopicTransactionBody} of the active transaction
      * @param consensusServiceConfig the {@link ConsensusServiceConfig} for the active transaction
      * @param recordBuilder the {@link ConsensusCreateTopicRecordBuilder} for the active transaction
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void handle(
             @NonNull final HandleContext handleContext,
-            @NonNull final ConsensusCreateTopicTransactionBody topicCreation,
+            @NonNull final ConsensusCreateTopicTransactionBody op,
             @NonNull final ConsensusServiceConfig consensusServiceConfig,
-            @NonNull final ConsensusCreateTopicRecordBuilder recordBuilder) {
-        throw new UnsupportedOperationException("Not implemented");
+            @NonNull final ConsensusCreateTopicRecordBuilder recordBuilder,
+            @NonNull final WritableTopicStore topicStore) {
+        final var builder = new TopicBuilderImpl();
+
+        /* Validate admin and submit keys and set them */
+        if (op.hasAdminKey()) {
+            handleContext.attributeValidator().validateKey(op.getAdminKey());
+            asHederaKey(op.getAdminKey()).ifPresent(builder::adminKey);
+        }
+        if (op.hasSubmitKey()) {
+            handleContext.attributeValidator().validateKey(op.getSubmitKey());
+            asHederaKey(op.getSubmitKey()).ifPresent(builder::submitKey);
+        }
+
+        /* Validate if the current topic can be created */
+        if (topicStore.sizeOfState() >= consensusServiceConfig.maxTopics()) {
+            throw new HandleStatusException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+        }
+
+        /* Validate the topic memo */
+        handleContext.attributeValidator().validateMemo(op.getMemo());
+        builder.memo(op.getMemo());
+
+        /* Validate the auto-renewal account */
+        final var autoRenewPeriod =
+                op.hasAutoRenewPeriod() ? op.getAutoRenewPeriod().getSeconds() : NA;
+        final var autoRenewAccountId =
+                op.hasAutoRenewAccount() ? op.getAutoRenewAccount().getAccountNum() : NA;
+
+        final var entityExpiryMeta = new ExpiryMeta(
+                NA, // expiry not set explicitly
+                autoRenewPeriod,
+                autoRenewAccountId);
+
+        final var effectiveExpiryMeta =
+                handleContext.expiryValidator().validateCreationAttempt(false, entityExpiryMeta);
+        builder.autoRenewSecs(effectiveExpiryMeta.autoRenewPeriod());
+        builder.expiry(effectiveExpiryMeta.expiry());
+        builder.autoRenewAccountNumber(effectiveExpiryMeta.autoRenewNum());
+
+        /* --- Add topic number to topic builder --- */
+        builder.topicNumber(handleContext.newEntityNumSupplier().getAsLong());
+
+        /* --- Put the final topic. It will be in underlying state's modifications map.
+        It will not be committed to state until commit is called on the state.--- */
+        final var topic = builder.build();
+        topicStore.put(topic);
+
+        /* --- Build the record with newly created topic --- */
+        recordBuilder.setCreatedTopic(topic.topicNumber());
     }
 
     @Override

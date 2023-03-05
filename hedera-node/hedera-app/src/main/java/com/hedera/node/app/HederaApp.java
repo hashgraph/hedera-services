@@ -43,6 +43,8 @@ import com.hedera.node.app.service.mono.throttling.ThrottlingModule;
 import com.hedera.node.app.service.mono.txns.TransactionsModule;
 import com.hedera.node.app.service.mono.txns.submission.SubmissionModule;
 import com.hedera.node.app.services.ServiceModule;
+import com.hedera.node.app.state.HederaStateModule;
+import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.workflows.handle.HandleWorkflowModule;
 import com.hedera.node.app.workflows.query.QueryWorkflowModule;
 import com.swirlds.common.crypto.Cryptography;
@@ -85,13 +87,16 @@ import javax.inject.Singleton;
             ExpiryModule.class,
             ServiceModule.class,
             QueryWorkflowModule.class,
-            HandleWorkflowModule.class
+            HandleWorkflowModule.class,
+            HederaStateModule.class
         })
 public interface HederaApp extends ServicesApp {
     /* Needed by ServicesState */
     Provider<QueryComponent.Factory> queryComponentFactory();
 
     Provider<IngestComponent.Factory> ingestComponentFactory();
+
+    WorkingStateAccessor workingStateAccessor();
 
     @Component.Builder
     interface Builder {

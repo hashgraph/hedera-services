@@ -17,8 +17,12 @@
 package com.hedera.node.app.service.token.impl.test.entity;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.node.app.service.token.entity.Account.HBARS_TO_TINYBARS;
-import static org.junit.jupiter.api.Assertions.*;
+import static com.hedera.node.app.spi.accounts.Account.HBARS_TO_TINYBARS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.token.impl.entity.AccountBuilderImpl;

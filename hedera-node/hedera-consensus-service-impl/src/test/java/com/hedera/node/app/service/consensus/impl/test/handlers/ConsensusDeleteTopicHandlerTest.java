@@ -40,8 +40,8 @@ import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusDeleteTopicRecordBuilder;
 import com.hedera.node.app.service.mono.Utils;
-import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
+import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.test.utils.KeyUtils;
@@ -61,14 +61,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ConsensusDeleteTopicHandlerTest {
-    private AccountKeyLookup keyLookup;
+    private AccountAccess keyLookup;
     private ReadableTopicStore topicStore;
 
     private ConsensusDeleteTopicHandler subject;
 
     @BeforeEach
     void setUp() {
-        keyLookup = mock(AccountKeyLookup.class);
+        keyLookup = mock(AccountAccess.class);
         topicStore = mock(ReadableTopicStore.class);
         subject = new ConsensusDeleteTopicHandler();
     }
