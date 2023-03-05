@@ -196,10 +196,10 @@ public class NetworkMetrics {
      *
      * @param connection the connection that was closed.
      */
-    public void recordDisconnect(Connection connection) {
+    public void recordDisconnect(final Connection connection) {
         int otherId = connection.getOtherId().getIdAsInt();
         if (otherId >= 0 && otherId < disconnectFrequency.size()) {
-            disconnectFrequency.get((int) otherId).count();
+            disconnectFrequency.get(otherId).count();
         }
     }
 }
