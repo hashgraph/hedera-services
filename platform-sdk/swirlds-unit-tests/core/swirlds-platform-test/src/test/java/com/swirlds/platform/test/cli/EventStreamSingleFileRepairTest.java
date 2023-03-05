@@ -76,7 +76,7 @@ class EventStreamSingleFileRepairTest {
         try (final Stream<Path> walk = Files.walk(tmpDir)) {
             pathToLastFile = walk.filter(path -> path.toString().endsWith(".evts"))
                     .reduce(((path, path2) -> path2.compareTo(path) < 0 ? path : path2))
-                    .get();
+                    .orElseThrow();
         }
         assertNotNull(pathToLastFile, "Path was not provided to the last file in the event stream.");
         final File lastFile = pathToLastFile.toFile();

@@ -39,7 +39,8 @@ import picocli.CommandLine;
 public class EventStreamRepairCommand extends AbstractCommand {
     private File eventStreamFile;
 
-    @CommandLine.Parameters(description = "The path to the event stream file or directory of event files needing repair.")
+    @CommandLine.Parameters(
+            description = "The path to the event stream file or directory of event files needing repair.")
     private void setEventStreamFileOrDirectory(final Path eventStreamFileOrDirectory) {
         if (Files.isDirectory(eventStreamFileOrDirectory)) {
             try (final Stream<Path> pathStream = Files.walk(eventStreamFileOrDirectory)) {
