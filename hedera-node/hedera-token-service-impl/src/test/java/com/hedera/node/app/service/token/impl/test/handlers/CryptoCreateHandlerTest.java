@@ -16,55 +16,64 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.node.app.service.token.impl.handlers.CryptoCreateHandler;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+
 class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
-    //    private CryptoCreateHandler subject = new CryptoCreateHandler();
-    //
-    //    @Test
-    //    void preHandleCryptoCreateVanilla() {
-    //        final var txn = createAccountTransaction(true);
-    //
-    //        final var context = new PreHandleContext(store, txn, payer);
-    //        subject.preHandle(context);
-    //
-    //        assertEquals(txn, context.getTxn());
-    //        basicMetaAssertions(context, 1, false, OK);
-    //        assertEquals(payerKey, context.getPayerKey());
-    //    }
-    //
-    //    @Test
-    //    void noReceiverSigRequiredPreHandleCryptoCreate() {
-    //        final var txn = createAccountTransaction(false);
-    //        final var expected = new PreHandleContext(store, txn, payer);
-    //
-    //        final var context = new PreHandleContext(store, txn, payer);
-    //        subject.preHandle(context);
-    //
-    //        assertEquals(expected.getTxn(), context.getTxn());
-    //        assertFalse(context.getRequiredNonPayerKeys().contains(payerKey));
-    //        basicMetaAssertions(context, 0, expected.failed(), OK);
-    //        assertIterableEquals(List.of(), context.getRequiredNonPayerKeys());
-    //        assertEquals(payerKey, context.getPayerKey());
-    //    }
-    //
-    //    @Test
-    //    void handleNotImplemented() {
-    //        assertThrows(UnsupportedOperationException.class, () -> subject.handle(metaToHandle));
-    //    }
-    //
-    //    private TransactionBody createAccountTransaction(final boolean receiverSigReq) {
-    //        final var transactionID =
-    //                TransactionID.newBuilder().setAccountID(payer).setTransactionValidStart(consensusTimestamp);
-    //        final var createTxnBody = CryptoCreateTransactionBody.newBuilder()
-    //                .setKey(key)
-    //                .setReceiverSigRequired(receiverSigReq)
-    //                .setMemo("Create Account")
-    //                .build();
-    //
-    //        return TransactionBody.newBuilder()
-    //                .setTransactionID(transactionID)
-    //                .setCryptoCreateAccount(createTxnBody)
-    //                .build();
-    //    }
+    private CryptoCreateHandler subject = new CryptoCreateHandler();
+
+    @Test
+    void preHandleCryptoCreateVanilla() {
+        final var txn = createAccountTransaction(true);
+
+        final var context = new PreHandleContext(store, txn, payer);
+        subject.preHandle(context);
+
+        assertEquals(txn, context.getTxn());
+        basicMetaAssertions(context, 1, false, OK);
+        assertEquals(payerKey, context.getPayerKey());
+    }
+
+    @Test
+    void noReceiverSigRequiredPreHandleCryptoCreate() {
+        final var txn = createAccountTransaction(false);
+        final var expected = new PreHandleContext(store, txn, payer);
+
+        final var context = new PreHandleContext(store, txn, payer);
+        subject.preHandle(context);
+
+        assertEquals(expected.getTxn(), context.getTxn());
+        assertFalse(context.getRequiredNonPayerKeys().contains(payerKey));
+        basicMetaAssertions(context, 0, expected.failed(), OK);
+        assertIterableEquals(List.of(), context.getRequiredNonPayerKeys());
+        assertEquals(payerKey, context.getPayerKey());
+    }
+
+    @Test
+    void handleNotImplemented() {
+        assertThrows(UnsupportedOperationException.class, () -> subject.handle(metaToHandle));
+    }
+
+    private TransactionBody createAccountTransaction(final boolean receiverSigReq) {
+        final var transactionID =
+                TransactionID.newBuilder().setAccountID(payer).setTransactionValidStart(consensusTimestamp);
+        final var createTxnBody = CryptoCreateTransactionBody.newBuilder()
+                .setKey(key)
+                .setReceiverSigRequired(receiverSigReq)
+                .setMemo("Create Account")
+                .build();
+
+        return TransactionBody.newBuilder()
+                .setTransactionID(transactionID)
+                .setCryptoCreateAccount(createTxnBody)
+                .build();
+    }
 }

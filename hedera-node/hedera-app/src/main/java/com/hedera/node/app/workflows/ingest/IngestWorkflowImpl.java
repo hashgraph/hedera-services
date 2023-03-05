@@ -187,7 +187,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
             } catch (InsufficientBalanceException e) {
                 estimatedFee = e.getEstimatedFee();
                 result = e.responseCode();
-            } catch (PreCheckException e) {
+            } catch (final PreCheckException e) {
                 result = e.responseCode();
             } catch (IOException ex) {
                 throw new RuntimeException("Failed to read bytes from request buffer", ex);

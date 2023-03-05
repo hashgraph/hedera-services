@@ -59,6 +59,8 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
 
     protected ReadableScheduleStore scheduleStore;
 
+    private TransactionBody scheduledTxn;
+
     @BeforeEach
     void setUp() {
         given(states.<Long, ScheduleVirtualValue>get("SCHEDULES_BY_ID")).willReturn(schedulesById);
@@ -71,14 +73,17 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
     void scheduleSignVanillaNoExplicitPayer() {
         final var txn = scheduleSignTransaction();
         givenSetupForScheduleSign(txn);
-        given(dispatcher.dispatch(scheduledTxn, scheduler)).willReturn(scheduledMeta);
+
         final var context = new PreHandleContext(keyLookup, txn, scheduler);
         subject.preHandle(context, scheduleStore, dispatcher);
         assertEquals(scheduler, context.getPayer());
         assertEquals(schedulerKey, context.getPayerKey());
         assertEquals(List.of(), context.getRequiredNonPayerKeys());
-        assertEquals(scheduledMeta, context.getHandlerMetadata());
-        assertEquals(OK, context.getStatus());
+
+        PreHandleContext innerContext = context.getInnerContext();
+        basicContextAssertions(innerContext, 0, false, OK);
+        assertEquals(scheduler, innerContext.getPayer());
+        assertEquals(schedulerKey, innerContext.getPayerKey());
     }
 
     @Test
@@ -89,30 +94,34 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
         final var context = new PreHandleContext(keyLookup, txn, scheduler);
         subject.preHandle(context, scheduleStore, dispatcher);
         assertEquals(scheduler, context.getPayer());
-        assertEquals(null, context.getHandlerMetadata());
+        assertNull(context.getInnerContext());
         assertEquals(INVALID_SCHEDULE_ID, context.getStatus());
+
+        verify(dispatcher, never()).dispatch(any());
     }
 
     @Test
     void scheduleSignVanillaWithOptionalPayerSet() {
         final var txn = scheduleSignTransaction();
         givenSetupForScheduleSign(txn);
-        scheduledMeta = new TransactionMetadata(scheduledTxn, payer, OK, adminKey, List.of(), null, List.of());
 
         given(schedule.hasExplicitPayer()).willReturn(true);
         given(schedule.payer()).willReturn(EntityId.fromGrpcAccountId(payer));
         given(keyLookup.getKey(scheduler)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
-        given(dispatcher.dispatch(scheduledTxn, payer)).willReturn(scheduledMeta);
+        given(keyLookup.getKey(payer)).willReturn(KeyOrLookupFailureReason.withKey(adminKey));
 
         final var context = new PreHandleContext(keyLookup, txn, scheduler);
         subject.preHandle(context, scheduleStore, dispatcher);
 
         assertEquals(scheduler, context.getPayer());
         assertEquals(schedulerKey, context.getPayerKey());
-        assertEquals(scheduledMeta, context.getHandlerMetadata());
-        assertEquals(adminKey, ((TransactionMetadata) context.getHandlerMetadata()).payerKey());
-        assertEquals(OK, context.getStatus());
-        verify(dispatcher).dispatch(scheduledTxn, payer);
+
+        final var innerContext = context.getInnerContext();
+        basicContextAssertions(innerContext, 0, false, OK);
+        assertEquals(payer, innerContext.getPayer());
+        assertEquals(adminKey, innerContext.getPayerKey());
+
+        verify(dispatcher).dispatch(innerContext);
     }
 
     @Test
@@ -132,6 +141,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
 
         final var context = new PreHandleContext(keyLookup, txn, scheduler);
         subject.preHandle(context, scheduleStore, dispatcher);
+        basicContextAssertions(context, 0, false, OK);
         assertEquals(scheduler, context.getPayer());
         assertEquals(schedulerKey, context.getPayerKey());
         assertEquals(List.of(), context.getRequiredNonPayerKeys());

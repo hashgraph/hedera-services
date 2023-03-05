@@ -46,11 +46,12 @@ class ScheduleHandlerTestBase {
     protected HederaKey adminKey = asHederaKey(key).get();
     protected AccountID scheduler = AccountID.newBuilder().accountNum(1001L).build();
     protected AccountID payer = AccountID.newBuilder().accountNum(2001L).build();
-    protected TransactionBody scheduledTxn;
-    protected TransactionMetadata scheduledMeta;
 
     @Mock
-    protected AccountKeyLookup keyLookup;
+    protected AccountAccess keyLookup;
+
+    @Mock
+    protected HederaKey payerKey;
 
     @Mock
     protected HederaKey schedulerKey;
@@ -61,23 +62,13 @@ class ScheduleHandlerTestBase {
     @Mock
     protected ReadableStates states;
 
-    protected void basicMetaAssertions(
-            final TransactionMetadata meta,
-            final int nonPayerKeysSize,
-            final boolean failed,
-            final ResponseCodeEnum failureStatus) {
-        assertEquals(nonPayerKeysSize, meta.requiredNonPayerKeys().size());
-        assertTrue(failed ? meta.failed() : !meta.failed());
-        assertEquals(failureStatus, meta.status());
-    }
-
     protected void basicContextAssertions(
             final PreHandleContext context,
             final int nonPayerKeysSize,
             final boolean failed,
             final ResponseCodeEnum failureStatus) {
         assertEquals(nonPayerKeysSize, context.getRequiredNonPayerKeys().size());
-        assertTrue(failed ? context.failed() : !context.failed());
+        assertEquals(failed, context.failed());
         assertEquals(failureStatus, context.getStatus());
     }
 

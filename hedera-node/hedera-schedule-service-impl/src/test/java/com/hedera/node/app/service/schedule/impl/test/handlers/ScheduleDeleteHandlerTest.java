@@ -59,6 +59,8 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
     private final AccountID scheduleDeleter =
             AccountID.newBuilder().accountNum(3001L).build();
 
+    protected TransactionBody scheduledTxn;
+
     @BeforeEach
     void setUp() {
         given(states.<Long, ScheduleVirtualValue>get("SCHEDULES_BY_ID")).willReturn(schedulesById);

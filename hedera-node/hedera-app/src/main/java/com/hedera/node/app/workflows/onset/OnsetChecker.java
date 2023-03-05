@@ -180,8 +180,8 @@ public class OnsetChecker {
     }
 
     /**
-     * This method converts a {@link Timestamp} to an {@link Instant} limited between {@link
-     * Instant#MIN} and {@link Instant#MAX}
+     * This method converts a {@link Timestamp} to an {@link Instant} limited between {@link Instant#MIN} and
+     * {@link Instant#MAX}
      *
      * @param timestamp the {@code Timestamp} that should be converted
      * @return the resulting {@code Instant}
@@ -193,9 +193,9 @@ public class OnsetChecker {
     }
 
     /**
-     * This method calculates the valid duration given in seconds, which is the provided number of
-     * seconds minus a buffer defined in {@link GlobalDynamicProperties}. The result is limited to a
-     * value that, if added to the {@code validStart}, will not exceed {@link Instant#MAX}.
+     * This method calculates the valid duration given in seconds, which is the provided number of seconds minus a
+     * buffer defined in {@link GlobalDynamicProperties}. The result is limited to a value that, if added to the
+     * {@code validStart}, will not exceed {@link Instant#MAX}.
      *
      * @param validForSecs the duration in seconds
      * @param validStart the {@link Instant} that is used to calculate the maximum

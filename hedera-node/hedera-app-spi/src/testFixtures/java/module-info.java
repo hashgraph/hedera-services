@@ -6,5 +6,4 @@ module com.hedera.node.app.spi.fixtures {
     requires com.hedera.node.hapi;
     requires com.hedera.pbj.runtime;
     requires static com.github.spotbugs.annotations;
-    requires org.assertj.core;
 }

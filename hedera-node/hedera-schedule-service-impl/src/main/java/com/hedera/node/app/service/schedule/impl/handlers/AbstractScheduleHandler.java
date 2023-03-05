@@ -23,35 +23,40 @@ import static com.hedera.node.app.spi.HapiUtils.functionOf;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
 
 /**
  * Provides some implementation support needed for both the {@link ScheduleCreateHandler} and {@link
  * ScheduleSignHandler}.
  */
 abstract class AbstractScheduleHandler {
-    protected TransactionMetadata preHandleScheduledTxn(
-            final TransactionBody scheduledTxn, final AccountID payerForNested, final PreHandleDispatcher dispatcher) {
+    protected void preHandleScheduledTxn(
+            final PreHandleContext context,
+            final TransactionBody scheduledTxn,
+            final AccountID payerForNested,
+            final PreHandleDispatcher dispatcher) {
+        final var innerContext = context.createNestedContext(scheduledTxn, payerForNested);
+        context.setInnerContext(innerContext);
         final HederaFunctionality scheduledFunction;
         try {
             scheduledFunction = functionOf(scheduledTxn);
         } catch (UnknownHederaFunctionality ex) {
-            return new TransactionMetadata(scheduledTxn, payerForNested, SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+            innerContext.status(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+            return;
         }
 
         if (!isSchedulable(scheduledFunction)) {
-            return new TransactionMetadata(scheduledTxn, payerForNested, SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+            innerContext.status(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+            return;
         }
 
-        final var meta = dispatcher.dispatch(scheduledTxn, payerForNested);
-        if (meta.failed()) {
-            return new TransactionMetadata(scheduledTxn, payerForNested, UNRESOLVABLE_REQUIRED_SIGNERS);
+        dispatcher.dispatch(innerContext);
+        if (innerContext.failed()) {
+            innerContext.status(UNRESOLVABLE_REQUIRED_SIGNERS);
         }
-        return meta;
     }
 
     /**

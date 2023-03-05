@@ -16,19 +16,17 @@
 
 package com.swirlds.merkledb.serialize;
 
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.function.Supplier;
 
 /**
- * Utility class to extend by key serializers for fixed-size keys. Delegates serialization and deserialization
- * to the corresponding virtual key class, leaving only {@link #equals(ByteBuffer, int, VirtualKey)} method
- * to implement.
+ * Utility class to extend by key serializers for fixed-size keys. Delegates serialization and
+ * deserialization to the corresponding virtual key class, leaving only {@link #equals(ByteBuffer,
+ * int, VirtualKey)} method to implement.
  *
- * @param <K>
- *     Virtual key type
+ * @param <K> Virtual key type
  */
 public abstract class AbstractFixedSizeKeySerializer<K extends VirtualKey<? super K>> implements KeySerializer<K> {
 
@@ -64,67 +62,44 @@ public abstract class AbstractFixedSizeKeySerializer<K extends VirtualKey<? supe
         return keyConstructor.get();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public long getClassId() {
         return classId;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public int getVersion() {
         return classVersion;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public int getSerializedSize() {
         return serializedKeySize;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public long getCurrentDataVersion() {
         return serializedKeyVersion;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int serialize(final K data, final SerializableDataOutputStream outputStream) throws IOException {
-        data.serialize(outputStream);
-        return serializedKeySize;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public int serialize(final K data, final ByteBuffer buffer) throws IOException {
         data.serialize(buffer);
         return serializedKeySize;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public int deserializeKeySize(final ByteBuffer buffer) {
         return serializedKeySize;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public K deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
         if (dataVersion != serializedKeyVersion) {

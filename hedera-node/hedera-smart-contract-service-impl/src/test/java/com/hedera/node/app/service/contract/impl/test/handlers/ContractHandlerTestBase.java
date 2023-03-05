@@ -56,7 +56,7 @@ public class ContractHandlerTestBase extends TransactionFactory {
     protected MerkleAccount payerAccount;
 
     @Mock
-    protected AccountKeyLookup keyLookup;
+    protected AccountAccess keyLookup;
 
     @BeforeEach
     void commonSetUp() {

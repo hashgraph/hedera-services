@@ -37,12 +37,13 @@ import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.ByteBuffer;
 import java.util.Objects;
 import javax.inject.Inject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-/** The {@code IngestChecker} contains checks that are specific to the ingest workflow */
+/**
+ * The {@code IngestChecker} contains checks that are specific to the ingest workflow
+ */
 public class IngestChecker {
 
     private static final Logger logger = LoggerFactory.getLogger(IngestChecker.class);
@@ -72,11 +73,11 @@ public class IngestChecker {
     /**
      * Checks a transaction for semantic errors
      *
-     * @param txBody the {@link TransactionBody}
+     * @param txBody        the {@link TransactionBody}
      * @param functionality the {@link HederaFunctionality} of the transaction
      * @throws NullPointerException if one of the arguments is {@code null}
-     * @throws PreCheckException if a semantic error was discovered. The contained {@code
-     *     responseCode} provides the error reason.
+     * @throws PreCheckException    if a semantic error was discovered. The contained {@code responseCode} provides the
+     *                              error reason.
      */
     public void checkTransactionSemantics(
             @NonNull final TransactionBody txBody, @NonNull final HederaFunctionality functionality)
@@ -102,8 +103,8 @@ public class IngestChecker {
      * @param signatureMap  the {@link SignatureMap} contained in the transaction
      * @param payerID       the {@link AccountID} of the payer
      * @throws NullPointerException if one of the arguments is {@code null}
-     * @throws PreCheckException if an error is found while checking the signature. The contained
-     *     {@code responseCode} provides the error reason.
+     * @throws PreCheckException    if an error is found while checking the signature. The contained {@code responseCode}
+     *                              provides the error reason.
      */
     public void checkPayerSignature(
             @NonNull final HederaState state,
