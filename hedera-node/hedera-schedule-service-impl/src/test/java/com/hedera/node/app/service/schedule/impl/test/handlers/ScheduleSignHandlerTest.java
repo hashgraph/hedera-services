@@ -28,7 +28,7 @@ import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualVa
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleSignHandler;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
-import com.hedera.node.app.spi.meta.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import org.junit.jupiter.api.BeforeEach;

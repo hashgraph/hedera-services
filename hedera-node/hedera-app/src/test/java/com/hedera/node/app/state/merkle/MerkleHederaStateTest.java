@@ -18,6 +18,7 @@ package com.hedera.node.app.state.merkle;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.hedera.node.app.spi.state.ReadableKVState;
@@ -56,7 +57,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
         setupFruitMerkleMap();
         hederaMerkle = new MerkleHederaState(
                 tree -> onMigrateCalled.set(true),
-                evt -> onPreHandleCalled.set(true),
+                (evt, meta) -> onPreHandleCalled.set(true),
                 (round, dual) -> onHandleCalled.set(true));
     }
 
@@ -185,7 +186,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
             final var fruitMetadata2 = new StateMetadata<>(
                     FIRST_SERVICE,
                     new TestSchema(1),
-                    StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_SERDES, LONG_SERDES));
+                    StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_CODEC, LONG_CODEC));
 
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata, fruitMerkleMap);
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata2, fruitMerkleMap);
@@ -269,7 +270,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
                 final var md = new StateMetadata<>(
                         serviceName,
                         new TestSchema(1),
-                        StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES));
+                        StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_CODEC, STRING_CODEC));
 
                 final var node = createMerkleMap(label);
                 map.put(serviceName, node);
@@ -641,7 +642,9 @@ class MerkleHederaStateTest extends MerkleTestBase {
             final var round = Mockito.mock(Round.class);
             final var dualState = Mockito.mock(SwirldDualState.class);
             final var state = new MerkleHederaState(
-                    tree -> onMigrateCalled.set(true), evt -> onPreHandleCalled.set(true), (r, d) -> {
+                    tree -> onMigrateCalled.set(true),
+                    (evt, meta, provider) -> onPreHandleCalled.set(true),
+                    (r, d, m) -> {
                         assertThat(round).isSameAs(r);
                         assertThat(dualState).isSameAs(d);
                         onHandleCalled.set(true);
@@ -663,8 +666,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
             // The original no longer has the listener
             final var round = Mockito.mock(Round.class);
             final var dualState = Mockito.mock(SwirldDualState.class);
-            hederaMerkle.handleConsensusRound(round, dualState);
-            assertThat(onHandleCalled).isFalse();
+            assertThrows(MutabilityException.class, () -> hederaMerkle.handleConsensusRound(round, dualState));
 
             // But the copy does
             copy.handleConsensusRound(round, dualState);

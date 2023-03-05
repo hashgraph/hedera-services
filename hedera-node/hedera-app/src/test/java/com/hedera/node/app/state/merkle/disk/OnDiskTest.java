@@ -19,12 +19,12 @@ package com.hedera.node.app.state.merkle.disk;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.node.app.spi.state.Schema;
-import com.hedera.node.app.spi.state.Serdes;
 import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.app.state.merkle.MerkleTestBase;
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.node.app.state.merkle.StateUtils;
+import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.DataInput;
 import com.hedera.pbj.runtime.io.DataOutput;
 import com.swirlds.common.crypto.DigestType;
@@ -63,7 +63,7 @@ class OnDiskTest extends MerkleTestBase {
         setupConstructableRegistry();
         storageDir = TemporaryFileBuilder.buildTemporaryDirectory();
 
-        def = StateDefinition.onDisk(ACCOUNT_STATE_KEY, new AccountIDSerdes(), new AccountSerdes(), 100);
+        def = StateDefinition.onDisk(ACCOUNT_STATE_KEY, new AccountIDCodec(), new AccountCodec(), 100);
 
         //noinspection rawtypes
         schema = new Schema(version(1, 0, 0)) {
@@ -208,7 +208,7 @@ class OnDiskTest extends MerkleTestBase {
 
     private record Account(@NonNull OnDiskTest.AccountID accountID, @NonNull String memo, long balance) {}
 
-    private static final class AccountIDSerdes implements Serdes<AccountID> {
+    private static final class AccountIDCodec implements Codec<AccountID> {
         @NonNull
         @Override
         public AccountID parse(@NonNull DataInput input) throws IOException {
@@ -247,8 +247,8 @@ class OnDiskTest extends MerkleTestBase {
         }
     }
 
-    private static final class AccountSerdes implements Serdes<Account> {
-        private final AccountIDSerdes accountIDSerdes = new AccountIDSerdes();
+    private static final class AccountCodec implements Codec<Account> {
+        private final AccountIDCodec accountIDSerdes = new AccountIDCodec();
 
         @NonNull
         @Override

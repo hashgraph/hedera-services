@@ -33,7 +33,7 @@ import java.io.IOException;
 import java.util.Objects;
 
 /** The value stored in a {@link MerkleMap} for in memory states */
-public final class InMemoryValue<K extends Comparable<K>, V> extends PartialMerkleLeaf
+public final class InMemoryValue<K extends Comparable<? super K>, V> extends PartialMerkleLeaf
         implements MerkleNode, Keyed<InMemoryKey<K>>, SelfSerializable, MerkleLeaf {
 
     @Deprecated(forRemoval = true)
@@ -136,8 +136,8 @@ public final class InMemoryValue<K extends Comparable<K>, V> extends PartialMerk
     /** {@inheritDoc} */
     @Override
     public void deserialize(SerializableDataInputStream serializableDataInputStream, int ignored) throws IOException {
-        final var keySerdes = md.stateDefinition().keySerdes();
-        final var valueSerdes = md.stateDefinition().valueSerdes();
+        final var keySerdes = md.stateDefinition().keyCodec();
+        final var valueSerdes = md.stateDefinition().valueCodec();
         final var k = keySerdes.parse(new DataInputStream(serializableDataInputStream));
         this.key = new InMemoryKey<>(k);
         this.val = valueSerdes.parse(new DataInputStream(serializableDataInputStream));
@@ -146,8 +146,8 @@ public final class InMemoryValue<K extends Comparable<K>, V> extends PartialMerk
     /** {@inheritDoc} */
     @Override
     public void serialize(SerializableDataOutputStream serializableDataOutputStream) throws IOException {
-        final var keySerdes = md.stateDefinition().keySerdes();
-        final var valueSerdes = md.stateDefinition().valueSerdes();
+        final var keySerdes = md.stateDefinition().keyCodec();
+        final var valueSerdes = md.stateDefinition().valueCodec();
         keySerdes.write(key.key(), new DataOutputStream(serializableDataOutputStream));
         valueSerdes.write(val, new DataOutputStream(serializableDataOutputStream));
     }

@@ -16,11 +16,11 @@
 
 package com.hedera.node.app.workflows.ingest;
 
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.transaction.TransactionResponse;
 import com.hedera.node.app.SessionContext;
 import com.hedera.pbj.runtime.io.DataBuffer;
-import com.hedera.pbj.runtime.io.DataInputBuffer;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.hedera.pbj.runtime.io.RandomAccessDataInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -42,6 +42,6 @@ public interface IngestWorkflow {
      */
     void submitTransaction(
             @NonNull SessionContext session,
-            @NonNull DataInputBuffer requestBuffer,
+            @NonNull RandomAccessDataInput requestBuffer,
             @NonNull DataBuffer responseBuffer);
 }

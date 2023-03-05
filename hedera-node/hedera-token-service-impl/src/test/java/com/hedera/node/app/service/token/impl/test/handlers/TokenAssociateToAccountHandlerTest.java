@@ -30,7 +30,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.node.app.service.token.impl.handlers.TokenAssociateToAccountHandler;
-import com.hedera.node.app.spi.meta.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 

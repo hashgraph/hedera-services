@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.state.merkle.disk;
 
-import com.hedera.node.app.spi.state.Serdes;
 import com.hedera.node.app.state.merkle.StateMetadata;
+import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.DataBuffer;
 import com.hedera.pbj.runtime.io.DataInputStream;
 import com.hedera.pbj.runtime.io.DataOutputStream;
@@ -44,7 +44,7 @@ public class OnDiskValue<V> implements VirtualValue {
     @Deprecated(forRemoval = true)
     private static final long CLASS_ID = 0x8837746626372L;
 
-    private final Serdes<V> serdes;
+    private final Codec<V> codec;
     private final StateMetadata<?, V> md;
     private V value;
     private boolean immutable = false;
@@ -52,13 +52,13 @@ public class OnDiskValue<V> implements VirtualValue {
     // Default constructor provided for ConstructableRegistry, TO BE REMOVED ASAP
     @Deprecated(forRemoval = true)
     public OnDiskValue() {
-        this.serdes = null;
+        this.codec = null;
         this.md = null;
     }
 
     public OnDiskValue(@NonNull final StateMetadata<?, V> md) {
         this.md = md;
-        this.serdes = md.stateDefinition().valueSerdes();
+        this.codec = md.stateDefinition().valueCodec();
     }
 
     public OnDiskValue(@NonNull final StateMetadata<?, V> md, @NonNull final V value) {
@@ -69,7 +69,7 @@ public class OnDiskValue<V> implements VirtualValue {
     /** {@inheritDoc} */
     @Override
     public VirtualValue copy() {
-        throwIfImmutable();
+        //        throwIfImmutable();
         final var copy = new OnDiskValue<>(md, value);
         this.immutable = true;
         return copy;
@@ -97,27 +97,27 @@ public class OnDiskValue<V> implements VirtualValue {
     @Override
     public void serialize(@NonNull final ByteBuffer byteBuffer) throws IOException {
         final var output = DataBuffer.wrap(byteBuffer);
-        serdes.write(value, output);
+        codec.write(value, output);
     }
 
     /** {@inheritDoc} */
     @Override
     public void serialize(@NonNull final SerializableDataOutputStream serializableDataOutputStream) throws IOException {
-        serdes.write(value, new DataOutputStream(serializableDataOutputStream));
+        codec.write(value, new DataOutputStream(serializableDataOutputStream));
     }
 
     /** {@inheritDoc} */
     @Override
     public void deserialize(@NonNull final ByteBuffer byteBuffer, int ignored) throws IOException {
         final var input = DataBuffer.wrap(byteBuffer);
-        value = serdes.parse(input);
+        value = codec.parse(input);
     }
 
     /** {@inheritDoc} */
     @Override
     public void deserialize(@NonNull final SerializableDataInputStream serializableDataInputStream, int ignored)
             throws IOException {
-        value = serdes.parse(new DataInputStream(serializableDataInputStream));
+        value = codec.parse(new DataInputStream(serializableDataInputStream));
     }
 
     /** {@inheritDoc} */

@@ -121,7 +121,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.state.HederaState;
@@ -457,7 +457,7 @@ class TransactionDispatcherTest {
                                         .build())
                                 .build(),
                         (BiConsumer<TransactionHandlers, PreHandleContext>) (handlers, meta) ->
-                                verify(handlers.consensusDeleteTopicHandler()).preHandle(meta)),
+                                verify(handlers.consensusDeleteTopicHandler()).preHandle(eq(meta), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.newBuilder()

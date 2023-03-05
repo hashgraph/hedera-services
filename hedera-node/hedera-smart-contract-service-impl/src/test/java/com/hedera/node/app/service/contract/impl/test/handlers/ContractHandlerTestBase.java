@@ -27,7 +27,7 @@ import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;

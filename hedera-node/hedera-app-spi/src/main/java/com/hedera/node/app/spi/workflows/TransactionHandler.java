@@ -16,7 +16,19 @@
 
 package com.hedera.node.app.spi.workflows;
 
+import com.hedera.node.app.spi.records.RecordBuilder;
+
 /**
  * A {@code TransactionHandler} contains all methods for the different stages of a single operation.
  */
-public interface TransactionHandler {}
+public interface TransactionHandler {
+    /**
+     * Returns an instance of the transaction-specific {@link RecordBuilder}.
+     *
+     * @return an instance of the transaction-specific {@link RecordBuilder}
+     * @param <R> the type of the transaction-specific {@link RecordBuilder}
+     */
+    default <R extends RecordBuilder<R>> R newRecordBuilder() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+}

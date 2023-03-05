@@ -40,8 +40,8 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.token.entity.Account;
 import com.hedera.node.app.service.token.impl.entity.AccountBuilderImpl;
-import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
+import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -60,7 +60,7 @@ import java.util.Optional;
  *
  * <p>This class is not exported from the module. It is an internal implementation detail.
  */
-public class ReadableAccountStore implements AccountKeyLookup {
+public class ReadableAccountStore implements AccountAccess {
     public static final int EVM_ADDRESS_LEN = 20;
     private static final byte[] MIRROR_PREFIX = new byte[12];
 
@@ -84,6 +84,12 @@ public class ReadableAccountStore implements AccountKeyLookup {
     public ReadableAccountStore(@NonNull final ReadableStates states) {
         this.accountState = states.get("ACCOUNTS");
         this.aliases = states.get("ALIASES");
+    }
+
+    @NonNull
+    @Override
+    public Optional<com.hedera.node.app.spi.accounts.Account> getAccountById(@NonNull AccountID accountOrAlias) {
+        return Optional.empty();
     }
 
     /** {@inheritDoc} */

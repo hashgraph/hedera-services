@@ -53,6 +53,7 @@ import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeChangeManag
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeInfoManager;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
@@ -142,7 +143,7 @@ class StakingAccountsCommitInterceptorTest {
     @BeforeEach
     void setUp() throws NegativeAccountBalanceException {
         stakingInfo = buildsStakingInfoMap();
-        stakeInfoManager = new StakeInfoManager(() -> stakingInfo);
+        stakeInfoManager = new StakeInfoManager(() -> MerkleMapLike.from(stakingInfo));
         subject = new StakingAccountsCommitInterceptor(
                 sideEffectsTracker,
                 () -> networkCtx,
@@ -748,7 +749,8 @@ class StakingAccountsCommitInterceptorTest {
                 () -> networkCtx,
                 dynamicProperties,
                 rewardCalculator,
-                new StakeChangeManager(stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(accounts)),
+                new StakeChangeManager(
+                        stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts))),
                 stakePeriodManager,
                 stakeInfoManager,
                 accountNumbers,
@@ -795,7 +797,8 @@ class StakingAccountsCommitInterceptorTest {
                 () -> networkCtx,
                 dynamicProperties,
                 rewardCalculator,
-                new StakeChangeManager(stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(accounts)),
+                new StakeChangeManager(
+                        stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts))),
                 stakePeriodManager,
                 stakeInfoManager,
                 accountNumbers,
@@ -836,7 +839,8 @@ class StakingAccountsCommitInterceptorTest {
                 () -> networkCtx,
                 dynamicProperties,
                 rewardCalculator,
-                new StakeChangeManager(stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(accounts)),
+                new StakeChangeManager(
+                        stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts))),
                 stakePeriodManager,
                 stakeInfoManager,
                 accountNumbers,
@@ -866,7 +870,8 @@ class StakingAccountsCommitInterceptorTest {
                 () -> networkCtx,
                 dynamicProperties,
                 rewardCalculator,
-                new StakeChangeManager(stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(accounts)),
+                new StakeChangeManager(
+                        stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts))),
                 stakePeriodManager,
                 stakeInfoManager,
                 accountNumbers,
@@ -903,7 +908,8 @@ class StakingAccountsCommitInterceptorTest {
                 () -> networkCtx,
                 dynamicProperties,
                 rewardCalculator,
-                new StakeChangeManager(stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(accounts)),
+                new StakeChangeManager(
+                        stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts))),
                 stakePeriodManager,
                 stakeInfoManager,
                 accountNumbers,
@@ -937,7 +943,8 @@ class StakingAccountsCommitInterceptorTest {
                 () -> networkCtx,
                 dynamicProperties,
                 rewardCalculator,
-                new StakeChangeManager(stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(accounts)),
+                new StakeChangeManager(
+                        stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts))),
                 stakePeriodManager,
                 stakeInfoManager,
                 accountNumbers,
@@ -980,7 +987,8 @@ class StakingAccountsCommitInterceptorTest {
                 () -> networkCtx,
                 dynamicProperties,
                 rewardCalculator,
-                new StakeChangeManager(stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(accounts)),
+                new StakeChangeManager(
+                        stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts))),
                 stakePeriodManager,
                 stakeInfoManager,
                 accountNumbers,

@@ -22,6 +22,8 @@ import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -610,5 +612,27 @@ public final class PbjConverter {
         } catch (IOException e) {
             throw new RuntimeException("Unable to convert from PBJ to bytes", e);
         }
+    }
+
+    public static SemanticVersion toPbj(com.hederahashgraph.api.proto.java.SemanticVersion v) {
+        return SemanticVersion.newBuilder()
+                .major(v.getMajor())
+                .minor(v.getMinor())
+                .patch(v.getPatch())
+                .build();
+    }
+
+    public static Timestamp toPbj(com.hederahashgraph.api.proto.java.Timestamp t) {
+        return Timestamp.newBuilder()
+                .seconds(t.getSeconds())
+                .nanos(t.getNanos())
+                .build();
+    }
+
+    public static com.hederahashgraph.api.proto.java.Timestamp fromPbj(Timestamp now) {
+        return com.hederahashgraph.api.proto.java.Timestamp.newBuilder()
+                .setSeconds(now.seconds())
+                .setNanos(now.nanos())
+                .build();
     }
 }

@@ -53,8 +53,7 @@ public class QueryChecker {
      * Constructor of {@code QueryChecker}
      *
      * @param onset the {@link WorkflowOnset} that (eventually) pre-processes the CryptoTransfer
-     * @param accountNumbers the {@link HederaAccountNumbers} that contains a list of special
-     *     accounts
+     * @param accountNumbers the {@link HederaAccountNumbers} that contains a list of special accounts
      * @param queryFeeCheck the {@link QueryFeeCheck} that checks if fees can be paid
      * @param authorizer the {@link Authorizer} that checks, if the caller is authorized
      * @param cryptoTransferHandler the {@link CryptoTransferHandler} that validates a contained

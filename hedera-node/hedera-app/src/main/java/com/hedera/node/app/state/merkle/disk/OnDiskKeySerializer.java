@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.state.merkle.disk;
 
-import com.hedera.node.app.spi.state.Serdes;
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.node.app.state.merkle.data.MeteredOutputStream;
+import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.DataBuffer;
 import com.hedera.pbj.runtime.io.DataOutputStream;
 import com.swirlds.common.io.SelfSerializable;
@@ -45,28 +45,30 @@ import java.util.Objects;
  *
  * @param <K>
  */
-public final class OnDiskKeySerializer<K extends Comparable<K>>
+public final class OnDiskKeySerializer<K extends Comparable<? super K>>
         implements KeySerializer<OnDiskKey<K>>, SelfSerializableSupplier<OnDiskKey<K>> {
+    /** This is a hint for virtual maps, but isn't actually useful. We just pick some size. */
+    private static final int TYPICAL_SIZE = 256;
 
     @Deprecated(forRemoval = true)
     private static final long CLASS_ID = 0x9992382838283411L;
 
     private final long classId;
-    private final Serdes<K> serdes;
+    private final Codec<K> codec;
     private final StateMetadata<K, ?> md;
 
     // Default constructor provided for ConstructableRegistry, TO BE REMOVED ASAP
     @Deprecated(forRemoval = true)
     public OnDiskKeySerializer() {
         classId = CLASS_ID; // BAD!!
-        serdes = null;
+        codec = null;
         md = null;
     }
 
     public OnDiskKeySerializer(@NonNull final StateMetadata<K, ?> md) {
         this.classId = md.onDiskKeySerializerClassId();
         this.md = Objects.requireNonNull(md);
-        this.serdes = md.stateDefinition().keySerdes();
+        this.codec = md.stateDefinition().keyCodec();
     }
 
     @Override
@@ -98,7 +100,7 @@ public final class OnDiskKeySerializer<K extends Comparable<K>>
 
     @Override
     public int getTypicalSerializedSize() {
-        return serdes.typicalSize();
+        return TYPICAL_SIZE;
     }
 
     @Override
@@ -109,7 +111,7 @@ public final class OnDiskKeySerializer<K extends Comparable<K>>
     @Override
     public int deserializeKeySize(@NonNull final ByteBuffer byteBuffer) {
         try {
-            return serdes.measure(DataBuffer.wrap(byteBuffer));
+            return codec.measure(DataBuffer.wrap(byteBuffer));
         } catch (IOException e) {
             // Maybe log here?
             return -1;
@@ -118,7 +120,7 @@ public final class OnDiskKeySerializer<K extends Comparable<K>>
 
     @Override
     public OnDiskKey<K> deserialize(@NonNull final ByteBuffer byteBuffer, final long ignored) throws IOException {
-        final var k = serdes.parse(DataBuffer.wrap(byteBuffer));
+        final var k = codec.parse(DataBuffer.wrap(byteBuffer));
         Objects.requireNonNull(k);
         return new OnDiskKey<>(md, k);
     }
@@ -128,7 +130,7 @@ public final class OnDiskKeySerializer<K extends Comparable<K>>
             throws IOException {
         final var metered = new MeteredOutputStream(out);
         final var k = Objects.requireNonNull(Objects.requireNonNull(key).getKey());
-        serdes.write(k, new DataOutputStream(metered));
+        codec.write(k, new DataOutputStream(metered));
         return metered.getCountWritten();
     }
 
@@ -138,7 +140,7 @@ public final class OnDiskKeySerializer<K extends Comparable<K>>
         // I really don't have a fast path for this. Which is very problematic for performance.
         // All we can do is serialize one or deserialize the other! It would be nice if PBJ
         // had a special method for this, but then we'd have to pipe it through all our APIs again
-        // or create some kind of Serdes object with all this stuff on it.
+        // or create some kind of Codec object with all this stuff on it.
         final var other = deserialize(byteBuffer, 0);
         return other.equals(key);
     }

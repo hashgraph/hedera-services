@@ -547,7 +547,7 @@ public class ContractCallSuite extends HapiSuite {
                                     ticketSerialNo.set(((Long) result[0]));
                                 }),
                         getTxnRecord(ticketTaking),
-                        getAccountBalance(DEFAULT_CONTRACT_SENDER).hasTokenBalance(ticketToken, 1L),
+                        getAccountBalance(DEFAULT_CONTRACT_SENDER).logged().hasTokenBalance(ticketToken, 1L),
                         /* Our ticket number is 3 (b/c of the two pre-mints), so we must call
                          * work twice before the contract will actually accept our ticket. */
                         sourcing(() -> contractCall(contract, "workTicket", ticketSerialNo.get())

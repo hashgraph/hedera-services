@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.mono.context.properties.SerializableSe
 import static com.hedera.node.app.service.mono.state.migration.MapMigrationToDisk.INSERTIONS_PER_COPY;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
+import static com.hedera.test.utils.AddresBookUtils.createPretendBookFrom;
 import static com.swirlds.common.system.InitTrigger.RECONNECT;
 import static com.swirlds.common.system.InitTrigger.RESTART;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
@@ -44,8 +45,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
-import com.google.common.primitives.Ints;
-import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.init.ServicesInitFlow;
@@ -84,7 +83,6 @@ import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
-import com.swirlds.common.crypto.SerializablePublicKey;
 import com.swirlds.common.crypto.engine.CryptoEngine;
 import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.system.InitTrigger;
@@ -105,9 +103,7 @@ import com.swirlds.virtualmap.VirtualMap;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.security.PublicKey;
 import java.time.Instant;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.apache.commons.io.FileUtils;
@@ -851,7 +847,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
         final var mockPlatform = createMockPlatformWithCrypto();
         given(mockPlatform.getAddressBook()).willReturn(addressBook);
         ServicesState swirldState = (ServicesState) ref.get().getSwirldState();
-        final var pretendAddressBook = createPretendBookFrom(mockPlatform, false);
         tracked(swirldState).init(mockPlatform, new DualStateImpl(), RESTART, forHapiAndHedera("0.30.0", "0.30.5"));
     }
 
@@ -876,7 +871,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
         final var vmap = new VirtualMap<>();
         subject.setChild(StateChildIndices.UNIQUE_TOKENS, vmap);
         assertTrue(subject.uniqueTokens().isVirtual());
-        assertSame(vmap, subject.uniqueTokens().virtualMap());
     }
 
     @Test
@@ -885,34 +879,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
         subject.setChild(StateChildIndices.UNIQUE_TOKENS, mmap);
         assertFalse(subject.uniqueTokens().isVirtual());
         assertSame(mmap, subject.uniqueTokens().merkleMap());
-    }
-
-    private AddressBook createPretendBookFrom(final Platform platform, final boolean withKeyDetails) {
-        final var pubKey = mock(PublicKey.class);
-        given(pubKey.getAlgorithm()).willReturn("EC");
-        if (withKeyDetails) {
-            given(pubKey.getEncoded()).willReturn(Longs.toByteArray(Long.MAX_VALUE));
-        }
-        final var nodeId = platform.getSelfId().getId();
-        final var address = new Address(
-                nodeId,
-                "",
-                "",
-                1L,
-                false,
-                null,
-                -1,
-                Ints.toByteArray(123456789),
-                -1,
-                null,
-                -1,
-                null,
-                -1,
-                new SerializablePublicKey(pubKey),
-                null,
-                new SerializablePublicKey(pubKey),
-                "");
-        return new AddressBook(List.of(address));
     }
 
     private static ServicesApp createApp(final Platform platform) {

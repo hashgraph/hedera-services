@@ -29,7 +29,7 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.node.app.service.token.impl.handlers.TokenBurnHandler;
-import com.hedera.node.app.spi.meta.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.junit.jupiter.api.Test;
 
 public class TokenBurnHandlerParityTest extends ParityTestBase {

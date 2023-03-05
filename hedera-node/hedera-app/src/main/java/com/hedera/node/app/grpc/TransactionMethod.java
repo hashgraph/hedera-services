@@ -20,7 +20,7 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.pbj.runtime.io.DataBuffer;
-import com.hedera.pbj.runtime.io.DataInputBuffer;
+import com.hedera.pbj.runtime.io.RandomAccessDataInput;
 import com.swirlds.common.metrics.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -54,7 +54,7 @@ final class TransactionMethod extends MethodBase {
     @Override
     protected void handle(
             @NonNull final SessionContext session,
-            @NonNull final DataInputBuffer requestBuffer,
+            @NonNull final RandomAccessDataInput requestBuffer,
             @NonNull final DataBuffer responseBuffer) {
         workflow.submitTransaction(session, requestBuffer, responseBuffer);
     }

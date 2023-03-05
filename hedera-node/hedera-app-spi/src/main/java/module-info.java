@@ -3,6 +3,7 @@ module com.hedera.node.app.spi {
     requires com.hedera.pbj.runtime;
     requires static transitive com.github.spotbugs.annotations;
     requires com.swirlds.common;
+    requires com.google.protobuf;
     requires com.swirlds.config;
 
     exports com.hedera.node.app.spi;
@@ -11,10 +12,19 @@ module com.hedera.node.app.spi {
     exports com.hedera.node.app.spi.meta;
     exports com.hedera.node.app.spi.numbers;
     exports com.hedera.node.app.spi.workflows;
+    exports com.hedera.node.app.spi.exceptions;
 
     opens com.hedera.node.app.spi to
-            com.hedera.node.app.spi.test,
+            com.hedera.node.app.service.mono.testFixtures;
+    opens com.hedera.node.app.spi.workflows to
             com.hedera.node.app.service.mono.testFixtures;
 
     exports com.hedera.node.app.spi.config;
+    exports com.hedera.node.app.spi.records;
+    exports com.hedera.node.app.spi.validation;
+    exports com.hedera.node.app.spi.accounts;
+
+    opens com.hedera.node.app.spi.accounts to
+            com.hedera.node.app.service.mono.testFixtures,
+            com.hedera.node.app.spi.test;
 }

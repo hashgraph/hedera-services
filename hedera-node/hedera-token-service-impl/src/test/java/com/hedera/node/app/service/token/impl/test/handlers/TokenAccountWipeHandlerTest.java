@@ -29,7 +29,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.node.app.service.token.impl.handlers.TokenAccountWipeHandler;
-import com.hedera.node.app.spi.meta.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.junit.jupiter.api.Test;
 
 class TokenAccountWipeHandlerTest extends ParityTestBase {

@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.txns.validation;
 
 import static com.hedera.node.app.service.mono.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromContractId;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asSecondsTimestamp;
 import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_MAX_LIFETIME;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asFile;
@@ -50,6 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.doCallRealMethod;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.NodeInfo;
@@ -61,6 +63,7 @@ import com.hedera.node.app.service.mono.files.HFileMeta;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
@@ -381,25 +384,25 @@ class ContextOptionValidatorTest {
     @Test
     void recognizesMissingTopic() {
         // expect:
-        assertEquals(INVALID_TOPIC_ID, subject.queryableTopicStatus(missingTopicId, topics));
+        assertEquals(INVALID_TOPIC_ID, subject.queryableTopicStatus(missingTopicId, MerkleMapLike.from(topics)));
     }
 
     @Test
     void recognizesDeletedTopicStatus() {
         // expect:
-        assertEquals(INVALID_TOPIC_ID, subject.queryableTopicStatus(deletedTopicId, topics));
+        assertEquals(INVALID_TOPIC_ID, subject.queryableTopicStatus(deletedTopicId, MerkleMapLike.from(topics)));
     }
 
     @Test
     void ignoresExpiredTopicStatus() {
         // expect:
-        assertEquals(OK, subject.queryableTopicStatus(expiredTopicId, topics));
+        assertEquals(OK, subject.queryableTopicStatus(expiredTopicId, MerkleMapLike.from(topics)));
     }
 
     @Test
     void recognizesOkTopicStatus() {
         // expect:
-        assertEquals(OK, subject.queryableTopicStatus(topicId, topics));
+        assertEquals(OK, subject.queryableTopicStatus(topicId, MerkleMapLike.from(topics)));
     }
 
     @Test
@@ -889,5 +892,31 @@ class ContextOptionValidatorTest {
     @Test
     void rejectsDecodeEmptyKey() {
         assertFailsWith(() -> subject.attemptToDecodeOrThrow(Key.getDefaultInstance(), BAD_ENCODING), BAD_ENCODING);
+    }
+
+    @Test
+    void delegatesExpiryValidation() {
+        final var then = 1234L;
+        final var timeThen = asSecondsTimestamp(then);
+
+        final var subject = mock(OptionValidator.class);
+        doCallRealMethod().when(subject).isValidExpiry(then);
+
+        subject.isValidExpiry(then);
+
+        verify(subject).isValidExpiry(timeThen);
+    }
+
+    @Test
+    void delegatesAutoRenewValidation() {
+        final var len = 1234L;
+        final var duration = Duration.newBuilder().setSeconds(len).build();
+
+        final var subject = mock(OptionValidator.class);
+        doCallRealMethod().when(subject).isValidAutoRenewPeriod(len);
+
+        subject.isValidAutoRenewPeriod(len);
+
+        verify(subject).isValidAutoRenewPeriod(duration);
     }
 }

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.grpc;
 
+import com.hedera.node.app.Hedera;
 import com.hedera.pbj.runtime.io.DataBuffer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.MethodDescriptor;
@@ -32,7 +33,7 @@ import java.util.Objects;
 final class DataBufferMarshaller implements MethodDescriptor.Marshaller<DataBuffer> {
     // NOTE: This needs to come from config, but because of the thread local, has to be
     //       static. See Issue #4294
-    private static final int MAX_MESSAGE_SIZE = 1024 * 6; // 6k
+    private static final int MAX_MESSAGE_SIZE = Hedera.MAX_SIGNED_TXN_SIZE;
     private static final int TOO_BIG_MESSAGE_SIZE = MAX_MESSAGE_SIZE + 1;
 
     /**

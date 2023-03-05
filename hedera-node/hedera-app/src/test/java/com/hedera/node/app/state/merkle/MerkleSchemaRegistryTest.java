@@ -141,7 +141,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         /** Utility method that migrates from version 9 to 10 */
         void migrateFromV9ToV10() {
             schemaRegistry.migrate(
-                    new MerkleHederaState(tree -> {}, (e) -> {}, (round, dualState) -> {}),
+                    new MerkleHederaState(tree -> {}, (e, m) -> {}, (round, dualState) -> {}),
                     version(9, 0, 0),
                     version(10, 0, 0));
         }
@@ -155,7 +155,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
 
         @BeforeEach
         void setUp() {
-            merkleTree = new MerkleHederaState(tree -> {}, (e) -> {}, (round, dualState) -> {});
+            merkleTree = new MerkleHederaState(tree -> {}, (e, m) -> {}, (r, ds) -> {});
 
             // Let the first version[0] be null, and all others have a number
             versions = new SemanticVersion[10];
@@ -301,7 +301,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                     @Override
                     @SuppressWarnings("rawtypes")
                     public Set<StateDefinition> statesToCreate() {
-                        final var fruitDef = StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES);
+                        final var fruitDef = StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_CODEC, STRING_CODEC);
                         return Set.of(fruitDef);
                     }
 
@@ -324,8 +324,8 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                     @SuppressWarnings("rawtypes")
                     public Set<StateDefinition> statesToCreate() {
                         final var animalDef =
-                                StateDefinition.onDisk(ANIMAL_STATE_KEY, STRING_SERDES, STRING_SERDES, 100);
-                        final var countryDef = StateDefinition.singleton(COUNTRY_STATE_KEY, STRING_SERDES);
+                                StateDefinition.onDisk(ANIMAL_STATE_KEY, STRING_CODEC, STRING_CODEC, 100);
+                        final var countryDef = StateDefinition.singleton(COUNTRY_STATE_KEY, STRING_CODEC);
                         return Set.of(animalDef, countryDef);
                     }
 

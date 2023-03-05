@@ -169,6 +169,7 @@ import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -189,7 +190,6 @@ import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.fcqueue.FCQueue;
-import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -867,13 +867,8 @@ public final class MiscUtils {
     }
 
     public static <K, V extends MerkleNode & Keyed<K>> void forEach(
-            final MerkleMap<K, V> map, final BiConsumer<? super K, ? super V> action) {
-        map.forEachNode((final MerkleNode node) -> {
-            if (node instanceof Keyed) {
-                final V leaf = node.cast();
-                action.accept(leaf.getKey(), leaf);
-            }
-        });
+            final MerkleMapLike<K, V> map, final BiConsumer<? super K, ? super V> action) {
+        map.forEachNode(action);
     }
 
     public static void putIfNotNull(@Nullable final Map<String, Object> map, final String key, final Object value) {

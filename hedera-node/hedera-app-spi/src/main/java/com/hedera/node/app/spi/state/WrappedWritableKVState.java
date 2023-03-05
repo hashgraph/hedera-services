@@ -48,29 +48,41 @@ public class WrappedWritableKVState<K extends Comparable<K>, V> extends Writable
         this.delegate = Objects.requireNonNull(delegate);
     }
 
+    /** {@inheritDoc} */
     @Override
     protected V getForModifyFromDataSource(@NonNull K key) {
         return delegate.getForModify(key);
     }
 
+    /** {@inheritDoc} */
     @Override
     protected void putIntoDataSource(@NonNull K key, @NonNull V value) {
         delegate.put(key, value);
     }
 
+    /** {@inheritDoc} */
     @Override
     protected void removeFromDataSource(@NonNull K key) {
         delegate.remove(key);
     }
 
+    /** {@inheritDoc} */
     @Override
     protected V readFromDataSource(@NonNull K key) {
         return delegate.get(key);
     }
 
+    /** {@inheritDoc} */
     @NonNull
     @Override
     protected Iterator<K> iterateFromDataSource() {
         return delegate.keys();
+    }
+
+    /** {@inheritDoc} */
+    @NonNull
+    @Override
+    public long sizeOfDataSource() {
+        return delegate.size();
     }
 }

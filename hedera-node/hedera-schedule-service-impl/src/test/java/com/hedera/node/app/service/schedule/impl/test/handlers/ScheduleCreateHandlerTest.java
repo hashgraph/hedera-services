@@ -22,7 +22,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleCreateHandler;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.fixtures.ScheduledTransactionFactory;
-import com.hedera.node.app.spi.meta.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import org.junit.jupiter.api.Test;
 import java.time.Instant;

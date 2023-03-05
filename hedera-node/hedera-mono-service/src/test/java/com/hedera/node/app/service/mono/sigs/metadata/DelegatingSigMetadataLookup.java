@@ -32,6 +32,7 @@ import com.hedera.node.app.service.mono.sigs.metadata.lookups.FileSigMetaLookup;
 import com.hedera.node.app.service.mono.sigs.metadata.lookups.HfsSigMetaLookup;
 import com.hedera.node.app.service.mono.sigs.metadata.lookups.TopicSigMetaLookup;
 import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
@@ -43,7 +44,6 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
-import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.function.Function;
@@ -81,7 +81,7 @@ public final class DelegatingSigMetadataLookup implements SigMetadataLookup {
             final AliasManager aliasManager,
             final HfsSigMetaLookup hfsSigMetaLookup,
             final Supplier<AccountStorageAdapter> accounts,
-            final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
+            final Supplier<MerkleMapLike<EntityNum, MerkleTopic>> topics,
             final Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenLookup,
             final Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleLookup) {
         return new DelegatingSigMetadataLookup(

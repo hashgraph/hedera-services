@@ -26,7 +26,15 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param <K> The type of the state key
  * @param <V> The type of the state value
  */
-public final class StateMetadata<K extends Comparable<K>, V> {
+public final class StateMetadata<K extends Comparable<? super K>, V> {
+    // The application framework reuses the same merkle nodes for different types of encoded data.
+    // When written to saved state, the type of data is determined with a "class ID", which is just
+    // a long. When a saved state is deserialized, the platform will read the "class ID" and then
+    // lookup in ConstructableRegistry the associated class to use for parsing the data.
+    //
+    // We generate class IDs dynamically based on the StateMetadata. The algorithm used for generating
+    // this class ID cannot change in the future, otherwise state already in the saved state file
+    // will not be retrievable!
     private static final String ON_DISK_KEY_CLASS_ID_SUFFIX = "OnDiskKey";
     private static final String ON_DISK_KEY_SERIALIZER_CLASS_ID_SUFFIX = "OnDiskKeySerializer";
     private static final String ON_DISK_VALUE_CLASS_ID_SUFFIX = "OnDiskValue";

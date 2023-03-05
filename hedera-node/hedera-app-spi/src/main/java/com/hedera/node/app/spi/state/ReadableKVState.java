@@ -84,4 +84,11 @@ public interface ReadableKVState<K extends Comparable<K>, V> {
      */
     @NonNull
     Set<K> readKeys();
+
+    /**
+     * Gets the number of keys in the {@link ReadableKVState}.
+     * @return number of keys in the {@link ReadableKVState}.
+     */
+    @NonNull
+    long size();
 }

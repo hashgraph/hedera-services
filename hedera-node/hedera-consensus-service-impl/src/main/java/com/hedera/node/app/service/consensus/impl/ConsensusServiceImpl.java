@@ -16,9 +16,46 @@
 
 package com.hedera.node.app.service.consensus.impl;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.service.consensus.ConsensusService;
+import com.hedera.node.app.service.consensus.impl.serdes.EntityNumCodec;
+import com.hedera.node.app.service.mono.state.codec.MonoMapCodecAdapter;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
+import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.spi.state.Schema;
+import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.hedera.node.app.spi.state.StateDefinition;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Set;
 
 /**
  * Standard implementation of the {@link ConsensusService} {@link com.hedera.node.app.spi.Service}.
  */
-public final class ConsensusServiceImpl implements ConsensusService {}
+public final class ConsensusServiceImpl implements ConsensusService {
+    private static final SemanticVersion CURRENT_VERSION =
+            SemanticVersion.newBuilder().minor(34).build();
+
+    public static final String TOPICS_KEY = "TOPICS";
+
+    @Override
+    public void registerSchemas(@NonNull SchemaRegistry registry) {
+        registry.register(consensusSchema());
+    }
+
+    private Schema consensusSchema() {
+        return new Schema(CURRENT_VERSION) {
+            @NonNull
+            @Override
+            public Set<StateDefinition> statesToCreate() {
+                return Set.of(topicsDef());
+            }
+        };
+    }
+
+    private StateDefinition<EntityNum, MerkleTopic> topicsDef() {
+        final var keySerdes = new EntityNumCodec();
+        final var valueSerdes =
+                MonoMapCodecAdapter.codecForSelfSerializable(MerkleTopic.CURRENT_VERSION, MerkleTopic::new);
+        return StateDefinition.inMemory(TOPICS_KEY, keySerdes, valueSerdes);
+    }
+}

@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.token.CryptoGetInfoResponse;
 import com.hedera.hapi.node.transaction.Query;
@@ -62,7 +63,7 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      * @throws PreCheckException if validation fails
      */
-    public void validate(@NonNull final Query query) throws PreCheckException {
+    public ResponseCodeEnum validate(@NonNull final Query query) throws PreCheckException {
         throw new UnsupportedOperationException("Not implemented");
     }
 

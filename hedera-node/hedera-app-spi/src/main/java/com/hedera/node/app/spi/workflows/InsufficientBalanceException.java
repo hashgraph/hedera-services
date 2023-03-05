@@ -20,8 +20,8 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * An {@code InsufficientBalanceException} is a {@link PreCheckException} that is thrown, when the
- * balance is not sufficient. It provides the {@link #estimatedFee}.
+ * An {@code InsufficientBalanceException} is a {@link PreCheckException} that is thrown, when the balance is not
+ * sufficient. It provides the {@link #estimatedFee}.
  */
 public class InsufficientBalanceException extends PreCheckException {
 

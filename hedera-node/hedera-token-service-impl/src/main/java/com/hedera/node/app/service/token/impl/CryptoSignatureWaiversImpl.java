@@ -18,14 +18,14 @@ package com.hedera.node.app.service.token.impl;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
+import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.commons.lang3.NotImplementedException;
 
 /**
- * A Singleton implementation of signature waivers needed for transactions in {@link CryptoService}.
+ * A Singleton implementation of signature waivers needed for transactions in {@link TokenService}.
  * NOTE: FUTURE - These will be implemented in the coming PR and this class should be a singleton.
  */
 public class CryptoSignatureWaiversImpl implements CryptoSignatureWaivers {

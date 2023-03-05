@@ -1,6 +1,5 @@
 module com.hedera.node.app.spi.fixtures {
     exports com.hedera.node.app.spi.fixtures;
-    exports com.hedera.node.app.spi.fixtures.meta;
     exports com.hedera.node.app.spi.fixtures.state;
 
     requires com.hedera.node.app.spi;

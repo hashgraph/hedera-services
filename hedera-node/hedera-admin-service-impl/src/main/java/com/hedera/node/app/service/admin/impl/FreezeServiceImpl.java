@@ -17,6 +17,13 @@
 package com.hedera.node.app.service.admin.impl;
 
 import com.hedera.node.app.service.admin.FreezeService;
+import com.hedera.node.app.spi.state.SchemaRegistry;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
-/** Standard implementation of the {@link FreezeService}. */
-public final class FreezeServiceImpl implements FreezeService {}
+/** Standard implementation of the {@link FreezeService} {@link com.hedera.node.app.spi.Service}. */
+public final class FreezeServiceImpl implements FreezeService {
+    @Override
+    public void registerSchemas(@NonNull SchemaRegistry registry) {
+        // No-op
+    }
+}

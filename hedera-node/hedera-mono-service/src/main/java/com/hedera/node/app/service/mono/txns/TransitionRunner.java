@@ -46,6 +46,7 @@ import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
 import javax.inject.Inject;
@@ -54,7 +55,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 @Singleton
-public class TransitionRunner {
+public class TransitionRunner implements TransactionLastStep {
     private static final Logger log = LogManager.getLogger(TransitionRunner.class);
 
     /**
@@ -85,8 +86,8 @@ public class TransitionRunner {
             UtilPrng);
 
     private final EntityIdSource ids;
-    private final TransactionContext txnCtx;
     private final TransitionLogicLookup lookup;
+    protected final TransactionContext txnCtx;
 
     @Inject
     public TransitionRunner(
@@ -124,7 +125,7 @@ public class TransitionRunner {
                     txnCtx.setStatus(SUCCESS);
                 }
             } catch (final InvalidTransactionException e) {
-                resolveFailure(e, accessor);
+                resolveFailure(e.getResponseCode(), accessor, e);
             } catch (final Exception processFailure) {
                 ids.reclaimProvisionalIds();
                 throw processFailure;
@@ -133,8 +134,7 @@ public class TransitionRunner {
         }
     }
 
-    private void resolveFailure(final InvalidTransactionException e, final TxnAccessor accessor) {
-        final var code = e.getResponseCode();
+    protected void resolveFailure(final ResponseCodeEnum code, final TxnAccessor accessor, final RuntimeException e) {
         if (code == FAIL_INVALID) {
             log.warn("Avoidable failure while handling {}", accessor.getSignedTxnWrapper(), e);
         }

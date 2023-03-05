@@ -68,7 +68,7 @@ import java.util.Set;
 import java.util.SortedMap;
 
 public class OnDiskAccount implements VirtualValue, HederaAccount {
-    private static final int CURRENT_VERSION = 1;
+    public static final int CURRENT_VERSION = 1;
     private static final long CLASS_ID = 0xc88e3a5c7b497468L;
 
     private static final String EMPTY_MEMO = "";

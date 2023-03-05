@@ -20,7 +20,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.SigWaivers;
 
-/** Signature waivers needed for transactions in {@link CryptoService} */
+/** Signature waivers needed for transactions in {@link TokenService} */
 public interface CryptoSignatureWaivers extends SigWaivers {
     /**
      * Advises if the target account's key must sign a given crypto update. Since accounts 0.0.2 and

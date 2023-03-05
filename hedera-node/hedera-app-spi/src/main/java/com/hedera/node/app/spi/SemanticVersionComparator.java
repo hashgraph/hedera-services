@@ -26,8 +26,7 @@ import java.util.Comparator;
  * can remove this class.
  */
 public class SemanticVersionComparator {
-    public static final Comparator<SemanticVersion> INSTANCE = Comparator
-            .comparingInt(SemanticVersion::major)
+    public static final Comparator<SemanticVersion> INSTANCE = Comparator.comparingInt(SemanticVersion::major)
             .thenComparingInt(SemanticVersion::minor)
             .thenComparingInt(SemanticVersion::patch);
 
