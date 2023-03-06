@@ -169,7 +169,6 @@ public class SyncManagerTest {
         Settings.getInstance().setEventIntakeQueueThrottleSize(100);
         Settings.getInstance().setMaxIncomingSyncsInc(10);
         Settings.getInstance().setMaxOutgoingSyncs(10);
-        Settings.getInstance().setTransThrottle(true);
         Settings.getInstance().getState().saveStatePeriod = 100;
         Settings.getInstance().setStaleEventPreventionThreshold(10);
     }
@@ -284,84 +283,6 @@ public class SyncManagerTest {
             assertEquals(next.size(), 1);
             assertTrue(next.get(0) > 0 && next.get(0) <= 100);
         }
-    }
-
-    /**
-     * Verify the behavior of SyncManager's transThrottleCallAndCreate function
-     */
-    @ParameterizedTest
-    @MethodSource("swirldStateManagers")
-    @Order(4)
-    void transThrottleCallAndCreate(final SwirldStateManager swirldStateManager) {
-        final State consState = mock(State.class);
-        final PlatformDualState dualState = mock(PlatformDualState.class);
-        doReturn(dualState).when(consState).getPlatformDualState();
-        doReturn(consState).when(swirldStateManager).getConsensusState();
-
-        final SyncManagerTestData test = new SyncManagerTestData(swirldStateManager);
-        resetTestSettings();
-
-        // syncManager.transThrottleCallAndCreate() == true --> we should initiate a sync
-        // syncManager.transThrottleCallAndCreate() == false --> we should NOT initiate a sync
-
-        assertTrue(test.syncManager.transThrottleCallAndCreate(), "By default we should be able to initiate a sync");
-
-        // With no events, we should be able to sync until after 10 successful syncs
-        for (int i = 0; i < 9; i++) {
-            test.syncManager.successfulSync();
-            assertTrue(
-                    test.syncManager.transThrottleCallAndCreate(),
-                    "With no events, we should be able to sync until after 10 successful syncs");
-        }
-
-        // Once we sync once more we are out of the start up period and will not be allowed to sync
-        test.syncManager.successfulSync();
-        assertFalse(
-                test.syncManager.transThrottleCallAndCreate(),
-                "Once we sync once more we are out of the start up period and will not be allowed to sync");
-
-        // Turning off transThrottle in the settings will cause all syncs to be allowed.
-        Settings.getInstance().setTransThrottle(false);
-        assertTrue(
-                test.syncManager.transThrottleCallAndCreate(),
-                "Turning off transThrottle in the settings will cause all syncs to be allowed");
-        Settings.getInstance().setTransThrottle(true);
-        assertFalse(test.syncManager.transThrottleCallAndCreate());
-
-        // If there are non-consensus user transactions then we want to initiate a sync
-        test.hashgraph.numUserTransEvents = 1;
-        assertTrue(
-                test.syncManager.transThrottleCallAndCreate(),
-                "If there are non-consensus user transactions then we want to initiate a sync");
-        test.hashgraph.numUserTransEvents = 0;
-        assertFalse(test.syncManager.transThrottleCallAndCreate());
-
-        // If there are transactions waiting to be put into an event then initiate a sync
-        doReturn(1).when(test.eventTransactionPool).numTransForEvent();
-        assertTrue(
-                test.syncManager.transThrottleCallAndCreate(),
-                "If there are transactions waiting to be put into an event then initiate a sync");
-        doReturn(0).when(test.eventTransactionPool).numTransForEvent();
-        assertFalse(test.syncManager.transThrottleCallAndCreate());
-
-        // if current time is 1 minute before or during the freeze period, initiate a sync
-        doReturn(true).when(dualState).isInFreezePeriod(any(Instant.class));
-        assertTrue(
-                test.syncManager.transThrottleCallAndCreate(),
-                "if current time is 1 minute before or during the freeze period, initiate a sync");
-        doReturn(false).when(dualState).isInFreezePeriod(any(Instant.class));
-        assertFalse(test.syncManager.transThrottleCallAndCreate());
-
-        // We need to sync until we have a saved state that has processed all transactions
-        test.hashgraph.lastRoundReceivedAllTransCons = 10;
-        test.lastRoundSavedToDisk = 9L;
-        assertTrue(
-                test.syncManager.transThrottleCallAndCreate(),
-                "We need to sync until we have a saved state that has processed all transactions");
-        test.lastRoundSavedToDisk = 10L;
-        assertFalse(test.syncManager.transThrottleCallAndCreate());
-        test.lastRoundSavedToDisk = 11L;
-        assertFalse(test.syncManager.transThrottleCallAndCreate());
     }
 
     /**
@@ -480,9 +401,6 @@ public class SyncManagerTest {
                 test.syncManager.shouldCreateEvent(OTHER_ID, false, eventsRead, eventsWritten),
                 "when freezeManager.shouldNotCreateEvent returns true , should not create events");
         when(test.freezeManager.shouldCreateEvent()).thenReturn(PASS);
-
-        // set transThrottle to be false, to make transThrottleCallAndCreate() return true
-        Settings.getInstance().setTransThrottle(false);
 
         assertTrue(
                 test.syncManager.shouldCreateEvent(OTHER_ID, false, eventsRead, eventsWritten),
