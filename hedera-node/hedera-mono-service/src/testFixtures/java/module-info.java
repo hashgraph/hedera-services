@@ -21,4 +21,5 @@ module com.hedera.node.app.service.mono.testFixtures {
     requires com.hedera.node.app.spi;
     requires com.google.common;
     requires com.github.spotbugs.annotations;
+    requires com.hedera.pbj.runtime;
 }
