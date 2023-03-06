@@ -89,9 +89,10 @@ class EntityNumValueTest {
     @Test
     void cannotDeserializeForImmutableValue() {
         final var immutable = subject.asReadOnly();
-        assertThrows(MutabilityException.class, () -> immutable.deserialize(ByteBuffer.allocate(0), 1));
-        assertThrows(
-                MutabilityException.class, () -> immutable.deserialize(mock(SerializableDataInputStream.class), 1));
+        final var buffer = ByteBuffer.allocate(0);
+        assertThrows(MutabilityException.class, () -> immutable.deserialize(buffer, 1));
+        final var in = mock(SerializableDataInputStream.class);
+        assertThrows(MutabilityException.class, () -> immutable.deserialize(in, 1));
     }
 
     @Test
