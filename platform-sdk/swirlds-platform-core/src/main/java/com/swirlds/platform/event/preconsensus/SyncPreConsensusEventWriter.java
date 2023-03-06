@@ -17,8 +17,8 @@
 package com.swirlds.platform.event.preconsensus;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
+import com.swirlds.common.threading.CountUpLatch;
 import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.LongRunningAverage;
 import com.swirlds.common.utility.Startable;
@@ -112,7 +112,7 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
     /**
      * The highest event sequence number that has been flushed.
      */
-    private long lastFlushedEvent = -1;
+    private CountUpLatch lastFlushedEvent = new CountUpLatch(-1);
 
     /**
      * Events that should be flushed ASAP.
@@ -240,22 +240,19 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
             // Stale events are not written to disk.
             return false;
         }
-        return event.getStreamSequenceNumber() <= lastFlushedEvent;
+        return event.getStreamSequenceNumber() <= lastFlushedEvent.getCount();
     }
-
-    // TODO can this be done without a busy wait?
 
     /**
      * {@inheritDoc}
      */
     @Override
     public void waitUntilDurable(final EventImpl event) throws InterruptedException {
-        while (!isEventDurable(event)) {
-            if (event.getStreamSequenceNumber() == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
-                throw new IllegalStateException("Event is stale and will never be durable");
-            }
-            NANOSECONDS.sleep(1);
+        if (event.getStreamSequenceNumber() == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
+            throw new IllegalStateException("Event is stale and will never be durable");
         }
+
+        lastFlushedEvent.await(event.getStreamSequenceNumber());
     }
 
     /**
@@ -263,18 +260,11 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      */
     @Override
     public boolean waitUntilDurable(final EventImpl event, final Duration timeToWait) throws InterruptedException {
-        final long endTime = time.nanoTime() + timeToWait.toNanos();
-        while (time.nanoTime() < endTime) {
-            if (isEventDurable(event)) {
-                return true;
-            }
-            if (event.getStreamSequenceNumber() == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
-                throw new IllegalStateException("Event is stale and will never be durable");
-            }
-            NANOSECONDS.sleep(1);
+        if (event.getStreamSequenceNumber() == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
+            throw new IllegalStateException("Event is stale and will never be durable");
         }
 
-        return false;
+        return lastFlushedEvent.await(event.getStreamSequenceNumber(), timeToWait);
     }
 
     /**
@@ -292,7 +282,7 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      * Mark all unflushed events as durable.
      */
     private void markEventsAsFlushed() {
-        lastFlushedEvent = lastWrittenEvent;
+        lastFlushedEvent.set(lastWrittenEvent);
     }
 
     /**
@@ -306,7 +296,7 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
             throw new IllegalStateException("Event is stale and will never be written to disk");
         }
 
-        if (lastFlushedEvent >= eventSequenceNumber) {
+        if (lastFlushedEvent.getCount() >= eventSequenceNumber) {
             // The event has already been flushed.
             return;
         }
