@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -236,6 +237,7 @@ class EventStreamRoundIteratorTest {
 
     @Test
     @DisplayName("Read All Events Truncated File Test")
+    @Disabled("Fails Randomly in Github PRs. https://github.com/hashgraph/hedera-services/issues/5450")
     void readAllEventsTruncatedFileTest() throws ConstructableRegistryException, IOException, NoSuchAlgorithmException {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
@@ -282,6 +284,7 @@ class EventStreamRoundIteratorTest {
 
     @Test
     @DisplayName("Read Complete Rounds Truncated File Test")
+    @Disabled("Fails Randomly in Github PRs. https://github.com/hashgraph/hedera-services/issues/5450")
     void readCompleteRoundsTruncatedFileTest()
             throws ConstructableRegistryException, IOException, NoSuchAlgorithmException {
 
