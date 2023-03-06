@@ -301,4 +301,27 @@ public class MerkleDbTest {
         dataSource.close();
         dataSource2.close();
     }
+
+    @Test
+    @DisplayName("Restore with no shared dir")
+    public void testRestoreNoSharedDir() throws IOException {
+        final MerkleDb instance = MerkleDb.getDefaultInstance();
+        final String tableName = "tableh";
+        final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
+        final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource =
+                instance.createDataSource(tableName, tableConfig, false);
+        Assertions.assertNotNull(dataSource);
+        dataSource.close();
+
+        final Path snapshotDir = TemporaryFileBuilder.buildTemporaryFile();
+        instance.snapshot(snapshotDir);
+        // Make sure the instance can be restored even without the shared dir. In the future this
+        // test may need to be removed, when the shared folder becomes mandatory to exist
+        Files.delete(snapshotDir.resolve("shared"));
+
+        final Path newDir = TemporaryFileBuilder.buildTemporaryFile();
+        final MerkleDb instance2 = MerkleDb.restore(snapshotDir, newDir);
+        Assertions.assertTrue(Files.exists(instance2.getSharedDir()));
+
+    }
 }
