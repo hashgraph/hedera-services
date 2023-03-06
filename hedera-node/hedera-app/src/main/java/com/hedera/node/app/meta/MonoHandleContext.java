@@ -94,7 +94,7 @@ public class MonoHandleContext implements HandleContext {
         return expiryValidator;
     }
 
-    private static class MonoAttributeValidator implements AttributeValidator {
+    private static final class MonoAttributeValidator implements AttributeValidator {
         private final OptionValidator optionValidator;
 
         private MonoAttributeValidator(final OptionValidator optionValidator) {
