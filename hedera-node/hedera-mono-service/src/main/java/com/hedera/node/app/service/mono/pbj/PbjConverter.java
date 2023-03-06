@@ -25,6 +25,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -653,5 +654,332 @@ public final class PbjConverter {
                 .setSeconds(now.seconds())
                 .setNanos(now.nanos())
                 .build();
+    }
+
+    public static com.hederahashgraph.api.proto.java.TopicID fromPbj(TopicID id) {
+        return com.hederahashgraph.api.proto.java.TopicID.newBuilder()
+                .setShardNum(id.shardNum())
+                .setRealmNum(id.realmNum())
+                .setTopicNum(id.topicNum())
+                .build();
+    }
+
+    public static com.hederahashgraph.api.proto.java.ResponseCodeEnum fromPbj(ResponseCodeEnum status) {
+        return switch (status) {
+            case OK -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+            case INVALID_TRANSACTION -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
+            case PAYER_ACCOUNT_NOT_FOUND -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
+            case INVALID_NODE_ACCOUNT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
+            case TRANSACTION_EXPIRED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
+            case INVALID_TRANSACTION_START -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_START;
+            case INVALID_TRANSACTION_DURATION -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
+            case INVALID_SIGNATURE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+            case MEMO_TOO_LONG -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
+            case INSUFFICIENT_TX_FEE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+            case INSUFFICIENT_PAYER_BALANCE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+            case DUPLICATE_TRANSACTION -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+            case BUSY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+            case NOT_SUPPORTED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+            case INVALID_FILE_ID -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+            case INVALID_ACCOUNT_ID -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+            case INVALID_CONTRACT_ID -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+            case INVALID_TRANSACTION_ID -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_ID;
+            case RECEIPT_NOT_FOUND -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECEIPT_NOT_FOUND;
+            case RECORD_NOT_FOUND -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
+            case INVALID_SOLIDITY_ID -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ID;
+            case UNKNOWN -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
+            case SUCCESS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+            case FAIL_INVALID -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+            case FAIL_FEE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_FEE;
+            case FAIL_BALANCE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_BALANCE;
+            case KEY_REQUIRED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
+            case BAD_ENCODING -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
+            case INSUFFICIENT_ACCOUNT_BALANCE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+            case INVALID_SOLIDITY_ADDRESS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
+            case INSUFFICIENT_GAS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
+            case CONTRACT_SIZE_LIMIT_EXCEEDED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_SIZE_LIMIT_EXCEEDED;
+            case LOCAL_CALL_MODIFICATION_EXCEPTION -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
+            case CONTRACT_REVERT_EXECUTED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+            case CONTRACT_EXECUTION_EXCEPTION -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
+            case INVALID_RECEIVING_NODE_ACCOUNT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
+            case MISSING_QUERY_HEADER -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_QUERY_HEADER;
+            case ACCOUNT_UPDATE_FAILED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_UPDATE_FAILED;
+            case INVALID_KEY_ENCODING -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KEY_ENCODING;
+            case NULL_SOLIDITY_ADDRESS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.NULL_SOLIDITY_ADDRESS;
+            case CONTRACT_UPDATE_FAILED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_UPDATE_FAILED;
+            case INVALID_QUERY_HEADER -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_QUERY_HEADER;
+            case INVALID_FEE_SUBMITTED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SUBMITTED;
+            case INVALID_PAYER_SIGNATURE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
+            case KEY_NOT_PROVIDED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_NOT_PROVIDED;
+            case INVALID_EXPIRATION_TIME -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+            case NO_WACL_KEY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_WACL_KEY;
+            case FILE_CONTENT_EMPTY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_CONTENT_EMPTY;
+            case INVALID_ACCOUNT_AMOUNTS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
+            case EMPTY_TRANSACTION_BODY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TRANSACTION_BODY;
+            case INVALID_TRANSACTION_BODY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+            case INVALID_SIGNATURE_TYPE_MISMATCHING_KEY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE_TYPE_MISMATCHING_KEY;
+            case INVALID_SIGNATURE_COUNT_MISMATCHING_KEY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE_COUNT_MISMATCHING_KEY;
+            case EMPTY_LIVE_HASH_BODY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_LIVE_HASH_BODY;
+            case EMPTY_LIVE_HASH -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_LIVE_HASH;
+            case EMPTY_LIVE_HASH_KEYS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_LIVE_HASH_KEYS;
+            case INVALID_LIVE_HASH_SIZE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_LIVE_HASH_SIZE;
+            case EMPTY_QUERY_BODY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_QUERY_BODY;
+            case EMPTY_LIVE_HASH_QUERY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_LIVE_HASH_QUERY;
+            case LIVE_HASH_NOT_FOUND -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.LIVE_HASH_NOT_FOUND;
+            case ACCOUNT_ID_DOES_NOT_EXIST -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
+            case LIVE_HASH_ALREADY_EXISTS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.LIVE_HASH_ALREADY_EXISTS;
+            case INVALID_FILE_WACL -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_WACL;
+            case SERIALIZATION_FAILED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIALIZATION_FAILED;
+            case TRANSACTION_OVERSIZE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
+            case TRANSACTION_TOO_MANY_LAYERS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_TOO_MANY_LAYERS;
+            case CONTRACT_DELETED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
+            case PLATFORM_NOT_ACTIVE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
+            case KEY_PREFIX_MISMATCH -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
+            case PLATFORM_TRANSACTION_NOT_CREATED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
+            case INVALID_RENEWAL_PERIOD -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
+            case INVALID_PAYER_ACCOUNT_ID -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+            case ACCOUNT_DELETED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+            case FILE_DELETED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
+            case ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
+            case SETTING_NEGATIVE_ACCOUNT_BALANCE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.SETTING_NEGATIVE_ACCOUNT_BALANCE;
+            case OBTAINER_REQUIRED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_REQUIRED;
+            case OBTAINER_SAME_CONTRACT_ID -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
+            case OBTAINER_DOES_NOT_EXIST -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_DOES_NOT_EXIST;
+            case MODIFYING_IMMUTABLE_CONTRACT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
+            case FILE_SYSTEM_EXCEPTION -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_SYSTEM_EXCEPTION;
+            case AUTORENEW_DURATION_NOT_IN_RANGE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
+            case ERROR_DECODING_BYTESTRING -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.ERROR_DECODING_BYTESTRING;
+            case CONTRACT_FILE_EMPTY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
+            case CONTRACT_BYTECODE_EMPTY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_BYTECODE_EMPTY;
+            case INVALID_INITIAL_BALANCE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_INITIAL_BALANCE;
+            case INVALID_RECEIVE_RECORD_THRESHOLD -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
+            case INVALID_SEND_RECORD_THRESHOLD -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SEND_RECORD_THRESHOLD;
+            case ACCOUNT_IS_NOT_GENESIS_ACCOUNT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_NOT_GENESIS_ACCOUNT;
+            case PAYER_ACCOUNT_UNAUTHORIZED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_UNAUTHORIZED;
+            case INVALID_FREEZE_TRANSACTION_BODY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
+            case FREEZE_TRANSACTION_BODY_NOT_FOUND -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_TRANSACTION_BODY_NOT_FOUND;
+            case TRANSFER_LIST_SIZE_LIMIT_EXCEEDED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
+            case RESULT_SIZE_LIMIT_EXCEEDED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.RESULT_SIZE_LIMIT_EXCEEDED;
+            case NOT_SPECIAL_ACCOUNT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SPECIAL_ACCOUNT;
+            case CONTRACT_NEGATIVE_GAS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
+            case CONTRACT_NEGATIVE_VALUE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
+            case INVALID_FEE_FILE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_FILE;
+            case INVALID_EXCHANGE_RATE_FILE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXCHANGE_RATE_FILE;
+            case INSUFFICIENT_LOCAL_CALL_GAS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_LOCAL_CALL_GAS;
+            case ENTITY_NOT_ALLOWED_TO_DELETE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
+            case AUTHORIZATION_FAILED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
+            case FILE_UPLOADED_PROTO_INVALID -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_UPLOADED_PROTO_INVALID;
+            case FILE_UPLOADED_PROTO_NOT_SAVED_TO_DISK -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_UPLOADED_PROTO_NOT_SAVED_TO_DISK;
+            case FEE_SCHEDULE_FILE_PART_UPLOADED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED;
+            case EXCHANGE_RATE_CHANGE_LIMIT_EXCEEDED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXCHANGE_RATE_CHANGE_LIMIT_EXCEEDED;
+            case MAX_CONTRACT_STORAGE_EXCEEDED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
+            case TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT;
+            case TOTAL_LEDGER_BALANCE_INVALID -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOTAL_LEDGER_BALANCE_INVALID;
+            case EXPIRATION_REDUCTION_NOT_ALLOWED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
+            case MAX_GAS_LIMIT_EXCEEDED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
+            case MAX_FILE_SIZE_EXCEEDED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED;
+            case RECEIVER_SIG_REQUIRED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECEIVER_SIG_REQUIRED;
+            case INVALID_TOPIC_ID -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
+            case INVALID_ADMIN_KEY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
+            case INVALID_SUBMIT_KEY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SUBMIT_KEY;
+            case UNAUTHORIZED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
+            case INVALID_TOPIC_MESSAGE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_MESSAGE;
+            case INVALID_AUTORENEW_ACCOUNT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+            case AUTORENEW_ACCOUNT_NOT_ALLOWED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_ACCOUNT_NOT_ALLOWED;
+            case TOPIC_EXPIRED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOPIC_EXPIRED;
+            case INVALID_CHUNK_NUMBER -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
+            case INVALID_CHUNK_TRANSACTION_ID -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID;
+            case ACCOUNT_FROZEN_FOR_TOKEN -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
+            case TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
+            case INVALID_TOKEN_ID -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+            case INVALID_TOKEN_DECIMALS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_DECIMALS;
+            case INVALID_TOKEN_INITIAL_SUPPLY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_INITIAL_SUPPLY;
+            case INVALID_TREASURY_ACCOUNT_FOR_TOKEN -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+            case INVALID_TOKEN_SYMBOL -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_SYMBOL;
+            case TOKEN_HAS_NO_FREEZE_KEY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
+            case TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
+            case MISSING_TOKEN_SYMBOL -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
+            case TOKEN_SYMBOL_TOO_LONG -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
+            case ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
+            case TOKEN_HAS_NO_KYC_KEY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
+            case INSUFFICIENT_TOKEN_BALANCE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
+            case TOKEN_WAS_DELETED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
+            case TOKEN_HAS_NO_SUPPLY_KEY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
+            case TOKEN_HAS_NO_WIPE_KEY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
+            case INVALID_TOKEN_MINT_AMOUNT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
+            case INVALID_TOKEN_BURN_AMOUNT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
+            case TOKEN_NOT_ASSOCIATED_TO_ACCOUNT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+            case CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
+            case INVALID_KYC_KEY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KYC_KEY;
+            case INVALID_WIPE_KEY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPE_KEY;
+            case INVALID_FREEZE_KEY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_KEY;
+            case INVALID_SUPPLY_KEY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SUPPLY_KEY;
+            case MISSING_TOKEN_NAME -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_NAME;
+            case TOKEN_NAME_TOO_LONG -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
+            case INVALID_WIPING_AMOUNT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
+            case TOKEN_IS_IMMUTABLE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
+            case TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
+            case TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
+            case ACCOUNT_IS_TREASURY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+            case TOKEN_ID_REPEATED_IN_TOKEN_LIST -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
+            case TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
+            case EMPTY_TOKEN_TRANSFER_BODY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_BODY;
+            case EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
+            case INVALID_SCHEDULE_ID -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+            case SCHEDULE_IS_IMMUTABLE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
+            case INVALID_SCHEDULE_PAYER_ID -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID;
+            case INVALID_SCHEDULE_ACCOUNT_ID -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ACCOUNT_ID;
+            case NO_NEW_VALID_SIGNATURES -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
+            case UNRESOLVABLE_REQUIRED_SIGNERS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
+            case SCHEDULED_TRANSACTION_NOT_IN_WHITELIST -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
+            case SOME_SIGNATURES_WERE_INVALID -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
+            case TRANSACTION_ID_FIELD_NOT_ALLOWED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
+            case IDENTICAL_SCHEDULE_ALREADY_CREATED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
+            case INVALID_ZERO_BYTE_IN_STRING -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
+            case SCHEDULE_ALREADY_DELETED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_DELETED;
+            case SCHEDULE_ALREADY_EXECUTED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
+            case MESSAGE_SIZE_TOO_LARGE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE;
+            case OPERATION_REPEATED_IN_BUCKET_GROUPS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.OPERATION_REPEATED_IN_BUCKET_GROUPS;
+            case BUCKET_CAPACITY_OVERFLOW -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUCKET_CAPACITY_OVERFLOW;
+            case NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION;
+            case BUCKET_HAS_NO_THROTTLE_GROUPS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUCKET_HAS_NO_THROTTLE_GROUPS;
+            case THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC;
+            case SUCCESS_BUT_MISSING_EXPECTED_OPERATION -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
+            case UNPARSEABLE_THROTTLE_DEFINITIONS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNPARSEABLE_THROTTLE_DEFINITIONS;
+            case INVALID_THROTTLE_DEFINITIONS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_THROTTLE_DEFINITIONS;
+            case ACCOUNT_EXPIRED_AND_PENDING_REMOVAL -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+            case INVALID_TOKEN_MAX_SUPPLY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MAX_SUPPLY;
+            case INVALID_TOKEN_NFT_SERIAL_NUMBER -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
+            case INVALID_NFT_ID -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
+            case METADATA_TOO_LONG -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.METADATA_TOO_LONG;
+            case BATCH_SIZE_LIMIT_EXCEEDED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
+            case INVALID_QUERY_RANGE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_QUERY_RANGE;
+            case FRACTION_DIVIDES_BY_ZERO -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
+            case INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
+            case CUSTOM_FEES_LIST_TOO_LONG -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
+            case INVALID_CUSTOM_FEE_COLLECTOR -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
+            case INVALID_TOKEN_ID_IN_CUSTOM_FEES -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
+            case TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
+            case TOKEN_MAX_SUPPLY_REACHED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_MAX_SUPPLY_REACHED;
+            case SENDER_DOES_NOT_OWN_NFT_SERIAL_NO -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
+            case CUSTOM_FEE_NOT_FULLY_SPECIFIED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
+            case CUSTOM_FEE_MUST_BE_POSITIVE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
+            case TOKEN_HAS_NO_FEE_SCHEDULE_KEY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
+            case CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
+            case ROYALTY_FRACTION_CANNOT_EXCEED_ONE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.ROYALTY_FRACTION_CANNOT_EXCEED_ONE;
+            case FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
+            case CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES;
+            case CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
+            case CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
+            case INVALID_CUSTOM_FEE_SCHEDULE_KEY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
+            case INVALID_TOKEN_MINT_METADATA -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_METADATA;
+            case INVALID_TOKEN_BURN_METADATA -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_METADATA;
+            case CURRENT_TREASURY_STILL_OWNS_NFTS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.CURRENT_TREASURY_STILL_OWNS_NFTS;
+            case ACCOUNT_STILL_OWNS_NFTS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
+            case TREASURY_MUST_OWN_BURNED_NFT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TREASURY_MUST_OWN_BURNED_NFT;
+            case ACCOUNT_DOES_NOT_OWN_WIPED_NFT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DOES_NOT_OWN_WIPED_NFT;
+            case ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
+            case MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED;
+            case PAYER_ACCOUNT_DELETED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
+            case CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
+            case CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
+            case INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
+            case SERIAL_NUMBER_LIMIT_REACHED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIAL_NUMBER_LIMIT_REACHED;
+            case CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE;
+            case NO_REMAINING_AUTOMATIC_ASSOCIATIONS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
+            case EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
+            case REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+            case TOKEN_IS_PAUSED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
+            case TOKEN_HAS_NO_PAUSE_KEY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
+            case INVALID_PAUSE_KEY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAUSE_KEY;
+            case FREEZE_UPDATE_FILE_DOES_NOT_EXIST -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_UPDATE_FILE_DOES_NOT_EXIST;
+            case FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH;
+            case NO_UPGRADE_HAS_BEEN_PREPARED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_UPGRADE_HAS_BEEN_PREPARED;
+            case NO_FREEZE_IS_SCHEDULED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_FREEZE_IS_SCHEDULED;
+            case UPDATE_FILE_HASH_CHANGED_SINCE_PREPARE_UPGRADE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .UPDATE_FILE_HASH_CHANGED_SINCE_PREPARE_UPGRADE;
+            case FREEZE_START_TIME_MUST_BE_FUTURE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_START_TIME_MUST_BE_FUTURE;
+            case PREPARED_UPDATE_FILE_IS_IMMUTABLE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.PREPARED_UPDATE_FILE_IS_IMMUTABLE;
+            case FREEZE_ALREADY_SCHEDULED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_ALREADY_SCHEDULED;
+            case FREEZE_UPGRADE_IN_PROGRESS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_UPGRADE_IN_PROGRESS;
+            case UPDATE_FILE_ID_DOES_NOT_MATCH_PREPARED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.UPDATE_FILE_ID_DOES_NOT_MATCH_PREPARED;
+            case UPDATE_FILE_HASH_DOES_NOT_MATCH_PREPARED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.UPDATE_FILE_HASH_DOES_NOT_MATCH_PREPARED;
+            case CONSENSUS_GAS_EXHAUSTED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
+            case REVERTED_SUCCESS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
+            case MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
+            case INVALID_ALIAS_KEY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
+            case UNEXPECTED_TOKEN_DECIMALS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNEXPECTED_TOKEN_DECIMALS;
+            case INVALID_PROXY_ACCOUNT_ID -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PROXY_ACCOUNT_ID;
+            case INVALID_TRANSFER_ACCOUNT_ID -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
+            case INVALID_FEE_COLLECTOR_ACCOUNT_ID -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_COLLECTOR_ACCOUNT_ID;
+            case ALIAS_IS_IMMUTABLE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_IS_IMMUTABLE;
+            case SPENDER_ACCOUNT_SAME_AS_OWNER -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER;
+            case AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
+            case NEGATIVE_ALLOWANCE_AMOUNT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
+            case CANNOT_APPROVE_FOR_ALL_FUNGIBLE_COMMON -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_APPROVE_FOR_ALL_FUNGIBLE_COMMON;
+            case SPENDER_DOES_NOT_HAVE_ALLOWANCE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
+            case AMOUNT_EXCEEDS_ALLOWANCE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
+            case MAX_ALLOWANCES_EXCEEDED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
+            case EMPTY_ALLOWANCES -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
+            case SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
+            case REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
+            case FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
+            case NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
+            case INVALID_ALLOWANCE_OWNER_ID -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+            case INVALID_ALLOWANCE_SPENDER_ID -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
+            case REPEATED_ALLOWANCES_TO_DELETE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.REPEATED_ALLOWANCES_TO_DELETE;
+            case INVALID_DELEGATING_SPENDER -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
+            case DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL;
+            case DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL;
+            case SCHEDULE_EXPIRATION_TIME_TOO_FAR_IN_FUTURE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .SCHEDULE_EXPIRATION_TIME_TOO_FAR_IN_FUTURE;
+            case SCHEDULE_EXPIRATION_TIME_MUST_BE_HIGHER_THAN_CONSENSUS_TIME -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .SCHEDULE_EXPIRATION_TIME_MUST_BE_HIGHER_THAN_CONSENSUS_TIME;
+            case SCHEDULE_FUTURE_THROTTLE_EXCEEDED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_FUTURE_THROTTLE_EXCEEDED;
+            case SCHEDULE_FUTURE_GAS_LIMIT_EXCEEDED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_FUTURE_GAS_LIMIT_EXCEEDED;
+            case INVALID_ETHEREUM_TRANSACTION -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
+            case WRONG_CHAIN_ID -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_CHAIN_ID;
+            case WRONG_NONCE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_NONCE;
+            case ACCESS_LIST_UNSUPPORTED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCESS_LIST_UNSUPPORTED;
+            case SCHEDULE_PENDING_EXPIRATION -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_PENDING_EXPIRATION;
+            case CONTRACT_IS_TOKEN_TREASURY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_IS_TOKEN_TREASURY;
+            case CONTRACT_HAS_NON_ZERO_TOKEN_BALANCES -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_HAS_NON_ZERO_TOKEN_BALANCES;
+            case CONTRACT_EXPIRED_AND_PENDING_REMOVAL -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXPIRED_AND_PENDING_REMOVAL;
+            case CONTRACT_HAS_NO_AUTO_RENEW_ACCOUNT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_HAS_NO_AUTO_RENEW_ACCOUNT;
+            case PERMANENT_REMOVAL_REQUIRES_SYSTEM_INITIATION -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .PERMANENT_REMOVAL_REQUIRES_SYSTEM_INITIATION;
+            case PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
+            case SELF_STAKING_IS_NOT_ALLOWED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.SELF_STAKING_IS_NOT_ALLOWED;
+            case INVALID_STAKING_ID -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
+            case STAKING_NOT_ENABLED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.STAKING_NOT_ENABLED;
+            case INVALID_PRNG_RANGE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PRNG_RANGE;
+            case MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
+            case INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
+            case INSUFFICIENT_BALANCES_FOR_STORAGE_RENT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_STORAGE_RENT;
+            case MAX_CHILD_RECORDS_EXCEEDED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
+            case INSUFFICIENT_BALANCES_FOR_RENEWAL_FEES -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_RENEWAL_FEES;
+            case TRANSACTION_HAS_UNKNOWN_FIELDS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
+            case ACCOUNT_IS_IMMUTABLE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
+            case ALIAS_ALREADY_ASSIGNED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
+//            case UNRECOGNIZED -> throw new RuntimeException("UNRECOGNIZED Response code!");
+        };
     }
 }

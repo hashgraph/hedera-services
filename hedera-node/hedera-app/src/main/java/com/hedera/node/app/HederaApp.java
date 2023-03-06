@@ -17,8 +17,12 @@
 package com.hedera.node.app;
 
 import com.hedera.node.app.annotations.MaxSignedTxnSize;
+import com.hedera.node.app.annotations.NodeSelfId;
+import com.hedera.node.app.authorization.AuthorizerDaggerModule;
 import com.hedera.node.app.components.IngestComponent;
 import com.hedera.node.app.components.QueryComponent;
+import com.hedera.node.app.metrics.MetricsDaggerModule;
+import com.hedera.node.app.state.HederaStateModule;
 import com.hedera.node.app.service.mono.ServicesApp;
 import com.hedera.node.app.service.mono.config.ConfigModule;
 import com.hedera.node.app.service.mono.context.ContextModule;
@@ -44,6 +48,8 @@ import com.hedera.node.app.service.mono.throttling.ThrottlingModule;
 import com.hedera.node.app.service.mono.txns.TransactionsModule;
 import com.hedera.node.app.service.mono.txns.submission.SubmissionModule;
 import com.hedera.node.app.services.ServiceModule;
+import com.hedera.node.app.state.WorkingStateAccessor;
+import com.hedera.node.app.workflows.handle.HandleWorkflowModule;
 import com.hedera.node.app.workflows.query.QueryWorkflowModule;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
@@ -86,7 +92,9 @@ import javax.inject.Singleton;
             ServiceModule.class,
             QueryWorkflowModule.class,
             HandleWorkflowModule.class,
-            HederaStateModule.class
+            HederaStateModule.class,
+            MetricsDaggerModule.class,
+            AuthorizerDaggerModule.class
         })
 public interface HederaApp extends ServicesApp {
     /* Needed by ServicesState */
@@ -111,7 +119,7 @@ public interface HederaApp extends ServicesApp {
         Builder consoleCreator(StateModule.ConsoleCreator consoleCreator);
 
         @BindsInstance
-        Builder selfId(long selfId);
+        Builder selfId(@NodeSelfId final long selfId);
 
         @BindsInstance
         Builder staticAccountMemo(@StaticAccountMemo String accountMemo);

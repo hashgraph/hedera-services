@@ -218,6 +218,12 @@ class OnDiskTest extends MerkleTestBase {
             return new AccountID(shard, realm, num);
         }
 
+        @NonNull
+        @Override
+        public AccountID parseStrict(@NonNull DataInput dataInput) throws IOException {
+            return parse(dataInput);
+        }
+
         @Override
         public void write(@NonNull AccountID value, @NonNull DataOutput output) throws IOException {
             output.writeLong(value.shard);
@@ -232,7 +238,7 @@ class OnDiskTest extends MerkleTestBase {
         }
 
         @Override
-        public int typicalSize() {
+        public int measureRecord(AccountID accountID) {
             return 150;
         }
 
@@ -262,6 +268,12 @@ class OnDiskTest extends MerkleTestBase {
             return new Account(id, memo, balance);
         }
 
+        @NonNull
+        @Override
+        public Account parseStrict(@NonNull DataInput dataInput) throws IOException {
+            return parse(dataInput);
+        }
+
         @Override
         public void write(@NonNull Account acct, @NonNull DataOutput output) throws IOException {
             // id
@@ -280,7 +292,7 @@ class OnDiskTest extends MerkleTestBase {
         }
 
         @Override
-        public int typicalSize() {
+        public int measureRecord(Account account) {
             throw new UnsupportedOperationException("Not used");
         }
 

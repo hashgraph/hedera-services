@@ -162,7 +162,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
                 final var tokenStates = state.createReadableStates(TokenService.NAME);
                 final var accountStore = storeSupplier.apply(tokenStates);
                 final var payer = accountStore
-                        .getAccount(payerID)
+                        .getAccountById(payerID)
                         .orElseThrow(() -> new PreCheckException(ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND));
 
                 // 5. Check payer's signature
