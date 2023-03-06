@@ -6,6 +6,7 @@ module com.hedera.node.app.spi {
     requires com.swirlds.common;
     requires com.google.protobuf;
     requires com.swirlds.config;
+    requires com.hedera.hashgraph.pbj.runtime;
 
     exports com.hedera.node.app.spi;
     exports com.hedera.node.app.spi.state;
