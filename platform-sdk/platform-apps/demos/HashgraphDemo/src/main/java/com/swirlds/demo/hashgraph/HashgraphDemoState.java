@@ -32,12 +32,12 @@ import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.SwirldState2;
+import com.swirlds.common.system.SwirldState;
 
 /**
  * The state for the hashgraph demo. See the comments for com.swirlds.demos.HashgraphDemoMain
  */
-public class HashgraphDemoState extends PartialMerkleLeaf implements SwirldState2, MerkleLeaf {
+public class HashgraphDemoState extends PartialMerkleLeaf implements SwirldState, MerkleLeaf {
 
     /**
      * The version history of this class.

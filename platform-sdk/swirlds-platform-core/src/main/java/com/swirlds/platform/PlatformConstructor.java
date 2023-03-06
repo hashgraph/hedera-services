@@ -16,7 +16,6 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.logging.LogMarker.ERROR;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.common.context.PlatformContext;
@@ -25,8 +24,6 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.SwirldState1;
-import com.swirlds.common.system.SwirldState2;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
@@ -42,19 +39,15 @@ import com.swirlds.platform.eventhandling.PreConsensusEventHandler;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusHandlingMetrics;
 import com.swirlds.platform.metrics.ConsensusMetrics;
-import com.swirlds.platform.metrics.ConsensusMetricsImpl;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.network.connectivity.SocketFactory;
 import com.swirlds.platform.network.connectivity.TcpFactory;
 import com.swirlds.platform.network.connectivity.TlsFactory;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
-import com.swirlds.platform.state.SwirldStateManagerDouble;
-import com.swirlds.platform.state.SwirldStateManagerSingle;
+import com.swirlds.platform.state.SwirldStateManagerImpl;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.PlatformConstructionException;
-import com.swirlds.platform.system.SystemExitReason;
-import com.swirlds.platform.system.SystemUtils;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.KeyManagementException;
@@ -63,10 +56,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
-import java.time.Instant;
 import java.util.concurrent.BlockingQueue;
 import java.util.function.BooleanSupplier;
-import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -152,8 +143,6 @@ final class PlatformConstructor {
     /**
      * Creates a new instance of {@link SwirldStateManager}.
      *
-     * @param threadManager
-     * 		responsible for creating and managing threads
      * @param selfId
      * 		this node's id
      * @param systemTransactionHandler
@@ -162,46 +151,25 @@ final class PlatformConstructor {
      * 		reference to the metrics-system
      * @param settings
      * 		static settings provider
-     * @param consEstimateSupplier
-     * 		supplier of an estimated consensus time for transactions
      * @param initialState
      * 		the initial state
      * @return the newly constructed instance of {@link SwirldStateManager}
      */
     static SwirldStateManager swirldStateManager(
-            final ThreadManager threadManager,
             final NodeId selfId,
             final SystemTransactionHandler systemTransactionHandler,
             final Metrics metrics,
             final SettingsProvider settings,
-            final Supplier<Instant> consEstimateSupplier,
             final BooleanSupplier inFreezeChecker,
             final State initialState) {
 
-        if (initialState.getSwirldState() instanceof SwirldState2) {
-            return new SwirldStateManagerDouble(
-                    selfId,
-                    systemTransactionHandler,
-                    new SwirldStateMetrics(metrics),
-                    settings,
-                    inFreezeChecker,
-                    initialState);
-        } else if (initialState.getSwirldState() instanceof SwirldState1) {
-            return new SwirldStateManagerSingle(
-                    threadManager,
-                    selfId,
-                    systemTransactionHandler,
-                    new SwirldStateMetrics(metrics),
-                    new ConsensusMetricsImpl(selfId, metrics),
-                    settings,
-                    consEstimateSupplier,
-                    inFreezeChecker,
-                    initialState);
-        } else {
-            logger.error(ERROR.getMarker(), "Unrecognized SwirldState class: {}", initialState.getClass());
-            SystemUtils.exitSystem(SystemExitReason.FATAL_ERROR);
-            return null;
-        }
+        return new SwirldStateManagerImpl(
+                selfId,
+                systemTransactionHandler,
+                new SwirldStateMetrics(metrics),
+                settings,
+                inFreezeChecker,
+                initialState);
     }
 
     /**

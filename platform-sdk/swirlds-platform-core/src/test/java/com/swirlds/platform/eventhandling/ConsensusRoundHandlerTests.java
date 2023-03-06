@@ -30,18 +30,15 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.SwirldState2;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.utility.ThrowingRunnable;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
-import com.swirlds.platform.state.SwirldStateManagerDouble;
-import com.swirlds.platform.state.SwirldStateManagerSingle;
+import com.swirlds.platform.state.SwirldStateManagerImpl;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
@@ -192,26 +189,8 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
         when(settingsProvider.getMaxEventQueueForCons()).thenReturn(500);
 
         final SwirldStateManager swirldStateManager;
-        if (swirldState instanceof SwirldState2) {
-            swirldStateManager = new SwirldStateManagerDouble(
-                    selfId,
-                    systemTransactionHandler,
-                    mock(SwirldStateMetrics.class),
-                    settingsProvider,
-                    () -> false,
-                    state);
-        } else {
-            swirldStateManager = new SwirldStateManagerSingle(
-                    getStaticThreadManager(),
-                    selfId,
-                    systemTransactionHandler,
-                    mock(SwirldStateMetrics.class),
-                    mock(ConsensusMetrics.class),
-                    settingsProvider,
-                    consEstimateSupplier,
-                    () -> false,
-                    state);
-        }
+        swirldStateManager = new SwirldStateManagerImpl(
+                selfId, systemTransactionHandler, mock(SwirldStateMetrics.class), settingsProvider, () -> false, state);
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();

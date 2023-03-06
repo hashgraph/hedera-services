@@ -22,12 +22,10 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.SwirldState2;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.test.metrics.NoOpMetrics;
-import com.swirlds.common.test.state.DummySwirldState1;
-import com.swirlds.common.test.state.DummySwirldState2;
+import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.components.SystemTransactionHandlerImpl;
 import com.swirlds.platform.internal.EventImpl;
@@ -47,11 +45,10 @@ import org.junit.jupiter.params.provider.Arguments;
 public abstract class AbstractEventHandlerTests {
 
     protected static Stream<Arguments> swirldStates() {
-        final SwirldState ss1 = new DummySwirldState1();
 
-        final SwirldState2 ss2 = new DummySwirldState2();
+        final SwirldState ss = new DummySwirldState();
 
-        return Stream.of(Arguments.of(ss1), Arguments.of(ss2));
+        return Stream.of(Arguments.of(ss), Arguments.of(ss));
     }
 
     private static final int NUM_NODES = 10;

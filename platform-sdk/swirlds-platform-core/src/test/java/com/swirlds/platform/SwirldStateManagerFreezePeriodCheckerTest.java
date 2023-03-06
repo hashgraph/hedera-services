@@ -26,8 +26,7 @@ import static org.mockito.Mockito.when;
 import com.swirlds.platform.state.DualStateImpl;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
-import com.swirlds.platform.state.SwirldStateManagerDouble;
-import com.swirlds.platform.state.SwirldStateManagerSingle;
+import com.swirlds.platform.state.SwirldStateManagerImpl;
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.Stream;
@@ -42,7 +41,7 @@ class SwirldStateManagerFreezePeriodCheckerTest {
 
     private static Stream<Arguments> swirldStateManagers() {
         return Stream.of(
-                Arguments.of(spy(SwirldStateManagerSingle.class)), Arguments.of(spy(SwirldStateManagerDouble.class)));
+                Arguments.of(spy(SwirldStateManagerImpl.class)), Arguments.of(spy(SwirldStateManagerImpl.class)));
     }
 
     @ParameterizedTest

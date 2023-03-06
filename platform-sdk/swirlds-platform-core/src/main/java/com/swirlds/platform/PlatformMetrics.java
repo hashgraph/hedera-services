@@ -28,8 +28,6 @@ import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.system.PlatformStatNames;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.event.EventCounter;
-import com.swirlds.platform.eventhandling.SwirldStateSingleTransactionPool;
-import com.swirlds.platform.state.SwirldStateManagerDouble;
 import com.swirlds.platform.stats.AverageAndMax;
 import com.swirlds.platform.stats.AverageStat;
 
@@ -201,9 +199,6 @@ public class PlatformMetrics {
                         INFO_CATEGORY, "priorityTransEvent", Integer.class, this::getPriorityTransEventSize)
                 .withDescription("priorityTransEvent queue size")
                 .withFormat("%d"));
-        metrics.getOrCreate(new FunctionGauge.Config<>(INFO_CATEGORY, "transCons", Long.class, this::getTransConsSize)
-                .withDescription("transCons queue size")
-                .withFormat("%d"));
         metrics.getOrCreate(new FunctionGauge.Config<>(
                         INTERNAL_CATEGORY,
                         "isEvFrozen",
@@ -278,16 +273,6 @@ public class PlatformMetrics {
             return 0;
         }
         return platform.getSwirldStateManager().getTransactionPool().getPriorityTransEventSize();
-    }
-
-    private long getTransConsSize() {
-        if (platform.getSwirldStateManager() == null
-                || platform.getSwirldStateManager() instanceof SwirldStateManagerDouble) {
-            return 0;
-        }
-        return ((SwirldStateSingleTransactionPool)
-                        platform.getSwirldStateManager().getTransactionPool())
-                .getConsSize();
     }
 
     private Boolean isStrongMinorityInMaxRound() {

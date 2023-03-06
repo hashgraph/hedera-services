@@ -917,7 +917,7 @@ public class PlatformTestingToolMain implements SwirldMain {
 
     @Override
     public SwirldState newState() {
-        return config.useSwirldState2 ? new PlatformTestingToolState2() : new PlatformTestingToolState();
+        return new PlatformTestingToolState();
     }
 
     private void platformStatusChange(final PlatformStatusChangeNotification notification) {

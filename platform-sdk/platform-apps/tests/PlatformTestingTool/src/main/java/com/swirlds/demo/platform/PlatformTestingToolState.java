@@ -46,9 +46,10 @@ import com.swirlds.common.system.PlatformWithDeprecatedMethods;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.SwirldState1;
+import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.ConsensusEvent;
+import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.utility.ThresholdLimitingHandler;
@@ -121,9 +122,9 @@ import org.apache.logging.log4j.MarkerManager;
  * writes them to the screen, and also saves them to disk in a comma separated value (.csv) file. Each transaction
  * consists of an optional sequence number and random bytes.
  */
-public class PlatformTestingToolState extends PartialNaryMerkleInternal implements MerkleInternal, SwirldState1 {
+public class PlatformTestingToolState extends PartialNaryMerkleInternal implements MerkleInternal, SwirldState {
 
-    private static final long CLASS_ID = 0xbaa7ddc780cf9e06L;
+    private static final long CLASS_ID = 0xc0900cfa7a24db76L;
     private static final Logger logger = LogManager.getLogger(PlatformTestingToolState.class);
     private static final Marker LOGM_DEMO_INFO = MarkerManager.getMarker("DEMO_INFO");
     private static final Marker LOGM_EXCEPTION = MarkerManager.getMarker("EXCEPTION");
@@ -161,7 +162,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     private static RunningAverageMetric htFCQMicroSec;
 
     /**
-     * Has {@link #init(Platform, AddressBook, SwirldDualState, InitTrigger, SoftwareVersion)} been called on this copy
+     * Has init() been called on this copy
      * or an ancestor copy of this object?
      */
     private final AtomicBoolean initialized = new AtomicBoolean(false);
@@ -1053,27 +1054,9 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         }
     }
 
-    @Override
-    public synchronized void preHandle(final Transaction transaction) {
-        if (!initialized.get()) {
-            throw new IllegalStateException("preHandle() called before init()");
-        }
-        preHandleTransaction(transaction);
-    }
-
     protected void preHandleTransaction(final Transaction transaction) {
         expandSignatures(transaction);
         transaction.setMetadata(true);
-    }
-
-    @Override
-    public synchronized void handleTransaction(
-            final long creatorId,
-            final Instant timeCreated,
-            final Instant estimatedTimestamp,
-            final Transaction trans,
-            final SwirldDualState swirldDualState) {
-        // intentional no-op
     }
 
     @Override
@@ -1607,5 +1590,10 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         public static final int QUORUM_RESULT = 10;
 
         public static final int CHILD_COUNT = 11;
+    }
+
+    @Override
+    public void preHandle(final Event event) {
+        event.forEachTransaction(this::preHandleTransaction);
     }
 }
