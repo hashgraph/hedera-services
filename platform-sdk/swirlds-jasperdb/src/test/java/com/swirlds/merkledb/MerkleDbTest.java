@@ -311,7 +311,6 @@ public class MerkleDbTest {
         final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource =
                 instance.createDataSource(tableName, tableConfig, false);
         Assertions.assertNotNull(dataSource);
-        dataSource.close();
 
         final Path snapshotDir = TemporaryFileBuilder.buildTemporaryFile();
         instance.snapshot(snapshotDir);
@@ -323,5 +322,38 @@ public class MerkleDbTest {
         final MerkleDb instance2 = MerkleDb.restore(snapshotDir, newDir);
         Assertions.assertTrue(Files.exists(instance2.getSharedDir()));
 
+        dataSource.close();
+    }
+
+    @Test
+    @DisplayName("Double snapshots")
+    public void testDoubleSnapshot() throws IOException {
+        final MerkleDb instance = MerkleDb.getDefaultInstance();
+        final String tableName = "tableh";
+        final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
+        final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource =
+                instance.createDataSource(tableName + "1", tableConfig, false);
+        Assertions.assertNotNull(dataSource);
+        final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource2 =
+                instance.createDataSource(tableName + "2", tableConfig, false);
+        Assertions.assertNotNull(dataSource2);
+
+        final Path snapshotDir = TemporaryFileBuilder.buildTemporaryFile();
+        instance.snapshot(snapshotDir);
+        // Restore again. This is what happens during signed state snapshots. From merkle tree
+        // perspective, all virtual maps are serialized to snapshots separately. However, at
+        // MerkleDb level, when the first virtual map (data source) is snapshot, the whole DB
+        // is put to the target folder. For all subsequent virtual maps snapshots are no-ops,
+        // MerkleDb just checks that the corresponding DB table is already there
+        instance.snapshot(snapshotDir);
+
+        final Path snapshotDir2 = TemporaryFileBuilder.buildTemporaryFile();
+        instance.snapshot(snapshotDir2);
+        // Remove one of the tables and try to restore again
+        dataSource.close();
+        instance.removeDataSource(dataSource.getTableName());
+        Assertions.assertThrows(IllegalStateException.class, () -> instance.snapshot(snapshotDir2));
+
+        dataSource2.close();
     }
 }
