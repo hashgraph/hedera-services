@@ -246,14 +246,6 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
     }
 
     /**
-     * Notifies the sync manager that there was a successful sync
-     */
-    @Override
-    public void successfulSync() {
-        // TODO remove
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override

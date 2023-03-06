@@ -29,6 +29,4 @@ public interface SyncManager {
     boolean shouldCreateEvent(NodeId otherId, boolean oneNodeFallenBehind, int eventsRead, int eventsWritten);
 
     boolean shouldCreateEvent(final SyncResult info);
-
-    void successfulSync();
 }

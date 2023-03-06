@@ -180,7 +180,6 @@ class SyncCaller implements Runnable {
                                 selfId.getId() /*selfId assumed to be main*/); // otherID (so self will count as the
                 // "other")
                 Thread.sleep(50);
-                platform.getSyncManager().successfulSync();
                 // selfId assumed to be main
                 return selfId.getIdAsInt(); // say that self just "synced" with self, and created an event for it
             }
@@ -268,7 +267,6 @@ class SyncCaller implements Runnable {
             }
 
             if (syncAccepted) {
-                platform.getSyncManager().successfulSync();
                 return otherId;
             } else {
                 return -1;

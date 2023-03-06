@@ -54,9 +54,6 @@ public class TestingSyncManager implements SyncManager, FallenBehindManager {
     }
 
     @Override
-    public void successfulSync() {}
-
-    @Override
     public void reportFallenBehind(NodeId id) {
         // for testing, we conclude we have fallen behind even if just 1 node says so
         fallenBehind = true;
