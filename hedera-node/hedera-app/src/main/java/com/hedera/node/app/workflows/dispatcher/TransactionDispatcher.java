@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.dispatcher;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -31,7 +32,6 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
-import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -100,12 +100,13 @@ public class TransactionDispatcher {
             @NonNull final HederaFunctionality function,
             @NonNull final TransactionBody txn,
             @NonNull final WritableStoreFactory writableStoreFactory) {
+        final var topicStore = writableStoreFactory.createTopicStore();
         switch (function) {
             case ConsensusCreateTopic -> dispatchConsensusCreateTopic(
-                    txn.getConsensusCreateTopic(), writableStoreFactory, usageLimits);
-            case ConsensusUpdateTopic -> dispatchConsensusUpdateTopic(txn.getConsensusUpdateTopic());
-            case ConsensusDeleteTopic -> dispatchConsensusDeleteTopic(txn.getConsensusDeleteTopic());
-            case ConsensusSubmitMessage -> dispatchConsensusSubmitMessage(txn.getConsensusSubmitMessage());
+                    txn.getConsensusCreateTopic(), topicStore, usageLimits);
+            case ConsensusUpdateTopic -> dispatchConsensusUpdateTopic(txn.getConsensusUpdateTopic(), topicStore);
+            case ConsensusDeleteTopic -> dispatchConsensusDeleteTopic(txn.getConsensusDeleteTopic(), topicStore);
+            case ConsensusSubmitMessage -> dispatchConsensusSubmitMessage(txn, topicStore);
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
         }
     }
@@ -127,7 +128,8 @@ public class TransactionDispatcher {
         final var txBody = context.getTxn();
         switch (txBody.getDataCase()) {
             case CONSENSUSCREATETOPIC -> handlers.consensusCreateTopicHandler().preHandle(context);
-            case CONSENSUSUPDATETOPIC -> handlers.consensusUpdateTopicHandler().preHandle(context);
+            case CONSENSUSUPDATETOPIC -> handlers.consensusUpdateTopicHandler()
+                    .preHandle(context, storeFactory.createTopicStore());
             case CONSENSUSDELETETOPIC -> handlers.consensusDeleteTopicHandler()
                     .preHandle(context, storeFactory.createTopicStore());
             case CONSENSUSSUBMITMESSAGE -> handlers.consensusSubmitMessageHandler()
@@ -213,35 +215,32 @@ public class TransactionDispatcher {
         return context -> dispatchPreHandle(storeFactory, context);
     }
 
-    private void dispatchConsensusDeleteTopic(@NonNull final ConsensusDeleteTopicTransactionBody topicDeletion) {
+    private void dispatchConsensusDeleteTopic(
+            @NonNull final ConsensusDeleteTopicTransactionBody topicDeletion,
+            @NonNull final WritableTopicStore topicStore) {
         final var handler = handlers.consensusDeleteTopicHandler();
-        final var recordBuilder = handler.newRecordBuilder();
-        handler.handle(
-                handleContext,
-                topicDeletion,
-                new ConsensusServiceConfig(
-                        dynamicProperties.maxNumTopics(), dynamicProperties.messageMaxBytesAllowed()),
-                recordBuilder);
+        handler.handle(topicDeletion, topicStore);
+        // TODO: Commit will be called in workflow or some other place when handle workflow is implemented
+        // This is temporary solution to make sure that topic is created
+        topicStore.commit();
     }
 
-    private void dispatchConsensusUpdateTopic(@NonNull final ConsensusUpdateTopicTransactionBody topicUpdate) {
+    private void dispatchConsensusUpdateTopic(
+            @NonNull final ConsensusUpdateTopicTransactionBody topicUpdate,
+            @NonNull final WritableTopicStore topicStore) {
         final var handler = handlers.consensusUpdateTopicHandler();
-        final var recordBuilder = handler.newRecordBuilder();
-        handler.handle(
-                handleContext,
-                topicUpdate,
-                new ConsensusServiceConfig(
-                        dynamicProperties.maxNumTopics(), dynamicProperties.messageMaxBytesAllowed()),
-                recordBuilder);
+        handler.handle(handleContext, topicUpdate, topicStore);
+        // TODO: Commit will be called in workflow or some other place when handle workflow is implemented
+        // This is temporary solution to make sure that topic is created
+        topicStore.commit();
     }
 
     private void dispatchConsensusCreateTopic(
             @NonNull final ConsensusCreateTopicTransactionBody topicCreation,
-            @NonNull final WritableStoreFactory storeFactory,
+            @NonNull final WritableTopicStore topicStore,
             @NonNull final UsageLimits usageLimits) {
         final var handler = handlers.consensusCreateTopicHandler();
         final var recordBuilder = handler.newRecordBuilder();
-        final var topicStore = storeFactory.createTopicStore();
         handler.handle(
                 handleContext,
                 topicCreation,
@@ -259,7 +258,7 @@ public class TransactionDispatcher {
     }
 
     private void dispatchConsensusSubmitMessage(
-            @NonNull final ConsensusSubmitMessageTransactionBody messageSubmission) {
+            @NonNull final TransactionBody messageSubmission, @NonNull final WritableTopicStore topicStore) {
         final var handler = handlers.consensusSubmitMessageHandler();
         final var recordBuilder = handler.newRecordBuilder();
         handler.handle(
@@ -267,7 +266,9 @@ public class TransactionDispatcher {
                 messageSubmission,
                 new ConsensusServiceConfig(
                         dynamicProperties.maxNumTopics(), dynamicProperties.messageMaxBytesAllowed()),
-                recordBuilder);
+                recordBuilder,
+                topicStore);
         txnCtx.setTopicRunningHash(recordBuilder.getNewTopicRunningHash(), recordBuilder.getNewTopicSequenceNumber());
+        topicStore.commit();
     }
 }

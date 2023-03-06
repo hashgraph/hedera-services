@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.state.virtual;
 
+import static com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey.fromLong;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -217,5 +218,10 @@ class EntityNumVirtualKeyTest {
         subject.serialize(fOut);
 
         verify(fOut).writeLong(longKey);
+    }
+
+    @Test
+    void canGetEntityNumUsingLongValue() {
+        assertEquals(subject, fromLong(longKey));
     }
 }

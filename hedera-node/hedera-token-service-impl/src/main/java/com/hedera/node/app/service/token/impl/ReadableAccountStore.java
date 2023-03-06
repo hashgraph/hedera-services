@@ -30,6 +30,8 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.impl.entity.AccountBuilderImpl;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.accounts.Account;
@@ -52,9 +54,9 @@ import java.util.Optional;
  */
 public class ReadableAccountStore implements AccountAccess {
     /** The underlying data storage class that holds the account data. */
-    private final ReadableKVState<Long, MerkleAccount> accountState;
+    private final ReadableKVState<EntityNumVirtualKey, MerkleAccount> accountState;
     /** The underlying data storage class that holds the aliases data built from the state. */
-    private final ReadableKVState<String, Long> aliases;
+    private final ReadableKVState<String, EntityNumValue> aliases;
 
     /**
      * Create a new {@link ReadableAccountStore} instance.
@@ -162,7 +164,7 @@ public class ReadableAccountStore implements AccountAccess {
         if (accountNum.equals(MISSING_NUM)) {
             return Optional.empty();
         }
-        return Optional.ofNullable(accountState.get(accountNum));
+        return Optional.ofNullable(accountState.get(EntityNumVirtualKey.fromLong(accountNum)));
     }
 
     /**
@@ -183,7 +185,7 @@ public class ReadableAccountStore implements AccountAccess {
             }
 
             final var ret = aliases.get(alias.toStringUtf8());
-            return ret == null ? MISSING_NUM : ret;
+            return ret == null ? MISSING_NUM : ret.num();
         }
         return idOrAlias.getAccountNum();
     }
@@ -200,7 +202,7 @@ public class ReadableAccountStore implements AccountAccess {
         if (contractNum.equals(MISSING_NUM)) {
             return Optional.empty();
         }
-        return Optional.ofNullable(accountState.get(contractNum));
+        return Optional.ofNullable(accountState.get(EntityNumVirtualKey.fromLong(contractNum)));
     }
 
     /**
@@ -232,7 +234,7 @@ public class ReadableAccountStore implements AccountAccess {
             if (entityNum == null) {
                 return MISSING_NUM;
             }
-            return entityNum;
+            return entityNum.num();
         } else {
             return idOrAlias.getContractNum();
         }

@@ -32,7 +32,7 @@ import java.util.Set;
  * @param <K> The type of the key
  * @param <V> The type of the value
  */
-public interface ReadableKVState<K extends Comparable<K>, V> {
+public interface ReadableKVState<K extends Comparable<? super K>, V> {
     /**
      * Gets the "state key" that uniquely identifies this {@link ReadableKVState} within the {@link
      * Schema} which are scoped to the service implementation. The key is therefore not globally
