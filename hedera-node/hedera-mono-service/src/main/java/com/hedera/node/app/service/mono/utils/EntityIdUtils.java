@@ -252,25 +252,17 @@ public final class EntityIdUtils {
     }
 
     public static AccountID accountIdFromEvmAddress(final byte[] bytes) {
-        return AccountID.newBuilder()
-                .setShardNum(0)
-                .setRealmNum(0)
-                .setAccountNum(numFromEvmAddress(bytes))
-                .build();
+        return AccountID.newBuilder().setAccountNum(numFromEvmAddress(bytes)).build();
     }
 
     public static ContractID contractIdFromEvmAddress(final byte[] bytes) {
         return ContractID.newBuilder()
-                .setShardNum(0)
-                .setRealmNum(0)
                 .setContractNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 12, 20)))
                 .build();
     }
 
     public static TokenID tokenIdFromEvmAddress(final byte[] bytes) {
         return TokenID.newBuilder()
-                .setShardNum(0)
-                .setRealmNum(0)
                 .setTokenNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 12, 20)))
                 .build();
     }

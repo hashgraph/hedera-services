@@ -16,16 +16,14 @@
 
 package com.hedera.node.app.service.evm.accounts;
 
-import com.google.common.base.Suppliers;
 import java.util.Arrays;
-import java.util.function.Supplier;
 import org.hyperledger.besu.datatypes.Address;
 
 public abstract class HederaEvmContractAliases {
 
     public static final int EVM_ADDRESS_LEN = 20;
     /* A placeholder to store the 12-byte of zeros prefix that marks an EVM address as a "mirror" address. */
-    private static final Supplier<byte[]> MIRROR_PREFIX = Suppliers.memoize(() -> new byte[12]);
+    private static final byte[] MIRROR_PREFIX = new byte[12];
 
     public abstract Address resolveForEvm(Address addressOrAlias);
 
@@ -38,6 +36,6 @@ public abstract class HederaEvmContractAliases {
             return false;
         }
 
-        return Arrays.equals(MIRROR_PREFIX.get(), 0, 12, address, 0, 12);
+        return Arrays.equals(MIRROR_PREFIX, 0, 12, address, 0, 12);
     }
 }
