@@ -269,6 +269,10 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
     }
 
     private boolean isRoundInFreezePeriod(final ConsensusRound round) {
+        if (round.getLastEvent() == null) {
+            // there are no events in this round
+            return false;
+        }
         return swirldStateManager.isInFreezePeriod(round.getLastEvent().getLastTransTime());
     }
 
