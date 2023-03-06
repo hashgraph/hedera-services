@@ -25,10 +25,6 @@ import java.time.Duration;
 /**
  * Configuration for pre-consensus event storage.
  *
- * @param flushPeriod
- * 		the amount of time that should pass between each flush. If this is too
- * 		small then IO performance may be effected. If this is close to or exceeds
- * 		the time for events to reach consensus then end-to-end latency will suffer.
  * @param writeQueueCapacity
  * 		the queue capacity for pre-consensus events waiting to be written to disk
  * @param minimumRetentionPeriod
@@ -37,9 +33,6 @@ import java.time.Duration;
  * @param preferredFileSizeMegabytes
  * 		the preferred file size for pre-consensus event files.
  * 		Not a strong guarantee on file size, more of a suggestion.
- * @param idleWaitPeriod
- * 		the amount of time the thread responsible for writing pre-consensus events to disk should wait
- * 		when it runs out of work
  * @param bootstrapGenerationalSpan
  * 		when first starting up a preconsensus event file manager, the running average for the generational
  * 		utilization will not have any values in it. Use this value until the running average represents real
