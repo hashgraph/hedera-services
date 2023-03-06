@@ -192,10 +192,10 @@ public class EventImpl extends AbstractSerializableHashable
      *
      * @param streamSequenceNumber the sequence number
      */
-    public void setStreamSequenceNumber(final long streamSequenceNumber) { // TODO test
+    public void setStreamSequenceNumber(final long streamSequenceNumber) {
         if (this.streamSequenceNumber != NO_STREAM_SEQUENCE_NUMBER
                 && streamSequenceNumber != STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
-            throw new IllegalArgumentException("sequence number already set");
+            throw new IllegalStateException("sequence number already set");
         }
         this.streamSequenceNumber = streamSequenceNumber;
     }

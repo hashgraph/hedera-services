@@ -22,7 +22,7 @@ import com.swirlds.platform.internal.EventImpl;
  * Responsible for assigning stream sequence numbers to events. All events that are written
  * to the preconsensus event stream must be assigned a sequence number.
  */
-public class PreconsensusEventStreamSequencer { // TODO write simple test
+public class PreconsensusEventStreamSequencer {
 
     private long nextStreamSequenceNumber = 0;
 

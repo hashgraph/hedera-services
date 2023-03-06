@@ -106,7 +106,7 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
     /**
      * The highest event sequence number that has been flushed.
      */
-    private CountUpLatch lastFlushedEvent = new CountUpLatch(-1);
+    private final CountUpLatch lastFlushedEvent = new CountUpLatch(-1);
 
     /**
      * Events that should be flushed ASAP.
@@ -320,11 +320,6 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
             fileManager.finishedWritingFile(currentMutableFile);
             markEventsAsFlushed();
             currentMutableFile = null;
-
-            // Future work: if an external process wants to copy stream files to a network drive, we should
-            //  hard link the file into another directory for that process here. This enables the external
-            //  process to manage the lifecycle of files (i.e. deleting them when it is finished) without
-            //  interfering with the lifecycle required by the platform.
 
             // Not strictly required here, but not a bad place to ensure we delete
             // files incrementally (as opposed to deleting a bunch of files all at once).
