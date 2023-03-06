@@ -45,6 +45,7 @@ import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.SwirldsPlatform;
+import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.PreConsensusEventHandler;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -598,6 +599,7 @@ class EventFlowTests {
             swirldStateManager = new SwirldStateManagerDouble(
                     selfNodeId,
                     systemTransactionTracker,
+                    mock(PreConsensusEventWriter.class),
                     mock(SwirldStateMetrics.class),
                     settingsProvider,
                     () -> false,

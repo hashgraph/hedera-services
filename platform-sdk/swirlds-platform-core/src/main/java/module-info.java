@@ -114,6 +114,7 @@ module com.swirlds.platform {
 
     opens com.swirlds.platform.cli to
             info.picocli;
+    exports com.swirlds.platform.event.preconsensus;
 
     /* Swirlds Libraries */
     requires transitive com.swirlds.common;

@@ -50,7 +50,7 @@ class ConsensusRoundTests {
 
         final List<EventImpl> events = List.of(e1, e2, e3);
 
-        final ConsensusRound round = new ConsensusRound(events, g);
+        final ConsensusRound round = new ConsensusRound(events, e3, g);
 
         assertEquals(events, round.getConsensusEvents(), "consensus event list does not match the provided list.");
         assertEquals(events.size(), round.getNumEvents(), "numEvents does not match the events provided.");
@@ -75,7 +75,7 @@ class ConsensusRoundTests {
 
         final List<EventImpl> events = List.of(e1, e2, e3);
 
-        final ConsensusRound round = new ConsensusRound(events, mock(GraphGenerations.class));
+        final ConsensusRound round = new ConsensusRound(events, e3, mock(GraphGenerations.class));
         assertTrue(round.hasShutdownEvent(), "hasShutdownEvent does match the values of the events provided.");
     }
 
@@ -91,7 +91,7 @@ class ConsensusRoundTests {
 
         final List<EventImpl> events = List.of(e1, e2, e3);
 
-        final ConsensusRound round = new ConsensusRound(events, mock(GraphGenerations.class));
+        final ConsensusRound round = new ConsensusRound(events, e3, mock(GraphGenerations.class));
         assertFalse(round.isComplete(), "isComplete does not match the values of the vents provided.");
         assertNull(round.getLastEvent(), "Last event should be null in an incomplete round.");
     }
@@ -110,7 +110,8 @@ class ConsensusRoundTests {
             events.add(event);
         }
 
-        final ConsensusRound round = new ConsensusRound(events, mock(GraphGenerations.class));
+        final ConsensusRound round =
+                new ConsensusRound(events, events.get(events.size() - 1), mock(GraphGenerations.class));
 
         assertEquals(
                 numActualTransactions, round.getNumAppTransactions(), "Incorrect number of application transactions.");

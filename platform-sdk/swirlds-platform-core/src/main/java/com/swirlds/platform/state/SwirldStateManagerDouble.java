@@ -26,6 +26,7 @@ import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.components.SystemTransactionHandler;
 import com.swirlds.platform.components.TransThrottleSyncAndCreateRuleResponse;
+import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
 import com.swirlds.platform.eventhandling.EventTransactionPool;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -84,6 +85,7 @@ public class SwirldStateManagerDouble implements SwirldStateManager {
      * 		this node's id
      * @param systemTransactionHandler
      * 		the handler for system transactions
+     * @param preConsensusEventWriter writer for pre-consensus events
      * @param swirldStateMetrics
      * 		metrics related to SwirldState
      * @param settings
@@ -96,6 +98,7 @@ public class SwirldStateManagerDouble implements SwirldStateManager {
     public SwirldStateManagerDouble(
             final NodeId selfId,
             final SystemTransactionHandler systemTransactionHandler,
+            final PreConsensusEventWriter preConsensusEventWriter,
             final SwirldStateMetrics swirldStateMetrics,
             final SettingsProvider settings,
             final BooleanSupplier inFreeze,
@@ -103,7 +106,7 @@ public class SwirldStateManagerDouble implements SwirldStateManager {
         this.systemTransactionHandler = systemTransactionHandler;
         this.stats = swirldStateMetrics;
         this.transactionPool = new EventTransactionPool(settings, inFreeze);
-        this.transactionHandler = new TransactionHandler(selfId, stats);
+        this.transactionHandler = new TransactionHandler(selfId, stats, preConsensusEventWriter);
         initialState(state);
     }
 

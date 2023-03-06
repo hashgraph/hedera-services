@@ -126,6 +126,12 @@ import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
+import com.swirlds.platform.event.preconsensus.AsyncPreConsensusEventWriter;
+import com.swirlds.platform.event.preconsensus.PreConsensusEventFileManager;
+import com.swirlds.platform.event.preconsensus.PreConsensusEventStreamConfig;
+import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventMetrics;
+import com.swirlds.platform.event.preconsensus.SyncPreConsensusEventWriter;
 import com.swirlds.platform.event.validation.AncientValidator;
 import com.swirlds.platform.event.validation.EventDeduplication;
 import com.swirlds.platform.event.validation.EventValidator;
@@ -203,6 +209,7 @@ import com.swirlds.platform.threading.PauseAndClear;
 import com.swirlds.platform.threading.PauseAndLoad;
 import com.swirlds.platform.util.PlatformComponents;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -263,6 +270,10 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private final String[] parameters;
     /** Handles all system transactions */
     private final SystemTransactionHandlerImpl systemTransactionHandler;
+    /**
+     * Writes preconsensus events to disk.
+     */
+    private final PreConsensusEventWriter preConsensusEventWriter;
     /** The platforms freeze manager */
     private final FreezeManager freezeManager;
     /** is used for pausing event creation for a while at start up */
@@ -575,6 +586,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         // FUTURE WORK remove this when there are no more ShutdownRequestedTriggers being dispatched
         components.add(new Shutdown());
+
+        preConsensusEventWriter = components.add(buildPreConsensusEventWriter());
 
         final LoadedState loadedState = loadSavedStateFromDisk();
         init(loadedState, genesisStateBuilder);
@@ -1003,6 +1016,30 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     }
 
     /**
+     * Build the pre-consensus event writer.
+     */
+    private PreConsensusEventWriter buildPreConsensusEventWriter() {
+        final PreConsensusEventStreamConfig preConsensusEventStreamConfig =
+                platformContext.getConfiguration().getConfigData(PreConsensusEventStreamConfig.class);
+
+        final PreconsensusEventMetrics preconsensusEventMetrics =
+                new PreconsensusEventMetrics(platformContext.getMetrics());
+
+        final PreConsensusEventFileManager fileManager;
+        try {
+            fileManager = new PreConsensusEventFileManager(
+                    OSTime.getInstance(), preConsensusEventStreamConfig, preconsensusEventMetrics);
+        } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+        }
+
+        final PreConsensusEventWriter syncWriter =
+                new SyncPreConsensusEventWriter(preConsensusEventStreamConfig, fileManager);
+
+        return new AsyncPreConsensusEventWriter(threadManager, preConsensusEventStreamConfig, syncWriter);
+    }
+
+    /**
      * Creates and wires up all the classes responsible for accepting events from gossip, creating new events, and
      * routing those events throughout the system.
      */
@@ -1048,7 +1085,14 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         }
 
         final EventIntake eventIntake = new EventIntake(
-                selfId, eventLinker, consensusRef::get, initialAddressBook, dispatcher, intakeCycleStats, shadowGraph);
+                selfId,
+                eventLinker,
+                consensusRef::get,
+                initialAddressBook,
+                dispatcher,
+                intakeCycleStats,
+                shadowGraph,
+                preConsensusEventWriter);
 
         final EventCreator eventCreator;
         if (settings.getChatter().isChatterUsed()) {
@@ -1149,6 +1193,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         swirldStateManager = PlatformConstructor.swirldStateManager(
                 threadManager,
+                preConsensusEventWriter,
                 selfId,
                 systemTransactionHandler,
                 metrics,

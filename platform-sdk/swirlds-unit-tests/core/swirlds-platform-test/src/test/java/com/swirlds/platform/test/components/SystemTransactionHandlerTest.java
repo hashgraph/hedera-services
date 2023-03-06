@@ -82,7 +82,8 @@ class SystemTransactionHandlerTest {
         final SystemTransactionHandler handler = new SystemTransactionHandlerImpl(stateSignatureConsumer);
 
         final ConsensusRound round =
-                new ConsensusRound(List.of(eventWithThisNodeSig, eventWithOtherNodeSig), mock(GraphGenerations.class));
+                new ConsensusRound(List.of(eventWithThisNodeSig, eventWithOtherNodeSig),
+                        mock(EventImpl.class), mock(GraphGenerations.class));
 
         assertDoesNotThrow(() -> handler.handlePreConsensusSystemTransactions(eventWithThisNodeSig));
         assertDoesNotThrow(() -> handler.handlePostConsensusSystemTransactions(round));
@@ -107,7 +108,8 @@ class SystemTransactionHandlerTest {
         final SystemTransactionHandler handler = new SystemTransactionHandlerImpl(stateSignatureConsumer);
 
         final ConsensusRound round =
-                new ConsensusRound(List.of(eventWithThisNodeSig, eventWithOtherNodeSig), mock(GraphGenerations.class));
+                new ConsensusRound(List.of(eventWithThisNodeSig, eventWithOtherNodeSig),
+                        mock(EventImpl.class), mock(GraphGenerations.class));
 
         handler.handlePostConsensusSystemTransactions(round);
 

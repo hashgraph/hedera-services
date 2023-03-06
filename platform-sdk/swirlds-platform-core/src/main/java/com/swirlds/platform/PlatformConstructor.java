@@ -37,6 +37,7 @@ import com.swirlds.platform.components.SystemTransactionHandler;
 import com.swirlds.platform.components.common.output.RoundAppliedToStateConsumer;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
+import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.PreConsensusEventHandler;
 import com.swirlds.platform.internal.EventImpl;
@@ -154,6 +155,7 @@ final class PlatformConstructor {
      *
      * @param threadManager
      * 		responsible for creating and managing threads
+     * @param preConsensusEventWriter the writer of pre-consensus events
      * @param selfId
      * 		this node's id
      * @param systemTransactionHandler
@@ -170,6 +172,7 @@ final class PlatformConstructor {
      */
     static SwirldStateManager swirldStateManager(
             final ThreadManager threadManager,
+            final PreConsensusEventWriter preConsensusEventWriter,
             final NodeId selfId,
             final SystemTransactionHandler systemTransactionHandler,
             final Metrics metrics,
@@ -182,6 +185,7 @@ final class PlatformConstructor {
             return new SwirldStateManagerDouble(
                     selfId,
                     systemTransactionHandler,
+                    preConsensusEventWriter,
                     new SwirldStateMetrics(metrics),
                     settings,
                     inFreezeChecker,

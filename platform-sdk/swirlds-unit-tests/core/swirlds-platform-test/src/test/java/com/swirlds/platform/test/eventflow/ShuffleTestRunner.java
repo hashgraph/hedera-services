@@ -29,6 +29,7 @@ import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.components.EventIntake;
 import com.swirlds.platform.event.linking.EventLinker;
+import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.PreConsensusEventHandler;
 import com.swirlds.platform.intake.IntakeCycleStats;
@@ -115,7 +116,8 @@ public class ShuffleTestRunner {
                 addressBook,
                 dispatcher,
                 mock(IntakeCycleStats.class),
-                mock(ShadowGraph.class));
+                mock(ShadowGraph.class),
+                mock(PreConsensusEventWriter.class));
 
         // Submit self transactions to the transaction submitter, which sends them to the SwirldStateManager and
         // EventTransactionPool

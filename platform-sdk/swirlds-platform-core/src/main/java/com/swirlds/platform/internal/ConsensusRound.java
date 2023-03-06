@@ -51,15 +51,23 @@ public class ConsensusRound implements Round {
     private int numAppTransactions = 0;
 
     /**
+     * The event that, when added to the hashgraph, caused this round to reach consensus.
+     */
+    private final EventImpl keystoneEvent;
+
+    /**
      * Create a new instance with the provided consensus events.
      *
-     * @param consensusEvents
-     * 		the events in the round, in consensus order
-     * @param generations
-     * 		the consensus generations for this round
+     * @param consensusEvents the events in the round, in consensus order
+     * @param keystoneEvent   the event that, when added to the hashgraph, caused this round to reach consensus
+     * @param generations     the consensus generations for this round
      */
-    public ConsensusRound(final List<EventImpl> consensusEvents, final GraphGenerations generations) {
+    public ConsensusRound(
+            final List<EventImpl> consensusEvents,
+            final EventImpl keystoneEvent,
+            final GraphGenerations generations) {
         this.consensusEvents = Collections.unmodifiableList(consensusEvents);
+        this.keystoneEvent = keystoneEvent;
         this.generations = generations;
 
         for (final EventImpl e : consensusEvents) {
@@ -162,11 +170,22 @@ public class ConsensusRound implements Round {
         return hasShutdownEvent;
     }
 
+    /**
+     * @return the event that, when added to the hashgraph, caused this round to reach consensus
+     */
+    public EventImpl getKeystoneEvent() {
+        return keystoneEvent;
+    }
+
     @Override
     public boolean equals(final Object o) {
-        if (this == o) return true;
+        if (this == o) {
+            return true;
+        }
 
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         final ConsensusRound round = (ConsensusRound) o;
 

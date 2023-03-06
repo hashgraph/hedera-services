@@ -28,6 +28,7 @@ import com.swirlds.common.system.SwirldState2;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.system.transaction.Transaction;
+import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
@@ -50,9 +51,19 @@ public class TransactionHandler {
     /** Stats relevant to SwirldState operations. */
     private final SwirldStateMetrics stats;
 
-    public TransactionHandler(final NodeId selfId, final SwirldStateMetrics stats) {
+    /**
+     * This object managers the preconsensus event stream. We can call into this when waiting for events to become
+     * durable.
+     */
+    private final PreConsensusEventWriter preConsensusEventWriter;
+
+    public TransactionHandler(
+            final NodeId selfId,
+            final SwirldStateMetrics stats,
+            final PreConsensusEventWriter preConsensusEventWriter) {
         this.selfId = selfId;
         this.stats = stats;
+        this.preConsensusEventWriter = preConsensusEventWriter;
     }
 
     /**
@@ -172,6 +183,10 @@ public class TransactionHandler {
      */
     public void handleRound(final ConsensusRound round, final State state) {
         try {
+
+            // TODO add metric for this!
+            preConsensusEventWriter.waitUntilDurable(round.getKeystoneEvent());
+
             final Instant timeOfHandle = Instant.now();
             final long startTime = System.nanoTime();
 

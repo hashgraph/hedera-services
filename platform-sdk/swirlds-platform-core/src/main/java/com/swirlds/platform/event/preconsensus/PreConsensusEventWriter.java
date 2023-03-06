@@ -51,7 +51,7 @@ public interface PreConsensusEventWriter extends Startable, Stoppable {
      * @param minimumGenerationToStore
      * 		the minimum generation required to be stored on disk
      */
-    void setMinimumGenerationToStore(long minimumGenerationToStore);
+    void setMinimumGenerationToStore(long minimumGenerationToStore); // TODO actually call into this
 
     /**
      * Check if an event is guaranteed to be durable, i.e. flushed to disk.

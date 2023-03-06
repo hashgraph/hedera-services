@@ -34,6 +34,7 @@ import com.swirlds.common.system.SwirldState2;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.utility.ThrowingRunnable;
+import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
@@ -196,6 +197,7 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
             swirldStateManager = new SwirldStateManagerDouble(
                     selfId,
                     systemTransactionHandler,
+                    mock(PreConsensusEventWriter.class),
                     mock(SwirldStateMetrics.class),
                     settingsProvider,
                     () -> false,

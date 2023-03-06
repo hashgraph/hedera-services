@@ -41,6 +41,7 @@ import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.test.TransactionUtils;
+import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
@@ -74,7 +75,7 @@ class TransactionHandlerTest {
         when(state.getSwirldState()).thenReturn(swirldState1);
         when(state.getSwirldDualState()).thenReturn(dualState);
 
-        handler = new TransactionHandler(selfId, mock(SwirldStateMetrics.class));
+        handler = new TransactionHandler(selfId, mock(SwirldStateMetrics.class), mock(PreConsensusEventWriter.class));
     }
 
     @Test

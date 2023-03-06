@@ -26,6 +26,7 @@ import com.swirlds.common.test.state.DummySwirldState2;
 import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.components.SystemTransactionHandlerImpl;
+import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.state.signed.SignedState;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,6 +46,7 @@ public class SwirldStateManagerDoubleTests {
         swirldStateManagerDouble = new SwirldStateManagerDouble(
                 new NodeId(false, 0L),
                 mock(SystemTransactionHandlerImpl.class),
+                mock(PreConsensusEventWriter.class),
                 mock(SwirldStateMetrics.class),
                 mock(SettingsProvider.class),
                 () -> false,

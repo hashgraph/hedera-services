@@ -31,6 +31,7 @@ import com.swirlds.platform.Consensus;
 import com.swirlds.platform.components.EventIntake;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
+import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
 import com.swirlds.platform.intake.IntakeCycleStats;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -67,7 +68,8 @@ class EventIntakeTest {
                 addressBook,
                 dispatcher,
                 mock(IntakeCycleStats.class),
-                shadowGraph);
+                shadowGraph,
+                mock(PreConsensusEventWriter.class));
 
         final GossipEvent gossipEvent = mock(GossipEvent.class);
         final EventImpl added = mock(EventImpl.class);

@@ -237,7 +237,7 @@ public class SwirldStateManagerSingle implements SwirldStateManager {
                 .buildFactory());
 
         this.transactionPool = new SwirldStateSingleTransactionPool(settings, inFreeze);
-        this.transactionHandler = new TransactionHandler(selfId, stats);
+        this.transactionHandler = new TransactionHandler(selfId, stats, null); // TODO delete this class prior to merge
         setState(initialState);
 
         this.currSizeSupplier = this.transactionPool::getCurrSize;
