@@ -16,14 +16,6 @@
 
 package com.swirlds.platform.state;
 
-import static com.swirlds.common.utility.Units.NANOSECONDS_TO_MICROSECONDS;
-import static com.swirlds.logging.LogMarker.ERROR;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.QUEUES;
-import static com.swirlds.logging.LogMarker.RECONNECT;
-import static com.swirlds.logging.LogMarker.STARTUP;
-import static com.swirlds.platform.state.SwirldStateManagerUtils.fastCopy;
-
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SwirldDualState;
@@ -39,7 +31,6 @@ import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.components.SystemTransactionHandler;
-import com.swirlds.platform.components.TransThrottleSyncAndCreateRuleResponse;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.eventhandling.SwirldStateSingleTransactionPool;
@@ -48,6 +39,9 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.state.signed.SignedState;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -63,8 +57,14 @@ import java.util.concurrent.Semaphore;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+import static com.swirlds.common.utility.Units.NANOSECONDS_TO_MICROSECONDS;
+import static com.swirlds.logging.LogMarker.ERROR;
+import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.LogMarker.QUEUES;
+import static com.swirlds.logging.LogMarker.RECONNECT;
+import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.platform.state.SwirldStateManagerUtils.fastCopy;
 
 /**
  * <p>Manages all interactions with the 3 state objects required by {@link SwirldState}.</p>
@@ -785,14 +785,6 @@ public class SwirldStateManagerSingle implements SwirldStateManager {
     @Override
     public State getConsensusState() {
         return stateCons.getState();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public TransThrottleSyncAndCreateRuleResponse shouldSyncAndCreate() {
-        return SwirldStateManagerUtils.shouldSyncAndCreate(getConsensusState());
     }
 
     /**

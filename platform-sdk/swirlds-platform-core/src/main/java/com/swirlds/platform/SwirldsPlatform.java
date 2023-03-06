@@ -16,15 +16,6 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.common.utility.CommonUtils.combineConsumers;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.PLATFORM_STATUS;
-import static com.swirlds.logging.LogMarker.RECONNECT;
-import static com.swirlds.logging.LogMarker.STARTUP;
-import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
-import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
-
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.OSHealthCheckConfig;
@@ -99,8 +90,6 @@ import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.EventTaskCreator;
 import com.swirlds.platform.components.EventTaskDispatcher;
 import com.swirlds.platform.components.SystemTransactionHandlerImpl;
-import com.swirlds.platform.components.TransThrottleSyncAndCreateRules;
-import com.swirlds.platform.components.TransactionTracker;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.components.wiring.ManualWiring;
@@ -202,6 +191,11 @@ import com.swirlds.platform.system.SystemUtils;
 import com.swirlds.platform.threading.PauseAndClear;
 import com.swirlds.platform.threading.PauseAndLoad;
 import com.swirlds.platform.util.PlatformComponents;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
@@ -219,10 +213,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.utility.CommonUtils.combineConsumers;
+import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.LogMarker.PLATFORM_STATUS;
+import static com.swirlds.logging.LogMarker.RECONNECT;
+import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
+import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
 
 public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods, ConnectionTracker {
 
@@ -339,8 +338,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private final StateManagementComponent stateManagementComponent;
     /** last time stamp when pause check timer is active */
     private long pauseCheckTimeStamp;
-    /** Tracks user transactions in the hashgraph */
-    private TransactionTracker transactionTracker;
     /** Tracks recent events created in the network */
     private CriticalQuorum criticalQuorum;
 
@@ -826,8 +823,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             chatterCore.loadFromSignedState(signedState);
         }
 
-        transactionTracker.reset();
-
         logger.info(
                 STARTUP.getMarker(),
                 "Last known events after restart are {}",
@@ -950,8 +945,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 swirldStateManager::submitTransaction,
                 new TransactionMetrics(metrics));
 
-        this.transactionTracker = new TransactionTracker();
-
         if (loadedState.signedStateFromDisk != null) {
             loadIntoConsensusAndEventMapper(loadedState.signedStateFromDisk);
         } else {
@@ -1013,7 +1006,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 preConsensusEventHandler,
                 eventMapper,
                 addedEventMetrics,
-                transactionTracker,
                 criticalQuorum,
                 eventIntakeMetrics);
         if (settings.getChatter().isChatterUsed()) {
@@ -1064,7 +1056,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     eventIntake::addEvent,
                     eventMapper,
                     eventMapper,
-                    transactionTracker,
                     swirldStateManager.getTransactionPool(),
                     freezeManager::isFreezeStarted,
                     new EventCreationRules(List.of()));
@@ -1187,12 +1178,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 selfId,
                 new EventCreationRules(List.of(
                         selfId, swirldStateManager.getTransactionPool(), startUpEventFrozenManager, freezeManager)),
-                List.of(freezeManager, startUpEventFrozenManager),
-                new TransThrottleSyncAndCreateRules(
-                        List.of(swirldStateManager.getTransactionPool(), swirldStateManager)),
-                stateManagementComponent::getLastRoundSavedToDisk,
-                stateManagementComponent::getLastCompleteRound,
-                transactionTracker,
                 criticalQuorum,
                 initialAddressBook,
                 fallenBehindManager));
@@ -1654,13 +1639,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      */
     public CriticalQuorum getCriticalQuorum() {
         return criticalQuorum;
-    }
-
-    /**
-     * @return the object that tracks user transactions in the hashgraph
-     */
-    TransactionTracker getTransactionTracker() {
-        return transactionTracker;
     }
 
     /**

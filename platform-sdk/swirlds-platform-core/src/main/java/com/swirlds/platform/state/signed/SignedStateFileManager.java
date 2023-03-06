@@ -16,16 +16,6 @@
 
 package com.swirlds.platform.state.signed;
 
-import static com.swirlds.common.io.utility.FileUtils.deleteDirectoryAndLog;
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
-import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
-import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
-import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStateDirectory;
-import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStatesBaseDirectory;
-import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeSignedStateToDisk;
-
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
@@ -37,15 +27,25 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.Startable;
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+import static com.swirlds.common.io.utility.FileUtils.deleteDirectoryAndLog;
+import static com.swirlds.common.utility.CommonUtils.throwArgNull;
+import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
+import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
+import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
+import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStateDirectory;
+import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStatesBaseDirectory;
+import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeSignedStateToDisk;
 
 /**
  * This class is responsible for managing the signed state writing pipeline.
@@ -62,8 +62,6 @@ public class SignedStateFileManager implements Startable {
      * written to disk.
      */
     private Instant previousSavedStateTimestamp;
-
-    private final AtomicLong lastRoundSavedToDisk = new AtomicLong(-1);
 
     /**
      * The ID of this node.
@@ -234,7 +232,6 @@ public class SignedStateFileManager implements Startable {
         return saveSignedStateToDisk(
                 signedState, getSignedStateDir(signedState.getRound()), "periodic snapshot", success -> {
                     if (success) {
-                        lastRoundSavedToDisk.set(signedState.getRound());
                         deleteOldStates();
                     }
                 });
@@ -334,7 +331,6 @@ public class SignedStateFileManager implements Startable {
      */
     public synchronized void registerSignedStateFromDisk(final SignedState signedState) {
         previousSavedStateTimestamp = signedState.getConsensusTimestamp();
-        lastRoundSavedToDisk.set(signedState.getRound());
     }
 
     /**
@@ -353,14 +349,5 @@ public class SignedStateFileManager implements Startable {
                 // Intentionally ignored, deleteDirectoryAndLog will log any exceptions that happen
             }
         }
-    }
-
-    /**
-     * Get the last round that was saved to disk.
-     *
-     * @return the last round that was saved to disk, or -1 if no round was recently saved to disk
-     */
-    public long getLastRoundSavedToDisk() {
-        return lastRoundSavedToDisk.get();
     }
 }

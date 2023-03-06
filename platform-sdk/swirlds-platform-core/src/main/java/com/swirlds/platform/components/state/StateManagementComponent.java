@@ -26,6 +26,7 @@ import com.swirlds.platform.components.state.query.LatestSignedStateProvider;
 import com.swirlds.platform.reconnect.emergency.EmergencyStateFinder;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInfo;
+
 import java.util.List;
 
 /**
@@ -62,13 +63,6 @@ public interface StateManagementComponent
      * @return the latest round number
      */
     long getLastCompleteRound();
-
-    /**
-     * Get the last round for which a signed state was saved to disk.
-     *
-     * @return the last round that was saved to disk, or -1 if no round was recently saved to disk
-     */
-    long getLastRoundSavedToDisk();
 
     /**
      * Get the latest signed states stored by this component. This method creates a copy, so no changes to the array

@@ -220,18 +220,6 @@ public class PlatformMetrics {
                 .withFormat("%b"));
         metrics.getOrCreate(new FunctionGauge.Config<>(
                         INTERNAL_CATEGORY,
-                        "transThrottleCallAndCreate",
-                        Object.class,
-                        () -> platform.getSyncManager() == null
-                                ? 0
-                                : platform.getSyncManager().transThrottleCallAndCreate())
-                .withFormat("%b"));
-        metrics.getOrCreate(new FunctionGauge.Config<>(
-                        INTERNAL_CATEGORY, "getNumUserTransEvents", Long.class, () -> platform.getTransactionTracker()
-                                .getNumUserTransEvents())
-                .withFormat("%d"));
-        metrics.getOrCreate(new FunctionGauge.Config<>(
-                        INTERNAL_CATEGORY,
                         "hasFallenBehind",
                         Object.class,
                         () -> platform.getSyncManager() == null

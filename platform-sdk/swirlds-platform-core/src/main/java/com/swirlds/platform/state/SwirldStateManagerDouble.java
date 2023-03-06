@@ -16,26 +16,26 @@
 
 package com.swirlds.platform.state;
 
-import static com.swirlds.logging.LogMarker.RECONNECT;
-import static com.swirlds.platform.state.SwirldStateManagerUtils.fastCopy;
-
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.SwirldState2;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.components.SystemTransactionHandler;
-import com.swirlds.platform.components.TransThrottleSyncAndCreateRuleResponse;
 import com.swirlds.platform.eventhandling.EventTransactionPool;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.state.signed.SignedState;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+import static com.swirlds.logging.LogMarker.RECONNECT;
+import static com.swirlds.platform.state.SwirldStateManagerUtils.fastCopy;
 
 /**
  * <p>Manages all interactions with the state object required by {@link SwirldState2}.</p>
@@ -304,14 +304,6 @@ public class SwirldStateManagerDouble implements SwirldStateManager {
     public State getStateForSigning() {
         fastCopyAndUpdateRefs(stateRef.get());
         return latestImmutableState.get();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public TransThrottleSyncAndCreateRuleResponse shouldSyncAndCreate() {
-        return SwirldStateManagerUtils.shouldSyncAndCreate(getConsensusState());
     }
 
     /**

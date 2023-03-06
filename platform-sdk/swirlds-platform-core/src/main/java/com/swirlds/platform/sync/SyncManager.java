@@ -26,10 +26,6 @@ public interface SyncManager {
 
     List<Long> getNeighborsToCall();
 
-    boolean transThrottle();
-
-    boolean transThrottleCallAndCreate();
-
     boolean shouldCreateEvent(NodeId otherId, boolean oneNodeFallenBehind, int eventsRead, int eventsWritten);
 
     boolean shouldCreateEvent(final SyncResult info);

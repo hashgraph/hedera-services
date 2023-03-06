@@ -16,15 +16,11 @@
 
 package com.swirlds.platform.state;
 
-import static com.swirlds.common.utility.Units.NANOSECONDS_TO_MICROSECONDS;
-import static com.swirlds.platform.components.TransThrottleSyncAndCreateRuleResponse.PASS;
-import static com.swirlds.platform.components.TransThrottleSyncAndCreateRuleResponse.SYNC_AND_CREATE;
-
-import com.swirlds.platform.components.TransThrottleSyncAndCreateRule;
-import com.swirlds.platform.components.TransThrottleSyncAndCreateRuleResponse;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
+
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+
+import static com.swirlds.common.utility.Units.NANOSECONDS_TO_MICROSECONDS;
 
 /**
  * A utility class with useful methods for implementations of {@link SwirldStateManager}.
@@ -57,19 +53,6 @@ public final class SwirldStateManagerUtils {
         stats.stateCopyMicros((copyEnd - copyStart) * NANOSECONDS_TO_MICROSECONDS);
 
         return copy;
-    }
-
-    /**
-     * @see TransThrottleSyncAndCreateRule#shouldSyncAndCreate
-     */
-    public static TransThrottleSyncAndCreateRuleResponse shouldSyncAndCreate(final State consensusState) {
-        // if current time is 1 minute before or during the freeze period, initiate a sync
-        if (isInFreezePeriod(Instant.now().plus(1, ChronoUnit.MINUTES), consensusState)
-                || isInFreezePeriod(Instant.now(), consensusState)) {
-            return SYNC_AND_CREATE;
-        } else {
-            return PASS;
-        }
     }
 
     /**

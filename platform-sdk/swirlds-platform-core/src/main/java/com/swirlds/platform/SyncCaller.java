@@ -162,11 +162,6 @@ class SyncCaller implements Runnable {
                         callerNumber);
             }
 
-            // check transThrottle, if there is no reason to call, don't call anyone
-            if (!platform.getSyncManager().transThrottle()) {
-                return -1;
-            }
-
             // check with sync manager for any reasons not to sync
             if (!platform.getSyncManager().shouldInitiateSync()) {
                 return -1;

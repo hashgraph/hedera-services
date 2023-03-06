@@ -16,20 +16,20 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.logging.LogMarker.FREEZE;
-
 import com.swirlds.common.system.EventCreationRule;
 import com.swirlds.common.system.EventCreationRuleResponse;
-import com.swirlds.platform.components.TransThrottleSyncRule;
 import com.swirlds.platform.state.signed.SignedState;
-import java.nio.file.Path;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.nio.file.Path;
+
+import static com.swirlds.logging.LogMarker.FREEZE;
 
 /**
  * The source freeze related information.
  */
-public class FreezeManager implements TransThrottleSyncRule, EventCreationRule {
+public class FreezeManager implements EventCreationRule {
 
     private static final Logger logger = LogManager.getLogger(FreezeManager.class);
 
@@ -161,15 +161,6 @@ public class FreezeManager implements TransThrottleSyncRule, EventCreationRule {
                     signedState.getRound());
             freezeEventCreation();
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean shouldSync() {
-        // the node should sync while event creation is frozen
-        return isEventCreationFrozen();
     }
 
     /**

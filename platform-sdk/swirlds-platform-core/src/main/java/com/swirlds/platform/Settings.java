@@ -975,10 +975,6 @@ public class Settings {
         return merkleDb;
     }
 
-    public boolean isTransThrottle() {
-        return false;
-    }
-
     public String getCsvOutputFolder() {
         return csvOutputFolder;
     }

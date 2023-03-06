@@ -16,18 +16,6 @@
 
 package com.swirlds.platform.test.components;
 
-import static com.swirlds.common.system.EventCreationRuleResponse.DONT_CREATE;
-import static com.swirlds.common.system.EventCreationRuleResponse.PASS;
-import static com.swirlds.common.test.RandomUtils.randomHash;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.stream.Signer;
@@ -43,7 +31,6 @@ import com.swirlds.platform.components.EventHandler;
 import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.TransactionPool;
 import com.swirlds.platform.components.TransactionSupplier;
-import com.swirlds.platform.components.TransactionTracker;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventConstants;
 import com.swirlds.platform.event.EventUtils;
@@ -53,6 +40,11 @@ import com.swirlds.platform.sync.Generations;
 import com.swirlds.platform.test.event.EventMocks;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -63,10 +55,18 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+
+import static com.swirlds.common.system.EventCreationRuleResponse.DONT_CREATE;
+import static com.swirlds.common.system.EventCreationRuleResponse.PASS;
+import static com.swirlds.common.test.RandomUtils.randomHash;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @DisplayName("Event Creator Tests")
 class EventCreatorTests {
@@ -79,12 +79,6 @@ class EventCreatorTests {
 
     private static final TransactionSupplier defaultTransactionSupplier = () -> new SwirldTransaction[0];
     private static final EventHandler noOpEventHandler = (event) -> {};
-
-    static final TransactionTracker defaultTransactionTracker = mock(TransactionTracker.class);
-
-    static {
-        when(defaultTransactionTracker.getNumUserTransEvents()).thenReturn(0L);
-    }
 
     static final TransactionPool defaultTransactionPool = mock(TransactionPool.class);
 
@@ -308,7 +302,6 @@ class EventCreatorTests {
                 defaultGenerationsSupplier,
                 () -> transactions,
                 events::add,
-                defaultTransactionTracker,
                 defaultTransactionPool,
                 () -> false,
                 defaultThrottles);
@@ -363,7 +356,6 @@ class EventCreatorTests {
                 defaultGenerationsSupplier,
                 () -> transactions,
                 events::add,
-                defaultTransactionTracker,
                 defaultTransactionPool,
                 () -> false,
                 defaultThrottles);
@@ -429,7 +421,6 @@ class EventCreatorTests {
                     events.add(e);
                     Mockito.when(mapper.getMostRecentSelfEvent()).thenReturn(e);
                 },
-                defaultTransactionTracker,
                 defaultTransactionPool,
                 () -> false,
                 defaultThrottles);
@@ -469,7 +460,6 @@ class EventCreatorTests {
                 defaultGenerationsSupplier,
                 defaultTransactionSupplier,
                 events::add,
-                defaultTransactionTracker,
                 defaultTransactionPool,
                 () -> false,
                 new EventCreationRules(List.of(mockRule)));

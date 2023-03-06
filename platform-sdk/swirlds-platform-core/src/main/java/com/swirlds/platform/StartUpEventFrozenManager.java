@@ -19,7 +19,7 @@ package com.swirlds.platform;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.EventCreationRule;
 import com.swirlds.common.system.EventCreationRuleResponse;
-import com.swirlds.platform.components.TransThrottleSyncRule;
+
 import java.time.Instant;
 import java.util.function.Supplier;
 
@@ -27,7 +27,7 @@ import java.util.function.Supplier;
  * This class is used for pausing event creation for a while, when the node starts from a saved state and {@link
  * Settings#freezeSecondsAfterStartup} is positive
  */
-public class StartUpEventFrozenManager implements TransThrottleSyncRule, EventCreationRule {
+public class StartUpEventFrozenManager implements EventCreationRule {
     /** the time when this platforms startup event frozen ends */
     private volatile Instant startUpEventFrozenEndTime = null;
     /** a boolean that indicates whether the statistics have been reset after the startup freeze */
@@ -67,15 +67,6 @@ public class StartUpEventFrozenManager implements TransThrottleSyncRule, EventCr
 
     void setStartUpEventFrozenEndTime(Instant startUpEventFrozenEndTime) {
         this.startUpEventFrozenEndTime = startUpEventFrozenEndTime;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean shouldSync() {
-        // the node should sync during startup freeze
-        return isEventCreationPausedAfterStartUp();
     }
 
     /**

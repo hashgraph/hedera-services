@@ -16,18 +16,14 @@
 
 package com.swirlds.platform.eventhandling;
 
-import static com.swirlds.platform.components.TransThrottleSyncAndCreateRuleResponse.PASS;
-import static com.swirlds.platform.components.TransThrottleSyncAndCreateRuleResponse.SYNC_AND_CREATE;
-
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.platform.SettingsProvider;
-import com.swirlds.platform.components.TransThrottleSyncAndCreateRule;
-import com.swirlds.platform.components.TransThrottleSyncAndCreateRuleResponse;
 import com.swirlds.platform.components.TransactionPool;
 import com.swirlds.platform.components.TransactionSupplier;
+
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -37,7 +33,7 @@ import java.util.function.BooleanSupplier;
  * Store a list of transactions created by self, both system and non-system, for wrapping in the next
  * event to be created.
  */
-public class EventTransactionPool implements TransactionPool, TransactionSupplier, TransThrottleSyncAndCreateRule {
+public class EventTransactionPool implements TransactionPool, TransactionSupplier {
 
     /**
      * A list of transactions created by this node waiting to be put into a self-event.
@@ -178,18 +174,6 @@ public class EventTransactionPool implements TransactionPool, TransactionSupplie
             return EventCreationRuleResponse.CREATE;
         } else {
             return EventCreationRuleResponse.PASS;
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public TransThrottleSyncAndCreateRuleResponse shouldSyncAndCreate() {
-        // if we have transactions waiting to be put into an event, initiate a sync
-        if (numTransForEvent() > 0) {
-            return SYNC_AND_CREATE;
-        } else {
-            return PASS;
         }
     }
 

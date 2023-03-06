@@ -16,6 +16,27 @@
 
 package com.swirlds.platform;
 
+import com.swirlds.common.system.EventCreationRuleResponse;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.events.BaseEvent;
+import com.swirlds.platform.components.CriticalQuorum;
+import com.swirlds.platform.components.EventCreationRules;
+import com.swirlds.platform.eventhandling.EventTransactionPool;
+import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.network.RandomGraph;
+import com.swirlds.platform.reconnect.FallenBehindManagerImpl;
+import com.swirlds.platform.state.SwirldStateManager;
+import com.swirlds.platform.state.SwirldStateManagerDouble;
+import com.swirlds.platform.state.SwirldStateManagerSingle;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.provider.Arguments;
+
+import java.util.List;
+import java.util.stream.Stream;
+
 import static com.swirlds.common.system.EventCreationRuleResponse.CREATE;
 import static com.swirlds.common.system.EventCreationRuleResponse.DONT_CREATE;
 import static com.swirlds.common.system.EventCreationRuleResponse.PASS;
@@ -29,33 +50,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
-
-import com.swirlds.common.system.EventCreationRuleResponse;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.events.BaseEvent;
-import com.swirlds.platform.components.CriticalQuorum;
-import com.swirlds.platform.components.EventCreationRules;
-import com.swirlds.platform.components.TransThrottleSyncAndCreateRules;
-import com.swirlds.platform.components.TransactionTracker;
-import com.swirlds.platform.eventhandling.EventTransactionPool;
-import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.network.RandomGraph;
-import com.swirlds.platform.reconnect.FallenBehindManagerImpl;
-import com.swirlds.platform.state.PlatformDualState;
-import com.swirlds.platform.state.State;
-import com.swirlds.platform.state.SwirldStateManager;
-import com.swirlds.platform.state.SwirldStateManagerDouble;
-import com.swirlds.platform.state.SwirldStateManagerSingle;
-import java.time.Instant;
-import java.util.List;
-import java.util.stream.Stream;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 
 // Tests utilize static Settings configuration and must not be run in parallel
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -75,10 +69,7 @@ public class SyncManagerTest {
 
         FreezeManager freezeManager;
         StartUpEventFrozenManager startUpEventFrozenManager;
-        public Long lastRoundSavedToDisk;
-        public Long lastCompletedRound;
         public DummyHashgraph hashgraph;
-        public TransactionTracker transactionTracker;
         public EventTransactionPool eventTransactionPool;
         public SwirldStateManager swirldStateManager;
         public RandomGraph connectionGraph;
@@ -101,8 +92,6 @@ public class SyncManagerTest {
         public SyncManagerTestData(final NodeId nodeId, final SwirldStateManager swirldStateManager) {
             freezeManager = mock(FreezeManager.class);
             startUpEventFrozenManager = mock(StartUpEventFrozenManager.class);
-            lastRoundSavedToDisk = 0L;
-            lastCompletedRound = 0L;
             hashgraph = new DummyHashgraph();
             eventTransactionPool = spy(EventTransactionPool.class);
 
@@ -112,17 +101,6 @@ public class SyncManagerTest {
             doReturn(false).when(swirldStateManager).isInFreezePeriod(any());
 
             connectionGraph = new RandomGraph(100, 40, 0);
-            transactionTracker = new TransactionTracker() {
-                @Override
-                public long getNumUserTransEvents() {
-                    return hashgraph.numUserTransEvents;
-                }
-
-                @Override
-                public long getLastRoundReceivedAllTransCons() {
-                    return hashgraph.lastRoundReceivedAllTransCons;
-                }
-            };
             criticalQuorum = new CriticalQuorum() {
                 @Override
                 public boolean isInCriticalQuorum(final long nodeId) {
@@ -148,11 +126,6 @@ public class SyncManagerTest {
                     connectionGraph,
                     nodeId,
                     new EventCreationRules(List.of(nodeId, startUpEventFrozenManager, freezeManager)),
-                    List.of(freezeManager, startUpEventFrozenManager),
-                    new TransThrottleSyncAndCreateRules(List.of(eventTransactionPool, swirldStateManager)),
-                    () -> lastRoundSavedToDisk,
-                    () -> lastCompletedRound,
-                    transactionTracker,
                     criticalQuorum,
                     hashgraph.getAddressBook(),
                     new FallenBehindManagerImpl(
