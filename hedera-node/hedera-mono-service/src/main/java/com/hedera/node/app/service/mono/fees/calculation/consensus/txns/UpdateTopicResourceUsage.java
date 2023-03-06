@@ -24,10 +24,12 @@ import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -36,7 +38,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 @Singleton
-public final class UpdateTopicResourceUsage implements TxnResourceUsageEstimator {
+public class UpdateTopicResourceUsage implements TxnResourceUsageEstimator {
     private static final Logger log = LogManager.getLogger(UpdateTopicResourceUsage.class);
 
     @Inject
@@ -60,10 +62,17 @@ public final class UpdateTopicResourceUsage implements TxnResourceUsageEstimator
             throw new IllegalStateException("No StateView present !!");
         }
 
-        long rbsIncrease = 0;
         final var merkleTopic = view.topics()
                 .get(EntityNum.fromTopicId(txnBody.getConsensusUpdateTopic().getTopicID()));
+        return usageGivenExplicit(txnBody, sigUsage, merkleTopic);
+    }
 
+    public FeeData usageGivenExplicit(
+            @NonNull final TransactionBody txnBody,
+            @NonNull final SigValueObj sigUsage,
+            @Nullable final MerkleTopic merkleTopic)
+            throws InvalidTxBodyException {
+        long rbsIncrease = 0;
         if (merkleTopic != null && merkleTopic.hasAdminKey()) {
             final var expiry = Timestamp.newBuilder()
                     .setSeconds(merkleTopic.getExpirationTimestamp().getSeconds())

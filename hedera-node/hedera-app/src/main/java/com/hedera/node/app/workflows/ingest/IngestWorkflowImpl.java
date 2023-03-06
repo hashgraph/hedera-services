@@ -45,7 +45,6 @@ import javax.inject.Inject;
 
 /** Implementation of {@link IngestWorkflow} */
 public final class IngestWorkflowImpl implements IngestWorkflow {
-
     private final NodeInfo nodeInfo;
     private final CurrentPlatformStatus currentPlatformStatus;
     private final Supplier<AutoCloseableWrapper<HederaState>> stateAccessor;
@@ -163,7 +162,6 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
                 checker.checkSolvency(onsetResult.transaction());
 
                 // 7. Submit to platform
-                // TODO - figure out how to get just the user transaction from the requestBuffer array
                 submissionManager.submit(txBody, onsetResult.transaction().toByteArray(), ctx.txBodyParser());
 
                 opCounters.countSubmitted(functionality);
