@@ -27,9 +27,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Similar to a {@link java.util.concurrent.CountDownLatch}, but counts up instead.
- * <p>
- * Note: this may not be performant if waiting for a very large number of count increases or for very high frequency
- * updates. Each time the count increases we touch concurrency objects.
  */
 public class CountUpLatch {
 
@@ -64,6 +61,9 @@ public class CountUpLatch {
 
     /**
      * Increment the count by 1.
+     * <p>
+     * Methods that update the count are not mutually thread safe. Concurrent threads should never attempt to update
+     * the count. It is, however, safe for many threads to concurrently call methods that query the count.
      */
     public void increment() {
         add(1);
@@ -71,27 +71,36 @@ public class CountUpLatch {
 
     /**
      * Set the count to a higher value.
+     * <p>
+     * Methods that update the count are not mutually thread safe. Concurrent threads should never attempt to update
+     * the count. It is, however, safe for many threads to concurrently call methods that query the count.
      *
      * @param count the new count, must be greater than the current value
-     * @throws IllegalArgumentException if the new count is less than the current count
+     * @throws IllegalArgumentException if the new count is less than the current count (the state of this object is
+     *                                  messed up if this happens -- this is an unrecoverable error)
      */
-    public synchronized void set(final long count) {
-        this.currentCount.getAndUpdate(original -> {
-            if (count < original) {
-                throw new IllegalArgumentException("Current count is " + original + " but new count is " + count
-                        + ", cannot set count to a lower value");
-            }
-            return count;
-        });
+    public void set(final long count) {
+        final long previous = currentCount.getAndSet(count);
+        if (count < previous) {
+            throw new IllegalArgumentException("Current count is " + previous + " but new count is " + count
+                    + ", cannot set count to a lower value");
+        }
         phaser.arriveAndAwaitAdvance();
     }
 
     /**
      * Increment the count by the given delta.
+     * <p>
+     * Methods that update the count are not mutually thread safe. Concurrent threads should never attempt to update
+     * the count. It is, however, safe for many threads to concurrently call methods that query the count.
      *
      * @param delta the amount to increment the count by
+     * @throws IllegalArgumentException if the delta is negative
      */
-    public synchronized void add(final long delta) {
+    public void add(final long delta) {
+        if (delta < 0) {
+            throw new IllegalArgumentException("Cannot add a negative delta (" + delta + ")");
+        }
         currentCount.addAndGet(delta);
         phaser.arriveAndAwaitAdvance();
     }
@@ -107,13 +116,9 @@ public class CountUpLatch {
             return;
         }
 
-        phaser.register();
-        try {
-            while (currentCount.get() < count) {
-                phaser.arriveAndAwaitAdvance();
-            }
-        } finally {
-            phaser.arriveAndDeregister();
+        int phase = phaser.getPhase();
+        while (currentCount.get() < count) {
+            phase = phaser.awaitAdvance(phase);
         }
     }
 
@@ -131,24 +136,22 @@ public class CountUpLatch {
         }
 
         final Instant start = Instant.now();
-        phaser.register();
-        try {
-            while (currentCount.get() < count) {
-                final Instant now = Instant.now();
-                final Duration elapsed = Duration.between(start, now);
-                if (isLessThan(timeToWait, elapsed)) {
-                    break;
-                }
+        int phase = phaser.getPhase();
+        while (currentCount.get() < count) {
 
-                final long remainingMillis = timeToWait.minus(elapsed).toMillis();
-
-                final int phase = phaser.arrive();
-                phaser.awaitAdvanceInterruptibly(phase, remainingMillis, TimeUnit.MILLISECONDS);
+            final Instant now = Instant.now();
+            final Duration elapsed = Duration.between(start, now);
+            if (isLessThan(timeToWait, elapsed)) {
+                break;
             }
-        } catch (final TimeoutException e) {
-            // ignore
-        } finally {
-            phaser.arriveAndDeregister();
+
+            final long remainingMillis = timeToWait.minus(elapsed).toMillis();
+
+            try {
+                phase = phaser.awaitAdvanceInterruptibly(phase, remainingMillis, TimeUnit.MILLISECONDS);
+            } catch (final TimeoutException e) {
+                break;
+            }
         }
 
         return currentCount.get() >= count;
