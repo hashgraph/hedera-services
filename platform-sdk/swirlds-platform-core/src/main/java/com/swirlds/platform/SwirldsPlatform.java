@@ -1973,7 +1973,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * @return whether this event is the last event to be added before restart
      */
     private boolean isLastEventBeforeRestart(final EventImpl event) {
-        return (event.isLastInRoundReceived() && swirldStateManager.isInFreezePeriod(event.getConsensusTimestamp()));
+        return event.isLastInRoundReceived() && swirldStateManager.isInFreezePeriod(event.getConsensusTimestamp());
     }
 
     /**
