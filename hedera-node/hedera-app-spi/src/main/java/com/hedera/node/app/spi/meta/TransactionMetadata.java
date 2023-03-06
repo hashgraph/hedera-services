@@ -27,7 +27,8 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.swirlds.common.crypto.TransactionSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Map;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Metadata collected when transactions are handled as part of "pre-handle". This happens with
@@ -39,44 +40,40 @@ import java.util.Map;
  * @param payer payer for the transaction
  * @param status {@link ResponseCodeEnum} status of the transaction
  * @param payerKey payer key required to sign the transaction. It is null if payer is missing
- * @param payerSignature {@link TransactionSignature} of the payer
- * @param otherSignatures lit {@link TransactionSignature} of other keys that need to sign
  * @param innerMetadata {@link TransactionMetadata} of the inner transaction (where appropriate)
  */
 public record TransactionMetadata(
         @Nullable TransactionBody txnBody,
-        @Nullable AccountID payer,
         @Nullable SignatureMap signatureMap,
+        @Nullable AccountID payer,
         @NonNull ResponseCodeEnum status,
         @Nullable HederaKey payerKey,
-        @Nullable TransactionSignature payerSignature,
-        @NonNull Map<HederaKey, TransactionSignature> otherSignatures,
+        @NonNull List<HederaKey> otherPartyKeys,
+        @Nullable List<TransactionSignature> cryptoSignatures,
         @Nullable TransactionMetadata innerMetadata) {
 
     public TransactionMetadata {
         requireNonNull(status);
-        requireNonNull(otherSignatures);
     }
 
     public TransactionMetadata(
             @NonNull final PreHandleContext context,
             @NonNull final SignatureMap signatureMap,
-            @Nullable final TransactionSignature payerSignature,
-            @NonNull final Map<HederaKey, TransactionSignature> otherSignatures,
+            @NonNull final List<TransactionSignature> cryptoSignatures,
             @Nullable final TransactionMetadata innerMetadata) {
         this(
                 requireNonNull(context).getTxn(),
-                context.getPayer(),
                 requireNonNull(signatureMap),
+                context.getPayer(),
                 context.getStatus(),
                 context.getPayerKey(),
-                payerSignature,
-                otherSignatures,
+                context.getRequiredNonPayerKeys(),
+                requireNonNull(cryptoSignatures),
                 innerMetadata);
     }
 
     public TransactionMetadata(@NonNull final ResponseCodeEnum status) {
-        this(null, null, null, status, null, null, Map.of(), null);
+        this(null, null, null, status, null, Collections.emptyList(), Collections.emptyList(), null);
     }
 
     /**

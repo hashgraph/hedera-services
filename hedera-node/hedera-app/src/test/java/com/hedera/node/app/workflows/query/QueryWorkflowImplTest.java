@@ -329,7 +329,7 @@ class QueryWorkflowImplTest extends AppTestBase {
 
     @Test
     void testSuccessIfPaymentRequired() throws InvalidProtocolBufferException, PreCheckException {
-        given(feeAccumulator.computePayment(any(), any(), any())).willReturn(new FeeObject(100L, 0L, 100L));
+        given(feeAccumulator.computePayment(any(), any(), any(), any())).willReturn(new FeeObject(100L, 0L, 100L));
         given(handler.requiresNodePayment(any())).willReturn(true);
         given(dispatcher.validate(any(), any())).willReturn(OK);
         given(dispatcher.getResponse(any(), any(), any(), any()))
@@ -346,6 +346,29 @@ class QueryWorkflowImplTest extends AppTestBase {
         assertThat(header.getNodeTransactionPrecheckCode()).isEqualTo(OK);
         assertThat(header.getResponseType()).isEqualTo(ANSWER_ONLY);
         assertThat(header.getCost()).isZero();
+        verify(opCounters).countReceived(FileGetInfo);
+        verify(opCounters).countAnswered(FileGetInfo);
+    }
+
+    @Test
+    void testSuccessIfAnswerOnlyCostRequired() throws InvalidProtocolBufferException, PreCheckException {
+        given(feeAccumulator.computePayment(any(), any(), any(), any())).willReturn(new FeeObject(100L, 0L, 100L));
+        given(handler.needsAnswerOnlyCost(any())).willReturn(true);
+        given(dispatcher.validate(any(), any())).willReturn(OK);
+        given(dispatcher.getResponse(any(), any(), any(), any()))
+                .willReturn(Response.newBuilder().build());
+        // given
+        final var responseBuffer = ByteBuffer.allocate(BUFFER_SIZE);
+        // when
+        workflow.handleQuery(ctx, requestBuffer, responseBuffer);
+
+        // then
+        final var response = parseResponse(responseBuffer);
+        assertThat(response.getFileGetInfo()).isNotNull();
+        final var header = response.getFileGetInfo().getHeader();
+        assertThat(header.getNodeTransactionPrecheckCode()).isEqualTo(OK);
+        assertThat(header.getResponseType()).isEqualTo(ANSWER_ONLY);
+        assertThat(header.getCost()).isEqualTo(200);
         verify(opCounters).countReceived(FileGetInfo);
         verify(opCounters).countAnswered(FileGetInfo);
     }
@@ -1102,7 +1125,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         doThrow(new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED))
                 .when(submissionManager)
                 .submit(txBody, payment.toByteArray(), ctx.txBodyParser());
-        given(feeAccumulator.computePayment(any(), any(), any())).willReturn(new FeeObject(100L, 0L, 100L));
+        given(feeAccumulator.computePayment(any(), any(), any(), any())).willReturn(new FeeObject(100L, 0L, 100L));
         final var responseBuffer = ByteBuffer.allocate(BUFFER_SIZE);
 
         // when

@@ -16,18 +16,23 @@
 
 package com.hedera.node.app.service.consensus.impl.handlers;
 
+import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.RUNNING_HASH_BYTE_ARRAY_SIZE;
+import static com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter.fromGrpcKey;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
+import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.hashgraph.pbj.runtime.io.Bytes;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
-import com.hedera.node.app.service.consensus.impl.entity.TopicBuilderImpl;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.CreateTopicRecordBuilder;
 import com.hedera.node.app.spi.exceptions.HandleStatusException;
@@ -68,8 +73,6 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         final var op = context.getTxn().consensusCreateTopic().orElseThrow();
         final var adminKey = asHederaKey(op.adminKey());
         adminKey.ifPresent(context::addToReqNonPayerKeys);
-        final var submitKey = asHederaKey(op.submitKey());
-        submitKey.ifPresent(context::addToReqNonPayerKeys);
 
         if (op.autoRenewAccount() != null) {
             final var autoRenewAccount = op.autoRenewAccount();
@@ -92,16 +95,16 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
             @NonNull final ConsensusServiceConfig consensusServiceConfig,
             @NonNull final ConsensusCreateTopicRecordBuilder recordBuilder,
             @NonNull final WritableTopicStore topicStore) {
-        final var builder = new TopicBuilderImpl();
+        final var builder = new Topic.Builder();
 
         /* Validate admin and submit keys and set them */
         if (op.hasAdminKey()) {
             handleContext.attributeValidator().validateKey(op.getAdminKey());
-            asHederaKey(op.getAdminKey()).ifPresent(builder::adminKey);
+            builder.adminKey(fromGrpcKey(op.getAdminKey()));
         }
         if (op.hasSubmitKey()) {
             handleContext.attributeValidator().validateKey(op.getSubmitKey());
-            asHederaKey(op.getSubmitKey()).ifPresent(builder::submitKey);
+            builder.submitKey(fromGrpcKey(op.getSubmitKey()));
         }
 
         /* Validate if the current topic can be created */
@@ -113,33 +116,43 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         handleContext.attributeValidator().validateMemo(op.getMemo());
         builder.memo(op.getMemo());
 
-        /* Validate the auto-renewal account */
-        final var autoRenewPeriod =
-                op.hasAutoRenewPeriod() ? op.getAutoRenewPeriod().getSeconds() : NA;
-        final var autoRenewAccountId =
-                op.hasAutoRenewAccount() ? op.getAutoRenewAccount().getAccountNum() : NA;
-
+        final var impliedExpiry = handleContext.consensusNow().getEpochSecond()
+                + op.getAutoRenewPeriod().getSeconds();
         final var entityExpiryMeta = new ExpiryMeta(
-                NA, // expiry not set explicitly
-                autoRenewPeriod,
-                autoRenewAccountId);
+                impliedExpiry,
+                op.getAutoRenewPeriod().getSeconds(),
+                // Shard and realm will be ignored if num is NA
+                op.getAutoRenewAccount().getShardNum(),
+                op.getAutoRenewAccount().getRealmNum(),
+                op.hasAutoRenewAccount() ? op.getAutoRenewAccount().getAccountNum() : NA);
 
-        final var effectiveExpiryMeta =
-                handleContext.expiryValidator().validateCreationAttempt(false, entityExpiryMeta);
-        builder.autoRenewSecs(effectiveExpiryMeta.autoRenewPeriod());
-        builder.expiry(effectiveExpiryMeta.expiry());
-        builder.autoRenewAccountNumber(effectiveExpiryMeta.autoRenewNum());
+        try {
+            final var effectiveExpiryMeta =
+                    handleContext.expiryValidator().resolveCreationAttempt(false, entityExpiryMeta);
+            builder.autoRenewPeriod(effectiveExpiryMeta.autoRenewPeriod());
+            builder.expiry(effectiveExpiryMeta.expiry());
+            builder.autoRenewAccountNumber(effectiveExpiryMeta.autoRenewNum());
 
-        /* --- Add topic number to topic builder --- */
-        builder.topicNumber(handleContext.newEntityNumSupplier().getAsLong());
+            /* --- Add topic number to topic builder --- */
+            builder.topicNumber(handleContext.newEntityNumSupplier().getAsLong());
 
-        /* --- Put the final topic. It will be in underlying state's modifications map.
-        It will not be committed to state until commit is called on the state.--- */
-        final var topic = builder.build();
-        topicStore.put(topic);
+            builder.runningHash(Bytes.wrap(new byte[RUNNING_HASH_BYTE_ARRAY_SIZE]));
 
-        /* --- Build the record with newly created topic --- */
-        recordBuilder.setCreatedTopic(topic.topicNumber());
+            /* --- Put the final topic. It will be in underlying state's modifications map.
+            It will not be committed to state until commit is called on the state.--- */
+            final var topic = builder.build();
+            topicStore.put(topic);
+
+            /* --- Build the record with newly created topic --- */
+            recordBuilder.setCreatedTopic(topic.topicNumber());
+        } catch (final HandleStatusException e) {
+            if (e.getStatus() == INVALID_EXPIRATION_TIME) {
+                // Since for some reason TopicCreateTransactionBody does not have an expiration time,
+                // it makes more sense to propagate AUTORENEW_DURATION_NOT_IN_RANGE
+                throw new HandleStatusException(AUTORENEW_DURATION_NOT_IN_RANGE);
+            }
+            throw e;
+        }
     }
 
     @Override

@@ -30,7 +30,7 @@ import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.swirlds.common.crypto.TransactionSignature;
-import java.util.Map;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -38,7 +38,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TransactionMetadataTest {
-
     @Mock
     private HederaKey payerKey;
 
@@ -47,19 +46,6 @@ class TransactionMetadataTest {
 
     private final TransactionBody txBody = TransactionBody.newBuilder().build();
     private final AccountID payer = AccountID.newBuilder().accountNum(42L).build();
-
-    @Test
-    void testDefaultConstructorWithInvalidArguments() {
-        // given
-        final Map<HederaKey, TransactionSignature> signatures = Map.of();
-
-        assertThatCode(() -> new TransactionMetadata(null, null, null, OK, null, null, signatures, null))
-                .doesNotThrowAnyException();
-        assertThatThrownBy(() -> new TransactionMetadata(txBody, payer, null, null, payerKey, null, signatures, null))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new TransactionMetadata(txBody, payer, null, OK, payerKey, null, null, null))
-                .isInstanceOf(NullPointerException.class);
-    }
 
     @Test
     void testPreHandleContextConstructor(
@@ -71,12 +57,13 @@ class TransactionMetadataTest {
         when(context.getPayer()).thenReturn(payer);
         when(context.getStatus()).thenReturn(OK);
         when(context.getPayerKey()).thenReturn(payerKey);
+        when(context.getRequiredNonPayerKeys()).thenReturn(List.of(otherKey));
         final var signatureMap = SignatureMap.newBuilder().build();
-        final var innerMetadata = new TransactionMetadata(null, null, null, OK, null, null, Map.of(), null);
+        final var innerMetadata = new TransactionMetadata(null, null, null, OK, null, null, List.of(), null);
+        final var expectedSigs = List.of(payerSignature, otherSignature);
 
         // when
-        final var metadata = new TransactionMetadata(
-                context, signatureMap, payerSignature, Map.of(otherKey, otherSignature), innerMetadata);
+        final var metadata = new TransactionMetadata(context, signatureMap, expectedSigs, innerMetadata);
 
         // then
         assertThat(metadata.txnBody()).isEqualTo(txBody);
@@ -84,8 +71,7 @@ class TransactionMetadataTest {
         assertThat(metadata.signatureMap()).isEqualTo(signatureMap);
         assertThat(metadata.status()).isEqualTo(OK);
         assertThat(metadata.payerKey()).isEqualTo(payerKey);
-        assertThat(metadata.payerSignature()).isEqualTo(payerSignature);
-        assertThat(metadata.otherSignatures()).containsExactly(Map.entry(otherKey, otherSignature));
+        assertThat(metadata.cryptoSignatures()).isEqualTo(expectedSigs);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -96,16 +82,16 @@ class TransactionMetadataTest {
         when(context.getPayer()).thenReturn(payer);
         when(context.getStatus()).thenReturn(OK);
         final var signatureMap = SignatureMap.newBuilder().build();
-        final Map<HederaKey, TransactionSignature> signatures = Map.of();
+        final List<TransactionSignature> signatures = List.of();
 
         // then
-        assertThatCode(() -> new TransactionMetadata(context, signatureMap, null, signatures, null))
+        assertThatCode(() -> new TransactionMetadata(context, signatureMap, signatures, null))
                 .doesNotThrowAnyException();
-        assertThatThrownBy(() -> new TransactionMetadata(null, signatureMap, null, signatures, null))
+        assertThatThrownBy(() -> new TransactionMetadata(null, signatureMap, signatures, null))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new TransactionMetadata(context, null, null, signatures, null))
+        assertThatThrownBy(() -> new TransactionMetadata(context, null, signatures, null))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new TransactionMetadata(context, signatureMap, null, null, null))
+        assertThatThrownBy(() -> new TransactionMetadata(context, signatureMap, null, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -120,8 +106,7 @@ class TransactionMetadataTest {
         assertThat(metadata.signatureMap()).isNull();
         assertThat(metadata.status()).isEqualTo(INVALID_ACCOUNT_ID);
         assertThat(metadata.payerKey()).isNull();
-        assertThat(metadata.payerSignature()).isNull();
-        assertThat(metadata.otherSignatures()).isEmpty();
+        assertThat(metadata.cryptoSignatures()).isEmpty();
     }
 
     @SuppressWarnings("ConstantConditions")

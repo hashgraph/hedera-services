@@ -38,6 +38,8 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.impl.entity.AccountBuilderImpl;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.accounts.Account;
@@ -73,9 +75,9 @@ public class ReadableAccountStore implements AccountAccess {
     }
 
     /** The underlying data storage class that holds the account data. */
-    private final ReadableKVState<Long, MerkleAccount> accountState;
+    private final ReadableKVState<EntityNumVirtualKey, MerkleAccount> accountState;
     /** The underlying data storage class that holds the aliases data built from the state. */
-    private final ReadableKVState<String, Long> aliases;
+    private final ReadableKVState<String, EntityNumValue> aliases;
 
     /**
      * Create a new {@link ReadableAccountStore} instance.
@@ -172,8 +174,7 @@ public class ReadableAccountStore implements AccountAccess {
      * @param id given account number
      * @return merkle leaf for the given account number
      */
-    @Nullable
-    private HederaAccount getAccountLeaf(@NonNull final AccountID id) {
+    private Optional<HederaAccount> getAccountLeaf(@NonNull final AccountID id) {
         // Get the account number based on the account identifier. It may be null.
         final var accountOneOf = id.account();
         final Long accountNum =
@@ -190,7 +191,7 @@ public class ReadableAccountStore implements AccountAccess {
                     case UNSET -> throw new RuntimeException("Account number not set in protobuf!!");
                 };
 
-        return accountNum == null ? null : accountState.get(accountNum);
+        return Optional.ofNullable(accountNum == null ? null : accountState.get(accountNum));
     }
 
     /**
@@ -200,8 +201,7 @@ public class ReadableAccountStore implements AccountAccess {
      * @param id given contract number
      * @return merkle leaf for the given contract number
      */
-    @Nullable
-    private HederaAccount getContractLeaf(@NonNull final ContractID id) {
+    private Optional<HederaAccount> getContractLeaf(@NonNull final ContractID id) {
         // Get the contract number based on the contract identifier. It may be null.
         final var contractOneOf = id.contract();
         final Long contractNum =
@@ -235,7 +235,7 @@ public class ReadableAccountStore implements AccountAccess {
                     case UNSET -> throw new RuntimeException("Contract number not set in protobuf!!");
                 };
 
-        return contractNum == null ? null : accountState.get(contractNum);
+        return Optional.ofNullable(contractNum == null ? null : accountState.get(contractNum));
     }
 
     private KeyOrLookupFailureReason validateKey(@Nullable final JKey key, final boolean isContractKey) {

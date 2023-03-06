@@ -22,7 +22,8 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.*;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
-import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
@@ -44,8 +45,7 @@ public class AdapterUtils {
     /**
      * Returns the {@link AccountAccess} containing the "well-known" accounts and aliases that
      * exist in a {@code SigRequirementsTest} scenario. This allows us to re-use these scenarios in
-     * unit tests of {@link com.hedera.node.app.spi.PreTransactionHandler} implementations that
-     * require an {@link AccountAccess}.
+     * unit tests that require an {@link AccountAccess}.
      *
      * @return the well-known account store
      */
@@ -67,19 +67,23 @@ public class AdapterUtils {
         return mockStates;
     }
 
-    private static ReadableKVState<Long, ? extends HederaAccount> wellKnownAccountsState() {
+    private static ReadableKVState<EntityNumVirtualKey, ? extends HederaAccount> wellKnownAccountsState() {
         final var wrappedState = new MapReadableKVState<>(ACCOUNTS_KEY, TxnHandlingScenario.wellKnownAccounts());
-        return new StateKeyAdapter<>(wrappedState, EntityNum::fromLong);
+        return new StateKeyAdapter<>(wrappedState, EntityNumVirtualKey::asEntityNum);
     }
 
-    private static MapReadableKVState<String, Long> wellKnownAliasState() {
-        final Map<String, Long> wellKnownAliases = Map.ofEntries(
-                Map.entry(CURRENTLY_UNUSED_ALIAS, MISSING_NUM.longValue()),
-                Map.entry(NO_RECEIVER_SIG_ALIAS, fromAccountId(NO_RECEIVER_SIG).longValue()),
-                Map.entry(RECEIVER_SIG_ALIAS, fromAccountId(RECEIVER_SIG).longValue()),
+    private static MapReadableKVState<String, EntityNumValue> wellKnownAliasState() {
+        final Map<String, EntityNumValue> wellKnownAliases = Map.ofEntries(
+                Map.entry(CURRENTLY_UNUSED_ALIAS, new EntityNumValue(MISSING_NUM.longValue())),
+                Map.entry(
+                        NO_RECEIVER_SIG_ALIAS,
+                        new EntityNumValue(fromAccountId(NO_RECEIVER_SIG).longValue())),
+                Map.entry(
+                        RECEIVER_SIG_ALIAS,
+                        new EntityNumValue(fromAccountId(RECEIVER_SIG).longValue())),
                 Map.entry(
                         FIRST_TOKEN_SENDER_LITERAL_ALIAS.toStringUtf8(),
-                        fromAccountId(FIRST_TOKEN_SENDER).longValue()));
+                        new EntityNumValue(fromAccountId(FIRST_TOKEN_SENDER).longValue())));
         return new MapReadableKVState<>(ALIASES_KEY, wellKnownAliases);
     }
 

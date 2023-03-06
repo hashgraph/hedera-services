@@ -137,4 +137,9 @@ public final class OnDiskKey<K extends Comparable<? super K>> implements Virtual
     public int hashCode() {
         return Objects.hash(key);
     }
+
+    @Override
+    public String toString() {
+        return "OnDiskKey{" + "key=" + key + '}';
+    }
 }

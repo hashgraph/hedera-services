@@ -48,8 +48,6 @@ import com.swirlds.common.utility.AutoCloseableWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Instant;
@@ -70,11 +68,13 @@ import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER_STATE_PROOF;
 import static com.hedera.node.app.spi.HapiUtils.asTimestamp;
 import static com.swirlds.common.system.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** Implementation of {@link QueryWorkflow} */
 public final class QueryWorkflowImpl implements QueryWorkflow {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(QueryWorkflowImpl.class);
+    private static final Logger LOGGER = LogManager.getLogger(QueryWorkflowImpl.class);
 
     private static final EnumSet<ResponseType> UNSUPPORTED_RESPONSE_TYPES =
             EnumSet.of(ANSWER_STATE_PROOF, COST_ANSWER_STATE_PROOF);
@@ -153,7 +153,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         requireNonNull(requestBuffer);
         requireNonNull(responseBuffer);
 
-        LOGGER.info("Started handling a query request in Query workflow");
         // 1. Parse and check header
         final Query query;
         try {
@@ -175,7 +174,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         if (queryHeader == null) {
             throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
         }
-        final ResponseType responseType = queryHeader.responseType();
+        final ResponseType responseType = queryHeader.getResponseType();
+        LOGGER.info("Started answering a {} query of type {}", function, responseType);
 
         Response response;
         long fee = 0L;
@@ -199,6 +199,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
 
             final var state = wrappedState.get();
+            final var storeFactory = new ReadableStoreFactory(state);
             final var paymentRequired = handler.requiresNodePayment(responseType);
             Transaction allegedPayment = null;
             TransactionBody txBody = null;
@@ -212,7 +213,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 checker.checkPermissions(payer, function);
 
                 // 3.iii Calculate costs
-                final var feeData = feeAccumulator.computePayment(function, query, asTimestamp(Instant.now()));
+                final var feeData =
+                        feeAccumulator.computePayment(storeFactory, function, query, asTimestamp(Instant.now()));
                 fee = totalFee(feeData);
 
                 // 3.iv Check account balances
@@ -224,7 +226,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
 
             // 4. Check validity
-            final var storeFactory = new ReadableStoreFactory(state);
             final var validity = dispatcher.validate(storeFactory, query);
 
             // 5. Submit payment to platform
@@ -241,7 +242,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
 
             if (handler.needsAnswerOnlyCost(responseType)) {
                 // 6.i Estimate costs
-                final var feeData = feeAccumulator.computePayment(function, query, asTimestamp(Instant.now()));
+                final var feeData =
+                        feeAccumulator.computePayment(storeFactory, function, query, asTimestamp(Instant.now()));
                 fee = totalFee(feeData);
 
                 final var header = createResponseHeader(responseType, validity, fee);
