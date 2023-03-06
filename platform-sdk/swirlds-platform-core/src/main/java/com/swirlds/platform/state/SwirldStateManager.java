@@ -32,8 +32,7 @@ import com.swirlds.platform.state.signed.LoadableFromSignedState;
 /**
  * The methods used to interact with instances of {@link SwirldState}.
  */
-public interface SwirldStateManager
-        extends FreezePeriodChecker, Clearable, LoadableFromSignedState {
+public interface SwirldStateManager extends FreezePeriodChecker, Clearable, LoadableFromSignedState {
 
     /**
      * Invokes the pre-handle method. Called after the event has been verified but before

@@ -26,7 +26,6 @@ import com.swirlds.platform.components.TransactionPool;
 import com.swirlds.platform.components.TransactionSupplier;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.internal.EventImpl;
-
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 

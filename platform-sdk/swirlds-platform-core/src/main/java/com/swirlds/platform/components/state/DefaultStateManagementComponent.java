@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.components.state;
 
+import static com.swirlds.logging.LogMarker.EXCEPTION;
+
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
@@ -56,12 +58,9 @@ import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.SignedStateSentinel;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.util.HashLogger;
+import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.util.List;
-
-import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 /**
  * The default implementation of {@link StateManagementComponent}.

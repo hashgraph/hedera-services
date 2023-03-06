@@ -16,15 +16,14 @@
 
 package com.swirlds.platform;
 
+import static com.swirlds.logging.LogMarker.FREEZE;
+
 import com.swirlds.common.system.EventCreationRule;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.platform.state.signed.SignedState;
+import java.nio.file.Path;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.nio.file.Path;
-
-import static com.swirlds.logging.LogMarker.FREEZE;
 
 /**
  * The source freeze related information.

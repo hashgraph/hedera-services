@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.components;
 
+import static com.swirlds.logging.LogMarker.CREATE_EVENT;
+
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.system.EventCreationRuleResponse;
@@ -27,14 +29,11 @@ import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.SelfEventStorage;
 import com.swirlds.platform.event.creation.AncientParentsRule;
 import com.swirlds.platform.internal.EventImpl;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.time.Instant;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
-
-import static com.swirlds.logging.LogMarker.CREATE_EVENT;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This class encapsulates the workflow required to create new events.
@@ -134,8 +133,7 @@ public class EventCreator {
         // already created an event with this particular other parent.
         //
         // We still want to create an event if there are state signature transactions when we are frozen.
-        if (hasOtherParentAlreadyBeenUsed(otherId)
-                && !hasSignatureTransactionsWhileFrozen()) {
+        if (hasOtherParentAlreadyBeenUsed(otherId) && !hasSignatureTransactionsWhileFrozen()) {
             return false;
         }
 

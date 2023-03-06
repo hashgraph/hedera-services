@@ -16,6 +16,15 @@
 
 package com.swirlds.platform;
 
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.utility.CommonUtils.combineConsumers;
+import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.LogMarker.PLATFORM_STATUS;
+import static com.swirlds.logging.LogMarker.RECONNECT;
+import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
+import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
+
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.OSHealthCheckConfig;
@@ -191,11 +200,6 @@ import com.swirlds.platform.system.SystemUtils;
 import com.swirlds.platform.threading.PauseAndClear;
 import com.swirlds.platform.threading.PauseAndLoad;
 import com.swirlds.platform.util.PlatformComponents;
-import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
@@ -213,15 +217,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.common.utility.CommonUtils.combineConsumers;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.PLATFORM_STATUS;
-import static com.swirlds.logging.LogMarker.RECONNECT;
-import static com.swirlds.logging.LogMarker.STARTUP;
-import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
-import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods, ConnectionTracker {
 

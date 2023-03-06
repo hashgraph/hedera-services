@@ -19,7 +19,6 @@ package com.swirlds.platform;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.EventCreationRule;
 import com.swirlds.common.system.EventCreationRuleResponse;
-
 import java.time.Instant;
 import java.util.function.Supplier;
 

@@ -16,11 +16,10 @@
 
 package com.swirlds.platform.state;
 
-import com.swirlds.platform.metrics.SwirldStateMetrics;
-
-import java.time.Instant;
-
 import static com.swirlds.common.utility.Units.NANOSECONDS_TO_MICROSECONDS;
+
+import com.swirlds.platform.metrics.SwirldStateMetrics;
+import java.time.Instant;
 
 /**
  * A utility class with useful methods for implementations of {@link SwirldStateManager}.

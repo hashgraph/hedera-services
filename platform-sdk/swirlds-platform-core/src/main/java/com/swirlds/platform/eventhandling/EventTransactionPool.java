@@ -23,7 +23,6 @@ import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.components.TransactionPool;
 import com.swirlds.platform.components.TransactionSupplier;
-
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;

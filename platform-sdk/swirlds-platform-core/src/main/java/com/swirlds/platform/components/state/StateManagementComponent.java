@@ -26,7 +26,6 @@ import com.swirlds.platform.components.state.query.LatestSignedStateProvider;
 import com.swirlds.platform.reconnect.emergency.EmergencyStateFinder;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInfo;
-
 import java.util.List;
 
 /**

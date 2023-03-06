@@ -16,6 +16,9 @@
 
 package com.swirlds.platform.state;
 
+import static com.swirlds.logging.LogMarker.RECONNECT;
+import static com.swirlds.platform.state.SwirldStateManagerUtils.fastCopy;
+
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.SwirldState2;
@@ -27,15 +30,11 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.state.signed.SignedState;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
-
-import static com.swirlds.logging.LogMarker.RECONNECT;
-import static com.swirlds.platform.state.SwirldStateManagerUtils.fastCopy;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * <p>Manages all interactions with the state object required by {@link SwirldState2}.</p>

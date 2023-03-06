@@ -16,6 +16,16 @@
 
 package com.swirlds.platform.state.signed;
 
+import static com.swirlds.common.io.utility.FileUtils.deleteDirectoryAndLog;
+import static com.swirlds.common.utility.CommonUtils.throwArgNull;
+import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
+import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
+import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
+import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStateDirectory;
+import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStatesBaseDirectory;
+import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeSignedStateToDisk;
+
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
@@ -27,25 +37,14 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.Startable;
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-
-import static com.swirlds.common.io.utility.FileUtils.deleteDirectoryAndLog;
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
-import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
-import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
-import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStateDirectory;
-import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStatesBaseDirectory;
-import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeSignedStateToDisk;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This class is responsible for managing the signed state writing pipeline.

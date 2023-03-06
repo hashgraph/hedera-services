@@ -16,27 +16,6 @@
 
 package com.swirlds.platform;
 
-import com.swirlds.common.system.EventCreationRuleResponse;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.events.BaseEvent;
-import com.swirlds.platform.components.CriticalQuorum;
-import com.swirlds.platform.components.EventCreationRules;
-import com.swirlds.platform.eventhandling.EventTransactionPool;
-import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.network.RandomGraph;
-import com.swirlds.platform.reconnect.FallenBehindManagerImpl;
-import com.swirlds.platform.state.SwirldStateManager;
-import com.swirlds.platform.state.SwirldStateManagerDouble;
-import com.swirlds.platform.state.SwirldStateManagerSingle;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
-import org.junit.jupiter.params.provider.Arguments;
-
-import java.util.List;
-import java.util.stream.Stream;
-
 import static com.swirlds.common.system.EventCreationRuleResponse.CREATE;
 import static com.swirlds.common.system.EventCreationRuleResponse.DONT_CREATE;
 import static com.swirlds.common.system.EventCreationRuleResponse.PASS;
@@ -50,6 +29,26 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
+
+import com.swirlds.common.system.EventCreationRuleResponse;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.events.BaseEvent;
+import com.swirlds.platform.components.CriticalQuorum;
+import com.swirlds.platform.components.EventCreationRules;
+import com.swirlds.platform.eventhandling.EventTransactionPool;
+import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.network.RandomGraph;
+import com.swirlds.platform.reconnect.FallenBehindManagerImpl;
+import com.swirlds.platform.state.SwirldStateManager;
+import com.swirlds.platform.state.SwirldStateManagerDouble;
+import com.swirlds.platform.state.SwirldStateManagerSingle;
+import java.util.List;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.provider.Arguments;
 
 // Tests utilize static Settings configuration and must not be run in parallel
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)

@@ -16,6 +16,9 @@
 
 package com.swirlds.platform;
 
+import static com.swirlds.logging.LogMarker.FREEZE;
+import static com.swirlds.logging.LogMarker.SYNC;
+
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
@@ -27,16 +30,12 @@ import com.swirlds.platform.sync.FallenBehindManager;
 import com.swirlds.platform.sync.SyncManager;
 import com.swirlds.platform.sync.SyncResult;
 import com.swirlds.platform.sync.SyncUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import static com.swirlds.logging.LogMarker.FREEZE;
-import static com.swirlds.logging.LogMarker.SYNC;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A class that manages information about who we need to sync with, and whether we need to reconnect
@@ -251,7 +250,7 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
      */
     @Override
     public void successfulSync() {
-        //TODO remove
+        // TODO remove
     }
 
     /**
