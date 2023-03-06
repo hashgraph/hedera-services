@@ -31,8 +31,6 @@ import java.util.PriorityQueue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-// TODO revisit synchronization
-
 /**
  * This object is responsible for writing events to the database.
  */
@@ -217,7 +215,7 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      * {@inheritDoc}
      */
     @Override
-    public void setMinimumGenerationToStore(final long minimumGenerationToStore) {
+    public synchronized void setMinimumGenerationToStore(final long minimumGenerationToStore) {
         this.minimumGenerationToStore = minimumGenerationToStore;
         pruneOldFiles();
     }
@@ -294,8 +292,6 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
 
         if (lastWrittenEvent < eventSequenceNumber) {
             // We haven't yet written this event, event will be flushed as soon as it is written.
-            // TODO write a test that is sensitive to queue ordered in the wrong way
-            // TODO write a test that requests flushes out of order
             flushableEvents.add(eventSequenceNumber);
             return;
         }
