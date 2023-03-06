@@ -46,7 +46,6 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -240,9 +239,9 @@ class EventStreamMultiFileIteratorTest {
                 iterator.forEachRemaining(deserializedEvents::add);
             } catch (final IOException e) {
                 if (e.getMessage().contains("does not contain any events")) {
-                    //The last file had too few events and the truncated file had no events.
-                    //This happens randomly, but especially when the original file has 3 or less events in it.
-                    //abort the unit tests in a successful state.
+                    // The last file had too few events and the truncated file had no events.
+                    // This happens randomly, but especially when the original file has 3 or less events in it.
+                    // abort the unit tests in a successful state.
                     return;
                 } else {
                     throw e;
