@@ -19,11 +19,12 @@ package com.hedera.node.app.service.consensus.impl.handlers;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.parser.KeyProtoParser;
-import com.hedera.hapi.node.base.writer.KeyWriter;
-import com.hedera.hashgraph.pbj.runtime.io.Bytes;
-import com.hedera.hashgraph.pbj.runtime.io.DataInputStream;
-import com.hedera.hashgraph.pbj.runtime.io.DataOutputStream;
+import com.hedera.hapi.node.base.codec.KeyProtoCodec;
+import com.hedera.pbj.runtime.io.Bytes;
+import com.hedera.pbj.runtime.io.DataBuffer;
+import com.hedera.pbj.runtime.io.DataOutputStream;
+import com.hedera.pbj.runtime.io.DataInputStream;
+import com.hedera.pbj.runtime.io.DataOutputStream;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.spi.key.HederaKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -51,11 +52,7 @@ public final class PbjKeyConverter {
      */
     public static byte[] unwrapPbj(final Bytes bytes) {
         final var ret = new byte[bytes.getLength()];
-        try {
-            bytes.getBytes(0, ret);
-        } catch (final IOException e) {
-            throw new IllegalStateException(e);
-        }
+        bytes.getBytes(0, ret);
         return ret;
     }
 
@@ -69,7 +66,7 @@ public final class PbjKeyConverter {
      */
     public static Key fromGrpcKey(@NonNull final com.hederahashgraph.api.proto.java.Key grpcKey) {
         try (final var bais = new ByteArrayInputStream(grpcKey.toByteArray())) {
-            return KeyProtoParser.parse(new DataInputStream(bais));
+            return Key.PROTOBUF.parse(new DataInputStream(bais));
         } catch (final IOException e) {
             throw new IllegalStateException(e);
         }
@@ -89,7 +86,7 @@ public final class PbjKeyConverter {
         }
         try (final var baos = new ByteArrayOutputStream();
                 final var dos = new DataOutputStream(baos)) {
-            KeyWriter.write(pbjKey, dos);
+            Key.PROTOBUF.write(pbjKey, dos);
             dos.flush();
             final var grpcKey = com.hederahashgraph.api.proto.java.Key.parseFrom(baos.toByteArray());
             return asHederaKey(grpcKey);

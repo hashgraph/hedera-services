@@ -31,12 +31,16 @@ import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.txns.submission.SolvencyPrecheck;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
-import com.hedera.node.app.service.token.entity.Account;
 import com.hedera.node.app.signature.SignaturePreparer;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.message.LoggerNameAwareMessage;
+import org.slf4j.LoggerFactory;
+
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import javax.inject.Inject;
@@ -46,7 +50,7 @@ import javax.inject.Inject;
  */
 public class IngestChecker {
 
-    private static final Logger logger = LoggerFactory.getLogger(IngestChecker.class);
+    private static final Logger logger = LogManager.getLogger(IngestChecker.class);
 
     private final AccountID nodeAccountID;
     private final SolvencyPrecheck solvencyPrecheck;

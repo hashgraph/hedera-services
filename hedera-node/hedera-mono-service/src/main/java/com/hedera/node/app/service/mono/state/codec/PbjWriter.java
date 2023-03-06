@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.state.serdes;
+package com.hedera.node.app.service.mono.state.codec;
 
-import com.hedera.hashgraph.pbj.runtime.io.DataOutput;
-import com.hedera.node.app.spi.state.Serdes;
+import com.hedera.pbj.runtime.io.DataOutput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 
 /**
- * Defines a writer to a PBJ {@link DataOutput}; helpful for building {@link Serdes}
+ * Defines a writer to a PBJ {@link DataOutput}; helpful for building {@link com.hedera.pbj.runtime.Codec}
  * implementations from a method reference to a PBJ-generated {@code Writer}
  * implementation.
  *

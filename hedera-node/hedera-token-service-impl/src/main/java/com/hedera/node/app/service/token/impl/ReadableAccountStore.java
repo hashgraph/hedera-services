@@ -89,12 +89,6 @@ public class ReadableAccountStore implements AccountAccess {
         this.aliases = states.get("ALIASES");
     }
 
-    @NonNull
-    @Override
-    public Optional<com.hedera.node.app.spi.accounts.Account> getAccountById(@NonNull AccountID accountOrAlias) {
-        return Optional.empty();
-    }
-
     /** {@inheritDoc} */
     @NonNull
     @Override
@@ -174,7 +168,8 @@ public class ReadableAccountStore implements AccountAccess {
      * @param id given account number
      * @return merkle leaf for the given account number
      */
-    private Optional<HederaAccount> getAccountLeaf(@NonNull final AccountID id) {
+    @Nullable
+    private HederaAccount getAccountLeaf(@NonNull final AccountID id) {
         // Get the account number based on the account identifier. It may be null.
         final var accountOneOf = id.account();
         final Long accountNum =
@@ -185,13 +180,15 @@ public class ReadableAccountStore implements AccountAccess {
                         if (alias.getLength() == EVM_ADDRESS_LEN && isMirror(alias)) {
                             yield fromMirror(alias);
                         } else {
-                            yield aliases.get(alias.asUtf8String());
+                            yield aliases.get(alias.asUtf8String()).num();
                         }
                     }
                     case UNSET -> throw new RuntimeException("Account number not set in protobuf!!");
                 };
 
-        return Optional.ofNullable(accountNum == null ? null : accountState.get(accountNum));
+        return accountNum == null
+                ? null
+                : accountState.get(EntityNumVirtualKey.fromLong(accountNum));
     }
 
     /**
@@ -201,7 +198,8 @@ public class ReadableAccountStore implements AccountAccess {
      * @param id given contract number
      * @return merkle leaf for the given contract number
      */
-    private Optional<HederaAccount> getContractLeaf(@NonNull final ContractID id) {
+    @Nullable
+    private HederaAccount getContractLeaf(@NonNull final ContractID id) {
         // Get the contract number based on the contract identifier. It may be null.
         final var contractOneOf = id.contract();
         final Long contractNum =
@@ -230,12 +228,12 @@ public class ReadableAccountStore implements AccountAccess {
                                         ByteString.copyFrom(evmKeyAliasAddress).toStringUtf8());
                             }
                         }
-                        yield entityNum;
+                        yield entityNum.num();
                     }
                     case UNSET -> throw new RuntimeException("Contract number not set in protobuf!!");
                 };
 
-        return Optional.ofNullable(contractNum == null ? null : accountState.get(contractNum));
+        return contractNum == null ? null : accountState.get(EntityNumVirtualKey.fromLong(contractNum));
     }
 
     private KeyOrLookupFailureReason validateKey(@Nullable final JKey key, final boolean isContractKey) {

@@ -30,7 +30,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_R
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.hashgraph.pbj.runtime.io.Bytes;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
@@ -41,6 +40,7 @@ import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.pbj.runtime.io.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -98,13 +98,13 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         final var builder = new Topic.Builder();
 
         /* Validate admin and submit keys and set them */
-        if (op.hasAdminKey()) {
-            handleContext.attributeValidator().validateKey(op.getAdminKey());
-            builder.adminKey(fromGrpcKey(op.getAdminKey()));
+        if (op.adminKey() != null) {
+            handleContext.attributeValidator().validateKey(op.adminKey());
+            builder.adminKey(op.adminKey());
         }
-        if (op.hasSubmitKey()) {
-            handleContext.attributeValidator().validateKey(op.getSubmitKey());
-            builder.submitKey(fromGrpcKey(op.getSubmitKey()));
+        if (op.submitKey() != null) {
+            handleContext.attributeValidator().validateKey(op.submitKey());
+            builder.submitKey(op.submitKey());
         }
 
         /* Validate if the current topic can be created */
@@ -113,18 +113,18 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         }
 
         /* Validate the topic memo */
-        handleContext.attributeValidator().validateMemo(op.getMemo());
-        builder.memo(op.getMemo());
+        handleContext.attributeValidator().validateMemo(op.memo());
+        builder.memo(op.memo());
 
         final var impliedExpiry = handleContext.consensusNow().getEpochSecond()
-                + op.getAutoRenewPeriod().getSeconds();
+                + op.autoRenewPeriod().seconds();
         final var entityExpiryMeta = new ExpiryMeta(
                 impliedExpiry,
-                op.getAutoRenewPeriod().getSeconds(),
+                op.autoRenewPeriod().seconds(),
                 // Shard and realm will be ignored if num is NA
-                op.getAutoRenewAccount().getShardNum(),
-                op.getAutoRenewAccount().getRealmNum(),
-                op.hasAutoRenewAccount() ? op.getAutoRenewAccount().getAccountNum() : NA);
+                op.autoRenewAccount() != null ? op.autoRenewAccount().shardNum() : NA,
+                op.autoRenewAccount() != null ? op.autoRenewAccount().realmNum() : NA,
+                op.autoRenewAccount() != null ? op.autoRenewAccount().accountNum().orElse(NA) : NA);
 
         try {
             final var effectiveExpiryMeta =

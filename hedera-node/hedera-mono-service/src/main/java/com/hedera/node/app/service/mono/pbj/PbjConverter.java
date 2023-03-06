@@ -623,7 +623,11 @@ public final class PbjConverter {
         };
     }
 
-    private static <T extends Record> byte[] asBytes(Codec<T> codec, T tx) {
+    public static <T extends Record> Bytes asWrappedBytes(Codec<T> codec, T item) {
+        return Bytes.wrap(asBytes(codec, item));
+    }
+
+    public static <T extends Record> byte[] asBytes(Codec<T> codec, T tx) {
         try {
             final var bytes = new ByteArrayOutputStream();
             codec.write(tx, new DataOutputStream(bytes));

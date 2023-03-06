@@ -18,14 +18,14 @@ package com.hedera.node.app.service.mono.state.codec;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import com.hedera.node.app.spi.state.serdes.SerdesFactory;
+
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
 class UtilsConstructorTest {
-    private static final Set<Class<?>> toBeTested = new HashSet<>(Arrays.asList(MonoMapCodecAdapter.class, SerdesFactory.class));
+    private static final Set<Class<?>> toBeTested = new HashSet<>(Arrays.asList(MonoMapCodecAdapter.class, com.hedera.node.app.spi.state.serdes.CodecFactory.class));
 
     @Test
     void throwsInConstructor() {

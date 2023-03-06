@@ -16,20 +16,18 @@
 
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willThrow;
-
-import com.hedera.hashgraph.pbj.runtime.io.Bytes;
 import com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter;
-import java.io.IOException;
-import java.util.Optional;
+import com.hedera.pbj.runtime.io.Bytes;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class PbjKeyConverterTest {
@@ -38,15 +36,6 @@ class PbjKeyConverterTest {
 
     @Mock
     private com.hederahashgraph.api.proto.java.Key grpcKey;
-
-    @Test
-    void translatesExceptionFromGetBytes() throws IOException {
-        final var expected = new IOException();
-        given(bytes.getLength()).willReturn(7);
-        willThrow(expected).given(bytes).getBytes(eq(0), any(byte[].class));
-
-        assertThrows(IllegalStateException.class, () -> PbjKeyConverter.unwrapPbj(bytes));
-    }
 
     @Test
     void nullPbjKeyReturnsEmptyOptional() {

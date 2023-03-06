@@ -14,32 +14,34 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.state.serdes;
+package com.hedera.node.app.service.mono.state.codec;
 
-import com.hedera.hashgraph.pbj.runtime.io.DataInputStream;
-import com.hedera.hashgraph.pbj.runtime.io.DataOutputStream;
-import com.hedera.node.app.spi.state.Serdes;
+import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.io.DataInput;
+import com.hedera.pbj.runtime.io.DataInputStream;
+import com.hedera.pbj.runtime.io.DataOutput;
+import com.hedera.pbj.runtime.io.DataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 
 /**
- * A factory that creates {@link Serdes} implementations from various ingredients.
+ * A factory that creates {@link com.hedera.pbj.runtime.Codec} implementations from various ingredients.
  *
  * <p>Mostly useful for packaging a PBJ {@code Writer} and {@code ProtoParser} into
- * a {@link Serdes} implementation.
+ * a {@link com.hedera.pbj.runtime.Codec} implementation.
  */
-public final class SerdesFactory {
-    private SerdesFactory() {
+public final class CodecFactory {
+    private CodecFactory() {
         throw new UnsupportedOperationException("Utility class");
     }
 
-    public static <T> Serdes<T> newInMemorySerdes(final PbjParser<T> parser, final PbjWriter<T> writer) {
-        return new Serdes<>() {
+    public static <T> Codec<T> newInMemoryCodec(final PbjParser<T> parser, final PbjWriter<T> writer) {
+        return new Codec<>() {
             @NonNull
             @Override
-            public T parse(final @NonNull java.io.DataInput input) throws IOException {
+            public T parse(final @NonNull DataInput input) throws IOException {
                 if (input instanceof SerializableDataInputStream in) {
                     return parser.parse(new DataInputStream(in));
                 } else {
@@ -48,7 +50,7 @@ public final class SerdesFactory {
             }
 
             @Override
-            public void write(final @NonNull T item, final @NonNull java.io.DataOutput output) throws IOException {
+            public void write(final @NonNull T item, final @NonNull DataOutput output) throws IOException {
                 if (output instanceof SerializableDataOutputStream out) {
                     writer.write(item, new DataOutputStream(out));
                 } else {
@@ -57,17 +59,23 @@ public final class SerdesFactory {
             }
 
             @Override
-            public int measure(@NonNull java.io.DataInput input) {
+            public int measure(final @NonNull DataInput input) {
+                throw new UnsupportedOperationException();
+            }
+
+            @NonNull
+            @Override
+            public T parseStrict(final @NonNull DataInput dataInput) {
                 throw new UnsupportedOperationException();
             }
 
             @Override
-            public int typicalSize() {
+            public int measureRecord(final T t) {
                 throw new UnsupportedOperationException();
             }
 
             @Override
-            public boolean fastEquals(@NonNull T item, @NonNull java.io.DataInput input) {
+            public boolean fastEquals(@NonNull T item, @NonNull DataInput input) {
                 throw new UnsupportedOperationException();
             }
         };

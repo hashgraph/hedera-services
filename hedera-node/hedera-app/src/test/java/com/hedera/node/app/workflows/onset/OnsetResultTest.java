@@ -21,6 +21,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import org.junit.jupiter.api.Test;
 
@@ -30,15 +31,20 @@ class OnsetResultTest {
     @Test
     void checkConstructorWithIllegalArguments() {
         // given
+        final var txn = Transaction.newBuilder().build();
         final var txBody = TransactionBody.newBuilder().build();
         final var sigMap = SignatureMap.newBuilder().build();
         final var function = HederaFunctionality.NONE;
 
         // then
-        assertThatThrownBy(() -> new OnsetResult(null, OK, sigMap, function)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new OnsetResult(txBody, null, sigMap, function))
+        assertThatThrownBy(() -> new OnsetResult(
+                txn, null, OK, sigMap, function)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new OnsetResult(
+                txn, txBody, null, sigMap, function))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new OnsetResult(txBody, OK, null, function)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new OnsetResult(txBody, OK, sigMap, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new OnsetResult(
+                txn, txBody, OK, null, function)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new OnsetResult(
+                txn, txBody, OK, sigMap, null)).isInstanceOf(NullPointerException.class);
     }
 }

@@ -20,13 +20,11 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.serdes.EntityNumCodec;
 import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.hapi.node.state.consensus.parser.TopicProtoParser;
-import com.hedera.hapi.node.state.consensus.writer.TopicWriter;
+import com.hedera.node.app.service.mono.state.codec.CodecFactory;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.app.spi.state.serdes.SerdesFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
@@ -56,10 +54,11 @@ public final class ConsensusServiceImpl implements ConsensusService {
     }
 
     private StateDefinition<EntityNum, Topic> topicsDef() {
-        final var keySerdes = new EntityNumSerdes();
+        final var keyCodec = new EntityNumCodec();
 
-        final var valueSerdes = SerdesFactory.newInMemorySerdes(TopicProtoParser::parse, TopicWriter::write);
+        final var valueCodec = CodecFactory.newInMemoryCodec(
+                Topic.PROTOBUF::parse, Topic.PROTOBUF::write);
 
-        return StateDefinition.inMemory(TOPICS_KEY, keySerdes, valueSerdes);
+        return StateDefinition.inMemory(TOPICS_KEY, keyCodec, valueCodec);
     }
 }
