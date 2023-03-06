@@ -19,7 +19,6 @@ package com.swirlds.platform.event.preconsensus;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.threading.CountUpLatch;
-import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.LongRunningAverage;
 import com.swirlds.common.utility.Startable;
 import com.swirlds.common.utility.Stoppable;
@@ -38,11 +37,6 @@ import org.apache.logging.log4j.Logger;
 public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Startable, Stoppable {
 
     private static final Logger logger = LogManager.getLogger(SyncPreConsensusEventWriter.class);
-
-    /**
-     * Provides wall clock time.
-     */
-    private final Time time;
 
     /**
      * Keeps track of the event stream files on disk.
@@ -122,19 +116,14 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
     /**
      * Create a new PreConsensusEventWriter.
      *
-     * @param time
-     * 		provides the wall clock time
      * @param config
      * 		configuration for preconsensus event streams
      * @param fileManager
      * 		manages all preconsensus event stream files currently on disk
      */
     public SyncPreConsensusEventWriter(
-            final Time time,
-            final PreConsensusEventStreamConfig config,
-            final PreConsensusEventFileManager fileManager) {
+            final PreConsensusEventStreamConfig config, final PreConsensusEventFileManager fileManager) {
 
-        this.time = time;
         preferredFileSizeMegabytes = config.preferredFileSizeMegabytes();
 
         averageGenerationalSpanUtilization =

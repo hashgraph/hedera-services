@@ -259,9 +259,7 @@ class AsyncPreConsensusEventWriterTests {
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreConsensusEventWriter writer = new AsyncPreConsensusEventWriter(
-                getStaticThreadManager(),
-                config,
-                new SyncPreConsensusEventWriter(OSTime.getInstance(), config, fileManager));
+                getStaticThreadManager(), config, new SyncPreConsensusEventWriter(config, fileManager));
 
         writer.start();
 
@@ -359,9 +357,7 @@ class AsyncPreConsensusEventWriterTests {
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreConsensusEventWriter writer = new AsyncPreConsensusEventWriter(
-                getStaticThreadManager(),
-                config,
-                new SyncPreConsensusEventWriter(OSTime.getInstance(), config, fileManager));
+                getStaticThreadManager(), config, new SyncPreConsensusEventWriter(config, fileManager));
 
         writer.start();
 
@@ -484,9 +480,7 @@ class AsyncPreConsensusEventWriterTests {
 
         final PreconsensusEventStreamSequencer sequencer1 = new PreconsensusEventStreamSequencer();
         final PreConsensusEventWriter writer1 = new AsyncPreConsensusEventWriter(
-                getStaticThreadManager(),
-                config,
-                new SyncPreConsensusEventWriter(OSTime.getInstance(), config, fileManager));
+                getStaticThreadManager(), config, new SyncPreConsensusEventWriter(config, fileManager));
 
         writer1.start();
 
@@ -528,9 +522,7 @@ class AsyncPreConsensusEventWriterTests {
 
         final PreconsensusEventStreamSequencer sequencer2 = new PreconsensusEventStreamSequencer();
         final PreConsensusEventWriter writer2 = new AsyncPreConsensusEventWriter(
-                getStaticThreadManager(),
-                config,
-                new SyncPreConsensusEventWriter(OSTime.getInstance(), config, fileManager));
+                getStaticThreadManager(), config, new SyncPreConsensusEventWriter(config, fileManager));
         writer2.start();
 
         final Set<EventImpl> rejectedEvents2 = new HashSet<>();
