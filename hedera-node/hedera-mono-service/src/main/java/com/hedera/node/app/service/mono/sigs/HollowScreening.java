@@ -108,6 +108,8 @@ public class HollowScreening {
             final var hollowKey = payerKey.getWildcardECDSAKey();
             final var payerEvmAddress = hollowKey.getEvmAddress();
             final var correspondingKey = evmAddressToEcdsaKeyIndex.get(Bytes.of(payerEvmAddress));
+            // NOTE that if no corresponding ECDSA key was is present,
+            // the transaction will fail with INVALID_PAYER_SIGNATURE
             if (correspondingKey != null) {
                 replacedPayerKey = correspondingKey;
                 pendingCompletions =
@@ -165,11 +167,11 @@ public class HollowScreening {
     }
 
     private static List<PendingCompletion> maybeAddToCompletions(
-            byte[] payerEvmAddress,
-            JECDSASecp256k1Key correspondingKey,
+            final byte[] evmAddress,
+            final JECDSASecp256k1Key correspondingKey,
             List<PendingCompletion> pendingCompletions,
-            AliasManager aliasManager) {
-        final var accountNum = aliasManager.lookupIdBy(ByteStringUtils.wrapUnsafely(payerEvmAddress));
+            final AliasManager aliasManager) {
+        final var accountNum = aliasManager.lookupIdBy(ByteStringUtils.wrapUnsafely(evmAddress));
         // a hollow account cannot be CryptoDelete-d, but it may have expired since the latest
         // immutable state
         if (accountNum != EntityNum.MISSING_NUM) {
