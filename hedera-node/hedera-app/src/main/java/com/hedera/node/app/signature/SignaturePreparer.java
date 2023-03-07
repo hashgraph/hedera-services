@@ -20,6 +20,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.node.app.service.mono.sigs.PlatformSigsCreationResult;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.state.HederaState;
 import com.swirlds.common.crypto.TransactionSignature;
@@ -29,6 +30,24 @@ import java.util.Map;
 
 public interface SignaturePreparer {
     ResponseCodeEnum syncGetPayerSigStatus(@NonNull Transaction transaction);
+
+    /**
+     * Computes the cryptographic signatures implied by the given transaction's
+     * {@link SignatureMap}, body, and required signing keys.
+     *
+     * <p>Note that if the {@link PlatformSigsCreationResult#asCode()} is not {@code OK},
+     * then we failed to create the signatures for either the payer or other parties. If
+     * the payer signatures failed, then the {@link PlatformSigsCreationResult#getPlatformSigs()}
+     * list will be empty. If the other party signatures failed, then the list will contain
+     * at least one cryptographic signature.
+     *
+     * @param transaction a {@link Transaction} being signed
+     * @param payerKey the payer key that must have an active signature
+     * @param otherPartyKeys other party keys that must have active signatures
+     * @return the result of the signature expansion
+     */
+    SigExpansionResult expandedSigsFor(
+            @NonNull Transaction transaction, @NonNull HederaKey payerKey, @NonNull List<HederaKey> otherPartyKeys);
 
     /**
      * Prepares the signature data for a single key (usually the payer's key).

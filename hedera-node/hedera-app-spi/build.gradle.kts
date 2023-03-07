@@ -34,11 +34,13 @@ configurations.all {
 }
 
 dependencies {
+  implementation(libs.swirlds.virtualmap)
+  implementation(libs.swirlds.jasperdb)
+  implementation(libs.swirlds.common)
   api(libs.pbj.runtime)
   api(libs.hapi)
   api(libs.jsr305.annotation)
   api(project(":hedera-node:hapi"))
-  implementation(libs.swirlds.common)
   compileOnlyApi(libs.spotbugs.annotations)
 
   testImplementation(testLibs.bundles.testing)

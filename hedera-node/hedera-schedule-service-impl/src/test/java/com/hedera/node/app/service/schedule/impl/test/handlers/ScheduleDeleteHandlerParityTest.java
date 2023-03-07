@@ -32,8 +32,8 @@ import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
 import com.hedera.node.app.spi.accounts.AccountAccess;
@@ -155,8 +155,8 @@ class AdapterUtils {
         return new ReadableScheduleStore(new MapReadableStates(Map.of("SCHEDULES_BY_ID", schedulesById)));
     }
 
-    private static ReadableKVState<Long, ? extends HederaAccount> wellKnownAccountsState() {
+    private static ReadableKVState<EntityNumVirtualKey, ? extends HederaAccount> wellKnownAccountsState() {
         final var wrappedState = new MapReadableKVState<>(ACCOUNTS_KEY, TxnHandlingScenario.wellKnownAccounts());
-        return new StateKeyAdapter<>(wrappedState, EntityNum::fromLong);
+        return new StateKeyAdapter<>(wrappedState, EntityNumVirtualKey::asEntityNum);
     }
 }

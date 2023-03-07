@@ -38,6 +38,8 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.impl.entity.AccountBuilderImpl;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.accounts.Account;
@@ -73,9 +75,9 @@ public class ReadableAccountStore implements AccountAccess {
     }
 
     /** The underlying data storage class that holds the account data. */
-    private final ReadableKVState<Long, MerkleAccount> accountState;
+    private final ReadableKVState<EntityNumVirtualKey, MerkleAccount> accountState;
     /** The underlying data storage class that holds the aliases data built from the state. */
-    private final ReadableKVState<String, Long> aliases;
+    private final ReadableKVState<String, EntityNumValue> aliases;
 
     /**
      * Create a new {@link ReadableAccountStore} instance.
@@ -85,12 +87,6 @@ public class ReadableAccountStore implements AccountAccess {
     public ReadableAccountStore(@NonNull final ReadableStates states) {
         this.accountState = states.get("ACCOUNTS");
         this.aliases = states.get("ALIASES");
-    }
-
-    @NonNull
-    @Override
-    public Optional<com.hedera.node.app.spi.accounts.Account> getAccountById(@NonNull AccountID accountOrAlias) {
-        return Optional.empty();
     }
 
     /** {@inheritDoc} */
@@ -184,13 +180,15 @@ public class ReadableAccountStore implements AccountAccess {
                         if (alias.getLength() == EVM_ADDRESS_LEN && isMirror(alias)) {
                             yield fromMirror(alias);
                         } else {
-                            yield aliases.get(alias.asUtf8String());
+                            yield aliases.get(alias.asUtf8String()).num();
                         }
                     }
                     case UNSET -> throw new RuntimeException("Account number not set in protobuf!!");
                 };
 
-        return accountNum == null ? null : accountState.get(accountNum);
+        return accountNum == null
+                ? null
+                : accountState.get(EntityNumVirtualKey.fromLong(accountNum));
     }
 
     /**
@@ -230,12 +228,12 @@ public class ReadableAccountStore implements AccountAccess {
                                         ByteString.copyFrom(evmKeyAliasAddress).toStringUtf8());
                             }
                         }
-                        yield entityNum;
+                        yield entityNum.num();
                     }
                     case UNSET -> throw new RuntimeException("Contract number not set in protobuf!!");
                 };
 
-        return contractNum == null ? null : accountState.get(contractNum);
+        return contractNum == null ? null : accountState.get(EntityNumVirtualKey.fromLong(contractNum));
     }
 
     private KeyOrLookupFailureReason validateKey(@Nullable final JKey key, final boolean isContractKey) {

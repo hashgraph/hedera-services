@@ -25,6 +25,7 @@ import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -101,12 +102,13 @@ public class TransactionDispatcher {
             @NonNull final HederaFunctionality function,
             @NonNull final TransactionBody txn,
             @NonNull final WritableStoreFactory writableStoreFactory) {
+        final var topicStore = writableStoreFactory.createTopicStore();
         switch (function) {
             case CONSENSUS_CREATE_TOPIC -> dispatchConsensusCreateTopic(
-                    txn.consensusCreateTopic().orElseThrow(), writableStoreFactory, usageLimits);
-            case CONSENSUS_UPDATE_TOPIC -> dispatchConsensusUpdateTopic(txn.consensusUpdateTopic().orElseThrow());
-            case CONSENSUS_DELETE_TOPIC -> dispatchConsensusDeleteTopic(txn.consensusDeleteTopic().orElseThrow());
-            case CONSENSUS_SUBMIT_MESSAGE -> dispatchConsensusSubmitMessage(txn.consensusSubmitMessage().orElseThrow());
+                    txn.consensusCreateTopic().orElseThrow(), topicStore, usageLimits);
+            case CONSENSUS_UPDATE_TOPIC -> dispatchConsensusUpdateTopic(txn.consensusUpdateTopic().orElseThrow(), topicStore);
+            case CONSENSUS_DELETE_TOPIC -> dispatchConsensusDeleteTopic(txn.consensusDeleteTopic().orElseThrow(), topicStore);
+            case CONSENSUS_SUBMIT_MESSAGE -> dispatchConsensusSubmitMessage(txn, topicStore);
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
         }
     }
@@ -128,7 +130,8 @@ public class TransactionDispatcher {
         final var txBody = context.getTxn();
         switch (txBody.data().kind()) {
             case CONSENSUS_CREATE_TOPIC -> handlers.consensusCreateTopicHandler().preHandle(context);
-            case CONSENSUS_UPDATE_TOPIC -> handlers.consensusUpdateTopicHandler().preHandle(context);
+            case CONSENSUS_UPDATE_TOPIC -> handlers.consensusUpdateTopicHandler()
+                    .preHandle(context, storeFactory.createTopicStore());
             case CONSENSUS_DELETE_TOPIC -> handlers.consensusDeleteTopicHandler()
                     .preHandle(context, storeFactory.createTopicStore());
             case CONSENSUS_SUBMIT_MESSAGE -> handlers.consensusSubmitMessageHandler()
@@ -214,35 +217,32 @@ public class TransactionDispatcher {
         return context -> dispatchPreHandle(storeFactory, context);
     }
 
-    private void dispatchConsensusDeleteTopic(@NonNull final ConsensusDeleteTopicTransactionBody topicDeletion) {
+    private void dispatchConsensusDeleteTopic(
+            @NonNull final ConsensusDeleteTopicTransactionBody topicDeletion,
+            @NonNull final WritableTopicStore topicStore) {
         final var handler = handlers.consensusDeleteTopicHandler();
-        final var recordBuilder = handler.newRecordBuilder();
-        handler.handle(
-                handleContext,
-                topicDeletion,
-                new ConsensusServiceConfig(
-                        dynamicProperties.maxNumTopics(), dynamicProperties.messageMaxBytesAllowed()),
-                recordBuilder);
+        handler.handle(topicDeletion, topicStore);
+        // TODO: Commit will be called in workflow or some other place when handle workflow is implemented
+        // This is temporary solution to make sure that topic is created
+        topicStore.commit();
     }
 
-    private void dispatchConsensusUpdateTopic(@NonNull final ConsensusUpdateTopicTransactionBody topicUpdate) {
+    private void dispatchConsensusUpdateTopic(
+            @NonNull final ConsensusUpdateTopicTransactionBody topicUpdate,
+            @NonNull final WritableTopicStore topicStore) {
         final var handler = handlers.consensusUpdateTopicHandler();
-        final var recordBuilder = handler.newRecordBuilder();
-        handler.handle(
-                handleContext,
-                topicUpdate,
-                new ConsensusServiceConfig(
-                        dynamicProperties.maxNumTopics(), dynamicProperties.messageMaxBytesAllowed()),
-                recordBuilder);
+        handler.handle(handleContext, topicUpdate, topicStore);
+        // TODO: Commit will be called in workflow or some other place when handle workflow is implemented
+        // This is temporary solution to make sure that topic is created
+        topicStore.commit();
     }
 
     private void dispatchConsensusCreateTopic(
             @NonNull final ConsensusCreateTopicTransactionBody topicCreation,
-            @NonNull final WritableStoreFactory storeFactory,
+            @NonNull final WritableTopicStore topicStore,
             @NonNull final UsageLimits usageLimits) {
         final var handler = handlers.consensusCreateTopicHandler();
         final var recordBuilder = handler.newRecordBuilder();
-        final var topicStore = storeFactory.createTopicStore();
         handler.handle(
                 handleContext,
                 topicCreation,
@@ -260,7 +260,7 @@ public class TransactionDispatcher {
     }
 
     private void dispatchConsensusSubmitMessage(
-            @NonNull final ConsensusSubmitMessageTransactionBody messageSubmission) {
+            @NonNull final TransactionBody messageSubmission, @NonNull final WritableTopicStore topicStore) {
         final var handler = handlers.consensusSubmitMessageHandler();
         final var recordBuilder = handler.newRecordBuilder();
         handler.handle(
@@ -268,7 +268,9 @@ public class TransactionDispatcher {
                 messageSubmission,
                 new ConsensusServiceConfig(
                         dynamicProperties.maxNumTopics(), dynamicProperties.messageMaxBytesAllowed()),
-                recordBuilder);
+                recordBuilder,
+                topicStore);
         txnCtx.setTopicRunningHash(recordBuilder.getNewTopicRunningHash(), recordBuilder.getNewTopicSequenceNumber());
+        topicStore.commit();
     }
 }

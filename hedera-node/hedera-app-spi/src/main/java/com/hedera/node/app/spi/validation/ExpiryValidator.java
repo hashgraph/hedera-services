@@ -32,7 +32,7 @@ public interface ExpiryValidator {
      * @param creationMetadata the expiry metadata for the attempted creation
      * @throws HandleStatusException if the metadata is invalid
      */
-    ExpiryMeta validateCreationAttempt(boolean entityCanSelfFundRenewal, ExpiryMeta creationMetadata);
+    ExpiryMeta resolveCreationAttempt(boolean entityCanSelfFundRenewal, ExpiryMeta creationMetadata);
 
     /**
      * Validates the expiry metadata for an attempt to update an entity, and returns the

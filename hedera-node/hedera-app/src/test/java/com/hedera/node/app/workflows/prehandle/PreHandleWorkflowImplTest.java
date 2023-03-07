@@ -17,32 +17,47 @@
 package com.hedera.node.app.workflows.prehandle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.base.codec.TransactionProtoCodec;
 import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
+import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.transaction.codec.TransactionBodyProtoCodec;
 import com.hedera.node.app.AppTestBase;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
+import com.hedera.node.app.signature.SigExpansionResult;
+import com.hedera.node.app.signature.SignaturePreparer;
+import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.onset.OnsetResult;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
+import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
-import java.time.Duration;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -50,7 +65,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.Function;
-import java.util.function.Supplier;
+
+import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -62,6 +78,24 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class PreHandleWorkflowImplTest extends AppTestBase {
 
     @Mock(strictness = LENIENT)
+    private TransactionSignature cryptoSig;
+
+    @Mock(strictness = LENIENT)
+    private HederaKey payerKey;
+
+    @Mock(strictness = LENIENT)
+    private ReadableStoreFactory storeFactory;
+
+    @Mock(strictness = LENIENT)
+    private TransactionSignature cryptoSig;
+
+    @Mock(strictness = LENIENT)
+    private HederaKey payerKey;
+
+    @Mock(strictness = LENIENT)
+    private ReadableStoreFactory storeFactory;
+
+    @Mock(strictness = LENIENT)
     private SwirldTransaction transaction;
 
     @Mock(strictness = LENIENT)
@@ -70,7 +104,16 @@ class PreHandleWorkflowImplTest extends AppTestBase {
     @Mock(strictness = LENIENT)
     private WorkflowOnset onset;
 
-    @Mock
+    @Mock(strictness = LENIENT)
+    private SignaturePreparer signaturePreparer;
+
+    @Mock(strictness = LENIENT)
+    private Cryptography cryptography;
+
+    @Mock(strictness = LENIENT)
+    private PreHandleContext context;
+
+    @Mock(strictness = LENIENT)
     private HederaState state;
 
     @Mock(strictness = LENIENT)
@@ -78,8 +121,10 @@ class PreHandleWorkflowImplTest extends AppTestBase {
 
     private PreHandleWorkflowImpl workflow;
 
-    private static final Function<Supplier<?>, CompletableFuture<?>> RUN_INSTANTLY =
-            supplier -> CompletableFuture.completedFuture(supplier.get());
+    private static final Function<Runnable, CompletableFuture<Void>> RUN_INSTANTLY = runnable -> {
+        runnable.run();
+        return CompletableFuture.completedFuture(null);
+    };
 
     @BeforeEach
     void setup() throws PreCheckException {
@@ -94,7 +139,9 @@ class PreHandleWorkflowImplTest extends AppTestBase {
                 .build();
         final SignatureMap signatureMap = SignatureMap.newBuilder().build();
         final HederaFunctionality functionality = HederaFunctionality.CONSENSUS_CREATE_TOPIC;
-        final OnsetResult onsetResult = new OnsetResult(txBody, OK, signatureMap, functionality);
+        final OnsetResult onsetResult = new OnsetResult(
+                com.hedera.hapi.node.base.Transaction.newBuilder().build(),
+                txBody, OK, signatureMap, functionality);
         when(onset.parseAndCheck(any(), any(byte[].class))).thenReturn(onsetResult);
 
         final Iterator<Transaction> iterator =
@@ -103,17 +150,79 @@ class PreHandleWorkflowImplTest extends AppTestBase {
 
         when(transaction.getContents()).thenReturn(new byte[0]);
 
-        workflow = new PreHandleWorkflowImpl(dispatcher, onset, RUN_INSTANTLY);
+        workflow = new PreHandleWorkflowImpl(dispatcher, onset, signaturePreparer, cryptography, RUN_INSTANTLY);
+    }
+
+    @Test
+    void resetsDuplicateClassification() {
+        final var onsetResult = new OnsetResult(
+                com.hedera.hapi.node.base.Transaction.newBuilder().build(),
+                TransactionBody.newBuilder().build(),
+                DUPLICATE_TRANSACTION,
+                SignatureMap.newBuilder().build(),
+                HederaFunctionality.CRYPTO_TRANSFER);
+        given(context.getStatus()).willReturn(DUPLICATE_TRANSACTION);
+
+        final var meta = workflow.dispatchForMetadata(onsetResult, context, storeFactory);
+
+        assertNotNull(meta);
+        verify(context).status(OK);
+        verifyNoInteractions(signaturePreparer);
+    }
+
+    @Test
+    void verifiesExpandedSigsAsync() {
+        final var onsetResult = new OnsetResult(
+                com.hedera.hapi.node.base.Transaction.newBuilder().build(),
+                TransactionBody.newBuilder().build(),
+                DUPLICATE_TRANSACTION,
+                SignatureMap.newBuilder().build(),
+                HederaFunctionality.CRYPTO_TRANSFER);
+        given(context.getStatus()).willReturn(DUPLICATE_TRANSACTION);
+        given(context.getPayerKey()).willReturn(payerKey);
+        given(context.getRequiredNonPayerKeys()).willReturn(Collections.emptyList());
+        given(signaturePreparer.expandedSigsFor(onsetResult.transaction(), payerKey, Collections.emptyList()))
+                .willReturn(new SigExpansionResult(List.of(cryptoSig), OK));
+
+        final var meta = workflow.dispatchForMetadata(onsetResult, context, storeFactory);
+
+        assertNotNull(meta);
+        verify(cryptography).verifyAsync(List.of(cryptoSig));
+    }
+
+    @Test
+    void shortCircuitsIfExpandedSigsFail() {
+        final var onsetResult = new OnsetResult(
+                com.hedera.hapi.node.base.Transaction.newBuilder().build(),
+                TransactionBody.newBuilder().build(),
+                DUPLICATE_TRANSACTION,
+                SignatureMap.newBuilder().build(),
+                HederaFunctionality.CRYPTO_TRANSFER);
+        given(context.getStatus()).willReturn(DUPLICATE_TRANSACTION);
+        given(context.getPayerKey()).willReturn(payerKey);
+        given(context.getRequiredNonPayerKeys()).willReturn(Collections.emptyList());
+        given(signaturePreparer.expandedSigsFor(onsetResult.transaction(), payerKey, Collections.emptyList()))
+                .willReturn(new SigExpansionResult(List.of(), INVALID_TOKEN_ID));
+
+        final var meta = workflow.dispatchForMetadata(onsetResult, context, storeFactory);
+
+        assertNotNull(meta);
+        verify(context).status(INVALID_TOKEN_ID);
+        verifyNoInteractions(cryptography);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalParameters(@Mock ExecutorService executorService) {
-        assertThatThrownBy(() -> new PreHandleWorkflowImpl(null, dispatcher, onset))
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(null, dispatcher, onset, signaturePreparer, cryptography))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new PreHandleWorkflowImpl(executorService, null, onset))
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(executorService, null, onset, signaturePreparer, cryptography))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new PreHandleWorkflowImpl(executorService, dispatcher, null))
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(executorService, dispatcher, null, signaturePreparer, cryptography))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(executorService, dispatcher, onset, null, cryptography))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(executorService, dispatcher, onset, signaturePreparer, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -121,8 +230,8 @@ class PreHandleWorkflowImplTest extends AppTestBase {
     @Test
     void testStartWithIllegalParameters() {
         // then
-        assertThatThrownBy(() -> workflow.start(null, event)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> workflow.start(state, null)).isInstanceOf(NullPointerException.class);
+        AssertionsForClassTypes.assertThatThrownBy(() -> workflow.start(null, event)).isInstanceOf(NullPointerException.class);
+        AssertionsForClassTypes.assertThatThrownBy(() -> workflow.start(state, null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -193,12 +302,21 @@ class PreHandleWorkflowImplTest extends AppTestBase {
                 .transactionID(transactionID)
                 .consensusCreateTopic(content)
                 .build();
+        final var signedTxn = SignedTransaction.newBuilder()
+                .bodyBytes(PbjConverter.asWrappedBytes(TransactionBody.PROTOBUF, txBody))
+                .build();
         final SignatureMap signatureMap = SignatureMap.newBuilder().build();
+        final var txn = com.hedera.hapi.node.base.Transaction.newBuilder()
+                .signedTransactionBytes(PbjConverter.asWrappedBytes(SignedTransaction.PROTOBUF, signedTxn))
+                .sigMap(signatureMap)
+                .build();
         final HederaFunctionality functionality = HederaFunctionality.CONSENSUS_CREATE_TOPIC;
-        final OnsetResult onsetResult = new OnsetResult(txBody, DUPLICATE_TRANSACTION, signatureMap, functionality);
+        final OnsetResult onsetResult = new OnsetResult(
+                txn, txBody, DUPLICATE_TRANSACTION, signatureMap, functionality);
         when(localOnset.parseAndCheck(any(), any(byte[].class))).thenReturn(onsetResult);
 
-        workflow = new PreHandleWorkflowImpl(dispatcher, localOnset, RUN_INSTANTLY);
+        workflow = new PreHandleWorkflowImpl(
+                dispatcher, localOnset, signaturePreparer, cryptography, RUN_INSTANTLY);
 
         // when
         workflow.start(state, event);

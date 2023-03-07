@@ -16,20 +16,42 @@
 
 package com.hedera.node.app.service.consensus.impl.handlers;
 
+import static com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter.unwrapPbj;
+import static com.hedera.node.app.service.mono.state.merkle.MerkleTopic.RUNNING_HASH_VERSION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_MESSAGE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
+import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
+import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.SubmitMessageRecordBuilder;
+import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.pbj.runtime.io.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
+import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -56,8 +78,8 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         requireNonNull(context);
         requireNonNull(topicStore);
 
-        final var op = context.getTxn().getConsensusSubmitMessage();
-        final var topicMeta = topicStore.getTopicMetadata(op.getTopicID());
+        final var op = context.getTxn().consensusSubmitMessage().get();
+        final var topicMeta = topicStore.getTopicMetadata(op.topicID());
         if (topicMeta.failed()) {
             context.status(ResponseCodeEnum.INVALID_TOPIC_ID);
             return;
@@ -70,24 +92,179 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
     /**
      * Given the appropriate context, submits a message to a topic.
      *
-     * TODO: Provide access to writable topic store.
-     *
      * @param handleContext the {@link HandleContext} for the active transaction
-     * @param submitMessage the {@link ConsensusSubmitMessageTransactionBody} of the active transaction
-     * @param consensusServiceConfig the {@link ConsensusServiceConfig} for the active transaction
+     * @param txn the {@link TransactionBody} of the active transaction
+     * @param config the {@link ConsensusServiceConfig} for the active transaction
      * @param recordBuilder the {@link ConsensusSubmitMessageRecordBuilder} for the active transaction
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void handle(
             @NonNull final HandleContext handleContext,
-            @NonNull final ConsensusSubmitMessageTransactionBody submitMessage,
-            @NonNull final ConsensusServiceConfig consensusServiceConfig,
-            @NonNull final ConsensusSubmitMessageRecordBuilder recordBuilder) {
-        throw new UnsupportedOperationException("Not implemented");
+            @NonNull final TransactionBody txn,
+            @NonNull final ConsensusServiceConfig config,
+            @NonNull final ConsensusSubmitMessageRecordBuilder recordBuilder,
+            @NonNull final WritableTopicStore topicStore) {
+        requireNonNull(handleContext);
+        requireNonNull(txn);
+        requireNonNull(config);
+        requireNonNull(recordBuilder);
+        requireNonNull(topicStore);
+
+        final var op = txn.consensusSubmitMessage().get();
+        final var topic = topicStore.getForModify(op.topicID().topicNum());
+        /* Validate all needed fields in the transaction */
+        validateTransaction(txn, config, topic);
+
+        /* since we have validated topic exists, topic.get() is safe to be called */
+        try {
+            final var updatedTopic = updateRunningHashAndSequenceNumber(txn, topic.get(), handleContext.consensusNow());
+
+            /* --- Put the modified topic. It will be in underlying state's modifications map.
+            It will not be committed to state until commit is called on the state.--- */
+            topicStore.put(updatedTopic);
+
+            recordBuilder.setNewTopicMetadata(
+                    unwrapPbj(updatedTopic.runningHash()), updatedTopic.sequenceNumber(), RUNNING_HASH_VERSION);
+        } catch (IOException e) {
+            throw new HandleStatusException(INVALID_TRANSACTION);
+        }
     }
 
+    /**
+     * Validates te transaction body. Throws {@link HandleStatusException} if any of the validations fail.
+     * @param txn the {@link TransactionBody} of the active transaction
+     * @param config the {@link ConsensusServiceConfig}
+     * @param topic the topic to which the message is being submitted
+     */
+    private void validateTransaction(
+            final TransactionBody txn,
+            final ConsensusServiceConfig config,
+            final Optional<Topic> topic) {
+        final var txnId = txn.transactionID();
+        final var payer = txn.transactionID().accountID();
+        final var op = txn.consensusSubmitMessage().get();
+
+        /* Check if the message submitted is empty */
+        // Question do we need this check ?
+        if (op.message().getLength() == 0) {
+            throw new HandleStatusException(INVALID_TOPIC_MESSAGE);
+        }
+
+        /* Check if the message submitted is greater than acceptable size */
+        if (op.message().getLength() > config.maxMessageSize()) {
+            throw new HandleStatusException(MESSAGE_SIZE_TOO_LARGE);
+        }
+
+        /* Check if the topic exists */
+        if (topic.isEmpty()) {
+            throw new HandleStatusException(INVALID_TOPIC_ID);
+        }
+        /* If the message is too large, user will be able to submit the message fragments in chunks. Validate if chunk info is correct */
+        validateChunkInfo(txnId, payer, op);
+    }
+
+    /**
+     * If the message is too large, user will be able to submit the message fragments in chunks.
+     * Validates the chunk info in the transaction body.
+     * Throws {@link HandleStatusException} if any of the validations fail.
+     * @param txnId the {@link TransactionID} of the active transaction
+     * @param payer the {@link AccountID} of the payer
+     * @param op the {@link ConsensusSubmitMessageTransactionBody} of the active transaction
+     */
+    private void validateChunkInfo(
+            final TransactionID txnId, final AccountID payer, final ConsensusSubmitMessageTransactionBody op) {
+        if (op.chunkInfo() != null) {
+            var chunkInfo = op.chunkInfo();
+
+            /* Validate chunk number */
+            if (!(1 <= chunkInfo.number() && chunkInfo.number() <= chunkInfo.total())) {
+                throw new HandleStatusException(INVALID_CHUNK_NUMBER);
+            }
+
+            /* Validate the initial chunk transaction payer is the same payer for the current transaction*/
+            if (!chunkInfo.initialTransactionID().accountID().equals(payer)) {
+                throw new HandleStatusException(INVALID_CHUNK_TRANSACTION_ID);
+            }
+
+            /* Validate if the transaction is submitting initial chunk,payer in initial transaction Id should be same as payer of the transaction */
+            if (1 == chunkInfo.number()
+                    && !chunkInfo.initialTransactionID().equals(txnId)) {
+                throw new HandleStatusException(INVALID_CHUNK_TRANSACTION_ID);
+            }
+        }
+    }
+
+    /**
+     * Updates the running hash and sequence number of the topic.
+     * @param txn the {@link TransactionBody} of the active transaction
+     * @param topic the topic to which the message is being submitted
+     * @param consensusNow the consensus time of the active transaction
+     * @return the updated topic
+     * @throws IOException if there is an error while updating the running hash
+     */
+    public Topic updateRunningHashAndSequenceNumber(final TransactionBody txn, final Topic topic, Instant consensusNow)
+            throws IOException {
+        final var payer = txn.transactionID().accountID();
+        final var topicId = txn.consensusSubmitMessage().get().topicID();
+        final var message = unwrapPbj(txn.consensusSubmitMessage().get().message());
+
+        // This line will be uncommented once there is PBJ fix to make copyBuilder() public
+        // final var topicBuilder = topic.copyBuilder();
+        final var topicBuilder = new Topic.Builder()
+                .topicNumber(topic.topicNumber())
+                .adminKey(topic.adminKey())
+                .submitKey(topic.submitKey())
+                .autoRenewAccountNumber(topic.autoRenewAccountNumber())
+                .autoRenewPeriod(topic.autoRenewPeriod())
+                .expiry(topic.expiry())
+                .deleted(topic.deleted())
+                .memo(topic.memo());
+
+        if (null == consensusNow) {
+            consensusNow = Instant.ofEpochSecond(0);
+        }
+
+        var sequenceNumber = topic.sequenceNumber();
+        var runningHash = topic.runningHash();
+
+        final var boas = new ByteArrayOutputStream();
+        try (final var out = new ObjectOutputStream(boas)) {
+            out.writeObject(unwrapPbj(runningHash));
+            out.writeLong(RUNNING_HASH_VERSION);
+            out.writeLong(payer.shardNum());
+            out.writeLong(payer.realmNum());
+            out.writeLong(payer.accountNum().get());
+            out.writeLong(topicId.shardNum());
+            out.writeLong(topicId.realmNum());
+            out.writeLong(topicId.topicNum());
+            out.writeLong(consensusNow.getEpochSecond());
+            out.writeInt(consensusNow.getNano());
+
+            /* Update the sequence number */
+            topicBuilder.sequenceNumber(++sequenceNumber);
+
+            out.writeLong(sequenceNumber);
+            out.writeObject(noThrowSha384HashOf(message));
+            out.flush();
+            runningHash = Bytes.wrap(noThrowSha384HashOf(boas.toByteArray()));
+
+            /* Update the running hash */
+            topicBuilder.runningHash(runningHash);
+        }
+        return topicBuilder.build();
+    }
+
+    /** {@inheritDoc} */
     @Override
     public ConsensusSubmitMessageRecordBuilder newRecordBuilder() {
         return new SubmitMessageRecordBuilder();
+    }
+
+    public static byte[] noThrowSha384HashOf(final byte[] byteArray) {
+        try {
+            return MessageDigest.getInstance("SHA-384").digest(byteArray);
+        } catch (final NoSuchAlgorithmException fatal) {
+            throw new IllegalStateException(fatal);
+        }
     }
 }
