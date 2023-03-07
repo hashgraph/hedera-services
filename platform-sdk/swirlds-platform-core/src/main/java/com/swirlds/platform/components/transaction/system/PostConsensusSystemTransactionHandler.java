@@ -14,20 +14,25 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.components;
+package com.swirlds.platform.components.transaction.system;
 
-import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
+import com.swirlds.common.system.transaction.internal.SystemTransaction;
+import com.swirlds.platform.state.State;
 
 /**
- * A source of transactions.
+ * Handles system transactions post-consensus
+ *
+ * @param <T> the system transaction type
  */
 @FunctionalInterface
-public interface TransactionSupplier {
+public interface PostConsensusSystemTransactionHandler<T extends SystemTransaction> {
 
     /**
-     * Returns an array of transactions. May return an empty array.
+     * Execute the post-consensus system transaction handler
      *
-     * @return an array with 0 or more transactions
+     * @param state       a mutable state
+     * @param nodeId      the id of the node which created the transaction
+     * @param transaction the transaction being handled
      */
-    ConsensusTransactionImpl[] getTransactions();
+    void handle(State state, long nodeId, T transaction);
 }

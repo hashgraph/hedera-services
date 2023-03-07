@@ -25,7 +25,8 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.components.SystemTransactionHandlerImpl;
+import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.state.signed.SignedState;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,7 +45,8 @@ public class SwirldStateManagerImplTests {
         initialState = newState();
         swirldStateManagerImpl = new SwirldStateManagerImpl(
                 new NodeId(false, 0L),
-                mock(SystemTransactionHandlerImpl.class),
+                mock(PreConsensusSystemTransactionManager.class),
+                mock(PostConsensusSystemTransactionManager.class),
                 mock(SwirldStateMetrics.class),
                 mock(SettingsProvider.class),
                 () -> false,

@@ -16,11 +16,9 @@
 
 package com.swirlds.common.system;
 
-import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
-import java.util.List;
 
 /**
  * A Swirld app is defined by creating two classes, one implementing {@link SwirldMain}, and the other

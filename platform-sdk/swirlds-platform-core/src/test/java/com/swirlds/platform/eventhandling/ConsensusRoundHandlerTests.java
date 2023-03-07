@@ -57,8 +57,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
 
 class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
 
@@ -187,9 +185,14 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
 
         when(settingsProvider.getMaxEventQueueForCons()).thenReturn(500);
 
-        final SwirldStateManager swirldStateManager;
-        swirldStateManager = new SwirldStateManagerImpl(
-                selfId, systemTransactionHandler, mock(SwirldStateMetrics.class), settingsProvider, () -> false, state);
+        final SwirldStateManager swirldStateManager = new SwirldStateManagerImpl(
+                selfId,
+                preConsensusSystemTransactionManager,
+                postConsensusSystemTransactionManager,
+                mock(SwirldStateMetrics.class),
+                settingsProvider,
+                () -> false,
+                state);
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();

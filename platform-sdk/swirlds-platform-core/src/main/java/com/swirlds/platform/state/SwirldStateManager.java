@@ -24,7 +24,7 @@ import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.FreezePeriodChecker;
-import com.swirlds.platform.components.TransThrottleSyncAndCreateRule;
+import com.swirlds.platform.components.transaction.throttle.TransThrottleSyncAndCreateRule;
 import com.swirlds.platform.eventhandling.EventTransactionPool;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -169,12 +169,6 @@ public interface SwirldStateManager
      * 		non-priority transactions
      */
     boolean submitTransaction(ConsensusTransactionImpl transaction, boolean priority);
-
-    /**
-     * Called during recovery. Updates the dual state status to clear any possible inconsistency between freezeTime
-     * and lastFrozenTime.
-     */
-    void clearFreezeTimes();
 
     /**
      * Gets the stop behavior of the threads applying transactions to the state
