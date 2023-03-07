@@ -547,7 +547,7 @@ public class SwirldStateManagerSingle implements SwirldStateManager {
         shuffleIfTimeToShuffle(stateCons);
 
         // Discard events that have already been applied to stateCons
-        if (round.isComplete() && shouldDiscardEvent(true, round.getLastEvent(), stateCons)) {
+        if (shouldDiscardEvent(true, round.getLastEvent(), stateCons)) {
             logger.error(
                     ERROR.getMarker(),
                     "Encountered out of order consensus event! Event Order = {}, stateCons lastCons = {}",
@@ -746,21 +746,6 @@ public class SwirldStateManagerSingle implements SwirldStateManager {
                     transaction, (SwirldState1) stateCons.getState().getSwirldState());
         }
         return transactionPool.submitTransaction(transaction, priority);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void clearFreezeTimes() {
-        // It is possible, though unlikely, that this operation is executed multiple times. Each failed attempt will
-        // leak a state, but since this is only called during recovery after which the node shuts down, it is
-        // acceptable. This leak will be eliminated with ticket swirlds/swirlds-platform/issues/5256.
-        stateCons.updateState(s -> {
-            s.getPlatformDualState().setFreezeTime(null);
-            s.getPlatformDualState().setLastFrozenTimeToBeCurrentFreezeTime();
-            return s;
-        });
     }
 
     private static BlockingQueue<EventImpl> newQueue() {
