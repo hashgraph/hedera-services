@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.LongBinaryOperator;
 
 /**
  * Similar to a {@link java.util.concurrent.CountDownLatch}, but counts up instead.
@@ -71,6 +72,12 @@ public class CountUpLatch {
     }
 
     /**
+     * Used to set the count in a way that will not allow the count to decrease.
+     */
+    private static final LongBinaryOperator SET_COUNT =
+            (final long previous, final long proposed) -> Math.max(proposed, previous);
+
+    /**
      * Set the count to a higher value.
      * <p>
      * Methods that update the count are not mutually thread safe. Concurrent threads should never attempt to update
@@ -81,10 +88,10 @@ public class CountUpLatch {
      *                                  messed up if this happens -- this is an unrecoverable error)
      */
     public void set(final long count) {
-        final long previous = currentCount.getAndSet(count);
-        if (count < previous) {
-            throw new IllegalArgumentException("Current count is " + previous + " but new count is " + count
-                    + ", cannot set count to a lower value");
+        final long result = currentCount.accumulateAndGet(count, SET_COUNT);
+        if (result != count) {
+            throw new IllegalArgumentException("Can't set the count to a lower value. Previous = " + result
+                    + ", provided = " + count);
         }
         lock.lock();
         try {

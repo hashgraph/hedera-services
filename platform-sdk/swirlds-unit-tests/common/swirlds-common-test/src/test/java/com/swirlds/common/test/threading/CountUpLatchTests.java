@@ -79,11 +79,10 @@ class CountUpLatchTests {
             if (proposedCount >= count) {
                 latch.set(proposedCount);
                 assertEquals(proposedCount, latch.getCount());
+                count = proposedCount;
             } else {
-                System.out.println("Skipping proposedCount = " + proposedCount + " because it is less than " + count);
                 assertThrows(IllegalArgumentException.class, () -> latch.set(proposedCount));
             }
-            count = proposedCount;
         }
     }
 
