@@ -38,14 +38,15 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
-import com.hedera.node.app.service.token.entity.Account;
 import com.hedera.node.app.service.token.impl.entity.AccountBuilderImpl;
-import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
+import com.hedera.node.app.spi.accounts.Account;
+import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.pbj.runtime.io.Bytes;
+import com.hedera.pbj.runtime.io.DataBuffer;
 import com.hedera.pbj.runtime.io.DataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -60,7 +61,7 @@ import java.util.Optional;
  *
  * <p>This class is not exported from the module. It is an internal implementation detail.
  */
-public class ReadableAccountStore implements AccountKeyLookup {
+public class ReadableAccountStore implements AccountAccess {
     public static final int EVM_ADDRESS_LEN = 20;
     private static final byte[] MIRROR_PREFIX = new byte[12];
 
@@ -84,6 +85,12 @@ public class ReadableAccountStore implements AccountKeyLookup {
     public ReadableAccountStore(@NonNull final ReadableStates states) {
         this.accountState = states.get("ACCOUNTS");
         this.aliases = states.get("ALIASES");
+    }
+
+    @NonNull
+    @Override
+    public Optional<com.hedera.node.app.spi.accounts.Account> getAccountById(@NonNull AccountID accountOrAlias) {
+        return Optional.empty();
     }
 
     /** {@inheritDoc} */
@@ -148,8 +155,9 @@ public class ReadableAccountStore implements AccountKeyLookup {
      * @return an {@link Optional} with the {@code Account}, if it was found, an empty {@code
      *     Optional} otherwise
      */
+    @Override
     @NonNull
-    public Optional<Account> getAccount(@NonNull final AccountID id) {
+    public Optional<Account> getAccountById(@NonNull final AccountID id) {
         // TODO Make sure we have tests for getAccount for all valid account IDs.
         final var account = getAccountLeaf(id);
         return Optional.ofNullable(account).map(accountLeaf -> mapAccount(id, accountLeaf));
@@ -310,18 +318,8 @@ public class ReadableAccountStore implements AccountKeyLookup {
         return builder.build();
     }
 
-    // For now, go through the pain of converting the PBJ key into a Google key and delegating.
-    // But really we need to get rid of JKey from all the new code.
     @NonNull
     public Optional<HederaKey> asHederaKey(@NonNull final Key key) {
-        try {
-            final var bytes = new ByteArrayOutputStream();
-            final var output = new DataOutputStream(bytes);
-            Key.PROTOBUF.write(key, output);
-            final var googleKey = com.hederahashgraph.api.proto.java.Key.parseFrom(bytes.toByteArray());
-            return Utils.asHederaKey(googleKey);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to produce protobuf bytes for a key!", e);
-        }
+        return Utils.asHederaKey(key);
     }
 }

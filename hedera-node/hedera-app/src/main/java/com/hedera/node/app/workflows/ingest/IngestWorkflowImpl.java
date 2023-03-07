@@ -16,11 +16,6 @@
 
 package com.hedera.node.app.workflows.ingest;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 import static com.swirlds.common.system.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
 
@@ -40,17 +35,17 @@ import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
 import com.hedera.pbj.runtime.io.DataBuffer;
-import com.hedera.pbj.runtime.io.DataInputBuffer;
+import com.hedera.pbj.runtime.io.RandomAccessDataInput;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import javax.inject.Inject;
 
 /** Implementation of {@link IngestWorkflow} */
 public final class IngestWorkflowImpl implements IngestWorkflow {
@@ -72,14 +67,14 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
      * @param nodeInfo the {@link NodeInfo} of the current node
      * @param currentPlatformStatus the {@link CurrentPlatformStatus}
      * @param stateAccessor a {@link Supplier} that provides the latest immutable state
-     * @param onset the {@link WorkflowOnset} that pre-processes the {@link ByteBuffer} of a
-     *     transaction
+     * @param onset the {@link WorkflowOnset} that pre-processes the bytes of a transaction
      * @param checker the {@link IngestChecker} with specific checks of an ingest-workflow
      * @param throttleAccumulator the {@link ThrottleAccumulator} for throttling
      * @param submissionManager the {@link SubmissionManager} to submit transactions to the platform
      * @param metrics the {@link Metrics} to use for tracking metrics
      * @throws NullPointerException if one of the arguments is {@code null}
      */
+    @Inject
     public IngestWorkflowImpl(
             @NonNull final NodeInfo nodeInfo,
             @NonNull final CurrentPlatformStatus currentPlatformStatus,
@@ -108,7 +103,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
     @Override
     public void submitTransaction(
             @NonNull final SessionContext ctx,
-            @NonNull final DataInputBuffer requestBuffer,
+            @NonNull final RandomAccessDataInput requestBuffer,
             @NonNull final DataBuffer responseBuffer) {
         submitTransaction(ctx, requestBuffer, responseBuffer, ReadableAccountStore::new);
     }
@@ -116,7 +111,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
     // Package-private for testing
     void submitTransaction(
             @NonNull final SessionContext ctx,
-            @NonNull final DataInputBuffer requestBuffer,
+            @NonNull final RandomAccessDataInput requestBuffer,
             @NonNull final DataBuffer responseBuffer,
             @NonNull final Function<ReadableStates, ReadableAccountStore> storeSupplier) {
         requireNonNull(ctx);
@@ -124,24 +119,24 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
         requireNonNull(responseBuffer);
         requireNonNull(storeSupplier);
 
-        ResponseCodeEnum result = OK;
+        ResponseCodeEnum result = ResponseCodeEnum.OK;
         long estimatedFee = 0L;
 
         // 0. Node state pre-checks
         if (nodeInfo.isSelfZeroStake()) {
-            result = INVALID_NODE_ACCOUNT;
+            result = ResponseCodeEnum.INVALID_NODE_ACCOUNT;
         } else if (currentPlatformStatus.get() != ACTIVE) {
-            result = PLATFORM_NOT_ACTIVE;
+            result = ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
         }
 
-        if (result == OK) {
+        if (result == ResponseCodeEnum.OK) {
             // Grab (and reference count) the state, so we have a consistent view of things
             try (final var wrappedState = stateAccessor.get()) {
                 final var state = wrappedState.get();
 
                 // 1. Parse the TransactionBody and check the syntax
                 final var onsetResult = onset.parseAndCheck(ctx, requestBuffer);
-                if (onsetResult.errorCode() != OK) {
+                if (onsetResult.errorCode() != ResponseCodeEnum.OK) {
                     throw new PreCheckException(onsetResult.errorCode());
                 }
 
@@ -155,8 +150,8 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
                 assert functionality != HederaFunctionality.NONE;
 
                 // 2. Check throttles
-                if (throttleAccumulator.shouldThrottle(functionality)) {
-                    throw new PreCheckException(BUSY);
+                if (throttleAccumulator.shouldThrottle(onsetResult.txBody())) {
+                    throw new PreCheckException(ResponseCodeEnum.BUSY);
                 }
 
                 // 3. Check semantics
@@ -167,14 +162,14 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
                 final var tokenStates = state.createReadableStates(TokenService.NAME);
                 final var accountStore = storeSupplier.apply(tokenStates);
                 final var payer = accountStore
-                        .getAccount(payerID)
-                        .orElseThrow(() -> new PreCheckException(PAYER_ACCOUNT_NOT_FOUND));
+                        .getAccountById(payerID)
+                        .orElseThrow(() -> new PreCheckException(ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND));
 
                 // 5. Check payer's signature
-                checker.checkPayerSignature(txBody, signatureMap, payer);
+                checker.checkPayerSignature(state, onsetResult.transaction(), signatureMap, payerID);
 
                 // 6. Check account balance
-                checker.checkSolvency(txBody, functionality, payer);
+                checker.checkSolvency(onsetResult.transaction());
 
                 // 7. Submit to platform
                 requestBuffer.resetPosition();
@@ -185,8 +180,10 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
             } catch (InsufficientBalanceException e) {
                 estimatedFee = e.getEstimatedFee();
                 result = e.responseCode();
-            } catch (PreCheckException e) {
+            } catch (final PreCheckException e) {
                 result = e.responseCode();
+            } catch (IOException ex) {
+                throw new RuntimeException("Failed to read bytes from request buffer", ex);
             }
         }
 

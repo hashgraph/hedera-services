@@ -30,11 +30,11 @@ import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
-import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
-import com.hedera.node.app.spi.meta.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -58,8 +58,8 @@ public class CryptoTransferHandler implements TransactionHandler {
      * @throws PreCheckException if validation fails
      */
     public void validate(@NonNull final TransactionBody txn) throws PreCheckException {
-        // TODO: Migrate validation from CryptoTransferTransistionLogic.validateSemantics()
-        throw new UnsupportedOperationException("Not implemented");
+        // FUTURE: Migrate validation from CryptoTransferTransistionLogic.validateSemantics()
+        //        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
@@ -68,7 +68,7 @@ public class CryptoTransferHandler implements TransactionHandler {
      *
      * @param context the {@link PreHandleContext} which collects all information that will be
      *     passed to {@link #handle(TransactionMetadata)}
-     * @param accountStore the {@link AccountKeyLookup} to use to resolve keys
+     * @param accountStore the {@link AccountAccess} to use to resolve keys
      * @param tokenStore the {@link ReadableTokenStore} to use to resolve token metadata
      * @throws NullPointerException if one of the arguments is {@code null}
      */
@@ -102,8 +102,9 @@ public class CryptoTransferHandler implements TransactionHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void handle(@NonNull final TransactionMetadata metadata) {
-        requireNonNull(metadata);
-        throw new UnsupportedOperationException("Not implemented");
+        // TODO : Need to implement this method when we are ready to validate payments for query
+        //        requireNonNull(metadata);
+        //        throw new UnsupportedOperationException("Not implemented");
     }
 
     private void handleTokenTransfers(
@@ -172,7 +173,7 @@ public class CryptoTransferHandler implements TransactionHandler {
     }
 
     private void handleHbarTransfers(
-            final CryptoTransferTransactionBody op, final PreHandleContext meta, final AccountKeyLookup keyLookup) {
+            final CryptoTransferTransactionBody op, final PreHandleContext meta, final AccountAccess keyLookup) {
         for (AccountAmount accountAmount : op.transfers().accountAmounts()) {
             final var keyOrFailure = keyLookup.getKey(accountAmount.accountID());
 

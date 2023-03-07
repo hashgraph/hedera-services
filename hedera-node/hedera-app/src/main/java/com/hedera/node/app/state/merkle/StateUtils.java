@@ -37,7 +37,7 @@ public final class StateUtils {
      * @throws IllegalArgumentException if any other validation criteria fails
      */
     @NonNull
-    public static String validateServiceName(@NonNull final String serviceName) {
+    static String validateServiceName(@NonNull final String serviceName) {
         if (Objects.requireNonNull(serviceName).isEmpty()) {
             throw new IllegalArgumentException("The service name must have characters");
         }
@@ -54,7 +54,7 @@ public final class StateUtils {
      * @throws IllegalArgumentException if any other validation criteria fails
      */
     @NonNull
-    public static String validateStateKey(@NonNull final String stateKey) {
+    static String validateStateKey(@NonNull final String stateKey) {
         if (Objects.requireNonNull(stateKey).isEmpty()) {
             throw new IllegalArgumentException("The state key must have characters");
         }
@@ -71,7 +71,7 @@ public final class StateUtils {
      * @throws IllegalArgumentException if any other validation criteria fails
      */
     @NonNull
-    public static String validateIdentifier(@NonNull final String stateKey) {
+    static String validateIdentifier(@NonNull final String stateKey) {
         if (Objects.requireNonNull(stateKey).isEmpty()) {
             throw new IllegalArgumentException("The identifier must have characters");
         }
@@ -103,7 +103,7 @@ public final class StateUtils {
      * @param extra An extra string to bake into the class id
      * @return the class id
      */
-    public static long computeClassId(@NonNull final StateMetadata<?, ?> md, @NonNull final String extra) {
+    static long computeClassId(@NonNull final StateMetadata<?, ?> md, @NonNull final String extra) {
         final var def = md.stateDefinition();
         return computeClassId(md.serviceName(), def.stateKey(), md.schema().getVersion(), extra);
     }
@@ -114,7 +114,7 @@ public final class StateUtils {
      * @param extra An extra string to bake into the class id
      * @return the class id
      */
-    public static long computeClassId(
+    static long computeClassId(
             @NonNull final String serviceName,
             @NonNull final String stateKey,
             @NonNull final SemanticVersion version,

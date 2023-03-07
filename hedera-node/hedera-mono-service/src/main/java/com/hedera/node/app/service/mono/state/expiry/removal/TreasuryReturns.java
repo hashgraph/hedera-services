@@ -34,6 +34,7 @@ import static com.hedera.node.app.service.mono.utils.EntityNumPair.MISSING_NUM_P
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.expiry.TokenRelsListMutation;
 import com.hedera.node.app.service.mono.state.expiry.classification.EntityLookup;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
@@ -48,7 +49,6 @@ import com.hedera.node.app.service.mono.throttling.MapAccessType;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.mono.utils.MapValueListUtils;
-import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
@@ -78,7 +78,7 @@ public class TreasuryReturns {
     static final List<MapAccessType> TREASURY_BALANCE_INCREMENT =
             List.of(ACCOUNTS_GET, TOKEN_ASSOCIATIONS_GET_FOR_MODIFY);
 
-    private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
+    private final Supplier<MerkleMapLike<EntityNum, MerkleToken>> tokens;
     private final Supplier<UniqueTokenMapAdapter> nfts;
     private final Supplier<TokenRelStorageAdapter> tokenRels;
 
@@ -91,7 +91,7 @@ public class TreasuryReturns {
     @Inject
     public TreasuryReturns(
             final EntityLookup entityLookup,
-            final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
+            final Supplier<MerkleMapLike<EntityNum, MerkleToken>> tokens,
             final Supplier<UniqueTokenMapAdapter> nfts,
             final Supplier<TokenRelStorageAdapter> tokenRels,
             final ExpiryThrottle expiryThrottle,

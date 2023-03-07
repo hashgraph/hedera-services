@@ -60,6 +60,8 @@ import com.hedera.node.app.service.mono.ledger.backing.BackingTokens;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
 import com.hedera.node.app.service.mono.sigs.sourcing.KeyType;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
@@ -110,8 +112,6 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.virtualmap.VirtualMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -595,7 +595,7 @@ public class StateView {
         return Optional.of(info.build());
     }
 
-    public MerkleMap<EntityNum, MerkleTopic> topics() {
+    public MerkleMapLike<EntityNum, MerkleTopic> topics() {
         return Objects.requireNonNull(stateChildren).topics();
     }
 
@@ -619,15 +619,15 @@ public class StateView {
         return Objects.requireNonNull(stateChildren).uniqueTokens();
     }
 
-    public VirtualMap<VirtualBlobKey, VirtualBlobValue> storage() {
+    public VirtualMapLike<VirtualBlobKey, VirtualBlobValue> storage() {
         return Objects.requireNonNull(stateChildren).storage();
     }
 
-    public VirtualMap<ContractKey, IterableContractValue> contractStorage() {
+    public VirtualMapLike<ContractKey, IterableContractValue> contractStorage() {
         return Objects.requireNonNull(stateChildren).contractStorage();
     }
 
-    public MerkleMap<EntityNum, MerkleToken> tokens() {
+    public MerkleMapLike<EntityNum, MerkleToken> tokens() {
         return Objects.requireNonNull(stateChildren).tokens();
     }
 
@@ -711,7 +711,7 @@ public class StateView {
      */
     public static void doBoundedIteration(
             final TokenRelStorageAdapter tokenRels,
-            final MerkleMap<EntityNum, MerkleToken> tokens,
+            final MerkleMapLike<EntityNum, MerkleToken> tokens,
             final HederaAccount account,
             final BiConsumer<MerkleToken, HederaTokenRel> visitor) {
         final var maxRels = account.getNumAssociations();
@@ -733,7 +733,7 @@ public class StateView {
      */
     public static void doBoundedIteration(
             final TokenRelStorageAdapter tokenRels,
-            final MerkleMap<EntityNum, MerkleToken> tokens,
+            final MerkleMapLike<EntityNum, MerkleToken> tokens,
             final EntityNumPair firstRel,
             final int maxRels,
             final BiConsumer<MerkleToken, HederaTokenRel> visitor) {
@@ -761,7 +761,7 @@ public class StateView {
     }
 
     @VisibleForTesting
-    public MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo() {
+    public MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfo() {
         return stateChildren.stakingInfo();
     }
 }

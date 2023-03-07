@@ -16,28 +16,20 @@
 
 package com.hedera.node.app.authorization;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermissions;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
-@Singleton
-public class Authorizer {
-
-    private final HapiOpPermissions hapiOpPermissions;
-
-    @Inject
-    public Authorizer(@NonNull final HapiOpPermissions hapiOpPermissions) {
-        this.hapiOpPermissions = requireNonNull(hapiOpPermissions);
-    }
-
-    public boolean isAuthorized(@NonNull final AccountID id, @NonNull final HederaFunctionality function) {
-        final var permissionStatus = hapiOpPermissions.permissibilityOf2(function, id);
-        return permissionStatus == OK;
-    }
+/**
+ * Verifies whether an account is authorized to perform a specific function.
+ */
+public interface Authorizer {
+    /**
+     * Checks if the given account is authorized to perform the given function.
+     *
+     * @param id The ID of the account to check
+     * @param function The specific functionality to check
+     * @return true if the account is authorized, otherwise false.
+     */
+    boolean isAuthorized(@NonNull AccountID id, @NonNull HederaFunctionality function);
 }

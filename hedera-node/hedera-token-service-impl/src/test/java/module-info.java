@@ -16,12 +16,15 @@ module com.hedera.node.app.service.token.impl.test {
     requires org.bouncycastle.provider;
     requires com.hedera.node.app.service.evm;
 
-    opens com.hedera.node.app.service.token.impl.test to
-            org.junit.platform.commons;
     opens com.hedera.node.app.service.token.impl.test.entity to
             org.junit.platform.commons;
     opens com.hedera.node.app.service.token.impl.test.util to
             org.junit.platform.commons;
     opens com.hedera.node.app.service.token.impl.test.handlers to
             org.junit.platform.commons;
+    opens com.hedera.node.app.service.token.impl.test.serdes to
+            org.junit.platform.commons;
+    opens com.hedera.node.app.service.token.impl.test to
+            org.junit.platform.commons,
+            org.mockito;
 }

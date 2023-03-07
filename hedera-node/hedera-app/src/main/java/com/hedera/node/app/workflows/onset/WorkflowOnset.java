@@ -16,12 +16,6 @@
 
 package com.hedera.node.app.workflows.onset;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_OVERSIZE;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
@@ -40,7 +34,7 @@ import com.hedera.pbj.runtime.io.Bytes;
 import com.hedera.pbj.runtime.io.BytesBuffer;
 import com.hedera.pbj.runtime.io.DataBuffer;
 import com.hedera.pbj.runtime.io.DataInput;
-import com.hedera.pbj.runtime.io.DataInputBuffer;
+import com.hedera.pbj.runtime.io.RandomAccessDataInput;
 import com.hedera.pbj.runtime.io.DataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
@@ -48,10 +42,15 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_OVERSIZE;
+import static java.util.Objects.requireNonNull;
 
 /**
  * This class does some pre-processing before each workflow. It parses the provided {@link
- * DataInputBuffer} and checks it.
+ * RandomAccessDataInput} and checks it.
  *
  * <p>This is used in every workflow that deals with transactions, i.e. in all workflows except the
  * query workflow. And even in the query workflow, it is used when dealing with the contained
@@ -93,7 +92,7 @@ public class WorkflowOnset {
      * @throws PreCheckException if the data is not valid
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public OnsetResult parseAndCheck(@NonNull final SessionContext ctx, @NonNull final DataInputBuffer buffer)
+    public OnsetResult parseAndCheck(@NonNull final SessionContext ctx, @NonNull final RandomAccessDataInput buffer)
             throws PreCheckException {
         requireNonNull(ctx);
         requireNonNull(buffer);
@@ -119,7 +118,7 @@ public class WorkflowOnset {
         requireNonNull(ctx);
         requireNonNull(buffer);
 
-        return doParseAndCheck(ctx, DataInputBuffer.wrap(buffer));
+        return doParseAndCheck(ctx, DataBuffer.wrap(buffer));
     }
 
     /**
@@ -152,7 +151,7 @@ public class WorkflowOnset {
     }
 
     @SuppressWarnings("deprecation")
-    private OnsetResult doParseAndCheck(@NonNull final SessionContext ctx, @NonNull final DataInputBuffer txData)
+    private OnsetResult doParseAndCheck(@NonNull final SessionContext ctx, @NonNull final RandomAccessDataInput txData)
             throws PreCheckException {
 
         // 0. Fail fast if there are too many transaction bytes
@@ -187,7 +186,7 @@ public class WorkflowOnset {
         // 4. return TransactionBody
         try {
             final var functionality = HapiUtils.functionOf(txBody);
-            return new OnsetResult(txBody, errorCode, signatureMap, functionality);
+            return new OnsetResult(tx, txBody, errorCode, signatureMap, functionality);
         } catch (UnknownHederaFunctionality e) {
             throw new PreCheckException(INVALID_TRANSACTION_BODY);
         }

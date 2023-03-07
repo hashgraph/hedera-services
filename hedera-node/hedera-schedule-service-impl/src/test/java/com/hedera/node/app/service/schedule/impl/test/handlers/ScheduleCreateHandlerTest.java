@@ -17,213 +17,163 @@
 package com.hedera.node.app.service.schedule.impl.test.handlers;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleCreateHandler;
+import com.hedera.node.app.service.schedule.impl.test.ScheduledTxnFactory;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
-import com.hedera.node.app.spi.fixtures.ScheduledTransactionFactory;
-import com.hedera.node.app.spi.meta.PreHandleContext;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
-import org.junit.jupiter.api.Test;
-import java.time.Instant;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import java.util.List;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
-import static com.hedera.node.app.service.schedule.impl.Utils.asOrdinary;
+import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase implements ScheduledTransactionFactory {
-    private TransactionBody txn;
-    private ScheduleCreateHandler subject = new ScheduleCreateHandler();
+class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
 
     @Test
     void preHandleScheduleCreateVanilla() {
+        final var subject = new ScheduleCreateHandler();
         final var txn = scheduleCreateTransaction(payer);
-        final var scheduledTxn =
-                asOrdinary(txn.scheduleCreate().orElseThrow().scheduledTransactionBody(), txn.transactionID());
-        scheduledMeta = new TransactionMetadata(
-                asOrdinary(txn.scheduleCreate().orElseThrow().scheduledTransactionBody(), txn.transactionID()),
-                scheduler,
-                OK,
-                schedulerKey,
-                List.of(),
-                null,
-                List.of());
 
         given(keyLookup.getKey(scheduler)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
-        given(dispatcher.dispatch(scheduledTxn, payer)).willReturn(scheduledMeta);
+        given(keyLookup.getKey(payer)).willReturn(KeyOrLookupFailureReason.withKey(payerKey));
 
         final var context = new PreHandleContext(keyLookup, txn, scheduler);
         subject.preHandle(context, dispatcher);
 
-        basicContextAssertions(context, 1, false, OK);
+        basicContextAssertions(context, 1, false, ResponseCodeEnum.OK);
         assertEquals(schedulerKey, context.getPayerKey());
         assertEquals(List.of(adminKey), context.getRequiredNonPayerKeys());
-        assertEquals(scheduledMeta, context.getHandlerMetadata());
 
-        verify(dispatcher).dispatch(scheduledTxn, payer);
+        final var innerContext = context.getInnerContext();
+        basicContextAssertions(innerContext, 0, false, ResponseCodeEnum.OK);
+        assertEquals(payer, innerContext.getPayer());
+        assertEquals(payerKey, innerContext.getPayerKey());
+
+        verify(dispatcher).dispatch(innerContext);
     }
 
     @Test
     void preHandleScheduleCreateVanillaNoAdmin() {
-        scheduleCreateTxnWith(null, "", payer, scheduler, asTimestamp(Instant.ofEpochSecond(1L)));
-        final var scheduledTxn =
-                asOrdinary(txn.scheduleCreate().orElseThrow().scheduledTransactionBody(), txn.transactionID());
-        scheduledMeta = new TransactionMetadata(
-                asOrdinary(txn.scheduleCreate().orElseThrow().scheduledTransactionBody(), txn.transactionID()),
-                scheduler,
-                OK,
-                schedulerKey,
-                List.of(),
-                null,
-                List.of());
+        final var subject = new ScheduleCreateHandler();
+        final var txn = ScheduledTxnFactory.scheduleCreateTxnWith(null, "", payer, scheduler,
+                Timestamp.newBuilder().seconds(1L).build());
 
         given(keyLookup.getKey(scheduler)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
-        given(dispatcher.dispatch(scheduledTxn, payer)).willReturn(scheduledMeta);
+        given(keyLookup.getKey(payer)).willReturn(KeyOrLookupFailureReason.withKey(payerKey));
 
         final var context = new PreHandleContext(keyLookup, txn, scheduler);
         subject.preHandle(context, dispatcher);
 
-        basicContextAssertions(context, 0, false, OK);
+        basicContextAssertions(context, 0, false, ResponseCodeEnum.OK);
         assertEquals(schedulerKey, context.getPayerKey());
         assertEquals(List.of(), context.getRequiredNonPayerKeys());
-        assertEquals(scheduledMeta, context.getHandlerMetadata());
 
-        verify(dispatcher).dispatch(scheduledTxn, payer);
+        final var innerContext = context.getInnerContext();
+        basicContextAssertions(innerContext, 0, false, ResponseCodeEnum.OK);
+        assertEquals(payer, innerContext.getPayer());
+        assertEquals(payerKey, innerContext.getPayerKey());
+
+        verify(dispatcher).dispatch(innerContext);
     }
 
     @Test
     void preHandleScheduleCreateFailsOnMissingPayer() {
-        givenSetupForScheduleCreate(payer);
+        final var subject = new ScheduleCreateHandler();
+        final var txn = scheduleCreateTransaction(payer);
+
         given(keyLookup.getKey(scheduler))
-                .willReturn(KeyOrLookupFailureReason.withFailureReason(INVALID_PAYER_ACCOUNT_ID));
-        scheduledMeta = new TransactionMetadata(
-                asOrdinary(txn.scheduleCreate().orElseThrow().scheduledTransactionBody(), txn.transactionID()),
-                scheduler,
-                OK,
-                schedulerKey,
-                List.of(),
-                null,
-                List.of());
-        given(dispatcher.dispatch(scheduledTxn, payer)).willReturn(scheduledMeta);
+                .willReturn(KeyOrLookupFailureReason.withFailureReason(ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID));
+        given(keyLookup.getKey(payer)).willReturn(KeyOrLookupFailureReason.withKey(payerKey));
 
         final var context = new PreHandleContext(keyLookup, txn, scheduler);
         subject.preHandle(context, dispatcher);
 
-        basicContextAssertions(context, 0, true, INVALID_PAYER_ACCOUNT_ID);
-        assertEquals(scheduledMeta, context.getHandlerMetadata());
+        basicContextAssertions(context, 0, true, ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID);
 
-        verify(dispatcher).dispatch(scheduledTxn, payer);
+        final var innerContext = context.getInnerContext();
+        basicContextAssertions(innerContext, 0, false, ResponseCodeEnum.OK);
+        assertEquals(payer, innerContext.getPayer());
+        assertEquals(payerKey, innerContext.getPayerKey());
+
+        verify(dispatcher).dispatch(innerContext);
     }
 
     @Test
     void preHandleScheduleCreateUsesSamePayerIfScheduledPayerNotSet() {
-        givenSetupForScheduleCreate(null);
-        scheduledMeta = new TransactionMetadata(
-                asOrdinary(txn.scheduleCreate().orElseThrow().scheduledTransactionBody(), txn.transactionID()),
-                scheduler,
-                OK,
-                schedulerKey,
-                List.of(),
-                null,
-                List.of());
-        given(dispatcher.dispatch(eq(scheduledTxn), any())).willReturn(scheduledMeta);
+        final var subject = new ScheduleCreateHandler();
+        final var txn = scheduleCreateTransaction(null);
         given(keyLookup.getKey(scheduler)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
 
         final var context = new PreHandleContext(keyLookup, txn, scheduler);
         subject.preHandle(context, dispatcher);
 
-        basicContextAssertions(context, 1, false, OK);
+        basicContextAssertions(context, 1, false, ResponseCodeEnum.OK);
         assertEquals(schedulerKey, context.getPayerKey());
         assertEquals(List.of(adminKey), context.getRequiredNonPayerKeys());
-        assertEquals(scheduledMeta, context.getHandlerMetadata());
 
-        verify(dispatcher).dispatch(scheduledTxn, scheduler);
+        final var innerContext = context.getInnerContext();
+        basicContextAssertions(innerContext, 0, false, ResponseCodeEnum.OK);
+        assertEquals(scheduler, innerContext.getPayer());
+        assertEquals(schedulerKey, innerContext.getPayerKey());
+
+        verify(dispatcher).dispatch(innerContext);
     }
 
     @Test
     void failsWithScheduleTransactionsNotRecognized() {
+        final var subject = new ScheduleCreateHandler();
         final var txn = scheduleTxnNotRecognized();
-        final var scheduledTxn =
-                asOrdinary(txn.scheduleCreate().orElseThrow().scheduledTransactionBody(), txn.transactionID());
-        scheduledMeta = new TransactionMetadata(
-                asOrdinary(txn.scheduleCreate().orElseThrow().scheduledTransactionBody(), txn.transactionID()),
-                scheduler,
-                OK,
-                schedulerKey,
-                List.of(),
-                null,
-                List.of());
 
         given(keyLookup.getKey(scheduler)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
 
         final var context = new PreHandleContext(keyLookup, txn, scheduler);
         subject.preHandle(context, dispatcher);
 
-        basicContextAssertions(context, 0, false, OK);
-        basicMetaAssertions(
-                (TransactionMetadata) context.getHandlerMetadata(), 0, true, SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+        basicContextAssertions(context, 0, false, ResponseCodeEnum.OK);
         assertEquals(schedulerKey, context.getPayerKey());
         assertEquals(List.of(), context.getRequiredNonPayerKeys());
-        assertEquals(null, ((TransactionMetadata) context.getHandlerMetadata()).payerKey());
-        assertEquals(List.of(), ((TransactionMetadata) context.getHandlerMetadata()).requiredNonPayerKeys());
 
-        verify(dispatcher, never()).dispatch(scheduledTxn, payer);
+        final var innerContext = context.getInnerContext();
+        basicContextAssertions(innerContext, 0, true, ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+        assertEquals(scheduler, innerContext.getPayer());
+        assertEquals(schedulerKey, innerContext.getPayerKey());
+
+        verify(dispatcher, never()).dispatch(any());
     }
 
     @Test
     void innerTxnFailsSetsStatus() {
-        givenSetupForScheduleCreate(payer);
-        scheduledMeta = new TransactionMetadata(
-                asOrdinary(txn.scheduleCreate().orElseThrow().scheduledTransactionBody(), txn.transactionID()),
-                payer,
-                INVALID_ACCOUNT_ID,
-                schedulerKey,
-                List.of(),
-                null,
-                List.of());
-        given(dispatcher.dispatch(any(), any())).willReturn(scheduledMeta);
+        final var subject = new ScheduleCreateHandler();
+        final var txn = scheduleCreateTransaction(payer);
+
+        given(keyLookup.getKey(scheduler)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
+        given(keyLookup.getKey(payer)).willReturn(
+                KeyOrLookupFailureReason.withFailureReason(ResponseCodeEnum.INVALID_ACCOUNT_ID));
 
         final var context = new PreHandleContext(keyLookup, txn, scheduler);
         subject.preHandle(context, dispatcher);
 
-        basicContextAssertions(context, 1, false, OK);
+        basicContextAssertions(context, 1, false, ResponseCodeEnum.OK);
         assertEquals(schedulerKey, context.getPayerKey());
         assertEquals(List.of(adminKey), context.getRequiredNonPayerKeys());
 
-        verify(dispatcher).dispatch(scheduledTxn, payer);
-        assertEquals(UNRESOLVABLE_REQUIRED_SIGNERS, ((TransactionMetadata)
- context.getHandlerMetadata()).status());
-        assertEquals(payer, ((TransactionMetadata) context.getHandlerMetadata()).payer());
-        assertEquals(List.of(), ((TransactionMetadata) context.getHandlerMetadata()).requiredNonPayerKeys());
-        assertEquals(
-                asOrdinary(txn.scheduleCreate().orElseThrow().scheduledTransactionBody(), txn.transactionID()),
-                ((TransactionMetadata) context.getHandlerMetadata()).txnBody());
+        final var innerContext = context.getInnerContext();
+        basicContextAssertions(innerContext, 0, true, ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS);
+        assertEquals(payer, innerContext.getPayer());
+        assertNull(innerContext.getPayerKey());
+
+        verify(dispatcher).dispatch(innerContext);
     }
 
     private TransactionBody scheduleCreateTransaction(final AccountID payer) {
-        return scheduleCreateTxnWith(
-                key,
-                "test",
-                payer,
-                scheduler,
+        return ScheduledTxnFactory.scheduleCreateTxnWith(key, "test", payer, scheduler,
                 Timestamp.newBuilder().seconds(1_234_567L).build());
-    }
-
-    private void givenSetupForScheduleCreate(final AccountID payer) {
-        txn = scheduleCreateTransaction(payer);
-        scheduledTxn = asOrdinary(txn.scheduleCreate().orElseThrow().scheduledTransactionBody(), txn.transactionID());
-
-        given(keyLookup.getKey(scheduler)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
-        lenient().when(dispatcher.dispatch(scheduledTxn, payer)).thenReturn(scheduledMeta);
     }
 }

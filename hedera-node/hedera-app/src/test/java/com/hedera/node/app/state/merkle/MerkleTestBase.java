@@ -19,7 +19,7 @@ package com.hedera.node.app.state.merkle;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.spi.fixtures.state.StateTestBase;
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
-import com.hedera.node.app.spi.state.*;
+import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskKeySerializer;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
@@ -27,6 +27,7 @@ import com.hedera.node.app.state.merkle.disk.OnDiskValueSerializer;
 import com.hedera.node.app.state.merkle.memory.InMemoryKey;
 import com.hedera.node.app.state.merkle.memory.InMemoryValue;
 import com.hedera.node.app.state.merkle.singleton.SingletonNode;
+import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.DataInput;
 import com.hedera.pbj.runtime.io.DataOutput;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -66,7 +67,7 @@ import java.nio.file.Path;
  * #SECOND_SERVICE} has space, steam, and country themed states. Most of these are simple String
  * types for the key and value, but the space themed state uses Long as the key type.
  *
- * <p>This class defines all the {@link Serdes}, {@link StateMetadata}, and {@link MerkleMap}s
+ * <p>This class defines all the {@link Codec}, {@link StateMetadata}, and {@link MerkleMap}s
  * required to represent each of these. It does not create a {@link VirtualMap} automatically, but
  * does provide APIs to make it easy to create them (the {@link VirtualMap} has a lot of setup
  * complexity, and also requires a storage directory, so rather than creating these for every test
@@ -77,10 +78,10 @@ public class MerkleTestBase extends StateTestBase {
     public static final String SECOND_SERVICE = "Second-Service";
     public static final String UNKNOWN_SERVICE = "Bogus-Service";
 
-    /** A {@link Serdes} to be used with String data types */
-    public static final Serdes<String> STRING_SERDES = new StringSerdes();
-    /** A {@link Serdes} to be used with Long data types */
-    public static final Serdes<Long> LONG_SERDES = new LongSerdes();
+    /** A {@link Codec} to be used with String data types */
+    public static final Codec<String> STRING_CODEC = new StringCodec();
+    /** A {@link Codec} to be used with Long data types */
+    public static final Codec<Long> LONG_CODEC = new LongCodec();
 
     /** Used by some tests that need to hash */
     protected static final MerkleCryptography CRYPTO = MerkleCryptoFactory.getInstance();
@@ -138,7 +139,7 @@ public class MerkleTestBase extends StateTestBase {
         fruitMetadata = new StateMetadata<>(
                 FIRST_SERVICE,
                 new TestSchema(1),
-                StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES));
+                StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_CODEC, STRING_CODEC));
     }
 
     /** Sets up the "Fruit" virtual map, label, and metadata. */
@@ -147,7 +148,7 @@ public class MerkleTestBase extends StateTestBase {
         fruitVirtualMetadata = new StateMetadata<>(
                 FIRST_SERVICE,
                 new TestSchema(1),
-                StateDefinition.onDisk(FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 100));
+                StateDefinition.onDisk(FRUIT_STATE_KEY, STRING_CODEC, STRING_CODEC, 100));
         fruitVirtualMap = createVirtualMap(fruitVirtualLabel, fruitVirtualMetadata);
     }
 
@@ -158,7 +159,7 @@ public class MerkleTestBase extends StateTestBase {
         animalMetadata = new StateMetadata<>(
                 FIRST_SERVICE,
                 new TestSchema(1),
-                StateDefinition.inMemory(ANIMAL_STATE_KEY, STRING_SERDES, STRING_SERDES));
+                StateDefinition.inMemory(ANIMAL_STATE_KEY, STRING_CODEC, STRING_CODEC));
     }
 
     /** Sets up the "Space" merkle map, label, and metadata. */
@@ -168,13 +169,13 @@ public class MerkleTestBase extends StateTestBase {
         spaceMetadata = new StateMetadata<>(
                 SECOND_SERVICE,
                 new TestSchema(1),
-                StateDefinition.inMemory(SPACE_STATE_KEY, LONG_SERDES, STRING_SERDES));
+                StateDefinition.inMemory(SPACE_STATE_KEY, LONG_CODEC, STRING_CODEC));
     }
 
     protected void setupSingletonCountry() {
         countryLabel = StateUtils.computeLabel(FIRST_SERVICE, COUNTRY_STATE_KEY);
         countryMetadata = new StateMetadata<String, String>(
-                FIRST_SERVICE, new TestSchema(1), StateDefinition.singleton(COUNTRY_STATE_KEY, STRING_SERDES));
+                FIRST_SERVICE, new TestSchema(1), StateDefinition.singleton(COUNTRY_STATE_KEY, STRING_CODEC));
         countrySingleton = new SingletonNode<>(countryMetadata, AUSTRALIA);
     }
 
@@ -299,8 +300,8 @@ public class MerkleTestBase extends StateTestBase {
         }
     }
 
-    /** An implementation of {@link Serdes} for String types */
-    private static final class StringSerdes implements Serdes<String> {
+    /** An implementation of {@link Codec} for String types */
+    private static final class StringCodec implements Codec<String> {
         @NonNull
         @Override
         public String parse(@NonNull DataInput input) throws IOException {
@@ -322,9 +323,15 @@ public class MerkleTestBase extends StateTestBase {
             return input.readInt();
         }
 
+        @NonNull
         @Override
-        public int typicalSize() {
-            return 255;
+        public String parseStrict(@NonNull DataInput dataInput) throws IOException {
+            return parse(dataInput);
+        }
+
+        @Override
+        public int measureRecord(String s) {
+            return s.getBytes(StandardCharsets.UTF_8).length;
         }
 
         @Override
@@ -338,8 +345,8 @@ public class MerkleTestBase extends StateTestBase {
         }
     }
 
-    /** An implementation of {@link Serdes} for Long types */
-    private static final class LongSerdes implements Serdes<Long> {
+    /** An implementation of {@link Codec} for Long types */
+    private static final class LongCodec implements Codec<Long> {
         @NonNull
         @Override
         public Long parse(@NonNull DataInput input) throws IOException {
@@ -356,8 +363,14 @@ public class MerkleTestBase extends StateTestBase {
             return 8;
         }
 
+        @NonNull
         @Override
-        public int typicalSize() {
+        public Long parseStrict(@NonNull DataInput dataInput) throws IOException {
+            return parse(dataInput);
+        }
+
+        @Override
+        public int measureRecord(Long aLong) {
             return 8;
         }
 

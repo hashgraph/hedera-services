@@ -49,7 +49,7 @@ public class WritableSingletonStateBase<T> extends ReadableSingletonStateBase<T>
 
     @Override
     public T get() {
-        // Possible pattern: "put" and then "get". In this case, "read" should be false!! Otherwise
+        // Possible pattern: "put" and then "get". In this case, "read" should be false!! Otherwise,
         // we invalidate tx when we don't need to
         if (modified) {
             return value;

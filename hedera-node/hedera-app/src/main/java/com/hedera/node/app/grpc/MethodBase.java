@@ -18,7 +18,7 @@ package com.hedera.node.app.grpc;
 
 import com.hedera.node.app.SessionContext;
 import com.hedera.pbj.runtime.io.DataBuffer;
-import com.hedera.pbj.runtime.io.DataInputBuffer;
+import com.hedera.pbj.runtime.io.RandomAccessDataInput;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
@@ -138,12 +138,12 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<DataBuffer, DataBuf
      * if a gRPC <b>ERROR</b> is to be returned.
      *
      * @param session The {@link SessionContext} for this call
-     * @param requestBuffer The {@link DataInputBuffer} containing the protobuf bytes for the request
+     * @param requestBuffer The {@link RandomAccessDataInput} containing the protobuf bytes for the request
      * @param responseBuffer A {@link DataBuffer} into which the response protobuf bytes may be written
      */
     protected abstract void handle(
             @NonNull final SessionContext session,
-            @NonNull final DataInputBuffer requestBuffer,
+            @NonNull final RandomAccessDataInput requestBuffer,
             @NonNull final DataBuffer responseBuffer);
 
     /**

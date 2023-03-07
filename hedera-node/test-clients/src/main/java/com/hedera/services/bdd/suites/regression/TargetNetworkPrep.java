@@ -90,6 +90,8 @@ public class TargetNetworkPrep extends HapiSuite {
                                     .payingWith(GENESIS)
                                     .contents(serde.toValidatedRawFile(stylized121)),
                             overridingAllOf(Map.of(
+                                    "scheduling.whitelist",
+                                    "ConsensusSubmitMessage,CryptoTransfer,TokenMint,TokenBurn,CryptoApproveAllowance,CryptoUpdate",
                                     CHAIN_ID_PROP,
                                     "298",
                                     STAKING_FEES_NODE_REWARD_PERCENTAGE,

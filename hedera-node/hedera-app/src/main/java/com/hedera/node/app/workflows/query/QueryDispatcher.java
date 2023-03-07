@@ -18,12 +18,14 @@ package com.hedera.node.app.workflows.query;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.spi.meta.QueryContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryHandler;
-import com.hedera.node.app.workflows.dispatcher.StoreFactory;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -91,8 +93,7 @@ public class QueryDispatcher {
             case TOKEN_GET_NFT_INFO -> handlers.tokenGetNftInfoHandler();
             case TOKEN_GET_NFT_INFOS -> handlers.tokenGetNftInfosHandler();
 
-            case TRANSACTION_GET_FAST_RECORD -> throw new UnsupportedOperationException(
-                    GET_FAST_RECORD_IS_NOT_SUPPORTED);
+            case TRANSACTION_GET_FAST_RECORD -> throw new UnsupportedOperationException(GET_FAST_RECORD_IS_NOT_SUPPORTED);
             case UNSET -> throw new UnsupportedOperationException(QUERY_NOT_SET);
         };
     }
@@ -100,19 +101,19 @@ public class QueryDispatcher {
     /**
      * Validates the query by dispatching the query to its specific handlers.
      *
-     * @param storeFactory the {@link StoreFactory} that keeps all stores which are eventually
-     *     needed
-     * @param query the {@link Query} of the request
+     * @param storeFactory the {@link ReadableStoreFactory} that keeps all stores which are eventually
+     *                     needed
+     * @param query        the {@link Query} of the request
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void validate(@NonNull final StoreFactory storeFactory, @NonNull final Query query)
+    public ResponseCodeEnum validate(@NonNull final ReadableStoreFactory storeFactory, @NonNull final Query query)
             throws PreCheckException {
         requireNonNull(storeFactory);
         requireNonNull(query);
 
-        switch (query.query().kind()) {
+        return switch (query.query().kind()) {
             case CONSENSUS_GET_TOPIC_INFO -> handlers.consensusGetTopicInfoHandler()
-                    .validate(query);
+                    .validate(query, storeFactory.createTopicStore());
 
             case GET_BY_SOLIDITY_ID -> handlers.contractGetBySolidityIDHandler().validate(query);
             case CONTRACT_CALL_LOCAL -> handlers.contractCallLocalHandler().validate(query);
@@ -149,36 +150,34 @@ public class QueryDispatcher {
                     .validate(query);
             case TOKEN_GET_NFT_INFO -> handlers.tokenGetNftInfoHandler().validate(query);
             case TOKEN_GET_NFT_INFOS -> handlers.tokenGetNftInfosHandler().validate(query);
-            case TRANSACTION_GET_FAST_RECORD -> throw new UnsupportedOperationException(
-                    GET_FAST_RECORD_IS_NOT_SUPPORTED);
-            case UNSET -> throw new UnsupportedOperationException(QUERY_NOT_SET);
 
-            default -> throw new UnsupportedOperationException(
-                    "This type of query is not supported: " + query.query().kind());
-        }
+            case TRANSACTION_GET_FAST_RECORD -> throw new UnsupportedOperationException(GET_FAST_RECORD_IS_NOT_SUPPORTED);
+            case UNSET -> throw new UnsupportedOperationException(QUERY_NOT_SET);
+        };
     }
 
     /**
      * Gets the response for a given query by dispatching its respective handlers.
      *
-     * @param storeFactory the {@link StoreFactory} that keeps all stores which are eventually
-     *     needed
+     * @param storeFactory the {@link ReadableStoreFactory} that keeps all stores which are eventually needed
      * @param query the actual {@link Query}
-     * @param header the {@link ResponseHeader} that should be used in the response, if it is
-     *     successful
+     * @param header the {@link ResponseHeader} that should be used in the response, if it is successful
+     * @param queryContext
      * @return the {@link Response} with the requested answer
      */
     public Response getResponse(
-            @NonNull final StoreFactory storeFactory,
+            @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final Query query,
-            @NonNull final ResponseHeader header) {
+            @NonNull final ResponseHeader header,
+            @NonNull final QueryContext queryContext) {
         requireNonNull(storeFactory);
         requireNonNull(query);
         requireNonNull(header);
+        requireNonNull(queryContext);
 
         return switch (query.query().kind()) {
             case CONSENSUS_GET_TOPIC_INFO -> handlers.consensusGetTopicInfoHandler()
-                    .findResponse(query, header);
+                    .findResponse(query, header, storeFactory.createTopicStore(), queryContext);
 
             case GET_BY_SOLIDITY_ID -> handlers.contractGetBySolidityIDHandler().findResponse(query, header);
             case CONTRACT_CALL_LOCAL -> handlers.contractCallLocalHandler().findResponse(query, header);
@@ -215,8 +214,8 @@ public class QueryDispatcher {
                     .findResponse(query, header);
             case TOKEN_GET_NFT_INFO -> handlers.tokenGetNftInfoHandler().findResponse(query, header);
             case TOKEN_GET_NFT_INFOS -> handlers.tokenGetNftInfosHandler().findResponse(query, header);
-            case TRANSACTION_GET_FAST_RECORD -> throw new UnsupportedOperationException(
-                    GET_FAST_RECORD_IS_NOT_SUPPORTED);
+
+            case TRANSACTION_GET_FAST_RECORD -> throw new UnsupportedOperationException(GET_FAST_RECORD_IS_NOT_SUPPORTED);
             case UNSET -> throw new UnsupportedOperationException(QUERY_NOT_SET);
         };
     }

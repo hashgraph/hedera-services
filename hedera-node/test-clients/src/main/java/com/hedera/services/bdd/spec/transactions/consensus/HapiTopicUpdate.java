@@ -183,7 +183,8 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
 
     @Override
     protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
-        return spec.clients().getConsSvcStub(targetNodeFor(spec), useTls)::updateTopic;
+        return spec.clients()
+                .getConsSvcStub(targetNodeFor(spec), useTls, spec.setup().workflowOperations())::updateTopic;
     }
 
     @Override

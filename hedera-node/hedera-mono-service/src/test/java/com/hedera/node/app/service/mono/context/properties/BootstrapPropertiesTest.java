@@ -116,6 +116,8 @@ import static com.hedera.node.app.spi.config.PropertyNames.FILES_SOFTWARE_UPDATE
 import static com.hedera.node.app.spi.config.PropertyNames.FILES_THROTTLE_DEFINITIONS;
 import static com.hedera.node.app.spi.config.PropertyNames.GRPC_PORT;
 import static com.hedera.node.app.spi.config.PropertyNames.GRPC_TLS_PORT;
+import static com.hedera.node.app.spi.config.PropertyNames.GRPC_WORKFLOWS_PORT;
+import static com.hedera.node.app.spi.config.PropertyNames.GRPC_WORKFLOWS_TLS_PORT;
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_ACCOUNTS_EXPORT_PATH;
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_ALLOWANCES_IS_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT;
@@ -253,6 +255,7 @@ import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -265,12 +268,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith({LogCaptureExtension.class})
 class BootstrapPropertiesTest {
-
     @LoggingTarget
     private LogCaptor logCaptor;
 
     @LoggingSubject
-    private final BootstrapProperties subject = new BootstrapProperties();
+    private BootstrapProperties subject = new BootstrapProperties();
 
     private static final String STD_PROPS_RESOURCE = "bootstrap/standard.properties";
     private static final String INVALID_PROPS_RESOURCE = "bootstrap/not.properties";
@@ -361,6 +363,8 @@ class BootstrapPropertiesTest {
             entry(FILES_SOFTWARE_UPDATE_RANGE, Pair.of(150L, 159L)),
             entry(GRPC_PORT, 50211),
             entry(GRPC_TLS_PORT, 50212),
+            entry(GRPC_WORKFLOWS_PORT, 60211),
+            entry(GRPC_WORKFLOWS_TLS_PORT, 60212),
             entry(HEDERA_ACCOUNTS_EXPORT_PATH, "data/onboard/exportedAccount.txt"),
             entry(HEDERA_EXPORT_ACCOUNTS_ON_STARTUP, false),
             entry(HEDERA_FIRST_USER_ENTITY, 1001L),
@@ -390,7 +394,7 @@ class BootstrapPropertiesTest {
             entry(AUTO_CREATION_ENABLED, true),
             entry(LAZY_CREATION_ENABLED, true),
             entry(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, false),
-            entry(AUTO_RENEW_TARGET_TYPES, EnumSet.of(EntityType.CONTRACT)),
+            entry(AUTO_RENEW_TARGET_TYPES, Collections.emptySet()),
             entry(AUTO_RENEW_NUM_OF_ENTITIES_TO_SCAN, 100),
             entry(AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE, 2),
             entry(AUTO_RENEW_GRACE_PERIOD, 604800L),
@@ -492,7 +496,7 @@ class BootstrapPropertiesTest {
             entry(HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION, false),
             entry(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION, true),
             entry(TOKENS_AUTO_CREATIONS_ENABLED, true),
-            entry(WORKFLOWS_ENABLED, false),
+            entry(WORKFLOWS_ENABLED, Set.of()),
             entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, false));
 
     @Test
@@ -571,6 +575,7 @@ class BootstrapPropertiesTest {
 
     @Test
     void doesntThrowOnMissingOverridesFile() {
+        subject = new BootstrapProperties(false);
         subject.bootstrapPropsResource = STD_PROPS_RESOURCE;
         subject.bootstrapOverridePropsLoc = "im-not-here";
 

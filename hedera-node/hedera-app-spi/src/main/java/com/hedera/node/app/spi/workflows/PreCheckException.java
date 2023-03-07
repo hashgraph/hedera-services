@@ -22,8 +22,8 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Thrown if the request itself is bad. The protobuf decoded correctly, but it failed one or more of
- * the ingestion pipeline pre-checks.
+ * Thrown if the request itself is bad. The protobuf decoded correctly, but it failed one or more of the ingestion
+ * pipeline pre-checks.
  */
 public class PreCheckException extends Exception {
     private final ResponseCodeEnum responseCode;

@@ -1,0 +1,7 @@
+{
+  "description": "records",
+  "extension": "rcd",
+  "sigExtension": "rcd_sig",
+  "fileHeader": [5, 0, 11, 0],
+  "sigFileHeader": [5]
+}

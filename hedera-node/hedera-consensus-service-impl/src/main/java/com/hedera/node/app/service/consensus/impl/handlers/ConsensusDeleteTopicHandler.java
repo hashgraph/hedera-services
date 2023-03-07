@@ -16,16 +16,21 @@
 
 package com.hedera.node.app.service.consensus.impl.handlers;
 
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.spi.meta.PreHandleContext;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
+import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
+import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
+import com.hedera.node.app.service.consensus.impl.records.ConsensusDeleteTopicRecordBuilder;
+import com.hedera.node.app.service.consensus.impl.records.ConsensusUpdateTopicRecordBuilder;
+import com.hedera.node.app.service.consensus.impl.records.DeleteTopicRecordBuilder;
+import com.hedera.node.app.spi.meta.HandleContext;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import static java.util.Objects.requireNonNull;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -39,33 +44,57 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
     /**
      * This method is called during the pre-handle workflow.
      *
-     * <p>Typically, this method validates the {@link TransactionBody} semantically, gathers all
-     * required keys, warms the cache, and creates the {@link TransactionMetadata} that is used in
-     * the handle stage.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
+     * <p>Determines signatures needed for deleting a consensus topic
      *
      * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@link #handle(TransactionMetadata)}
+     *     passed to {@code handle()}
+     * @param topicStore the {@link ReadableTopicStore} to use to resolve topic metadata
+     * @throws NullPointerException if any of the arguments are {@code null}
+     */
+    public void preHandle(@NonNull final PreHandleContext context, @NonNull ReadableTopicStore topicStore) {
+        requireNonNull(context);
+        requireNonNull(topicStore);
+
+        final var op = context.getTxn().consensusDeleteTopic().orElseThrow();
+        final var topicMeta = topicStore.getTopicMetadata(op.topicID());
+        if (topicMeta.failed()) {
+            context.status(ResponseCodeEnum.INVALID_TOPIC_ID);
+            return;
+        }
+
+        final var adminKey = topicMeta.metadata().adminKey();
+        if (adminKey.isEmpty()) {
+            context.status(ResponseCodeEnum.UNAUTHORIZED);
+            return;
+        }
+
+        context.addToReqNonPayerKeys(adminKey.get());
+    }
+
+    /**
+     * Given the appropriate context, deletes a topic.
+     *
+     * TODO: Provide access to writable topic store.
+     *
+     * @param handleContext the {@link HandleContext} for the active transaction
+     * @param topicDeletion the {@link ConsensusDeleteTopicTransactionBody} of the active transaction
+     * @param consensusServiceConfig the {@link ConsensusServiceConfig} for the active transaction
+     * @param recordBuilder the {@link ConsensusUpdateTopicRecordBuilder} for the active transaction
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(@NonNull final PreHandleContext context) {
-        requireNonNull(context);
+    public void handle(
+            @NonNull final HandleContext handleContext,
+            @NonNull final ConsensusDeleteTopicTransactionBody topicDeletion,
+            @NonNull final ConsensusServiceConfig consensusServiceConfig,
+            @NonNull final ConsensusDeleteTopicRecordBuilder recordBuilder) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
-     * This method is called during the handle workflow. It executes the actual transaction.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @param metadata the {@link TransactionMetadata} that was generated during pre-handle.
-     * @throws NullPointerException if one of the arguments is {@code null}
+     * {@inheritDoc}
      */
-    public void handle(@NonNull final TransactionMetadata metadata) {
-        requireNonNull(metadata);
-        throw new UnsupportedOperationException("Not implemented");
+    @Override
+    public ConsensusDeleteTopicRecordBuilder newRecordBuilder() {
+        return new DeleteTopicRecordBuilder();
     }
 }

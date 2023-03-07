@@ -17,16 +17,25 @@
 package com.hedera.node.app.spi;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import java.time.Instant;
 import java.util.EnumSet;
 import java.util.Set;
 
 /**
- * Utility class for working with the HAPI. Might possibly move this to the HAPI project.
+ * Utility class for working with the HAPI. We might move this to the HAPI project.
  */
 public class HapiUtils {
     private HapiUtils() {}
+
+    public static Timestamp asTimestamp(final Instant instant) {
+        return Timestamp.newBuilder()
+                .seconds(instant.getEpochSecond())
+                .nanos(instant.getNano())
+                .build();
+    }
 
     public static final Set<HederaFunctionality> QUERY_FUNCTIONS = EnumSet.of(
             HederaFunctionality.CONSENSUS_GET_TOPIC_INFO,

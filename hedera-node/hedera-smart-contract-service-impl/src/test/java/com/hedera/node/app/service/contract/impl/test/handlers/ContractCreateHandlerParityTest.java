@@ -17,62 +17,76 @@
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
 import static com.hedera.test.factories.scenarios.ContractCreateScenarios.*;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.MISC_ACCOUNT_KT;
+import static com.hedera.test.factories.txns.ContractCreateFactory.DEFAULT_ADMIN_KT;
+import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
+import static com.hedera.test.utils.KeyUtils.sanityRestored;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
+import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.time.Instant;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class ContractCreateHandlerParityTest {
-    //    private AccountKeyLookup keyLookup;
-    //    private final ContractCreateHandler subject = new ContractCreateHandler();
-    //
-    //    @BeforeEach
-    //    void setUp() {
-    //        final var now = Instant.now();
-    //        keyLookup = AdapterUtils.wellKnownKeyLookupAt();
-    //    }
-    //
-    //    @Test
-    //    void getsContractCreateWithAutoRenew() {
-    //        final var theTxn = txnFrom(CONTRACT_CREATE_WITH_AUTO_RENEW_ACCOUNT);
-    //        final var context = new PreHandleContext(keyLookup, theTxn);
-    //        subject.preHandle(context);
-    //
-    //        assertThat(sanityRestored(context.getPayerKey())).isEqualTo(DEFAULT_PAYER_KT.asKey());
-    //        assertThat(sanityRestored(context.getRequiredNonPayerKeys())).containsExactly(MISC_ACCOUNT_KT.asKey());
-    //    }
-    //
-    //    @Test
-    //    void getsContractCreateNoAdminKey() {
-    //        final var theTxn = txnFrom(CONTRACT_CREATE_NO_ADMIN_KEY);
-    //        final var context = new PreHandleContext(keyLookup, theTxn);
-    //        subject.preHandle(context);
-    //
-    //        assertThat(sanityRestored(context.getPayerKey())).isEqualTo(DEFAULT_PAYER_KT.asKey());
-    //        assertThat(sanityRestored(context.getRequiredNonPayerKeys())).isEmpty();
-    //    }
-    //
-    //    @Test
-    //    void getsContractCreateDeprecatedAdminKey() {
-    //        final var theTxn = txnFrom(CONTRACT_CREATE_DEPRECATED_CID_ADMIN_KEY);
-    //        final var context = new PreHandleContext(keyLookup, theTxn);
-    //        subject.preHandle(context);
-    //
-    //        assertThat(sanityRestored(context.getPayerKey())).isEqualTo(DEFAULT_PAYER_KT.asKey());
-    //        assertThat(sanityRestored(context.getRequiredNonPayerKeys())).isEmpty();
-    //    }
-    //
-    //    @Test
-    //    void getsContractCreateWithAdminKey() {
-    //        final var theTxn = txnFrom(CONTRACT_CREATE_WITH_ADMIN_KEY);
-    //        final var context = new PreHandleContext(keyLookup, theTxn);
-    //        subject.preHandle(context);
-    //
-    //        assertThat(sanityRestored(context.getPayerKey())).isEqualTo(DEFAULT_PAYER_KT.asKey());
-    //        assertThat(sanityRestored(context.getRequiredNonPayerKeys())).containsExactly(DEFAULT_ADMIN_KT.asKey());
-    //    }
-    //
-    //    private TransactionBody txnFrom(final TxnHandlingScenario scenario) {
-    //        try {
-    //            return scenario.platformTxn().getTxn();
-    //        } catch (final Throwable e) {
-    //            throw new RuntimeException(e);
-    //        }
-    //    }
+    private AccountAccess keyLookup;
+    private final ContractCreateHandler subject = new ContractCreateHandler();
+
+    @BeforeEach
+    void setUp() {
+        final var now = Instant.now();
+        keyLookup = AdapterUtils.wellKnownKeyLookupAt();
+    }
+
+    @Test
+    void getsContractCreateWithAutoRenew() {
+        final var theTxn = txnFrom(CONTRACT_CREATE_WITH_AUTO_RENEW_ACCOUNT);
+        final var context = new PreHandleContext(keyLookup, theTxn);
+        subject.preHandle(context);
+
+        assertThat(sanityRestored(context.getPayerKey())).isEqualTo(DEFAULT_PAYER_KT.asKey());
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys())).containsExactly(MISC_ACCOUNT_KT.asKey());
+    }
+
+    @Test
+    void getsContractCreateNoAdminKey() {
+        final var theTxn = txnFrom(CONTRACT_CREATE_NO_ADMIN_KEY);
+        final var context = new PreHandleContext(keyLookup, theTxn);
+        subject.preHandle(context);
+
+        assertThat(sanityRestored(context.getPayerKey())).isEqualTo(DEFAULT_PAYER_KT.asKey());
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys())).isEmpty();
+    }
+
+    @Test
+    void getsContractCreateDeprecatedAdminKey() {
+        final var theTxn = txnFrom(CONTRACT_CREATE_DEPRECATED_CID_ADMIN_KEY);
+        final var context = new PreHandleContext(keyLookup, theTxn);
+        subject.preHandle(context);
+
+        assertThat(sanityRestored(context.getPayerKey())).isEqualTo(DEFAULT_PAYER_KT.asKey());
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys())).isEmpty();
+    }
+
+    @Test
+    void getsContractCreateWithAdminKey() {
+        final var theTxn = txnFrom(CONTRACT_CREATE_WITH_ADMIN_KEY);
+        final var context = new PreHandleContext(keyLookup, theTxn);
+        subject.preHandle(context);
+
+        assertThat(sanityRestored(context.getPayerKey())).isEqualTo(DEFAULT_PAYER_KT.asKey());
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys())).containsExactly(DEFAULT_ADMIN_KT.asKey());
+    }
+
+    private TransactionBody txnFrom(final TxnHandlingScenario scenario) {
+        try {
+            return scenario.platformTxn().getTxn();
+        } catch (final Throwable e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

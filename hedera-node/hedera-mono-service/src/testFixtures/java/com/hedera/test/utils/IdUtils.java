@@ -63,6 +63,15 @@ public class IdUtils {
                 .build();
     }
 
+    public static com.hedera.hapi.node.base.AccountID asPbjAccount(String v) {
+        long[] nativeParts = asDotDelimitedLongArray(v);
+        return com.hedera.hapi.node.base.AccountID.newBuilder()
+                .shardNum(nativeParts[0])
+                .realmNum(nativeParts[1])
+                .accountNum(nativeParts[2])
+                .build();
+    }
+
     public static AccountID asAliasAccount(ByteString alias) {
         return AccountID.newBuilder()
                 .setShardNum(0)

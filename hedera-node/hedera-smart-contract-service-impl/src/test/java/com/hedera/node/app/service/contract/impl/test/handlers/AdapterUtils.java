@@ -18,18 +18,25 @@ package com.hedera.node.app.service.contract.impl.test.handlers;
 
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.*;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CURRENTLY_UNUSED_ALIAS;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKEN_SENDER;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKEN_SENDER_LITERAL_ALIAS;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVER_SIG;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVER_SIG_ALIAS;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.RECEIVER_SIG;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.RECEIVER_SIG_ALIAS;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.StateKeyAdapter;
+import com.hedera.test.utils.TestFixturesKeyLookup;
 import java.util.Map;
 import org.mockito.Mockito;
 
@@ -44,13 +51,14 @@ public class AdapterUtils {
     }
 
     /**
-     * Returns the {@link AccountKeyLookup} containing the "well-known" accounts and aliases that
+     * Returns the {@link AccountAccess} containing the "well-known" accounts and aliases that
      * exist in a {@code SigRequirementsTest} scenario. This allows us to re-use these scenarios in
-     * unit tests of {@link TransactionHandler} implementations that require an {@link AccountKeyLookup}.
+     * unit tests of {@link com.hedera.node.app.spi.PreTransactionHandler} implementations that
+     * require an {@link AccountAccess}.
      *
      * @return the well-known account store
      */
-    public static AccountKeyLookup wellKnownKeyLookupAt() {
+    public static AccountAccess wellKnownKeyLookupAt() {
         return new TestFixturesKeyLookup(mockStates(Map.of(
                 ALIASES_KEY, wellKnownAliasState(),
                 ACCOUNTS_KEY, wellKnownAccountsState())));

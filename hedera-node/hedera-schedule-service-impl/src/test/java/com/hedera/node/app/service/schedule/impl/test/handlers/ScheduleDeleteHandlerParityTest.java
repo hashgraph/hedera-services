@@ -30,18 +30,20 @@ import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
-import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapReadableStates;
-import com.hedera.node.app.spi.meta.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
@@ -56,7 +58,7 @@ import org.junit.jupiter.api.Test;
 class ScheduleDeleteHandlerParityTest {
     static final KeyTree ADMIN_KEY = KeyTree.withRoot(ed25519());
 
-    private AccountKeyLookup keyLookup;
+    private AccountAccess keyLookup;
     private final ScheduleDeleteHandler subject = new ScheduleDeleteHandler();
     private ReadableScheduleStore scheduleStore;
 
@@ -105,7 +107,7 @@ class ScheduleDeleteHandlerParityTest {
 
     private TransactionBody txnFrom(final TxnHandlingScenario scenario) {
         try {
-            return scenario.platformTxn().getTxn();
+            return PbjConverter.toPbj(scenario.platformTxn().getTxn());
         } catch (final Throwable e) {
             throw new RuntimeException(e);
         }
@@ -127,14 +129,14 @@ class AdapterUtils {
     }
 
     /**
-     * Returns the {@link AccountKeyLookup} containing the "well-known" accounts that exist in a
+     * Returns the {@link AccountAccess} containing the "well-known" accounts that exist in a
      * {@code SigRequirementsTest} scenario. This allows us to re-use these scenarios in unit tests
      * of {@link com.hedera.node.app.spi.Tr} implementations that require an {@link
-     * AccountKeyLookup}.
+     * AccountAccess}.
      *
      * @return the well-known account store
      */
-    public static AccountKeyLookup wellKnownKeyLookupAt() {
+    public static AccountAccess wellKnownKeyLookupAt() {
         return new TestFixturesKeyLookup(mockStates(Map.of(ACCOUNTS_KEY, wellKnownAccountsState())));
     }
 

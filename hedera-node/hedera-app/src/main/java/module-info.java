@@ -1,14 +1,5 @@
 module com.hedera.node.app {
-    requires io.helidon.grpc.core;
-    requires io.helidon.grpc.server;
-    requires com.swirlds.common;
-    requires com.swirlds.merkle;
-    requires com.swirlds.jasperdb;
-    requires com.swirlds.virtualmap;
-    requires org.slf4j;
-    requires static com.github.spotbugs.annotations;
     requires com.hedera.pbj.runtime;
-    requires grpc.stub;
     requires com.hedera.node.app.service.mono;
     requires com.hedera.node.app.spi;
     requires com.hedera.node.app.service.admin;
@@ -29,12 +20,25 @@ module com.hedera.node.app {
     requires com.hedera.node.app.service.token.impl;
     requires com.hedera.node.app.service.util.impl;
     requires com.hedera.node.app.hapi.utils;
+    requires com.swirlds.platform;
+    requires com.swirlds.fchashmap;
+    requires com.swirlds.config;
+    requires com.swirlds.common;
+    requires com.swirlds.merkle;
+    requires com.swirlds.jasperdb;
+    requires com.swirlds.virtualmap;
+    requires io.helidon.grpc.core;
+    requires io.helidon.grpc.server;
+    requires grpc.stub;
+    requires org.slf4j;
     requires dagger;
     requires javax.inject;
-    requires com.swirlds.platform;
-    requires com.swirlds.config;
     requires org.apache.logging.log4j;
+    requires org.apache.commons.lang3;
     requires com.google.common;
+    requires com.github.spotbugs.annotations;
+    requires com.hedera.hashgraph.protobuf.java.api;
+    requires com.hedera.node.app.hapi.fees;
 
     exports com.hedera.node.app to
             com.swirlds.platform;
@@ -48,4 +52,8 @@ module com.hedera.node.app {
             com.swirlds.common;
     exports com.hedera.node.app.state.merkle.singleton to
             com.swirlds.common;
+    exports com.hedera.node.app.authorization to com.swirlds.platform;
+    exports com.hedera.node.app.state.merkle.adapters to com.swirlds.platform;
+    exports com.hedera.node.app.fees to com.swirlds.platform;
+    exports com.hedera.node.app.throttle to com.swirlds.platform;
 }

@@ -16,17 +16,36 @@
 
 package com.hedera.node.app.service.consensus.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
+import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
+import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.base.ResponseType;
+import com.hedera.hapi.node.base.TopicID;
+import com.hedera.hapi.node.consensus.ConsensusGetTopicInfoQuery;
 import com.hedera.hapi.node.consensus.ConsensusGetTopicInfoResponse;
+import com.hedera.hapi.node.consensus.ConsensusTopicInfo;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.spi.meta.QueryContext;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.pbj.runtime.io.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -51,6 +70,16 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
         return Response.newBuilder().consensusGetTopicInfo(response).build();
     }
 
+    @Override
+    public boolean requiresNodePayment(@NonNull ResponseType responseType) {
+        return responseType == ANSWER_ONLY || responseType == ANSWER_STATE_PROOF;
+    }
+
+    @Override
+    public boolean needsAnswerOnlyCost(@NonNull ResponseType responseType) {
+        return COST_ANSWER == responseType;
+    }
+
     /**
      * This method is called during the query workflow. It validates the query, but does not
      * determine the response yet.
@@ -62,8 +91,16 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      * @throws PreCheckException if validation fails
      */
-    public void validate(@NonNull final Query query) throws PreCheckException {
-        throw new UnsupportedOperationException("Not implemented");
+    public ResponseCodeEnum validate(@NonNull final Query query, @NonNull final ReadableTopicStore topicStore)
+            throws PreCheckException {
+        final ConsensusGetTopicInfoQuery op = query.consensusGetTopicInfo().orElseThrow();
+        if (op.topicID() != null) {
+            final var topicMetadata = topicStore.getTopicMetadata(op.topicID());
+            if (topicMetadata.failed() || topicMetadata.metadata().isDeleted()) {
+                return INVALID_TOPIC_ID;
+            }
+        }
+        return OK;
     }
 
     /**
@@ -73,12 +110,64 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
-     * @param query the {@link Query} with the request
-     * @param header the {@link ResponseHeader} that should be used, if the request was successful
+     * @param queryContext
+     * @param query        the {@link Query} with the request
+     * @param header       the {@link ResponseHeader} that should be used, if the request was successful
+     * @param queryContext context for executing the query
      * @return a {@link Response} with the requested values
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public Response findResponse(@NonNull final Query query, @NonNull final ResponseHeader header) {
-        throw new UnsupportedOperationException("Not implemented");
+    public Response findResponse(
+            @NonNull final Query query,
+            @NonNull final ResponseHeader header,
+            @NonNull final ReadableTopicStore topicStore,
+            @NonNull final QueryContext queryContext) {
+        final var op = query.consensusGetTopicInfo().orElseThrow();
+        final var response = ConsensusGetTopicInfoResponse.newBuilder();
+        response.topicID(op.topicID());
+
+        final var responseType = op.header().responseType();
+        response.header(header);
+        if (header.nodeTransactionPrecheckCode() == OK && responseType != COST_ANSWER) {
+            final var optionalInfo = infoForTopic(op.topicID(), topicStore, queryContext);
+            if (optionalInfo.isPresent()) {
+                response.topicInfo(optionalInfo.get());
+            }
+        }
+
+        return Response.newBuilder().consensusGetTopicInfo(response).build();
+    }
+
+    /**
+     * Provides information about a topic.
+     * @param topicID the topic to get information about
+     * @param topicStore the topic store
+     * @param queryContext context for executing the query
+     * @return the information about the topic
+     */
+    private Optional<ConsensusTopicInfo> infoForTopic(
+            @NonNull final TopicID topicID,
+            @NonNull final ReadableTopicStore topicStore,
+            @NonNull final QueryContext queryContext) {
+        final var metaOrFailure = topicStore.getTopicMetadata(topicID);
+        if (metaOrFailure.failed()) {
+            return Optional.empty();
+        } else {
+            final var info = ConsensusTopicInfo.newBuilder();
+            final var meta = metaOrFailure.metadata();
+            meta.memo().ifPresent(info::memo);
+            info.runningHash(Bytes.wrap(meta.runningHash()));
+            info.sequenceNumber(meta.sequenceNumber());
+            info.expirationTime(meta.expirationTimestamp());
+            meta.adminKey().ifPresent(key -> info.adminKey(asKeyUnchecked((JKey) key)));
+            meta.submitKey().ifPresent(key -> info.submitKey(asKeyUnchecked((JKey) key)));
+            info.autoRenewPeriod(Duration.newBuilder().seconds(meta.autoRenewDurationSeconds()));
+            meta.autoRenewAccountId()
+                    .ifPresent(account ->
+                            info.autoRenewAccount(AccountID.newBuilder().accountNum(account)));
+
+            info.ledgerId(queryContext.getLedgerId());
+            return Optional.of(info.build());
+        }
     }
 }

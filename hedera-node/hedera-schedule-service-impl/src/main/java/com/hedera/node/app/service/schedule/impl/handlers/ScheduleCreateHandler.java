@@ -21,9 +21,11 @@ import static com.hedera.node.app.service.schedule.impl.Utils.asOrdinary;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.node.app.spi.PreHandleDispatcher;
-import com.hedera.node.app.spi.meta.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -73,9 +75,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
 
         // FUTURE: Once we allow schedule transactions to be scheduled inside, we need a check here
         // to see if provided payer is same as payer in the inner transaction.
-
-        final var innerMeta = preHandleScheduledTxn(scheduledTxn, payerForNested, dispatcher);
-        context.handlerMetadata(innerMeta);
+        preHandleScheduledTxn(context, scheduledTxn, payerForNested, dispatcher);
     }
 
     /**

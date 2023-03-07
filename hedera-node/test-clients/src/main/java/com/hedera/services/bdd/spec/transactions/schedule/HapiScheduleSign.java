@@ -41,10 +41,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
 public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
     private final String schedule;
     private List<String> signatories = Collections.emptyList();
+
+    @Nullable
+    private List<Key> explicitSigners = null;
+
     private boolean ignoreMissing = false;
     private boolean saveScheduledTxnId = false;
 
@@ -54,6 +59,11 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
 
     public HapiScheduleSign alsoSigningWith(String... keys) {
         signatories = List.of(keys);
+        return this;
+    }
+
+    public HapiScheduleSign alsoSigningWithExplicit(final List<Key> keys) {
+        explicitSigners = keys;
         return this;
     }
 
@@ -126,8 +136,12 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
     protected List<Function<HapiSpec, Key>> defaultSigners() {
         final var signers = new ArrayList<Function<HapiSpec, Key>>();
         signers.add(spec -> spec.registry().getKey(effectivePayer(spec)));
-        for (String added : signatories) {
-            signers.add(spec -> spec.registry().getKey(added));
+        if (explicitSigners != null) {
+            explicitSigners.forEach(key -> signers.add(spec -> key));
+        } else {
+            for (String added : signatories) {
+                signers.add(spec -> spec.registry().getKey(added));
+            }
         }
         return signers;
     }

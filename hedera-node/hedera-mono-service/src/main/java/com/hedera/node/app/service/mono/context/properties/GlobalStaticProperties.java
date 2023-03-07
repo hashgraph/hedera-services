@@ -18,7 +18,10 @@ package com.hedera.node.app.service.mono.context.properties;
 
 import static com.hedera.node.app.spi.config.PropertyNames.WORKFLOWS_ENABLED;
 
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.HashSet;
+import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -26,7 +29,7 @@ import javax.inject.Singleton;
 public class GlobalStaticProperties {
 
     private final PropertySource properties;
-    private boolean workflowsEnabled;
+    private Set<HederaFunctionality> workflowsEnabled = new HashSet<>();
 
     @Inject
     public GlobalStaticProperties(@Nullable final BootstrapProperties properties) {
@@ -35,10 +38,12 @@ public class GlobalStaticProperties {
     }
 
     public void reload() {
-        workflowsEnabled = properties != null && properties.getBooleanProperty(WORKFLOWS_ENABLED);
+        if (properties != null) {
+            workflowsEnabled = properties.getFunctionsProperty(WORKFLOWS_ENABLED);
+        }
     }
 
-    public boolean workflowsEnabled() {
+    public Set<HederaFunctionality> workflowsEnabled() {
         return workflowsEnabled;
     }
 }

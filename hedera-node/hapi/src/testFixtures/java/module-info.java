@@ -3,5 +3,5 @@ module com.hedera.node.hapi.fixtures {
 
     requires com.hedera.node.hapi;
     requires com.hedera.pbj.runtime;
-    requires static com.github.spotbugs.annotations;
+    requires com.github.spotbugs.annotations;
 }

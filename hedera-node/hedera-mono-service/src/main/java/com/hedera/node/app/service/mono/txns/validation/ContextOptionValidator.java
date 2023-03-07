@@ -41,6 +41,7 @@ import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -51,7 +52,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.merkle.map.MerkleMap;
 import java.time.Instant;
 import java.util.Optional;
 import javax.inject.Inject;
@@ -210,7 +210,7 @@ public class ContextOptionValidator implements OptionValidator {
     }
 
     @Override
-    public ResponseCodeEnum queryableTopicStatus(final TopicID id, final MerkleMap<EntityNum, MerkleTopic> topics) {
+    public ResponseCodeEnum queryableTopicStatus(final TopicID id, final MerkleMapLike<EntityNum, MerkleTopic> topics) {
         final MerkleTopic merkleTopic = topics.get(EntityNum.fromTopicId(id));
 
         return Optional.ofNullable(merkleTopic)
