@@ -16,18 +16,18 @@
 
 package com.swirlds.platform.eventhandling;
 
-import static com.swirlds.platform.components.TransThrottleSyncAndCreateRuleResponse.PASS;
-import static com.swirlds.platform.components.TransThrottleSyncAndCreateRuleResponse.SYNC_AND_CREATE;
+import static com.swirlds.platform.components.transaction.throttle.TransThrottleSyncAndCreateRuleResponse.PASS;
+import static com.swirlds.platform.components.transaction.throttle.TransThrottleSyncAndCreateRuleResponse.SYNC_AND_CREATE;
 
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.platform.SettingsProvider;
-import com.swirlds.platform.components.TransThrottleSyncAndCreateRule;
-import com.swirlds.platform.components.TransThrottleSyncAndCreateRuleResponse;
-import com.swirlds.platform.components.TransactionPool;
-import com.swirlds.platform.components.TransactionSupplier;
+import com.swirlds.platform.components.transaction.TransactionPool;
+import com.swirlds.platform.components.transaction.TransactionSupplier;
+import com.swirlds.platform.components.transaction.throttle.TransThrottleSyncAndCreateRule;
+import com.swirlds.platform.components.transaction.throttle.TransThrottleSyncAndCreateRuleResponse;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
