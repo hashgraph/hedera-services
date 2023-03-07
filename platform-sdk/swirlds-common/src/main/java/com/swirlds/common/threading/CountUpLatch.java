@@ -20,10 +20,10 @@ import static com.swirlds.common.utility.CompareTo.isLessThan;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.concurrent.Phaser;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Similar to a {@link java.util.concurrent.CountDownLatch}, but counts up instead.
@@ -31,7 +31,9 @@ import java.util.concurrent.atomic.AtomicLong;
 public class CountUpLatch {
 
     private final AtomicLong currentCount;
-    private final Phaser phaser;
+
+    private final ReentrantLock lock = new ReentrantLock();
+    private final Condition condition = lock.newCondition();
 
     /**
      * Create a new CountUpLatch with an initial count of 0.
@@ -47,7 +49,6 @@ public class CountUpLatch {
      */
     public CountUpLatch(final long initialCount) {
         this.currentCount = new AtomicLong(initialCount);
-        this.phaser = new Phaser(1);
     }
 
     /**
@@ -85,7 +86,12 @@ public class CountUpLatch {
             throw new IllegalArgumentException("Current count is " + previous + " but new count is " + count
                     + ", cannot set count to a lower value");
         }
-        phaser.arriveAndAwaitAdvance();
+        lock.lock();
+        try {
+            condition.signalAll();
+        } finally {
+            lock.unlock();
+        }
     }
 
     /**
@@ -102,7 +108,13 @@ public class CountUpLatch {
             throw new IllegalArgumentException("Cannot add a negative delta (" + delta + ")");
         }
         currentCount.addAndGet(delta);
-        phaser.arriveAndAwaitAdvance();
+
+        lock.lock();
+        try {
+            condition.signalAll();
+        } finally {
+            lock.unlock();
+        }
     }
 
     /**
@@ -116,9 +128,16 @@ public class CountUpLatch {
             return;
         }
 
-        int phase = phaser.getPhase();
-        while (currentCount.get() < count) {
-            phase = phaser.awaitAdvance(phase);
+        while (true) {
+            lock.lock();
+            try {
+                if (currentCount.get() >= count) {
+                    return;
+                }
+                condition.await();
+            } finally {
+                lock.unlock();
+            }
         }
     }
 
@@ -130,30 +149,32 @@ public class CountUpLatch {
      * @return true if the count reached the given value, false if the time to wait expired
      * @throws InterruptedException if interrupted while waiting
      */
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     public boolean await(final long count, final Duration timeToWait) throws InterruptedException {
         if (currentCount.get() >= count) {
             return true;
         }
 
         final Instant start = Instant.now();
-        int phase = phaser.getPhase();
-        while (currentCount.get() < count) {
 
+        while (true) {
             final Instant now = Instant.now();
             final Duration elapsed = Duration.between(start, now);
             if (isLessThan(timeToWait, elapsed)) {
-                break;
+                // we are out of time
+                return currentCount.get() >= count;
             }
-
             final long remainingMillis = timeToWait.minus(elapsed).toMillis();
 
+            lock.lock();
             try {
-                phase = phaser.awaitAdvanceInterruptibly(phase, remainingMillis, TimeUnit.MILLISECONDS);
-            } catch (final TimeoutException e) {
-                break;
+                if (currentCount.get() >= count) {
+                    return true;
+                }
+                condition.await(remainingMillis, TimeUnit.MILLISECONDS);
+            } finally {
+                lock.unlock();
             }
         }
-
-        return currentCount.get() >= count;
     }
 }
