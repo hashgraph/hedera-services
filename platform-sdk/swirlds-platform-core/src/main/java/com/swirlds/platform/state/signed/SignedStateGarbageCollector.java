@@ -33,14 +33,7 @@ public class SignedStateGarbageCollector implements Startable {
     public static final int DELETION_QUEUE_CAPACITY = 25;
 
     /**
-     * <p>
      * This queue thread is responsible for deleting/archiving signed states on a background thread.
-     * </p>
-     *
-     * <p>
-     * If, in the future, state deletion ever becomes a bottleneck, then it is safe to change this into a
-     * {@link com.swirlds.common.threading.framework.QueueThreadPool QueueThreadPool}.
-     * </p>
      */
     private final QueueThread<Runnable> deletionQueue;
 
