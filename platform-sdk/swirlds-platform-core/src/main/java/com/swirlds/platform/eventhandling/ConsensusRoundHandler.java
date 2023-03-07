@@ -269,10 +269,11 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
     }
 
     private boolean isRoundInFreezePeriod(final ConsensusRound round) {
-        if (round.isComplete()) {
-            return swirldStateManager.isInFreezePeriod(round.getLastEvent().getLastTransTime());
+        if (round.getLastEvent() == null) {
+            // there are no events in this round
+            return false;
         }
-        return false;
+        return swirldStateManager.isInFreezePeriod(round.getLastEvent().getLastTransTime());
     }
 
     /**
@@ -337,11 +338,8 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
             }
         }
 
-        // the round will only ever be incomplete if we are in recovery mode
-        if (round.isComplete()) {
-            // update the running hash object
-            eventsConsRunningHash = round.getLastEvent().getRunningHash();
-        }
+        // update the running hash object
+        eventsConsRunningHash = round.getLastEvent().getRunningHash();
 
         // time point 3 to the end is misleading on its own because it is recorded even when no signed state is created
         // . For an accurate stat on how much time it takes to create a signed state, refer to
@@ -354,9 +352,8 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
 
         consensusTimingStat.setTimePoint(6);
 
-        // If the round is complete and it should be signed (either because it has a shutdown event or the settings say
-        // so), create the signed state
-        if (round.isComplete() && (round.hasShutdownEvent() || timeToSignState(round.getRoundNum()))) {
+        // If the round should be signed (because the settings say so), create the signed state
+        if (timeToSignState(round.getRoundNum())) {
             if (isRoundInFreezePeriod(round)) {
                 // We are saving the first state in the freeze period.
                 // This should never be set to false once it is true. It is reset by restarting the node
