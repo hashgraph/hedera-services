@@ -14,17 +14,20 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.components;
+package com.swirlds.platform.components.transaction;
+
+import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 
 /**
- * Is used for checking whether this node should initiate a sync and create an event for that sync
+ * A source of transactions.
  */
-public interface TransThrottleSyncAndCreateRule {
+@FunctionalInterface
+public interface TransactionSupplier {
+
     /**
-     * Determines whether this node should or should not initiate a sync and create an event for that sync,
-     * or should check subsequent rules
+     * Returns an array of transactions. May return an empty array.
      *
-     * @return the sync and create action to take
+     * @return an array with 0 or more transactions
      */
-    TransThrottleSyncAndCreateRuleResponse shouldSyncAndCreate();
+    ConsensusTransactionImpl[] getTransactions();
 }
