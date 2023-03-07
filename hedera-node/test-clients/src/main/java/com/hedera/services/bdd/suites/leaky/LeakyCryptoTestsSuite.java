@@ -103,6 +103,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCre
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -519,11 +520,11 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                             .via("createTxn");
                     final var op2 = cryptoCreate(ACCOUNT)
                             .alias(ecdsaKey.toByteString())
-                            .hasPrecheck(INVALID_ALIAS_KEY)
+                            .hasPrecheck(ALIAS_ALREADY_ASSIGNED)
                             .balance(100 * ONE_HBAR);
                     final var op3 = cryptoCreate(ACCOUNT)
                             .alias(evmAddressBytes)
-                            .hasPrecheck(INVALID_ALIAS_KEY)
+                            .hasPrecheck(ALIAS_ALREADY_ASSIGNED)
                             .balance(100 * ONE_HBAR);
                     final var op4 = cryptoCreate(ANOTHER_ACCOUNT)
                             .key(SECP_256K1_SOURCE_KEY)
@@ -537,7 +538,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                             .key(SECP_256K1_SOURCE_KEY)
                             .alias(evmAddressBytes)
                             .balance(100 * ONE_HBAR)
-                            .hasPrecheck(INVALID_ALIAS_KEY);
+                            .hasPrecheck(ALIAS_ALREADY_ASSIGNED);
 
                     allRunFor(spec, op, op2, op3, op4, op5, op6);
                     var hapiGetAccountInfo = getAliasedAccountInfo(evmAddressBytes)
@@ -711,12 +712,16 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                     final var evmAddressBytes = ByteString.copyFrom(addressBytes);
                     final var op = cryptoCreate(ACCOUNT)
                             .alias(evmAddressBytes)
+                            .signedBy(payer, SECP_256K1_SOURCE_KEY)
+                            .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
                             .payingWith(payer)
                             .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE)
                             .balance(ONE_HUNDRED_HBARS);
                     final var op2 = cryptoTransfer(tinyBarsFromTo(GENESIS, payer, 2 * REDUCED_TOTAL_FEE));
                     final var op3 = cryptoCreate(ACCOUNT)
                             .alias(evmAddressBytes)
+                            .signedBy(payer, SECP_256K1_SOURCE_KEY)
+                            .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
                             .payingWith(payer)
                             .hasKnownStatus(SUCCESS)
                             .balance(ONE_HUNDRED_HBARS);

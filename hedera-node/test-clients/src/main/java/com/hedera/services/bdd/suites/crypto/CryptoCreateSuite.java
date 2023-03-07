@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressF
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
@@ -43,12 +44,14 @@ import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.CRY
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_CREATE_SPONSOR;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite.INITIAL_BALANCE;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite.TRANSFER_TXN_2;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
@@ -82,6 +85,7 @@ public class CryptoCreateSuite extends HapiSuite {
     public static final String NO_KEYS = "noKeys";
     public static final String SHORT_KEY = "shortKey";
     public static final String EMPTY_KEY_STRING = "emptyKey";
+    private static final String ED_KEY = "EDKEY";
 
     public static void main(String... args) {
         new CryptoCreateSuite().runSuiteAsync();
@@ -115,6 +119,9 @@ public class CryptoCreateSuite extends HapiSuite {
                 createAnAccountWithEDKeyAndNoAlias(),
                 createAnAccountWithED25519KeyAndED25519Alias(),
                 createAnAccountWithECKeyAndECKeyAlias(),
+                createAnAccountWithECDSAKeyAliasDifferentThanAdminKey(),
+                createAnAccountWithEVMAddressAliasDifferentThanAdminKey(),
+                createAnAccountWithEDKeyAliasDifferentThanAdminKey(),
                 hollowAccountCompletionAfterCryptoCreate(),
                 cannotCreateAnAccountWithLongZeroKeyButCanUseEvmAddress());
     }
@@ -190,8 +197,11 @@ public class CryptoCreateSuite extends HapiSuite {
                     evmAddress.set(ByteString.copyFrom(rawAddress));
                 }))
                 .then(
-                        sourcing(() ->
-                                cryptoCreate(ACCOUNT).alias(secp256k1Key.get()).via(creation)),
+                        sourcing(() -> cryptoCreate(ACCOUNT)
+                                .alias(secp256k1Key.get())
+                                .signedBy(GENESIS, ecdsaKey)
+                                .sigMapPrefixes(uniqueWithFullPrefixesFor(ecdsaKey))
+                                .via(creation)),
                         sourcing(() ->
                                 getTxnRecord(creation).hasPriority(recordWith().evmAddress(evmAddress.get()))));
     }
@@ -482,12 +492,17 @@ public class CryptoCreateSuite extends HapiSuite {
                 .given(newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
                 .when(withOpContext((spec, opLog) -> {
                     final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
-                    final var op =
-                            cryptoCreate(ACCOUNT).alias(ecdsaKey.toByteString()).balance(100 * ONE_HBAR);
+                    final var op = cryptoCreate(ACCOUNT)
+                            .alias(ecdsaKey.toByteString())
+                            .balance(100 * ONE_HBAR)
+                            .signedBy(GENESIS, SECP_256K1_SOURCE_KEY)
+                            .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY));
                     final var op2 = cryptoCreate(ACCOUNT)
                             .alias(ecdsaKey.toByteString())
-                            .hasPrecheck(INVALID_ALIAS_KEY)
-                            .balance(100 * ONE_HBAR);
+                            .hasPrecheck(ALIAS_ALREADY_ASSIGNED)
+                            .balance(100 * ONE_HBAR)
+                            .signedBy(GENESIS, SECP_256K1_SOURCE_KEY)
+                            .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY));
 
                     allRunFor(spec, op, op2);
                     var hapiGetAccountInfo = getAccountInfo(ACCOUNT)
@@ -510,15 +525,23 @@ public class CryptoCreateSuite extends HapiSuite {
                     final var addressBytes = recoverAddressFromPubKey(tmp);
                     assert addressBytes.length > 0;
                     final var evmAddressBytes = ByteString.copyFrom(addressBytes);
-                    final var op = cryptoCreate(ACCOUNT).alias(evmAddressBytes).balance(100 * ONE_HBAR);
+                    final var op = cryptoCreate(ACCOUNT)
+                            .alias(evmAddressBytes)
+                            .balance(100 * ONE_HBAR)
+                            .signedBy(GENESIS, SECP_256K1_SOURCE_KEY)
+                            .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY));
                     final var op2 = cryptoCreate(ACCOUNT)
                             .alias(evmAddressBytes)
-                            .hasPrecheck(INVALID_ALIAS_KEY)
-                            .balance(100 * ONE_HBAR);
+                            .hasPrecheck(ALIAS_ALREADY_ASSIGNED)
+                            .balance(100 * ONE_HBAR)
+                            .signedBy(GENESIS, SECP_256K1_SOURCE_KEY)
+                            .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY));
                     final var op3 = cryptoCreate(ACCOUNT)
                             .alias(ecdsaKey.toByteString())
-                            .hasPrecheck(INVALID_ALIAS_KEY)
-                            .balance(100 * ONE_HBAR);
+                            .hasPrecheck(ALIAS_ALREADY_ASSIGNED)
+                            .balance(100 * ONE_HBAR)
+                            .signedBy(GENESIS, SECP_256K1_SOURCE_KEY)
+                            .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY));
 
                     allRunFor(spec, op, op2, op3);
                     var hapiGetAccountInfo = getAccountInfo(ACCOUNT)
@@ -540,10 +563,12 @@ public class CryptoCreateSuite extends HapiSuite {
                     var ed25519Key = spec.registry().getKey(ED_25519_KEY);
                     final var op = cryptoCreate(ACCOUNT)
                             .alias(ed25519Key.toByteString())
+                            .signedBy(GENESIS, ED_25519_KEY)
+                            .sigMapPrefixes(uniqueWithFullPrefixesFor(ED_25519_KEY))
                             .balance(1000 * ONE_HBAR);
                     final var op2 = cryptoCreate(ACCOUNT)
                             .alias(ed25519Key.toByteString())
-                            .hasPrecheck(INVALID_ALIAS_KEY);
+                            .hasPrecheck(ALIAS_ALREADY_ASSIGNED);
 
                     allRunFor(spec, op, op2);
                     var hapiGetAccountInfo = getAccountInfo(ACCOUNT)
@@ -583,12 +608,14 @@ public class CryptoCreateSuite extends HapiSuite {
 
                     final var createWithECDSAKeyAlias = cryptoCreate(ANOTHER_ACCOUNT)
                             .alias(ecdsaKey.toByteString())
+                            .signedBy(GENESIS, SECP_256K1_SOURCE_KEY)
+                            .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
                             .hasKnownStatus(SUCCESS)
                             .balance(100 * ONE_HBAR);
 
                     final var createWithEVMAddressAlias = cryptoCreate(ANOTHER_ACCOUNT)
                             .alias(evmAddressBytes)
-                            .hasPrecheck(INVALID_ALIAS_KEY)
+                            .hasPrecheck(ALIAS_ALREADY_ASSIGNED)
                             .balance(100 * ONE_HBAR);
 
                     allRunFor(
@@ -622,7 +649,7 @@ public class CryptoCreateSuite extends HapiSuite {
                             .balance(1000 * ONE_HBAR);
                     final var op2 = cryptoCreate(ACCOUNT)
                             .alias(ed25519Key.toByteString())
-                            .hasPrecheck(INVALID_ALIAS_KEY);
+                            .hasPrecheck(ALIAS_ALREADY_ASSIGNED);
 
                     allRunFor(spec, op, op2);
                     var hapiGetAccountInfo = getAccountInfo(ACCOUNT)
@@ -655,11 +682,11 @@ public class CryptoCreateSuite extends HapiSuite {
                             .balance(100 * ONE_HBAR);
                     final var op3 = cryptoCreate(ACCOUNT)
                             .alias(ecdsaKey.toByteString())
-                            .hasPrecheck(INVALID_ALIAS_KEY)
+                            .hasPrecheck(ALIAS_ALREADY_ASSIGNED)
                             .balance(100 * ONE_HBAR);
                     final var op4 = cryptoCreate(ACCOUNT)
                             .alias(evmAddressBytes)
-                            .hasPrecheck(INVALID_ALIAS_KEY)
+                            .hasPrecheck(ALIAS_ALREADY_ASSIGNED)
                             .balance(100 * ONE_HBAR);
 
                     allRunFor(spec, op, op2, op3, op4);
@@ -680,6 +707,115 @@ public class CryptoCreateSuite extends HapiSuite {
                 .then();
     }
 
+    private HapiSpec createAnAccountWithECDSAKeyAliasDifferentThanAdminKey() {
+        return defaultHapiSpec("createAnAccountWithECDSAKeyAliasDifferentThanAdminKey")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(ED_KEY).shape(ED25519))
+                .when(withOpContext((spec, opLog) -> {
+                    final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                    final var op =
+                            // try to create without signature for the alias
+                            cryptoCreate(ACCOUNT)
+                                    .key(ED_KEY)
+                                    .alias(ecdsaKey.toByteString())
+                                    .balance(100 * ONE_HBAR)
+                                    .hasKnownStatus(INVALID_SIGNATURE);
+                    final var op2 =
+                            // create with proper signatures
+                            cryptoCreate(ACCOUNT)
+                                    .key(ED_KEY)
+                                    .alias(ecdsaKey.toByteString())
+                                    .signedBy(GENESIS, SECP_256K1_SOURCE_KEY)
+                                    .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
+                                    .balance(100 * ONE_HBAR);
+                    allRunFor(spec, op, op2);
+                    var hapiGetAccountInfo = getAccountInfo(ACCOUNT)
+                            .has(accountWith()
+                                    .key(ED_KEY)
+                                    .alias(SECP_256K1_SOURCE_KEY)
+                                    .autoRenew(THREE_MONTHS_IN_SECONDS)
+                                    .receiverSigReq(false));
+                    allRunFor(spec, hapiGetAccountInfo);
+                }))
+                .then();
+    }
+
+    private HapiSpec createAnAccountWithEVMAddressAliasDifferentThanAdminKey() {
+        return defaultHapiSpec("createAnAccountWithEVMAddressAliasDifferentThanAdminKey")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(ED_KEY).shape(ED25519))
+                .when(withOpContext((spec, opLog) -> {
+                    final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                    assert addressBytes.length > 0;
+                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
+
+                    final var op =
+                            // try to create without signature for the alias
+                            cryptoCreate(ACCOUNT)
+                                    .key(ED_KEY)
+                                    .alias(evmAddressBytes)
+                                    .balance(100 * ONE_HBAR)
+                                    .hasKnownStatus(INVALID_SIGNATURE);
+                    final var op2 =
+                            // create with proper signatures
+                            cryptoCreate(ACCOUNT)
+                                    .key(ED_KEY)
+                                    .alias(evmAddressBytes)
+                                    .signedBy(GENESIS, SECP_256K1_SOURCE_KEY)
+                                    .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
+                                    .balance(100 * ONE_HBAR);
+                    allRunFor(spec, op, op2);
+                    var hapiGetAccountInfo = getAccountInfo(ACCOUNT)
+                            .has(accountWith()
+                                    .key(ED_KEY)
+                                    .evmAddress(evmAddressBytes)
+                                    .autoRenew(THREE_MONTHS_IN_SECONDS)
+                                    .receiverSigReq(false))
+                            .logged();
+                    allRunFor(spec, hapiGetAccountInfo);
+                }))
+                .then();
+    }
+
+    private HapiSpec createAnAccountWithEDKeyAliasDifferentThanAdminKey() {
+        return defaultHapiSpec("createAnAccountWithEDKeyAliasDifferentThanAdminKey")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(ED_KEY).shape(ED25519))
+                .when(withOpContext((spec, opLog) -> {
+                    final var edKey = spec.registry().getKey(ED_KEY);
+
+                    final var op =
+                            // try to create without signature for the alias
+                            cryptoCreate(ACCOUNT)
+                                    .key(SECP_256K1_SOURCE_KEY)
+                                    .alias(edKey.toByteString())
+                                    .balance(100 * ONE_HBAR)
+                                    .hasKnownStatus(INVALID_SIGNATURE);
+                    final var op2 =
+                            // create with proper signatures
+                            cryptoCreate(ACCOUNT)
+                                    .key(SECP_256K1_SOURCE_KEY)
+                                    .alias(edKey.toByteString())
+                                    .signedBy(GENESIS, ED_KEY)
+                                    .sigMapPrefixes(uniqueWithFullPrefixesFor(ED_KEY))
+                                    .balance(100 * ONE_HBAR);
+                    allRunFor(spec, op, op2);
+                    var hapiGetAccountInfo = getAccountInfo(ACCOUNT)
+                            .has(accountWith()
+                                    .key(SECP_256K1_SOURCE_KEY)
+                                    .alias(edKey.toByteString())
+                                    .autoRenew(THREE_MONTHS_IN_SECONDS)
+                                    .receiverSigReq(false));
+                    allRunFor(spec, hapiGetAccountInfo);
+                }))
+                .then();
+    }
+
     private HapiSpec hollowAccountCompletionAfterCryptoCreate() {
         return defaultHapiSpec("HollowAccountCompletionAfterCryptoCreate")
                 .given(
@@ -694,6 +830,8 @@ public class CryptoCreateSuite extends HapiSuite {
                     final var evmAddressBytes = ByteString.copyFrom(addressBytes);
                     final var op = cryptoCreate(ACCOUNT)
                             .alias(evmAddressBytes)
+                            .signedBy(GENESIS, SECP_256K1_SOURCE_KEY)
+                            .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
                             .balance(100 * ONE_HBAR)
                             .via("createTxn");
 
