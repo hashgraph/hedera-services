@@ -18,15 +18,16 @@ package com.hedera.node.app.service.consensus.impl;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.service.consensus.entity.Topic;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
-import com.hedera.node.app.service.mono.state.submerkle.EntityId;
-import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * Provides write methods for modifying underlying data storage mechanisms for
@@ -35,9 +36,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * <p>This class is not exported from the module. It is an internal implementation detail.
  * This class is not complete, it will be extended with other methods like remove, update etc.,
  */
-public class WritableTopicStore {
+public class WritableTopicStore extends TopicStore {
     /** The underlying data storage class that holds the topic data. */
-    private final WritableKVState<Long, MerkleTopic> topicState;
+    private final WritableKVState<EntityNum, Topic> topicState;
 
     /**
      * Create a new {@link WritableTopicStore} instance.
@@ -57,22 +58,51 @@ public class WritableTopicStore {
      * @param topic - the topic to be mapped onto a new {@link MerkleTopic} and persisted.
      */
     public void put(@NonNull final Topic topic) {
-        requireNonNull(topicState);
-        requireNonNull(topic);
-        topicState.put(topic.topicNumber(), asMerkleTopic(topic));
+        Objects.requireNonNull(topicState).put(EntityNum.fromLong(topic.topicNumber()), Objects.requireNonNull(topic));
     }
 
-    private MerkleTopic asMerkleTopic(@NonNull final Topic topic) {
-        final var merkle = new MerkleTopic();
-        topic.getAdminKey().ifPresent(key -> merkle.setAdminKey((JKey) key));
-        topic.getSubmitKey().ifPresent(key -> merkle.setSubmitKey((JKey) key));
-        merkle.setMemo(topic.memo());
-        merkle.setAutoRenewAccountId(EntityId.fromNum(topic.autoRenewAccountNumber()));
-        merkle.setAutoRenewDurationSeconds(topic.autoRenewSecs());
-        merkle.setExpirationTimestamp(RichInstant.fromGrpc(
-                Timestamp.newBuilder().setSeconds(topic.expiry()).build()));
-        merkle.setDeleted(topic.deleted());
-        merkle.setSequenceNumber(topic.sequenceNumber());
-        return merkle;
+    /**
+     * Commits the changes to the underlying data storage.
+     * TODO: Not sure if the stores have responsibility of committing the changes. This might change in the future.
+     */
+    public void commit() {
+        requireNonNull(topicState);
+        ((WritableKVStateBase) topicState).commit();
+    }
+
+    /**
+     * Returns the {@link Topic} with the given number. If no such topic exists, returns {@code Optional.empty()}
+     * @param topicNum - the number of the topic to be retrieved.
+     */
+    public Optional<Topic> get(final long topicNum) {
+        final var topic = Objects.requireNonNull(topicState).get(EntityNum.fromLong(topicNum));
+        return Optional.ofNullable(topic);
+    }
+
+    /**
+     * Returns the {@link Topic} with the given number using {@link WritableKVState#getForModify(Comparable K)}.
+     * If no such topic exists, returns {@code Optional.empty()}
+     * @param topicNum - the number of the topic to be retrieved.
+     */
+    public Optional<Topic> getForModify(@NonNull final long topicNum) {
+        requireNonNull(topicNum);
+        final var topic = Objects.requireNonNull(topicState).getForModify(EntityNum.fromLong(topicNum));
+        return Optional.ofNullable(topic);
+    }
+
+    /**
+     * Returns the number of topics in the state.
+     * @return the number of topics in the state.
+     */
+    public long sizeOfState() {
+        return topicState.size();
+    }
+
+    /**
+     * Returns the set of topics modified in existing state.
+     * @return the set of topics modified in existing state
+     */
+    public Set<EntityNum> modifiedTopics() {
+        return topicState.modifiedKeys();
     }
 }

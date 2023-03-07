@@ -43,7 +43,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
-class Expansion {
+public class Expansion {
     private final SigRequirements sigReqs;
     private final PubKeyToSigBytes pkToSigFn;
     private final CryptoSigsCreation cryptoSigsCreation;
@@ -169,7 +169,7 @@ class Expansion {
     }
 
     @FunctionalInterface
-    interface CryptoSigsCreation {
+    public interface CryptoSigsCreation {
         PlatformSigsCreationResult createFrom(
                 List<JKey> hederaKeys, PubKeyToSigBytes sigBytesFn, TxnScopedPlatformSigFactory factory);
     }

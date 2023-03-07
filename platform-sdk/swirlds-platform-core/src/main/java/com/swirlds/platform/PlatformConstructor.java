@@ -33,8 +33,9 @@ import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
-import com.swirlds.platform.components.SystemTransactionHandler;
 import com.swirlds.platform.components.common.output.RoundAppliedToStateConsumer;
+import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
@@ -156,8 +157,10 @@ final class PlatformConstructor {
      * 		responsible for creating and managing threads
      * @param selfId
      * 		this node's id
-     * @param systemTransactionHandler
-     * 		the handler of system transactions
+     * @param preConsensusSystemTransactionManager
+     * 		the manager which handles system transactions pre-consensus
+     * @param postConsensusSystemTransactionManager
+     * 		the manager which handles system transactions post-consensus
      * @param metrics
      * 		reference to the metrics-system
      * @param settings
@@ -171,7 +174,8 @@ final class PlatformConstructor {
     static SwirldStateManager swirldStateManager(
             final ThreadManager threadManager,
             final NodeId selfId,
-            final SystemTransactionHandler systemTransactionHandler,
+            final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager,
+            final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager,
             final Metrics metrics,
             final SettingsProvider settings,
             final Supplier<Instant> consEstimateSupplier,
@@ -181,7 +185,8 @@ final class PlatformConstructor {
         if (initialState.getSwirldState() instanceof SwirldState2) {
             return new SwirldStateManagerDouble(
                     selfId,
-                    systemTransactionHandler,
+                    preConsensusSystemTransactionManager,
+                    postConsensusSystemTransactionManager,
                     new SwirldStateMetrics(metrics),
                     settings,
                     inFreezeChecker,
@@ -190,7 +195,8 @@ final class PlatformConstructor {
             return new SwirldStateManagerSingle(
                     threadManager,
                     selfId,
-                    systemTransactionHandler,
+                    preConsensusSystemTransactionManager,
+                    postConsensusSystemTransactionManager,
                     new SwirldStateMetrics(metrics),
                     new ConsensusMetricsImpl(selfId, metrics),
                     settings,

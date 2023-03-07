@@ -16,9 +16,8 @@
 
 package com.swirlds.benchmark;
 
-import com.swirlds.jasperdb.collections.LongListOffHeap;
-import com.swirlds.jasperdb.files.MemoryIndexDiskKeyValueStore;
-import java.util.concurrent.Semaphore;
+import com.swirlds.merkledb.collections.LongListOffHeap;
+import com.swirlds.merkledb.files.MemoryIndexDiskKeyValueStore;
 import java.util.concurrent.atomic.AtomicLong;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -49,7 +48,7 @@ public class KeyValueStoreBench extends BaseBench {
                 getTestDir(),
                 "mergeBench",
                 null,
-                new BenchmarkRecordSerializer(),
+                new BenchmarkRecordMerkleDbSerializer(),
                 (key, dataLocation, dataValue) -> {},
                 new LongListOffHeap());
         System.out.println();
@@ -71,14 +70,12 @@ public class KeyValueStoreBench extends BaseBench {
 
         // Merge files
         start = System.currentTimeMillis();
-        final Semaphore pauseMerging = new Semaphore(1);
         final AtomicLong count = new AtomicLong(0);
         store.merge(
                 list -> {
                     count.set(list.size());
                     return list;
                 },
-                pauseMerging,
                 2);
         System.out.println("Merged " + count.get() + " files in " + (System.currentTimeMillis() - start) + "ms");
 

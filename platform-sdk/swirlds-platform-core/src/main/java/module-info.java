@@ -115,6 +115,11 @@ module com.swirlds.platform {
     opens com.swirlds.platform.cli to
             info.picocli;
 
+    exports com.swirlds.platform.components.transaction;
+    exports com.swirlds.platform.components.transaction.system.internal;
+    exports com.swirlds.platform.components.transaction.system;
+    exports com.swirlds.platform.components.transaction.throttle;
+
     /* Swirlds Libraries */
     requires transitive com.swirlds.common;
     requires com.swirlds.common.test;

@@ -23,8 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
+import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
@@ -50,15 +50,15 @@ class PreHandleContextTest {
     private HederaKey otherKey;
 
     @Mock
-    AccountKeyLookup lookup;
+    AccountAccess accountAccess;
 
     private PreHandleContext subject;
 
     @Test
     void gettersWork() {
-        given(lookup.getKey(PAYER)).willReturn(KeyOrLookupFailureReason.withKey(payerKey));
+        given(accountAccess.getKey(PAYER)).willReturn(KeyOrLookupFailureReason.withKey(payerKey));
         final var txn = createAccountTransaction();
-        subject = new PreHandleContext(lookup, txn, PAYER).addToReqNonPayerKeys(otherKey);
+        subject = new PreHandleContext(accountAccess, txn, PAYER).addToReqNonPayerKeys(otherKey);
 
         assertFalse(subject.failed());
         assertEquals(txn, subject.getTxn());
@@ -69,9 +69,9 @@ class PreHandleContextTest {
 
     @Test
     void gettersWorkOnFailure() {
-        given(lookup.getKey(PAYER)).willReturn(KeyOrLookupFailureReason.withKey(payerKey));
+        given(accountAccess.getKey(PAYER)).willReturn(KeyOrLookupFailureReason.withKey(payerKey));
         final var txn = createAccountTransaction();
-        subject = new PreHandleContext(lookup, txn, PAYER)
+        subject = new PreHandleContext(accountAccess, txn, PAYER)
                 .status(INVALID_ACCOUNT_ID)
                 .addToReqNonPayerKeys(otherKey);
 

@@ -26,27 +26,19 @@ import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.virtualmap.VirtualLongKey;
 
 /**
- * Supports parameterized testing of {@link MerkleDbDataSource} with
- * both fixed- and variable-size data.
+ * Supports parameterized testing of {@link MerkleDbDataSource} with both fixed- and variable-size
+ * data.
  *
- * Used with JUnit's {@link org.junit.jupiter.params.provider.EnumSource} annotation.
+ * <p>Used with JUnit's {@link org.junit.jupiter.params.provider.EnumSource} annotation.
  */
 public enum FilesTestType {
-    /**
-     * Parameterizes a test with fixed-size data.
-     */
+    /** Parameterizes a test with fixed-size data. */
     fixed(new ExampleFixedSizeDataSerializer(), new ExampleLongKeyFixedSize.Serializer()),
-    /**
-     * Parameterizes a test with fixed-size data and a complex key.
-     */
+    /** Parameterizes a test with fixed-size data and a complex key. */
     fixedComplexKey(new ExampleFixedSizeDataSerializer(), new ExampleLongLongKeyFixedSize.Serializer()),
-    /**
-     * Parameterizes a test with variable-size data.
-     */
+    /** Parameterizes a test with variable-size data. */
     variable(new ExampleVariableSizeDataSerializer(), new ExampleLongKeyVariableSize.Serializer()),
-    /**
-     * Parameterizes a test with variable-size data and a complex key.
-     */
+    /** Parameterizes a test with variable-size data and a complex key. */
     variableComplexKey(new ExampleVariableSizeDataSerializer(), new ExampleLongLongKeyVariableSize.Serializer());
 
     /** used by files package level tests */
@@ -76,19 +68,19 @@ public enum FilesTestType {
     }
 
     /**
-     * Get the file size for a file created in DataFileLowLevelTest.createFile test. Values here are measured values
-     * from a known good test run.
+     * Get the file size for a file created in DataFileLowLevelTest.createFile test. Values here are
+     * measured values from a known good test run.
      */
     public long getDataFileLowLevelTestFileSize() {
         switch (this) {
             case fixed:
             default:
             case fixedComplexKey:
-                return 24576L;
+                return 20480L;
             case variable:
-                return 102400L;
+                return 98304L;
             case variableComplexKey:
-                return 32768L;
+                return 28672L;
         }
     }
 }

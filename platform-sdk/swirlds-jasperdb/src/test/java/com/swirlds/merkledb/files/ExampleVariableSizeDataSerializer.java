@@ -16,17 +16,17 @@
 
 package com.swirlds.merkledb.files;
 
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Objects;
 
 /**
- * Very simple DataItem that is variable size and has a long key and number of long values. Designed for testing.
+ * Very simple DataItem that is variable size and has a long key and number of long values. Designed
+ * for testing.
  *
- * Stores bytes size as a long so all data is longs, makes it easier to manually read file in tests
+ * <p>Stores bytes size as a long so all data is longs, makes it easier to manually read file in
+ * tests
  */
 public class ExampleVariableSizeDataSerializer implements DataItemSerializer<long[]> {
 
@@ -43,8 +43,7 @@ public class ExampleVariableSizeDataSerializer implements DataItemSerializer<lon
     /**
      * Deserialize data item header from the given byte buffer
      *
-     * @param buffer
-     * 		Buffer to read from
+     * @param buffer Buffer to read from
      * @return The read header
      */
     @Override
@@ -62,9 +61,7 @@ public class ExampleVariableSizeDataSerializer implements DataItemSerializer<lon
         return VARIABLE_DATA_SIZE;
     }
 
-    /**
-     * Get the current data item serialization version
-     */
+    /** Get the current data item serialization version */
     @Override
     public long getCurrentDataVersion() {
         return 1;
@@ -73,10 +70,8 @@ public class ExampleVariableSizeDataSerializer implements DataItemSerializer<lon
     /**
      * Deserialize a data item from a byte buffer, that was written with given data version
      *
-     * @param buffer
-     * 		The buffer to read from containing the data item including its header
-     * @param dataVersion
-     * 		The serialization version the data item was written with
+     * @param buffer The buffer to read from containing the data item including its header
+     * @param dataVersion The serialization version the data item was written with
      * @return Deserialized data item
      */
     @Override
@@ -91,24 +86,12 @@ public class ExampleVariableSizeDataSerializer implements DataItemSerializer<lon
         return dataItem;
     }
 
-    /**
-     * Serialize a data item including header to the output stream returning the size of the data written
-     *
-     * @param data
-     * 		The data item to serialize
-     * @param outputStream
-     * 		Output stream to write to
-     */
     @Override
-    public int serialize(long[] data, SerializableDataOutputStream outputStream) throws IOException {
-        Objects.requireNonNull(data);
-        Objects.requireNonNull(outputStream);
+    public int serialize(final long[] data, final ByteBuffer buffer) throws IOException {
         int dataSizeBytes = Long.BYTES + (Long.BYTES * data.length); // Size + data
-        // write size
-        outputStream.writeLong(dataSizeBytes);
-        // write key and data
+        buffer.putLong(dataSizeBytes);
         for (long d : data) {
-            outputStream.writeLong(d);
+            buffer.putLong(d);
         }
         return dataSizeBytes;
     }

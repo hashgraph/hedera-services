@@ -26,6 +26,7 @@ import com.hedera.node.app.service.mono.txns.TransitionRunner;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -41,6 +42,7 @@ import javax.inject.Singleton;
 public class AdaptedMonoTransitionRunner extends TransitionRunner {
     private final TransactionDispatcher dispatcher;
     private final Set<HederaFunctionality> functionsToDispatch;
+    private final WritableStoreFactory writableStoreFactory;
 
     @Inject
     public AdaptedMonoTransitionRunner(
@@ -48,10 +50,12 @@ public class AdaptedMonoTransitionRunner extends TransitionRunner {
             @NonNull final TransactionContext txnCtx,
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final TransitionLogicLookup lookup,
-            @NonNull final GlobalStaticProperties staticProperties) {
+            @NonNull final GlobalStaticProperties staticProperties,
+            @NonNull final WritableStoreFactory storeFactory) {
         super(ids, txnCtx, lookup);
         this.dispatcher = Objects.requireNonNull(dispatcher);
         this.functionsToDispatch = Objects.requireNonNull(staticProperties).workflowsEnabled();
+        this.writableStoreFactory = Objects.requireNonNull(storeFactory);
     }
 
     /**
@@ -62,7 +66,7 @@ public class AdaptedMonoTransitionRunner extends TransitionRunner {
         final var function = accessor.getFunction();
         if (functionsToDispatch.contains(function)) {
             try {
-                dispatcher.dispatchHandle(function, accessor.getTxn());
+                dispatcher.dispatchHandle(function, accessor.getTxn(), writableStoreFactory);
                 txnCtx.setStatus(SUCCESS);
             } catch (final HandleStatusException e) {
                 super.resolveFailure(e.getStatus(), accessor, e);
