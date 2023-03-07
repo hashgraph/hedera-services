@@ -44,9 +44,6 @@ public class ConsensusRound implements Round {
     /** the last event in the round */
     private EventImpl lastEvent;
 
-    /** true if this round contains a shutdown event */
-    private boolean hasShutdownEvent;
-
     /** The number of application transactions in this round */
     private int numAppTransactions = 0;
 
@@ -63,9 +60,6 @@ public class ConsensusRound implements Round {
         this.generations = generations;
 
         for (final EventImpl e : consensusEvents) {
-            if (e.isLastOneBeforeShutdown()) {
-                hasShutdownEvent = true;
-            }
             numAppTransactions += e.getNumAppTransactions();
         }
 
@@ -75,13 +69,6 @@ public class ConsensusRound implements Round {
         }
 
         this.roundNum = consensusEvents.get(0).getRoundReceived();
-    }
-
-    /**
-     * @return true if this round is complete (contains the last event of the round)
-     */
-    public boolean isComplete() {
-        return lastEvent != null;
     }
 
     /**
@@ -153,13 +140,6 @@ public class ConsensusRound implements Round {
      */
     public EventImpl getLastEvent() {
         return lastEvent;
-    }
-
-    /**
-     * @return true if this round contains a shutdown event
-     */
-    public boolean hasShutdownEvent() {
-        return hasShutdownEvent;
     }
 
     @Override

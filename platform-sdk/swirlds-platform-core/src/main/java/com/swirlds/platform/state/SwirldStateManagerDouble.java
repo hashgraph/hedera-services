@@ -277,23 +277,6 @@ public class SwirldStateManagerDouble implements SwirldStateManager {
         latestImmutableState.set(immutableState);
     }
 
-    /**
-     * {@inheritDoc}
-     *
-     * Only invoked during state recovery.
-     */
-    @Override
-    public void clearFreezeTimes() {
-        // It is possible, though unlikely, that this operation is executed multiple times. Each failed attempt will
-        // leak a state, but since this is only called during recovery after which the node shuts down, it is
-        // acceptable. This leak will be eliminated with ticket swirlds/swirlds-platform/issues/5256.
-        stateRef.getAndUpdate(s -> {
-            s.getPlatformDualState().setFreezeTime(null);
-            s.getPlatformDualState().setLastFrozenTimeToBeCurrentFreezeTime();
-            return s;
-        });
-    }
-
     private void updateEpoch() {
         final PlatformState platformState = stateRef.get().getPlatformState();
         if (platformState != null) {
