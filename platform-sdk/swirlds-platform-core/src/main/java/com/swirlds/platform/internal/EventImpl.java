@@ -1,4 +1,3 @@
-
 /*
  * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *

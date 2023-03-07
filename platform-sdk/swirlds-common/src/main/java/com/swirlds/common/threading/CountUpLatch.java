@@ -64,8 +64,8 @@ public class CountUpLatch {
     /**
      * Increment the count by 1.
      * <p>
-     * Methods that update the count are not mutually thread safe. Concurrent threads should never attempt to update
-     * the count. It is, however, safe for many threads to concurrently call methods that query the count.
+     * Methods that update the count are not mutually thread safe. Concurrent threads should never attempt to update the
+     * count. It is, however, safe for many threads to concurrently call methods that query the count.
      */
     public void increment() {
         add(1);
@@ -80,8 +80,8 @@ public class CountUpLatch {
     /**
      * Set the count to a higher value.
      * <p>
-     * Methods that update the count are not mutually thread safe. Concurrent threads should never attempt to update
-     * the count. It is, however, safe for many threads to concurrently call methods that query the count.
+     * Methods that update the count are not mutually thread safe. Concurrent threads should never attempt to update the
+     * count. It is, however, safe for many threads to concurrently call methods that query the count.
      *
      * @param count the new count, must be greater than the current value
      * @throws IllegalArgumentException if the new count is less than the current count (the state of this object is
@@ -104,8 +104,8 @@ public class CountUpLatch {
     /**
      * Increment the count by the given delta.
      * <p>
-     * Methods that update the count are not mutually thread safe. Concurrent threads should never attempt to update
-     * the count. It is, however, safe for many threads to concurrently call methods that query the count.
+     * Methods that update the count are not mutually thread safe. Concurrent threads should never attempt to update the
+     * count. It is, however, safe for many threads to concurrently call methods that query the count.
      *
      * @param delta the amount to increment the count by
      * @throws IllegalArgumentException if the delta is negative
@@ -131,11 +131,7 @@ public class CountUpLatch {
      * @throws InterruptedException if interrupted while waiting
      */
     public void await(final long count) throws InterruptedException {
-        if (currentCount.get() >= count) {
-            return;
-        }
-
-        while (true) {
+        while (currentCount.get() < count) {
             lock.lock();
             try {
                 if (currentCount.get() >= count) {
@@ -149,6 +145,23 @@ public class CountUpLatch {
     }
 
     /**
+     * Compute the remaining time we need to wait.
+     *
+     * @param start      the time we started waiting
+     * @param timeToWait the maximum time to wait
+     * @return the remaining time to wait
+     */
+    private static Duration getRemainingTime(final Instant start, final Duration timeToWait) {
+        final Instant now = Instant.now();
+        final Duration elapsed = Duration.between(start, now);
+        if (isLessThan(timeToWait, elapsed)) {
+            // we are out of time
+            return Duration.ZERO;
+        }
+        return timeToWait.minus(elapsed);
+    }
+
+    /**
      * Wait until the count reaches the given value.
      *
      * @param count      the count to wait for
@@ -158,20 +171,13 @@ public class CountUpLatch {
      */
     @SuppressWarnings("ResultOfMethodCallIgnored")
     public boolean await(final long count, final Duration timeToWait) throws InterruptedException {
-        if (currentCount.get() >= count) {
-            return true;
-        }
-
         final Instant start = Instant.now();
 
-        while (true) {
-            final Instant now = Instant.now();
-            final Duration elapsed = Duration.between(start, now);
-            if (isLessThan(timeToWait, elapsed)) {
-                // we are out of time
+        while (currentCount.get() < count) {
+            final long remainingMillis = getRemainingTime(start, timeToWait).toMillis();
+            if (remainingMillis <= 0) {
                 return currentCount.get() >= count;
             }
-            final long remainingMillis = timeToWait.minus(elapsed).toMillis();
 
             lock.lock();
             try {
@@ -183,5 +189,7 @@ public class CountUpLatch {
                 lock.unlock();
             }
         }
+
+        return true;
     }
 }
