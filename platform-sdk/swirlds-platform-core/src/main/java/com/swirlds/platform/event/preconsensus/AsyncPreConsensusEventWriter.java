@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.event.preconsensus;
 
-import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
+import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.threading.framework.BlockingQueueInserter;
 import com.swirlds.common.threading.framework.MultiQueueThread;
@@ -24,11 +24,15 @@ import com.swirlds.common.threading.framework.config.MultiQueueThreadConfigurati
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.internal.EventImpl;
 import java.time.Duration;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * An object capable of writing preconsensus events to disk. Work is done asynchronously on a background thread.
  */
 public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
+
+    private static final Logger logger = LogManager.getLogger();
 
     /**
      * The wrapped writer.
@@ -157,20 +161,29 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
      * Pass a minimum generation non-ancient to the wrapped writer.
      */
     private void setMinimumGenerationNonAncientHandler(final Long minimumGenerationNonAncient) {
-        // Unless we do something silly like wrapping an asynchronous writer inside another asynchronous writer,
-        // this should never throw an InterruptedException.
-        abortAndThrowIfInterrupted(
-                () -> writer.setMinimumGenerationNonAncient(minimumGenerationNonAncient),
-                "interrupted while attempting to call setMinimumGenerationNonAncient on writer");
+        try {
+            writer.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
+        } catch (final InterruptedException e) {
+            // Unless we do something silly like wrapping an asynchronous writer inside another asynchronous writer,
+            // this should never throw an InterruptedException.
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "interrupted while attempting to call setMinimumGenerationNonAncient on writer");
+            Thread.currentThread().interrupt();
+        }
     }
 
     /**
      * Pass an event to the wrapped writer.
      */
     private void addEventHandler(final EventImpl event) {
-        // Unless we do something silly like wrapping an asynchronous writer inside another asynchronous writer,
-        // this should never throw an InterruptedException.
-        abortAndThrowIfInterrupted(
-                () -> writer.writeEvent(event), "interrupted while attempting to call addEvent on writer");
+        try {
+            writer.writeEvent(event);
+        } catch (final InterruptedException e) {
+            // Unless we do something silly like wrapping an asynchronous writer inside another asynchronous writer,
+            // this should never throw an InterruptedException.
+            logger.error(EXCEPTION.getMarker(), "interrupted while attempting to call addEvent on writer");
+            Thread.currentThread().interrupt();
+        }
     }
 }

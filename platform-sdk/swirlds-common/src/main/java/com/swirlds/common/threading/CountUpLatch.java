@@ -90,8 +90,8 @@ public class CountUpLatch {
     public void set(final long count) {
         final long result = currentCount.accumulateAndGet(count, SET_COUNT);
         if (result != count) {
-            throw new IllegalArgumentException("Can't set the count to a lower value. Previous = " + result
-                    + ", provided = " + count);
+            throw new IllegalArgumentException(
+                    "Can't set the count to a lower value. Previous = " + result + ", provided = " + count);
         }
         lock.lock();
         try {
