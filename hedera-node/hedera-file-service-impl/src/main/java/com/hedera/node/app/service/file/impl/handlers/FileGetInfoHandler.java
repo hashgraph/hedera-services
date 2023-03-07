@@ -46,7 +46,7 @@ public class FileGetInfoHandler extends PaidQueryHandler {
 
     @Override
     public Response createEmptyResponse(@NonNull final ResponseHeader header) {
-        final var response = FileGetInfoResponse.newBuilder().header(header).build();
+        final var response = FileGetInfoResponse.newBuilder().header(header);
         return Response.newBuilder().fileGetInfo(response).build();
     }
 
