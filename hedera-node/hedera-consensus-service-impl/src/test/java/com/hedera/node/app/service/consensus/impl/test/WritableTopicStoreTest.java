@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.node.app.service.consensus.entity.Topic;
+import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusHandlerTestBase;
 import org.junit.jupiter.api.Test;
@@ -48,24 +48,24 @@ class WritableTopicStoreTest extends ConsensusHandlerTestBase {
     @Test
     void commitsTopicChanges() {
         topic = createTopic();
-        assertFalse(writableTopicState.contains(topicNum));
+        assertFalse(writableTopicState.contains(topicEntityNum));
 
         writableStore.put(topic);
 
-        assertTrue(writableTopicState.contains(topicNum));
-        final var merkleTopic = writableTopicState.get(topicNum);
+        assertTrue(writableTopicState.contains(topicEntityNum));
+        final var writtenTopic = writableTopicState.get(topicEntityNum);
+        assertEquals(topic, writtenTopic);
+    }
 
-        assertEquals(topic.getAdminKey().get(), merkleTopic.getAdminKey());
-        assertEquals(topic.getSubmitKey().get(), merkleTopic.getSubmitKey());
-        assertEquals(topic.autoRenewSecs(), merkleTopic.getAutoRenewDurationSeconds());
-        assertEquals(
-                topic.autoRenewAccountNumber(),
-                merkleTopic.getAutoRenewAccountId().num());
-        assertEquals(topic.expiry(), merkleTopic.getExpirationTimestamp().getSeconds());
-        assertEquals(topic.sequenceNumber(), merkleTopic.getSequenceNumber());
-        assertEquals(topic.memo(), merkleTopic.getMemo());
-        assertEquals(topic.deleted(), merkleTopic.isDeleted());
+    @Test
+    void getReturnsTopic() {
+        topic = createTopic();
+        writableStore.put(topic);
 
-        assertTrue(writableTopicState.modifiedKeys().contains(topicNum));
+        final var maybeReadTopic = writableStore.get(topicEntityNum.longValue());
+
+        assertTrue(maybeReadTopic.isPresent());
+        final var readTopic = maybeReadTopic.get();
+        assertEquals(topic, readTopic);
     }
 }
