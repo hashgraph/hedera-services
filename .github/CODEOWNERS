@@ -40,7 +40,7 @@ CODEOWNERS                                @hashgraph/release-engineering @hashgr
 /hedera-node/*.txt                        @hashgraph/hedera-services
 
 # Hedera Node Docker Definitions
-/hedera-node/docker/                      @hashgraph/release-engineering @hashgraph/release-engineering-managers @hashgraph/hedera-services
+/hedera-node/docker/                      @hashgraph/hedera-services @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 # Hedera Node Modules
 /hedera-node/hedera-mono-service/src/     @hashgraph/hedera-services
@@ -56,5 +56,6 @@ CODEOWNERS                                @hashgraph/release-engineering @hashgr
 /hedera-node/hedera-token*/src/           @hashgraph/hedera-services
 /hedera-node/hedera-util*/src/            @hashgraph/hedera-services
 /hedera-node/test-clients/src/            @hashgraph/hedera-services
+/hedera-node/**/module-info.java          @hashgraph/hedera-services @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 
