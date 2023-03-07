@@ -1,16 +1,27 @@
 # Protection Rules for Github Configuration Files and Actions Workflows
-/.github/     @hashgraph/release-engineering @hashgraph/release-engineering-managers
+/.github/       @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 # Legacy Maven project files
-**/pom.xml    @hashgraph/release-engineering @hashgraph/release-engineering-managers
+**/pom.xml      @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 # Gradle project files and inline plugins
-/gradle/      @hashgraph/release-engineering @hashgraph/release-engineering-managers
-gradlew       @hashgraph/release-engineering @hashgraph/release-engineering-managers
-gradlew.bat   @hashgraph/release-engineering @hashgraph/release-engineering-managers
-**/buildSrc/  @hashgraph/release-engineering @hashgraph/release-engineering-managers
-**/gradle.*   @hashgraph/release-engineering @hashgraph/release-engineering-managers
-**/*.gradle.* @hashgraph/release-engineering @hashgraph/release-engineering-managers
+/gradle/        @hashgraph/release-engineering @hashgraph/release-engineering-managers
+gradlew         @hashgraph/release-engineering @hashgraph/release-engineering-managers
+gradlew.bat     @hashgraph/release-engineering @hashgraph/release-engineering-managers
+**/buildSrc/    @hashgraph/release-engineering @hashgraph/release-engineering-managers
+**/gradle.*     @hashgraph/release-engineering @hashgraph/release-engineering-managers
+**/*.gradle.*   @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 # Self-protection for root CODEOWNERS files (this file should not exist and should definitely require approval)
-CODEOWNERS    @hashgraph/release-engineering @hashgraph/release-engineering-managers
+CODEOWNERS      @hashgraph/release-engineering @hashgraph/release-engineering-managers
+
+# CodeCov configuration
+**/codecov.yml              @hashgraph/release-engineering @hashgraph/release-engineering-managers
+
+# Git Ignore definitions
+**/.gitignore               @hashgraph/release-engineering @hashgraph/release-engineering-managers
+**/.gitignore.*             @hashgraph/release-engineering @hashgraph/release-engineering-managers
+
+# Legacy CircleCI configuration
+.circleci.settings.xml      @hashgraph/release-engineering @hashgraph/release-engineering-managers
+/.circleci/                 @hashgraph/release-engineering @hashgraph/release-engineering-managers
