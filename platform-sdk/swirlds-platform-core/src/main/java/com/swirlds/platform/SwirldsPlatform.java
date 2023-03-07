@@ -1980,15 +1980,13 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     }
 
     /**
-     * check whether the given event is the last event in its round, and the platform enters freeze period, or whether
-     * this event is the last event before shutdown
+     * check whether the given event is the last event in its round, and the platform enters freeze period
      *
      * @param event a consensus event
      * @return whether this event is the last event to be added before restart
      */
     private boolean isLastEventBeforeRestart(final EventImpl event) {
-        return (event.isLastInRoundReceived() && swirldStateManager.isInFreezePeriod(event.getConsensusTimestamp()))
-                || event.isLastOneBeforeShutdown();
+        return event.isLastInRoundReceived() && swirldStateManager.isInFreezePeriod(event.getConsensusTimestamp());
     }
 
     /**
