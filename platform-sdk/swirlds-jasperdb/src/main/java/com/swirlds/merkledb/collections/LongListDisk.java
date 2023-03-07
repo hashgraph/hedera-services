@@ -27,7 +27,7 @@ import java.nio.file.StandardOpenOption;
 
 /** A direct on disk implementation of LongList. Note that this implementation doesn't allow writes to the indexes that are
  * below the min valid index in effect. To synchronize {@link LongListDisk#minValidIndexInEffect}
- * and {@link LongList@minValidIndex}, the user should call {@link LongList#writeToFile(Path)} with a path that differs
+ * and {@link LongList#minValidIndex}, the user should call {@link LongList#writeToFile(Path)} with a path that differs
  * from the current one.
  */
 public class LongListDisk extends LongList {
