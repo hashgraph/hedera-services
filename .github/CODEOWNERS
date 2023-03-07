@@ -69,7 +69,7 @@ CODEOWNERS                                @hashgraph/release-engineering @hashgr
 
 # Protect the repository root files
 /*.md                                     @hashgraph/release-engineering @hashgraph/release-engineering-managers
-LICENSE                                   @hashgraph/release-engineering @hashgraph/release-engineering-managers
+**/LICENSE                                   @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 # CodeCov configuration
 **/codecov.yml                            @hashgraph/release-engineering @hashgraph/release-engineering-managers
