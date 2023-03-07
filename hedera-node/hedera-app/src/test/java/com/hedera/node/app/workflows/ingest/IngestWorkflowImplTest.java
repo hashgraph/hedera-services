@@ -49,6 +49,7 @@ import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.NodeInfo;
+import com.hedera.node.app.service.token.entity.Account;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -167,11 +168,7 @@ class IngestWorkflowImplTest extends AppTestBase {
 
         // Mock out the onset to always return a valid parsed object
         final var onsetResult = new OnsetResult(
-                com.hedera.hapi.node.base.Transaction.newBuilder().build(),
-                transactionBody,
-                OK,
-                SignatureMap.newBuilder().build(),
-                HederaFunctionality.CONSENSUS_CREATE_TOPIC);
+                transactionBody, OK, SignatureMap.newBuilder().build(), HederaFunctionality.CONSENSUS_CREATE_TOPIC);
         when(onset.parseAndCheck(ctx, requestBuffer)).thenReturn(onsetResult);
 
         // Create the workflow we are going to test with
@@ -552,7 +549,7 @@ class IngestWorkflowImplTest extends AppTestBase {
             // Given an IngestChecker that will throw a RuntimeException from checkSolvency
             doThrow(new RuntimeException("checkSolvency exception"))
                     .when(checker)
-                    .checkSolvency(any());
+                    .checkSolvency(any(), any(), any());
 
             // When the transaction is submitted, then the exception is bubbled up
             assertThatThrownBy(() -> workflow.submitTransaction(ctx, requestBuffer, responseBuffer))
