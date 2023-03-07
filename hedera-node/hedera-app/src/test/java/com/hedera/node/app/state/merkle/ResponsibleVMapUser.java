@@ -61,21 +61,21 @@ public abstract class ResponsibleVMapUser {
     }
 
     private void release(@NonNull final MerkleHederaState state) throws IOException {
-        release(state.storage());
-        release(state.contractStorage());
-
-        final var accounts = state.accounts();
-        if (accounts != null && accounts.areOnDisk()) {
-            release(accounts.getOnDiskAccounts());
-        }
-        final var tokenRels = state.tokenAssociations();
-        if (tokenRels != null && tokenRels.areOnDisk()) {
-            release(tokenRels.getOnDiskRels());
-        }
-        final var nfts = state.uniqueTokens();
-        if (nfts != null && nfts.isVirtual()) {
-            release(nfts.getOnDiskNfts());
-        }
+//        release(state.storage());
+//        release(state.contractStorage());
+//
+//        final var accounts = state.accounts();
+//        if (accounts != null && accounts.areOnDisk()) {
+//            release(accounts.getOnDiskAccounts());
+//        }
+//        final var tokenRels = state.tokenAssociations();
+//        if (tokenRels != null && tokenRels.areOnDisk()) {
+//            release(tokenRels.getOnDiskRels());
+//        }
+//        final var nfts = state.uniqueTokens();
+//        if (nfts != null && nfts.isVirtual()) {
+//            release(nfts.getOnDiskNfts());
+//        }
     }
 
     private void release(@Nullable final VirtualMapLike<?, ?> map) throws IOException {

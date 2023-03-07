@@ -27,6 +27,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.annotations.NodeSelfId;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.txns.submission.SolvencyPrecheck;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -38,8 +39,6 @@ import com.hedera.node.app.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.message.LoggerNameAwareMessage;
-import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.Objects;
@@ -52,7 +51,7 @@ public class IngestChecker {
 
     private static final Logger logger = LogManager.getLogger(IngestChecker.class);
 
-    private final AccountID nodeAccountID;
+    private final long nodeAccountID;
     private final SolvencyPrecheck solvencyPrecheck;
     private final SignaturePreparer signaturePreparer;
 
@@ -66,7 +65,7 @@ public class IngestChecker {
      */
     @Inject
     public IngestChecker(
-            @NonNull final AccountID nodeAccountID,
+            @NonNull @NodeSelfId final long nodeAccountID,
             @NonNull final SolvencyPrecheck solvencyPrecheck,
             @NonNull final SignaturePreparer signaturePreparer) {
         this.nodeAccountID = requireNonNull(nodeAccountID);

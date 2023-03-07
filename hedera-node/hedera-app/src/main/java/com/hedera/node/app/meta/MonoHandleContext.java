@@ -18,16 +18,17 @@ package com.hedera.node.app.meta;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Key;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Objects;
@@ -42,7 +43,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class MonoHandleContext implements HandleContext {
-    private static final AccountID PLACEHOLDER_ID = AccountID.getDefaultInstance();
+    private static final AccountID PLACEHOLDER_ID = AccountID.newBuilder().build();
 
     private final LongSupplier nums;
     private final ExpiryValidator expiryValidator;
@@ -56,7 +57,7 @@ public class MonoHandleContext implements HandleContext {
             @NonNull final OptionValidator optionValidator,
             @NonNull final TransactionContext txnCtx) {
         Objects.requireNonNull(ids);
-        this.nums = () -> ids.newAccountId(PLACEHOLDER_ID).getAccountNum();
+        this.nums = () -> ids.newAccountId(PbjConverter.fromPbj(PLACEHOLDER_ID)).getAccountNum();
         this.txnCtx = Objects.requireNonNull(txnCtx);
         this.expiryValidator = Objects.requireNonNull(expiryValidator);
         this.attributeValidator = new MonoAttributeValidator(Objects.requireNonNull(optionValidator));
@@ -104,9 +105,9 @@ public class MonoHandleContext implements HandleContext {
         @Override
         public void validateKey(final Key key) {
             try {
-                optionValidator.attemptDecodeOrThrow(key);
+                optionValidator.attemptDecodeOrThrow(PbjConverter.fromPbj(key));
             } catch (final InvalidTransactionException e) {
-                throw new HandleStatusException(e.getResponseCode());
+                throw new HandleStatusException(PbjConverter.toPbj(e.getResponseCode()));
             }
         }
 
@@ -114,7 +115,7 @@ public class MonoHandleContext implements HandleContext {
         public void validateMemo(final String memo) {
             final var validity = optionValidator.memoCheck(memo);
             if (validity != OK) {
-                throw new HandleStatusException(validity);
+                throw new HandleStatusException(PbjConverter.toPbj(validity));
             }
         }
     }

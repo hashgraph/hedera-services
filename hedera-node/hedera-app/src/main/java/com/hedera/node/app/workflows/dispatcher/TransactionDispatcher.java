@@ -29,6 +29,7 @@ import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
@@ -249,9 +250,9 @@ public class TransactionDispatcher {
                         dynamicProperties.maxNumTopics(), dynamicProperties.messageMaxBytesAllowed()),
                 recordBuilder,
                 topicStore);
-        txnCtx.setCreated(TopicID.newBuilder()
+        txnCtx.setCreated(PbjConverter.fromPbj(TopicID.newBuilder()
                 .topicNum(recordBuilder.getCreatedTopic())
-                .build());
+                .build()));
         usageLimits.refreshTopics();
         // TODO: Commit will be called in workflow or some other place when handle workflow is implemented
         // This is temporary solution to make sure that topic is created
