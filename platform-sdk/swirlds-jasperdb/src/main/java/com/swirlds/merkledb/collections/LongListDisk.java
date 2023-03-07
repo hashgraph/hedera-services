@@ -179,10 +179,26 @@ public class LongListDisk extends LongList {
      */
     @Override
     protected void writeLongsData(final FileChannel fc) throws IOException {
-        final long minValidIndexOffset = minValidIndex.get() * Long.BYTES;
-        fileChannel.position(currentFileHeaderSize + minValidIndexOffset);
+        long currentMinValidIndex = minValidIndex.get();
+        // offset for the list if min valid index shifted to the left
+        final long leftDiffOffset = Math.max(0, minValidIndexInEffect - currentMinValidIndex) * Long.BYTES;
+        // offset for the list if min valid index shifted to the right
+        final long rightDiffOffset = Math.max(0, currentMinValidIndex - minValidIndexInEffect) * Long.BYTES;
+        // in the current file we only care about the right diff offset because it means file truncation on write
+        fileChannel.position(currentFileHeaderSize + rightDiffOffset);
+        // if min valid index shifted to the right we need to reserve disk for the interval between
+        // the old min valid index and the new one
+        if (leftDiffOffset != 0) {
+            ByteBuffer buffer = ByteBuffer.allocateDirect((int) leftDiffOffset).order(ByteOrder.nativeOrder());
+            MerkleDbFileUtils.completelyWrite(fc, buffer, currentFileHeaderSize);
+        }
         MerkleDbFileUtils.completelyTransferFrom(
-                fc, fileChannel, currentFileHeaderSize, fileChannel.size() - minValidIndexOffset);
+                fc,
+                fileChannel,
+                // we change destination position only if we need to reserve empty disk space
+                currentFileHeaderSize + leftDiffOffset,
+                // we either truncate using right diff offset or expand using left diff offset
+                fileChannel.size() - rightDiffOffset + leftDiffOffset);
     }
 
     /**

@@ -90,7 +90,7 @@ class LongListDiskTest {
         try (final LongListDisk longListDisk = new LongListDisk(tempFile)) {
             assertEquals(longList.size(), longListDisk.size(), "Unexpected value for longListDisk.size()");
             checkEmptyUpToIndex(longListDisk, SAMPLE_SIZE / 2);
-            checkData(longListDisk, SAMPLE_SIZE / 2, SAMPLE_SIZE / 2);
+            checkData(longListDisk, SAMPLE_SIZE / 2, SAMPLE_SIZE);
         }
         // cleanup
         Files.delete(tempFile);
@@ -112,26 +112,34 @@ class LongListDiskTest {
         longList.writeToFile(halfEmptyListFile);
 
         try (LongListDisk halfEmptyList = new LongListDisk(halfEmptyListFile)) {
+            // check that it's half-empty indeed
+            checkEmptyUpToIndex(halfEmptyList, newMinValidIndex);
+            // and half-full
+            checkData(halfEmptyList, SAMPLE_SIZE / 2, SAMPLE_SIZE);
+
             // we cannot put a value below min valid index in effect
             assertThrows(IndexOutOfBoundsException.class, () -> halfEmptyList.put(newMinValidIndex - 1, nextInt()));
             assertThrows(
                     IndexOutOfBoundsException.class,
                     () -> halfEmptyList.putIfEqual(newMinValidIndex - 1, nextInt(), nextInt()));
-            checkEmptyUpToIndex(longList, newMinValidIndex);
+
             // even if we update min valid index, we cannot put a value below the one that is in effect
-            longList.updateMinValidIndex(0);
+            halfEmptyList.updateMinValidIndex(0);
             assertThrows(IndexOutOfBoundsException.class, () -> halfEmptyList.put(newMinValidIndex - 1, nextInt()));
             assertThrows(
                     IndexOutOfBoundsException.class,
                     () -> halfEmptyList.putIfEqual(newMinValidIndex - 1, nextInt(), nextInt()));
 
             // however, once we create another file with the new min valid index, it comes into effect
-            final Path zeroMinValidIndex = testDirectory.resolve("LongListDiskTest_half_empty.ll");
-            longList.writeToFile(halfEmptyListFile);
+            final Path zeroMinValidIndex = testDirectory.resolve("LongListDiskTest_zero_min_valid_index.ll");
+            halfEmptyList.writeToFile(zeroMinValidIndex);
 
             try (LongListDisk zeroMinValidIndexList = new LongListDisk(zeroMinValidIndex)) {
+                checkEmptyUpToIndex(zeroMinValidIndexList, newMinValidIndex);
+                checkData(zeroMinValidIndexList, SAMPLE_SIZE / 2, SAMPLE_SIZE);
+
                 for (int i = 0; i < newMinValidIndex; i++) {
-                    longList.put(i, i + 100);
+                    zeroMinValidIndexList.put(i, i + 100);
                 }
                 checkData(zeroMinValidIndexList, SAMPLE_SIZE);
             }
@@ -193,7 +201,7 @@ class LongListDiskTest {
         // half-empty
         checkEmptyUpToIndex(list, SMALL_SAMPLE_SIZE / 2);
         // half-full
-        checkData(list, SMALL_SAMPLE_SIZE / 2, SMALL_SAMPLE_SIZE / 2);
+        checkData(list, SMALL_SAMPLE_SIZE / 2, SMALL_SAMPLE_SIZE);
 
         // if we write to the same file, it doesn't shrink after the min valid index update
         list.writeToFile(listFile);
@@ -218,8 +226,8 @@ class LongListDiskTest {
         checkData(longList, 0, sampleSize);
     }
 
-    private static void checkData(final LongList longList, final int startIndex, final int sampleSize) {
-        for (int i = startIndex; i < sampleSize; i++) {
+    private static void checkData(final LongList longList, final int startIndex, final int endIndex) {
+        for (int i = startIndex; i < endIndex; i++) {
             assertEquals(i + 100, longList.get(i, -1), "Unexpected value from longList.get(" + i + ")");
         }
     }
