@@ -24,8 +24,8 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.impl.serdes.EntityNumCodec;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import java.io.DataInput;
-import java.io.DataOutput;
+import com.hedera.pbj.runtime.io.DataInput;
+import com.hedera.pbj.runtime.io.DataOutput;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -61,14 +61,14 @@ class EntityNumSerdesTest {
     void canDeserializeFromAppropriateStream() throws IOException {
         given(in.readInt()).willReturn(SOME_NUM.intValue());
 
-        final var parsed = subject.parse(in);
+        final var parsed = subject.parse(input);
 
         assertEquals(SOME_NUM, parsed);
     }
 
     @Test
     void canSerializeToAppropriateStream() throws IOException {
-        subject.write(SOME_NUM, out);
+        subject.write(SOME_NUM, output);
 
         verify(out).writeInt(SOME_NUM.intValue());
     }

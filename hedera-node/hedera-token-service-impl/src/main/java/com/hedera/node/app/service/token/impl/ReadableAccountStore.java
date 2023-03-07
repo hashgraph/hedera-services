@@ -23,6 +23,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MODIFYING_IMMUTABLE_CON
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.PRESENT_BUT_NOT_REQUIRED;
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withFailureReason;
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
@@ -85,12 +86,6 @@ public class ReadableAccountStore implements AccountAccess {
     public ReadableAccountStore(@NonNull final ReadableStates states) {
         this.accountState = states.get("ACCOUNTS");
         this.aliases = states.get("ALIASES");
-    }
-
-    @NonNull
-    @Override
-    public Optional<com.hedera.node.app.spi.accounts.Account> getAccountById(@NonNull AccountID accountOrAlias) {
-        return Optional.empty();
     }
 
     /** {@inheritDoc} */

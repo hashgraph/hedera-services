@@ -16,14 +16,14 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.node.app.service.token.impl.handlers.CryptoCreateHandler;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.base.TransactionID;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -64,16 +64,16 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
     private TransactionBody createAccountTransaction(final boolean receiverSigReq) {
         final var transactionID =
-                TransactionID.newBuilder().setAccountID(payer).setTransactionValidStart(consensusTimestamp);
+                TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
         final var createTxnBody = CryptoCreateTransactionBody.newBuilder()
-                .setKey(key)
-                .setReceiverSigRequired(receiverSigReq)
-                .setMemo("Create Account")
+                .key(key)
+                .receiverSigRequired(receiverSigReq)
+                .memo("Create Account")
                 .build();
 
         return TransactionBody.newBuilder()
-                .setTransactionID(transactionID)
-                .setCryptoCreateAccount(createTxnBody)
+                .transactionID(transactionID)
+                .cryptoCreateAccount(createTxnBody)
                 .build();
     }
 }

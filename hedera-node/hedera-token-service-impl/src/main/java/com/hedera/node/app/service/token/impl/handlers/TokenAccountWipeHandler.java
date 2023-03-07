@@ -38,7 +38,7 @@ public class TokenAccountWipeHandler implements TransactionHandler {
     public TokenAccountWipeHandler() {}
 
     /**
-     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#TokenAccountWipe}
+     * Pre-handles a {@link com.hedera.hapi.node.base.HederaFunctionality#TokenAccountWipe}
      * transaction, returning the metadata required to, at minimum, validate the signatures of all
      * required signing keys.
      *

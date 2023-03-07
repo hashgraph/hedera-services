@@ -16,37 +16,35 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.token.CryptoDeleteAllowanceTransactionBody;
+import com.hedera.hapi.node.token.NftRemoveAllowance;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteAllowanceHandler;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
-import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 class CryptoDeleteAllowanceHandlerTest extends CryptoHandlerTestBase {
-    private final TokenID nft = asToken("0.0.56789");
-    private final AccountID owner = asAccount("0.0.123456");
+    private final TokenID nft = TokenID.newBuilder().tokenNum(56789).build();
+    private final AccountID owner = AccountID.newBuilder().accountNum(123456).build();
     private final HederaKey ownerKey = asHederaKey(A_COMPLEX_KEY).get();
 
     @Mock
@@ -56,7 +54,7 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoDeleteAllowanceVanilla() {
-        given(accounts.get(owner.getAccountNum())).willReturn(ownerAccount);
+        given(accounts.get(owner.accountNum().get())).willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
         final var txn = cryptoDeleteAllowanceTransaction(payer);
@@ -69,7 +67,7 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoDeleteAllowanceDoesntAddIfOwnerSameAsPayer() {
-        given(accounts.get(owner.getAccountNum())).willReturn(ownerAccount);
+        given(accounts.get(owner.accountNum().get())).willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
         final var txn = cryptoDeleteAllowanceTransaction(owner);
@@ -83,7 +81,7 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoHandlerTestBase {
     @Test
     void cryptoDeleteAllowanceFailsIfPayerOrOwnerNotExist() {
         var txn = cryptoDeleteAllowanceTransaction(owner);
-        given(accounts.get(owner.getAccountNum())).willReturn(null);
+        given(accounts.get(owner.accountNum().get())).willReturn(null);
 
         final var context1 = new PreHandleContext(store, txn, owner);
         subject.preHandle(context1);
@@ -106,17 +104,17 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     private TransactionBody cryptoDeleteAllowanceTransaction(final AccountID id) {
         final var transactionID =
-                TransactionID.newBuilder().setAccountID(id).setTransactionValidStart(consensusTimestamp);
+                TransactionID.newBuilder().accountID(id).transactionValidStart(consensusTimestamp);
         final var allowanceTxnBody = CryptoDeleteAllowanceTransactionBody.newBuilder()
-                .addNftAllowances(NftRemoveAllowance.newBuilder()
-                        .setOwner(owner)
-                        .setTokenId(nft)
-                        .addAllSerialNumbers(List.of(1L, 2L, 3L))
+                .nftAllowances(NftRemoveAllowance.newBuilder()
+                        .owner(owner)
+                        .tokenId(nft)
+                        .serialNumbers(List.of(1L, 2L, 3L))
                         .build())
                 .build();
         return TransactionBody.newBuilder()
-                .setTransactionID(transactionID)
-                .setCryptoDeleteAllowance(allowanceTxnBody)
+                .transactionID(transactionID)
+                .cryptoDeleteAllowance(allowanceTxnBody)
                 .build();
     }
 }

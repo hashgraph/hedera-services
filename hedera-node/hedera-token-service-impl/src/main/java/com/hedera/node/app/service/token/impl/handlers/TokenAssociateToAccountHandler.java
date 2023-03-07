@@ -39,7 +39,7 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
 
     /**
      * Pre-handles a {@link
-     * com.hederahashgraph.api.proto.java.HederaFunctionality#TokenAssociateToAccount} transaction,
+     * com.hedera.hapi.node.base.HederaFunctionality#TokenAssociateToAccount} transaction,
      * returning the metadata required to, at minimum, validate the signatures of all required
      * signing keys.
      *

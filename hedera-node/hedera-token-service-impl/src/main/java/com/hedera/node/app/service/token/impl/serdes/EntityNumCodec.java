@@ -21,8 +21,8 @@ import com.hedera.pbj.runtime.Codec;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.DataInput;
-import java.io.DataOutput;
+import com.hedera.pbj.runtime.io.DataInput;
+import com.hedera.pbj.runtime.io.DataOutput;
 import java.io.IOException;
 
 public class EntityNumCodec implements Codec<EntityNum> {
@@ -36,6 +36,12 @@ public class EntityNumCodec implements Codec<EntityNum> {
         }
     }
 
+    @NonNull
+    @Override
+    public EntityNum parseStrict(@NonNull DataInput dataInput) throws IOException {
+        return parse(dataInput);
+    }
+
     @Override
     public void write(final @NonNull EntityNum item, final @NonNull DataOutput output) throws IOException {
         if (output instanceof SerializableDataOutputStream out) {
@@ -46,11 +52,16 @@ public class EntityNumCodec implements Codec<EntityNum> {
     }
 
     @Override
-    public int measure(final @NonNull DataInput input) throws IOException {
+    public int measure(final @NonNull DataInput input) {
         throw new UnsupportedOperationException();
     }
 
     @Override
+    public int measureRecord(EntityNum entityNum) {
+        return 0;
+    }
+
+    //    @Override
     public int typicalSize() {
         throw new UnsupportedOperationException();
     }

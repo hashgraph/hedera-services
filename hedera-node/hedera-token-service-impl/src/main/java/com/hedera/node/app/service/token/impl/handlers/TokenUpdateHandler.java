@@ -50,7 +50,7 @@ public class TokenUpdateHandler implements TransactionHandler {
     public TokenUpdateHandler() {}
 
     /**
-     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#TokenUpdate}
+     * Pre-handles a {@link com.hedera.hapi.node.base.HederaFunctionality#TokenUpdate}
      * transaction, returning the metadata required to, at minimum, validate the signatures of all
      * required signing keys.
      *

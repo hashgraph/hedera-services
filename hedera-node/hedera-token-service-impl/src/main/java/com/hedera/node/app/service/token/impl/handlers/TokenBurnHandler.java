@@ -38,7 +38,7 @@ public class TokenBurnHandler implements TransactionHandler {
     public TokenBurnHandler() {}
 
     /**
-     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#TokenBurn}
+     * Pre-handles a {@link com.hedera.hapi.node.base.HederaFunctionality#TokenBurn}
      * transaction, returning the metadata required to, at minimum, validate the signatures of all
      * required signing keys.
      *

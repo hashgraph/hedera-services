@@ -38,7 +38,7 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
     public TokenFreezeAccountHandler() {}
 
     /**
-     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#TokenFreezeAccount}
+     * Pre-handles a {@link com.hedera.hapi.node.base.HederaFunctionality#TokenFreezeAccount}
      * transaction, returning the metadata required to, at minimum, validate the signatures of all
      * required signing keys.
      *

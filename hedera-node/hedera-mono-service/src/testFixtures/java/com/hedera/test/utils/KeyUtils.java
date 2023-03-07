@@ -16,19 +16,19 @@
 
 package com.hedera.test.utils;
 
-import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
-import com.hederahashgraph.api.proto.java.ThresholdKey;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
+import com.hedera.hapi.node.base.ThresholdKey;
+import com.hedera.pbj.runtime.io.Bytes;
 import java.util.List;
 import java.util.function.Function;
 
 public class KeyUtils {
 
     private static final Function<String, Key.Builder> KEY_BUILDER =
-            value -> Key.newBuilder().setEd25519(ByteString.copyFrom(value.getBytes()));
+            value -> Key.newBuilder().ed25519(Bytes.wrap(value.getBytes()));
     private static final String A_NAME = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
     private static final String B_NAME = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
@@ -36,45 +36,46 @@ public class KeyUtils {
     private static final String C_NAME = "cccccccccccccccccccccccccccccccc";
 
     public static final Key A_THRESHOLD_KEY = Key.newBuilder()
-            .setThresholdKey(ThresholdKey.newBuilder()
-                    .setThreshold(2)
-                    .setKeys(KeyList.newBuilder()
-                            .addKeys(KEY_BUILDER.apply(A_NAME))
-                            .addKeys(KEY_BUILDER.apply(B_NAME))
-                            .addKeys(KEY_BUILDER.apply(C_NAME))))
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(2)
+                    .keys(KeyList.newBuilder()
+                            .keys(KEY_BUILDER.apply(A_NAME).build(),
+                                    KEY_BUILDER.apply(B_NAME).build(),
+                                    KEY_BUILDER.apply(C_NAME).build())
+                            .build()))
             .build();
     public static final Key A_KEY_LIST = Key.newBuilder()
-            .setKeyList(KeyList.newBuilder()
-                    .addKeys(KEY_BUILDER.apply(A_NAME))
-                    .addKeys(KEY_BUILDER.apply(B_NAME))
-                    .addKeys(KEY_BUILDER.apply(C_NAME)))
+            .keyList(KeyList.newBuilder()
+                    .keys(KEY_BUILDER.apply(A_NAME).build(),
+                            KEY_BUILDER.apply(B_NAME).build(),
+                            KEY_BUILDER.apply(C_NAME).build()))
             .build();
     public static final Key A_COMPLEX_KEY = Key.newBuilder()
-            .setThresholdKey(ThresholdKey.newBuilder()
-                    .setThreshold(2)
-                    .setKeys(KeyList.newBuilder()
-                            .addKeys(KEY_BUILDER.apply(A_NAME))
-                            .addKeys(KEY_BUILDER.apply(B_NAME))
-                            .addKeys(A_THRESHOLD_KEY)))
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(2)
+                    .keys(KeyList.newBuilder()
+                            .keys(KEY_BUILDER.apply(A_NAME).build(),
+                                    KEY_BUILDER.apply(B_NAME).build(),
+                                    A_THRESHOLD_KEY)))
             .build();
     public static final Key B_COMPLEX_KEY = Key.newBuilder()
-            .setThresholdKey(ThresholdKey.newBuilder()
-                    .setThreshold(2)
-                    .setKeys(KeyList.newBuilder()
-                            .addKeys(KEY_BUILDER.apply(A_NAME))
-                            .addKeys(KEY_BUILDER.apply(B_NAME))
-                            .addKeys(A_COMPLEX_KEY)))
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(2)
+                    .keys(KeyList.newBuilder()
+                            .keys(KEY_BUILDER.apply(A_NAME).build(),
+                                    KEY_BUILDER.apply(B_NAME).build(),
+                                    A_COMPLEX_KEY)))
             .build();
     public static final Key C_COMPLEX_KEY = Key.newBuilder()
-            .setThresholdKey(ThresholdKey.newBuilder()
-                    .setThreshold(2)
-                    .setKeys(KeyList.newBuilder()
-                            .addKeys(KEY_BUILDER.apply(A_NAME))
-                            .addKeys(KEY_BUILDER.apply(B_NAME))
-                            .addKeys(B_COMPLEX_KEY)))
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(2)
+                    .keys(KeyList.newBuilder()
+                            .keys(KEY_BUILDER.apply(A_NAME).build(),
+                                    KEY_BUILDER.apply(B_NAME).build(),
+                                    B_COMPLEX_KEY)))
             .build();
 
-    public static List<Key> sanityRestored(List<? extends HederaKey> jKeys) {
+    public static List<com.hederahashgraph.api.proto.java.Key> sanityRestored(List<? extends HederaKey> jKeys) {
         return jKeys.stream()
                 .map(jKey -> {
                     try {
@@ -86,7 +87,7 @@ public class KeyUtils {
                 .toList();
     }
 
-    public static Key sanityRestored(HederaKey jKey) {
+    public static com.hederahashgraph.api.proto.java.Key sanityRestored(HederaKey jKey) {
         try {
             return JKey.mapJKey((JKey) jKey);
         } catch (Exception ignore) {

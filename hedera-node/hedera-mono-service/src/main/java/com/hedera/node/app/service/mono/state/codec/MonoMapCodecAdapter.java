@@ -89,7 +89,7 @@ public class MonoMapCodecAdapter {
                 if (input instanceof SerializableDataInputStream in) {
                     item.deserialize(in, version);
                 } else if (input instanceof DataBuffer bb) {
-                    item.deserialize(bb.getBuffer(), version);
+//                    item.deserialize(bb.getBuffer(), version);
                 } else {
                     throw new IllegalArgumentException(
                             "Unsupported DataInput type: " + input.getClass().getName());
@@ -108,7 +108,7 @@ public class MonoMapCodecAdapter {
                 if (output instanceof SerializableDataOutputStream out) {
                     item.serialize(out);
                 } else if (output instanceof DataBuffer bb) {
-                    item.serialize(bb.getBuffer());
+//                    item.serialize(bb.getBuffer());
                 } else {
                     throw new IllegalArgumentException(
                             "Unsupported DataOutput type: " + output.getClass().getName());
@@ -141,8 +141,8 @@ public class MonoMapCodecAdapter {
                 final var item = factory.get();
                 if (input instanceof SerializableDataInputStream in) {
                     item.deserialize(in, version);
-                } else if (input instanceof ByteBufferDataInput bb) {
-                    item.deserialize(bb.getBuffer(), version);
+//                } else if (input instanceof ByteBufferDataInput bb) {
+//                    item.deserialize(bb.getBuffer(), version);
                 } else {
                     throw new IllegalArgumentException(
                             "Unsupported DataInput type: " + input.getClass().getName());
@@ -160,8 +160,8 @@ public class MonoMapCodecAdapter {
             public void write(final @NonNull T item, final @NonNull DataOutput output) throws IOException {
                 if (output instanceof SerializableDataOutputStream out) {
                     item.serialize(out);
-                } else if (output instanceof ByteBufferDataOutput bb) {
-                    item.serialize(bb.getBuffer());
+//                } else if (output instanceof ByteBufferDataOutput bb) {
+//                    item.serialize(bb.getBuffer());
                 } else {
                     throw new IllegalArgumentException(
                             "Unsupported DataOutput type: " + output.getClass().getName());

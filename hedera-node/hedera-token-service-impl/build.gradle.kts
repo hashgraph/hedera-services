@@ -28,10 +28,12 @@ configurations.all {
 }
 
 dependencies {
+  implementation(project(mapOf("path" to ":hedera-node:hapi")))
   annotationProcessor(libs.dagger.compiler)
   api(project(":hedera-node:hedera-token-service"))
   implementation(project(":hedera-node:hedera-mono-service"))
   implementation(libs.bundles.di)
+  implementation(libs.pbj.runtime)
 
   implementation(libs.swirlds.virtualmap)
   implementation(libs.swirlds.jasperdb)

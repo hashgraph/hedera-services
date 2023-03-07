@@ -32,6 +32,7 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.pbj.runtime.io.Bytes;
 import com.hederahashgraph.api.proto.java.Key;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
@@ -251,9 +252,22 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
     }
 
     @Nullable
+    @Deprecated
     public static byte[] keyAliasToEVMAddress(final ByteString alias) {
         try {
             final Key key = Key.parseFrom(alias);
+            final JKey jKey = JKey.mapKey(key);
+            return tryAddressRecovery(jKey, ADDRESS_RECOVERY_FN);
+        } catch (InvalidProtocolBufferException | DecoderException | IllegalArgumentException ignore) {
+            // any expected exception means no eth mapping
+            return null;
+        }
+    }
+
+    @Nullable
+    public static byte[] keyAliasToEVMAddress(final Bytes alias) {
+        try {
+            final Key key = Key.parseFrom(alias.asUtf8String().getBytes());
             final JKey jKey = JKey.mapKey(key);
             return tryAddressRecovery(jKey, ADDRESS_RECOVERY_FN);
         } catch (InvalidProtocolBufferException | DecoderException | IllegalArgumentException ignore) {

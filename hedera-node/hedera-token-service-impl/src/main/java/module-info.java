@@ -12,6 +12,7 @@ module com.hedera.node.app.service.token.impl {
     requires javax.inject;
     requires com.hedera.pbj.runtime;
     requires com.github.spotbugs.annotations;
+    requires transitive com.hedera.node.hapi;
 
     provides com.hedera.node.app.service.token.TokenService with
             com.hedera.node.app.service.token.impl.TokenServiceImpl;

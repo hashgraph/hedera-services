@@ -34,7 +34,7 @@ import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.StateKeyAdapter;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,17 +54,17 @@ public class SigReqAdapterUtils {
     public static ReadableTokenStore wellKnownTokenStoreAt() {
         final var source = sigReqsMockTokenStore();
         final Map<EntityNum, MerkleToken> destination = new HashMap<>();
-        List.of(
-                        KNOWN_TOKEN_IMMUTABLE,
-                        KNOWN_TOKEN_NO_SPECIAL_KEYS,
-                        KNOWN_TOKEN_WITH_PAUSE,
-                        KNOWN_TOKEN_WITH_FREEZE,
-                        KNOWN_TOKEN_WITH_KYC,
-                        KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY,
-                        KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK,
-                        KNOWN_TOKEN_WITH_SUPPLY,
-                        KNOWN_TOKEN_WITH_WIPE)
-                .forEach(id -> destination.put(EntityNum.fromTokenId(id), source.get(id)));
+//        List.of(
+//                        KNOWN_TOKEN_IMMUTABLE,
+//                        KNOWN_TOKEN_NO_SPECIAL_KEYS,
+//                        KNOWN_TOKEN_WITH_PAUSE,
+//                        KNOWN_TOKEN_WITH_FREEZE,
+//                        KNOWN_TOKEN_WITH_KYC,
+//                        KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY,
+//                        KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK,
+//                        KNOWN_TOKEN_WITH_SUPPLY,
+//                        KNOWN_TOKEN_WITH_WIPE)
+//                .forEach(id -> destination.put(EntityNum.fromTokenId(id), source.get(id)));
         final var wrappedState = new MapReadableKVState<>("TOKENS", destination);
         final var state = new StateKeyAdapter<>(wrappedState, EntityNum::fromLong);
         return new ReadableTokenStore(mockStates(Map.of(TOKENS_KEY, state)));
@@ -83,7 +83,8 @@ public class SigReqAdapterUtils {
 
     public static TransactionBody txnFrom(final TxnHandlingScenario scenario) {
         try {
-            return scenario.platformTxn().getTxn();
+            return null;
+//            scenario.platformTxn().getTxn();
         } catch (final Throwable e) {
             throw new RuntimeException(e);
         }

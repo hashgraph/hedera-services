@@ -22,7 +22,7 @@ import com.hedera.hapi.node.token.CryptoGetAccountRecordsQuery;
 import com.hedera.hapi.node.token.GetAccountDetailsQuery;
 import com.hedera.hapi.node.transaction.TransactionGetReceiptQuery;
 import com.hedera.hapi.node.transaction.TransactionGetRecordQuery;
-import com.hedera.node.app.service.token.entity.Account;
+import com.hedera.node.app.spi.accounts.Account;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 

@@ -33,9 +33,9 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Timestamp;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -46,11 +46,11 @@ public class CryptoHandlerTestBase {
     protected static final String ACCOUNTS = "ACCOUNTS";
     protected static final String ALIASES = "ALIASES";
     protected final Key key = A_COMPLEX_KEY;
-    protected final AccountID payer = asAccount("0.0.3");
+    protected final AccountID payer = AccountID.newBuilder().accountNum(3).build();
     protected final Timestamp consensusTimestamp =
-            Timestamp.newBuilder().setSeconds(1_234_567L).build();
+            Timestamp.newBuilder().seconds(1_234_567L).build();
     protected final HederaKey payerKey = asHederaKey(A_COMPLEX_KEY).get();
-    protected final Long payerNum = payer.getAccountNum();
+    protected final Long payerNum = payer.accountNum().get();
 
     @Mock
     protected ReadableKVState<Long, MerkleAccount> aliases;

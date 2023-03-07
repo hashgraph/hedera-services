@@ -22,8 +22,8 @@ import static com.hedera.test.factories.scenarios.TokenWipeScenarios.WIPE_WITH_M
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_WIPE_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.utils.KeyUtils.sanityRestored;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,7 +47,8 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
         assertFalse(context.failed());
         assertEquals(OK, context.getStatus());
         assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(TOKEN_WIPE_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()),
+                contains(TOKEN_WIPE_KT.asKey()));
     }
 
     @Test

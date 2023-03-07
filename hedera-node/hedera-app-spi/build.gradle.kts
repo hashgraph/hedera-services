@@ -39,7 +39,8 @@ dependencies {
   api(libs.jsr305.annotation)
   api(project(":hedera-node:hapi"))
   implementation(libs.swirlds.common)
-  compileOnlyApi(libs.spotbugs.annotations)
+    implementation(project(mapOf("path" to ":hedera-node:hapi")))
+    compileOnlyApi(libs.spotbugs.annotations)
 
   testImplementation(testLibs.bundles.testing)
   testCompileOnly(libs.spotbugs.annotations)

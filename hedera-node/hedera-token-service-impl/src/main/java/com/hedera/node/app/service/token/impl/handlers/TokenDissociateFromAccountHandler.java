@@ -39,7 +39,7 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
 
     /**
      * Pre-handles a {@link
-     * com.hederahashgraph.api.proto.java.HederaFunctionality#TokenDissociateFromAccount}
+     * com.hedera.hapi.node.base.HederaFunctionality#TokenDissociateFromAccount}
      * transaction, returning the metadata required to, at minimum, validate the signatures of all
      * required signing keys.
      *
