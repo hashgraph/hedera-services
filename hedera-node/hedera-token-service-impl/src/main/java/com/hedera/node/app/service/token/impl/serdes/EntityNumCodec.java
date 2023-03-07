@@ -61,11 +61,6 @@ public class EntityNumCodec implements Codec<EntityNum> {
         return 0;
     }
 
-    //    @Override
-    public int typicalSize() {
-        throw new UnsupportedOperationException();
-    }
-
     @Override
     public boolean fastEquals(final @NonNull EntityNum item, final @NonNull DataInput input) {
         throw new UnsupportedOperationException();

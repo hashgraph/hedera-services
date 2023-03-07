@@ -23,7 +23,7 @@ import com.hedera.pbj.runtime.io.DataOutput;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-public class StringSerdes implements Codec<String> {
+public class StringCodec implements Codec<String> {
     @NonNull
     @Override
     public String parse(@NonNull DataInput input) throws IOException {

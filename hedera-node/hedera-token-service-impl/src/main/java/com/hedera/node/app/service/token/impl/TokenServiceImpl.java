@@ -29,7 +29,7 @@ import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.serdes.EntityNumCodec;
-import com.hedera.node.app.service.token.impl.serdes.StringSerdes;
+import com.hedera.node.app.service.token.impl.serdes.StringCodec;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
@@ -84,7 +84,7 @@ public class TokenServiceImpl implements TokenService {
     }
 
     private StateDefinition<String, EntityNumValue> onDiskAliasesDef() {
-        final var keySerdes = new StringSerdes();
+        final var keySerdes = new StringCodec();
         final var valueSerdes =
                 MonoMapCodecAdapter.codecForVirtualValue(EntityNumValue.CURRENT_VERSION, EntityNumValue::new);
         return StateDefinition.onDisk(ALIASES_KEY, keySerdes, valueSerdes, MAX_ACCOUNTS);
