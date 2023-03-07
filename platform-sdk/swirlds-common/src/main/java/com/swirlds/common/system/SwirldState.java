@@ -55,22 +55,26 @@ public interface SwirldState extends MerkleNode {
 
     /**
      * Provides the application an opportunity to perform operations on transactions in an event prior to handling.
-     * Called against a given {@link Event} only once, globally (not once per state instance) This method may modify
-     * the {@link Transaction}s in the event by doing nothing, adding additional signatures, removing existing
-     * signatures, replacing signatures with versions that expand the public key from an application specific
-     * identifier to an actual public key, or attaching metadata. Additional signatures extracted from the transaction
-     * payload can also be added to the list of signatures to be verified.
+     * Called against a given {@link Event} only once, globally (not once per state instance) This method may modify the
+     * {@link Transaction}s in the event by doing nothing, adding additional signatures, removing existing signatures,
+     * replacing signatures with versions that expand the public key from an application specific identifier to an
+     * actual public key, or attaching metadata. Additional signatures extracted from the transaction payload can also
+     * be added to the list of signatures to be verified.
      * <p>
      * <strong>This method is always invoked on an immutable state.</strong>
      *
-     * @param event
-     * 		the event to perform pre-handling on
+     * @param event the event to perform pre-handling on
      * @see #handleConsensusRound(Round, SwirldDualState)
      */
-    default void preHandle(final Event event) {}
+    default void preHandle(final Event event) {
+        // Override if needed
+    }
 
     /**
      * Handle transactions in a round apply them to the state.
+     *
+     * @param round           the round to be handled and applied to this state
+     * @param swirldDualState the dual state for this round
      */
     void handleConsensusRound(final Round round, final SwirldDualState swirldDualState);
 
