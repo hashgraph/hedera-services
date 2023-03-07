@@ -72,6 +72,19 @@ class MerkleDBFileUtilsTest {
     }
 
     @Test
+    @DisplayName("read N bytes from file channel")
+    void readNBytesFromFileChannel() throws IOException {
+        final File testFile = createTestFile(EXAMPLE_STRING);
+        FileChannel fileChannel = FileChannel.open(testFile.toPath(), StandardOpenOption.READ);
+        ByteBuffer result = MerkleDbFileUtils.readFromFileChannel(fileChannel, 10);
+        assertEquals(10, result.remaining());
+        byte[] bytesFromFile = new byte[10];
+        result.get(bytesFromFile);
+
+        assertEquals("1234567890", new String(bytesFromFile));
+    }
+
+    @Test
     @DisplayName("completelyRead with larger buffer")
     void completelyReadWhenLargerBuffer() throws IOException {
         final File testFile = createTestFile(EXAMPLE_STRING);
@@ -563,18 +576,17 @@ class MerkleDBFileUtilsTest {
         }
 
         @Override
-        public FileChannel truncate(final long size) throws IOException {
+        public FileChannel truncate(final long size) {
             throw new NotImplementedException();
         }
 
         @Override
-        public void force(final boolean metaData) throws IOException {
+        public void force(final boolean metaData) {
             throw new NotImplementedException();
         }
 
         @Override
-        public long transferTo(final long position, final long count, final WritableByteChannel target)
-                throws IOException {
+        public long transferTo(final long position, final long count, final WritableByteChannel target) {
             throw new NotImplementedException();
         }
 
@@ -623,12 +635,12 @@ class MerkleDBFileUtilsTest {
         }
 
         @Override
-        public FileLock lock(final long position, final long size, final boolean shared) throws IOException {
+        public FileLock lock(final long position, final long size, final boolean shared) {
             throw new NotImplementedException();
         }
 
         @Override
-        public FileLock tryLock(final long position, final long size, final boolean shared) throws IOException {
+        public FileLock tryLock(final long position, final long size, final boolean shared) {
             throw new NotImplementedException();
         }
 

@@ -25,13 +25,20 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
-/** A direct on disk implementation of LongList */
+/** A direct on disk implementation of LongList. Note that this implementation doesn't allow writes to the indexes that are
+ * below the min valid index in effect. To synchronize {@link LongListDisk#minValidIndexInEffect}
+ * and {@link LongList@minValidIndex}, the user should call {@link LongList#writeToFile(Path)} with a path that differs
+ * from the current one.
+ */
 public class LongListDisk extends LongList {
     /** A temp byte buffer for reading and writing longs */
     private static final ThreadLocal<ByteBuffer> TEMP_LONG_BUFFER_THREAD_LOCAL =
             ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(Long.BYTES).order(ByteOrder.nativeOrder()));
     /** The disk file this LongList is based on */
     private final Path file;
+
+    /** The minimal index allowed to use with a current file. */
+    private final long minValidIndexInEffect;
 
     /**
      * Create a {@link LongListDisk} on a file, if the file doesn't exist it will be created.
@@ -42,6 +49,7 @@ public class LongListDisk extends LongList {
     public LongListDisk(final Path file) throws IOException {
         super(FileChannel.open(file, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE));
         this.file = file;
+        this.minValidIndexInEffect = minValidIndex.get();
     }
 
     /**
@@ -49,16 +57,17 @@ public class LongListDisk extends LongList {
      *
      * @param index the index to use
      * @param value the long to store
-     * @throws IndexOutOfBoundsException if the index is negative or beyond the max capacity of the
-     *     list
+     * @throws IndexOutOfBoundsException if the index is negative, beyond the max capacity of the
+     *         list or below the min valid index in effect
      * @throws IllegalArgumentException if the value is zero
      */
     @Override
     public synchronized void put(final long index, final long value) {
         checkValueAndIndex(value, index);
+        checkMinValidIndexInEffect(index);
         try {
             final ByteBuffer buf = TEMP_LONG_BUFFER_THREAD_LOCAL.get();
-            final long offset = currentFileHeaderSize + (index * Long.BYTES);
+            final long offset = calculateOffset(index);
             // write new value to file
             buf.putLong(0, value);
             buf.position(0);
@@ -78,16 +87,18 @@ public class LongListDisk extends LongList {
      * @param oldValue the value that must currently obtain at the index
      * @param newValue the new value to store
      * @return whether the newValue was set
-     * @throws IndexOutOfBoundsException if the index is negative or beyond the max capacity of the
-     *     list
+     * @throws IndexOutOfBoundsException if the index is negative, beyond the max capacity of the
+     *     list or below the min valid index in effect
      * @throws IllegalArgumentException if old value is zero (which could never be true)
      */
     @Override
     public synchronized boolean putIfEqual(final long index, final long oldValue, final long newValue) {
         checkValueAndIndex(newValue, index);
+        checkMinValidIndexInEffect(index);
+
         try {
             final ByteBuffer buf = TEMP_LONG_BUFFER_THREAD_LOCAL.get();
-            final long offset = currentFileHeaderSize + (index * Long.BYTES);
+            final long offset = calculateOffset(index);
             // first read old value
             buf.clear();
             MerkleDbFileUtils.completelyRead(fileChannel, buf, offset);
@@ -108,12 +119,36 @@ public class LongListDisk extends LongList {
     }
 
     /**
-     * Write all longs in this LongList into a file.
+     * Checks if the given index is greater than or equal to the min valid index in effect.
+     * We can't allow writes to indexes less than the min valid index in effect because that would result in an error
+     * in attempt to write to a file channel at a negative offset.
      *
+     * @param index the index to check
+     * @throws IndexOutOfBoundsException if the index is less than the min valid index in effect
+     */
+    private void checkMinValidIndexInEffect(final long index) {
+        if (index < minValidIndexInEffect) {
+            throw new IndexOutOfBoundsException("Index " + index
+                    + " cannot be less than the minimum valid index in effect " + minValidIndexInEffect);
+        }
+    }
+
+    /**
+     * Calculate the offset in the file for the given index.
+     * @param index the index to use
+     * @return the offset in the file for the given index
+     */
+    private long calculateOffset(long index) {
+        return currentFileHeaderSize + ((index - minValidIndexInEffect) * Long.BYTES);
+    }
+
+    /**
+     * Write all longs in this LongList into a file.
+     * <p>
      * <b> It is not guaranteed what version of data will be written if the LongList is changed via put methods
      * while this LongList is being written to a file. If you need consistency while calling put concurrently then
      * use a BufferedLongListWrapper. </b>
-     *
+     * <p>
      * <b> It is not guaranteed what version of data will be written if the LongList is changed
      * via put methods while this LongList is being written to a file. If you need consistency while
      * calling put concurrently then use a BufferedLongListWrapper. </b>
@@ -162,10 +197,14 @@ public class LongListDisk extends LongList {
         try {
             final ByteBuffer buf = TEMP_LONG_BUFFER_THREAD_LOCAL.get();
             final long listIndex = (chunkIndex * numLongsPerChunk) + subIndex;
-            if (listIndex < minValidIndex.get()) {
+
+            if (listIndex < minValidIndex.get()
+                    ||
+                    // don't allow reading outside the current file
+                    listIndex < getMinValidIndexInEffect()) {
                 return IMPERMISSIBLE_VALUE;
             }
-            final long offset = currentFileHeaderSize + (listIndex * Long.BYTES);
+            final long offset = calculateOffset(listIndex);
             buf.clear();
             MerkleDbFileUtils.completelyRead(fileChannel, buf, offset);
             return buf.getLong(0);
@@ -187,5 +226,10 @@ public class LongListDisk extends LongList {
         }
         // now close
         fileChannel.close();
+    }
+
+    @Override
+    protected long getMinValidIndexInEffect() {
+        return minValidIndexInEffect;
     }
 }

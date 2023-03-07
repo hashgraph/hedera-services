@@ -147,7 +147,7 @@ public final class LongListHeap extends LongList {
         final ByteBuffer tempBuffer = allocateDirect(1024 * 1024);
         tempBuffer.order(ByteOrder.nativeOrder());
         final LongBuffer tempLongBuffer = tempBuffer.asLongBuffer();
-        for (long i = 0; i < size(); i++) {
+        for (long i = minValidIndex.get(); i < size(); i++) {
             // if buffer is full then write
             if (!tempLongBuffer.hasRemaining()) {
                 tempBuffer.clear();

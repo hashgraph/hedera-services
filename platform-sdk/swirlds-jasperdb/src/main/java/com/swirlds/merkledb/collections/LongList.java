@@ -17,6 +17,7 @@
 package com.swirlds.merkledb.collections;
 
 import static com.swirlds.common.utility.Units.MEBIBYTES_TO_BYTES;
+import static com.swirlds.merkledb.utilities.MerkleDbFileUtils.readFromFileChannel;
 
 import com.swirlds.merkledb.files.DataFileCommon;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
@@ -90,7 +91,8 @@ public abstract class LongList implements CASableLongIndex, Closeable {
     protected final int numLongsPerChunk;
     /** Size in bytes for each memory chunk to allocate */
     protected final int memoryChunkSize;
-    /** The number of longs contained in this LongList. */
+    /** The number of longs that this list would contain if it was not optimized by {@link LongList#updateMinValidIndex}.
+     * Practically speaking, it defines the list's right boundary. */
     protected final AtomicLong size = new AtomicLong(0);
     /**
      * The maximum number of longs to ever store in this data structure. This is used as a safety
@@ -179,14 +181,6 @@ public abstract class LongList implements CASableLongIndex, Closeable {
             currentFileHeaderSize = FILE_HEADER_SIZE_V2;
             writeHeader(fileChannel);
         }
-    }
-
-    private static ByteBuffer readFromFileChannel(final FileChannel fileChannel, final int bytesToRead)
-            throws IOException {
-        final ByteBuffer headerBuffer = ByteBuffer.allocate(bytesToRead);
-        MerkleDbFileUtils.completelyRead(fileChannel, headerBuffer);
-        headerBuffer.rewind();
-        return headerBuffer;
     }
 
     /**
@@ -397,11 +391,20 @@ public abstract class LongList implements CASableLongIndex, Closeable {
     @Override
     public <T extends Throwable> void forEach(final LongAction<T> action) throws InterruptedException, T {
         final long max = getCurrentMax();
-        for (long i = minValidIndex.get(); i < max; i++) {
+        for (long i = getMinValidIndexInEffect(); i < max; i++) {
             final long value = get(i);
             if (value != IMPERMISSIBLE_VALUE) {
                 action.handle(i, value);
             }
         }
+    }
+
+    /**
+     * Returns currently applicable min valid index. For in-memory implementations it's equal to the {@link #minValidIndex},
+     * however for file based implementations it may be different.
+     * @return min valid index
+     */
+    protected long getMinValidIndexInEffect() {
+        return minValidIndex.get();
     }
 }
