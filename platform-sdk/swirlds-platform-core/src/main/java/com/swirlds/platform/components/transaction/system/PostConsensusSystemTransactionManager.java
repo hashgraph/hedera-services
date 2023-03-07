@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,21 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.components.common.output;
+package com.swirlds.platform.components.transaction.system;
+
+import com.swirlds.platform.internal.ConsensusRound;
+import com.swirlds.platform.state.State;
 
 /**
- * Invoked when a state signature is received from peer.
+ * Keeps track of system transaction post-consensus handling methods
  */
 @FunctionalInterface
-public interface StateSignatureConsumer {
-
+public interface PostConsensusSystemTransactionManager {
     /**
-     * A state signature to be handled.
+     * Handle a post-consensus round by passing each included system transaction to the registered handlers
      *
-     * @param stateSignature
-     * 		the state signature to handle
-     * @param isConsensus
-     *        {@code true} if the signature has reached consensus, {@code false} otherwise
+     * @param state a mutable state
+     * @param round the post-consensus round
      */
-    void handleStateSignature(StateSignature stateSignature, boolean isConsensus);
+    void handleRound(State state, ConsensusRound round);
 }
