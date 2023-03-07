@@ -62,11 +62,6 @@ public class SyncManagerTest {
     private static final long ID = 0L;
     private static final NodeId OTHER_ID = new NodeId(false, 1L);
 
-    private static Stream<Arguments> swirldStateManagers() {
-        return Stream.of(
-                Arguments.of(spy(SwirldStateManagerImpl.class)), Arguments.of(spy(SwirldStateManagerImpl.class)));
-    }
-
     /**
      * A helper class that contains dummy data to feed into SyncManager lambdas.
      */
@@ -288,10 +283,10 @@ public class SyncManagerTest {
     /**
      * Verify the behavior of SyncManager's transThrottleCallAndCreate function
      */
-    @ParameterizedTest
-    @MethodSource("swirldStateManagers")
+    @Test
     @Order(4)
-    void transThrottleCallAndCreate(final SwirldStateManager swirldStateManager) {
+    void transThrottleCallAndCreate() {
+        final SwirldStateManager swirldStateManager = spy(SwirldStateManagerImpl.class);
         final State consState = mock(State.class);
         final PlatformDualState dualState = mock(PlatformDualState.class);
         doReturn(dualState).when(consState).getPlatformDualState();

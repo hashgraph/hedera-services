@@ -31,7 +31,7 @@ import java.util.Objects;
 
 /**
  * An {@link AddressBookStore} that is included in the state. This address book store is sequential. That is, once a
- * copy is made, the old copy becomes immutable. TODO collapse this now that we don't need multiple versions!
+ * copy is made, the old copy becomes immutable.
  */
 public class SequentialAddressBookStore extends AbstractAddressBookStore implements ComposedMerkleInternal {
 

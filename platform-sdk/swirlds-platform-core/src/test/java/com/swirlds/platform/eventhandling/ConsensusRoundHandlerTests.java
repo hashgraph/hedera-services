@@ -30,6 +30,7 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.utility.ThrowingRunnable;
@@ -55,6 +56,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -154,13 +156,10 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
 
     /**
      * Tests that consensus events are passed to {@link EventStreamManager#addEvents(List)} exactly once.
-     *
-     * @param swirldState
-     * 		the instance of {@link SwirldState} to initialize {@link ConsensusRoundHandler} with
      */
-    @ParameterizedTest
-    @MethodSource("swirldStates")
-    void testConsensusEventStream(final SwirldState swirldState) {
+    @Test
+    void testConsensusEventStream() {
+        final SwirldState swirldState = new DummySwirldState();
         initConsensusHandler(swirldState);
         testEventStream(eventStreamManager, consensusRoundHandler::consensusRound);
     }

@@ -44,13 +44,6 @@ import org.junit.jupiter.params.provider.Arguments;
 
 public abstract class AbstractEventHandlerTests {
 
-    protected static Stream<Arguments> swirldStates() {
-
-        final SwirldState ss = new DummySwirldState();
-
-        return Stream.of(Arguments.of(ss), Arguments.of(ss));
-    }
-
     private static final int NUM_NODES = 10;
 
     protected NodeId selfId;

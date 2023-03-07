@@ -160,28 +160,11 @@ public class PlatformTestingToolMain implements SwirldMain {
      * This might cause performOnDeleted errors. So performOnDeleted is set to true when enableCheck is false
      */
     private boolean enableCheck = true;
-    /** continue checking even amount of error greater than errorThreshold */
-    private boolean continueAfterError = false;
-    /** after test finish keep MerkleMap and FCFS log so it will be loaded during restart test */
-    private boolean keepCheckLog;
-    /** save internal file logs and expected map to file at the last checking stage */
-    private boolean saveAppLogState = false;
 
     private boolean waitForSaveStateDuringFreeze = false;
     public AtomicBoolean handledExitValidation = new AtomicBoolean(false);
     /** query record */
     private boolean queryRecord = false;
-
-    /**
-     * enable check expiration functionality at end of the test.
-     * Checks if any records in FCQueue have expirationTime below lastPurgeTimestamp
-     */
-    private boolean checkExpiration = true;
-
-    /**
-     * define how many seconds we allow records to live in FCQ
-     */
-    private int fcqTtl = DEFAULT_EXPIRATION_TIME;
 
     /** algorithm to decide whether submit based on statistics and goal */
     private TransactionSubmitter submitter;
@@ -199,13 +182,9 @@ public class PlatformTestingToolMain implements SwirldMain {
     private Platform platform;
     /** the platform is active now or not */
     private volatile boolean isActive = false;
-    /** a console window for text output */
-    private Console console = null;
 
     private static final int CLIENT_AMOUNT = 2;
     AppClient[] appClient = new AppClient[CLIENT_AMOUNT];
-    /** threshold to stop check if amount of error reach this threshold */
-    private long errorThreshold = 100;
     /** generate different payload bytes according to config */
     private TransactionPool transactionPool;
 
@@ -215,7 +194,6 @@ public class PlatformTestingToolMain implements SwirldMain {
     /** total FCM transactions, not including previous runs before restart */
     private long totalFCMTransactions;
 
-    private long transactionStartTimestamp = Integer.MAX_VALUE;
     private long prevFCMCreateAmount;
     private long prevFCMUpdateAmount;
     private long prevFCMTransferAmount;
@@ -328,57 +306,6 @@ public class PlatformTestingToolMain implements SwirldMain {
         }
         for (String arg : jvmArgs) {
             logger.info(LOGM_STARTUP, "JVM arg: {}", arg);
-        }
-    }
-
-    private boolean isQuitAfterChecking(long currentNodeInTurn) {
-        if ((submitConfig.isSubmitInTurn()
-                && currentNodeInTurn == (platform.getAddressBook().getSize() - 1))) {
-            logger.info(LOGM_DEMO_INFO, "In turn mode last node finished submitting all transactions");
-            return true;
-        } else if (!submitConfig.isSubmitInTurn() && noMoreTransaction) {
-            logger.info(LOGM_DEMO_INFO, "All node finished submitting all transactions");
-            return true;
-        } else if (submitConfig.isSingleNodeSubmit() && noMoreTransaction) {
-            logger.info(LOGM_DEMO_INFO, "Single node finished submitting all transactions");
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    /** check whether received expected total amount of transactions */
-    private boolean checkTotalTranAmount(TransactionCounter transactionCounter) {
-        logger.trace(LOGM_DEMO_INFO, "Node {} transactionSubmitted {}", selfId, transactionSubmitted);
-        logger.trace(
-                LOGM_DEMO_INFO,
-                "Node {} Total Recv Transaction {}",
-                selfId,
-                transactionCounter.getAllTransactionAmount());
-        logger.trace(
-                LOGM_DEMO_INFO,
-                "Node {} Total Recv FCM Transaction {}",
-                selfId,
-                transactionCounter.getTotalFCMTransactionAmount());
-
-        logger.trace(
-                LOGM_DEMO_INFO,
-                "Node {} Total totalTranAmountFromPrevRun {}",
-                selfId,
-                transactionCounter.totalTranAmountFromPrevRun);
-
-        if ((transactionSubmitted.get() + transactionCounter.totalTranAmountFromPrevRun)
-                != transactionCounter.getAllTransactionAmount()) {
-            logger.error(
-                    LOGM_DEMO_INFO,
-                    "Node {} transactionSubmitted + totalTranAmountFromPrevRun not equal total received ",
-                    selfId);
-            logger.error(LOGM_DEMO_INFO, " transactionCounter = " + transactionCounter);
-            // return false;
-            // TODO: properly handle stale transactions so count can be handled and validated
-            return true;
-        } else {
-            return true;
         }
     }
 
@@ -609,10 +536,6 @@ public class PlatformTestingToolMain implements SwirldMain {
         platform.getNotificationEngine().register(PlatformStatusChangeListener.class, this::platformStatusChange);
         registerReconnectCompleteListener();
 
-        if (!config.headless) { // create the window, make it visible
-            console = createConsole(platform, true);
-        }
-
         SwirldsGui.setAbout(selfId.getId(), "Platform Testing Demo");
         try {
             final PlatformTestingToolState state = ((PlatformWithDeprecatedMethods) platform).getState();
@@ -780,15 +703,9 @@ public class PlatformTestingToolMain implements SwirldMain {
     }
 
     private void initBasedOnPayloadCfgSimple(final PayloadCfgSimple pConfig) {
-        this.continueAfterError = pConfig.isContinueAfterError();
-        this.errorThreshold = pConfig.getErrorThreshold();
-        this.keepCheckLog = pConfig.isKeepCheckLog();
-        this.saveAppLogState = pConfig.isSaveAppLogState();
         this.waitForSaveStateDuringFreeze = pConfig.isWaitForSaveStateDuringFreeze();
         this.saveExpectedMapAtFreeze = pConfig.isSaveExpectedMapAtFreeze();
         this.queryRecord = pConfig.isQueryRecord();
-        this.checkExpiration = pConfig.isCheckExpiration();
-        this.fcqTtl = pConfig.getFcqTtl();
     }
 
     private void initializeAppClient(final String[] pars, final ObjectMapper objectMapper) throws IOException {
@@ -865,8 +782,6 @@ public class PlatformTestingToolMain implements SwirldMain {
             // if single mode only node 0 can submit transactions
             // if not single mode anyone can submit transactions
             if (!submitConfig.isSingleNodeSubmit() || selfId.equalsMain(0)) {
-
-                transactionStartTimestamp = System.currentTimeMillis();
 
                 if (submitConfig.isSubmitInTurn()) {
                     // Delay the start of transactions by interval multiply by node id
@@ -1140,28 +1055,6 @@ public class PlatformTestingToolMain implements SwirldMain {
                 logSuccessMessageAndFinishTest(notification.getConsensusTimestamp());
             }
         });
-    }
-
-    /**
-     * Check if current FCQs contains records that should have been removed
-     *
-     * @param state
-     */
-    private void validateExpiration(final PlatformTestingToolState state) {
-        final long lastPurgeTimestamp = state.getLastPurgeTimestamp();
-        final MerkleMap<MapKey, MapValueFCQ<TransactionRecord>> fcqMap =
-                state.getStateMap().getAccountFCQMap();
-        if (fcqMap == null || fcqMap.size() == 0) {
-            return;
-        }
-        boolean isExpirationCheckSuccess =
-                ExpirationUtils.isRecordExpirationValid(lastPurgeTimestamp, fcqMap, platform.getSelfId());
-
-        // TODO sleep for fcqTTL time or by default 180 seconds and purge, so that all records are purged.
-        //  Validate if no records are present in FCQueue by calling method areZeroRecordsLeft
-        if (isExpirationCheckSuccess) {
-            logger.info(LOGM_DEMO_INFO, "{} Passes Expiration Checking.", platform.getSelfId());
-        }
     }
 
     private void handleMessageQuorum(final long id, final ControlAction state) {

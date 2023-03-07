@@ -147,8 +147,8 @@ public class SwirldStateFlowTests extends EventFlowTests {
     }
 
     private SwirldStateTracker getLatestImmutableState() {
-        final SwirldStateManagerImpl ssm2 = (SwirldStateManagerImpl) swirldStateManager;
-        return (SwirldStateTracker) ssm2.getLatestImmutableState().getSwirldState();
+        final SwirldStateManagerImpl ssm = (SwirldStateManagerImpl) swirldStateManager;
+        return (SwirldStateTracker) ssm.getLatestImmutableState().getSwirldState();
     }
 
     private void verifyNoStateFailures() {

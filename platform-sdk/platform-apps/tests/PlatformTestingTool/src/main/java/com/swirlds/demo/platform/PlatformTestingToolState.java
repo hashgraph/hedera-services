@@ -490,11 +490,6 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         return controlQuorum;
     }
 
-    @JsonIgnore
-    public long getLastTranTimeStamp() {
-        return lastTranTimeStamp;
-    }
-
     public NextSeqConsList getNextSeqCons() {
         return getChild(ChildIndices.NEXT_SEQUENCE_CONSENSUS);
     }
@@ -644,17 +639,6 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     @JsonIgnore
     public synchronized ExpectedFCMFamily getStateExpectedMap() {
         return expectedFCMFamily;
-    }
-
-    public synchronized long getNextSeq(final long id) {
-        final long ret =
-                getNextSeqCons() == null ? 0 : getNextSeqCons().get((int) id).getValue();
-        logger.info(
-                LOGM_DEMO_INFO,
-                "PlatformTestingDemoDemoState node {} will continue creating transaction from {}",
-                id,
-                ret);
-        return ret;
     }
 
     /**

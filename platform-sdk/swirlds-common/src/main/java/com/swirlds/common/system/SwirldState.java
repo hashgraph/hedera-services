@@ -63,14 +63,6 @@ public interface SwirldState extends MerkleNode {
      * identifier to an actual public key, or attaching metadata. Additional signatures extracted from the transaction
      * payload can also be added to the list of signatures to be verified.
      * <p>
-     * If signature verification is desired, it is recommended that process be started in this method on a background
-     * thread using one of the methods below to give it time to complete before the transaction is handled
-     * post-consensus.
-     * <ul>
-     *     <li>{@link com.swirlds.common.crypto.Cryptography#verifyAsync(TransactionSignature)}</li>
-     *     <li>{@link com.swirlds.common.crypto.Cryptography#verifyAsync(List)}</li>
-     * </ul>
-     * <p>
      * <strong>This method is always invoked on an immutable state.</strong>
      *
      * @param event
@@ -80,25 +72,7 @@ public interface SwirldState extends MerkleNode {
     default void preHandle(final Event event) {}
 
     /**
-     * {@inheritDoc}
-     * <p>
-     * The state of this object must NEVER change except inside the methods below.
-     *
-     * <ul>
-     *     <li>{@link #init(Platform, SwirldDualState, InitTrigger, SoftwareVersion)}</li>
-     *     <li>{@link #copy()}</li>
-     *     <li>{@link #handleConsensusRound(Round, SwirldDualState)}</li>
-     *  </ul>
-     * <p>
-     * If signature verification was started on a background thread in {@link #preHandle(Event)}, the process
-     * should be checked for completion. Accessing {@link TransactionSignature#getSignatureStatus()} before this
-     * process is complete will cause it to return {@code null}:
-     *
-     * <pre>
-     *     for (TransactionSignature sig : transaction.getSignatures()) {
-     *         Future&lt;Void&gt; future = sig.waitForFuture().get();
-     *     }
-     * </pre>
+     * Handle transactions in a round apply them to the state.
      */
     void handleConsensusRound(final Round round, final SwirldDualState swirldDualState);
 

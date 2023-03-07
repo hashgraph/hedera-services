@@ -74,7 +74,7 @@ public class SwirldStateManagerImplTests {
                 2,
                 ss1.getState().getReservationCount(),
                 "Loading from signed state should increment the reference count, because it is now referenced by the "
-                        + "signed state and the previous immutable state in SwirldStateManagerDouble.");
+                        + "signed state and the previous immutable state in SwirldStateManager.");
         assertEquals(
                 1,
                 swirldStateManagerImpl.getConsensusState().getReservationCount(),
@@ -87,7 +87,7 @@ public class SwirldStateManagerImplTests {
                 2,
                 ss2.getState().getReservationCount(),
                 "Loading from signed state should increment the reference count, because it is now referenced by the "
-                        + "signed state and the previous immutable state in SwirldStateManagerDouble.");
+                        + "signed state and the previous immutable state in SwirldStateManager.");
         assertEquals(
                 1,
                 swirldStateManagerImpl.getConsensusState().getReservationCount(),

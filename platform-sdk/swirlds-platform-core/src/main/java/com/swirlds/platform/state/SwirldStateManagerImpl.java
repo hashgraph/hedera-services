@@ -189,7 +189,7 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
     @Override
     public void clear() {
         // clear the transactions
-        logger.info(RECONNECT.getMarker(), "SwirldStateManagerDouble: clearing transactionPool");
+        logger.info(RECONNECT.getMarker(), "SwirldStateManager: clearing transactionPool");
         transactionPool.clear();
     }
 
