@@ -87,6 +87,15 @@ class PreHandleWorkflowImplTest extends AppTestBase {
     private ReadableStoreFactory storeFactory;
 
     @Mock(strictness = LENIENT)
+    private TransactionSignature cryptoSig;
+
+    @Mock(strictness = LENIENT)
+    private HederaKey payerKey;
+
+    @Mock(strictness = LENIENT)
+    private ReadableStoreFactory storeFactory;
+
+    @Mock(strictness = LENIENT)
     private SwirldTransaction transaction;
 
     @Mock(strictness = LENIENT)

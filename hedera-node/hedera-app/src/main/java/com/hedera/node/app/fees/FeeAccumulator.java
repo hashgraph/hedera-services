@@ -22,9 +22,6 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.Timestamp;
 
 /**
  * Interface for fee calculation. Currently, it is only used to compute payments for Queries. It

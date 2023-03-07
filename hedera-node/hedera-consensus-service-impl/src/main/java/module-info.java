@@ -11,7 +11,6 @@ module com.hedera.node.app.service.consensus.impl {
     requires com.github.spotbugs.annotations;
     requires com.hedera.node.app.service.token;
     requires com.swirlds.config;
-    requires com.hedera.hashgraph.protobuf.java.api;
 
     provides com.hedera.node.app.service.consensus.ConsensusService with
             ConsensusServiceImpl;

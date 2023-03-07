@@ -84,9 +84,9 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
      */
     public void handle(
             @NonNull final ConsensusDeleteTopicTransactionBody op, @NonNull final WritableTopicStore topicStore) {
-        var topicId = op.getTopicID();
+        var topicId = op.topicID();
 
-        var optionalTopic = topicStore.get(topicId.getTopicNum());
+        var optionalTopic = topicStore.get(topicId.topicNum());
 
         /* If the topic doesn't exist, return INVALID_TOPIC_ID */
         if (optionalTopic.isEmpty()) {
