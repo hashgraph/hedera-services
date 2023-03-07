@@ -109,8 +109,8 @@ public class EventStreamSingleFileRepairIterator implements Iterator<SelfSeriali
                     // update running hash calculator with event.
                     runningHashCalculator.addObject(dce);
                 } else {
-                    throw new IllegalStateException(
-                            "Unexpected SelfSerializable Class: " + next.getClass().getCanonicalName());
+                    throw new IllegalStateException("Unexpected SelfSerializable Class: "
+                            + next.getClass().getCanonicalName());
                 }
             }
         } catch (final IOException e) {
