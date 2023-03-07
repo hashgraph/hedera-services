@@ -109,9 +109,8 @@ public class EventStreamSingleFileRepairIterator implements Iterator<SelfSeriali
                     // update running hash calculator with event.
                     runningHashCalculator.addObject(dce);
                 } else {
-                    logger.warn(
-                            "Unexpected event in repair iterator, class: {}",
-                            next.getClass().getCanonicalName());
+                    throw new IllegalStateException(
+                            "Unexpected SelfSerializable Class: " + next.getClass().getCanonicalName());
                 }
             }
         } catch (final IOException e) {
@@ -179,7 +178,8 @@ public class EventStreamSingleFileRepairIterator implements Iterator<SelfSeriali
      * Indicates if the wrapped event stream did not have a final hash and the final hash was added to the resulting
      * event stream.
      *
-     * @return false until and unless this iterator has added a final hash to the original event stream, then true is returned.
+     * @return false until and unless this iterator has added a final hash to the content of the original event stream,
+     * then true is returned.
      */
     public boolean finalHashAdded() {
         return finalHashAdded;
