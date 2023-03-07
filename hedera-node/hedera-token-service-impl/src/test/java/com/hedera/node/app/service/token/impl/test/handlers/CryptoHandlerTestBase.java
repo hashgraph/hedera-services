@@ -26,6 +26,8 @@ import static org.mockito.Mockito.lenient;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.spi.key.HederaKey;
@@ -53,10 +55,10 @@ public class CryptoHandlerTestBase {
     protected final Long payerNum = payer.accountNum().get();
 
     @Mock
-    protected ReadableKVState<Long, MerkleAccount> aliases;
+    protected ReadableKVState<String, EntityNumValue> aliases;
 
     @Mock
-    protected ReadableKVState<Long, MerkleAccount> accounts;
+    protected ReadableKVState<EntityNumVirtualKey, MerkleAccount> accounts;
 
     @Mock
     protected MerkleAccount payerAccount;
@@ -74,8 +76,8 @@ public class CryptoHandlerTestBase {
 
     @BeforeEach
     void commonSetUp() {
-        given(states.<Long, MerkleAccount>get(ACCOUNTS)).willReturn(accounts);
-        given(states.<Long, MerkleAccount>get(ALIASES)).willReturn(aliases);
+        given(states.<EntityNumVirtualKey, MerkleAccount>get(ACCOUNTS)).willReturn(accounts);
+        given(states.<String, EntityNumValue>get(ALIASES)).willReturn(aliases);
         store = new ReadableAccountStore(states);
         setUpPayer();
     }
@@ -91,7 +93,7 @@ public class CryptoHandlerTestBase {
     }
 
     protected void setUpPayer() {
-        lenient().when(accounts.get(payerNum)).thenReturn(payerAccount);
+        lenient().when(accounts.get(EntityNumVirtualKey.fromLong(payerNum))).thenReturn(payerAccount);
         lenient().when(payerAccount.getAccountKey()).thenReturn((JKey) payerKey);
     }
 }

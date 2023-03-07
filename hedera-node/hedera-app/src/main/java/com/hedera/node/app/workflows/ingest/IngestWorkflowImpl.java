@@ -49,7 +49,6 @@ import javax.inject.Inject;
 
 /** Implementation of {@link IngestWorkflow} */
 public final class IngestWorkflowImpl implements IngestWorkflow {
-
     private final NodeInfo nodeInfo;
     private final CurrentPlatformStatus currentPlatformStatus;
     private final Supplier<AutoCloseableWrapper<HederaState>> stateAccessor;
@@ -159,11 +158,6 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
 
                 // 4. Get payer account
                 final AccountID payerID = txBody.transactionID().accountID();
-                final var tokenStates = state.createReadableStates(TokenService.NAME);
-                final var accountStore = storeSupplier.apply(tokenStates);
-                final var payer = accountStore
-                        .getAccountById(payerID)
-                        .orElseThrow(() -> new PreCheckException(ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND));
 
                 // 5. Check payer's signature
                 checker.checkPayerSignature(state, onsetResult.transaction(), signatureMap, payerID);
@@ -177,7 +171,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
                 requestBuffer.readBytes(byteArray);
                 submissionManager.submit(txBody, byteArray);
                 counters.get(functionality).increment();
-            } catch (InsufficientBalanceException e) {
+            } catch (final InsufficientBalanceException e) {
                 estimatedFee = e.getEstimatedFee();
                 result = e.responseCode();
             } catch (final PreCheckException e) {

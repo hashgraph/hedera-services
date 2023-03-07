@@ -17,6 +17,8 @@
 package com.hedera.node.app.service.mono.state.codec;
 
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.io.Bytes;
+import com.hedera.pbj.runtime.io.BytesBuffer;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import org.junit.jupiter.api.Assertions;
@@ -123,7 +125,7 @@ abstract class AbstractVirtualCodecTest<T extends Record> {
     private T parseUsingBuffer(final byte[] serialized) {
         final T instance;
         final var buffer = ByteBuffer.wrap(serialized);
-        final var bb = new ByteBufferDataInput(buffer);
+        final var bb = BytesBuffer.wrap(Bytes.wrap(serialized));
         try {
             instance = subject.parse(bb);
         } catch (IOException e) {

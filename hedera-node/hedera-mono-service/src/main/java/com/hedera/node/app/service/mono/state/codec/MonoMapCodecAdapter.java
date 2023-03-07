@@ -1,6 +1,7 @@
 package com.hedera.node.app.service.mono.state.codec;
 
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.io.BytesBuffer;
 import com.hedera.pbj.runtime.io.DataBuffer;
 import com.hedera.pbj.runtime.io.DataInput;
 import com.hedera.pbj.runtime.io.DataOutput;
@@ -23,9 +24,7 @@ import java.util.function.Supplier;
  * codec needs to implement {@code measure()} and {@code typicalSize()}.
  *
  * <p>Also note the {@link SelfSerializable} codec are only usable with a
- * {@code SerializableDataInputStream} and {@code SerializableDataOutputStream}. The {@link VirtualKey}
- * and {@link VirtualValue} codec also supports {@link ByteBufferDataInput} and
- * {@link ByteBufferDataOutput}.
+ * {@code SerializableDataInputStream} and {@code SerializableDataOutputStream}.
  */
 public class MonoMapCodecAdapter {
     private MonoMapCodecAdapter() {
@@ -86,10 +85,11 @@ public class MonoMapCodecAdapter {
             @Override
             public T parse(final @NonNull DataInput input) throws IOException {
                 final var item = factory.get();
+                // TODO - this will never be true, we need the filtered stream from (DataInputStream) in
                 if (input instanceof SerializableDataInputStream in) {
                     item.deserialize(in, version);
-                } else if (input instanceof DataBuffer bb) {
-//                    item.deserialize(bb.getBuffer(), version);
+                } else if (input instanceof DataBuffer db) {
+                    // TODO - need to have access to the wrapped ByteBuffer here
                 } else {
                     throw new IllegalArgumentException(
                             "Unsupported DataInput type: " + input.getClass().getName());
@@ -105,10 +105,11 @@ public class MonoMapCodecAdapter {
 
             @Override
             public void write(final @NonNull T item, final @NonNull DataOutput output) throws IOException {
+                // TODO - this will never be true, we need the filtered stream from (DataOutputStream) out
                 if (output instanceof SerializableDataOutputStream out) {
                     item.serialize(out);
-                } else if (output instanceof DataBuffer bb) {
-//                    item.serialize(bb.getBuffer());
+                } else if (output instanceof DataBuffer db) {
+                    // TODO - need to have access to the wrapped ByteBuffer here
                 } else {
                     throw new IllegalArgumentException(
                             "Unsupported DataOutput type: " + output.getClass().getName());
@@ -139,10 +140,11 @@ public class MonoMapCodecAdapter {
             @Override
             public T parse(final @NonNull DataInput input) throws IOException {
                 final var item = factory.get();
+                // TODO - this will never be true, we need the filtered stream from (DataInputStream) in
                 if (input instanceof SerializableDataInputStream in) {
                     item.deserialize(in, version);
-//                } else if (input instanceof ByteBufferDataInput bb) {
-//                    item.deserialize(bb.getBuffer(), version);
+                } else if (input instanceof DataBuffer db) {
+                    // TODO - need to have access to the wrapped ByteBuffer here
                 } else {
                     throw new IllegalArgumentException(
                             "Unsupported DataInput type: " + input.getClass().getName());
@@ -158,10 +160,11 @@ public class MonoMapCodecAdapter {
 
             @Override
             public void write(final @NonNull T item, final @NonNull DataOutput output) throws IOException {
+                // TODO - this will never be true, we need the filtered stream from (DataOutputStream) out
                 if (output instanceof SerializableDataOutputStream out) {
                     item.serialize(out);
-//                } else if (output instanceof ByteBufferDataOutput bb) {
-//                    item.serialize(bb.getBuffer());
+                } else if (output instanceof DataBuffer db) {
+                    // TODO - need to have access to the wrapped ByteBuffer here
                 } else {
                     throw new IllegalArgumentException(
                             "Unsupported DataOutput type: " + output.getClass().getName());

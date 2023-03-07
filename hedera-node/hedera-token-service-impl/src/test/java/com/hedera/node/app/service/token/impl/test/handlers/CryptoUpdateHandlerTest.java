@@ -26,6 +26,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -49,7 +50,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     @Test
     void cryptoUpdateVanilla() {
         final var txn = cryptoUpdateTransaction(payer, updateAccountId);
-        given(accounts.get(updateAccountId.accountNum().get())).willReturn(updateAccount);
+        given(accounts.get(EntityNumVirtualKey.fromLong(updateAccountId.accountNum().get()))).willReturn(updateAccount);
         given(updateAccount.getAccountKey()).willReturn((JKey) updateAccountKey);
         given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(false);
         given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(false);
@@ -64,7 +65,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     @Test
     void cryptoUpdateNewSignatureKeyWaivedVanilla() {
         final var txn = cryptoUpdateTransaction(payer, updateAccountId);
-        given(accounts.get(updateAccountId.accountNum().get())).willReturn(updateAccount);
+        given(accounts.get(EntityNumVirtualKey.fromLong(updateAccountId.accountNum().get()))).willReturn(updateAccount);
         given(updateAccount.getAccountKey()).willReturn((JKey) updateAccountKey);
         given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(true);
         given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(false);
@@ -92,7 +93,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     @Test
     void cryptoUpdatePayerMissingFails() {
         final var txn = cryptoUpdateTransaction(updateAccountId, updateAccountId);
-        given(accounts.get(updateAccountId.accountNum().get())).willReturn(null);
+        given(accounts.get(EntityNumVirtualKey.fromLong(updateAccountId.accountNum().get()))).willReturn(null);
 
         given(waivers.isNewKeySignatureWaived(txn, updateAccountId)).willReturn(false);
         given(waivers.isTargetAccountSignatureWaived(txn, updateAccountId)).willReturn(true);
@@ -106,7 +107,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     @Test
     void cryptoUpdatePayerMissingFailsWhenNoOtherSigsRequired() {
         final var txn = cryptoUpdateTransaction(updateAccountId, updateAccountId);
-        given(accounts.get(updateAccountId.accountNum().get())).willReturn(null);
+        given(accounts.get(EntityNumVirtualKey.fromLong(updateAccountId.accountNum().get()))).willReturn(null);
 
         given(waivers.isNewKeySignatureWaived(txn, updateAccountId)).willReturn(true);
         given(waivers.isTargetAccountSignatureWaived(txn, updateAccountId)).willReturn(true);
@@ -120,7 +121,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     @Test
     void cryptoUpdateUpdateAccountMissingFails() {
         final var txn = cryptoUpdateTransaction(payer, updateAccountId);
-        given(accounts.get(updateAccountId.accountNum().get())).willReturn(null);
+        given(accounts.get(EntityNumVirtualKey.fromLong(updateAccountId.accountNum().get()))).willReturn(null);
 
         given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(true);
         given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(false);

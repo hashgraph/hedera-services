@@ -301,4 +301,11 @@ class OnDiskTest extends MerkleTestBase {
             throw new UnsupportedOperationException("Not used");
         }
     }
+
+    @Test
+    void toStringWorks() {
+        final var key = new OnDiskKey<>(md);
+        final var string = key.toString();
+        assertThat(string).isEqualTo("OnDiskKey{key=null}");
+    }
 }

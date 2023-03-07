@@ -46,8 +46,7 @@ public class SigReqAdapterUtils {
     /**
      * Returns the {@link ReadableTokenStore} containing the "well-known" tokens that exist in a
      * {@code SigRequirementsTest} scenario. This allows us to re-use these scenarios in unit tests
-     * of {@link com.hedera.node.app.spi.PreTransactionHandler} implementations that require a
-     * {@link ReadableTokenStore}.
+     * that require a {@link ReadableTokenStore}.
      *
      * @return the well-known token store
      */

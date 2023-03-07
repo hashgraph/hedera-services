@@ -16,20 +16,20 @@
 
 package com.hedera.node.app.fees;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusGetTopicInfo;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.fees.MonoFeeAccumulator;
+import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.calculation.UsageBasedFeeCalculator;
 import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import java.util.HashMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,6 +38,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class MonoFeeAccumulatorTest {
+    private final Query mockQuery = Query.getDefaultInstance();
+    private final FeeData mockUsage = FeeData.getDefaultInstance();
+    private final FeeData mockPrices = FeeData.getDefaultInstance();
+    private final Timestamp mockTime = Timestamp.newBuilder().setSeconds(100L).build();
+
     @Mock
     private UsageBasedFeeCalculator usageBasedFeeCalculator;
 
@@ -47,32 +52,51 @@ class MonoFeeAccumulatorTest {
     @Mock
     private StateView stateView;
 
+    @Mock
+    private MonoGetTopicInfoUsage getTopicInfoUsage;
+
+    @Mock
+    private ReadableStoreFactory readableStoreFactory;
+
+    @Mock
+    private ReadableTopicStore readableTopicStore;
+
     private MonoFeeAccumulator subject;
 
     @BeforeEach
     void setUp() {
-        subject = new MonoFeeAccumulator(usageBasedFeeCalculator, usagePricesProvider, () -> stateView);
+        subject = new MonoFeeAccumulator(
+                usageBasedFeeCalculator, getTopicInfoUsage, usagePricesProvider, () -> stateView);
+    }
+
+    @Test
+    void usesMonoAdapterDirectlyForGetTopicInfo() {
+        final var expectedFees = new FeeObject(100L, 0L, 100L);
+        given(usagePricesProvider.defaultPricesGiven(ConsensusGetTopicInfo, mockTime))
+                .willReturn(mockPrices);
+        given(readableStoreFactory.createTopicStore()).willReturn(readableTopicStore);
+        given(getTopicInfoUsage.computeUsage(mockQuery, readableTopicStore)).willReturn(mockUsage);
+        given(usageBasedFeeCalculator.computeFromQueryResourceUsage(mockUsage, mockUsage, mockTime))
+                .willReturn(expectedFees);
+
+        final var actualFees = subject.computePayment(readableStoreFactory, ConsensusGetTopicInfo, mockQuery, mockTime);
+
+        assertSame(expectedFees, actualFees);
     }
 
     @Test
     void delegatedComputePaymentForQuery() {
-//        final var mockQuery = Query.getDefaultInstance();
-//        final var queryFunction = HederaFunctionality.ConsensusGetTopicInfo;
-//        final var usagePrices = FeeData.getDefaultInstance();
-//        final var time = Timestamp.newBuilder().setSeconds(100L).build();
-//        final var feeObject = new FeeObject(100L, 0L, 100L);
-//
-//        given(usagePricesProvider.defaultPricesGiven(queryFunction, time)).willReturn(usagePrices);
-//        given(usageBasedFeeCalculator.computePayment(mockQuery, usagePrices, stateView, time, new HashMap<>()))
-//                .willReturn(feeObject);
-//
-//        final var fee = subject.computePayment(
-//                queryFunction,
-//                mockQuery,
-//                Timestamp.newBuilder().setSeconds(100L).build());
-//
-//        assertEquals(feeObject, fee);
-//        verify(usagePricesProvider).defaultPricesGiven(queryFunction, time);
-//        verify(usageBasedFeeCalculator).computePayment(mockQuery, usagePrices, stateView, time, new HashMap<>());
+        final var queryFunction = ConsensusGetTopicInfo;
+        final var expectedFee = new FeeObject(100L, 0L, 100L);
+
+        given(usagePricesProvider.defaultPricesGiven(queryFunction, mockTime)).willReturn(mockPrices);
+        given(readableStoreFactory.createTopicStore()).willReturn(readableTopicStore);
+        given(getTopicInfoUsage.computeUsage(mockQuery, readableTopicStore)).willReturn(mockUsage);
+        given(usageBasedFeeCalculator.computeFromQueryResourceUsage(mockUsage, mockPrices, mockTime))
+                .willReturn(expectedFee);
+
+        final var fee = subject.computePayment(readableStoreFactory, queryFunction, mockQuery, mockTime);
+
+        assertSame(expectedFee, fee);
     }
 }

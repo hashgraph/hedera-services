@@ -35,6 +35,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteAllowanceHandler;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -54,7 +55,7 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoDeleteAllowanceVanilla() {
-        given(accounts.get(owner.accountNum().get())).willReturn(ownerAccount);
+        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum().get()))).willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
         final var txn = cryptoDeleteAllowanceTransaction(payer);
@@ -67,7 +68,7 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoDeleteAllowanceDoesntAddIfOwnerSameAsPayer() {
-        given(accounts.get(owner.accountNum().get())).willReturn(ownerAccount);
+        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum().get()))).willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
         final var txn = cryptoDeleteAllowanceTransaction(owner);
@@ -81,7 +82,7 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoHandlerTestBase {
     @Test
     void cryptoDeleteAllowanceFailsIfPayerOrOwnerNotExist() {
         var txn = cryptoDeleteAllowanceTransaction(owner);
-        given(accounts.get(owner.accountNum().get())).willReturn(null);
+        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum().get()))).willReturn(null);
 
         final var context1 = new PreHandleContext(store, txn, owner);
         subject.preHandle(context1);

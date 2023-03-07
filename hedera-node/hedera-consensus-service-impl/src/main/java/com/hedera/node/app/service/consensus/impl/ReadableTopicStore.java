@@ -25,11 +25,12 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
-import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
+import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -40,7 +41,7 @@ import java.util.Optional;
  */
 public class ReadableTopicStore extends TopicStore {
     /** The underlying data storage class that holds the topic data. */
-    private final ReadableKVState<EntityNum, MerkleTopic> topicState;
+    private final ReadableKVState<EntityNum, Topic> topicState;
 
     /**
      * Create a new {@link ReadableTopicStore} instance.
@@ -72,9 +73,8 @@ public class ReadableTopicStore extends TopicStore {
         return withTopicMeta(topicMetaFrom(topic.get()));
     }
 
-    private Optional<MerkleTopic> getTopicLeaf(TopicID id) {
-        final var topic = topicState.get(EntityNum.fromTopicId(id));
-        return Optional.ofNullable(topic);
+    public Optional<Topic> getTopicLeaf(TopicID id) {
+        return Optional.ofNullable(Objects.requireNonNull(topicState).get(EntityNum.fromTopicId(id)));
     }
 
     /**

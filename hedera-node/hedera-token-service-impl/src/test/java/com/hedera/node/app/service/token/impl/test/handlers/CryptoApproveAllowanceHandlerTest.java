@@ -29,6 +29,7 @@ import static org.mockito.BDDMockito.given;
 import com.google.protobuf.BoolValue;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.impl.handlers.CryptoApproveAllowanceHandler;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -88,7 +89,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoApproveAllowanceVanilla() {
-        given(accounts.get(owner.accountNum().get())).willReturn(ownerAccount);
+        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum().get()))).willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, false);
@@ -101,7 +102,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoApproveAllowanceFailsWithInvalidOwner() {
-        given(accounts.get(owner.accountNum().get())).willReturn(null);
+        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum().get()))).willReturn(null);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, false);
         final var context = new PreHandleContext(store, txn, payer);
@@ -113,7 +114,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoApproveAllowanceDoesntAddIfOwnerSameAsPayer() {
-        given(accounts.get(owner.accountNum().get())).willReturn(ownerAccount);
+        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum().get()))).willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
         final var txn = cryptoApproveAllowanceTransaction(owner, false);
@@ -126,9 +127,9 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoApproveAllowanceAddsDelegatingSpender() {
-        given(accounts.get(owner.accountNum().get())).willReturn(ownerAccount);
+        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum().get()))).willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
-        given(accounts.get(delegatingSpender.accountNum().get())).willReturn(payerAccount);
+        given(accounts.get(EntityNumVirtualKey.fromLong(delegatingSpender.accountNum().get()))).willReturn(payerAccount);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, true);
         final var context = new PreHandleContext(store, txn, payer);
@@ -140,9 +141,9 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoApproveAllowanceFailsIfDelegatingSpenderMissing() {
-        given(accounts.get(owner.accountNum().get())).willReturn(ownerAccount);
+        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum().get()))).willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
-        given(accounts.get(delegatingSpender.accountNum().get())).willReturn(null);
+        given(accounts.get(EntityNumVirtualKey.fromLong(delegatingSpender.accountNum().get()))).willReturn(null);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, true);
         final var context = new PreHandleContext(store, txn, payer);

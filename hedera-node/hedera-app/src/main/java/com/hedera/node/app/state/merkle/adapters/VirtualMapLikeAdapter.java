@@ -94,7 +94,9 @@ public final class VirtualMapLikeAdapter {
 
             @Override
             public void put(final K key, final V value) {
-                real.put(new OnDiskKey<>(md, key), new OnDiskValue<>(md, value));
+                final var onDiskKey = new OnDiskKey<>(md, key);
+                final var onDiskValue = new OnDiskValue<>(md, value);
+                real.put(onDiskKey, onDiskValue);
             }
 
             @Override

@@ -60,6 +60,7 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.grpc.marshalling.AliasResolver;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
 import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.node.app.service.mono.txns.span.ExpandHandleSpanMapAccessor;
@@ -134,8 +135,9 @@ public class SignedTxnAccessor implements TxnAccessor {
 
     public static SignedTxnAccessor uncheckedFrom(final com.hedera.hapi.node.base.Transaction validSignedTxn) {
         try {
-            return null;
-//            return SignedTxnAccessor.from(validSignedTxn.toByteArray());
+            return SignedTxnAccessor.from(PbjConverter.asBytes(
+                    com.hedera.hapi.node.base.Transaction.PROTOBUF,
+                    validSignedTxn));
         } catch (final Exception illegal) {
             log.warn("Unexpected use of factory with invalid gRPC transaction", illegal);
             throw new IllegalArgumentException("Argument 'validSignedTxn' must be a valid signed txn");

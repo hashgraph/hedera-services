@@ -34,6 +34,7 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.accounts.Account;
 import com.hedera.node.app.spi.accounts.AccountAccess;
@@ -45,7 +46,7 @@ import org.apache.commons.lang3.NotImplementedException;
 
 public class TestFixturesKeyLookup implements AccountAccess {
     private final ReadableKVState<String, Long> aliases;
-    private final ReadableKVState<Long, HederaAccount> accounts;
+    private final ReadableKVState<EntityNumVirtualKey, HederaAccount> accounts;
 
     public TestFixturesKeyLookup(@NonNull final ReadableStates states) {
         this.accounts = states.get("ACCOUNTS");
@@ -127,21 +128,21 @@ public class TestFixturesKeyLookup implements AccountAccess {
         }
     }
 
-    private Long accountNumOf(final AccountID id) {
+    private EntityNumVirtualKey accountNumOf(final AccountID id) {
         if (isAlias(PbjConverter.fromPbj(id))) {
             final var alias = id.alias().orElse(null);
             if (alias.getLength() == EVM_ADDRESS_SIZE) {
                 final var evmAddress = PbjConverter.fromPbj(alias).toByteArray();
                 if (isMirror(evmAddress)) {
-                    return numFromEvmAddress(evmAddress);
+                    return EntityNumVirtualKey.fromLong(numFromEvmAddress(evmAddress));
                 }
             }
             final var value = aliases.get(alias.asUtf8String());
             if (value == null) {
-                return 0L;
+                return EntityNumVirtualKey.fromLong(0L);
             }
-            return value;
+            return EntityNumVirtualKey.fromLong(value);
         }
-        return id.accountNum().orElse(0L);
+        return EntityNumVirtualKey.fromLong(id.accountNum().orElse(0L));
     }
 }
