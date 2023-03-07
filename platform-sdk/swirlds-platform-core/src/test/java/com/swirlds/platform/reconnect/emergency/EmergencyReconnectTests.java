@@ -59,6 +59,7 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
 import java.io.IOException;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
@@ -104,7 +105,7 @@ public class EmergencyReconnectTests {
     void teacherDoesNotHaveCompatibleState() throws InterruptedException {
         final Hash stateHash = RandomUtils.randomHash();
         final NotificationEngine notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
-        final EmergencyRecoveryFile emergencyRecoveryFile = new EmergencyRecoveryFile(1L, stateHash);
+        final EmergencyRecoveryFile emergencyRecoveryFile = new EmergencyRecoveryFile(1L, stateHash, Instant.now());
 
         final ReconnectController reconnectController = mock(ReconnectController.class);
         when(reconnectController.acquireLearnerPermit()).thenReturn(true);
@@ -160,7 +161,7 @@ public class EmergencyReconnectTests {
         TimeUnit.MILLISECONDS.sleep(100);
 
         final EmergencyRecoveryFile emergencyRecoveryFile =
-                new EmergencyRecoveryFile(emergencyRound, emergencyStateHash);
+                new EmergencyRecoveryFile(emergencyRound, emergencyStateHash, Instant.now());
 
         learnerProtocol = createLearnerProtocol(notificationEngine, emergencyRecoveryFile, reconnectController);
         teacherProtocol = createTeacherProtocol(notificationEngine, reconnectController);
