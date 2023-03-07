@@ -1,60 +1,60 @@
 # Protection Rules for Github Configuration Files and Actions Workflows
-/.github/                             @hashgraph/release-engineering @hashgraph/release-engineering-managers
+/.github/                                 @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 # Legacy Maven project files
-**/pom.xml                            @hashgraph/release-engineering @hashgraph/release-engineering-managers
+**/pom.xml                                @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 # Gradle project files and inline plugins
-/gradle/                              @hashgraph/release-engineering @hashgraph/release-engineering-managers
-gradlew                               @hashgraph/release-engineering @hashgraph/release-engineering-managers
-gradlew.bat                           @hashgraph/release-engineering @hashgraph/release-engineering-managers
-**/buildSrc/                          @hashgraph/release-engineering @hashgraph/release-engineering-managers
-**/gradle.*                           @hashgraph/release-engineering @hashgraph/release-engineering-managers
-**/*.gradle.*                         @hashgraph/release-engineering @hashgraph/release-engineering-managers
+/gradle/                                  @hashgraph/release-engineering @hashgraph/release-engineering-managers
+gradlew                                   @hashgraph/release-engineering @hashgraph/release-engineering-managers
+gradlew.bat                               @hashgraph/release-engineering @hashgraph/release-engineering-managers
+**/buildSrc/                              @hashgraph/release-engineering @hashgraph/release-engineering-managers
+**/gradle.*                               @hashgraph/release-engineering @hashgraph/release-engineering-managers
+**/*.gradle.*                             @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 # Self-protection for root CODEOWNERS files (this file should not exist and should definitely require approval)
-CODEOWNERS                            @hashgraph/release-engineering @hashgraph/release-engineering-managers
+CODEOWNERS                                @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 # CodeCov configuration
-**/codecov.yml                        @hashgraph/release-engineering @hashgraph/release-engineering-managers
+**/codecov.yml                            @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 # Git Ignore definitions
-**/.gitignore                         @hashgraph/release-engineering @hashgraph/release-engineering-managers
-**/.gitignore.*                       @hashgraph/release-engineering @hashgraph/release-engineering-managers
+**/.gitignore                             @hashgraph/release-engineering @hashgraph/release-engineering-managers
+**/.gitignore.*                           @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 # Legacy CircleCI configuration
-.circleci.settings.xml                @hashgraph/release-engineering @hashgraph/release-engineering-managers
-/.circleci/                           @hashgraph/release-engineering @hashgraph/release-engineering-managers
+.circleci.settings.xml                    @hashgraph/release-engineering @hashgraph/release-engineering-managers
+/.circleci/                               @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 # Hedera Node Deployments - Configuration & Grafana Dashboards
-/hedera-node/configuration/**         @hashgraph/release-engineering @hashgraph/devops @hashgraph/hedera-services
-/hedera-node/infrastructure/**        @hashgraph/release-engineering @hashgraph/devops @hashgraph/hedera-services
+/hedera-node/configuration/**             @hashgraph/release-engineering @hashgraph/devops @hashgraph/hedera-services
+/hedera-node/infrastructure/**            @hashgraph/release-engineering @hashgraph/devops @hashgraph/hedera-services
 
 # Hedera Node General Files
-/hedera-node/data/                    @hashgraph/hedera-services
-/hedera-node/docs/                    @hashgraph/hedera-services
-/hedera-node/forensics/               @hashgraph/hedera-services
-/hedera-node/tools/                   @hashgraph/hedera-services
-/hedera-node/*.md                     @hashgraph/hedera-services
-/hedera-node/*.xml                    @hashgraph/hedera-services
-/hedera-node/*.txt                    @hashgraph/hedera-services
+/hedera-node/data/                        @hashgraph/hedera-services
+/hedera-node/docs/                        @hashgraph/hedera-services
+/hedera-node/forensics/                   @hashgraph/hedera-services
+/hedera-node/tools/                       @hashgraph/hedera-services
+/hedera-node/*.md                         @hashgraph/hedera-services
+/hedera-node/*.xml                        @hashgraph/hedera-services
+/hedera-node/*.txt                        @hashgraph/hedera-services
 
 # Hedera Node Docker Definitions
-/hedera-node/docker/                  @hashgraph/release-engineering @hashgraph/release-engineering-managers @hashgraph/hedera-services
+/hedera-node/docker/                      @hashgraph/release-engineering @hashgraph/release-engineering-managers @hashgraph/hedera-services
 
 # Hedera Node Modules
-/hedera-node/hedera-mono-service/     @hashgraph/hedera-services
-/hedera-node/hapi*/                   @hashgraph/hedera-services
-/hedera-node/hedera-admin*/           @hashgraph/hedera-services
-/hedera-node/hedera-app*/             @hashgraph/hedera-services
-/hedera-node/hedera-consensus*/       @hashgraph/hedera-services
-/hedera-node/hedera-evm*/             @hashgraph/hedera-services @hashgraph/hedera-smart-contracts
-/hedera-node/hedera-file*/            @hashgraph/hedera-services
-/hedera-node/hedera-network*/         @hashgraph/hedera-services
-/hedera-node/hedera-schedule*/        @hashgraph/hedera-services
-/hedera-node/hedera-smart-contract*/  @hashgraph/hedera-services @hashgraph/hedera-smart-contracts
-/hedera-node/hedera-token*/           @hashgraph/hedera-services
-/hedera-node/hedera-util*/            @hashgraph/hedera-services
-/hedera-node/test-clients/            @hashgraph/hedera-services
+/hedera-node/hedera-mono-service/src/     @hashgraph/hedera-services
+/hedera-node/hapi*/src/                   @hashgraph/hedera-services
+/hedera-node/hedera-admin*/src/           @hashgraph/hedera-services
+/hedera-node/hedera-app*/src/             @hashgraph/hedera-services
+/hedera-node/hedera-consensus*/src/       @hashgraph/hedera-services
+/hedera-node/hedera-evm*/src/             @hashgraph/hedera-services @hashgraph/hedera-smart-contracts
+/hedera-node/hedera-file*/src/            @hashgraph/hedera-services
+/hedera-node/hedera-network*/src/         @hashgraph/hedera-services
+/hedera-node/hedera-schedule*/src/        @hashgraph/hedera-services
+/hedera-node/hedera-smart-contract*/src/  @hashgraph/hedera-services @hashgraph/hedera-smart-contracts
+/hedera-node/hedera-token*/src/           @hashgraph/hedera-services
+/hedera-node/hedera-util*/src/            @hashgraph/hedera-services
+/hedera-node/test-clients/src/            @hashgraph/hedera-services
 
 
