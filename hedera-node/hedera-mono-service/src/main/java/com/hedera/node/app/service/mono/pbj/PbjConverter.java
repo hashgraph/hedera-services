@@ -20,9 +20,11 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.FeeData;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ResponseType;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TopicID;
@@ -33,6 +35,8 @@ import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.Bytes;
 import com.hedera.pbj.runtime.io.DataBuffer;
 import com.hedera.pbj.runtime.io.DataOutputStream;
+import com.hederahashgraph.api.proto.java.FeeComponents;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -985,5 +989,68 @@ public final class PbjConverter {
             case ALIAS_ALREADY_ASSIGNED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
 //            case UNRECOGNIZED -> throw new RuntimeException("UNRECOGNIZED Response code!");
         };
+    }
+
+    public static com.hederahashgraph.api.proto.java.ResponseType fromPbj(ResponseType responseType) {
+        return switch(responseType) {
+            case ANSWER_ONLY -> com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
+            case ANSWER_STATE_PROOF -> com.hederahashgraph.api.proto.java.ResponseType.ANSWER_STATE_PROOF;
+            case COST_ANSWER -> com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
+            case COST_ANSWER_STATE_PROOF -> com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER_STATE_PROOF;
+        };
+    }
+
+    public static com.hederahashgraph.api.proto.java.FeeData fromPbj(FeeData feeData) {
+        return com.hederahashgraph.api.proto.java.FeeData.newBuilder()
+                .setNodedata(fromPbj(feeData.nodedata()))
+                .setNetworkdata(fromPbj(feeData.networkdata()))
+                .setServicedata(fromPbj(feeData.servicedata()))
+                .build();
+    }
+
+    public static FeeData toPbj(com.hederahashgraph.api.proto.java.FeeData feeData) {
+        return new FeeData.Builder()
+                .nodedata(toPbj(feeData.getNodedata()))
+                .networkdata(toPbj(feeData.getNetworkdata()))
+                .servicedata(toPbj(feeData.getServicedata()))
+                .build();
+    }
+
+    public static FeeComponents fromPbj(com.hedera.hapi.node.base.FeeComponents nodedata) {
+        return FeeComponents.newBuilder()
+                .setMin(nodedata.min())
+                .setMax(nodedata.max())
+                .setConstant(nodedata.constant())
+                .setBpt(nodedata.bpt())
+                .setVpt(nodedata.vpt())
+                .setRbh(nodedata.rbh())
+                .setSbh(nodedata.sbh())
+                .setGas(nodedata.gas())
+                .setTv(nodedata.tv())
+                .setBpr(nodedata.bpr())
+                .setSbpr(nodedata.sbpr())
+                .build();
+    }
+
+    public static com.hedera.hapi.node.base.FeeComponents toPbj(com.hederahashgraph.api.proto.java.FeeComponents nodedata) {
+        return new com.hedera.hapi.node.base.FeeComponents.Builder()
+                .min(nodedata.getMin())
+                .max(nodedata.getMax())
+                .constant(nodedata.getConstant())
+                .bpt(nodedata.getBpt())
+                .vpt(nodedata.getVpt())
+                .rbh(nodedata.getRbh())
+                .sbh(nodedata.getSbh())
+                .gas(nodedata.getGas())
+                .tv(nodedata.getTv())
+                .bpr(nodedata.getBpr())
+                .sbpr(nodedata.getSbpr())
+                .build();
+    }
+
+    public static byte[] asBytes(Bytes b) {
+        final var buf = new byte[b.getLength()];
+        b.getBytes(0, buf);
+        return buf;
     }
 }

@@ -56,8 +56,7 @@ public interface SignaturePreparer {
      * the real {@link SignaturePreparer}.
      *
      * @param state        the {@link HederaState} that should be used to read the state
-     * @param txBodyBytes  the {@code byte[]} of the {@link
-     *                     com.hederahashgraph.api.proto.java.TransactionBody}
+     * @param txBodyBytes  the {@code byte[]} of the {@link com.hedera.hapi.node.base.Transaction}
      * @param signatureMap the {@link SignatureMap} that is included in the transaction
      * @param accountID    the {@link AccountID} for which the signature data needs to be prepared
      * @return the {@link TransactionSignature} with all data required to verify the signature
@@ -76,8 +75,7 @@ public interface SignaturePreparer {
      * the real {@link SignaturePreparer}.
      *
      * @param state        the {@link HederaState} that should be used to read the state
-     * @param txBodyBytes  the {@code byte[]} of the {@link
-     *                     com.hederahashgraph.api.proto.java.TransactionBody}
+     * @param txBodyBytes  the {@code byte[]} of the {@link com.hedera.hapi.node.base.Transaction}
      * @param signatureMap the {@link SignatureMap} that is included in the transaction
      * @param keys         the list of {@link HederaKey}s for which the signature data needs to be prepared
      * @return a {@link Map} from the provided keys to their respective {@link TransactionSignature}

@@ -22,24 +22,24 @@ import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.consensus.ConsensusGetTopicInfoQuery;
 import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.hashgraph.pbj.runtime.io.Bytes;
+import com.hedera.hapi.node.transaction.Query;
+import com.hedera.pbj.runtime.io.Bytes;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
-import com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter;
 import com.hedera.node.app.service.mono.fees.calculation.consensus.queries.GetTopicInfoResourceUsage;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoQuery;
-import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.QueryHeader;
-import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.TopicID;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.FeeData;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.QueryHeader;
+import com.hedera.hapi.node.base.ResponseType;
+import com.hedera.hapi.node.base.TopicID;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,14 +55,14 @@ class MonoGetTopicInfoUsageTest {
     @Mock
     private ReadableTopicStore topicStore;
 
-    private final FeeData mockUsage = FeeData.getDefaultInstance();
-    private final AccountID autoRenewId = asAccount("0.0.4");
+    private final FeeData mockUsage = new FeeData.Builder().build();
+    private final AccountID autoRenewId = PbjConverter.toPbj(asAccount("0.0.4"));
     private final byte[] runningHash = "runningHash".getBytes();
 
-    private final Key key = A_COMPLEX_KEY;
+    private final Key key = PbjConverter.toPbj(A_COMPLEX_KEY);
     private final EntityNum topicEntityNum = EntityNum.fromLong(1L);
     private final TopicID topicId =
-            TopicID.newBuilder().setTopicNum(topicEntityNum.longValue()).build();
+            new TopicID.Builder().topicNum(topicEntityNum.longValue()).build();
     private final String memo = "test memo";
     private final long expirationTime = 1_234_567L;
     private final long sequenceNumber = 1L;
@@ -70,23 +70,23 @@ class MonoGetTopicInfoUsageTest {
     private final boolean deleted = true;
 
     private final Topic topic = new Topic(
-            topicId.getTopicNum(),
+            topicId.topicNum(),
             sequenceNumber,
             expirationTime,
             autoRenewSecs,
-            autoRenewId.getAccountNum(),
+            autoRenewId.accountNum().get(),
             deleted,
             Bytes.wrap(runningHash),
             memo,
-            PbjKeyConverter.fromGrpcKey(key),
-            PbjKeyConverter.fromGrpcKey(key));
+            key,
+            key);
 
     private final MerkleTopic adapterTopic = new MerkleTopic(
             memo,
             (JKey) asHederaKey(key).get(),
             (JKey) asHederaKey(key).get(),
             autoRenewSecs,
-            new EntityId(0, 0, autoRenewId.getAccountNum()),
+            new EntityId(0, 0, autoRenewId.accountNum().get()),
             new RichInstant(expirationTime, 0));
 
     {
@@ -104,14 +104,14 @@ class MonoGetTopicInfoUsageTest {
 
     @Test
     void usesDelegateWithAdaptedMerkleTopic() {
-        final var query = Query.newBuilder()
-                .setConsensusGetTopicInfo(ConsensusGetTopicInfoQuery.newBuilder()
-                        .setHeader(QueryHeader.newBuilder().setResponseType(ResponseType.ANSWER_STATE_PROOF))
-                        .setTopicID(topicId))
+        final var query = new Query.Builder().consensusGetTopicInfo(
+                new ConsensusGetTopicInfoQuery.Builder()
+                        .header(new QueryHeader(null, ResponseType.ANSWER_STATE_PROOF))
+                        .topicID(topicId).build())
                 .build();
         given(topicStore.getTopicLeaf(topicId)).willReturn(Optional.of(topic));
-        given(delegate.usageGivenTypeAndTopic(adapterTopic, ResponseType.ANSWER_STATE_PROOF))
-                .willReturn(mockUsage);
+        given(delegate.usageGivenTypeAndTopic(adapterTopic, PbjConverter.fromPbj(ResponseType.ANSWER_STATE_PROOF)))
+                .willReturn(PbjConverter.fromPbj(mockUsage));
 
         final var usage = subject.computeUsage(query, topicStore);
 

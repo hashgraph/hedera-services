@@ -16,11 +16,14 @@
 
 package com.hedera.node.app.handle;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_CREATE_TOPIC;
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
+
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
@@ -36,7 +39,9 @@ import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
+import com.hedera.node.app.workflows.handle.AdaptedMonoTransitionRunner;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,71 +52,71 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class AdaptedMonoTransitionRunnerTest {
-//    private final TransactionBody mockTxn = TransactionBody.getDefaultInstance();
-//
-//    @Mock
-//    private EntityIdSource ids;
-//
-//    @Mock
-//    private TransactionContext txnCtx;
-//
-//    @Mock
-//    private TransactionDispatcher dispatcher;
-//
-//    @Mock
-//    private TransitionLogicLookup lookup;
-//
-//    @Mock
-//    private GlobalStaticProperties staticProperties;
-//
-//    @Mock
-//    private TxnAccessor accessor;
-//
-//    @Mock
-//    private WritableStoreFactory storeFactory;
-//
-//    private AdaptedMonoTransitionRunner subject;
-//
-//    @BeforeEach
-//    void setUp() {
-//        given(staticProperties.workflowsEnabled()).willReturn(Set.of(ConsensusCreateTopic));
-//        subject = new AdaptedMonoTransitionRunner(ids, txnCtx, dispatcher, lookup, staticProperties, storeFactory);
-//    }
-//
-//    @Test
-//    void delegatesConsensusCreateAndTracksSuccess() {
-//        given(accessor.getFunction()).willReturn(ConsensusCreateTopic);
-//        given(accessor.getTxn()).willReturn(mockTxn);
-//
-//        subject.tryTransition(accessor);
-//
-//        verify(dispatcher).dispatchHandle(ConsensusCreateTopic, mockTxn, storeFactory);
-//        verify(txnCtx).setStatus(SUCCESS);
-//    }
-//
-//    @Test
-//    void delegatesConsensusCreateAndTracksFailureIfThrows() {
-//        given(accessor.getFunction()).willReturn(ConsensusCreateTopic);
-//        given(accessor.getTxn()).willReturn(mockTxn);
-//        willThrow(new HandleStatusException(INVALID_EXPIRATION_TIME))
-//                .given(dispatcher)
-//                .dispatchHandle(ConsensusCreateTopic, mockTxn, storeFactory);
-//
-//        assertTrue(subject.tryTransition(accessor));
-//
-//        verify(dispatcher).dispatchHandle(ConsensusCreateTopic, mockTxn, storeFactory);
-//        verify(txnCtx).setStatus(INVALID_EXPIRATION_TIME);
-//    }
-//
-//    @Test
-//    void doesNotDelegateOthers() {
-//        given(accessor.getFunction()).willReturn(CryptoTransfer);
-//        given(accessor.getTxn()).willReturn(mockTxn);
-//        given(lookup.lookupFor(CryptoTransfer, mockTxn)).willReturn(Optional.empty());
-//
-//        assertFalse(subject.tryTransition(accessor));
-//
-//        verifyNoInteractions(dispatcher);
-//        verify(txnCtx).setStatus(FAIL_INVALID);
-//    }
+    private final TransactionBody mockTxn = TransactionBody.getDefaultInstance();
+
+    @Mock
+    private EntityIdSource ids;
+
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private TransactionDispatcher dispatcher;
+
+    @Mock
+    private TransitionLogicLookup lookup;
+
+    @Mock
+    private GlobalStaticProperties staticProperties;
+
+    @Mock
+    private TxnAccessor accessor;
+
+    @Mock
+    private WritableStoreFactory storeFactory;
+
+    private AdaptedMonoTransitionRunner subject;
+
+    @BeforeEach
+    void setUp() {
+        given(staticProperties.workflowsEnabled()).willReturn(Set.of(fromPbj(CONSENSUS_CREATE_TOPIC)));
+        subject = new AdaptedMonoTransitionRunner(ids, txnCtx, dispatcher, lookup, staticProperties, storeFactory);
+    }
+
+    @Test
+    void delegatesConsensusCreateAndTracksSuccess() {
+        given(accessor.getFunction()).willReturn(fromPbj(CONSENSUS_CREATE_TOPIC));
+        given(accessor.getTxn()).willReturn(mockTxn);
+
+        subject.tryTransition(accessor);
+
+        verify(dispatcher).dispatchHandle(CONSENSUS_CREATE_TOPIC, toPbj(mockTxn), storeFactory);
+        verify(txnCtx).setStatus(fromPbj(SUCCESS));
+    }
+
+    @Test
+    void delegatesConsensusCreateAndTracksFailureIfThrows() {
+        given(accessor.getFunction()).willReturn(fromPbj(CONSENSUS_CREATE_TOPIC));
+        given(accessor.getTxn()).willReturn(mockTxn);
+        willThrow(new HandleStatusException(INVALID_EXPIRATION_TIME))
+                .given(dispatcher)
+                .dispatchHandle(CONSENSUS_CREATE_TOPIC, toPbj(mockTxn), storeFactory);
+
+        assertTrue(subject.tryTransition(accessor));
+
+        verify(dispatcher).dispatchHandle(CONSENSUS_CREATE_TOPIC, toPbj(mockTxn), storeFactory);
+        verify(txnCtx).setStatus(fromPbj(INVALID_EXPIRATION_TIME));
+    }
+
+    @Test
+    void doesNotDelegateOthers() {
+        given(accessor.getFunction()).willReturn(fromPbj(CRYPTO_TRANSFER));
+        given(accessor.getTxn()).willReturn(mockTxn);
+        given(lookup.lookupFor(fromPbj(CRYPTO_TRANSFER), mockTxn)).willReturn(Optional.empty());
+
+        assertFalse(subject.tryTransition(accessor));
+
+        verifyNoInteractions(dispatcher);
+        verify(txnCtx).setStatus(fromPbj(FAIL_INVALID));
+    }
 }

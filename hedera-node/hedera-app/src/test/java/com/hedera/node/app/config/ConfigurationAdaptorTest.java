@@ -68,6 +68,7 @@ import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.spi.config.GlobalConfig;
 import com.hedera.node.app.spi.config.NodeConfig;
 import com.hedera.node.app.spi.config.Profile;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -101,7 +102,7 @@ class ConfigurationAdaptorTest {
         final Consumer<String> booleanMockRule = name -> createMock.apply(name).willReturn(true);
         final Consumer<String> listMockRule = name -> createMock.apply(name).willReturn(List.of());
         final Consumer<String> functionMockRule =
-                name -> createMock.apply(name).willReturn(Set.of(CONSENSUS_GET_TOPIC_INFO));
+                name -> createMock.apply(name).willReturn(Set.of(HederaFunctionality.CONSENSUS_GET_TOPIC_INFO));
         integerMockRule.accept(GRPC_PORT);
         integerMockRule.accept(GRPC_TLS_PORT);
         longMockRule.accept(STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS);
@@ -378,7 +379,7 @@ class ConfigurationAdaptorTest {
     @Test
     void testGetGlobalConfig() {
         given(propertySource.getTypedProperty(Set.class, "workflows.enabled"))
-                .willReturn(Set.of(CONSENSUS_GET_TOPIC_INFO));
+                .willReturn(Set.of(HederaFunctionality.CONSENSUS_GET_TOPIC_INFO));
 
         // given
         final ConfigurationAdaptor configurationAdapter = new ConfigurationAdaptor(propertySource);

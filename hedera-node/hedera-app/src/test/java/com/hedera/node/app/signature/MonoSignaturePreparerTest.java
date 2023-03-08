@@ -16,11 +16,11 @@
 
 package com.hedera.node.app.signature;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.*;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
@@ -28,6 +28,7 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.exception.InvalidAccountIDException;
 import com.hedera.node.app.service.mono.legacy.exception.KeyPrefixMismatchException;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.sigs.Expansion;
 import com.hedera.node.app.service.mono.sigs.PlatformSigsCreationResult;
 import com.hedera.node.app.service.mono.sigs.factories.TxnScopedPlatformSigFactory;
@@ -35,8 +36,8 @@ import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.node.app.service.mono.sigs.verification.PrecheckVerifier;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.Transaction;
+import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.Transaction;
 import com.swirlds.common.crypto.TransactionSignature;
 import java.util.List;
 import java.util.function.Function;
@@ -48,13 +49,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class MonoSignaturePreparerTest {
-    private static final Transaction MOCK_TXN = Transaction.getDefaultInstance();
+    private static final Transaction MOCK_TXN = new Transaction.Builder().build();
 
     private static final JKey PAYER_KEY = new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
     private static final List<HederaKey> OTHER_PARTY_KEYS = List.of(
             new JEd25519Key("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".getBytes()),
             new JEd25519Key("cccccccccccccccccccccccccccccccc".getBytes()));
-    private static final Transaction MOCK_TRANSACTION = Transaction.getDefaultInstance();
+    private static final Transaction MOCK_TRANSACTION = new Transaction.Builder().build();
 
     @Mock
     private PrecheckVerifier precheckVerifier;
@@ -178,7 +179,7 @@ class MonoSignaturePreparerTest {
     }
 
     private void givenUnhappy(final PlatformSigsCreationResult result) {
-        given(result.asCode()).willReturn(KEY_PREFIX_MISMATCH);
+        given(result.asCode()).willReturn(PbjConverter.fromPbj(KEY_PREFIX_MISMATCH));
         given(result.hasFailed()).willReturn(true);
     }
 }

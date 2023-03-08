@@ -19,11 +19,15 @@ package com.hedera.node.app.meta;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BAD_ENCODING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.TransactionContext;
@@ -32,8 +36,7 @@ import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import java.time.Instant;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Key;
+import com.hedera.hapi.node.base.AccountID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -73,8 +76,8 @@ class MonoHandleContextTest {
     @Test
     void delegatesIdCreationToEntitySource() {
         final var nextNum = 666L;
-        given(ids.newAccountId(AccountID.getDefaultInstance()))
-                .willReturn(AccountID.newBuilder().setAccountNum(nextNum).build());
+        given(ids.newAccountId(notNull()))
+                .willReturn(fromPbj(new AccountID.Builder().accountNum(nextNum).build()));
 
         final var numSupplier = subject.newEntityNumSupplier();
 
@@ -83,40 +86,41 @@ class MonoHandleContextTest {
 
     @Test
     void delegatesKeyValidationToOptionValidatorAndTranslatesFailure() {
-//        given(optionValidator.attemptDecodeOrThrow(any())).willThrow(new InvalidTransactionException(BAD_ENCODING));
-//
-//        final var attributeValidator = subject.attributeValidator();
-//
-//        assertFailsWith(BAD_ENCODING, () -> attributeValidator.validateKey(Key.newBuilder().build()));
+        given(optionValidator.attemptDecodeOrThrow(any())).willThrow(new InvalidTransactionException(
+                fromPbj(BAD_ENCODING)));
+
+        final var attributeValidator = subject.attributeValidator();
+
+        assertFailsWith(BAD_ENCODING, () -> attributeValidator.validateKey(Key.newBuilder().build()));
     }
 
     @Test
     void delegatesKeyValidationToOptionValidatorHappyPath() {
-//        final var attributeValidator = subject.attributeValidator();
-//
-//        attributeValidator.validateKey(Key.newBuilder().build());
-//
-//        verify(optionValidator).attemptDecodeOrThrow(Key.getDefaultInstance());
+        final var attributeValidator = subject.attributeValidator();
+
+        attributeValidator.validateKey(Key.newBuilder().build());
+
+        verify(optionValidator).attemptDecodeOrThrow(fromPbj(new Key.Builder().build()));
     }
 
     @Test
     void delegatesMemoValidationToOptionValidatorHappyPath() {
         final var memo = "A memo";
-//        final var attributeValidator = subject.attributeValidator();
-//
-//        given(optionValidator.memoCheck(memo)).willReturn(OK);
-//
-//        assertDoesNotThrow(() -> attributeValidator.validateMemo(memo));
+        final var attributeValidator = subject.attributeValidator();
+
+        given(optionValidator.memoCheck(memo)).willReturn(fromPbj(OK));
+
+        assertDoesNotThrow(() -> attributeValidator.validateMemo(memo));
     }
 
     @Test
     void delegatesMemoValidationToOptionValidatorAndTranslatesFailure() {
-//        final var memo = "A memo";
-//        final var attributeValidator = subject.attributeValidator();
-//
-//        given(optionValidator.memoCheck(memo)).willReturn(INVALID_ZERO_BYTE_IN_STRING);
-//
-//        assertFailsWith(INVALID_ZERO_BYTE_IN_STRING, () -> attributeValidator.validateMemo(memo));
+        final var memo = "A memo";
+        final var attributeValidator = subject.attributeValidator();
+
+        given(optionValidator.memoCheck(memo)).willReturn(fromPbj(INVALID_ZERO_BYTE_IN_STRING));
+
+        assertFailsWith(INVALID_ZERO_BYTE_IN_STRING, () -> attributeValidator.validateMemo(memo));
     }
 
     @Test

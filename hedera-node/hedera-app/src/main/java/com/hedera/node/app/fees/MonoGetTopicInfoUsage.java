@@ -17,19 +17,22 @@
 package com.hedera.node.app.fees;
 
 import static com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter.fromPbjKey;
-import static com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter.unwrapPbj;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.mono.fees.calculation.consensus.queries.GetTopicInfoResourceUsage;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
-import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoQuery;
-import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.Query;
+import com.hedera.hapi.node.consensus.ConsensusGetTopicInfoQuery;
+import com.hedera.hapi.node.base.FeeData;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -59,12 +62,12 @@ public class MonoGetTopicInfoUsage {
      * @return the resource usage of the contained topic info query
      */
     public FeeData computeUsage(final Query query, final ReadableTopicStore topicStore) {
-        final var topicInfoQuery = query.getConsensusGetTopicInfo();
-        final var topicId = topicInfoQuery.getTopicID();
-        final var responseType = topicInfoQuery.getHeader().getResponseType();
+        final var topicInfoQuery = query.consensusGetTopicInfo();
+        final var topicId = topicInfoQuery.map(ConsensusGetTopicInfoQuery::topicID).orElse(null);
+        final var responseType = topicInfoQuery.map(t->t.header().responseType()).orElse(null);
         final var maybeTopic = topicStore.getTopicLeaf(topicId);
-        return delegate.usageGivenTypeAndTopic(
-                maybeTopic.map(MonoGetTopicInfoUsage::monoTopicFrom).orElse(null), responseType);
+        return toPbj(delegate.usageGivenTypeAndTopic(
+                maybeTopic.map(MonoGetTopicInfoUsage::monoTopicFrom).orElse(null), fromPbj(responseType)));
     }
 
     /**
@@ -83,7 +86,7 @@ public class MonoGetTopicInfoUsage {
                 topic.autoRenewPeriod(),
                 new EntityId(0, 0, topic.autoRenewAccountNumber()),
                 new RichInstant(topic.expiry(), 0));
-        monoTopic.setRunningHash(unwrapPbj(topic.runningHash()));
+        monoTopic.setRunningHash(PbjConverter.asBytes(topic.runningHash()));
         monoTopic.setSequenceNumber(topic.sequenceNumber());
         monoTopic.setDeleted(topic.deleted());
         return monoTopic;

@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.meta;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
@@ -43,7 +43,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class MonoHandleContext implements HandleContext {
-    private static final AccountID PLACEHOLDER_ID = AccountID.newBuilder().build();
+    private static final AccountID PLACEHOLDER_ID = new AccountID.Builder().build();
 
     private final LongSupplier nums;
     private final ExpiryValidator expiryValidator;
@@ -114,7 +114,7 @@ public class MonoHandleContext implements HandleContext {
         @Override
         public void validateMemo(final String memo) {
             final var validity = optionValidator.memoCheck(memo);
-            if (validity != OK) {
+            if (PbjConverter.toPbj(validity) != OK) {
                 throw new HandleStatusException(PbjConverter.toPbj(validity));
             }
         }
