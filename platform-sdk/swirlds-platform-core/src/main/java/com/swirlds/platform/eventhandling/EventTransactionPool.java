@@ -23,8 +23,6 @@ import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.components.transaction.TransactionPool;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
-import com.swirlds.platform.components.transaction.throttle.TransThrottleSyncAndCreateRule;
-import com.swirlds.platform.components.transaction.throttle.TransThrottleSyncAndCreateRuleResponse;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
