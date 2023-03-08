@@ -250,7 +250,7 @@ public record BasicConfig(
         @ConfigProperty(value = "pingTransFreq", defaultValue = "1") long pingTransFreq,
         @ConfigProperty(value = "staleEventPreventionThreshold", defaultValue = "5") int staleEventPreventionThreshold,
         @ConfigProperty(value = "eventIntakeQueueThrottleSize", defaultValue = "1000") int eventIntakeQueueThrottleSize,
-        @ConfigProperty(value = "transThrottle", defaultValue = "true") boolean transThrottle,
+        @ConfigProperty(value = "transThrottle", defaultValue = "false") boolean transThrottle,
         @ConfigProperty(value = "transactionMaxBytes", defaultValue = "6144") int transactionMaxBytes,
         @ConfigProperty(value = "useTLS", defaultValue = "true") boolean useTLS,
         @ConfigProperty(value = "socketIpTos", defaultValue = "-1") int socketIpTos,
