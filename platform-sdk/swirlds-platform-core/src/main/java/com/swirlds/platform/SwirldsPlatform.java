@@ -1724,7 +1724,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * {@inheritDoc}
      */
     @Override
-    public void connectionClosed(final boolean outbound) {
+    public void connectionClosed(final boolean outbound, final Connection conn) {
         final int connectionNumber = activeConnectionNumber.decrementAndGet();
         if (connectionNumber < 0) {
             logger.error(EXCEPTION.getMarker(), "activeConnectionNumber is {}, this is a bug!", connectionNumber);
@@ -1736,6 +1736,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         } else {
             platformMetrics.incrementInterruptedRecSyncs();
         }
+        networkMetrics.recordDisconnect(conn);
     }
 
     /**
@@ -1979,15 +1980,13 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     }
 
     /**
-     * check whether the given event is the last event in its round, and the platform enters freeze period, or whether
-     * this event is the last event before shutdown
+     * check whether the given event is the last event in its round, and the platform enters freeze period
      *
      * @param event a consensus event
      * @return whether this event is the last event to be added before restart
      */
     private boolean isLastEventBeforeRestart(final EventImpl event) {
-        return (event.isLastInRoundReceived() && swirldStateManager.isInFreezePeriod(event.getConsensusTimestamp()))
-                || event.isLastOneBeforeShutdown();
+        return event.isLastInRoundReceived() && swirldStateManager.isInFreezePeriod(event.getConsensusTimestamp());
     }
 
     /**
