@@ -15,33 +15,33 @@
  */
 
 plugins {
-    id("com.swirlds.platform.conventions")
-    id("com.swirlds.platform.library")
-    id("com.swirlds.platform.maven-publish")
-    id("org.gradle.java-test-fixtures")
+  id("com.swirlds.platform.conventions")
+  id("com.swirlds.platform.library")
+  id("com.swirlds.platform.maven-publish")
+  id("org.gradle.java-test-fixtures")
 }
 
 dependencies {
-    // Individual Dependencies
-    api(project(":swirlds-logging"))
-    api(project(":swirlds-config-api"))
-    implementation(libs.classgraph)
-    implementation(libs.commons.codec)
-    implementation(libs.prometheus.httpserver) {
-        exclude("io.prometheus", "simpleclient_tracer_otel")
-        exclude("io.prometheus", "simpleclient_tracer_otel_agent")
-    }
-    compileOnly(libs.spotbugs.annotations)
+  // Individual Dependencies
+  api(project(":swirlds-logging"))
+  api(project(":swirlds-config-api"))
+  implementation(libs.classgraph)
+  implementation(libs.commons.codec)
+  implementation(libs.prometheus.httpserver) {
+    exclude("io.prometheus", "simpleclient_tracer_otel")
+    exclude("io.prometheus", "simpleclient_tracer_otel_agent")
+  }
+  compileOnly(libs.spotbugs.annotations)
 
-    // Bundle Dependencies
-    api(libs.bundles.cryptography.core)
-    runtimeOnly(libs.bundles.cryptography.runtime)
-    implementation(libs.bundles.logging.impl)
+  // Bundle Dependencies
+  api(libs.bundles.cryptography.core)
+  runtimeOnly(libs.bundles.cryptography.runtime)
+  implementation(libs.bundles.logging.impl)
 
-    // Test Dependencies
-    testImplementation(testLibs.bundles.junit)
-    testImplementation(testLibs.bundles.mocking)
-    testImplementation(testLibs.bundles.utils)
-    testImplementation(project(":swirlds-config-impl"))
-    testImplementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
+  // Test Dependencies
+  testImplementation(testLibs.bundles.junit)
+  testImplementation(testLibs.bundles.mocking)
+  testImplementation(testLibs.bundles.utils)
+  testImplementation(project(":swirlds-config-impl"))
+  testImplementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
 }

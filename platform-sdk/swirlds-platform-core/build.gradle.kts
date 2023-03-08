@@ -15,39 +15,39 @@
  */
 
 plugins {
-    id("com.swirlds.platform.conventions")
-    id("com.swirlds.platform.library")
-    id("com.swirlds.platform.maven-publish")
-    id("org.gradle.java-test-fixtures")
+  id("com.swirlds.platform.conventions")
+  id("com.swirlds.platform.library")
+  id("com.swirlds.platform.maven-publish")
+  id("org.gradle.java-test-fixtures")
 }
 
 extraJavaModuleInfo { failOnMissingModuleInfo.set(false) }
 
 dependencies {
-    // Individual Dependencies
-    api(project(":swirlds-fchashmap"))
-    api(project(":swirlds-fcqueue"))
-    api(project(":swirlds-jasperdb"))
-    api(project(":swirlds-cli"))
-    compileOnly(libs.spotbugs.annotations)
-    runtimeOnly(project(":swirlds-config-impl"))
+  // Individual Dependencies
+  api(project(":swirlds-fchashmap"))
+  api(project(":swirlds-fcqueue"))
+  api(project(":swirlds-jasperdb"))
+  api(project(":swirlds-cli"))
+  compileOnly(libs.spotbugs.annotations)
+  runtimeOnly(project(":swirlds-config-impl"))
 
-    // Bundle Dependencies
-    implementation(libs.bundles.logging.impl)
-    implementation(libs.bundles.javafx)
-    implementation(libs.bundles.networking)
-    implementation(libs.bundles.picocli)
-    implementation(libs.bundles.jackson)
+  // Bundle Dependencies
+  implementation(libs.bundles.logging.impl)
+  implementation(libs.bundles.javafx)
+  implementation(libs.bundles.networking)
+  implementation(libs.bundles.picocli)
+  implementation(libs.bundles.jackson)
 
-    // Test Dependencies
+  // Test Dependencies
 
-    // These should not be implementation() based deps, but this requires refactoring to eliminate.
-    implementation(project(":swirlds-unit-tests:common:swirlds-common-test"))
-    implementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
+  // These should not be implementation() based deps, but this requires refactoring to eliminate.
+  implementation(project(":swirlds-unit-tests:common:swirlds-common-test"))
+  implementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
 
-    testImplementation(testLibs.bundles.junit)
-    testImplementation(testLibs.bundles.mocking)
-    testImplementation(testLibs.bundles.utils)
-    testImplementation(project(":swirlds-config-impl"))
-    testImplementation(testFixtures(project(":swirlds-common")))
+  testImplementation(testLibs.bundles.junit)
+  testImplementation(testLibs.bundles.mocking)
+  testImplementation(testLibs.bundles.utils)
+  testImplementation(project(":swirlds-config-impl"))
+  testImplementation(testFixtures(project(":swirlds-common")))
 }

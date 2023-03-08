@@ -15,21 +15,21 @@
  */
 
 plugins {
-    id("com.swirlds.platform.conventions")
-    id("com.swirlds.platform.library")
-    id("com.swirlds.platform.maven-publish")
+  id("com.swirlds.platform.conventions")
+  id("com.swirlds.platform.library")
+  id("com.swirlds.platform.maven-publish")
 }
 
 dependencies {
-    // Individual Dependencies
-    api(libs.bundles.logging.api)
-    api(project(":swirlds-config-api"))
-    api(project(":swirlds-common"))
-    implementation(libs.bundles.logging.impl)
-    implementation(libs.classgraph)
-    compileOnly(libs.spotbugs.annotations)
+  // Individual Dependencies
+  api(libs.bundles.logging.api)
+  api(project(":swirlds-config-api"))
+  api(project(":swirlds-common"))
+  implementation(libs.bundles.logging.impl)
+  implementation(libs.classgraph)
+  compileOnly(libs.spotbugs.annotations)
 
-    // Test Dependencies
-    testImplementation(testLibs.bundles.junit)
-    testImplementation(project(":swirlds-config-impl"))
+  // Test Dependencies
+  testImplementation(testLibs.bundles.junit)
+  testImplementation(project(":swirlds-config-impl"))
 }

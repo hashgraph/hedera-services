@@ -15,15 +15,15 @@
  */
 
 plugins {
-    id("com.swirlds.platform.conventions")
-    id("com.swirlds.platform.library")
-    id("com.swirlds.platform.maven-publish")
+  id("com.swirlds.platform.conventions")
+  id("com.swirlds.platform.library")
+  id("com.swirlds.platform.maven-publish")
 }
 
 dependencies {
-    api(project(":swirlds-common"))
-    implementation(libs.bundles.picocli)
-    implementation(libs.classgraph)
-    implementation(libs.bundles.logging.impl)
-    compileOnly(libs.spotbugs.annotations)
+  api(project(":swirlds-common"))
+  implementation(libs.bundles.picocli)
+  implementation(libs.classgraph)
+  implementation(libs.bundles.logging.impl)
+  compileOnly(libs.spotbugs.annotations)
 }
