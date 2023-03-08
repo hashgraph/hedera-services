@@ -5,6 +5,7 @@ module com.hedera.node.app.service.schedule.impl.test {
     requires transitive com.hedera.node.app.service.schedule.impl;
     requires org.mockito;
     requires org.mockito.junit.jupiter;
+    requires dagger;
     requires com.hedera.node.app.service.mono.testFixtures;
     requires org.apache.commons.lang3;
     requires org.apache.commons.codec;

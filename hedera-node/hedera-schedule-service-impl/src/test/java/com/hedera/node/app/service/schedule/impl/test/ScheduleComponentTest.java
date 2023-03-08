@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.schedule.impl.test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.hedera.node.app.service.schedule.impl.components.DaggerScheduleComponent;
 import com.hedera.node.app.service.schedule.impl.components.ScheduleComponent;
