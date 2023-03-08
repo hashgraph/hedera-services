@@ -401,6 +401,7 @@ class EventRecoveryWorkflowTests {
 
         EventRecoveryWorkflow.updateEmergencyRecoveryFile(tmpDir, bootstrapTime);
 
+        // Verify the contents of the updated recovery file
         final EmergencyRecoveryFile updatedRecoveryFile = EmergencyRecoveryFile.read(tmpDir);
         assertNotNull(updatedRecoveryFile, "Updated recovery file should not be null");
         assertEquals(round, updatedRecoveryFile.round(), "round does not match");
@@ -410,6 +411,7 @@ class EventRecoveryWorkflowTests {
         assertEquals(bootstrapTime,
                 updatedRecoveryFile.recovery().boostrap().timestamp(), "bootstrap timestamp does not match");
 
+        // Verify the contents of the backup recovery file (copy of the original)
         final EmergencyRecoveryFile backupFile = EmergencyRecoveryFile.read(tmpDir.resolve("backup"));
         assertNotNull(backupFile, "Updated recovery file should not be null");
         assertEquals(round, backupFile.round(), "round does not match");
