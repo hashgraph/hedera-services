@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,20 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.components.common.output;
+package com.swirlds.platform.components.transaction.system;
+
+import java.util.List;
 
 /**
- * Invoked when a state signature is received from peer.
+ * Should be implemented by objects that wish to handle system transactions pre-consensus
  */
 @FunctionalInterface
-public interface StateSignatureConsumer {
-
+public interface PreConsensusSystemTransactionConsumer {
     /**
-     * A state signature to be handled.
+     * Reports which pre-consensus system transactions the implementing class wishes to consume, and the methods it
+     * wishes to consume them with
      *
-     * @param stateSignature
-     * 		the state signature to handle
-     * @param isConsensus
-     *        {@code true} if the signature has reached consensus, {@code false} otherwise
+     * @return a list of {@link PreConsensusSystemTransactionTypedHandler}s
      */
-    void handleStateSignature(StateSignature stateSignature, boolean isConsensus);
+    List<PreConsensusSystemTransactionTypedHandler<?>> getPreConsensusHandleMethods();
 }
