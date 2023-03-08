@@ -42,6 +42,7 @@ import org.apache.logging.log4j.Logger;
 
 public class MixedOpsTransactionsSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(MixedOpsTransactionsSuite.class);
+    private static final String SENDER = "sender";
 
     public static void main(String... args) {
         new MixedOpsTransactionsSuite().runSuiteSync();
@@ -72,7 +73,7 @@ public class MixedOpsTransactionsSuite extends HapiSuite {
                                 .payingWith(GENESIS)
                                 .overridingProps(Map.of("ledger.schedule.txExpiryTimeSecs", "" + ONE_YEAR_IN_SECS)),
                         sleepFor(10000),
-                        cryptoCreate("sender").advertisingCreation().balance(ONE_HBAR),
+                        cryptoCreate(SENDER).advertisingCreation().balance(ONE_HBAR),
                         cryptoCreate("receiver")
                                 .key(GENESIS)
                                 .advertisingCreation()
@@ -88,11 +89,11 @@ public class MixedOpsTransactionsSuite extends HapiSuite {
                         createTopic("wellKnownTopic").advertisingCreation())
                 .when(IntStream.range(0, numScheduledTxns)
                         .mapToObj(i -> scheduleCreate(
-                                        "schedule" + i, cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1)))
+                                "schedule" + i, cryptoTransfer(tinyBarsFromTo(SENDER, "receiver", 1)))
                                 .advertisingCreation()
                                 .fee(ONE_HUNDRED_HBARS)
                                 .signedBy(DEFAULT_PAYER)
-                                .alsoSigningWith("sender")
+                                .alsoSigningWith(SENDER)
                                 .withEntityMemo("This is the " + i + "th scheduled txn."))
                         .toArray(HapiSpecOperation[]::new))
                 .then(freezeOnly().payingWith(GENESIS).startingIn(60).seconds());

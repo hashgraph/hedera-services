@@ -36,6 +36,8 @@ import org.apache.logging.log4j.Logger;
 
 public class Issue2150Spec extends HapiSuite {
     private static final Logger log = LogManager.getLogger(Issue2150Spec.class);
+    private static final String PAYER = "payer";
+    private static final String RECEIVER = "receiver";
 
     public static void main(String... args) {
         new Issue2150Spec().runSuiteSync();
@@ -43,8 +45,8 @@ public class Issue2150Spec extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            multiKeyNonPayerEntityVerifiedAsync(),
+        return List.of(new HapiSpec[]{
+                multiKeyNonPayerEntityVerifiedAsync(),
         });
     }
 
@@ -56,11 +58,11 @@ public class Issue2150Spec extends HapiSuite {
                 .given(
                         newKeyNamed("payerKey").shape(LARGE_THRESH_SHAPE),
                         newKeyNamed("receiverKey").shape(LARGE_THRESH_SHAPE),
-                        cryptoCreate("payer").keyShape(LARGE_THRESH_SHAPE),
-                        cryptoCreate("receiver").keyShape(LARGE_THRESH_SHAPE).receiverSigRequired(true))
+                        cryptoCreate(PAYER).keyShape(LARGE_THRESH_SHAPE),
+                        cryptoCreate(RECEIVER).keyShape(LARGE_THRESH_SHAPE).receiverSigRequired(true))
                 .when()
-                .then(cryptoTransfer(tinyBarsFromTo("payer", "receiver", 1L))
-                        .sigControl(forKey("payer", firstOnly), forKey("receiver", firstOnly)));
+                .then(cryptoTransfer(tinyBarsFromTo(PAYER, RECEIVER, 1L))
+                        .sigControl(forKey(PAYER, firstOnly), forKey(RECEIVER, firstOnly)));
     }
 
     @Override

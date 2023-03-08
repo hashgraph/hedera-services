@@ -48,10 +48,13 @@ import org.junit.jupiter.api.Assertions;
 public class CongestionPricingSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CongestionPricingSuite.class);
 
+    private static final String FEES_PERCENT_CONGESTION_MULTIPLIERS = "fees.percentCongestionMultipliers";
     private static final String defaultCongestionMultipliers =
-            HapiSpecSetup.getDefaultNodeProps().get("fees.percentCongestionMultipliers");
+            HapiSpecSetup.getDefaultNodeProps().get(FEES_PERCENT_CONGESTION_MULTIPLIERS);
+    private static final String FEES_MIN_CONGESTION_PERIOD = "fees.minCongestionPeriod";
     private static final String defaultMinCongestionPeriod =
-            HapiSpecSetup.getDefaultNodeProps().get("fees.minCongestionPeriod");
+            HapiSpecSetup.getDefaultNodeProps().get(FEES_MIN_CONGESTION_PERIOD);
+    private static final String CIVILIAN = "civilian";
 
     public static void main(String... args) {
         new CongestionPricingSuite().runSuiteSync();
@@ -59,8 +62,8 @@ public class CongestionPricingSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            canUpdateMultipliersDynamically(),
+        return List.of(new HapiSpec[]{
+                canUpdateMultipliersDynamically(),
         });
     }
 
@@ -75,11 +78,11 @@ public class CongestionPricingSuite extends HapiSuite {
 
         return defaultHapiSpec("CanUpdateMultipliersDynamically")
                 .given(
-                        cryptoCreate("civilian").payingWith(GENESIS).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(CIVILIAN).payingWith(GENESIS).balance(ONE_MILLION_HBARS),
                         uploadInitCode(contract),
                         contractCreate(contract),
                         contractCall(contract)
-                                .payingWith("civilian")
+                                .payingWith(CIVILIAN)
                                 .fee(ONE_HUNDRED_HBARS)
                                 .sending(ONE_HBAR)
                                 .via("cheapCall"),
@@ -92,29 +95,29 @@ public class CongestionPricingSuite extends HapiSuite {
                                 .fee(ONE_HUNDRED_HBARS)
                                 .payingWith(EXCHANGE_RATE_CONTROL)
                                 .overridingProps(Map.of(
-                                        "fees.percentCongestionMultipliers",
+                                        FEES_PERCENT_CONGESTION_MULTIPLIERS,
                                         "1,7x",
-                                        "fees.minCongestionPeriod",
+                                        FEES_MIN_CONGESTION_PERIOD,
                                         tmpMinCongestionPeriod)),
                         fileUpdate(THROTTLE_DEFS)
                                 .payingWith(EXCHANGE_RATE_CONTROL)
                                 .contents(artificialLimits.toByteArray()),
                         sleepFor(2_000),
                         blockingOrder(IntStream.range(0, 10)
-                                .mapToObj(i -> new HapiSpecOperation[] {
-                                    usableTxnIdNamed("uncheckedTxn" + i).payerId("civilian"),
-                                    uncheckedSubmit(contractCall(contract)
-                                                    .signedBy("civilian")
-                                                    .fee(ONE_HUNDRED_HBARS)
-                                                    .sending(ONE_HBAR)
-                                                    .txnId("uncheckedTxn" + i))
-                                            .payingWith(GENESIS),
-                                    sleepFor(125)
+                                .mapToObj(i -> new HapiSpecOperation[]{
+                                        usableTxnIdNamed("uncheckedTxn" + i).payerId(CIVILIAN),
+                                        uncheckedSubmit(contractCall(contract)
+                                                .signedBy(CIVILIAN)
+                                                .fee(ONE_HUNDRED_HBARS)
+                                                .sending(ONE_HBAR)
+                                                .txnId("uncheckedTxn" + i))
+                                                .payingWith(GENESIS),
+                                        sleepFor(125)
                                 })
                                 .flatMap(Arrays::stream)
                                 .toArray(HapiSpecOperation[]::new)),
                         contractCall(contract)
-                                .payingWith("civilian")
+                                .payingWith(CIVILIAN)
                                 .fee(ONE_HUNDRED_HBARS)
                                 .sending(ONE_HBAR)
                                 .via("pricyCall"))
@@ -133,8 +136,8 @@ public class CongestionPricingSuite extends HapiSuite {
                                 .fee(ONE_HUNDRED_HBARS)
                                 .payingWith(EXCHANGE_RATE_CONTROL)
                                 .overridingProps(Map.of(
-                                        "fees.percentCongestionMultipliers", defaultCongestionMultipliers,
-                                        "fees.minCongestionPeriod", defaultMinCongestionPeriod)),
+                                        FEES_PERCENT_CONGESTION_MULTIPLIERS, defaultCongestionMultipliers,
+                                        FEES_MIN_CONGESTION_PERIOD, defaultMinCongestionPeriod)),
                         cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(GENESIS, FUNDING, 1))
                                 .payingWith(GENESIS),
 

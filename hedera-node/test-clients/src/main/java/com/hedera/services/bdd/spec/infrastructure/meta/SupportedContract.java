@@ -25,10 +25,10 @@ import java.util.List;
 
 public enum SupportedContract {
     SIMPLE_STORAGE(
-            bytecodePath("SimpleStorage"),
+            bytecodePath(Constants.SIMPLE_STORAGE1),
             List.of(new ContractCallDetails(
-                    getABIFor(FUNCTION, "set", "SimpleStorage"), new Object[] {BigInteger.valueOf(1)})),
-            List.of(new ContractCallDetails(getABIFor(FUNCTION, "get", "SimpleStorage"), new Object[] {})));
+                    getABIFor(FUNCTION, "set", Constants.SIMPLE_STORAGE1), new Object[]{BigInteger.valueOf(1)})),
+            List.of(new ContractCallDetails(getABIFor(FUNCTION, "get", Constants.SIMPLE_STORAGE1), new Object[]{})));
 
     private final String pathToBytecode;
     private final List<ContractCallDetails> callDetails;
@@ -51,5 +51,9 @@ public enum SupportedContract {
 
     public String getPathToBytecode() {
         return pathToBytecode;
+    }
+
+    private static class Constants {
+        static final String SIMPLE_STORAGE1 = "SimpleStorage";
     }
 }

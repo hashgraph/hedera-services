@@ -77,14 +77,14 @@ import org.apache.logging.log4j.Logger;
 public class MixedOpsLoadTest extends LoadTest {
     private static final Logger log = LogManager.getLogger(MixedOpsLoadTest.class);
     private static final int NUM_SUBMISSIONS = 100;
+    private static final String SUBMIT_KEY = "submitKey";
+    private static final String TOKEN = "token";
     private final ResponseCodeEnum[] permissiblePrechecks =
-            new ResponseCodeEnum[] {BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, UNKNOWN};
+            new ResponseCodeEnum[]{BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, UNKNOWN};
 
     private static String sender = "sender";
     private static String receiver = "receiver";
-    private static String submitKey = "submitKey";
     private static String topic = "topic";
-    private static String token = "token";
     private static String schedule = "schedule";
     private static int messageSize = 1024;
 
@@ -116,15 +116,15 @@ public class MixedOpsLoadTest extends LoadTest {
                     .hasRetryPrecheckFrom(
                             BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, PAYER_ACCOUNT_NOT_FOUND)
                     .deferStatusResolution(),
-            submitMessageTo(topic)
-                    .message(ArrayUtils.addAll(
-                            ByteBuffer.allocate(8)
-                                    .putLong(Instant.now().toEpochMilli())
-                                    .array(),
-                            randomUtf8Bytes(messageSize - 8)))
-                    .noLogging()
-                    .payingWith(GENESIS)
-                    .signedBy(sender, submitKey)
+                submitMessageTo(topic)
+                        .message(ArrayUtils.addAll(
+                                ByteBuffer.allocate(8)
+                                        .putLong(Instant.now().toEpochMilli())
+                                        .array(),
+                                randomUtf8Bytes(messageSize - 8)))
+                        .noLogging()
+                        .payingWith(GENESIS)
+                        .signedBy(sender, SUBMIT_KEY)
                     .fee(ONE_HBAR)
                     .suppressStats(true)
                     .hasRetryPrecheckFrom(
@@ -137,18 +137,18 @@ public class MixedOpsLoadTest extends LoadTest {
                     .hasKnownStatusFrom(
                             SUCCESS, OK, INVALID_TOPIC_ID, INSUFFICIENT_PAYER_BALANCE, UNKNOWN, TRANSACTION_EXPIRED)
                     .deferStatusResolution(),
-            r.nextInt(100) > 5
-                    ? cryptoTransfer(moving(1, token + r.nextInt(NUM_SUBMISSIONS))
-                                    .between(sender, receiver))
-                            .payingWith(sender)
-                            .signedBy(GENESIS)
-                            .fee(ONE_HUNDRED_HBARS)
-                            .noLogging()
-                            .suppressStats(true)
-                            .hasPrecheckFrom(
-                                    OK,
-                                    INSUFFICIENT_PAYER_BALANCE,
-                                    EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS,
+                r.nextInt(100) > 5
+                        ? cryptoTransfer(moving(1, TOKEN + r.nextInt(NUM_SUBMISSIONS))
+                        .between(sender, receiver))
+                        .payingWith(sender)
+                        .signedBy(GENESIS)
+                        .fee(ONE_HUNDRED_HBARS)
+                        .noLogging()
+                        .suppressStats(true)
+                        .hasPrecheckFrom(
+                                OK,
+                                INSUFFICIENT_PAYER_BALANCE,
+                                EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS,
                                     DUPLICATE_TRANSACTION)
                             .hasRetryPrecheckFrom(permissiblePrechecks)
                             .hasKnownStatusFrom(
@@ -181,7 +181,7 @@ public class MixedOpsLoadTest extends LoadTest {
                         withOpContext(
                                 (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
                         logIt(ignore -> settings.toString()),
-                        newKeyNamed("submitKey"),
+                        newKeyNamed(SUBMIT_KEY),
                         tokenOpsEnablement(),
                         scheduleOpsEnablement(),
                         cryptoCreate("treasury")
@@ -210,9 +210,9 @@ public class MixedOpsLoadTest extends LoadTest {
                         cryptoCreate(receiver)
                                 .hasRetryPrecheckFrom(permissiblePrechecks)
                                 .key(GENESIS),
-                        createTopic(topic).submitKeyName("submitKey"),
+                        createTopic(topic).submitKeyName(SUBMIT_KEY),
                         inParallel(IntStream.range(0, NUM_SUBMISSIONS)
-                                .mapToObj(ignore -> tokenCreate("token" + tokenId.getAndIncrement())
+                                .mapToObj(ignore -> tokenCreate(TOKEN + tokenId.getAndIncrement())
                                         .payingWith(GENESIS)
                                         .signedBy(GENESIS)
                                         .fee(ONE_HUNDRED_HBARS)
@@ -239,7 +239,7 @@ public class MixedOpsLoadTest extends LoadTest {
                                 .toArray(n -> new HapiSpecOperation[n])),
                         sleepFor(10000),
                         inParallel(IntStream.range(0, NUM_SUBMISSIONS)
-                                .mapToObj(i -> tokenAssociate(sender, "token" + i)
+                                .mapToObj(i -> tokenAssociate(sender, TOKEN + i)
                                         .payingWith(GENESIS)
                                         .signedBy(GENESIS)
                                         .hasRetryPrecheckFrom(permissiblePrechecks)

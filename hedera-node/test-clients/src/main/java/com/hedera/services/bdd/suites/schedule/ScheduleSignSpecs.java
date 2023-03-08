@@ -70,10 +70,24 @@ public class ScheduleSignSpecs extends HapiSuite {
     private static final int SCHEDULE_EXPIRY_TIME_MS = SCHEDULE_EXPIRY_TIME_SECS * 1000;
 
     private static final String suiteWhitelist = "CryptoCreate,ConsensusSubmitMessage,CryptoTransfer";
+    private static final String LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS = "ledger.schedule.txExpiryTimeSecs";
     private static final String defaultTxExpiry =
-            HapiSpecSetup.getDefaultNodeProps().get("ledger.schedule.txExpiryTimeSecs");
+            HapiSpecSetup.getDefaultNodeProps().get(LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS);
+    private static final String SCHEDULING_WHITELIST = "scheduling.whitelist";
     private static final String defaultWhitelist =
-            HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist");
+            HapiSpecSetup.getDefaultNodeProps().get(SCHEDULING_WHITELIST);
+    private static final String NEW_SENDER_KEY = "newSKey";
+    private static final String DEFERRED_XFER = "deferredXfer";
+    private static final String ADMIN = "admin";
+    private static final String SHARED_KEY = "sharedKey";
+    private static final String TWO_SIG_XFER = "twoSigXfer";
+    private static final String PAYER = "payer";
+    private static final String SOMEBODY = "somebody";
+    private static final String RANDOM_KEY = "randomKey";
+    private static final String SENDER = "sender";
+    private static final String RECEIVER = "receiver";
+    private static final String BASIC_XFER = "basicXfer";
+    private static final String TOKEN_A = "tokenA";
 
     public static void main(String... args) {
         new ScheduleSignSpecs().runSuiteSync();
@@ -115,8 +129,8 @@ public class ScheduleSignSpecs extends HapiSuite {
                 .then(fileUpdate(APP_PROPERTIES)
                         .payingWith(ADDRESS_BOOK_CONTROL)
                         .overridingProps(Map.of(
-                                "ledger.schedule.txExpiryTimeSecs", defaultTxExpiry,
-                                "scheduling.whitelist", defaultWhitelist)));
+                                LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS, defaultTxExpiry,
+                                SCHEDULING_WHITELIST, defaultWhitelist)));
     }
 
     private HapiSpec suiteSetup() {
@@ -125,11 +139,14 @@ public class ScheduleSignSpecs extends HapiSuite {
                 .when()
                 .then(fileUpdate(APP_PROPERTIES)
                         .payingWith(ADDRESS_BOOK_CONTROL)
-                        .overridingProps(Map.of("scheduling.whitelist", suiteWhitelist)));
+                        .overridingProps(Map.of(SCHEDULING_WHITELIST, suiteWhitelist)));
     }
 
     private HapiSpec signingDeletedSchedulesHasNoEffect() {
-        String sender = "X", receiver = "Y", schedule = "Z", adminKey = "admin";
+        String sender = "X";
+        String receiver = "Y";
+        String schedule = "Z";
+        String adminKey = ADMIN;
 
         return defaultHapiSpec("SigningDeletedSchedulesHasNoEffect")
                 .given(
@@ -152,12 +169,15 @@ public class ScheduleSignSpecs extends HapiSuite {
         var sigTwo = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(ON, ON, ON), sigs(OFF, OFF, OFF)));
         var firstSigThree = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF), sigs(ON, OFF, OFF)));
         var secondSigThree = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF), sigs(ON, ON, OFF)));
-        String sender = "X", receiver = "Y", schedule = "Z", senderKey = "sKey", newSenderKey = "newSKey";
+        String sender = "X";
+        String receiver = "Y";
+        String schedule = "Z";
+        String senderKey = "sKey";
 
         return defaultHapiSpec("ChangeInNestedSigningReqsRespected")
                 .given(
                         newKeyNamed(senderKey).shape(senderShape),
-                        keyFromMutation(newSenderKey, senderKey).changing(this::bumpThirdNestedThresholdSigningReq),
+                        keyFromMutation(NEW_SENDER_KEY, senderKey).changing(this::bumpThirdNestedThresholdSigningReq),
                         cryptoCreate(sender).key(senderKey),
                         cryptoCreate(receiver).balance(0L),
                         scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(sender, receiver, 1)))
@@ -166,19 +186,19 @@ public class ScheduleSignSpecs extends HapiSuite {
                                 .sigControl(ControlForKey.forKey(senderKey, sigOne)),
                         getAccountBalance(receiver).hasTinyBars(0L))
                 .when(
-                        cryptoUpdate(sender).key(newSenderKey),
+                        cryptoUpdate(sender).key(NEW_SENDER_KEY),
                         scheduleSign(schedule)
-                                .alsoSigningWith(newSenderKey)
-                                .sigControl(forKey(newSenderKey, firstSigThree)),
+                                .alsoSigningWith(NEW_SENDER_KEY)
+                                .sigControl(forKey(NEW_SENDER_KEY, firstSigThree)),
                         getAccountBalance(receiver).hasTinyBars(0L),
                         scheduleSign(schedule)
-                                .alsoSigningWith(newSenderKey)
-                                .sigControl(forKey(newSenderKey, secondSigThree)),
+                                .alsoSigningWith(NEW_SENDER_KEY)
+                                .sigControl(forKey(NEW_SENDER_KEY, secondSigThree)),
                         getAccountBalance(receiver).hasTinyBars(1L))
                 .then(
                         scheduleSign(schedule)
-                                .alsoSigningWith(newSenderKey)
-                                .sigControl(forKey(newSenderKey, sigTwo))
+                                .alsoSigningWith(NEW_SENDER_KEY)
+                                .sigControl(forKey(NEW_SENDER_KEY, sigTwo))
                                 .hasKnownStatus(SCHEDULE_ALREADY_EXECUTED),
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
@@ -198,12 +218,15 @@ public class ScheduleSignSpecs extends HapiSuite {
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
         var sigTwo = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(ON, ON, ON), sigs(OFF, OFF, OFF)));
         var firstSigThree = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF), sigs(ON, OFF, OFF)));
-        String sender = "X", receiver = "Y", schedule = "Z", senderKey = "sKey", newSenderKey = "newSKey";
+        String sender = "X";
+        String receiver = "Y";
+        String schedule = "Z";
+        String senderKey = "sKey";
 
         return defaultHapiSpec("ReductionInSigningReqsAllowsTxnToGoThrough")
                 .given(
                         newKeyNamed(senderKey).shape(senderShape),
-                        keyFromMutation(newSenderKey, senderKey).changing(this::lowerThirdNestedThresholdSigningReq),
+                        keyFromMutation(NEW_SENDER_KEY, senderKey).changing(this::lowerThirdNestedThresholdSigningReq),
                         cryptoCreate(sender).key(senderKey),
                         cryptoCreate(receiver).balance(0L),
                         scheduleCreate(schedule, cryptoTransfer(tinyBarsFromTo(sender, receiver, 1)))
@@ -213,16 +236,16 @@ public class ScheduleSignSpecs extends HapiSuite {
                         getAccountBalance(receiver).hasTinyBars(0L))
                 .when(
                         scheduleSign(schedule)
-                                .alsoSigningWith(newSenderKey)
-                                .sigControl(forKey(newSenderKey, firstSigThree)),
+                                .alsoSigningWith(NEW_SENDER_KEY)
+                                .sigControl(forKey(NEW_SENDER_KEY, firstSigThree)),
                         getAccountBalance(receiver).hasTinyBars(0L),
-                        cryptoUpdate(sender).key(newSenderKey),
+                        cryptoUpdate(sender).key(NEW_SENDER_KEY),
                         scheduleSign(schedule),
                         getAccountBalance(receiver).hasTinyBars(1L))
                 .then(
                         scheduleSign(schedule)
-                                .alsoSigningWith(newSenderKey)
-                                .sigControl(forKey(newSenderKey, sigTwo))
+                                .alsoSigningWith(NEW_SENDER_KEY)
+                                .sigControl(forKey(NEW_SENDER_KEY, sigTwo))
                                 .hasKnownStatus(SCHEDULE_ALREADY_EXECUTED),
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
@@ -232,12 +255,16 @@ public class ScheduleSignSpecs extends HapiSuite {
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
         var sigTwo = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(ON, ON, ON), sigs(OFF, OFF, OFF)));
         var firstSigThree = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF), sigs(ON, OFF, OFF)));
-        String sender = "X", receiver = "Y", schedule = "Z", senderKey = "sKey", newSenderKey = "newSKey";
+        String sender = "X";
+        String receiver = "Y";
+        String schedule = "Z";
+        String senderKey = "sKey";
+        String newSenderKey = NEW_SENDER_KEY;
 
         return defaultHapiSpec("ReductionInSigningReqsAllowsTxnToGoThroughWithRandomKey")
                 .given(
-                        newKeyNamed("randomKey"),
-                        cryptoCreate("random").key("randomKey"),
+                        newKeyNamed(RANDOM_KEY),
+                        cryptoCreate("random").key(RANDOM_KEY),
                         newKeyNamed(senderKey).shape(senderShape),
                         keyFromMutation(newSenderKey, senderKey).changing(this::lowerThirdNestedThresholdSigningReq),
                         cryptoCreate(sender).key(senderKey),
@@ -253,7 +280,7 @@ public class ScheduleSignSpecs extends HapiSuite {
                                 .sigControl(forKey(newSenderKey, firstSigThree)),
                         getAccountBalance(receiver).hasTinyBars(0L),
                         cryptoUpdate(sender).key(newSenderKey),
-                        scheduleSign(schedule).signedBy("randomKey").payingWith("random"),
+                        scheduleSign(schedule).signedBy(RANDOM_KEY).payingWith("random"),
                         getAccountBalance(receiver).hasTinyBars(1L))
                 .then(
                         scheduleSign(schedule)
@@ -278,7 +305,10 @@ public class ScheduleSignSpecs extends HapiSuite {
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
         var sigTwo = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(OFF, ON, OFF), sigs(OFF, OFF, OFF)));
         var sigThree = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF), sigs(ON, OFF, OFF)));
-        String sender = "X", receiver = "Y", schedule = "Z", senderKey = "sKey";
+        String sender = "X";
+        String receiver = "Y";
+        String schedule = "Z";
+        String senderKey = "sKey";
 
         return defaultHapiSpec("NestedSigningReqsWorkAsExpected")
                 .given(
@@ -306,7 +336,10 @@ public class ScheduleSignSpecs extends HapiSuite {
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
         var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
         var sigThree = senderShape.signedWith(sigs(OFF, OFF, ON));
-        String sender = "X", receiver = "Y", schedule = "Z", senderKey = "sKey";
+        String sender = "X";
+        String receiver = "Y";
+        String schedule = "Z";
+        String senderKey = "sKey";
 
         return defaultHapiSpec("ReceiverSigRequiredNotConfusedByOrder")
                 .given(
@@ -338,7 +371,10 @@ public class ScheduleSignSpecs extends HapiSuite {
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
         var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
         var sigThree = senderShape.signedWith(sigs(OFF, OFF, ON));
-        String sender = "X", receiver = "Y", schedule = "Z", senderKey = "sKey";
+        String sender = "X";
+        String receiver = "Y";
+        String schedule = "Z";
+        String senderKey = "sKey";
 
         return defaultHapiSpec("receiverSigRequiredNotConfusedByMultiSigSender")
                 .given(
@@ -370,7 +406,10 @@ public class ScheduleSignSpecs extends HapiSuite {
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
         var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
         var sigThree = senderShape.signedWith(sigs(OFF, OFF, ON));
-        String sender = "X", receiver = "Y", schedule = "Z", senderKey = "sKey";
+        String sender = "X";
+        String receiver = "Y";
+        String schedule = "Z";
+        String senderKey = "sKey";
 
         return defaultHapiSpec("ReceiverSigRequiredUpdateIsRecognized")
                 .given(
@@ -406,7 +445,10 @@ public class ScheduleSignSpecs extends HapiSuite {
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
         var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
         var sigThree = senderShape.signedWith(sigs(OFF, OFF, ON));
-        String sender = "X", receiver = "Y", schedule = "Z", senderKey = "sKey";
+        String sender = "X";
+        String receiver = "Y";
+        String schedule = "Z";
+        String senderKey = "sKey";
 
         return defaultHapiSpec("ScheduleAlreadyExecutedOnCreateDoesntRepeatTransaction")
                 .given(
@@ -437,7 +479,10 @@ public class ScheduleSignSpecs extends HapiSuite {
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
         var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
         var sigThree = senderShape.signedWith(sigs(OFF, OFF, ON));
-        String sender = "X", receiver = "Y", firstSchedule = "Z", senderKey = "sKey";
+        String sender = "X";
+        String receiver = "Y";
+        String firstSchedule = "Z";
+        String senderKey = "sKey";
 
         return defaultHapiSpec("ScheduleAlreadyExecutedDoesntRepeatTransaction")
                 .given(
@@ -462,44 +507,44 @@ public class ScheduleSignSpecs extends HapiSuite {
     }
 
     private HapiSpec basicSignatureCollectionWorks() {
-        var txnBody = cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1));
+        var txnBody = cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1));
 
         return defaultHapiSpec("BasicSignatureCollectionWorks")
                 .given(
-                        cryptoCreate("sender"),
-                        cryptoCreate("receiver").receiverSigRequired(true),
-                        scheduleCreate("basicXfer", txnBody))
-                .when(scheduleSign("basicXfer").alsoSigningWith("receiver"))
-                .then(getScheduleInfo("basicXfer").hasSignatories("receiver"));
+                        cryptoCreate(SENDER),
+                        cryptoCreate(RECEIVER).receiverSigRequired(true),
+                        scheduleCreate(BASIC_XFER, txnBody))
+                .when(scheduleSign(BASIC_XFER).alsoSigningWith(RECEIVER))
+                .then(getScheduleInfo(BASIC_XFER).hasSignatories(RECEIVER));
     }
 
     private HapiSpec signalsIrrelevantSig() {
-        var txnBody = cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1));
+        var txnBody = cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1));
 
         return defaultHapiSpec("SignalsIrrelevantSig")
                 .given(
-                        cryptoCreate("sender"),
-                        cryptoCreate("receiver"),
+                        cryptoCreate(SENDER),
+                        cryptoCreate(RECEIVER),
                         newKeyNamed("somebodyelse"),
-                        scheduleCreate("basicXfer", txnBody))
+                        scheduleCreate(BASIC_XFER, txnBody))
                 .when()
-                .then(scheduleSign("basicXfer")
+                .then(scheduleSign(BASIC_XFER)
                         .alsoSigningWith("somebodyelse")
                         .hasKnownStatusFrom(NO_NEW_VALID_SIGNATURES, SOME_SIGNATURES_WERE_INVALID));
     }
 
     private HapiSpec signalsIrrelevantSigEvenAfterLinkedEntityUpdate() {
-        var txnBody = mintToken("tokenA", 50000000L);
+        var txnBody = mintToken(TOKEN_A, 50000000L);
 
         return defaultHapiSpec("SignalsIrrelevantSigEvenAfterLinkedEntityUpdate")
                 .given(
-                        overriding("scheduling.whitelist", "TokenMint"),
-                        newKeyNamed("admin"),
+                        overriding(SCHEDULING_WHITELIST, "TokenMint"),
+                        newKeyNamed(ADMIN),
                         newKeyNamed("mint"),
                         newKeyNamed("newMint"),
-                        tokenCreate("tokenA").adminKey("admin").supplyKey("mint"),
+                        tokenCreate(TOKEN_A).adminKey(ADMIN).supplyKey("mint"),
                         scheduleCreate("tokenMintScheduled", txnBody))
-                .when(tokenUpdate("tokenA").supplyKey("newMint"))
+                .when(tokenUpdate(TOKEN_A).supplyKey("newMint"))
                 .then(
                         scheduleSign("tokenMintScheduled")
                                 .alsoSigningWith("mint")
@@ -511,22 +556,22 @@ public class ScheduleSignSpecs extends HapiSuite {
                                  * only use .hasKnownStatus(NO_NEW_VALID_SIGNATURES) and it will pass
                                  * >99.99% of the time. */
                                 .hasKnownStatusFrom(NO_NEW_VALID_SIGNATURES, SOME_SIGNATURES_WERE_INVALID),
-                        overriding("scheduling.whitelist", suiteWhitelist));
+                        overriding(SCHEDULING_WHITELIST, suiteWhitelist));
     }
 
     private HapiSpec addingSignaturesToNonExistingTxFails() {
         return defaultHapiSpec("AddingSignaturesToNonExistingTxFails")
-                .given(cryptoCreate("sender"), newKeyNamed("somebody"))
+                .given(cryptoCreate(SENDER), newKeyNamed(SOMEBODY))
                 .when()
                 .then(scheduleSign("0.0.123321")
                         .fee(ONE_HBAR)
-                        .alsoSigningWith("somebody", "sender")
+                        .alsoSigningWith(SOMEBODY, SENDER)
                         .hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)
                         .hasKnownStatus(INVALID_SCHEDULE_ID));
     }
 
     private HapiSpec addingSignaturesToExecutedTxFails() {
-        var txnBody = cryptoCreate("somebody");
+        var txnBody = cryptoCreate(SOMEBODY);
         var creation = "basicCryptoCreate";
 
         return defaultHapiSpec("AddingSignaturesToExecutedTxFails")
@@ -541,48 +586,48 @@ public class ScheduleSignSpecs extends HapiSuite {
     public HapiSpec triggersUponFinishingPayerSig() {
         return defaultHapiSpec("TriggersUponFinishingPayerSig")
                 .given(
-                        cryptoCreate("payer").balance(ONE_HBAR),
-                        cryptoCreate("sender").balance(1L),
-                        cryptoCreate("receiver").balance(0L).receiverSigRequired(true))
+                        cryptoCreate(PAYER).balance(ONE_HBAR),
+                        cryptoCreate(SENDER).balance(1L),
+                        cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true))
                 .when(
                         scheduleCreate(
-                                        "threeSigXfer",
-                                        cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1))
-                                                .fee(ONE_HBAR))
-                                .designatingPayer("payer")
-                                .alsoSigningWith("sender", "receiver"),
-                        getAccountBalance("receiver").hasTinyBars(0L),
-                        scheduleSign("threeSigXfer").alsoSigningWith("payer"))
-                .then(getAccountBalance("receiver").hasTinyBars(1L));
+                                "threeSigXfer",
+                                cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1))
+                                        .fee(ONE_HBAR))
+                                .designatingPayer(PAYER)
+                                .alsoSigningWith(SENDER, RECEIVER),
+                        getAccountBalance(RECEIVER).hasTinyBars(0L),
+                        scheduleSign("threeSigXfer").alsoSigningWith(PAYER))
+                .then(getAccountBalance(RECEIVER).hasTinyBars(1L));
     }
 
     public HapiSpec triggersUponAdditionalNeededSig() {
         return defaultHapiSpec("TriggersUponAdditionalNeededSig")
                 .given(
-                        cryptoCreate("sender").balance(1L),
-                        cryptoCreate("receiver").balance(0L).receiverSigRequired(true))
+                        cryptoCreate(SENDER).balance(1L),
+                        cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true))
                 .when(
                         scheduleCreate(
-                                        "twoSigXfer",
-                                        cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1))
-                                                .fee(ONE_HBAR))
-                                .alsoSigningWith("sender"),
-                        getAccountBalance("receiver").hasTinyBars(0L),
-                        scheduleSign("twoSigXfer").alsoSigningWith("receiver"))
-                .then(getAccountBalance("receiver").hasTinyBars(1L));
+                                TWO_SIG_XFER,
+                                cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1))
+                                        .fee(ONE_HBAR))
+                                .alsoSigningWith(SENDER),
+                        getAccountBalance(RECEIVER).hasTinyBars(0L),
+                        scheduleSign(TWO_SIG_XFER).alsoSigningWith(RECEIVER))
+                .then(getAccountBalance(RECEIVER).hasTinyBars(1L));
     }
 
     public HapiSpec sharedKeyWorksAsExpected() {
         return defaultHapiSpec("RequiresSharedKeyToSignBothSchedulingAndScheduledTxns")
                 .given(
-                        newKeyNamed("sharedKey"),
-                        cryptoCreate("payerWithSharedKey").key("sharedKey"))
+                        newKeyNamed(SHARED_KEY),
+                        cryptoCreate("payerWithSharedKey").key(SHARED_KEY))
                 .when(scheduleCreate(
                                 "deferredCreation",
-                                cryptoCreate("yetToBe")
-                                        .signedBy()
-                                        .receiverSigRequired(true)
-                                        .key("sharedKey")
+                        cryptoCreate("yetToBe")
+                                .signedBy()
+                                .receiverSigRequired(true)
+                                .key(SHARED_KEY)
                                         .balance(123L)
                                         .fee(ONE_HBAR))
                         .payingWith("payerWithSharedKey")
@@ -599,8 +644,8 @@ public class ScheduleSignSpecs extends HapiSuite {
                 .given(
                         newKeyNamed(adminKey).generator(keyGen).logged(),
                         newKeyNamed(scheduledTxnKey).generator(keyGen).logged(),
-                        cryptoCreate("sender").key(scheduledTxnKey).balance(1L))
-                .when(scheduleCreate("deferredXfer", cryptoTransfer(tinyBarsFromTo("sender", ADDRESS_BOOK_CONTROL, 1)))
+                        cryptoCreate(SENDER).key(scheduledTxnKey).balance(1L))
+                .when(scheduleCreate(DEFERRED_XFER, cryptoTransfer(tinyBarsFromTo(SENDER, ADDRESS_BOOK_CONTROL, 1)))
                         .adminKey(adminKey))
                 .then();
     }
@@ -617,17 +662,17 @@ public class ScheduleSignSpecs extends HapiSuite {
                         cryptoCreate("cSender").key("cKey").balance(1L),
                         balanceSnapshot("before", ADDRESS_BOOK_CONTROL))
                 .when(scheduleCreate(
-                        "deferredXfer",
+                        DEFERRED_XFER,
                         cryptoTransfer(
                                 tinyBarsFromTo("aSender", ADDRESS_BOOK_CONTROL, 1),
                                 tinyBarsFromTo("cSender", ADDRESS_BOOK_CONTROL, 1))))
                 .then(
-                        scheduleSign("deferredXfer").alsoSigningWith("aKey"),
-                        scheduleSign("deferredXfer").alsoSigningWith("aKey").hasKnownStatus(NO_NEW_VALID_SIGNATURES),
-                        scheduleSign("deferredXfer")
+                        scheduleSign(DEFERRED_XFER).alsoSigningWith("aKey"),
+                        scheduleSign(DEFERRED_XFER).alsoSigningWith("aKey").hasKnownStatus(NO_NEW_VALID_SIGNATURES),
+                        scheduleSign(DEFERRED_XFER)
                                 .alsoSigningWith("aKey", "bKey")
                                 .hasKnownStatus(NO_NEW_VALID_SIGNATURES),
-                        scheduleSign("deferredXfer")
+                        scheduleSign(DEFERRED_XFER)
                                 .alsoSigningWith("bKey")
                                 /* In the rare, but possible, case that the overlapping byte shared by aKey
                                  * and bKey is _also_ shared by the DEFAULT_PAYER, the bKey prefix in the sig
@@ -638,7 +683,7 @@ public class ScheduleSignSpecs extends HapiSuite {
                                  * only use .hasKnownStatus(SOME_SIGNATURES_WERE_INVALID) and it will pass
                                  * >99.99% of the time. */
                                 .hasKnownStatusFrom(SOME_SIGNATURES_WERE_INVALID, NO_NEW_VALID_SIGNATURES),
-                        scheduleSign("deferredXfer").alsoSigningWith("aKey", "bKey", "cKey"),
+                        scheduleSign(DEFERRED_XFER).alsoSigningWith("aKey", "bKey", "cKey"),
                         getAccountBalance(ADDRESS_BOOK_CONTROL).hasTinyBars(changeFromSnapshot("before", +2)));
     }
 
@@ -648,19 +693,19 @@ public class ScheduleSignSpecs extends HapiSuite {
                         newKeyNamed("a"),
                         newKeyNamed("b"),
                         newKeyListNamed("ab", List.of("a", "b")),
-                        newKeyNamed("admin"))
+                        newKeyNamed(ADMIN))
                 .when(
-                        cryptoCreate("sender").key("ab").balance(667L),
+                        cryptoCreate(SENDER).key("ab").balance(667L),
                         scheduleCreate(
-                                        "deferredFall",
-                                        cryptoTransfer(tinyBarsFromTo("sender", FUNDING, 1))
-                                                .fee(ONE_HBAR))
+                                "deferredFall",
+                                cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
+                                        .fee(ONE_HBAR))
                                 .alsoSigningWith("a"),
-                        getAccountBalance("sender").hasTinyBars(667L),
-                        cryptoUpdate("sender").key("a"))
+                        getAccountBalance(SENDER).hasTinyBars(667L),
+                        cryptoUpdate(SENDER).key("a"))
                 .then(
                         scheduleSign("deferredFall").alsoSigningWith(),
-                        getAccountBalance("sender").hasTinyBars(666L));
+                        getAccountBalance(SENDER).hasTinyBars(666L));
     }
 
     public HapiSpec signFailsDueToDeletedExpiration() {
@@ -669,29 +714,29 @@ public class ScheduleSignSpecs extends HapiSuite {
                 .given(
                         sleepFor(SCHEDULE_EXPIRY_TIME_MS), // await any other scheduled expiring
                         // entity to expire
-                        cryptoCreate("sender").balance(1L),
-                        cryptoCreate("receiver").balance(0L).receiverSigRequired(true))
+                        cryptoCreate(SENDER).balance(1L),
+                        cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true))
                 .when(
-                        overriding("ledger.schedule.txExpiryTimeSecs", "" + FAST_EXPIRATION),
-                        scheduleCreate("twoSigXfer", cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1)))
-                                .alsoSigningWith("sender"),
-                        getAccountBalance("receiver").hasTinyBars(0L))
+                        overriding(LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS, "" + FAST_EXPIRATION),
+                        scheduleCreate(TWO_SIG_XFER, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1)))
+                                .alsoSigningWith(SENDER),
+                        getAccountBalance(RECEIVER).hasTinyBars(0L))
                 .then(
-                        scheduleSign("twoSigXfer")
-                                .alsoSigningWith("receiver")
+                        scheduleSign(TWO_SIG_XFER)
+                                .alsoSigningWith(RECEIVER)
                                 .hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)
                                 .hasKnownStatusFrom(INVALID_SCHEDULE_ID, SCHEDULE_PENDING_EXPIRATION),
                         sleepFor(2000),
-                        scheduleSign("twoSigXfer")
-                                .alsoSigningWith("receiver")
+                        scheduleSign(TWO_SIG_XFER)
+                                .alsoSigningWith(RECEIVER)
                                 .hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)
                                 .hasKnownStatusFrom(INVALID_SCHEDULE_ID, SCHEDULE_PENDING_EXPIRATION),
-                        scheduleSign("twoSigXfer")
-                                .alsoSigningWith("receiver")
+                        scheduleSign(TWO_SIG_XFER)
+                                .alsoSigningWith(RECEIVER)
                                 .hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)
                                 .hasKnownStatusFrom(INVALID_SCHEDULE_ID),
-                        getScheduleInfo("twoSigXfer").hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
-                        overriding("ledger.schedule.txExpiryTimeSecs", "" + defaultTxExpiry));
+                        getScheduleInfo(TWO_SIG_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
+                        overriding(LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS, "" + defaultTxExpiry));
     }
 
     @Override

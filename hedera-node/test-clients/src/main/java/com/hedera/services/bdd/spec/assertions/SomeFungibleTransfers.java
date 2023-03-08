@@ -31,6 +31,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
 
 public class SomeFungibleTransfers implements ErroringAssertsProvider<List<TokenTransferList>> {
+    static final String FOR_TOKEN = "' for token '";
     private final Map<String, List<Pair<String, Long>>> changes = new HashMap<>();
     private boolean noOtherChangesTolerated = false;
 
@@ -101,7 +102,7 @@ public class SomeFungibleTransfers implements ErroringAssertsProvider<List<Token
                         Assertions.assertEquals(
                                 expected,
                                 actual,
-                                "Wrong change in account '" + accountName + "' for token '" + tokenName + "'");
+                                "Wrong change in account '" + accountName + FOR_TOKEN + tokenName + "'");
                     } catch (Throwable t) {
                         wrongFungibleChanges.add(t);
                     }
@@ -127,22 +128,20 @@ public class SomeFungibleTransfers implements ErroringAssertsProvider<List<Token
     private long expectedChange(String token, String account) {
         final var expectations = changes.get(token);
         if (expectations == null) {
-            throw new IllegalStateException(
-                    "No expected change in account '" + account + "' for token '" + token + "'");
+            throw new IllegalStateException(exceptionMessageNotExpectedChangeAccountForToken(account, token));
         }
         for (var change : expectations) {
             if (change.getKey().equals(account)) {
                 return change.getValue();
             }
         }
-        throw new IllegalStateException("No expected change in account '" + account + "' for token '" + token + "'");
+        throw new IllegalStateException(exceptionMessageNotExpectedChangeAccountForToken(account, token));
     }
 
     private void forgetExpectation(String token, String account) {
         final var expectations = changes.get(token);
         if (expectations == null) {
-            throw new IllegalStateException(
-                    "No expected change in account '" + account + "' for token '" + token + "'");
+            throw new IllegalStateException(exceptionMessageNotExpectedChangeAccountForToken(account, token));
         }
         for (var iter = expectations.iterator(); iter.hasNext(); ) {
             final var change = iter.next();
@@ -151,5 +150,9 @@ public class SomeFungibleTransfers implements ErroringAssertsProvider<List<Token
                 break;
             }
         }
+    }
+
+    private String exceptionMessageNotExpectedChangeAccountForToken(final String account, final String token) {
+        return "No expected change in account '" + account + FOR_TOKEN + token + "'";
     }
 }

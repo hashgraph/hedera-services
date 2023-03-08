@@ -186,15 +186,17 @@ public class CryptoTransferSuite extends HapiSuite {
 2 tokens involved,
   4 account adjustments: {} tb, ${} (~{}x pure crypto)
   5 account adjustments: {} tb, ${} (~{}x pure crypto)
-  6 account adjustments: {} tb, ${} (~{}x pure crypto)
-3 tokens involved,
-  6 account adjustments: {} tb, ${} (~{}x pure crypto)
-                                                          """;
+                      6 account adjustments: {} tb, ${} (~{}x pure crypto)
+                    3 tokens involved,
+                      6 account adjustments: {} tb, ${} (~{}x pure crypto)
+                                                                              """;
     public static final String HODL_XFER = "hodlXfer";
     public static final String PAYEE_NO_SIG_REQ = "payeeNoSigReq";
     private static final String HBAR_XFER = "hbarXfer";
     private static final String NFT_XFER = "nftXfer";
     private static final String FT_XFER = "ftXfer";
+    private static final String OTHERACCOUNT = "otheraccount";
+    private static final String PLEASE_MIND_THE_VASE = "Please mind the vase.";
 
     public static void main(String... args) {
         new CryptoTransferSuite().runSuiteAsync();
@@ -321,7 +323,7 @@ public class CryptoTransferSuite extends HapiSuite {
                         cryptoCreate(collector),
                         cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
                         cryptoCreate(COUNTERPARTY).maxAutomaticTokenAssociations(2),
-                        cryptoCreate("otheraccount").maxAutomaticTokenAssociations(2),
+                        cryptoCreate(OTHERACCOUNT).maxAutomaticTokenAssociations(2),
                         tokenCreate(FUNGIBLE_TOKEN).treasury(PARTY).initialSupply(1_000_000),
                         tokenCreate("FEE_DENOM").treasury(collector),
                         tokenCreate(NON_FUNGIBLE_TOKEN)
@@ -331,7 +333,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                 .supplyKey(MULTI_KEY)
                                 .withCustom(royaltyFeeWithFallback(
                                         1, 2, fixedHtsFeeInheritingRoyaltyCollector(1, "FEE_DENOM"), collector)),
-                        mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("Please mind the vase."))),
+                        mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8(PLEASE_MIND_THE_VASE))),
                         withOpContext((spec, opLog) -> {
                             final var registry = spec.registry();
                             ftId.set(registry.getTokenID(FUNGIBLE_TOKEN));
@@ -340,16 +342,16 @@ public class CryptoTransferSuite extends HapiSuite {
                             counterId.set(registry.getAccountID(COUNTERPARTY));
                             partyAlias.set(ByteString.copyFrom(asSolidityAddress(partyId.get())));
                             counterAlias.set(ByteString.copyFrom(asSolidityAddress(counterId.get())));
-                            otherAccountId.set(registry.getAccountID("otheraccount"));
+                            otherAccountId.set(registry.getAccountID(OTHERACCOUNT));
                         }))
                 .when(cryptoTransfer((spec, b) -> b.addTokenTransfers(TokenTransferList.newBuilder()
-                                        .setToken(nftId.get())
-                                        .addNftTransfers(
-                                                ocWith(accountId(partyAlias.get()), accountId(counterAlias.get()), 1L)))
-                                .setTransfers(TransferList.newBuilder()
-                                        .addAccountAmounts(aaWith(partyId.get(), +2))
-                                        .addAccountAmounts(aaWith(otherAccountId.get(), -2))))
-                        .signedBy(DEFAULT_PAYER, PARTY, "otheraccount")
+                                .setToken(nftId.get())
+                                .addNftTransfers(
+                                        ocWith(accountId(partyAlias.get()), accountId(counterAlias.get()), 1L)))
+                        .setTransfers(TransferList.newBuilder()
+                                .addAccountAmounts(aaWith(partyId.get(), +2))
+                                .addAccountAmounts(aaWith(otherAccountId.get(), -2))))
+                        .signedBy(DEFAULT_PAYER, PARTY, OTHERACCOUNT)
                         .via(NFT_XFER))
                 .then(getTxnRecord(NFT_XFER).logged());
     }
@@ -402,7 +404,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                 .treasury(PARTY)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .supplyKey(MULTI_KEY),
-                        mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("Please mind the vase."))),
+                        mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8(PLEASE_MIND_THE_VASE))),
                         withOpContext((spec, opLog) -> {
                             final var registry = spec.registry();
                             ftId.set(registry.getTokenID(FUNGIBLE_TOKEN));
@@ -505,7 +507,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                 .initialSupply(0)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .supplyKey(MULTI_KEY),
-                        mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("Please mind the vase."))),
+                        mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8(PLEASE_MIND_THE_VASE))),
                         withOpContext((spec, opLog) -> {
                             final var registry = spec.registry();
                             ftId.set(registry.getTokenID(FUNGIBLE_TOKEN));

@@ -48,6 +48,8 @@ public class ContractDeleteSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ContractDeleteSuite.class);
     private static final String CONTRACT = "Multipurpose";
     private static final String PAYABLE_CONSTRUCTOR = "PayableConstructor";
+    private static final String DESTROY = "destroy";
+    private static final String RECEIVER = "receiver";
 
     public static void main(String... args) {
         new ContractDeleteSuite().runSuiteAsync();
@@ -182,11 +184,10 @@ public class ContractDeleteSuite extends HapiSuite {
                         tokenAssociate(selfDestructCallable + "2", someToken),
                         tokenUpdate(someToken).treasury(selfDestructCallable + "2"),
                         contractDelete(selfDestructCallable + "1"),
-                        contractCall(selfDestructCallable + "2", "destroy")
-                                .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION),
+                        contractCall(selfDestructCallable + "2", DESTROY).hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION),
                         tokenAssociate(escapeRoute, someToken),
                         tokenUpdate(someToken).treasury(escapeRoute))
-                .then(contractCall(selfDestructCallable + "2", "destroy"));
+                .then(contractCall(selfDestructCallable + "2", DESTROY));
     }
 
     HapiSpec cannotDeleteOrSelfDestructContractWithNonZeroBalance() {
@@ -218,7 +219,7 @@ public class ContractDeleteSuite extends HapiSuite {
                                 .between(selfDestructableContract, otherMiscContract)))
                 .then(
                         contractDelete(otherMiscContract).hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES),
-                        contractCall(selfDestructableContract, "destroy").hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION));
+                        contractCall(selfDestructableContract, DESTROY).hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION));
     }
 
     HapiSpec rejectsWithoutProperSig() {
@@ -266,11 +267,11 @@ public class ContractDeleteSuite extends HapiSuite {
     private HapiSpec deleteTransfersToAccount() {
         return defaultHapiSpec("DeleteTransfersToAccount")
                 .given(
-                        cryptoCreate("receiver").balance(0L),
+                        cryptoCreate(RECEIVER).balance(0L),
                         uploadInitCode(PAYABLE_CONSTRUCTOR),
                         contractCreate(PAYABLE_CONSTRUCTOR).balance(1L))
-                .when(contractDelete(PAYABLE_CONSTRUCTOR).transferAccount("receiver"))
-                .then(getAccountBalance("receiver").hasTinyBars(1L));
+                .when(contractDelete(PAYABLE_CONSTRUCTOR).transferAccount(RECEIVER))
+                .then(getAccountBalance(RECEIVER).hasTinyBars(1L));
     }
 
     private HapiSpec deleteTransfersToContract() {

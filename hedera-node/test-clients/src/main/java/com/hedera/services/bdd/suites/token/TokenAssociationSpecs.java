@@ -75,6 +75,10 @@ public class TokenAssociationSpecs extends HapiSuite {
     public static final String VANILLA_TOKEN = "TokenD";
     public static final String MULTI_KEY = "multiKey";
     public static final String TBD_TOKEN = "ToBeDeleted";
+    public static final String TOKENS = " tokens";
+    public static final String CREATION = "creation";
+    public static final String SIMPLE = "simple";
+    public static final String FREEZE_KEY = "freezeKey";
 
     public static void main(String... args) {
         final var spec = new TokenAssociationSpecs();
@@ -166,11 +170,11 @@ public class TokenAssociationSpecs extends HapiSuite {
         final var contract = "contract";
         return defaultHapiSpec("ContractInfoQueriesAsExpected")
                 .given(
-                        newKeyNamed("simple"),
+                        newKeyNamed(SIMPLE),
                         tokenCreate("a"),
                         tokenCreate("b"),
                         tokenCreate("c"),
-                        tokenCreate("tbd").adminKey("simple"),
+                        tokenCreate("tbd").adminKey(SIMPLE),
                         createDefaultContract(contract))
                 .when(
                         tokenAssociate(contract, "a", "b", "c", "tbd"),
@@ -193,11 +197,11 @@ public class TokenAssociationSpecs extends HapiSuite {
         final var account = "account";
         return defaultHapiSpec("InfoQueriesAsExpected")
                 .given(
-                        newKeyNamed("simple"),
+                        newKeyNamed(SIMPLE),
                         tokenCreate("a").decimals(1),
                         tokenCreate("b").decimals(2),
                         tokenCreate("c").decimals(3),
-                        tokenCreate("tbd").adminKey("simple").decimals(4),
+                        tokenCreate("tbd").adminKey(SIMPLE).decimals(4),
                         cryptoCreate(account).balance(0L))
                 .when(
                         tokenAssociate(account, "a", "b", "c", "tbd"),
@@ -228,9 +232,9 @@ public class TokenAssociationSpecs extends HapiSuite {
                         newKeyNamed("admin"),
                         cryptoCreate(treasury),
                         uploadInitCode(contract),
-                        contractCreate(contract).gas(300_000).via("creation"),
+                        contractCreate(contract).gas(300_000).via(CREATION),
                         withOpContext((spec, opLog) -> {
-                            var subOp = getTxnRecord("creation");
+                            var subOp = getTxnRecord(CREATION);
                             allRunFor(spec, subOp);
                             var record = subOp.getResponseRecord();
                             now.set(record.getConsensusTimestamp().getSeconds());
@@ -269,18 +273,18 @@ public class TokenAssociationSpecs extends HapiSuite {
         AtomicLong now = new AtomicLong();
         return defaultHapiSpec("DissociationFromExpiredTokensAsExpected")
                 .given(
-                        newKeyNamed("freezeKey"),
+                        newKeyNamed(FREEZE_KEY),
                         cryptoCreate(treasury),
-                        cryptoCreate(frozenAccount).via("creation"),
-                        cryptoCreate(unfrozenAccount).via("creation"),
+                        cryptoCreate(frozenAccount).via(CREATION),
+                        cryptoCreate(unfrozenAccount).via(CREATION),
                         withOpContext((spec, opLog) -> {
-                            var subOp = getTxnRecord("creation");
+                            var subOp = getTxnRecord(CREATION);
                             allRunFor(spec, subOp);
                             var record = subOp.getResponseRecord();
                             now.set(record.getConsensusTimestamp().getSeconds());
                         }),
                         sourcing(() -> tokenCreate(expiringToken)
-                                .freezeKey("freezeKey")
+                                .freezeKey(FREEZE_KEY)
                                 .freezeDefault(true)
                                 .treasury(treasury)
                                 .initialSupply(1000L)
@@ -304,7 +308,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                                                 assertEquals(
                                                         1,
                                                         tokenXfers.size(),
-                                                        "Wrong number of" + " tokens" + " transferred!");
+                                                        "Wrong number of" + TOKENS + " transferred!");
                                                 TokenTransferList xfers = tokenXfers.get(0);
                                                 assertEquals(
                                                         spec.registry().getTokenID(expiringToken),
@@ -318,7 +322,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                                                 assertEquals(
                                                         100L,
                                                         toTreasury.getAmount(),
-                                                        "Treasury should" + " get 100" + " tokens" + " back!");
+                                                        "Treasury should" + " get 100" + TOKENS + " back!");
                                                 AccountAmount fromAccount = xfers.getTransfers(1);
                                                 assertEquals(
                                                         spec.registry().getAccountID(unfrozenAccount),
@@ -327,7 +331,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                                                 assertEquals(
                                                         -100L,
                                                         fromAccount.getAmount(),
-                                                        "Account should" + " send 100" + " tokens" + " back!");
+                                                        "Account should" + " send 100" + TOKENS + " back!");
                                             } catch (Exception error) {
                                                 return List.of(error);
                                             }
@@ -480,24 +484,22 @@ public class TokenAssociationSpecs extends HapiSuite {
     }
 
     public HapiSpec dissociateHasExpectedSemanticsForDissociatedContracts() {
-        final var multiKey = "multiKey";
         final var uniqToken = "UniqToken";
         final var contract = "Fuse";
-        final var bytecode = "bytecode";
         final var firstMeta = ByteString.copyFrom("FIRST".getBytes(StandardCharsets.UTF_8));
         final var secondMeta = ByteString.copyFrom("SECOND".getBytes(StandardCharsets.UTF_8));
         final var thirdMeta = ByteString.copyFrom("THIRD".getBytes(StandardCharsets.UTF_8));
 
         return defaultHapiSpec("DissociateHasExpectedSemanticsForDissociatedContracts")
                 .given(
-                        newKeyNamed(multiKey),
+                        newKeyNamed(MULTI_KEY),
                         cryptoCreate(TOKEN_TREASURY).balance(0L).maxAutomaticTokenAssociations(542),
                         uploadInitCode(contract),
                         contractCreate(contract).gas(300_000),
                         tokenCreate(uniqToken)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .initialSupply(0)
-                                .supplyKey(multiKey)
+                                .supplyKey(MULTI_KEY)
                                 .treasury(TOKEN_TREASURY),
                         mintToken(uniqToken, List.of(firstMeta, secondMeta, thirdMeta)),
                         getAccountInfo(TOKEN_TREASURY).logged())
@@ -538,19 +540,19 @@ public class TokenAssociationSpecs extends HapiSuite {
     }
 
     public static HapiSpecOperation[] basicKeysAndTokens() {
-        return new HapiSpecOperation[] {
-            newKeyNamed("kycKey"),
-            newKeyNamed("freezeKey"),
-            cryptoCreate(TOKEN_TREASURY).balance(0L),
-            tokenCreate(FREEZABLE_TOKEN_ON_BY_DEFAULT)
-                    .treasury(TOKEN_TREASURY)
-                    .freezeKey("freezeKey")
-                    .freezeDefault(true),
-            tokenCreate(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
-                    .treasury(TOKEN_TREASURY)
-                    .freezeKey("freezeKey")
-                    .freezeDefault(false),
-            tokenCreate(KNOWABLE_TOKEN).treasury(TOKEN_TREASURY).kycKey("kycKey"),
+        return new HapiSpecOperation[]{
+                newKeyNamed("kycKey"),
+                newKeyNamed(FREEZE_KEY),
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                tokenCreate(FREEZABLE_TOKEN_ON_BY_DEFAULT)
+                        .treasury(TOKEN_TREASURY)
+                        .freezeKey(FREEZE_KEY)
+                        .freezeDefault(true),
+                tokenCreate(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
+                        .treasury(TOKEN_TREASURY)
+                        .freezeKey(FREEZE_KEY)
+                        .freezeDefault(false),
+                tokenCreate(KNOWABLE_TOKEN).treasury(TOKEN_TREASURY).kycKey("kycKey"),
             tokenCreate(VANILLA_TOKEN).treasury(TOKEN_TREASURY)
         };
     }

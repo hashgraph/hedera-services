@@ -90,6 +90,9 @@ public class AssociatePrecompileSuite extends HapiSuite {
     private static final byte[] ACCOUNT_ADDRESS =
             asAddress(AccountID.newBuilder().build());
     private static final byte[] TOKEN_ADDRESS = asAddress(TokenID.newBuilder().build());
+    private static final String INVALID_SINGLE_ABI_CALL_TXN = "Invalid Single Abi Call txn";
+    private static final String TOKEN_ASSOCIATE = "tokenAssociate";
+    private static final String VANILLA_TOKEN_ASSOCIATE_TXN = "vanillaTokenAssociateTxn";
 
     public static void main(String... args) {
         new AssociatePrecompileSuite().runSuiteAsync();
@@ -193,17 +196,17 @@ public class AssociatePrecompileSuite extends HapiSuite {
                                 .via("notSupportedFunctionCallTxn")
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
-                                        THE_CONTRACT,
-                                        "tokenAssociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                THE_CONTRACT,
+                                TOKEN_ASSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .payingWith(GENESIS)
-                                .via("vanillaTokenAssociateTxn")
+                                .via(VANILLA_TOKEN_ASSOCIATE_TXN)
                                 .gas(GAS_TO_OFFER))))
                 .then(
                         emptyChildRecordsCheck("notSupportedFunctionCallTxn", CONTRACT_REVERT_EXECUTED),
                         childRecordsCheck(
-                                "vanillaTokenAssociateTxn",
+                                VANILLA_TOKEN_ASSOCIATE_TXN,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -234,21 +237,21 @@ public class AssociatePrecompileSuite extends HapiSuite {
                         newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
                         cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
                         contractCall(
-                                        THE_CONTRACT,
-                                        "tokenAssociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(invalidAbiArgument))
+                                THE_CONTRACT,
+                                TOKEN_ASSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(invalidAbiArgument))
                                 .payingWith(GENESIS)
                                 .via("functionCallWithInvalidArgumentTxn")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
-                                        THE_CONTRACT,
-                                        "tokenAssociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                THE_CONTRACT,
+                                TOKEN_ASSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .payingWith(GENESIS)
-                                .via("vanillaTokenAssociateTxn")
+                                .via(VANILLA_TOKEN_ASSOCIATE_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(SUCCESS))))
                 .then(
@@ -261,7 +264,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
                                                 .contractCallResult(
                                                         htsPrecompileResult().withStatus(INVALID_TOKEN_ID)))),
                         childRecordsCheck(
-                                "vanillaTokenAssociateTxn",
+                                VANILLA_TOKEN_ASSOCIATE_TXN,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -399,17 +402,16 @@ public class AssociatePrecompileSuite extends HapiSuite {
                 .given(uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT), contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
                 .when(
                         contractCall(
-                                        THE_GRACEFULLY_FAILING_CONTRACT,
-                                        "performInvalidlyFormattedSingleFunctionCall",
-                                        HapiParserUtil.asHeadlongAddress(ACCOUNT_ADDRESS))
+                                THE_GRACEFULLY_FAILING_CONTRACT,
+                                "performInvalidlyFormattedSingleFunctionCall",
+                                HapiParserUtil.asHeadlongAddress(ACCOUNT_ADDRESS))
                                 .notTryingAsHexedliteral()
-                                .via("Invalid Single Abi Call txn")
+                                .via(INVALID_SINGLE_ABI_CALL_TXN)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                        getTxnRecord("Invalid Single Abi Call txn")
-                                .saveTxnRecordToRegistry("Invalid Single Abi Call txn"))
+                        getTxnRecord(INVALID_SINGLE_ABI_CALL_TXN).saveTxnRecordToRegistry(INVALID_SINGLE_ABI_CALL_TXN))
                 .then(withOpContext((spec, ignore) -> {
                     final var gasUsed = spec.registry()
-                            .getTransactionRecord("Invalid Single Abi Call txn")
+                            .getTransactionRecord(INVALID_SINGLE_ABI_CALL_TXN)
                             .getContractCallResult()
                             .getGasUsed();
                     assertEquals(99011, gasUsed);

@@ -115,6 +115,45 @@ public class ContractKeysHTSSuite extends HapiSuite {
     private static final String ASSOCIATE_DISSOCIATE_CONTRACT = "AssociateDissociate";
     private static final String BURN_TOKEN = "BurnToken";
     private static final String BURN_TOKEN_METHOD = "burnToken";
+    private static final String STATIC_BURN_CALL_WITH_CONTRACT_KEY_TXN = "staticBurnCallWithContractKeyTxn";
+    private static final String STATIC_BURN_CALL_WITH_DELEGATE_CONTRACT_KEY_TXN =
+            "staticBurnCallWithDelegateContractKeyTxn";
+    private static final String NON_ZERO_TOKEN_BALANCE_DISSOCIATE_WITH_DELEGATE_CONTRACT_KEY_FAILED_TXN =
+            "nonZeroTokenBalanceDissociateWithDelegateContractKeyFailedTxn";
+    private static final String TOKEN_DISSOCIATE_WITH_DELEGATE_CONTRACT_KEY_HAPPY_TXN =
+            "tokenDissociateWithDelegateContractKeyHappyTxn";
+    private static final String CREATION_TX = "creationTx";
+    private static final String DISTRIBUTE_TX = "distributeTx";
+    private static final String TOKEN_ASSOCIATE = "tokenAssociate";
+    private static final String TOKEN_DISSOCIATE = "tokenDissociate";
+    private static final String BURN_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_DELEGATE_CALL =
+            "burnCallAfterNestedMintCallWithPrecompileDelegateCall";
+    private static final String BURN_WITH_CONTRACT_KEY = "burn with contract key";
+    private static final String VANILLA_TOKEN_ASSOCIATE_TXN = "vanillaTokenAssociateTxn";
+    private static final String TOKEN = "Token";
+    private static final String DELEGATE_CONTRACT1 = "DelegateContract";
+    private static final String SERVICE_CONTRACT = "ServiceContract";
+    private static final String SECOND = "Second!";
+    private static final String DELEGATE_BURN_CALL_WITH_CONTRACT_KEY_TXN = "delegateBurnCallWithContractKeyTxn";
+    private static final String NESTED_ASSOCIATE_DISSOCIATE = "NestedAssociateDissociate";
+    private static final String STATIC_CONTRACT = "StaticContract";
+    private static final String BURN_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_CALL =
+            "burnCallAfterNestedMintCallWithPrecompileCall";
+    private static final String BURN_DELEGATE_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_DELEGATE_CALL =
+            "burnDelegateCallAfterNestedMintCallWithPrecompileDelegateCall";
+    private static final String BURN_DELEGATE_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_DELEGATE_CALL =
+            "burnDelegateCallAfterNestedMintDelegateCallWithPrecompileDelegateCall";
+    private static final String BURN_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_DELEGATE_CALL =
+            "burnCallAfterNestedMintDelegateCallWithPrecompileDelegateCall";
+    private static final String BURN_DELEGATE_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_CALL =
+            "burnDelegateCallAfterNestedMintCallWithPrecompileCall";
+    private static final String BURN_DELEGATE_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_CALL =
+            "burnDelegateCallAfterNestedMintDelegateCallWithPrecompileCall";
+    private static final String BURN_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_CALL =
+            "burnCallAfterNestedMintDelegateCallWithPrecompileCall";
+    private static final String FIRST = "First!";
+    private static final String ANYBODY = "anybody";
+    private static final String FUNGIBLE_TOKEN = "fungibleToken";
 
     public static void main(String... args) {
         new ContractKeysHTSSuite().runSuiteAsync();
@@ -213,7 +252,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     private HapiSpec burnWithKeyAsPartOf1OfXThreshold() {
-        final var token = "Token";
+        final var token = TOKEN;
         final var delegateContractKeyShape = KeyShape.threshOf(1, SIMPLE, DELEGATE_CONTRACT);
         final var contractKeyShape = KeyShape.threshOf(1, SIMPLE, KeyShape.CONTRACT);
 
@@ -231,10 +270,10 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         withOpContext((spec, opLog) -> allRunFor(
                                 spec,
                                 contractCreate(
-                                                BURN_TOKEN,
-                                                HapiParserUtil.asHeadlongAddress(asAddress(
-                                                        spec.registry().getTokenID(token))))
-                                        .via("creationTx"))))
+                                        BURN_TOKEN,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(
+                                                spec.registry().getTokenID(token))))
+                                        .via(CREATION_TX))))
                 .when(
                         newKeyNamed(DELEGATE_KEY).shape(delegateContractKeyShape.signedWith(sigs(ON, BURN_TOKEN))),
                         tokenUpdate(token).supplyKey(DELEGATE_KEY),
@@ -259,10 +298,10 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         newKeyNamed(CONTRACT_KEY).shape(contractKeyShape.signedWith(sigs(ON, BURN_TOKEN))),
                         tokenUpdate(token).supplyKey(CONTRACT_KEY),
                         contractCall(BURN_TOKEN, BURN_TOKEN_METHOD, BigInteger.ONE, new long[0])
-                                .via("burn with contract key")
+                                .via(BURN_WITH_CONTRACT_KEY)
                                 .gas(GAS_TO_OFFER),
                         childRecordsCheck(
-                                "burn with contract key",
+                                BURN_WITH_CONTRACT_KEY,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -276,8 +315,8 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     private HapiSpec transferWithKeyAsPartOf2OfXThreshold() {
-        final var outerContract = "DelegateContract";
-        final var nestedContract = "ServiceContract";
+        final var outerContract = DELEGATE_CONTRACT1;
+        final var nestedContract = SERVICE_CONTRACT;
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> receiverID = new AtomicReference<>();
@@ -293,7 +332,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 .treasury(TOKEN_TREASURY)
                                 .initialSupply(0)
                                 .exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id))),
-                        mintToken(VANILLA_TOKEN, List.of(copyFromUtf8("First!"))),
+                        mintToken(VANILLA_TOKEN, List.of(copyFromUtf8(FIRST))),
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(RECEIVER).exposingCreatedIdTo(receiverID::set),
                         uploadInitCode(outerContract, nestedContract),
@@ -337,8 +376,8 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     private HapiSpec delegateCallForTransferWithContractKey() {
-        final var outerContract = "DelegateContract";
-        final var nestedContract = "ServiceContract";
+        final var outerContract = DELEGATE_CONTRACT1;
+        final var nestedContract = SERVICE_CONTRACT;
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> receiverID = new AtomicReference<>();
@@ -353,7 +392,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 .treasury(TOKEN_TREASURY)
                                 .initialSupply(0)
                                 .exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id))),
-                        mintToken(VANILLA_TOKEN, List.of(copyFromUtf8("First!"))),
+                        mintToken(VANILLA_TOKEN, List.of(copyFromUtf8(FIRST))),
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(RECEIVER).exposingCreatedIdTo(receiverID::set),
                         uploadInitCode(outerContract, nestedContract),
@@ -395,8 +434,8 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     private HapiSpec delegateCallForBurnWithContractKey() {
-        final var outerContract = "DelegateContract";
-        final var nestedContract = "ServiceContract";
+        final var outerContract = DELEGATE_CONTRACT1;
+        final var nestedContract = SERVICE_CONTRACT;
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
         return defaultHapiSpec("delegateCallForBurnWithContractKey")
@@ -410,8 +449,8 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 .treasury(TOKEN_TREASURY)
                                 .initialSupply(0L)
                                 .exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id))),
-                        mintToken(VANILLA_TOKEN, List.of(copyFromUtf8("First!"))),
-                        mintToken(VANILLA_TOKEN, List.of(copyFromUtf8("Second!"))),
+                        mintToken(VANILLA_TOKEN, List.of(copyFromUtf8(FIRST))),
+                        mintToken(VANILLA_TOKEN, List.of(copyFromUtf8(SECOND))),
                         uploadInitCode(outerContract, nestedContract),
                         contractCreate(nestedContract))
                 .when(withOpContext((spec, opLog) -> allRunFor(
@@ -421,18 +460,18 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
                         tokenUpdate(VANILLA_TOKEN).supplyKey(CONTRACT_KEY),
                         contractCall(
-                                        outerContract,
-                                        "burnDelegateCall",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
-                                        BigInteger.ZERO,
-                                        new long[] {1L})
+                                outerContract,
+                                "burnDelegateCall",
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
+                                BigInteger.ZERO,
+                                new long[]{1L})
                                 .payingWith(GENESIS)
-                                .via("delegateBurnCallWithContractKeyTxn")
+                                .via(DELEGATE_BURN_CALL_WITH_CONTRACT_KEY_TXN)
                                 .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
                                 .gas(GAS_TO_OFFER))))
                 .then(
                         childRecordsCheck(
-                                "delegateBurnCallWithContractKeyTxn",
+                                DELEGATE_BURN_CALL_WITH_CONTRACT_KEY_TXN,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
@@ -444,8 +483,8 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     private HapiSpec delegateCallForMintWithContractKey() {
-        final var outerContract = "DelegateContract";
-        final var nestedContract = "ServiceContract";
+        final var outerContract = DELEGATE_CONTRACT1;
+        final var nestedContract = SERVICE_CONTRACT;
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
         return defaultHapiSpec("delegateCallForMintWithContractKey")
@@ -468,17 +507,17 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
                         tokenUpdate(VANILLA_TOKEN).supplyKey(CONTRACT_KEY),
                         contractCall(
-                                        outerContract,
-                                        "mintDelegateCall",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
-                                        BigInteger.ONE)
+                                outerContract,
+                                "mintDelegateCall",
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
+                                BigInteger.ONE)
                                 .payingWith(GENESIS)
-                                .via("delegateBurnCallWithContractKeyTxn")
+                                .via(DELEGATE_BURN_CALL_WITH_CONTRACT_KEY_TXN)
                                 .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
                                 .gas(GAS_TO_OFFER))))
                 .then(
                         childRecordsCheck(
-                                "delegateBurnCallWithContractKeyTxn",
+                                DELEGATE_BURN_CALL_WITH_CONTRACT_KEY_TXN,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
@@ -491,8 +530,8 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     private HapiSpec staticCallForDissociatePrecompileFails() {
-        final var outerContract = "NestedAssociateDissociate";
-        final var nestedContract = "AssociateDissociate";
+        final var outerContract = NESTED_ASSOCIATE_DISSOCIATE;
+        final var nestedContract = ASSOCIATE_DISSOCIATE_CONTRACT;
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
@@ -526,8 +565,8 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     private HapiSpec staticCallForTransferWithContractKey() {
-        final var outerContract = "StaticContract";
-        final var nestedContract = "ServiceContract";
+        final var outerContract = STATIC_CONTRACT;
+        final var nestedContract = SERVICE_CONTRACT;
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> receiverID = new AtomicReference<>();
@@ -542,7 +581,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 .treasury(TOKEN_TREASURY)
                                 .initialSupply(0)
                                 .exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id))),
-                        mintToken(VANILLA_TOKEN, List.of(copyFromUtf8("First!"))),
+                        mintToken(VANILLA_TOKEN, List.of(copyFromUtf8(FIRST))),
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(RECEIVER).exposingCreatedIdTo(receiverID::set),
                         uploadInitCode(outerContract, nestedContract),
@@ -574,8 +613,8 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     private HapiSpec staticCallForBurnWithContractKey() {
-        final var outerContract = "StaticContract";
-        final var nestedContract = "ServiceContract";
+        final var outerContract = STATIC_CONTRACT;
+        final var nestedContract = SERVICE_CONTRACT;
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
         return defaultHapiSpec("staticCallForBurnWithContractKey")
@@ -589,8 +628,8 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 .treasury(TOKEN_TREASURY)
                                 .initialSupply(0L)
                                 .exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id))),
-                        mintToken(VANILLA_TOKEN, List.of(copyFromUtf8("First!"))),
-                        mintToken(VANILLA_TOKEN, List.of(copyFromUtf8("Second!"))),
+                        mintToken(VANILLA_TOKEN, List.of(copyFromUtf8(FIRST))),
+                        mintToken(VANILLA_TOKEN, List.of(copyFromUtf8(SECOND))),
                         uploadInitCode(outerContract, nestedContract),
                         contractCreate(nestedContract))
                 .when(withOpContext((spec, opLog) -> allRunFor(
@@ -600,21 +639,21 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
                         tokenUpdate(VANILLA_TOKEN).supplyKey(CONTRACT_KEY),
                         contractCall(
-                                        outerContract,
-                                        "burnStaticCall",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
-                                        BigInteger.ZERO,
-                                        new long[] {1L})
+                                outerContract,
+                                "burnStaticCall",
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
+                                BigInteger.ZERO,
+                                new long[]{1L})
                                 .payingWith(GENESIS)
-                                .via("staticBurnCallWithContractKeyTxn")
+                                .via(STATIC_BURN_CALL_WITH_CONTRACT_KEY_TXN)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                 .gas(GAS_TO_OFFER))))
-                .then(emptyChildRecordsCheck("staticBurnCallWithContractKeyTxn", CONTRACT_REVERT_EXECUTED));
+                .then(emptyChildRecordsCheck(STATIC_BURN_CALL_WITH_CONTRACT_KEY_TXN, CONTRACT_REVERT_EXECUTED));
     }
 
     private HapiSpec staticCallForMintWithContractKey() {
-        final var outerContract = "StaticContract";
-        final var nestedContract = "ServiceContract";
+        final var outerContract = STATIC_CONTRACT;
+        final var nestedContract = SERVICE_CONTRACT;
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
         return defaultHapiSpec("staticCallForMintWithContractKey")
@@ -637,20 +676,20 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
                         tokenUpdate(VANILLA_TOKEN).supplyKey(CONTRACT_KEY),
                         contractCall(
-                                        outerContract,
-                                        "mintStaticCall",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
-                                        BigInteger.ONE)
+                                outerContract,
+                                "mintStaticCall",
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
+                                BigInteger.ONE)
                                 .payingWith(GENESIS)
-                                .via("staticBurnCallWithContractKeyTxn")
+                                .via(STATIC_BURN_CALL_WITH_CONTRACT_KEY_TXN)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                 .gas(GAS_TO_OFFER))))
-                .then(emptyChildRecordsCheck("staticBurnCallWithContractKeyTxn", CONTRACT_REVERT_EXECUTED));
+                .then(emptyChildRecordsCheck(STATIC_BURN_CALL_WITH_CONTRACT_KEY_TXN, CONTRACT_REVERT_EXECUTED));
     }
 
     private HapiSpec staticCallForTransferWithDelegateContractKey() {
-        final var outerContract = "StaticContract";
-        final var nestedContract = "ServiceContract";
+        final var outerContract = STATIC_CONTRACT;
+        final var nestedContract = SERVICE_CONTRACT;
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> receiverID = new AtomicReference<>();
@@ -665,7 +704,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 .treasury(TOKEN_TREASURY)
                                 .initialSupply(0)
                                 .exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id))),
-                        mintToken(VANILLA_TOKEN, List.of(copyFromUtf8("First!"))),
+                        mintToken(VANILLA_TOKEN, List.of(copyFromUtf8(FIRST))),
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(RECEIVER).exposingCreatedIdTo(receiverID::set),
                         uploadInitCode(outerContract, nestedContract),
@@ -698,8 +737,8 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     private HapiSpec staticCallForBurnWithDelegateContractKey() {
-        final var outerContract = "StaticContract";
-        final var nestedContract = "ServiceContract";
+        final var outerContract = STATIC_CONTRACT;
+        final var nestedContract = SERVICE_CONTRACT;
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
         return defaultHapiSpec("staticCallForBurnWithDelegateContractKey")
@@ -713,8 +752,8 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 .treasury(TOKEN_TREASURY)
                                 .initialSupply(0L)
                                 .exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id))),
-                        mintToken(VANILLA_TOKEN, List.of(copyFromUtf8("First!"))),
-                        mintToken(VANILLA_TOKEN, List.of(copyFromUtf8("Second!"))),
+                        mintToken(VANILLA_TOKEN, List.of(copyFromUtf8(FIRST))),
+                        mintToken(VANILLA_TOKEN, List.of(copyFromUtf8(SECOND))),
                         uploadInitCode(outerContract, nestedContract),
                         contractCreate(nestedContract))
                 .when(withOpContext((spec, opLog) -> allRunFor(
@@ -725,21 +764,22 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
                         tokenUpdate(VANILLA_TOKEN).supplyKey(DELEGATE_KEY),
                         contractCall(
-                                        outerContract,
-                                        "burnStaticCall",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
-                                        BigInteger.ZERO,
-                                        new long[] {1L})
+                                outerContract,
+                                "burnStaticCall",
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
+                                BigInteger.ZERO,
+                                new long[]{1L})
                                 .payingWith(GENESIS)
-                                .via("staticBurnCallWithDelegateContractKeyTxn")
+                                .via(STATIC_BURN_CALL_WITH_DELEGATE_CONTRACT_KEY_TXN)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                 .gas(GAS_TO_OFFER))))
-                .then(emptyChildRecordsCheck("staticBurnCallWithDelegateContractKeyTxn", CONTRACT_REVERT_EXECUTED));
+                .then(emptyChildRecordsCheck(
+                        STATIC_BURN_CALL_WITH_DELEGATE_CONTRACT_KEY_TXN, CONTRACT_REVERT_EXECUTED));
     }
 
     private HapiSpec staticCallForMintWithDelegateContractKey() {
-        final var outerContract = "StaticContract";
-        final var nestedContract = "ServiceContract";
+        final var outerContract = STATIC_CONTRACT;
+        final var nestedContract = SERVICE_CONTRACT;
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
         return defaultHapiSpec("staticCallForMintWithDelegateContractKey")
@@ -763,20 +803,21 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
                         tokenUpdate(VANILLA_TOKEN).supplyKey(DELEGATE_KEY),
                         contractCall(
-                                        outerContract,
-                                        "mintStaticCall",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
-                                        BigInteger.ONE)
+                                outerContract,
+                                "mintStaticCall",
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
+                                BigInteger.ONE)
                                 .payingWith(GENESIS)
-                                .via("staticBurnCallWithDelegateContractKeyTxn")
+                                .via(STATIC_BURN_CALL_WITH_DELEGATE_CONTRACT_KEY_TXN)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                 .gas(GAS_TO_OFFER))))
-                .then(emptyChildRecordsCheck("staticBurnCallWithDelegateContractKeyTxn", CONTRACT_REVERT_EXECUTED));
+                .then(emptyChildRecordsCheck(
+                        STATIC_BURN_CALL_WITH_DELEGATE_CONTRACT_KEY_TXN, CONTRACT_REVERT_EXECUTED));
     }
 
     private HapiSpec staticCallForAssociatePrecompileFails() {
-        final var outerContract = "NestedAssociateDissociate";
-        final var nestedContract = "AssociateDissociate";
+        final var outerContract = NESTED_ASSOCIATE_DISSOCIATE;
+        final var nestedContract = ASSOCIATE_DISSOCIATE_CONTRACT;
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
@@ -812,8 +853,8 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     private HapiSpec callForMintWithContractKey() {
-        final var theAccount = "anybody";
-        final var fungibleToken = "fungibleToken";
+        final var theAccount = ANYBODY;
+        final var fungibleToken = FUNGIBLE_TOKEN;
         final var firstMintTxn = "firstMintTxn";
         final var amount = 10L;
 
@@ -867,8 +908,8 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     private HapiSpec callForMintWithDelegateContractKey() {
-        final var theAccount = "anybody";
-        final var fungibleToken = "fungibleToken";
+        final var theAccount = ANYBODY;
+        final var fungibleToken = FUNGIBLE_TOKEN;
         final var firstMintTxn = "firstMintTxn";
         final var amount = 10L;
 
@@ -937,7 +978,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         tokenAssociate(ACCOUNT, NFT),
                         mintToken(NFT, List.of(metadata("firstMemo"), metadata("secondMemo"))),
                         uploadInitCode(ORDINARY_CALLS_CONTRACT),
-                        contractCreate(ORDINARY_CALLS_CONTRACT).via("creationTx"))
+                        contractCreate(ORDINARY_CALLS_CONTRACT).via(CREATION_TX))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         newKeyNamed(CONTRACT_KEY)
@@ -951,16 +992,16 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                         "transferNFTCall",
                                         HapiParserUtil.asHeadlongAddress(
                                                 asAddress(spec.registry().getTokenID(NFT))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(RECEIVER))),
-                                        1L)
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(RECEIVER))),
+                                1L)
                                 .fee(ONE_HBAR)
                                 .hasKnownStatus(SUCCESS)
                                 .payingWith(GENESIS)
                                 .gas(GAS_TO_OFFER)
-                                .via("distributeTx"))))
+                                .via(DISTRIBUTE_TX))))
                 .then(
                         getTokenInfo(NFT).hasTotalSupply(2),
                         getAccountInfo(RECEIVER).hasOwnedNfts(1),
@@ -968,7 +1009,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         getAccountInfo(ACCOUNT).hasOwnedNfts(0),
                         getAccountBalance(ACCOUNT).hasTokenBalance(NFT, 0),
                         childRecordsCheck(
-                                "distributeTx",
+                                DISTRIBUTE_TX,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -1009,16 +1050,16 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                         "transferNFTCall",
                                         HapiParserUtil.asHeadlongAddress(
                                                 asAddress(spec.registry().getTokenID(NFT))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(RECEIVER))),
-                                        1L)
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getAccountID(RECEIVER))),
+                                1L)
                                 .fee(ONE_HBAR)
                                 .hasKnownStatus(SUCCESS)
                                 .payingWith(GENESIS)
                                 .gas(GAS_TO_OFFER)
-                                .via("distributeTx"))))
+                                .via(DISTRIBUTE_TX))))
                 .then(
                         getTokenInfo(NFT).hasTotalSupply(2),
                         getAccountInfo(RECEIVER).hasOwnedNfts(1),
@@ -1026,7 +1067,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         getAccountInfo(ACCOUNT).hasOwnedNfts(0),
                         getAccountBalance(ACCOUNT).hasTokenBalance(NFT, 0),
                         childRecordsCheck(
-                                "distributeTx",
+                                DISTRIBUTE_TX,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -1057,17 +1098,17 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, ASSOCIATE_DISSOCIATE_CONTRACT))),
                         cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenAssociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_ASSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .payingWith(GENESIS)
-                                .via("vanillaTokenAssociateTxn")
+                                .via(VANILLA_TOKEN_ASSOCIATE_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(SUCCESS))))
                 .then(
                         childRecordsCheck(
-                                "vanillaTokenAssociateTxn",
+                                VANILLA_TOKEN_ASSOCIATE_TXN,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -1097,17 +1138,17 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 .shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, ASSOCIATE_DISSOCIATE_CONTRACT))),
                         cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenAssociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_ASSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .payingWith(GENESIS)
-                                .via("vanillaTokenAssociateTxn")
+                                .via(VANILLA_TOKEN_ASSOCIATE_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(SUCCESS))))
                 .then(
                         childRecordsCheck(
-                                "vanillaTokenAssociateTxn",
+                                VANILLA_TOKEN_ASSOCIATE_TXN,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -1143,27 +1184,27 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         tokenAssociate(ACCOUNT, VANILLA_TOKEN),
                         cryptoTransfer(moving(1, VANILLA_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenDissociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_DISSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .payingWith(GENESIS)
-                                .via("nonZeroTokenBalanceDissociateWithDelegateContractKeyFailedTxn")
+                                .via(NON_ZERO_TOKEN_BALANCE_DISSOCIATE_WITH_DELEGATE_CONTRACT_KEY_FAILED_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         cryptoTransfer(moving(1, VANILLA_TOKEN).between(ACCOUNT, TOKEN_TREASURY)),
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenDissociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_DISSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .payingWith(GENESIS)
-                                .via("tokenDissociateWithDelegateContractKeyHappyTxn")
+                                .via(TOKEN_DISSOCIATE_WITH_DELEGATE_CONTRACT_KEY_HAPPY_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(SUCCESS))))
                 .then(
                         childRecordsCheck(
-                                "nonZeroTokenBalanceDissociateWithDelegateContractKeyFailedTxn",
+                                NON_ZERO_TOKEN_BALANCE_DISSOCIATE_WITH_DELEGATE_CONTRACT_KEY_FAILED_TXN,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES)
@@ -1171,7 +1212,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                                 .contractCallResult(htsPrecompileResult()
                                                         .withStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES)))),
                         childRecordsCheck(
-                                "tokenDissociateWithDelegateContractKeyHappyTxn",
+                                TOKEN_DISSOCIATE_WITH_DELEGATE_CONTRACT_KEY_HAPPY_TXN,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -1207,20 +1248,20 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         tokenAssociate(ACCOUNT, VANILLA_TOKEN),
                         cryptoTransfer(moving(1, VANILLA_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenDissociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_DISSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via("nonZeroTokenBalanceDissociateWithContractKeyFailedTxn")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         cryptoTransfer(moving(1, VANILLA_TOKEN).between(ACCOUNT, TOKEN_TREASURY)),
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenDissociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_DISSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via("tokenDissociateWithContractKeyHappyTxn")
                                 .gas(GAS_TO_OFFER)
@@ -1246,7 +1287,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     private HapiSpec callForBurnWithDelegateContractKey() {
-        final var token = "Token";
+        final var token = TOKEN;
 
         return defaultHapiSpec("callBurnWithDelegateContractKey")
                 .given(
@@ -1262,18 +1303,18 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         withOpContext((spec, opLog) -> allRunFor(
                                 spec,
                                 contractCreate(
-                                                BURN_TOKEN,
-                                                HapiParserUtil.asHeadlongAddress(asAddress(
-                                                        spec.registry().getTokenID(token))))
-                                        .via("creationTx"))))
+                                        BURN_TOKEN,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(
+                                                spec.registry().getTokenID(token))))
+                                        .via(CREATION_TX))))
                 .when(
                         newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, BURN_TOKEN))),
                         tokenUpdate(token).supplyKey(DELEGATE_KEY),
                         contractCall(BURN_TOKEN, BURN_TOKEN_METHOD, BigInteger.ONE, new long[0])
-                                .via("burn with contract key")
+                                .via(BURN_WITH_CONTRACT_KEY)
                                 .gas(GAS_TO_OFFER),
                         childRecordsCheck(
-                                "burn with contract key",
+                                BURN_WITH_CONTRACT_KEY,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -1289,8 +1330,8 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     private HapiSpec delegateCallForAssociatePrecompileSignedWithDelegateContractKeyWorks() {
-        final var outerContract = "NestedAssociateDissociate";
-        final var nestedContract = "AssociateDissociate";
+        final var outerContract = NESTED_ASSOCIATE_DISSOCIATE;
+        final var nestedContract = ASSOCIATE_DISSOCIATE_CONTRACT;
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
@@ -1333,8 +1374,8 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     private HapiSpec delegateCallForDissociatePrecompileSignedWithDelegateContractKeyWorks() {
-        final var outerContract = "NestedAssociateDissociate";
-        final var nestedContract = "AssociateDissociate";
+        final var outerContract = NESTED_ASSOCIATE_DISSOCIATE;
+        final var nestedContract = ASSOCIATE_DISSOCIATE_CONTRACT;
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
@@ -1398,10 +1439,10 @@ public class ContractKeysHTSSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenAssociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(kycTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_ASSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(kycTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via("kycNFTAssociateFailsTxn")
                                 .gas(GAS_TO_OFFER)
@@ -1410,19 +1451,19 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, ASSOCIATE_DISSOCIATE_CONTRACT))),
                         cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenAssociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(kycTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_ASSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(kycTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via("kycNFTAssociateTxn")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(SUCCESS),
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenAssociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(kycTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_ASSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(kycTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via("kycNFTSecondAssociateFailsTxn")
                                 .gas(GAS_TO_OFFER)
@@ -1479,19 +1520,19 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
                         cryptoUpdate(TOKEN_TREASURY).key(DELEGATE_KEY),
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenDissociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(treasuryID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_DISSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(treasuryID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via("tokenDissociateFromTreasuryFailedTxn")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenDissociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_DISSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via("tokenDissociateWithDelegateContractKeyFailedTxn")
                                 .gas(GAS_TO_OFFER)
@@ -1499,22 +1540,22 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         tokenAssociate(ACCOUNT, VANILLA_TOKEN),
                         cryptoTransfer(moving(1, VANILLA_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenDissociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_DISSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .payingWith(GENESIS)
-                                .via("nonZeroTokenBalanceDissociateWithDelegateContractKeyFailedTxn")
+                                .via(NON_ZERO_TOKEN_BALANCE_DISSOCIATE_WITH_DELEGATE_CONTRACT_KEY_FAILED_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         cryptoTransfer(moving(1, VANILLA_TOKEN).between(ACCOUNT, TOKEN_TREASURY)),
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenDissociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_DISSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .payingWith(GENESIS)
-                                .via("tokenDissociateWithDelegateContractKeyHappyTxn")
+                                .via(TOKEN_DISSOCIATE_WITH_DELEGATE_CONTRACT_KEY_HAPPY_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(SUCCESS))))
                 .then(
@@ -1535,7 +1576,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                                 .contractCallResult(htsPrecompileResult()
                                                         .withStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)))),
                         childRecordsCheck(
-                                "nonZeroTokenBalanceDissociateWithDelegateContractKeyFailedTxn",
+                                NON_ZERO_TOKEN_BALANCE_DISSOCIATE_WITH_DELEGATE_CONTRACT_KEY_FAILED_TXN,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES)
@@ -1543,7 +1584,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                                 .contractCallResult(htsPrecompileResult()
                                                         .withStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES)))),
                         childRecordsCheck(
-                                "tokenDissociateWithDelegateContractKeyHappyTxn",
+                                TOKEN_DISSOCIATE_WITH_DELEGATE_CONTRACT_KEY_HAPPY_TXN,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -1578,20 +1619,20 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
                         tokenAssociate(ACCOUNT, FROZEN_TOKEN),
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenDissociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(frozenTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_DISSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(frozenTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via("frozenTokenAssociateWithDelegateContractKeyTxn")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         tokenUnfreeze(FROZEN_TOKEN, ACCOUNT),
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenDissociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(frozenTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_DISSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(frozenTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via("UnfrozenTokenAssociateWithDelegateContractKeyTxn")
                                 .gas(GAS_TO_OFFER)
@@ -1639,20 +1680,20 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, ASSOCIATE_DISSOCIATE_CONTRACT))),
                         cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenDissociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(kycTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_DISSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(kycTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via("kycTokenDissociateWithDelegateContractKeyFailedTxn")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         tokenAssociate(ACCOUNT, KYC_TOKEN),
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenDissociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(kycTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_DISSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(kycTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via("kycTokenDissociateWithDelegateContractKeyHappyTxn")
                                 .gas(GAS_TO_OFFER)
@@ -1703,19 +1744,19 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
                         cryptoUpdate(TOKEN_TREASURY).key(DELEGATE_KEY),
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenDissociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(treasuryID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_DISSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(treasuryID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via("NFTDissociateFromTreasuryFailedTxn")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenDissociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_DISSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via("NFTDissociateWithDelegateContractKeyFailedTxn")
                                 .gas(GAS_TO_OFFER)
@@ -1723,20 +1764,20 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         tokenAssociate(ACCOUNT, VANILLA_TOKEN),
                         cryptoTransfer(movingUnique(VANILLA_TOKEN, 1).between(TOKEN_TREASURY, ACCOUNT)),
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenDissociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_DISSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via("nonZeroNFTBalanceDissociateWithDelegateContractKeyFailedTxn")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         cryptoTransfer(movingUnique(VANILLA_TOKEN, 1).between(ACCOUNT, TOKEN_TREASURY)),
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenDissociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_DISSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via("NFTDissociateWithDelegateContractKeyHappyTxn")
                                 .gas(GAS_TO_OFFER)
@@ -1804,20 +1845,20 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
                         tokenAssociate(ACCOUNT, FROZEN_TOKEN),
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenDissociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(frozenTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_DISSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(frozenTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via("frozenNFTAssociateWithDelegateContractKeyTxn")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         tokenUnfreeze(FROZEN_TOKEN, ACCOUNT),
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenDissociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(frozenTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_DISSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(frozenTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via("UnfrozenNFTAssociateWithDelegateContractKeyTxn")
                                 .gas(GAS_TO_OFFER)
@@ -1867,20 +1908,20 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, ASSOCIATE_DISSOCIATE_CONTRACT))),
                         cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenDissociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(kycTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_DISSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(kycTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via("kycNFTDissociateWithDelegateContractKeyFailedTxn")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         tokenAssociate(ACCOUNT, KYC_TOKEN),
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenDissociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(kycTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_DISSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(kycTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via("kycNFTDissociateWithDelegateContractKeyHappyTxn")
                                 .gas(GAS_TO_OFFER)
@@ -1927,10 +1968,10 @@ public class ContractKeysHTSSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenAssociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(frozenTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_ASSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(frozenTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via("frozenNFTAssociateFailsTxn")
                                 .gas(GAS_TO_OFFER)
@@ -1939,19 +1980,19 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, ASSOCIATE_DISSOCIATE_CONTRACT))),
                         cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenAssociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(frozenTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_ASSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(frozenTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via("frozenNFTAssociateTxn")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(SUCCESS),
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenAssociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(frozenTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_ASSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(frozenTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via("frozenNFTSecondAssociateFailsTxn")
                                 .gas(GAS_TO_OFFER)
@@ -2004,10 +2045,10 @@ public class ContractKeysHTSSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenAssociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_ASSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via("vanillaNFTAssociateFailsTxn")
                                 .gas(GAS_TO_OFFER)
@@ -2016,19 +2057,19 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, ASSOCIATE_DISSOCIATE_CONTRACT))),
                         cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenAssociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_ASSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via("vanillaNFTAssociateTxn")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(SUCCESS),
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenAssociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_ASSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via("vanillaNFTSecondAssociateFailsTxn")
                                 .gas(GAS_TO_OFFER)
@@ -2080,10 +2121,10 @@ public class ContractKeysHTSSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenAssociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(kycTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_ASSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(kycTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via("kycTokenAssociateFailsTxn")
                                 .gas(GAS_TO_OFFER)
@@ -2092,19 +2133,19 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, ASSOCIATE_DISSOCIATE_CONTRACT))),
                         cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenAssociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(kycTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_ASSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(kycTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via("kycTokenAssociateTxn")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(SUCCESS),
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenAssociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(kycTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_ASSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(kycTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via("kycTokenSecondAssociateFailsTxn")
                                 .gas(GAS_TO_OFFER)
@@ -2159,10 +2200,10 @@ public class ContractKeysHTSSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenAssociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(frozenTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_ASSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(frozenTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via("frozenTokenAssociateFailsTxn")
                                 .gas(GAS_TO_OFFER)
@@ -2171,19 +2212,19 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, ASSOCIATE_DISSOCIATE_CONTRACT))),
                         cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenAssociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(frozenTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_ASSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(frozenTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via("frozenTokenAssociateTxn")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(SUCCESS),
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenAssociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(frozenTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_ASSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(frozenTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via("frozenTokenSecondAssociateFailsTxn")
                                 .gas(GAS_TO_OFFER)
@@ -2234,10 +2275,10 @@ public class ContractKeysHTSSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenAssociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_ASSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via("vanillaTokenAssociateFailsTxn")
                                 .gas(GAS_TO_OFFER)
@@ -2246,19 +2287,19 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, ASSOCIATE_DISSOCIATE_CONTRACT))),
                         cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenAssociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_ASSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .payingWith(GENESIS)
-                                .via("vanillaTokenAssociateTxn")
+                                .via(VANILLA_TOKEN_ASSOCIATE_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(SUCCESS),
                         contractCall(
-                                        ASSOCIATE_DISSOCIATE_CONTRACT,
-                                        "tokenAssociate",
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                ASSOCIATE_DISSOCIATE_CONTRACT,
+                                TOKEN_ASSOCIATE,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via("vanillaTokenSecondAssociateFailsTxn")
                                 .gas(GAS_TO_OFFER)
@@ -2273,7 +2314,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                                 .contractCallResult(htsPrecompileResult()
                                                         .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
                         childRecordsCheck(
-                                "vanillaTokenAssociateTxn",
+                                VANILLA_TOKEN_ASSOCIATE_TXN,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -2292,8 +2333,8 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     private HapiSpec delegateCallForAssociatePrecompileSignedWithContractKeyFails() {
-        final var outerContract = "NestedAssociateDissociate";
-        final var nestedContract = "AssociateDissociate";
+        final var outerContract = NESTED_ASSOCIATE_DISSOCIATE;
+        final var nestedContract = ASSOCIATE_DISSOCIATE_CONTRACT;
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
@@ -2335,8 +2376,8 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     private HapiSpec delegateCallForDissociatePrecompileSignedWithContractKeyFails() {
-        final var outerContract = "NestedAssociateDissociate";
-        final var nestedContract = "AssociateDissociate";
+        final var outerContract = NESTED_ASSOCIATE_DISSOCIATE;
+        final var nestedContract = ASSOCIATE_DISSOCIATE_CONTRACT;
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
@@ -2379,7 +2420,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     private HapiSpec callForBurnWithContractKey() {
-        final var token = "Token";
+        final var token = TOKEN;
 
         return defaultHapiSpec("callBurnWithContractKey")
                 .given(
@@ -2395,18 +2436,18 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         withOpContext((spec, opLog) -> allRunFor(
                                 spec,
                                 contractCreate(
-                                                BURN_TOKEN,
-                                                HapiParserUtil.asHeadlongAddress(asAddress(
-                                                        spec.registry().getTokenID(token))))
-                                        .via("creationTx"))))
+                                        BURN_TOKEN,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(
+                                                spec.registry().getTokenID(token))))
+                                        .via(CREATION_TX))))
                 .when(
                         newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, BURN_TOKEN))),
                         tokenUpdate(token).supplyKey(CONTRACT_KEY),
                         contractCall(BURN_TOKEN, BURN_TOKEN_METHOD, BigInteger.ONE, new long[0])
-                                .via("burn with contract key")
+                                .via(BURN_WITH_CONTRACT_KEY)
                                 .gas(GAS_TO_OFFER),
                         childRecordsCheck(
-                                "burn with contract key",
+                                BURN_WITH_CONTRACT_KEY,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -2422,8 +2463,8 @@ public class ContractKeysHTSSuite extends HapiSuite {
     }
 
     private HapiSpec burnTokenWithFullPrefixAndPartialPrefixKeys() {
-        final var theAccount = "anybody";
-        final var fungibleToken = "fungibleToken";
+        final var theAccount = ANYBODY;
+        final var fungibleToken = FUNGIBLE_TOKEN;
         final var firstBurnTxn = "firstBurnTxn";
         final var secondBurnTxn = "secondBurnTxn";
         final var amount = 99L;
@@ -2495,7 +2536,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
 
     private HapiSpec mixedFramesScenarios() {
         final var theAccount = "theAccount";
-        final var fungibleToken = "fungibleToken";
+        final var fungibleToken = FUNGIBLE_TOKEN;
         final var nestedContract = "MixedMintToken";
         final var outerContract = "MixedFramesScenarios";
         final var delegateContractDelegateContractShape =
@@ -2521,45 +2562,46 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         withOpContext((spec, opLog) -> allRunFor(
                                 spec,
                                 contractCreate(
-                                                outerContract,
-                                                asHeadlongAddress(getNestedContractAddress(nestedContract, spec)))
-                                        .via("creationTx"),
+                                        outerContract,
+                                        asHeadlongAddress(getNestedContractAddress(nestedContract, spec)))
+                                        .via(CREATION_TX),
                                 newKeyNamed(delegateContractDelegateContractKey)
                                         .shape(delegateContractDelegateContractShape.signedWith(
                                                 sigs(ON, nestedContract, outerContract))),
                                 tokenUpdate(fungibleToken).supplyKey(delegateContractDelegateContractKey),
                                 contractCall(
-                                                outerContract,
-                                                "burnCallAfterNestedMintCallWithPrecompileCall",
-                                                BigInteger.ONE,
-                                                HapiParserUtil.asHeadlongAddress(asAddress(
-                                                        spec.registry().getTokenID(fungibleToken))))
+                                        outerContract,
+                                        BURN_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_CALL,
+                                        BigInteger.ONE,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(
+                                                spec.registry().getTokenID(fungibleToken))))
                                         .payingWith(theAccount)
-                                        .via("burnCallAfterNestedMintCallWithPrecompileCall"),
+                                        .via(BURN_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_CALL),
                                 contractCall(
-                                                outerContract,
-                                                "burnDelegateCallAfterNestedMintCallWithPrecompileDelegateCall",
-                                                BigInteger.ONE,
-                                                HapiParserUtil.asHeadlongAddress(asAddress(
-                                                        spec.registry().getTokenID(fungibleToken))))
+                                        outerContract,
+                                        BURN_DELEGATE_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_DELEGATE_CALL,
+                                        BigInteger.ONE,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(
+                                                spec.registry().getTokenID(fungibleToken))))
                                         .payingWith(theAccount)
-                                        .via("burnDelegateCallAfterNestedMintCallWithPrecompileDelegateCall"),
+                                        .via(BURN_DELEGATE_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_DELEGATE_CALL),
                                 contractCall(
-                                                outerContract,
-                                                "burnDelegateCallAfterNestedMintDelegateCallWithPrecompileDelegateCall",
-                                                BigInteger.ONE,
-                                                HapiParserUtil.asHeadlongAddress(asAddress(
-                                                        spec.registry().getTokenID(fungibleToken))))
+                                        outerContract,
+                                        BURN_DELEGATE_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_DELEGATE_CALL,
+                                        BigInteger.ONE,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(
+                                                spec.registry().getTokenID(fungibleToken))))
                                         .payingWith(theAccount)
-                                        .via("burnDelegateCallAfterNestedMintDelegateCallWithPrecompileDelegateCall"),
+                                        .via(
+                                                BURN_DELEGATE_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_DELEGATE_CALL),
                                 contractCall(
-                                                outerContract,
-                                                "burnCallAfterNestedMintDelegateCallWithPrecompileDelegateCall",
-                                                BigInteger.ONE,
-                                                HapiParserUtil.asHeadlongAddress(asAddress(
-                                                        spec.registry().getTokenID(fungibleToken))))
+                                        outerContract,
+                                        BURN_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_DELEGATE_CALL,
+                                        BigInteger.ONE,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(
+                                                spec.registry().getTokenID(fungibleToken))))
                                         .payingWith(theAccount)
-                                        .via("burnCallAfterNestedMintDelegateCallWithPrecompileDelegateCall"))),
+                                        .via(BURN_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_DELEGATE_CALL))),
                         withOpContext((spec, opLog) -> allRunFor(
                                 spec,
                                 newKeyNamed(contractDelegateContractKey)
@@ -2567,29 +2609,29 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                                 sigs(ON, nestedContract, outerContract))),
                                 tokenUpdate(fungibleToken).supplyKey(contractDelegateContractKey),
                                 contractCall(
-                                                outerContract,
-                                                "burnDelegateCallAfterNestedMintCallWithPrecompileCall",
-                                                BigInteger.ONE,
-                                                HapiParserUtil.asHeadlongAddress(asAddress(
-                                                        spec.registry().getTokenID(fungibleToken))))
+                                        outerContract,
+                                        BURN_DELEGATE_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_CALL,
+                                        BigInteger.ONE,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(
+                                                spec.registry().getTokenID(fungibleToken))))
                                         .payingWith(theAccount)
-                                        .via("burnDelegateCallAfterNestedMintCallWithPrecompileCall"),
+                                        .via(BURN_DELEGATE_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_CALL),
                                 contractCall(
-                                                outerContract,
-                                                "burnDelegateCallAfterNestedMintDelegateCallWithPrecompileCall",
-                                                BigInteger.ONE,
-                                                HapiParserUtil.asHeadlongAddress(asAddress(
-                                                        spec.registry().getTokenID(fungibleToken))))
+                                        outerContract,
+                                        BURN_DELEGATE_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_CALL,
+                                        BigInteger.ONE,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(
+                                                spec.registry().getTokenID(fungibleToken))))
                                         .payingWith(theAccount)
-                                        .via("burnDelegateCallAfterNestedMintDelegateCallWithPrecompileCall"),
+                                        .via(BURN_DELEGATE_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_CALL),
                                 contractCall(
-                                                outerContract,
-                                                "burnCallAfterNestedMintDelegateCallWithPrecompileCall",
-                                                BigInteger.ONE,
-                                                HapiParserUtil.asHeadlongAddress(asAddress(
-                                                        spec.registry().getTokenID(fungibleToken))))
+                                        outerContract,
+                                        BURN_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_CALL,
+                                        BigInteger.ONE,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(
+                                                spec.registry().getTokenID(fungibleToken))))
                                         .payingWith(theAccount)
-                                        .via("burnCallAfterNestedMintDelegateCallWithPrecompileCall"))),
+                                        .via(BURN_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_CALL))),
                         withOpContext((spec, opLog) -> allRunFor(
                                 spec,
                                 newKeyNamed(contractDelegateContractKey)
@@ -2597,15 +2639,15 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                                 sigs(ON, outerContract, nestedContract))),
                                 tokenUpdate(fungibleToken).supplyKey(contractDelegateContractKey),
                                 contractCall(
-                                                outerContract,
-                                                "burnCallAfterNestedMintCallWithPrecompileDelegateCall",
-                                                BigInteger.ONE,
-                                                HapiParserUtil.asHeadlongAddress(asAddress(
-                                                        spec.registry().getTokenID(fungibleToken))))
+                                        outerContract,
+                                        BURN_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_DELEGATE_CALL,
+                                        BigInteger.ONE,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(
+                                                spec.registry().getTokenID(fungibleToken))))
                                         .payingWith(theAccount)
-                                        .via("burnCallAfterNestedMintCallWithPrecompileDelegateCall"))),
+                                        .via(BURN_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_DELEGATE_CALL))),
                         childRecordsCheck(
-                                "burnCallAfterNestedMintCallWithPrecompileCall",
+                                BURN_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_CALL,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -2629,7 +2671,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                                 changingFungibleBalances().including(fungibleToken, TOKEN_TREASURY, -1))
                                         .newTotalSupply(50)),
                         childRecordsCheck(
-                                "burnDelegateCallAfterNestedMintCallWithPrecompileCall",
+                                BURN_DELEGATE_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_CALL,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -2653,7 +2695,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                                 changingFungibleBalances().including(fungibleToken, TOKEN_TREASURY, -1))
                                         .newTotalSupply(50)),
                         childRecordsCheck(
-                                "burnDelegateCallAfterNestedMintDelegateCallWithPrecompileCall",
+                                BURN_DELEGATE_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_CALL,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -2677,7 +2719,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                                 changingFungibleBalances().including(fungibleToken, TOKEN_TREASURY, -1))
                                         .newTotalSupply(50)),
                         childRecordsCheck(
-                                "burnCallAfterNestedMintDelegateCallWithPrecompileCall",
+                                BURN_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_CALL,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -2701,7 +2743,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                                 changingFungibleBalances().including(fungibleToken, TOKEN_TREASURY, -1))
                                         .newTotalSupply(50)),
                         childRecordsCheck(
-                                "burnCallAfterNestedMintCallWithPrecompileDelegateCall",
+                                BURN_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_DELEGATE_CALL,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -2725,7 +2767,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                                 changingFungibleBalances().including(fungibleToken, TOKEN_TREASURY, -1))
                                         .newTotalSupply(50)),
                         childRecordsCheck(
-                                "burnDelegateCallAfterNestedMintCallWithPrecompileDelegateCall",
+                                BURN_DELEGATE_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_DELEGATE_CALL,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -2749,7 +2791,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                                 changingFungibleBalances().including(fungibleToken, TOKEN_TREASURY, -1))
                                         .newTotalSupply(50)),
                         childRecordsCheck(
-                                "burnDelegateCallAfterNestedMintDelegateCallWithPrecompileDelegateCall",
+                                BURN_DELEGATE_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_DELEGATE_CALL,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -2773,7 +2815,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                                 changingFungibleBalances().including(fungibleToken, TOKEN_TREASURY, -1))
                                         .newTotalSupply(50)),
                         childRecordsCheck(
-                                "burnCallAfterNestedMintDelegateCallWithPrecompileDelegateCall",
+                                BURN_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_DELEGATE_CALL,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)

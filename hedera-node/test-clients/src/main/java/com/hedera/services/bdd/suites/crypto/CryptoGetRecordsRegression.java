@@ -43,6 +43,9 @@ import org.apache.logging.log4j.Logger;
 
 public class CryptoGetRecordsRegression extends HapiSuite {
     static final Logger log = LogManager.getLogger(CryptoGetRecordsRegression.class);
+    private static final String LOW_THRESH_PAYER = "lowThreshPayer";
+    private static final String TO_BE_DELETED = "toBeDeleted";
+    private static final String ACCOUNT_1 = "account1";
 
     public static void main(String... args) {
         new CryptoGetRecordsRegression().runSuiteSync();
@@ -71,18 +74,18 @@ public class CryptoGetRecordsRegression extends HapiSuite {
         String memo = "Dim galleries, dusky corridors got past...";
 
         return defaultHapiSpec("SucceedsNormally")
-                .given(cryptoCreate("misc"), cryptoCreate("lowThreshPayer").sendThreshold(1L))
+                .given(cryptoCreate("misc"), cryptoCreate(LOW_THRESH_PAYER).sendThreshold(1L))
                 .when(cryptoTransfer(tinyBarsFromTo(GENESIS, "misc", 1))
-                        .payingWith("lowThreshPayer")
+                        .payingWith(LOW_THRESH_PAYER)
                         .memo(memo)
                         .via("txn"))
-                .then(getAccountRecords("lowThreshPayer")
+                .then(getAccountRecords(LOW_THRESH_PAYER)
                         .has(AssertUtils.inOrder(recordWith()
                                 .txnId("txn")
                                 .memo(memo)
                                 .transfers(including(tinyBarsFromTo(GENESIS, "misc", 1L)))
                                 .status(SUCCESS)
-                                .payer("lowThreshPayer"))));
+                                .payer(LOW_THRESH_PAYER))));
     }
 
     private HapiSpec failsForMissingAccount() {
@@ -128,21 +131,21 @@ public class CryptoGetRecordsRegression extends HapiSuite {
 
     private HapiSpec failsForDeletedAccount() {
         return defaultHapiSpec("FailsForDeletedAccount")
-                .given(cryptoCreate("toBeDeleted"))
-                .when(cryptoDelete("toBeDeleted").transfer(GENESIS))
+                .given(cryptoCreate(TO_BE_DELETED))
+                .when(cryptoDelete(TO_BE_DELETED).transfer(GENESIS))
                 .then(
-                        getAccountRecords("toBeDeleted").hasCostAnswerPrecheck(ACCOUNT_DELETED),
-                        getAccountRecords("toBeDeleted").nodePayment(123L).hasAnswerOnlyPrecheck(ACCOUNT_DELETED));
+                        getAccountRecords(TO_BE_DELETED).hasCostAnswerPrecheck(ACCOUNT_DELETED),
+                        getAccountRecords(TO_BE_DELETED).nodePayment(123L).hasAnswerOnlyPrecheck(ACCOUNT_DELETED));
     }
 
     private HapiSpec getAccountRecords_testForDuplicates() {
         return defaultHapiSpec("testForDuplicateAccountRecords")
                 .given(
-                        cryptoCreate("account1").balance(5000000000000L).sendThreshold(1L),
+                        cryptoCreate(ACCOUNT_1).balance(5000000000000L).sendThreshold(1L),
                         cryptoCreate("account2").balance(5000000000000L).sendThreshold(1L))
-                .when(cryptoTransfer(tinyBarsFromTo("account1", "account2", 10L))
-                        .payingWith("account1")
+                .when(cryptoTransfer(tinyBarsFromTo(ACCOUNT_1, "account2", 10L))
+                        .payingWith(ACCOUNT_1)
                         .via("thresholdTxn"))
-                .then(getAccountRecords("account1").logged());
+                .then(getAccountRecords(ACCOUNT_1).logged());
     }
 }

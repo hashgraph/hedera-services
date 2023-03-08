@@ -75,6 +75,14 @@ import org.junit.jupiter.api.Assertions;
 
 public class TokenManagementSpecs extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TokenManagementSpecs.class);
+    private static final String SUPPLE = "supple";
+    private static final String SHOULD_NOT_APPEAR = "should-not-appear";
+    private static final String FUNGIBLE_TOKEN = "fungibleToken";
+    private static final String SUPPLY_KEY = "supplyKey";
+    private static final String MINT_TXN = "mintTxn";
+    private static final String WIPE_TXN = "wipeTxn";
+    private static final String ONE_KYC = "oneKyc";
+    private static final String RIGID = "rigid";
 
     public static void main(String... args) {
         new TokenManagementSpecs().runSuiteAsync();
@@ -82,9 +90,9 @@ public class TokenManagementSpecs extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            freezeMgmtSuccessCasesWork(),
-            kycMgmtFailureCasesWork(),
+        return List.of(new HapiSpec[]{
+                freezeMgmtSuccessCasesWork(),
+                kycMgmtFailureCasesWork(),
             kycMgmtSuccessCasesWork(),
             supplyMgmtSuccessCasesWork(),
             wipeAccountFailureCasesWork(),
@@ -165,41 +173,41 @@ public class TokenManagementSpecs extends HapiSuite {
     private HapiSpec frozenTreasuryCannotBeMintedOrBurned() {
         return defaultHapiSpec("FrozenTreasuryCannotBeMintedOrBurned")
                 .given(
-                        newKeyNamed("supplyKey"),
+                        newKeyNamed(SUPPLY_KEY),
                         newKeyNamed("freezeKey"),
                         cryptoCreate(TOKEN_TREASURY).balance(0L))
-                .when(tokenCreate("supple")
+                .when(tokenCreate(SUPPLE)
                         .freezeKey("freezeKey")
-                        .supplyKey("supplyKey")
+                        .supplyKey(SUPPLY_KEY)
                         .initialSupply(1)
                         .treasury(TOKEN_TREASURY))
                 .then(
-                        tokenFreeze("supple", TOKEN_TREASURY),
-                        mintToken("supple", 1).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
-                        burnToken("supple", 1).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
-                        getTokenInfo("supple").hasTotalSupply(1),
+                        tokenFreeze(SUPPLE, TOKEN_TREASURY),
+                        mintToken(SUPPLE, 1).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
+                        burnToken(SUPPLE, 1).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
+                        getTokenInfo(SUPPLE).hasTotalSupply(1),
                         getAccountInfo(TOKEN_TREASURY)
-                                .hasToken(relationshipWith("supple").balance(1).freeze(Frozen)));
+                                .hasToken(relationshipWith(SUPPLE).balance(1).freeze(Frozen)));
     }
 
     private HapiSpec revokedKYCTreasuryCannotBeMintedOrBurned() {
         return defaultHapiSpec("RevokedKYCTreasuryCannotBeMintedOrBurned")
                 .given(
-                        newKeyNamed("supplyKey"),
+                        newKeyNamed(SUPPLY_KEY),
                         newKeyNamed("kycKey"),
                         cryptoCreate(TOKEN_TREASURY).balance(0L))
-                .when(tokenCreate("supple")
+                .when(tokenCreate(SUPPLE)
                         .kycKey("kycKey")
-                        .supplyKey("supplyKey")
+                        .supplyKey(SUPPLY_KEY)
                         .initialSupply(1)
                         .treasury(TOKEN_TREASURY))
                 .then(
-                        revokeTokenKyc("supple", TOKEN_TREASURY),
-                        mintToken("supple", 1).hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN),
-                        burnToken("supple", 1).hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN),
-                        getTokenInfo("supple").hasTotalSupply(1),
+                        revokeTokenKyc(SUPPLE, TOKEN_TREASURY),
+                        mintToken(SUPPLE, 1).hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN),
+                        burnToken(SUPPLE, 1).hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN),
+                        getTokenInfo(SUPPLE).hasTotalSupply(1),
                         getAccountInfo(TOKEN_TREASURY)
-                                .hasToken(relationshipWith("supple").balance(1).kyc(Revoked)));
+                                .hasToken(relationshipWith(SUPPLE).balance(1).kyc(Revoked)));
     }
 
     private HapiSpec burnTokenFailsDueToInsufficientTreasuryBalance() {
@@ -225,13 +233,13 @@ public class TokenManagementSpecs extends HapiSuite {
                         getAccountInfo("misc").logged(),
                         burnToken(BURN_TOKEN, BURN_AMOUNT)
                                 .hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE)
-                                .via("wipeTxn"),
+                                .via(WIPE_TXN),
                         getTokenInfo(BURN_TOKEN).logged(),
                         getAccountInfo("misc").logged())
                 .then(
                         getTokenInfo(BURN_TOKEN).hasTotalSupply(TOTAL_SUPPLY),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(BURN_TOKEN, TRANSFER_AMOUNT),
-                        getTxnRecord("wipeTxn").logged());
+                        getTxnRecord(WIPE_TXN).logged());
     }
 
     public HapiSpec wipeAccountSuccessCasesWork() {
@@ -252,7 +260,7 @@ public class TokenManagementSpecs extends HapiSuite {
                         getAccountBalance("misc").hasTokenBalance(wipeableToken, 500),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(wipeableToken, 500),
                         getAccountInfo("misc").logged(),
-                        wipeTokenAccount(wipeableToken, "misc", 500).via("wipeTxn"),
+                        wipeTokenAccount(wipeableToken, "misc", 500).via(WIPE_TXN),
                         getAccountInfo("misc").logged(),
                         wipeTokenAccount(wipeableToken, "misc", 0).via("wipeWithZeroAmount"),
                         getAccountInfo("misc").logged())
@@ -261,7 +269,7 @@ public class TokenManagementSpecs extends HapiSuite {
                         cryptoDelete("misc"),
                         getTokenInfo(wipeableToken).hasTotalSupply(500),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(wipeableToken, 500),
-                        getTxnRecord("wipeTxn").logged());
+                        getTxnRecord(WIPE_TXN).logged());
     }
 
     public HapiSpec wipeAccountFailureCasesWork() {
@@ -315,10 +323,10 @@ public class TokenManagementSpecs extends HapiSuite {
 
         return defaultHapiSpec("KycMgmtFailureCasesWork")
                 .given(
-                        newKeyNamed("oneKyc"),
+                        newKeyNamed(ONE_KYC),
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         tokenCreate(withoutKycKey).treasury(TOKEN_TREASURY),
-                        tokenCreate(withKycKey).kycKey("oneKyc").treasury(TOKEN_TREASURY))
+                        tokenCreate(withKycKey).kycKey(ONE_KYC).treasury(TOKEN_TREASURY))
                 .when(
                         grantTokenKyc(withoutKycKey, TOKEN_TREASURY)
                                 .signedBy(GENESIS)
@@ -370,9 +378,9 @@ public class TokenManagementSpecs extends HapiSuite {
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate("misc").balance(0L),
-                        newKeyNamed("oneKyc"),
+                        newKeyNamed(ONE_KYC),
                         newKeyNamed("twoKyc"),
-                        tokenCreate(withKycKey).kycKey("oneKyc").treasury(TOKEN_TREASURY),
+                        tokenCreate(withKycKey).kycKey(ONE_KYC).treasury(TOKEN_TREASURY),
                         tokenCreate(withoutKycKey).treasury(TOKEN_TREASURY),
                         tokenAssociate("misc", withKycKey, withoutKycKey))
                 .when(
@@ -392,44 +400,44 @@ public class TokenManagementSpecs extends HapiSuite {
         return defaultHapiSpec("SupplyMgmtSuccessCasesWork")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        newKeyNamed("supplyKey"),
-                        tokenCreate("supple")
-                                .supplyKey("supplyKey")
+                        newKeyNamed(SUPPLY_KEY),
+                        tokenCreate(SUPPLE)
+                                .supplyKey(SUPPLY_KEY)
                                 .initialSupply(10)
                                 .decimals(1)
                                 .treasury(TOKEN_TREASURY))
                 .when(
-                        getTokenInfo("supple").logged(),
+                        getTokenInfo(SUPPLE).logged(),
                         getAccountBalance(TOKEN_TREASURY).logged(),
-                        mintToken("supple", 100).via("mintTxn"),
-                        burnToken("supple", 50).via("burnTxn"))
+                        mintToken(SUPPLE, 100).via(MINT_TXN),
+                        burnToken(SUPPLE, 50).via("burnTxn"))
                 .then(
                         getAccountInfo(TOKEN_TREASURY).logged(),
-                        getTokenInfo("supple").logged(),
-                        getTxnRecord("mintTxn").logged(),
+                        getTokenInfo(SUPPLE).logged(),
+                        getTxnRecord(MINT_TXN).logged(),
                         getTxnRecord("burnTxn").logged());
     }
 
     private HapiSpec fungibleCommonMaxSupplyReachWork() {
         return defaultHapiSpec("FungibleCommonMaxSupplyReachWork")
                 .given(
-                        newKeyNamed("supplyKey"),
+                        newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate("fungibleToken")
+                        tokenCreate(FUNGIBLE_TOKEN)
                                 .initialSupply(0)
                                 .maxSupply(500)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
                                 .supplyType(TokenSupplyType.FINITE)
-                                .supplyKey("supplyKey")
+                                .supplyKey(SUPPLY_KEY)
                                 .treasury(TOKEN_TREASURY))
-                .when(mintToken("fungibleToken", 3000)
+                .when(mintToken(FUNGIBLE_TOKEN, 3000)
                         .hasKnownStatus(TOKEN_MAX_SUPPLY_REACHED)
-                        .via("should-not-appear"))
+                        .via(SHOULD_NOT_APPEAR))
                 .then(
-                        getTxnRecord("should-not-appear").showsNoTransfers(),
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance("fungibleToken", 0),
+                        getTxnRecord(SHOULD_NOT_APPEAR).showsNoTransfers(),
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, 0),
                         UtilVerbs.withOpContext((spec, opLog) -> {
-                            var mintNFT = getTxnRecord("should-not-appear");
+                            var mintNFT = getTxnRecord(SHOULD_NOT_APPEAR);
                             allRunFor(spec, mintNFT);
                             var receipt = mintNFT.getResponseRecord().getReceipt();
                             Assertions.assertEquals(0, receipt.getNewTotalSupply());
@@ -439,16 +447,16 @@ public class TokenManagementSpecs extends HapiSuite {
     private HapiSpec mintingMaxLongValueWorks() {
         return defaultHapiSpec("MintingMaxLongValueWorks")
                 .given(
-                        newKeyNamed("supplyKey"),
+                        newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(TOKEN_TREASURY).balance(10L),
-                        tokenCreate("fungibleToken")
+                        tokenCreate(FUNGIBLE_TOKEN)
                                 .initialSupply(0)
                                 .tokenType(FUNGIBLE_COMMON)
                                 .supplyType(TokenSupplyType.INFINITE)
-                                .supplyKey("supplyKey")
+                                .supplyKey(SUPPLY_KEY)
                                 .treasury(TOKEN_TREASURY))
-                .when(mintToken("fungibleToken", Long.MAX_VALUE).via("mintTxn"))
-                .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance("fungibleToken", Long.MAX_VALUE));
+                .when(mintToken(FUNGIBLE_TOKEN, Long.MAX_VALUE).via(MINT_TXN))
+                .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, Long.MAX_VALUE));
     }
 
     private HapiSpec nftMintProvidesMintedNftsAndNewTotalSupply() {
@@ -479,22 +487,22 @@ public class TokenManagementSpecs extends HapiSuite {
 
     public HapiSpec supplyMgmtFailureCasesWork() {
         return defaultHapiSpec("SupplyMgmtFailureCasesWork")
-                .given(newKeyNamed("supplyKey"))
+                .given(newKeyNamed(SUPPLY_KEY))
                 .when(
-                        tokenCreate("rigid"),
-                        tokenCreate("supple")
-                                .supplyKey("supplyKey")
+                        tokenCreate(RIGID),
+                        tokenCreate(SUPPLE)
+                                .supplyKey(SUPPLY_KEY)
                                 .decimals(16)
                                 .initialSupply(1))
                 .then(
-                        mintToken("rigid", 1).signedBy(GENESIS).hasKnownStatus(TOKEN_HAS_NO_SUPPLY_KEY),
-                        burnToken("rigid", 1).signedBy(GENESIS).hasKnownStatus(TOKEN_HAS_NO_SUPPLY_KEY),
-                        mintToken("supple", Long.MAX_VALUE).hasKnownStatus(INVALID_TOKEN_MINT_AMOUNT),
-                        mintToken("supple", 0).hasPrecheck(OK),
-                        mintToken("supple", -1).hasPrecheck(INVALID_TOKEN_MINT_AMOUNT),
-                        burnToken("supple", 2).hasKnownStatus(INVALID_TOKEN_BURN_AMOUNT),
-                        burnToken("supple", 0).hasPrecheck(OK),
-                        burnToken("supple", -1).hasPrecheck(INVALID_TOKEN_BURN_AMOUNT));
+                        mintToken(RIGID, 1).signedBy(GENESIS).hasKnownStatus(TOKEN_HAS_NO_SUPPLY_KEY),
+                        burnToken(RIGID, 1).signedBy(GENESIS).hasKnownStatus(TOKEN_HAS_NO_SUPPLY_KEY),
+                        mintToken(SUPPLE, Long.MAX_VALUE).hasKnownStatus(INVALID_TOKEN_MINT_AMOUNT),
+                        mintToken(SUPPLE, 0).hasPrecheck(OK),
+                        mintToken(SUPPLE, -1).hasPrecheck(INVALID_TOKEN_MINT_AMOUNT),
+                        burnToken(SUPPLE, 2).hasKnownStatus(INVALID_TOKEN_BURN_AMOUNT),
+                        burnToken(SUPPLE, 0).hasPrecheck(OK),
+                        burnToken(SUPPLE, -1).hasPrecheck(INVALID_TOKEN_BURN_AMOUNT));
     }
 
     @Override

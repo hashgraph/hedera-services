@@ -37,6 +37,8 @@ import org.apache.logging.log4j.Logger;
 
 public class WalletTestSetup extends HapiSuite {
     private static final Logger log = LogManager.getLogger(WalletTestSetup.class);
+    private static final String NODES = "nodes";
+    private static final String ID = "0.0.1113";
 
     static String DETERMINISTIC_WALLET = "deterministicWallet";
 
@@ -74,24 +76,29 @@ public class WalletTestSetup extends HapiSuite {
         return customHapiSpec("CreateDeterministicWalletForRecovery")
                 .withProperties(Map.of(
                         //						"nodes", "35.237.200.180:0.0.3",
-                        "client.feeSchedule.fromDisk", "true",
-                        "client.feeSchedule.path", "system-files/feeSchedule.bin",
-                        "client.exchangeRates.fromDisk", "true",
-                        "client.exchangeRates.path", "system-files/exchangeRates.bin",
+                        "client.feeSchedule.fromDisk",
+                        "true",
+                        "client.feeSchedule.path",
+                        "system-files/feeSchedule.bin",
+                        "client.exchangeRates.fromDisk",
+                        "true",
+                        "client.exchangeRates.path",
+                        "system-files/exchangeRates.bin",
                         //						"nodes",
                         // "35.237.182.66:0.0.3,35.245.226.22:0.0.4,34.68.9.203:0.0.5,34.83.131.197:0.0.6,34.94
                         //
                         //	.236.63:0.0.7,35.203.26.115:0.0.8,34.77.3.213:0.0.9,35.197.237.44:0.0.10,35.246.250.176:0.0.11,
                         //
                         //	34.90.117.105:0.0.12,35.200.57.21:0.0.13,34.92.120.143:0.0.14,34.87.47.168:0.0.15"
-                        "nodes", "34.94.106.61:0.0.3,35.237.119.55:0.0.4,35.245.27.193:0.0.5,34.83.112.116:0.0.6"
+                        NODES,
+                        "34.94.106.61:0.0.3,35.237.119.55:0.0.4,35.245.27.193:0.0.5,34.83.112.116:0.0.6"
                         //						"nodes",
                         // "35.237.182.66:0.0.3,35.245.226.22:0.0.4,34.68.9.203:0.0.5,34.83.131.197:0.0.6,34.94
                         //
                         //	.236.63:0.0.7,35.203.26.115:0.0.8,34.77.3.213:0.0.9,35.197.237.44:0.0.10,35.246.250.176:0.0.11,
                         //
                         //	34.90.117.105:0.0.12,35.200.57.21:0.0.13,34.92.120.143:0.0.14,34.87.47.168:0.0.15"
-                        ))
+                ))
                 .given(
                         //						keyFromPem("src/main/resource/mainnet-account950.pem")
                         //								.passphrase("swirlds")
@@ -134,8 +141,8 @@ public class WalletTestSetup extends HapiSuite {
         long TINYBARS_PER_HBAR = 100_000_000L;
         long amount = 100_000 * TINYBARS_PER_HBAR;
         return customHapiSpec("FundDeterministicWallet")
-                .withProperties(Map.of("nodes", "35.237.182.66:0.0.3"))
-                .given(keyFromMnemonic(DETERMINISTIC_WALLET, mnemonic).linkedTo("0.0.1113"))
+                .withProperties(Map.of(NODES, "35.237.182.66:0.0.3"))
+                .given(keyFromMnemonic(DETERMINISTIC_WALLET, mnemonic).linkedTo(ID))
                 .when(cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(GENESIS, DETERMINISTIC_WALLET, amount)))
                 .then(QueryVerbs.getAccountBalance(GENESIS));
     }
@@ -143,15 +150,15 @@ public class WalletTestSetup extends HapiSuite {
     private HapiSpec reviewDeterministicWallet() {
         return customHapiSpec("ReviewDeterministicWallet")
                 .withProperties(Map.of(
-                        "nodes",
+                        NODES,
                         "35.237.182.66:0.0.3,35.245.226.22:0.0.4,34.68.9.203:0.0.5,34.83.131.197:0.0.6,"
                                 + "34.94.236.63:0.0.7,35.203.26.115:0.0.8,34.77.3.213:0.0.9,35.197.237.44:0.0.10,"
                                 + "35.246.250.176:0.0.11,34.90.117.105:0.0.12,35.200.57.21:0.0.13,34.92.120.143:0.0.14,"
                                 + "34.87.47.168:0.0.15"))
-                .given(keyFromMnemonic(DETERMINISTIC_WALLET, mnemonic).linkedTo("0.0.1113"))
+                .given(keyFromMnemonic(DETERMINISTIC_WALLET, mnemonic).linkedTo(ID))
                 .when(cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(DETERMINISTIC_WALLET, GENESIS, 1))
                         .payingWith(DETERMINISTIC_WALLET))
-                .then(QueryVerbs.getAccountInfo("0.0.1113")
+                .then(QueryVerbs.getAccountInfo(ID)
                         .logged()
                         .plusCustomLog((info, opLog) -> opLog.info(
                                 CommonUtils.hex(info.getKey().getEd25519().toByteArray()))));
