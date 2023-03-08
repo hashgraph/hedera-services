@@ -16,14 +16,18 @@
 
 package com.hedera.node.app.fees;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusGetTopicInfo;
+
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.calculation.UsageBasedFeeCalculator;
 import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.function.Supplier;
 import javax.inject.Inject;
@@ -36,22 +40,40 @@ import javax.inject.Singleton;
 @Singleton
 public class MonoFeeAccumulator implements FeeAccumulator {
     private final UsageBasedFeeCalculator feeCalculator;
+    private final MonoGetTopicInfoUsage getTopicInfoUsage;
     private final UsagePricesProvider resourceCosts;
     private final Supplier<StateView> stateView;
 
     @Inject
     public MonoFeeAccumulator(
             final UsageBasedFeeCalculator feeCalculator,
+            final MonoGetTopicInfoUsage getTopicInfoUsage,
             final UsagePricesProvider resourceCosts,
             final Supplier<StateView> stateView) {
         this.feeCalculator = feeCalculator;
+        this.getTopicInfoUsage = getTopicInfoUsage;
         this.resourceCosts = resourceCosts;
         this.stateView = stateView;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public FeeObject computePayment(HederaFunctionality functionality, Query query, Timestamp now) {
+    public FeeObject computePayment(
+            @NonNull final ReadableStoreFactory readableStoreFactory,
+            @NonNull final HederaFunctionality functionality,
+            @NonNull final Query query,
+            @NonNull final Timestamp now) {
         final var usagePrices = resourceCosts.defaultPricesGiven(functionality, now);
+        // Special case here because when running with workflows enabled, the underlying
+        // states will have PBJ Topic's as keys, not MerkleTopic's; so the mono-service
+        // resource estimator would hit a ClassCastException
+        if (functionality == ConsensusGetTopicInfo) {
+            final var topicStore = readableStoreFactory.createTopicStore();
+            final var usage = getTopicInfoUsage.computeUsage(query, topicStore);
+            return feeCalculator.computeFromQueryResourceUsage(usage, usagePrices, now);
+        }
         return feeCalculator.computePayment(query, usagePrices, stateView.get(), now, new HashMap<>());
     }
 }

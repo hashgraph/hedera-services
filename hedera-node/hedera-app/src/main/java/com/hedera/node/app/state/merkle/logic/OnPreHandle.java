@@ -16,11 +16,11 @@
 
 package com.hedera.node.app.state.merkle.logic;
 
-import com.hedera.node.app.service.mono.context.StateChildrenProvider;
 import com.hedera.node.app.service.mono.state.org.StateMetadata;
+import com.hedera.node.app.state.HederaState;
 import com.swirlds.common.system.events.Event;
 
 @FunctionalInterface
 public interface OnPreHandle {
-    void accept(Event event, StateMetadata metadata, StateChildrenProvider provider);
+    void accept(Event event, StateMetadata metadata, HederaState state);
 }
