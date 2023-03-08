@@ -16,13 +16,15 @@
 
 package com.hedera.node.app.service.mono.state.codec;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import com.hedera.pbj.runtime.io.DataBuffer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.SplittableRandom;
 import java.util.stream.Stream;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.jupiter.api.Test;
 
 class VirtualKeySerdesAdapterTest extends AbstractVirtualCodecTest<VirtualBlobKey> {
     private static final int NUM_INSTANCES = 42;
@@ -37,23 +39,16 @@ class VirtualKeySerdesAdapterTest extends AbstractVirtualCodecTest<VirtualBlobKe
     @Test
     void canMeasureKeySize() throws IOException {
         final var key = new VirtualBlobKey(VirtualBlobKey.Type.FILE_DATA, RANDOM.nextInt());
-        final var bb = new ByteBufferDataInput(ByteBuffer.wrap(writeUsingBuffer(key)));
+        final var bb = DataBuffer.wrap(ByteBuffer.wrap(writeUsingBuffer(key)));
         final var expected = SERIALIZER.getSerializedSize();
         final var actual = subject.measure(bb);
         assertEquals(expected, actual);
     }
 
     @Test
-    void canGetTypicalSize() {
-        final var expected = SERIALIZER.getSerializedSize();
-        final var actual = subject.typicalSize();
-        assertEquals(expected, actual);
-    }
-
-    @Test
     void doesNotSupportFastEquals() {
         final var key = new VirtualBlobKey(VirtualBlobKey.Type.FILE_DATA, RANDOM.nextInt());
-        final var bb = new ByteBufferDataInput(ByteBuffer.wrap(writeUsingBuffer(key)));
+        final var bb = DataBuffer.wrap(ByteBuffer.wrap(writeUsingBuffer(key)));
         assertThrows(UnsupportedOperationException.class, () -> subject.fastEquals(key, bb));
     }
 
