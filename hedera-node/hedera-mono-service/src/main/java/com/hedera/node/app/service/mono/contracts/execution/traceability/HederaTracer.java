@@ -186,9 +186,6 @@ public class HederaTracer implements HederaOperationTracer {
         actionConfig.accept(action);
 
         allActions.add(action);
-        if (isActionSidecarValidationEnabled() && !action.isValid()) {
-            invalidActions.add(action);
-        }
         currentActionsStack.push(action);
     }
 
@@ -271,6 +268,10 @@ public class HederaTracer implements HederaOperationTracer {
                     }
                 }
                 break;
+        }
+
+        if (isActionSidecarValidationEnabled() && !action.isValid()) {
+            invalidActions.add(action);
         }
     }
 
