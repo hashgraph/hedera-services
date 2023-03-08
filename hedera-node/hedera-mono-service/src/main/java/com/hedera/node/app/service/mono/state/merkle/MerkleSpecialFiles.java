@@ -23,7 +23,7 @@ import static com.hedera.node.app.service.mono.utils.EntityIdUtils.readableId;
 import com.google.common.base.MoreObjects;
 import com.google.common.primitives.Longs;
 import com.hedera.node.app.service.mono.state.merkle.internals.BytesElement;
-import com.hedera.hapi.node.base.FileID;
+import com.hederahashgraph.api.proto.java.FileID;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
@@ -191,7 +191,7 @@ public class MerkleSpecialFiles extends PartialMerkleLeaf implements MerkleLeaf 
     public synchronized void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeInt(fileContents.size());
         for (final var entry : fileContents.entrySet()) {
-            out.writeLong(entry.getKey().fileNum());
+            out.writeLong(entry.getKey().getFileNum());
             out.writeSerializable(entry.getValue(), true);
         }
     }
@@ -213,7 +213,7 @@ public class MerkleSpecialFiles extends PartialMerkleLeaf implements MerkleLeaf 
         final var baos = baosSupplier.get();
         for (final var entry : fileContents.entrySet()) {
             try {
-                baos.write(Longs.toByteArray(entry.getKey().fileNum()));
+                baos.write(Longs.toByteArray(entry.getKey().getFileNum()));
                 baos.write(entry.getValue().getHash().getValue());
             } catch (final IOException e) {
                 log.error("Hash concatenation failed", e);

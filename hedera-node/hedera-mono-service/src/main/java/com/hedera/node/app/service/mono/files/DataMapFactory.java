@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.mono.files;
 
 import com.hedera.node.app.service.mono.files.store.BytesStoreAdapter;
-import com.hedera.hapi.node.base.FileID;
+import com.hederahashgraph.api.proto.java.FileID;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -48,13 +48,13 @@ public class DataMapFactory {
         assert flag;
 
         return FileID.newBuilder()
-                .shardNum(0)
-                .realmNum(Long.parseLong(matcher.group(REALM_INDEX)))
-                .fileNum(Long.parseLong(matcher.group(ACCOUNT_INDEX)))
+                .setShardNum(0)
+                .setRealmNum(Long.parseLong(matcher.group(REALM_INDEX)))
+                .setFileNum(Long.parseLong(matcher.group(ACCOUNT_INDEX)))
                 .build();
     }
 
     static String toKeyString(FileID fid) {
-        return String.format(LEGACY_PATH_TEMPLATE, fid.realmNum(), fid.fileNum());
+        return String.format(LEGACY_PATH_TEMPLATE, fid.getRealmNum(), fid.getFileNum());
     }
 }
