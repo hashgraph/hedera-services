@@ -21,14 +21,14 @@ import java.util.Objects;
 /**
  * Class that contains common checks like null checks as static methods.
  */
-public class Check {
+public class Checks {
 
     /**
      * Private constructor to prevent instantiation.
      *
      * @throws IllegalAccessException if the constructor is called
      */
-    private Check() throws IllegalAccessException {
+    private Checks() throws IllegalAccessException {
         throw new IllegalAccessException("Check should never be instantiated!");
     }
 
@@ -38,7 +38,7 @@ public class Check {
      * @param argument     the argument to check
      * @param argumentName the name of the argument
      */
-    public static <T> T forNull(final T argument, final String argumentName) {
+    public static <T> T throwArgNull(final T argument, final String argumentName) {
         return Objects.requireNonNull(
                 argument, () -> String.format("The supplied argument '%s' cannot be null!", argumentName));
     }

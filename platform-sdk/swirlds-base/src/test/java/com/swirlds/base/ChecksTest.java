@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-class CheckTest {
+class ChecksTest {
 
     @Test
     @DisplayName("Check null argument")
@@ -30,7 +30,7 @@ class CheckTest {
         final String argumentName = "argument";
 
         // then
-        Assertions.assertThrows(NullPointerException.class, () -> Check.forNull(argument, argumentName));
+        Assertions.assertThrows(NullPointerException.class, () -> Checks.throwArgNull(argument, argumentName));
     }
 
     @Test
@@ -41,7 +41,7 @@ class CheckTest {
         final String argumentName = null;
 
         // when
-        final Object value = Check.forNull(argument, argumentName);
+        final Object value = Checks.throwArgNull(argument, argumentName);
 
         // then
         Assertions.assertEquals(argument, value);
@@ -56,7 +56,7 @@ class CheckTest {
 
         // when
         final NullPointerException nullPointerException =
-                Assertions.assertThrows(NullPointerException.class, () -> Check.forNull(argument, argumentName));
+                Assertions.assertThrows(NullPointerException.class, () -> Checks.throwArgNull(argument, argumentName));
 
         // then
         Assertions.assertEquals("The supplied argument 'null' cannot be null!", nullPointerException.getMessage());
