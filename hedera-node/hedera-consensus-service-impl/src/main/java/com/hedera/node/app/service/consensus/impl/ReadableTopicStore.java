@@ -74,7 +74,7 @@ public class ReadableTopicStore extends TopicStore {
     }
 
     public Optional<Topic> getTopicLeaf(TopicID id) {
-        return Optional.ofNullable(Objects.requireNonNull(topicState).get(EntityNum.fromTopicId(id)));
+        return Optional.ofNullable(Objects.requireNonNull(topicState).get(EntityNum.fromTopicId(PbjConverter.fromPbj(id))));
     }
 
     /**
