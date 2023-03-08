@@ -5,6 +5,7 @@ module com.hedera.node.app.service.network.impl {
     requires dagger;
     requires javax.inject;
     requires com.github.spotbugs.annotations;
+    requires com.hedera.pbj.runtime;
 
     provides com.hedera.node.app.service.network.NetworkService with
             com.hedera.node.app.service.network.impl.NetworkServiceImpl;

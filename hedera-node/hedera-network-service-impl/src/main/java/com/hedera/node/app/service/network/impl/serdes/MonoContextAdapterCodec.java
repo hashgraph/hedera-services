@@ -17,11 +17,13 @@
 package com.hedera.node.app.service.network.impl.serdes;
 
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
+import com.hedera.pbj.runtime.Codec;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.DataInput;
-import java.io.DataOutput;
+import com.hedera.pbj.runtime.io.DataInput;
+import com.hedera.pbj.runtime.io.DataOutput;
+
 import java.io.IOException;
 
 public class MonoContextAdapterCodec implements Codec<MerkleNetworkContext> {
@@ -52,12 +54,18 @@ public class MonoContextAdapterCodec implements Codec<MerkleNetworkContext> {
     }
 
     @Override
-    public int typicalSize() {
+    public int measureRecord(final @NonNull MerkleNetworkContext merkleNetworkContext) {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public boolean fastEquals(@NonNull MerkleNetworkContext item, @NonNull DataInput input) {
         throw new UnsupportedOperationException();
+    }
+
+    @NonNull
+    @Override
+    public MerkleNetworkContext parseStrict(@NonNull DataInput dataInput) throws IOException {
+        return parse(dataInput);
     }
 }

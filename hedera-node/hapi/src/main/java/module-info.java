@@ -34,7 +34,9 @@ module com.hedera.node.hapi {
     exports com.hedera.hapi.streams;
     exports com.hedera.hapi.streams.codec;
     exports com.hedera.hapi.streams.schema;
+
     requires com.github.spotbugs.annotations;
+
     exports com.hedera.hapi.node.state.consensus.codec;
     exports com.hedera.hapi.node.state.consensus;
 }

@@ -92,7 +92,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
-import com.hederahashgraph.api.proto.java.FileID;
+import com.hedera.hapi.node.base.FileID;
 import com.hederahashgraph.api.proto.java.GetAccountDetailsResponse;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
