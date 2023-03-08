@@ -19,10 +19,8 @@ package com.hedera.node.app.service.evm.contracts.operations;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
-public class CreateOperationTracking {
-    protected boolean failForExistingHollowAccount(MessageFrame frame, Address contractAddress) {
-        return false;
-    }
+public interface CreateOperationExternalizer {
+    void externalize(MessageFrame frame, MessageFrame childFrame);
 
-    protected void sideEffects(MessageFrame frame, MessageFrame childFrame) {}
+    boolean shouldFailBasedOnLazyCreation(MessageFrame frame, Address contractAddress);
 }

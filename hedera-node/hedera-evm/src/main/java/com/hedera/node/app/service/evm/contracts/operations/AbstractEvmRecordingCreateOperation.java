@@ -19,6 +19,7 @@ package com.hedera.node.app.service.evm.contracts.operations;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -41,7 +42,8 @@ public abstract class AbstractEvmRecordingCreateOperation extends AbstractOperat
             new OperationResult(0L, ExceptionalHaltReason.INVALID_OPERATION);
     protected static final Operation.OperationResult UNDERFLOW_RESPONSE =
             new Operation.OperationResult(0, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
-    private CreateOperationTracking createOperationTracking = new CreateOperationTracking();
+    private final CreateOperationExternalizer createOperationExternalizer;
+    protected final EvmProperties evmProperties;
 
     protected AbstractEvmRecordingCreateOperation(
             final int opcode,
@@ -49,12 +51,12 @@ public abstract class AbstractEvmRecordingCreateOperation extends AbstractOperat
             final int stackItemsConsumed,
             final int stackItemsProduced,
             final int opSize,
-            final GasCalculator gasCalculator) {
+            final GasCalculator gasCalculator,
+            final EvmProperties evmProperties,
+            final CreateOperationExternalizer createOperationExternalizer) {
         super(opcode, name, stackItemsConsumed, stackItemsProduced, opSize, gasCalculator);
-    }
-
-    protected void setCreateOperationTracking(CreateOperationTracking createOperationTracking) {
-        this.createOperationTracking = createOperationTracking;
+        this.evmProperties = evmProperties;
+        this.createOperationExternalizer = createOperationExternalizer;
     }
 
     @Override
@@ -128,7 +130,7 @@ public abstract class AbstractEvmRecordingCreateOperation extends AbstractOperat
 
         final Address contractAddress = targetContractAddress(frame);
 
-        if (createOperationTracking.failForExistingHollowAccount(frame, contractAddress)) {
+        if (createOperationExternalizer.shouldFailBasedOnLazyCreation(frame, contractAddress)) {
             fail(frame);
             return;
         }
@@ -176,7 +178,7 @@ public abstract class AbstractEvmRecordingCreateOperation extends AbstractOperat
         if (childFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
             frame.mergeWarmedUpFields(childFrame);
             frame.pushStackItem(Words.fromAddress(childFrame.getContractAddress()));
-            createOperationTracking.sideEffects(frame, childFrame);
+            createOperationExternalizer.externalize(frame, childFrame);
         } else {
             frame.setReturnData(childFrame.getOutputData());
             frame.pushStackItem(UInt256.ZERO);

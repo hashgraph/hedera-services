@@ -16,20 +16,33 @@
 
 package com.hedera.node.app.service.evm.contracts.operations;
 
+import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
+
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
 import javax.inject.Inject;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.units.bigints.UInt256;
+import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 public class HederaEvmCreate2Operation extends AbstractEvmRecordingCreateOperation {
+    private static final Bytes PREFIX = Bytes.fromHexString("0xFF");
+
     @Inject
-    public HederaEvmCreate2Operation(final GasCalculator gasCalculator) {
-        super(0xF5, "ħCREATE2", 4, 1, 1, gasCalculator);
+    public HederaEvmCreate2Operation(
+            final GasCalculator gasCalculator,
+            final EvmProperties evmProperties,
+            final CreateOperationExternalizer createOperationExternalizer) {
+        super(0xF5, "ħCREATE2", 4, 1, 1, gasCalculator, evmProperties, createOperationExternalizer);
     }
 
     @Override
     protected boolean isEnabled() {
-        return false;
+        return evmProperties.isCreate2Enabled();
     }
 
     @Override
@@ -38,7 +51,30 @@ public class HederaEvmCreate2Operation extends AbstractEvmRecordingCreateOperati
     }
 
     @Override
-    protected Address targetContractAddress(MessageFrame frame) {
-        return null;
+    protected Address targetContractAddress(final MessageFrame frame) {
+        final var sourceAddressOrAlias = frame.getRecipientAddress();
+        final var offset = clampedToLong(frame.getStackItem(1));
+        final var length = clampedToLong(frame.getStackItem(2));
+
+        final var updater = (HederaEvmWorldUpdater) frame.getWorldUpdater();
+        final var source = updater.priorityAddress(sourceAddressOrAlias);
+
+        final Bytes32 salt = UInt256.fromBytes(frame.getStackItem(3));
+        final var initCode = frame.readMutableMemory(offset, length);
+        final var hash = keccak256(Bytes.concatenate(PREFIX, source, salt, keccak256(initCode)));
+        final var alias = Address.wrap(hash.slice(12, 20));
+
+        final Address address = updater.newAliasedContractAddress(sourceAddressOrAlias, alias);
+        frame.warmUpAddress(address);
+        frame.warmUpAddress(alias);
+        return alias;
+    }
+
+    private static Bytes32 keccak256(final Bytes input) {
+        return Bytes32.wrap(keccak256DigestOf(input.toArrayUnsafe()));
+    }
+
+    private static byte[] keccak256DigestOf(final byte[] msg) {
+        return new Keccak.Digest256().digest(msg);
     }
 }

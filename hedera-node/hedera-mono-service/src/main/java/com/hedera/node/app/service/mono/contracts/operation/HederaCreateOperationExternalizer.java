@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import static com.hedera.node.app.service.mono.state.EntityCreator.NO_CUSTOM_FEE
 import static com.hedera.node.app.service.mono.txns.contract.ContractCreateTransitionLogic.STANDIN_CONTRACT_ID_KEY;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.accountIdFromEvmAddress;
 
-import com.hedera.node.app.service.evm.contracts.operations.AbstractEvmRecordingCreateOperation;
+import com.hedera.node.app.service.evm.contracts.operations.CreateOperationExternalizer;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
@@ -39,28 +39,23 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import java.util.Collections;
 import java.util.List;
+import javax.inject.Inject;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
-public abstract class AbstractRecordingCreateOperation extends AbstractEvmRecordingCreateOperation {
+public class HederaCreateOperationExternalizer implements CreateOperationExternalizer {
     protected final GlobalDynamicProperties dynamicProperties;
     private final EntityCreator creator;
     private final SyntheticTxnFactory syntheticTxnFactory;
     private final RecordsHistorian recordsHistorian;
 
-    protected AbstractRecordingCreateOperation(
-            final int opcode,
-            final String name,
-            final int stackItemsConsumed,
-            final int stackItemsProduced,
-            final int opSize,
-            final GasCalculator gasCalculator,
+    @Inject
+    public HederaCreateOperationExternalizer(
             final EntityCreator creator,
             final SyntheticTxnFactory syntheticTxnFactory,
             final RecordsHistorian recordsHistorian,
             final GlobalDynamicProperties dynamicProperties) {
-        super(opcode, name, stackItemsConsumed, stackItemsProduced, opSize, gasCalculator);
+        super();
         this.creator = creator;
         this.recordsHistorian = recordsHistorian;
         this.syntheticTxnFactory = syntheticTxnFactory;
@@ -68,21 +63,7 @@ public abstract class AbstractRecordingCreateOperation extends AbstractEvmRecord
     }
 
     @Override
-    protected boolean failForExistingHollowAccount(MessageFrame frame, Address contractAddress) {
-        if (!dynamicProperties.isLazyCreationEnabled()) {
-            final var hollowAccountID =
-                    matchingHollowAccountId((HederaStackedWorldStateUpdater) frame.getWorldUpdater(), contractAddress);
-
-            if (hollowAccountID != null) {
-                fail(frame);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    @Override
-    protected void sideEffects(MessageFrame frame, MessageFrame childFrame) {
+    public void externalize(MessageFrame frame, MessageFrame childFrame) {
         // Add an in-progress record so that if everything succeeds, we can externalize the
         // newly
         // created contract in the record stream with both its 0.0.X id and its EVM address.
@@ -116,6 +97,17 @@ public abstract class AbstractRecordingCreateOperation extends AbstractEvmRecord
         } else {
             updater.manageInProgressRecord(recordsHistorian, childRecord, syntheticOp, Collections.emptyList());
         }
+    }
+
+    @Override
+    public boolean shouldFailBasedOnLazyCreation(MessageFrame frame, Address contractAddress) {
+        if (!dynamicProperties.isLazyCreationEnabled()) {
+            final var hollowAccountID =
+                    matchingHollowAccountId((HederaStackedWorldStateUpdater) frame.getWorldUpdater(), contractAddress);
+
+            return hollowAccountID != null;
+        }
+        return false;
     }
 
     private AccountID matchingHollowAccountId(HederaStackedWorldStateUpdater updater, Address contract) {

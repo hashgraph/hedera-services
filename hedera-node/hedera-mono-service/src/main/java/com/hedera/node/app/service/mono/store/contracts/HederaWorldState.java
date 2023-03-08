@@ -231,6 +231,16 @@ public class HederaWorldState extends HederaEvmWorldState implements HederaMutab
         }
 
         @Override
+        public Address priorityAddress(Address addressOrAlias) {
+            return null;
+        }
+
+        @Override
+        public Address newAliasedContractAddress(Address sponsor, Address alias) {
+            return null;
+        }
+
+        @Override
         public void addSbhRefund(long refund) {
             sbhRefund = sbhRefund + refund;
         }

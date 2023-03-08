@@ -16,27 +16,17 @@
 
 package com.hedera.node.app.service.mono.contracts.operation;
 
-import static com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils.keccak256DigestOf;
-import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
-
 import com.hedera.node.app.service.evm.contracts.operations.HederaEvmCreate2Operation;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.EntityCreator;
-import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import javax.inject.Inject;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.units.bigints.UInt256;
-import org.hyperledger.besu.datatypes.Address;
+
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 public class HederaCreate2Operation extends HederaEvmCreate2Operation {
-    private static final Bytes PREFIX = Bytes.fromHexString("0xFF");
-
-    private final GlobalDynamicProperties dynamicProperties;
 
     @Inject
     public HederaCreate2Operation(
@@ -45,43 +35,12 @@ public class HederaCreate2Operation extends HederaEvmCreate2Operation {
             final SyntheticTxnFactory syntheticTxnFactory,
             final RecordsHistorian recordsHistorian,
             final GlobalDynamicProperties dynamicProperties) {
-        super(gasCalculator);
-        setCreateOperationTracking(
-                new HederaCreateOperationTracking(creator, syntheticTxnFactory, recordsHistorian, dynamicProperties));
-        this.dynamicProperties = dynamicProperties;
+        super(gasCalculator, dynamicProperties,
+                new HederaCreateOperationExternalizer(creator, syntheticTxnFactory, recordsHistorian, dynamicProperties));
     }
 
     @Override
     protected long cost(final MessageFrame frame) {
         return gasCalculator().create2OperationGasCost(frame);
-    }
-
-    @Override
-    protected boolean isEnabled() {
-        return dynamicProperties.isCreate2Enabled();
-    }
-
-    @Override
-    protected Address targetContractAddress(final MessageFrame frame) {
-        final var sourceAddressOrAlias = frame.getRecipientAddress();
-        final var offset = clampedToLong(frame.getStackItem(1));
-        final var length = clampedToLong(frame.getStackItem(2));
-
-        final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
-        final var source = updater.priorityAddress(sourceAddressOrAlias);
-
-        final Bytes32 salt = UInt256.fromBytes(frame.getStackItem(3));
-        final var initCode = frame.readMutableMemory(offset, length);
-        final var hash = keccak256(Bytes.concatenate(PREFIX, source, salt, keccak256(initCode)));
-        final var alias = Address.wrap(hash.slice(12, 20));
-
-        final Address address = updater.newAliasedContractAddress(sourceAddressOrAlias, alias);
-        frame.warmUpAddress(address);
-        frame.warmUpAddress(alias);
-        return alias;
-    }
-
-    private static Bytes32 keccak256(final Bytes input) {
-        return Bytes32.wrap(keccak256DigestOf(input.toArrayUnsafe()));
     }
 }

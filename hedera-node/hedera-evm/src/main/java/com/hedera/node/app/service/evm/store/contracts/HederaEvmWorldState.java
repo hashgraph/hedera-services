@@ -27,6 +27,7 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
+// TODO: remove
 public class HederaEvmWorldState implements HederaEvmMutableWorldState {
 
     private final HederaEvmEntityAccess hederaEvmEntityAccess;
@@ -117,6 +118,16 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
         @Override
         public long getSbhRefund() {
             return 0;
+        }
+
+        @Override
+        public Address priorityAddress(Address addressOrAlias) {
+            return null;
+        }
+
+        @Override
+        public Address newAliasedContractAddress(Address sponsor, Address alias) {
+            return null;
         }
 
         @Override

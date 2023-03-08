@@ -29,4 +29,8 @@ public interface EvmProperties {
     int maxGasRefundPercentage();
 
     boolean isRedirectTokenCallsEnabled();
+
+    boolean isLazyCreationEnabled();
+
+    boolean isCreate2Enabled();
 }

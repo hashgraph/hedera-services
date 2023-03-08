@@ -42,4 +42,8 @@ public interface HederaEvmWorldUpdater extends WorldUpdater {
      * @return the amount of Gas to refund;
      */
     long getSbhRefund();
+
+    Address priorityAddress(final Address addressOrAlias);
+
+    Address newAliasedContractAddress(final Address sponsor, final Address alias);
 }
