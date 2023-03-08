@@ -430,10 +430,10 @@ public class CostOfEveryThingSuite extends HapiSuite {
                         cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true))
                 .when(
                         scheduleCreate(
-                                CANONICAL_SCHEDULE,
-                                cryptoTransfer(tinyBarsFromTo(PAYING_SENDER, RECEIVER, 1L))
-                                        .memo("")
-                                        .fee(ONE_HBAR))
+                                        CANONICAL_SCHEDULE,
+                                        cryptoTransfer(tinyBarsFromTo(PAYING_SENDER, RECEIVER, 1L))
+                                                .memo("")
+                                                .fee(ONE_HBAR))
                                 .via("canonicalScheduleCreation")
                                 .payingWith(PAYING_SENDER)
                                 .adminKey(PAYING_SENDER),
@@ -443,11 +443,11 @@ public class CostOfEveryThingSuite extends HapiSuite {
                                 .payingWith(PAYING_SENDER)
                                 .alsoSigningWith(RECEIVER),
                         scheduleCreate(
-                                "tbd",
-                                cryptoTransfer(tinyBarsFromTo(PAYING_SENDER, RECEIVER, 1L))
-                                        .memo("")
-                                        .fee(ONE_HBAR)
-                                        .signedBy(PAYING_SENDER))
+                                        "tbd",
+                                        cryptoTransfer(tinyBarsFromTo(PAYING_SENDER, RECEIVER, 1L))
+                                                .memo("")
+                                                .fee(ONE_HBAR)
+                                                .signedBy(PAYING_SENDER))
                                 .payingWith(PAYING_SENDER)
                                 .adminKey(PAYING_SENDER),
                         scheduleDelete("tbd").via("canonicalScheduleDeletion").payingWith(PAYING_SENDER))

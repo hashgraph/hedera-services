@@ -1578,31 +1578,30 @@ public class ValidationScenarios extends HapiSuite {
         }
 
         KeyShape complex = KeyShape.threshOf(1, KeyShape.listOf(2), KeyShape.threshOf(1, 3));
-        return new HapiSpecOperation[]{
-                newKeyNamed(NOVEL_TOPIC_ADMIN).shape(complex),
-                createTopic(NOVEL_TOPIC_NAME)
-                        .payingWith(SCENARIO_PAYER_NAME)
-                        .setNodeFrom(ValidationScenarios::nextNode)
-                        .adminKeyName(NOVEL_TOPIC_ADMIN)
-                        .submitKeyShape(KeyShape.SIMPLE),
-                submitMessageTo(NOVEL_TOPIC_NAME)
-                        .payingWith(SCENARIO_PAYER_NAME)
-                        .setNodeFrom(ValidationScenarios::nextNode)
-                        .signedBy(SCENARIO_PAYER_NAME)
-                        .hasKnownStatus(INVALID_SIGNATURE),
-                updateTopic(NOVEL_TOPIC_NAME)
-                        .payingWith(SCENARIO_PAYER_NAME)
-                        .setNodeFrom(ValidationScenarios::nextNode)
-                        .signedBy(SCENARIO_PAYER_NAME, NOVEL_TOPIC_ADMIN)
-                        .submitKey(EMPTY_KEY),
-                submitMessageTo(NOVEL_TOPIC_NAME)
-                        .payingWith(SCENARIO_PAYER_NAME)
-                        .setNodeFrom(ValidationScenarios::nextNode)
-                        .signedBy(SCENARIO_PAYER_NAME),
-                deleteTopic(NOVEL_TOPIC_NAME).payingWith(SCENARIO_PAYER_NAME).setNodeFrom(
-                        ValidationScenarios::nextNode),
-                withOpContext((spec, opLog) -> novelTopicUsed.set(
-                        HapiPropertySource.asTopicString(spec.registry().getTopicID(NOVEL_TOPIC_NAME))))
+        return new HapiSpecOperation[] {
+            newKeyNamed(NOVEL_TOPIC_ADMIN).shape(complex),
+            createTopic(NOVEL_TOPIC_NAME)
+                    .payingWith(SCENARIO_PAYER_NAME)
+                    .setNodeFrom(ValidationScenarios::nextNode)
+                    .adminKeyName(NOVEL_TOPIC_ADMIN)
+                    .submitKeyShape(KeyShape.SIMPLE),
+            submitMessageTo(NOVEL_TOPIC_NAME)
+                    .payingWith(SCENARIO_PAYER_NAME)
+                    .setNodeFrom(ValidationScenarios::nextNode)
+                    .signedBy(SCENARIO_PAYER_NAME)
+                    .hasKnownStatus(INVALID_SIGNATURE),
+            updateTopic(NOVEL_TOPIC_NAME)
+                    .payingWith(SCENARIO_PAYER_NAME)
+                    .setNodeFrom(ValidationScenarios::nextNode)
+                    .signedBy(SCENARIO_PAYER_NAME, NOVEL_TOPIC_ADMIN)
+                    .submitKey(EMPTY_KEY),
+            submitMessageTo(NOVEL_TOPIC_NAME)
+                    .payingWith(SCENARIO_PAYER_NAME)
+                    .setNodeFrom(ValidationScenarios::nextNode)
+                    .signedBy(SCENARIO_PAYER_NAME),
+            deleteTopic(NOVEL_TOPIC_NAME).payingWith(SCENARIO_PAYER_NAME).setNodeFrom(ValidationScenarios::nextNode),
+            withOpContext((spec, opLog) -> novelTopicUsed.set(
+                    HapiPropertySource.asTopicString(spec.registry().getTopicID(NOVEL_TOPIC_NAME))))
         };
     }
 

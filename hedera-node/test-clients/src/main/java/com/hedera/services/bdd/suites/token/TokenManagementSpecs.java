@@ -90,21 +90,21 @@ public class TokenManagementSpecs extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[]{
-                freezeMgmtSuccessCasesWork(),
-                kycMgmtFailureCasesWork(),
-                kycMgmtSuccessCasesWork(),
-                supplyMgmtSuccessCasesWork(),
-                wipeAccountFailureCasesWork(),
-                wipeAccountSuccessCasesWork(),
-                supplyMgmtFailureCasesWork(),
-                burnTokenFailsDueToInsufficientTreasuryBalance(),
-                frozenTreasuryCannotBeMintedOrBurned(),
-                revokedKYCTreasuryCannotBeMintedOrBurned(),
-                fungibleCommonMaxSupplyReachWork(),
-                mintingMaxLongValueWorks(),
-                nftMintProvidesMintedNftsAndNewTotalSupply(),
-                zeroUnitTokenOperationsWorkAsExpected()
+        return List.of(new HapiSpec[] {
+            freezeMgmtSuccessCasesWork(),
+            kycMgmtFailureCasesWork(),
+            kycMgmtSuccessCasesWork(),
+            supplyMgmtSuccessCasesWork(),
+            wipeAccountFailureCasesWork(),
+            wipeAccountSuccessCasesWork(),
+            supplyMgmtFailureCasesWork(),
+            burnTokenFailsDueToInsufficientTreasuryBalance(),
+            frozenTreasuryCannotBeMintedOrBurned(),
+            revokedKYCTreasuryCannotBeMintedOrBurned(),
+            fungibleCommonMaxSupplyReachWork(),
+            mintingMaxLongValueWorks(),
+            nftMintProvidesMintedNftsAndNewTotalSupply(),
+            zeroUnitTokenOperationsWorkAsExpected()
         });
     }
 

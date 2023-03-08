@@ -56,9 +56,9 @@ public class TokenManagementSpecsStateful extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[]{
-                /* Stateful specs from TokenManagementSpecs */
-                freezeMgmtFailureCasesWork(),
+        return List.of(new HapiSpec[] {
+            /* Stateful specs from TokenManagementSpecs */
+            freezeMgmtFailureCasesWork(),
         });
     }
 

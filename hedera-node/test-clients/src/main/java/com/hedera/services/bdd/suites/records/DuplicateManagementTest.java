@@ -58,10 +58,10 @@ public class DuplicateManagementTest extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[]{
-                usesUnclassifiableIfNoClassifiableAvailable(),
-                hasExpectedDuplicates(),
-                classifiableTakesPriorityOverUnclassifiable(),
+        return List.of(new HapiSpec[] {
+            usesUnclassifiableIfNoClassifiableAvailable(),
+            hasExpectedDuplicates(),
+            classifiableTakesPriorityOverUnclassifiable(),
         });
     }
 
@@ -72,8 +72,8 @@ public class DuplicateManagementTest extends HapiSuite {
                         usableTxnIdNamed(TXN_ID).payerId(CIVILIAN))
                 .when(
                         uncheckedSubmit(cryptoCreate(REPEATED)
-                                .payingWith(CIVILIAN)
-                                .txnId(TXN_ID))
+                                        .payingWith(CIVILIAN)
+                                        .txnId(TXN_ID))
                                 .payingWith(CIVILIAN)
                                 .fee(ONE_HBAR)
                                 .hasPrecheck(NOT_SUPPORTED),
@@ -155,9 +155,9 @@ public class DuplicateManagementTest extends HapiSuite {
                         cryptoTransfer(tinyBarsFromTo(GENESIS, TO, 100_000_000L)))
                 .when(
                         uncheckedSubmit(cryptoCreate("nope")
-                                .txnId(TXN_ID)
-                                .payingWith(CIVILIAN)
-                                .setNode("0.0.4"))
+                                        .txnId(TXN_ID)
+                                        .payingWith(CIVILIAN)
+                                        .setNode("0.0.4"))
                                 .logged(),
                         uncheckedSubmit(cryptoCreate("sure")
                                 .txnId(TXN_ID)

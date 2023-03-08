@@ -102,29 +102,29 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[]{
-                mintFailsWithLargeBatchSize(),
-                mintFailsWithTooLongMetadata(),
-                mintFailsWithInvalidMetadataFromBatch(),
-                mintUniqueTokenHappyPath(),
-                mintTokenWorksWhenAccountsAreFrozenByDefault(),
-                mintFailsWithDeletedToken(),
-                mintUniqueTokenWorksWithRepeatedMetadata(),
-                mintDistinguishesFeeSubTypes(),
-                mintUniqueTokenReceiptCheck(),
-                populatingMetadataForFungibleDoesNotWork(),
-                populatingAmountForNonFungibleDoesNotWork(),
-                finiteNftReachesMaxSupplyProperly(),
-                burnHappyPath(),
-                canOnlyBurnFromTreasury(),
-                burnFailsOnInvalidSerialNumber(),
-                burnRespectsBurnBatchConstraints(),
-                treasuryBalanceCorrectAfterBurn(),
-                burnWorksWhenAccountsAreFrozenByDefault(),
-                serialNumbersOnlyOnFungibleBurnFails(),
-                amountOnlyOnNonFungibleBurnFails(),
-                wipeHappyPath(),
-                wipeRespectsConstraints(),
+        return List.of(new HapiSpec[] {
+            mintFailsWithLargeBatchSize(),
+            mintFailsWithTooLongMetadata(),
+            mintFailsWithInvalidMetadataFromBatch(),
+            mintUniqueTokenHappyPath(),
+            mintTokenWorksWhenAccountsAreFrozenByDefault(),
+            mintFailsWithDeletedToken(),
+            mintUniqueTokenWorksWithRepeatedMetadata(),
+            mintDistinguishesFeeSubTypes(),
+            mintUniqueTokenReceiptCheck(),
+            populatingMetadataForFungibleDoesNotWork(),
+            populatingAmountForNonFungibleDoesNotWork(),
+            finiteNftReachesMaxSupplyProperly(),
+            burnHappyPath(),
+            canOnlyBurnFromTreasury(),
+            burnFailsOnInvalidSerialNumber(),
+            burnRespectsBurnBatchConstraints(),
+            treasuryBalanceCorrectAfterBurn(),
+            burnWorksWhenAccountsAreFrozenByDefault(),
+            serialNumbersOnlyOnFungibleBurnFails(),
+            amountOnlyOnNonFungibleBurnFails(),
+            wipeHappyPath(),
+            wipeRespectsConstraints(),
             commonWipeFailsWhenInvokedOnUniqueToken(),
             uniqueWipeFailsWhenInvokedOnFungibleToken(),
             wipeFailsWithInvalidSerialNumber(),
@@ -147,12 +147,12 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .supplyKey(SUPPLY_KEY)
                                 .treasury(TOKEN_TREASURY))
                 .when(mintToken(
-                        FUNGIBLE_TOKEN,
-                        List.of(
-                                metadata("some-data"),
-                                metadata("some-data2"),
-                                metadata("some-data3"),
-                                metadata("some-data4")))
+                                FUNGIBLE_TOKEN,
+                                List.of(
+                                        metadata("some-data"),
+                                        metadata("some-data2"),
+                                        metadata("some-data3"),
+                                        metadata("some-data4")))
                         .hasKnownStatus(INVALID_TOKEN_MINT_AMOUNT)
                         .via(SHOULD_NOT_WORK))
                 .then(
@@ -205,12 +205,12 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .supplyKey(SUPPLY_KEY)
                                 .treasury(TOKEN_TREASURY))
                 .when(mintToken(
-                        NFT,
-                        List.of(
-                                metadata("some-data"),
-                                metadata("some-data2"),
-                                metadata("some-data3"),
-                                metadata("some-data4")))
+                                NFT,
+                                List.of(
+                                        metadata("some-data"),
+                                        metadata("some-data2"),
+                                        metadata("some-data3"),
+                                        metadata("some-data4")))
                         .hasKnownStatus(TOKEN_MAX_SUPPLY_REACHED)
                         .via(SHOULD_NOT_APPEAR))
                 .then(
@@ -686,7 +686,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         cryptoTransfer(movingUnique(NFT, 1, 2).between(TOKEN_TREASURY, ACCOUNT)))
                 .when()
                 .then(wipeTokenAccount(
-                        NFT, ACCOUNT, LongStream.range(0, 1000).boxed().collect(Collectors.toList()))
+                                NFT, ACCOUNT, LongStream.range(0, 1000).boxed().collect(Collectors.toList()))
                         .hasPrecheck(BATCH_SIZE_LIMIT_EXCEEDED));
     }
 

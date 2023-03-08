@@ -85,7 +85,7 @@ public class PerpetualLocalCalls extends HapiSuite {
                         .has(resultWith()
                                 .resultThruAbi(
                                         getABIFor(FUNCTION, "getMyValue", CHILD_STORAGE),
-                                        isLiteralResult(new Object[]{BigInteger.valueOf(73)})));
+                                        isLiteralResult(new Object[] {BigInteger.valueOf(73)})));
                 var soFar = totalBeforeFailure.getAndIncrement();
                 if (soFar % 1000 == 0) {
                     log.info("--- " + soFar);

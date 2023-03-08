@@ -116,10 +116,10 @@ public class SplittingThrottlesWorks extends HapiSuite {
                             .hasPrecheckFrom(OK, BUSY);
                 } else {
                     op = scheduleCreate(
-                            "scheduleW/e" + nextI,
-                            cryptoTransfer(tinyBarsFromTo(CIVILIAN, FUNDING, 1))
-                                    .memo(TxnUtils.randomAlphaNumeric(32))
-                                    .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS))
+                                    "scheduleW/e" + nextI,
+                                    cryptoTransfer(tinyBarsFromTo(CIVILIAN, FUNDING, 1))
+                                            .memo(TxnUtils.randomAlphaNumeric(32))
+                                            .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS))
                             .noLogging()
                             .deferStatusResolution()
                             .payingWith(CIVILIAN)

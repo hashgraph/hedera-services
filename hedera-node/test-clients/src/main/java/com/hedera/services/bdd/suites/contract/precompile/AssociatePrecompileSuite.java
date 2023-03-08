@@ -196,10 +196,10 @@ public class AssociatePrecompileSuite extends HapiSuite {
                                 .via("notSupportedFunctionCallTxn")
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
-                                THE_CONTRACT,
-                                TOKEN_ASSOCIATE,
-                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                        THE_CONTRACT,
+                                        TOKEN_ASSOCIATE,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via(VANILLA_TOKEN_ASSOCIATE_TXN)
                                 .gas(GAS_TO_OFFER))))
@@ -237,19 +237,19 @@ public class AssociatePrecompileSuite extends HapiSuite {
                         newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
                         cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
                         contractCall(
-                                THE_CONTRACT,
-                                TOKEN_ASSOCIATE,
-                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                HapiParserUtil.asHeadlongAddress(invalidAbiArgument))
+                                        THE_CONTRACT,
+                                        TOKEN_ASSOCIATE,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(invalidAbiArgument))
                                 .payingWith(GENESIS)
                                 .via("functionCallWithInvalidArgumentTxn")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
-                                THE_CONTRACT,
-                                TOKEN_ASSOCIATE,
-                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                        THE_CONTRACT,
+                                        TOKEN_ASSOCIATE,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via(VANILLA_TOKEN_ASSOCIATE_TXN)
                                 .gas(GAS_TO_OFFER)
@@ -402,9 +402,9 @@ public class AssociatePrecompileSuite extends HapiSuite {
                 .given(uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT), contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
                 .when(
                         contractCall(
-                                THE_GRACEFULLY_FAILING_CONTRACT,
-                                "performInvalidlyFormattedSingleFunctionCall",
-                                HapiParserUtil.asHeadlongAddress(ACCOUNT_ADDRESS))
+                                        THE_GRACEFULLY_FAILING_CONTRACT,
+                                        "performInvalidlyFormattedSingleFunctionCall",
+                                        HapiParserUtil.asHeadlongAddress(ACCOUNT_ADDRESS))
                                 .notTryingAsHexedliteral()
                                 .via(INVALID_SINGLE_ABI_CALL_TXN)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),

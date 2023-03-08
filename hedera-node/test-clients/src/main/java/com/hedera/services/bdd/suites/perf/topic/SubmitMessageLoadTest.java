@@ -132,7 +132,7 @@ public class SubmitMessageLoadTest extends LoadTest {
                         // if just created a new key then export spec for later reuse
                         pemFile == null
                                 ? withOpContext(
-                                (spec, ignore) -> spec.keys().exportSimpleKey("topicSubmitKey.pem", SUBMIT_KEY))
+                                        (spec, ignore) -> spec.keys().exportSimpleKey("topicSubmitKey.pem", SUBMIT_KEY))
                                 : sleepFor(100),
                         logIt(ignore -> settings.toString()))
                 .when(
@@ -150,12 +150,12 @@ public class SubmitMessageLoadTest extends LoadTest {
                                 .hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
                         topicID == null
                                 ? createTopic("topic")
-                                .submitKeyName(SUBMIT_KEY)
-                                .hasRetryPrecheckFrom(
-                                        BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
+                                        .submitKeyName(SUBMIT_KEY)
+                                        .hasRetryPrecheckFrom(
+                                                BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
                                 : sleepFor(100),
                         sleepFor(10000) // wait all other thread ready
-                )
+                        )
                 .then(
                         defaultLoadTest(submitBurst, settings),
                         getAccountBalance(SENDER).logged());

@@ -97,13 +97,13 @@ public class TransferListServiceFeesSuite extends HapiSuite {
                         cryptoCreate(PAYER).balance(getBalanceFromFee.apply(REFERENCE_TRANSFER, sufficientBalanceFn)),
                         UtilVerbs.inParallel(
                                 cryptoTransfer(tinyBarsFromTo(PAYER, EXCHANGE_RATE_CONTROL, spec -> spec.registry()
-                                        .getAmount(FEE_CHARGED)))
+                                                .getAmount(FEE_CHARGED)))
                                         .via("txnA")
                                         .payingWith(PAYER)
                                         .hasAnyPrecheck()
                                         .hasAnyKnownStatus(),
                                 cryptoTransfer(tinyBarsFromTo(PAYER, EXCHANGE_RATE_CONTROL, spec -> spec.registry()
-                                        .getAmount(FEE_CHARGED)))
+                                                .getAmount(FEE_CHARGED)))
                                         .via("txnB")
                                         .payingWith(PAYER)
                                         .hasAnyPrecheck()
@@ -134,15 +134,15 @@ public class TransferListServiceFeesSuite extends HapiSuite {
                         cryptoCreate("B"),
                         cryptoCreate("anon"),
                         cryptoTransfer(
-                                tinyBarsFromTo("anon", "A", TRANSFER_AMOUNT),
-                                tinyBarsFromTo("anon", "B", TRANSFER_AMOUNT))
+                                        tinyBarsFromTo("anon", "A", TRANSFER_AMOUNT),
+                                        tinyBarsFromTo("anon", "B", TRANSFER_AMOUNT))
                                 .via(REFERENCE_TRANSFER)
                                 .payingWith("anon"))
                 .when(
                         cryptoCreate(PAYER).balance(getBalanceFromFee.apply(REFERENCE_TRANSFER, Function.identity())),
                         cryptoTransfer(
-                                tinyBarsFromTo(PAYER, "A", TRANSFER_AMOUNT),
-                                tinyBarsFromTo(PAYER, "B", TRANSFER_AMOUNT))
+                                        tinyBarsFromTo(PAYER, "A", TRANSFER_AMOUNT),
+                                        tinyBarsFromTo(PAYER, "B", TRANSFER_AMOUNT))
                                 .payingWith(PAYER)
                                 .via("subjectTransfer")
                                 .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE))

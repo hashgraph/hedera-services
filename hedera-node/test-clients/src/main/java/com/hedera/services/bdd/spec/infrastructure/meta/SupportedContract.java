@@ -27,8 +27,8 @@ public enum SupportedContract {
     SIMPLE_STORAGE(
             bytecodePath(Constants.SIMPLE_STORAGE1),
             List.of(new ContractCallDetails(
-                    getABIFor(FUNCTION, "set", Constants.SIMPLE_STORAGE1), new Object[]{BigInteger.valueOf(1)})),
-            List.of(new ContractCallDetails(getABIFor(FUNCTION, "get", Constants.SIMPLE_STORAGE1), new Object[]{})));
+                    getABIFor(FUNCTION, "set", Constants.SIMPLE_STORAGE1), new Object[] {BigInteger.valueOf(1)})),
+            List.of(new ContractCallDetails(getABIFor(FUNCTION, "get", Constants.SIMPLE_STORAGE1), new Object[] {})));
 
     private final String pathToBytecode;
     private final List<ContractCallDetails> callDetails;

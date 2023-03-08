@@ -591,9 +591,9 @@ public class ScheduleSignSpecs extends HapiSuite {
                         cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true))
                 .when(
                         scheduleCreate(
-                                "threeSigXfer",
-                                cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1))
-                                        .fee(ONE_HBAR))
+                                        "threeSigXfer",
+                                        cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1))
+                                                .fee(ONE_HBAR))
                                 .designatingPayer(PAYER)
                                 .alsoSigningWith(SENDER, RECEIVER),
                         getAccountBalance(RECEIVER).hasTinyBars(0L),
@@ -608,9 +608,9 @@ public class ScheduleSignSpecs extends HapiSuite {
                         cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true))
                 .when(
                         scheduleCreate(
-                                TWO_SIG_XFER,
-                                cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1))
-                                        .fee(ONE_HBAR))
+                                        TWO_SIG_XFER,
+                                        cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1))
+                                                .fee(ONE_HBAR))
                                 .alsoSigningWith(SENDER),
                         getAccountBalance(RECEIVER).hasTinyBars(0L),
                         scheduleSign(TWO_SIG_XFER).alsoSigningWith(RECEIVER))
@@ -623,13 +623,13 @@ public class ScheduleSignSpecs extends HapiSuite {
                         newKeyNamed(SHARED_KEY),
                         cryptoCreate("payerWithSharedKey").key(SHARED_KEY))
                 .when(scheduleCreate(
-                        "deferredCreation",
-                        cryptoCreate("yetToBe")
-                                .signedBy()
-                                .receiverSigRequired(true)
-                                .key(SHARED_KEY)
-                                .balance(123L)
-                                .fee(ONE_HBAR))
+                                "deferredCreation",
+                                cryptoCreate("yetToBe")
+                                        .signedBy()
+                                        .receiverSigRequired(true)
+                                        .key(SHARED_KEY)
+                                        .balance(123L)
+                                        .fee(ONE_HBAR))
                         .payingWith("payerWithSharedKey")
                         .via("creation"))
                 .then(getTxnRecord("creation").scheduled());
@@ -693,9 +693,9 @@ public class ScheduleSignSpecs extends HapiSuite {
                 .when(
                         cryptoCreate(SENDER).key("ab").balance(667L),
                         scheduleCreate(
-                                "deferredFall",
-                                cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
-                                        .fee(ONE_HBAR))
+                                        "deferredFall",
+                                        cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
+                                                .fee(ONE_HBAR))
                                 .alsoSigningWith("a"),
                         getAccountBalance(SENDER).hasTinyBars(667L),
                         cryptoUpdate(SENDER).key("a"))

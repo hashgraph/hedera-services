@@ -107,10 +107,10 @@ public class CostOfEverythingSuite extends HapiSuite {
                         cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true))
                 .when(
                         scheduleCreate(
-                                CANONICAL,
-                                cryptoTransfer(tinyBarsFromTo(PAYING_SENDER, RECEIVER, 1L))
-                                        .blankMemo()
-                                        .fee(ONE_HBAR))
+                                        CANONICAL,
+                                        cryptoTransfer(tinyBarsFromTo(PAYING_SENDER, RECEIVER, 1L))
+                                                .blankMemo()
+                                                .fee(ONE_HBAR))
                                 .via("canonicalCreation")
                                 .payingWith(PAYING_SENDER)
                                 .adminKey(PAYING_SENDER),
@@ -120,12 +120,12 @@ public class CostOfEverythingSuite extends HapiSuite {
                                 .payingWith(PAYING_SENDER)
                                 .alsoSigningWith(RECEIVER),
                         scheduleCreate(
-                                "tbd",
-                                cryptoTransfer(tinyBarsFromTo(PAYING_SENDER, RECEIVER, 1L))
-                                        .memo("")
-                                        .fee(ONE_HBAR)
-                                        .blankMemo()
-                                        .signedBy(PAYING_SENDER))
+                                        "tbd",
+                                        cryptoTransfer(tinyBarsFromTo(PAYING_SENDER, RECEIVER, 1L))
+                                                .memo("")
+                                                .fee(ONE_HBAR)
+                                                .blankMemo()
+                                                .signedBy(PAYING_SENDER))
                                 .payingWith(PAYING_SENDER)
                                 .adminKey(PAYING_SENDER),
                         scheduleDelete("tbd").via("canonicalDeletion").payingWith(PAYING_SENDER))
@@ -158,12 +158,12 @@ public class CostOfEverythingSuite extends HapiSuite {
                                 .has(resultWith()
                                         .resultThruAbi(
                                                 getABIFor(FUNCTION, "pick", multipurposeContract),
-                                                isLiteralResult(new Object[]{BigInteger.valueOf(256)}))),
+                                                isLiteralResult(new Object[] {BigInteger.valueOf(256)}))),
                         contractCall(multipurposeContract, "donate", donationArgs)
                                 .payingWith(CIVILIAN),
-                        contractCallLocal(lookupContract, "lookup", spec -> new Object[]{
-                                spec.registry().getAccountID(CIVILIAN).getAccountNum()
-                        })
+                        contractCallLocal(lookupContract, "lookup", spec -> new Object[] {
+                                    spec.registry().getAccountID(CIVILIAN).getAccountNum()
+                                })
                                 .payingWith(CIVILIAN)
                                 .logged());
     }
@@ -198,12 +198,12 @@ public class CostOfEverythingSuite extends HapiSuite {
                         cryptoCreate("c"),
                         cryptoCreate("d"))
                 .when(cryptoTransfer(spec -> TransferList.newBuilder()
-                        .addAccountAmounts(aa(spec, GENESIS, -4L))
-                        .addAccountAmounts(aa(spec, "a", 1L))
-                        .addAccountAmounts(aa(spec, "b", 1L))
-                        .addAccountAmounts(aa(spec, "c", 1L))
-                        .addAccountAmounts(aa(spec, "d", 1L))
-                        .build())
+                                .addAccountAmounts(aa(spec, GENESIS, -4L))
+                                .addAccountAmounts(aa(spec, "a", 1L))
+                                .addAccountAmounts(aa(spec, "b", 1L))
+                                .addAccountAmounts(aa(spec, "c", 1L))
+                                .addAccountAmounts(aa(spec, "d", 1L))
+                                .build())
                         .payingWith(HAIR_TRIGGER_PAYER)
                         .via("txn"))
                 .then(getTxnRecord("txn").logged());

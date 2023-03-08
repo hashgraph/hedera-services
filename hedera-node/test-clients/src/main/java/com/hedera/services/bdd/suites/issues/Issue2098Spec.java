@@ -45,11 +45,11 @@ public class Issue2098Spec extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[]{
-                queryApiPermissionsChangeImmediately(),
-                txnApiPermissionsChangeImmediately(),
-                adminsCanQueryNoMatterPermissions(),
-                adminsCanTransactNoMatterPermissions(),
+        return List.of(new HapiSpec[] {
+            queryApiPermissionsChangeImmediately(),
+            txnApiPermissionsChangeImmediately(),
+            adminsCanQueryNoMatterPermissions(),
+            adminsCanTransactNoMatterPermissions(),
         });
     }
 

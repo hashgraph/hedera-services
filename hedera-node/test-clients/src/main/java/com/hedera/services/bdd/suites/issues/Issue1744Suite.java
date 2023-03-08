@@ -61,12 +61,12 @@ public class Issue1744Suite extends HapiSuite {
                 .then(
                         UtilVerbs.inParallel(
                                 cryptoTransfer(tinyBarsFromTo(PAYER, FUNDING, spec -> spec.registry()
-                                        .getAmount("fee")))
+                                                .getAmount("fee")))
                                         .payingWith(PAYER)
                                         .via("txnA")
                                         .hasAnyKnownStatus(),
                                 cryptoTransfer(tinyBarsFromTo(PAYER, FUNDING, spec -> spec.registry()
-                                        .getAmount("fee")))
+                                                .getAmount("fee")))
                                         .payingWith(PAYER)
                                         .via("txnB")
                                         .hasAnyKnownStatus()),

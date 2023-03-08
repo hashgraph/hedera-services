@@ -42,8 +42,8 @@ public class LocalNetworkCheck extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[]{
-                balancesChangeOnTransfer(),
+        return List.of(new HapiSpec[] {
+            balancesChangeOnTransfer(),
         });
     }
 

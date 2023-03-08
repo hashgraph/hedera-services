@@ -48,10 +48,10 @@ public class Issue2051Spec extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[]{
-                transferAccountCannotBeDeletedForContractTarget(),
-                transferAccountCannotBeDeleted(),
-                tbdCanPayForItsOwnDeletion(),
+        return List.of(new HapiSpec[] {
+            transferAccountCannotBeDeletedForContractTarget(),
+            transferAccountCannotBeDeleted(),
+            tbdCanPayForItsOwnDeletion(),
         });
     }
 

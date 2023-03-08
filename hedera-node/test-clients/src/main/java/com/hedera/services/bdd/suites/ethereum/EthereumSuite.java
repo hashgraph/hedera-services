@@ -491,7 +491,7 @@ public class EthereumSuite extends HapiSuite {
                             .accountIsAlias();
                     final var subop2 = balanceSnapshot(payerBalance, RELAYER);
                     final var subop3 = ethereumCall(
-                            PAY_RECEIVABLE_CONTRACT, "deposit", BigInteger.valueOf(depositAmount))
+                                    PAY_RECEIVABLE_CONTRACT, "deposit", BigInteger.valueOf(depositAmount))
                             .type(EthTxData.EthTransactionType.EIP1559)
                             .signingWith(SECP_256K1_SOURCE_KEY)
                             .payingWith(RELAYER)

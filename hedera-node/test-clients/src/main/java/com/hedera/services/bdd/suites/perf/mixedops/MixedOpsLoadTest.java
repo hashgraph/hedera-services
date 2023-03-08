@@ -80,7 +80,7 @@ public class MixedOpsLoadTest extends LoadTest {
     private static final String SUBMIT_KEY = "submitKey";
     private static final String TOKEN = "token";
     private final ResponseCodeEnum[] permissiblePrechecks =
-            new ResponseCodeEnum[]{BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, UNKNOWN};
+            new ResponseCodeEnum[] {BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, UNKNOWN};
 
     private static String sender = "sender";
     private static String receiver = "receiver";
@@ -105,70 +105,70 @@ public class MixedOpsLoadTest extends LoadTest {
         AtomicInteger tokenId = new AtomicInteger(0);
         AtomicInteger scheduleId = new AtomicInteger(0);
 
-        Supplier<HapiSpecOperation[]> mixedOpsBurst = () -> new HapiSpecOperation[]{
-                cryptoTransfer(tinyBarsFromTo(sender, receiver, 1L))
-                        .noLogging()
-                        .payingWith(sender)
-                        .signedBy(GENESIS)
-                        .suppressStats(true)
-                        .fee(ONE_HBAR)
-                        .hasKnownStatusFrom(SUCCESS, OK, INSUFFICIENT_PAYER_BALANCE, UNKNOWN, TRANSACTION_EXPIRED)
-                        .hasRetryPrecheckFrom(
-                                BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, PAYER_ACCOUNT_NOT_FOUND)
-                        .deferStatusResolution(),
-                submitMessageTo(topic)
-                        .message(ArrayUtils.addAll(
-                                ByteBuffer.allocate(8)
-                                        .putLong(Instant.now().toEpochMilli())
-                                        .array(),
-                                randomUtf8Bytes(messageSize - 8)))
-                        .noLogging()
-                        .payingWith(GENESIS)
-                        .signedBy(sender, SUBMIT_KEY)
-                        .fee(ONE_HBAR)
-                        .suppressStats(true)
-                        .hasRetryPrecheckFrom(
-                                BUSY,
-                                DUPLICATE_TRANSACTION,
-                                PLATFORM_TRANSACTION_NOT_CREATED,
-                                TOPIC_EXPIRED,
-                                INVALID_TOPIC_ID,
-                                INSUFFICIENT_PAYER_BALANCE)
-                        .hasKnownStatusFrom(
-                                SUCCESS, OK, INVALID_TOPIC_ID, INSUFFICIENT_PAYER_BALANCE, UNKNOWN, TRANSACTION_EXPIRED)
-                        .deferStatusResolution(),
-                r.nextInt(100) > 5
-                        ? cryptoTransfer(moving(1, TOKEN + r.nextInt(NUM_SUBMISSIONS))
-                        .between(sender, receiver))
-                        .payingWith(sender)
-                        .signedBy(GENESIS)
-                        .fee(ONE_HUNDRED_HBARS)
-                        .noLogging()
-                        .suppressStats(true)
-                        .hasPrecheckFrom(
-                                OK,
-                                INSUFFICIENT_PAYER_BALANCE,
-                                EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS,
-                                DUPLICATE_TRANSACTION)
-                        .hasRetryPrecheckFrom(permissiblePrechecks)
-                        .hasKnownStatusFrom(
-                                SUCCESS,
-                                OK,
-                                INSUFFICIENT_TOKEN_BALANCE,
-                                TRANSACTION_EXPIRED,
-                                INVALID_TOKEN_ID,
-                                UNKNOWN,
-                                TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
-                        .deferStatusResolution()
-                        : scheduleSign(schedule + "-" + getHostName() + "-" + r.nextInt(NUM_SUBMISSIONS))
-                                .ignoreIfMissing()
-                                .noLogging()
-                                .alsoSigningWith(receiver)
-                                .hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)
-                                .hasKnownStatusFrom(
-                                        SUCCESS,
-                                        OK,
-                                        TRANSACTION_EXPIRED,
+        Supplier<HapiSpecOperation[]> mixedOpsBurst = () -> new HapiSpecOperation[] {
+            cryptoTransfer(tinyBarsFromTo(sender, receiver, 1L))
+                    .noLogging()
+                    .payingWith(sender)
+                    .signedBy(GENESIS)
+                    .suppressStats(true)
+                    .fee(ONE_HBAR)
+                    .hasKnownStatusFrom(SUCCESS, OK, INSUFFICIENT_PAYER_BALANCE, UNKNOWN, TRANSACTION_EXPIRED)
+                    .hasRetryPrecheckFrom(
+                            BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, PAYER_ACCOUNT_NOT_FOUND)
+                    .deferStatusResolution(),
+            submitMessageTo(topic)
+                    .message(ArrayUtils.addAll(
+                            ByteBuffer.allocate(8)
+                                    .putLong(Instant.now().toEpochMilli())
+                                    .array(),
+                            randomUtf8Bytes(messageSize - 8)))
+                    .noLogging()
+                    .payingWith(GENESIS)
+                    .signedBy(sender, SUBMIT_KEY)
+                    .fee(ONE_HBAR)
+                    .suppressStats(true)
+                    .hasRetryPrecheckFrom(
+                            BUSY,
+                            DUPLICATE_TRANSACTION,
+                            PLATFORM_TRANSACTION_NOT_CREATED,
+                            TOPIC_EXPIRED,
+                            INVALID_TOPIC_ID,
+                            INSUFFICIENT_PAYER_BALANCE)
+                    .hasKnownStatusFrom(
+                            SUCCESS, OK, INVALID_TOPIC_ID, INSUFFICIENT_PAYER_BALANCE, UNKNOWN, TRANSACTION_EXPIRED)
+                    .deferStatusResolution(),
+            r.nextInt(100) > 5
+                    ? cryptoTransfer(moving(1, TOKEN + r.nextInt(NUM_SUBMISSIONS))
+                                    .between(sender, receiver))
+                            .payingWith(sender)
+                            .signedBy(GENESIS)
+                            .fee(ONE_HUNDRED_HBARS)
+                            .noLogging()
+                            .suppressStats(true)
+                            .hasPrecheckFrom(
+                                    OK,
+                                    INSUFFICIENT_PAYER_BALANCE,
+                                    EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS,
+                                    DUPLICATE_TRANSACTION)
+                            .hasRetryPrecheckFrom(permissiblePrechecks)
+                            .hasKnownStatusFrom(
+                                    SUCCESS,
+                                    OK,
+                                    INSUFFICIENT_TOKEN_BALANCE,
+                                    TRANSACTION_EXPIRED,
+                                    INVALID_TOKEN_ID,
+                                    UNKNOWN,
+                                    TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
+                            .deferStatusResolution()
+                    : scheduleSign(schedule + "-" + getHostName() + "-" + r.nextInt(NUM_SUBMISSIONS))
+                            .ignoreIfMissing()
+                            .noLogging()
+                            .alsoSigningWith(receiver)
+                            .hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)
+                            .hasKnownStatusFrom(
+                                    SUCCESS,
+                                    OK,
+                                    TRANSACTION_EXPIRED,
                                     INVALID_SCHEDULE_ID,
                                     UNKNOWN,
                                     SCHEDULE_ALREADY_EXECUTED)

@@ -619,9 +619,9 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                         cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true))
                 .when(
                         scheduleCreate(
-                                THREE_SIG_XFER,
-                                cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1))
-                                        .fee(ONE_HBAR))
+                                        THREE_SIG_XFER,
+                                        cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1))
+                                                .fee(ONE_HBAR))
                                 .designatingPayer(PAYER)
                                 .waitForExpiry()
                                 .withRelativeExpiry(SENDER_TXN, 8)
@@ -651,9 +651,9 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                         cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true))
                 .when(
                         scheduleCreate(
-                                TWO_SIG_XFER,
-                                cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1))
-                                        .fee(ONE_HBAR))
+                                        TWO_SIG_XFER,
+                                        cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1))
+                                                .fee(ONE_HBAR))
                                 .waitForExpiry()
                                 .withRelativeExpiry(SENDER_TXN, 8)
                                 .recordingScheduledTxn()
@@ -681,13 +681,13 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                         newKeyNamed(SHARED_KEY),
                         cryptoCreate("payerWithSharedKey").key(SHARED_KEY).via(CREATE_TXN))
                 .when(scheduleCreate(
-                        DEFERRED_CREATION,
-                        cryptoCreate("yetToBe")
-                                .signedBy()
-                                .receiverSigRequired(true)
-                                .key(SHARED_KEY)
-                                .balance(123L)
-                                .fee(ONE_HBAR))
+                                DEFERRED_CREATION,
+                                cryptoCreate("yetToBe")
+                                        .signedBy()
+                                        .receiverSigRequired(true)
+                                        .key(SHARED_KEY)
+                                        .balance(123L)
+                                        .fee(ONE_HBAR))
                         .waitForExpiry()
                         .withRelativeExpiry(CREATE_TXN, 8)
                         .recordingScheduledTxn()
@@ -720,10 +720,10 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                         cryptoCreate("cSender").key("cKey").balance(1L),
                         balanceSnapshot(BEFORE, ADDRESS_BOOK_CONTROL))
                 .when(scheduleCreate(
-                        DEFERRED_XFER,
-                        cryptoTransfer(
-                                tinyBarsFromTo("aSender", ADDRESS_BOOK_CONTROL, 1),
-                                tinyBarsFromTo("cSender", ADDRESS_BOOK_CONTROL, 1)))
+                                DEFERRED_XFER,
+                                cryptoTransfer(
+                                        tinyBarsFromTo("aSender", ADDRESS_BOOK_CONTROL, 1),
+                                        tinyBarsFromTo("cSender", ADDRESS_BOOK_CONTROL, 1)))
                         .waitForExpiry()
                         .withRelativeExpiry(A_SENDER_TXN, 8)
                         .recordingScheduledTxn())
@@ -765,9 +765,9 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                 .when(
                         cryptoCreate(SENDER).key("ab").balance(667L).via(SENDER_TXN),
                         scheduleCreate(
-                                DEFERRED_FALL,
-                                cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
-                                        .fee(ONE_HBAR))
+                                        DEFERRED_FALL,
+                                        cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
+                                                .fee(ONE_HBAR))
                                 .waitForExpiry()
                                 .withRelativeExpiry(SENDER_TXN, 8)
                                 .recordingScheduledTxn()

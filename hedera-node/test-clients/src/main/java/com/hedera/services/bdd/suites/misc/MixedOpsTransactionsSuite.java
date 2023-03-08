@@ -89,7 +89,7 @@ public class MixedOpsTransactionsSuite extends HapiSuite {
                         createTopic("wellKnownTopic").advertisingCreation())
                 .when(IntStream.range(0, numScheduledTxns)
                         .mapToObj(i -> scheduleCreate(
-                                "schedule" + i, cryptoTransfer(tinyBarsFromTo(SENDER, "receiver", 1)))
+                                        "schedule" + i, cryptoTransfer(tinyBarsFromTo(SENDER, "receiver", 1)))
                                 .advertisingCreation()
                                 .fee(ONE_HUNDRED_HBARS)
                                 .signedBy(DEFAULT_PAYER)

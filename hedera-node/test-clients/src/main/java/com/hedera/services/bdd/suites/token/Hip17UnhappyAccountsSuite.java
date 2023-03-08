@@ -71,19 +71,19 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[]{
-                /* Dissociated Account */
-                uniqueTokenOperationsFailForDissociatedAccount(),
-                /* Frozen Account */
-                uniqueTokenOperationsFailForFrozenAccount(),
-                /* Account Without KYC */
-                uniqueTokenOperationsFailForKycRevokedAccount(),
-                /* Expired Account */
-                uniqueTokenOperationsFailForExpiredAccount(),
-                /* Deleted Account */
-                uniqueTokenOperationsFailForDeletedAccount(),
-                /* AutoRemoved Account */
-                uniqueTokenOperationsFailForAutoRemovedAccount()
+        return List.of(new HapiSpec[] {
+            /* Dissociated Account */
+            uniqueTokenOperationsFailForDissociatedAccount(),
+            /* Frozen Account */
+            uniqueTokenOperationsFailForFrozenAccount(),
+            /* Account Without KYC */
+            uniqueTokenOperationsFailForKycRevokedAccount(),
+            /* Expired Account */
+            uniqueTokenOperationsFailForExpiredAccount(),
+            /* Deleted Account */
+            uniqueTokenOperationsFailForDeletedAccount(),
+            /* AutoRemoved Account */
+            uniqueTokenOperationsFailForAutoRemovedAccount()
         });
     }
 

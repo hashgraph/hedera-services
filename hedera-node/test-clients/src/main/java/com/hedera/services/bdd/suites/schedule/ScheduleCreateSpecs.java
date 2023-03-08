@@ -203,9 +203,9 @@ public class ScheduleCreateSpecs extends HapiSuite {
         return defaultHapiSpec("BodyAndPayerCreation")
                 .given(cryptoCreate(PAYER))
                 .when(scheduleCreate(
-                        ONLY_BODY_AND_PAYER,
-                        cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1))
-                                .memo("SURPRISE!!!"))
+                                ONLY_BODY_AND_PAYER,
+                                cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1))
+                                        .memo("SURPRISE!!!"))
                         .recordingScheduledTxn()
                         // prevent multiple runs of this test causing duplicates
                         .withEntityMemo("" + new SecureRandom().nextLong())
@@ -261,17 +261,17 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         cryptoCreate(SENDER).balance(1L),
                         cryptoCreate(FIRST_PAYER),
                         scheduleCreate(
-                                ORIGINAL,
-                                cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
-                                        .memo("A")
-                                        .fee(ONE_HBAR))
+                                        ORIGINAL,
+                                        cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
+                                                .memo("A")
+                                                .fee(ONE_HBAR))
                                 .payingWith(FIRST_PAYER))
                 .when()
                 .then(scheduleCreate(
-                        CONTINUE,
-                        cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
-                                .memo("B")
-                                .fee(ONE_HBAR))
+                                CONTINUE,
+                                cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
+                                        .memo("B")
+                                        .fee(ONE_HBAR))
                         .payingWith(FIRST_PAYER));
     }
 
@@ -280,15 +280,15 @@ public class ScheduleCreateSpecs extends HapiSuite {
                 .given(
                         cryptoCreate(SENDER).balance(1L),
                         scheduleCreate(
-                                ORIGINAL,
-                                cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
-                                        .fee(ONE_HBAR))
+                                        ORIGINAL,
+                                        cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
+                                                .fee(ONE_HBAR))
                                 .withEntityMemo(ENTITY_MEMO))
                 .when()
                 .then(scheduleCreate(
-                        CONTINUE,
-                        cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
-                                .fee(ONE_HBAR))
+                                CONTINUE,
+                                cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
+                                        .fee(ONE_HBAR))
                         .withEntityMemo("The whole time he was at the Bodies, til"));
     }
 
@@ -300,18 +300,18 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         cryptoCreate(SENDER).balance(1L),
                         cryptoCreate(FIRST_PAYER),
                         scheduleCreate(
-                                ORIGINAL,
-                                cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
-                                        .fee(ONE_HBAR))
+                                        ORIGINAL,
+                                        cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
+                                                .fee(ONE_HBAR))
                                 .adminKey("adminA")
                                 .withEntityMemo(ENTITY_MEMO)
                                 .designatingPayer(FIRST_PAYER)
                                 .payingWith(FIRST_PAYER))
                 .when()
                 .then(scheduleCreate(
-                        CONTINUE,
-                        cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
-                                .fee(ONE_HBAR))
+                                CONTINUE,
+                                cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
+                                        .fee(ONE_HBAR))
                         .adminKey("adminB")
                         .withEntityMemo(ENTITY_MEMO)
                         .designatingPayer(FIRST_PAYER)
@@ -324,18 +324,18 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         cryptoCreate(SENDER).balance(1L),
                         cryptoCreate(FIRST_PAYER),
                         scheduleCreate(
-                                ORIGINAL,
-                                cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
-                                        .fee(ONE_HBAR))
+                                        ORIGINAL,
+                                        cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
+                                                .fee(ONE_HBAR))
                                 .designatingPayer(FIRST_PAYER)
                                 .payingWith(FIRST_PAYER)
                                 .savingExpectedScheduledTxnId())
                 .when(cryptoCreate(SECOND_PAYER))
                 .then(
                         scheduleCreate(
-                                "duplicate",
-                                cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
-                                        .fee(ONE_HBAR))
+                                        "duplicate",
+                                        cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
+                                                .fee(ONE_HBAR))
                                 .payingWith(SECOND_PAYER)
                                 .designatingPayer(SECOND_PAYER)
                                 .via(COPYCAT)
@@ -361,13 +361,13 @@ public class ScheduleCreateSpecs extends HapiSuite {
                 .when()
                 .then(
                         scheduleCreate(
-                                CREATION,
-                                cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
-                                        .memo(nAscii(101)))
+                                        CREATION,
+                                        cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
+                                                .memo(nAscii(101)))
                                 .hasPrecheck(MEMO_TOO_LONG),
                         scheduleCreate(
                                         "creationPartDeux",
-                                cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
+                                        cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1))
                                                 .memo("Here's s\u0000 to chew on!"))
                                 .hasPrecheck(INVALID_ZERO_BYTE_IN_STRING));
     }
@@ -428,9 +428,9 @@ public class ScheduleCreateSpecs extends HapiSuite {
                 .then(
                         cryptoUpdate(RECEIVER).key(bKey).deferStatusResolution(),
                         scheduleCreate(
-                                "outdatedXferSigs",
-                                cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1))
-                                        .fee(ONE_HBAR))
+                                        "outdatedXferSigs",
+                                        cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1))
+                                                .fee(ONE_HBAR))
                                 .alsoSigningWith(aKey)
                                 /* In the rare, but possible, case that the overlapping byte shared by aKey
                                  * and bKey is _also_ shared by the DEFAULT_PAYER, the bKey prefix in the sig
@@ -458,7 +458,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
                 .given()
                 .when()
                 .then(scheduleCreate(
-                        NEVER_TO_BE, cryptoCreate("nope").key(GENESIS).receiverSigRequired(true))
+                                NEVER_TO_BE, cryptoCreate("nope").key(GENESIS).receiverSigRequired(true))
                         .designatingPayer(DESIGNATING_PAYER)
                         .hasKnownStatus(ACCOUNT_ID_DOES_NOT_EXIST));
     }
@@ -470,9 +470,9 @@ public class ScheduleCreateSpecs extends HapiSuite {
                         cryptoCreate(SENDER).balance(1L),
                         cryptoCreate(RECEIVER).receiverSigRequired(true).balance(0L))
                 .when(scheduleCreate(
-                        BASIC_XFER,
-                        cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1L))
-                                .fee(ONE_HBAR))
+                                BASIC_XFER,
+                                cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1L))
+                                        .fee(ONE_HBAR))
                         .designatingPayer(PAYER)
                         .alsoSigningWith(SENDER, RECEIVER))
                 .then(
@@ -490,9 +490,9 @@ public class ScheduleCreateSpecs extends HapiSuite {
         return defaultHapiSpec("TriggersImmediatelyWithBothReqSimpleSigs")
                 .given(cryptoCreate(SENDER), cryptoCreate(RECEIVER).receiverSigRequired(true))
                 .when(scheduleCreate(
-                        BASIC_XFER,
-                        cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, transferAmount))
-                                .memo("Shocked, I tell you!"))
+                                BASIC_XFER,
+                                cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, transferAmount))
+                                        .memo("Shocked, I tell you!"))
                         .alsoSigningWith(SENDER, RECEIVER)
                         .via(BASIC_XFER)
                         .recordingScheduledTxn())
@@ -508,10 +508,10 @@ public class ScheduleCreateSpecs extends HapiSuite {
                 .given()
                 .when()
                 .then(scheduleCreate(
-                        "xferWithImaginaryAccount",
-                        cryptoTransfer(
-                                tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1),
-                                tinyBarsFromTo(DESIGNATING_PAYER, FUNDING, 1)))
+                                "xferWithImaginaryAccount",
+                                cryptoTransfer(
+                                        tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1),
+                                        tinyBarsFromTo(DESIGNATING_PAYER, FUNDING, 1)))
                         .hasKnownStatus(UNRESOLVABLE_REQUIRED_SIGNERS));
     }
 

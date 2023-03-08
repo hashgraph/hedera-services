@@ -59,10 +59,10 @@ public class AssortedHcsOps extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[]{
-                //						runMisc(),
-                testRechargingPayer(),
-                //						infoLookup(),
+        return List.of(new HapiSpec[] {
+            //						runMisc(),
+            testRechargingPayer(),
+            //						infoLookup(),
         });
     }
 

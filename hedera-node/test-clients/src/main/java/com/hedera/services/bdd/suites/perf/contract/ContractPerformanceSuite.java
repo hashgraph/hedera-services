@@ -113,23 +113,23 @@ public class ContractPerformanceSuite extends HapiSuite {
             }
             HapiSpecOperation[] givenBlock;
             if (contractCode.contains(EXTERNAL_CONTRACT_MARKER)) {
-                givenBlock = new HapiSpecOperation[]{
-                        createProgramFile(RETURN_CONTRACT + BYTECODE, RETURN_PROGRAM),
-                        contractCreate(RETURN_CONTRACT).bytecode(RETURN_CONTRACT + BYTECODE),
-                        createProgramFile(REVERT_CONTRACT + BYTECODE, REVERT_PROGRAM),
-                        contractCreate(REVERT_CONTRACT).bytecode(REVERT_CONTRACT + BYTECODE),
-                        withOpContext((spec, opLog) -> allRunFor(
-                                spec,
-                                createTestProgram(
-                                        test,
-                                        spec.registry().getContractId(RETURN_CONTRACT),
-                                        spec.registry().getContractId(REVERT_CONTRACT)))),
-                        contractCreate(test).bytecode(test + BYTECODE)
+                givenBlock = new HapiSpecOperation[] {
+                    createProgramFile(RETURN_CONTRACT + BYTECODE, RETURN_PROGRAM),
+                    contractCreate(RETURN_CONTRACT).bytecode(RETURN_CONTRACT + BYTECODE),
+                    createProgramFile(REVERT_CONTRACT + BYTECODE, REVERT_PROGRAM),
+                    contractCreate(REVERT_CONTRACT).bytecode(REVERT_CONTRACT + BYTECODE),
+                    withOpContext((spec, opLog) -> allRunFor(
+                            spec,
+                            createTestProgram(
+                                    test,
+                                    spec.registry().getContractId(RETURN_CONTRACT),
+                                    spec.registry().getContractId(REVERT_CONTRACT)))),
+                    contractCreate(test).bytecode(test + BYTECODE)
                 };
             } else {
-                givenBlock = new HapiSpecOperation[]{
-                        fileCreate(BYTECODE).path(PERF_RESOURCES + test),
-                        contractCreate(test).bytecode(BYTECODE)
+                givenBlock = new HapiSpecOperation[] {
+                    fileCreate(BYTECODE).path(PERF_RESOURCES + test),
+                    contractCreate(test).bytecode(BYTECODE)
                 };
             }
             hapiSpecs.add(defaultHapiSpec("Perf_" + test)

@@ -175,11 +175,11 @@ public class DelegatePrecompileSuite extends HapiSuite {
                         newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(OUTER_CONTRACT))),
                         tokenUpdate(VANILLA_TOKEN).supplyKey(DELEGATE_KEY),
                         contractCall(
-                                OUTER_CONTRACT,
-                                "burnDelegateCall",
-                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
-                                BigInteger.ZERO,
-                                new long[]{1L})
+                                        OUTER_CONTRACT,
+                                        "burnDelegateCall",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
+                                        BigInteger.ZERO,
+                                        new long[] {1L})
                                 .payingWith(GENESIS)
                                 .via(DELEGATE_BURN_CALL_WITH_DELEGATE_CONTRACT_KEY_TXN)
                                 .gas(GAS_TO_OFFER))))
@@ -221,10 +221,10 @@ public class DelegatePrecompileSuite extends HapiSuite {
                         newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(OUTER_CONTRACT))),
                         tokenUpdate(VANILLA_TOKEN).supplyKey(DELEGATE_KEY),
                         contractCall(
-                                OUTER_CONTRACT,
-                                "mintDelegateCall",
-                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
-                                BigInteger.ONE)
+                                        OUTER_CONTRACT,
+                                        "mintDelegateCall",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
+                                        BigInteger.ONE)
                                 .payingWith(GENESIS)
                                 .via(DELEGATE_BURN_CALL_WITH_DELEGATE_CONTRACT_KEY_TXN)
                                 .gas(GAS_TO_OFFER))))

@@ -540,20 +540,20 @@ public class TokenAssociationSpecs extends HapiSuite {
     }
 
     public static HapiSpecOperation[] basicKeysAndTokens() {
-        return new HapiSpecOperation[]{
-                newKeyNamed("kycKey"),
-                newKeyNamed(FREEZE_KEY),
-                cryptoCreate(TOKEN_TREASURY).balance(0L),
-                tokenCreate(FREEZABLE_TOKEN_ON_BY_DEFAULT)
-                        .treasury(TOKEN_TREASURY)
-                        .freezeKey(FREEZE_KEY)
-                        .freezeDefault(true),
-                tokenCreate(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
-                        .treasury(TOKEN_TREASURY)
-                        .freezeKey(FREEZE_KEY)
-                        .freezeDefault(false),
-                tokenCreate(KNOWABLE_TOKEN).treasury(TOKEN_TREASURY).kycKey("kycKey"),
-                tokenCreate(VANILLA_TOKEN).treasury(TOKEN_TREASURY)
+        return new HapiSpecOperation[] {
+            newKeyNamed("kycKey"),
+            newKeyNamed(FREEZE_KEY),
+            cryptoCreate(TOKEN_TREASURY).balance(0L),
+            tokenCreate(FREEZABLE_TOKEN_ON_BY_DEFAULT)
+                    .treasury(TOKEN_TREASURY)
+                    .freezeKey(FREEZE_KEY)
+                    .freezeDefault(true),
+            tokenCreate(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
+                    .treasury(TOKEN_TREASURY)
+                    .freezeKey(FREEZE_KEY)
+                    .freezeDefault(false),
+            tokenCreate(KNOWABLE_TOKEN).treasury(TOKEN_TREASURY).kycKey("kycKey"),
+            tokenCreate(VANILLA_TOKEN).treasury(TOKEN_TREASURY)
         };
     }
 

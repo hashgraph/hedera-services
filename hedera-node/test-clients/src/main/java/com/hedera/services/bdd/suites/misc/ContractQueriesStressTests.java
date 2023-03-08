@@ -184,7 +184,7 @@ public class ContractQueriesStressTests extends HapiSuite {
                         .has(resultWith()
                                 .resultThruAbi(
                                         getABIFor(FUNCTION, "getMyValue", CHILD_STORAGE),
-                                        isLiteralResult(new Object[]{BigInteger.valueOf(73)})));
+                                        isLiteralResult(new Object[] {BigInteger.valueOf(73)})));
                 return Optional.of(op);
             }
         };

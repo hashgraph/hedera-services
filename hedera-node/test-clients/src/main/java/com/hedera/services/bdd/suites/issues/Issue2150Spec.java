@@ -45,8 +45,8 @@ public class Issue2150Spec extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[]{
-                multiKeyNonPayerEntityVerifiedAsync(),
+        return List.of(new HapiSpec[] {
+            multiKeyNonPayerEntityVerifiedAsync(),
         });
     }
 

@@ -157,9 +157,9 @@ public class RecordCreationSuite extends HapiSuite {
                         balanceSnapshot(STAKING_REWARD1, FOR_ACCOUNT_STAKING_REWARDS),
                         balanceSnapshot(NODE_REWARD1, FOR_ACCOUNT_NODE_REWARD),
                         uncheckedSubmit(cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
-                                .memo(disquietingMemo)
-                                .payingWith(PAYER)
-                                .txnId(TXN_ID))
+                                        .memo(disquietingMemo)
+                                        .payingWith(PAYER)
+                                        .txnId(TXN_ID))
                                 .payingWith(GENESIS),
                         sleepFor(SLEEP_MS))
                 .then(
@@ -207,10 +207,10 @@ public class RecordCreationSuite extends HapiSuite {
                         balanceSnapshot(STAKING_REWARD1, FOR_ACCOUNT_STAKING_REWARDS),
                         balanceSnapshot(NODE_REWARD1, FOR_ACCOUNT_NODE_REWARD),
                         sourcing(() -> uncheckedSubmit(cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
-                                .memo(comfortingMemo)
-                                .fee(feeObs.get().getNetworkFee() - 1L)
-                                .payingWith(PAYER)
-                                .txnId(TXN_ID))
+                                        .memo(comfortingMemo)
+                                        .fee(feeObs.get().getNetworkFee() - 1L)
+                                        .payingWith(PAYER)
+                                        .txnId(TXN_ID))
                                 .payingWith(GENESIS)),
                         sleepFor(SLEEP_MS))
                 .then(

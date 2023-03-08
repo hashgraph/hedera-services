@@ -63,14 +63,14 @@ public class PrivilegedOpsSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[]{
-                superusersAreNeverThrottledOnTransfers(),
-                superusersAreNeverThrottledOnMiscTxns(),
-                superusersAreNeverThrottledOnHcsTxns(),
-                superusersAreNeverThrottledOnMiscQueries(),
-                superusersAreNeverThrottledOnHcsQueries(),
-                systemAccountUpdatePrivilegesAsExpected(),
-                freezeAdminPrivilegesAsExpected(),
+        return List.of(new HapiSpec[] {
+            superusersAreNeverThrottledOnTransfers(),
+            superusersAreNeverThrottledOnMiscTxns(),
+            superusersAreNeverThrottledOnHcsTxns(),
+            superusersAreNeverThrottledOnMiscQueries(),
+            superusersAreNeverThrottledOnHcsQueries(),
+            systemAccountUpdatePrivilegesAsExpected(),
+            freezeAdminPrivilegesAsExpected(),
         });
     }
 

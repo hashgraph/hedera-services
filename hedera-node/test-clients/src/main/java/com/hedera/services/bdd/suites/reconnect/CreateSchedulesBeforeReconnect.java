@@ -73,8 +73,8 @@ public class CreateSchedulesBeforeReconnect extends HapiSuite {
         }
 
         return scheduleCreate(
-                SCHEDULE + getHostName() + "-" + scheduleNumber.getAndIncrement(),
-                cryptoTransfer(tinyBarsFromTo(SCHEDULE_SENDER, SCHEDULE_RECEIVER, 1)))
+                        SCHEDULE + getHostName() + "-" + scheduleNumber.getAndIncrement(),
+                        cryptoTransfer(tinyBarsFromTo(SCHEDULE_SENDER, SCHEDULE_RECEIVER, 1)))
                 .signedBy(DEFAULT_PAYER)
                 .fee(ONE_HUNDRED_HBARS)
                 .alsoSigningWith(SCHEDULE_SENDER)
@@ -107,8 +107,8 @@ public class CreateSchedulesBeforeReconnect extends HapiSuite {
                                 .deferStatusResolution(),
                         sleepFor(10000),
                         scheduleCreate(
-                                SCHEDULE + getHostName() + "-" + scheduleNumber.getAndIncrement(),
-                                cryptoTransfer(tinyBarsFromTo(SCHEDULE_SENDER, SCHEDULE_RECEIVER, 1)))
+                                        SCHEDULE + getHostName() + "-" + scheduleNumber.getAndIncrement(),
+                                        cryptoTransfer(tinyBarsFromTo(SCHEDULE_SENDER, SCHEDULE_RECEIVER, 1)))
                                 .signedBy(DEFAULT_PAYER)
                                 .fee(ONE_HUNDRED_HBARS)
                                 .alsoSigningWith(SCHEDULE_SENDER)
@@ -125,8 +125,8 @@ public class CreateSchedulesBeforeReconnect extends HapiSuite {
                         sleepFor(10000))
                 .then(
                         scheduleCreate(
-                                SCHEDULE + getHostName() + "-" + scheduleNumber.getAndIncrement(),
-                                cryptoTransfer(tinyBarsFromTo(SCHEDULE_SENDER, SCHEDULE_RECEIVER, 1)))
+                                        SCHEDULE + getHostName() + "-" + scheduleNumber.getAndIncrement(),
+                                        cryptoTransfer(tinyBarsFromTo(SCHEDULE_SENDER, SCHEDULE_RECEIVER, 1)))
                                 .signedBy(DEFAULT_PAYER)
                                 .fee(ONE_HUNDRED_HBARS)
                                 .alsoSigningWith(SCHEDULE_SENDER)

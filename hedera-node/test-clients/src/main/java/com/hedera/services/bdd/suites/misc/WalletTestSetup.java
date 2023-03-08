@@ -98,7 +98,7 @@ public class WalletTestSetup extends HapiSuite {
                         //	.236.63:0.0.7,35.203.26.115:0.0.8,34.77.3.213:0.0.9,35.197.237.44:0.0.10,35.246.250.176:0.0.11,
                         //
                         //	34.90.117.105:0.0.12,35.200.57.21:0.0.13,34.92.120.143:0.0.14,34.87.47.168:0.0.15"
-                ))
+                        ))
                 .given(
                         //						keyFromPem("src/main/resource/mainnet-account950.pem")
                         //								.passphrase("swirlds")

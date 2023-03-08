@@ -186,12 +186,12 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
                         cryptoCreate(RECEIVER_B).balance(noBalance),
                         cryptoCreate(RECEIVER_C).balance(noBalance),
                         scheduleCreate(
-                                rejectedTxn,
-                                cryptoTransfer(
-                                        tinyBarsFromTo(SENDER, RECEIVER_A, transferAmount),
-                                        tinyBarsFromTo(SENDER, RECEIVER_B, transferAmount),
-                                        tinyBarsFromTo(SENDER, RECEIVER_C, transferAmount))
-                                        .memo(randomUppercase(100)))
+                                        rejectedTxn,
+                                        cryptoTransfer(
+                                                        tinyBarsFromTo(SENDER, RECEIVER_A, transferAmount),
+                                                        tinyBarsFromTo(SENDER, RECEIVER_B, transferAmount),
+                                                        tinyBarsFromTo(SENDER, RECEIVER_C, transferAmount))
+                                                .memo(randomUppercase(100)))
                                 .designatingPayer(PAYING_ACCOUNT)
                                 .via("createTx"))
                 .when(scheduleSign(rejectedTxn)
