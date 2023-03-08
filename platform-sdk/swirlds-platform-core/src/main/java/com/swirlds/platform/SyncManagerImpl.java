@@ -18,16 +18,16 @@ package com.swirlds.platform;
 
 import static com.swirlds.logging.LogMarker.FREEZE;
 import static com.swirlds.logging.LogMarker.SYNC;
-import static com.swirlds.platform.components.TransThrottleSyncAndCreateRuleResponse.SYNC_AND_CREATE;
+import static com.swirlds.platform.components.transaction.throttle.TransThrottleSyncAndCreateRuleResponse.SYNC_AND_CREATE;
 
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.EventCreationRules;
-import com.swirlds.platform.components.TransThrottleSyncAndCreateRules;
-import com.swirlds.platform.components.TransThrottleSyncRule;
-import com.swirlds.platform.components.TransactionTracker;
+import com.swirlds.platform.components.transaction.TransactionTracker;
+import com.swirlds.platform.components.transaction.throttle.TransThrottleSyncAndCreateRules;
+import com.swirlds.platform.components.transaction.throttle.TransThrottleSyncRule;
 import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.network.RandomGraph;
 import com.swirlds.platform.sync.FallenBehindManager;

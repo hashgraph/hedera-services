@@ -26,11 +26,12 @@ import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
+import com.swirlds.common.metrics.extensions.CountPerSecond;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.Connection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.LongAdder;
@@ -69,21 +70,21 @@ public class NetworkMetrics {
     private final RunningAverageMetric avgPing;
     private final SpeedometerMetric bytesPerSecondSent;
     private final RunningAverageMetric avgConnsCreated;
+    /**
+     * Number of disconnects per second per peer in the address book.
+     */
+    private final List<CountPerSecond> disconnectFrequency;
 
     /**
      * Constructor of {@code NetworkMetrics}
      *
-     * @param metrics
-     * 		a reference to the metrics-system
-     * @param selfId
-     * 		this node's id
-     * @param addressBookSize
-     * 		the number of nodes in the address book
-     * @throws IllegalArgumentException
-     * 		if {@code platform} is {@code null}
+     * @param metrics         a reference to the metrics-system
+     * @param selfId          this node's id
+     * @param addressBookSize the number of nodes in the address book
+     * @throws IllegalArgumentException if {@code platform} is {@code null}
      */
     public NetworkMetrics(final Metrics metrics, final NodeId selfId, final int addressBookSize) {
-        CommonUtils.throwArgNull(selfId, "selfId");
+        Objects.requireNonNull(selfId, "The selfId must not be null.");
         this.selfId = selfId;
 
         avgPingMilliseconds = IntStream.range(0, addressBookSize)
@@ -101,13 +102,20 @@ public class NetworkMetrics {
         avgPing = metrics.getOrCreate(AVG_PING_CONFIG);
         bytesPerSecondSent = metrics.getOrCreate(BYTES_PER_SECOND_SENT_CONFIG);
         avgConnsCreated = metrics.getOrCreate(AVG_CONNS_CREATED_CONFIG);
+        disconnectFrequency = IntStream.range(0, addressBookSize)
+                // The metric for disconnects between a node and itself is always 0.
+                // To remove the self-metric, use: `i -> i == selfId.getIdAsInt() ? null : <object>`
+                .mapToObj(i -> new CountPerSecond(
+                        metrics,
+                        new CountPerSecond.Config(PLATFORM_CATEGORY, String.format("disconnects/sec_with_%02d", i))
+                                .withDescription(String.format("number of disconnects with node %02d per second", i))))
+                .toList();
     }
 
     /**
      * Notifies the stats that a new connection has been established
      *
-     * @param connection
-     * 		a new connection
+     * @param connection a new connection
      */
     public void connectionEstablished(final Connection connection) {
         if (connection == null) {
@@ -120,10 +128,8 @@ public class NetworkMetrics {
     /**
      * Record the ping time to this particular node
      *
-     * @param node
-     * 		the node to which the latency is referring to
-     * @param pingNanos
-     * 		the ping time, in nanoseconds
+     * @param node      the node to which the latency is referring to
+     * @param pingNanos the ping time, in nanoseconds
      */
     public void recordPingTime(final NodeId node, final long pingNanos) {
         avgPingMilliseconds.get(node.getIdAsInt()).update((pingNanos) / 1_000_000.0);
@@ -185,7 +191,15 @@ public class NetworkMetrics {
         return avgPingMilliseconds;
     }
 
-    public List<SpeedometerMetric> getAvgBytePerSecSent() {
-        return avgBytePerSecSent;
+    /**
+     * Records the occurrence of a disconnect.
+     *
+     * @param connection the connection that was closed.
+     */
+    public void recordDisconnect(final Connection connection) {
+        int otherId = connection.getOtherId().getIdAsInt();
+        if (otherId >= 0 && otherId < disconnectFrequency.size()) {
+            disconnectFrequency.get(otherId).count();
+        }
     }
 }

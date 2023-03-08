@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,18 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.components;
+package com.swirlds.platform.components.transaction;
 
-/**
- * Is used for checking whether this node should sync with other nodes
- */
-public interface TransThrottleSyncRule {
+import com.swirlds.common.system.EventCreationRule;
+
+public interface TransactionPool extends EventCreationRule {
     /**
-     * Determine whether this node should sync with other nodes
-     *
-     * @return true iff this node should sync with other nodes
+     * @return the number of user transactions in the pool
      */
-    boolean shouldSync();
+    int numTransForEvent();
+
+    /**
+     * @return the number of state signature transactions in the pool
+     */
+    int numSignatureTransEvent();
 }
