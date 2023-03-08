@@ -3,45 +3,56 @@
 #########################
 
 # Hedera Node Root Protections
-/hedera-node/                             @hashgraph/hedera-services
-/hedera-node/README.md                    @hashgraph/hedera-services @hashgraph/release-engineering @hashgraph/release-engineering-managers
+/hedera-node/                                   @hashgraph/hedera-services
+/hedera-node/README.md                          @hashgraph/hedera-services @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 # Hedera Node Deployments - Configuration & Grafana Dashboards
-/hedera-node/configuration/**             @hashgraph/release-engineering @hashgraph/devops @hashgraph/hedera-services @hashgraph/platform-hashgraph
-/hedera-node/infrastructure/**            @hashgraph/release-engineering @hashgraph/devops @hashgraph/hedera-services
+/hedera-node/configuration/**                   @hashgraph/release-engineering @hashgraph/devops @hashgraph/hedera-services @hashgraph/platform-hashgraph
+/hedera-node/infrastructure/**                  @hashgraph/release-engineering @hashgraph/devops @hashgraph/hedera-services
 
 # Hedera Node Docker Definitions
-/hedera-node/docker/                      @hashgraph/hedera-services @hashgraph/release-engineering @hashgraph/release-engineering-managers
+/hedera-node/docker/                            @hashgraph/hedera-services @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 # Hedera Node Modules
-/hedera-node/hedera-mono-service/         @hashgraph/hedera-services
-/hedera-node/hapi*/                       @hashgraph/hedera-services
-/hedera-node/hedera-admin*/               @hashgraph/hedera-services @kimbor @povolev15
-/hedera-node/hedera-app*/                 @hashgraph/hedera-services @hashgraph/platform-base
-/hedera-node/hedera-consensus*/           @hashgraph/hedera-services @povolev15 @iwsimon
-/hedera-node/hedera-evm*/                 @hashgraph/hedera-smart-contracts
-/hedera-node/hedera-file*/                @hashgraph/hedera-services @povolev15 @iwsimon
-/hedera-node/hedera-network*/             @hashgraph/hedera-services @kimbor @povolev15
-/hedera-node/hedera-schedule*/            @hashgraph/hedera-services @iwsimon @kimbor
-/hedera-node/hedera-smart-contract*/      @hashgraph/hedera-smart-contracts @tinker-michaelj
-/hedera-node/hedera-token*/               @hashgraph/hedera-services @mhess-swl @Neeharika-Sompalli
-/hedera-node/hedera-util*/                @hashgraph/hedera-services
-/hedera-node/hedera-staking*/             @hashgraph/hedera-services
-/hedera-node/test-clients/                @hashgraph/hedera-services
-/hedera-node/**/module-info.java          @hashgraph/hedera-services @hashgraph/release-engineering @hashgraph/release-engineering-managers
+/hedera-node/hedera-mono-service/               @hashgraph/hedera-services
+/hedera-node/hapi*/                             @hashgraph/hedera-services
+/hedera-node/hedera-admin*/                     @hashgraph/hedera-services @kimbor @povolev15
+/hedera-node/hedera-app*/                       @hashgraph/hedera-services @hashgraph/platform-base
+/hedera-node/hedera-consensus*/                 @hashgraph/hedera-services @povolev15 @iwsimon
+/hedera-node/hedera-evm*/                       @hashgraph/hedera-smart-contracts
+/hedera-node/hedera-file*/                      @hashgraph/hedera-services @povolev15 @iwsimon
+/hedera-node/hedera-network*/                   @hashgraph/hedera-services @kimbor @povolev15
+/hedera-node/hedera-schedule*/                  @hashgraph/hedera-services @iwsimon @kimbor
+/hedera-node/hedera-smart-contract*/            @hashgraph/hedera-smart-contracts @tinker-michaelj
+/hedera-node/hedera-token*/                     @hashgraph/hedera-services @mhess-swl @Neeharika-Sompalli
+/hedera-node/hedera-util*/                      @hashgraph/hedera-services
+/hedera-node/hedera-staking*/                   @hashgraph/hedera-services
+/hedera-node/test-clients/                      @hashgraph/hedera-services
+/hedera-node/**/module-info.java                @hashgraph/hedera-services @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 #########################
 ##### Platform SDK ######
 #########################
 
 # Platform SDK Root Protections
-/platform-sdk/                            @hashgraph/platform-base @hashgraph/platform-hashgraph @hashgraph/platform-data
-/platform-sdk/README.md                   @hashgraph/platform-base @hashgraph/release-engineering @hashgraph/release-engineering-managers
+/platform-sdk/                                  @hashgraph/platform-base @hashgraph/platform-hashgraph @hashgraph/platform-data
+/platform-sdk/README.md                         @hashgraph/platform-base @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 # Platform SDK Modules
-# TBD
-
-
+/platform-sdk/swirlds-cli/                      @hashgraph/platform-base @hashgraph/platform-hashgraph
+/platform-sdk/swirlds-common/                   @hashgraph/platform-base @hashgraph/platform-hashgraph
+/platform-sdk/swirlds-config-*/                 @hashgraph/platform-base
+/platform-sdk/swirlds-fchashmap/                @hashgraph/platform-data
+/platform-sdk/swirlds-fcqueue/                  @hashgraph/platform-data
+/platform-sdk/swirlds-jasperdb/                 @hashgraph/platform-data
+/platform-sdk/swirlds-logging/                  @hashgraph/platform-base
+/platform-sdk/swirlds-merkle/                   @hashgraph/platform-data
+/platform-sdk/swirlds-platform-core/            @hashgraph/platform-hashgraph
+/platform-sdk/swirlds-unit-tests/common/        @hashgraph/platform-base
+/platform-sdk/swirlds-unit-tests/core/          @hashgraph/platform-hashgraph
+/platform-sdk/swirlds-unit-tests/structures/    @hashgraph/platform-data
+/platform-sdk/swirlds-virtualmap/               @hashgraph/platform-data
+/platform-sdk/**/module-info.java               @hashgraph/platform-base @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 #########################
 #####  Core Files  ######
@@ -50,33 +61,33 @@
 # NOTE: Must be placed last to ensure enforcement over all other rules
 
 # Protection Rules for Github Configuration Files and Actions Workflows
-/.github/                                 @hashgraph/release-engineering @hashgraph/release-engineering-managers
+/.github/                                       @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 # Legacy Maven project files
-**/pom.xml                                @hashgraph/release-engineering @hashgraph/release-engineering-managers
+**/pom.xml                                      @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 # Gradle project files and inline plugins
-/gradle/                                  @hashgraph/release-engineering @hashgraph/release-engineering-managers
-gradlew                                   @hashgraph/release-engineering @hashgraph/release-engineering-managers
-gradlew.bat                               @hashgraph/release-engineering @hashgraph/release-engineering-managers
-**/buildSrc/                              @hashgraph/release-engineering @hashgraph/release-engineering-managers
-**/gradle.*                               @hashgraph/release-engineering @hashgraph/release-engineering-managers
-**/*.gradle.*                             @hashgraph/release-engineering @hashgraph/release-engineering-managers
+/gradle/                                        @hashgraph/release-engineering @hashgraph/release-engineering-managers
+gradlew                                         @hashgraph/release-engineering @hashgraph/release-engineering-managers
+gradlew.bat                                     @hashgraph/release-engineering @hashgraph/release-engineering-managers
+**/buildSrc/                                    @hashgraph/release-engineering @hashgraph/release-engineering-managers
+**/gradle.*                                     @hashgraph/release-engineering @hashgraph/release-engineering-managers
+**/*.gradle.*                                   @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 # Self-protection for root CODEOWNERS files (this file should not exist and should definitely require approval)
-CODEOWNERS                                @hashgraph/release-engineering @hashgraph/release-engineering-managers
+CODEOWNERS                                      @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 # Protect the repository root files
-/README.md                                @hashgraph/release-engineering @hashgraph/release-engineering-managers
-**/LICENSE                                @hashgraph/release-engineering @hashgraph/release-engineering-managers
+/README.md                                      @hashgraph/release-engineering @hashgraph/release-engineering-managers
+**/LICENSE                                      @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 # CodeCov configuration
-**/codecov.yml                            @hashgraph/release-engineering @hashgraph/release-engineering-managers
+**/codecov.yml                                  @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 # Git Ignore definitions
-**/.gitignore                             @hashgraph/release-engineering @hashgraph/release-engineering-managers
-**/.gitignore.*                           @hashgraph/release-engineering @hashgraph/release-engineering-managers
+**/.gitignore                                   @hashgraph/release-engineering @hashgraph/release-engineering-managers
+**/.gitignore.*                                 @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 # Legacy CircleCI configuration
-.circleci.settings.xml                    @hashgraph/release-engineering @hashgraph/release-engineering-managers
-/.circleci/                               @hashgraph/release-engineering @hashgraph/release-engineering-managers
+.circleci.settings.xml                          @hashgraph/release-engineering @hashgraph/release-engineering-managers
+/.circleci/                                     @hashgraph/release-engineering @hashgraph/release-engineering-managers
