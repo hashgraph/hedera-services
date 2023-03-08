@@ -94,14 +94,18 @@ public final class HederaOperationUtil {
         if (precompiledContractMap.containsKey(address.toShortHexString())) {
             return supplierExecution.get();
         }
-
-        final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
-        final var account = updater.get(address);
         if (Boolean.FALSE.equals(addressValidator.test(address, frame))) {
             return new Operation.OperationResult(
                     supplierHaltGasCost.getAsLong(), HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
         }
-        boolean isDelegateCall = !frame.getContractAddress().equals(frame.getRecipientAddress());
+        // static frames are guaranteed to be read-only and cannot change state, so no signature verification is needed
+        if (frame.isStatic()) {
+            return supplierExecution.get();
+        }
+
+        final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
+        final var account = updater.get(address);
+        final var isDelegateCall = !frame.getContractAddress().equals(frame.getRecipientAddress());
         boolean sigReqIsMet;
         // if this is a delegate call activeContract should be the recipient address
         // otherwise it should be the contract address
