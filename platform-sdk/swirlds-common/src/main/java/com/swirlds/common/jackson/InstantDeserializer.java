@@ -18,13 +18,14 @@
 package com.swirlds.common.jackson;
 
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.swirlds.common.crypto.Hash;
 import java.io.IOException;
 import java.time.Instant;
 
+/**
+ * Deserializer for optionally present {@link Instant} values.
+ */
 public class InstantDeserializer extends StdDeserializer<Instant> {
     public InstantDeserializer() {
         this(null);
@@ -34,9 +35,18 @@ public class InstantDeserializer extends StdDeserializer<Instant> {
         super(vc);
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Returns {@code null} if a value is not present.
+     */
     @Override
     public Instant deserialize(JsonParser jp, DeserializationContext ctxt)
             throws IOException {
-        return Instant.parse(jp.getValueAsString());
+        final String value = jp.getValueAsString();
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return Instant.parse(value);
     }
 }

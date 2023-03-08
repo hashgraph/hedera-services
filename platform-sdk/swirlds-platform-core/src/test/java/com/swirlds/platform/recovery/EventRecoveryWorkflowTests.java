@@ -18,10 +18,13 @@ package com.swirlds.platform.recovery;
 
 import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.RandomUtils.randomHash;
+import static com.swirlds.common.test.RandomUtils.randomPositiveLong;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -36,8 +39,13 @@ import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState2;
 import com.swirlds.common.system.events.ConsensusEvent;
+import com.swirlds.common.test.RandomUtils;
+import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.state.EmergencyRecoveryFile;
 import com.swirlds.platform.state.MinGenInfo;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -50,8 +58,12 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class EventRecoveryWorkflowTests {
+
+    @TempDir
+    Path tmpDir;
 
     @Test
     @DisplayName("getMinGenInfo() Test")
@@ -236,33 +248,33 @@ class EventRecoveryWorkflowTests {
 
         final SwirldState2 immutableState = mock(SwirldState2.class);
         doAnswer(invocation -> {
-                    assertFalse(roundHandled.get(), "round should not have been handled yet");
-                    preHandleList.add(invocation.getArgument(0));
-                    return null;
-                })
+            assertFalse(roundHandled.get(), "round should not have been handled yet");
+            preHandleList.add(invocation.getArgument(0));
+            return null;
+        })
                 .when(immutableState)
                 .preHandle(any());
         doAnswer(invocation -> {
-                    fail("mutable state should handle transactions");
-                    return null;
-                })
+            fail("mutable state should handle transactions");
+            return null;
+        })
                 .when(immutableState)
                 .handleConsensusRound(any(), any());
 
         final SwirldState2 mutableState = mock(SwirldState2.class);
         doAnswer(invocation -> {
-                    fail("immutable state should pre-handle transactions");
-                    return null;
-                })
+            fail("immutable state should pre-handle transactions");
+            return null;
+        })
                 .when(mutableState)
                 .preHandle(any());
         doAnswer(invocation -> {
-                    assertFalse(roundHandled.get(), "round should only be handled once");
-                    assertSame(round, invocation.getArgument(0), "unexpected round");
-                    assertSame(dualState, invocation.getArgument(1), "unexpected dual state");
-                    roundHandled.set(true);
-                    return null;
-                })
+            assertFalse(roundHandled.get(), "round should only be handled once");
+            assertSame(round, invocation.getArgument(0), "unexpected round");
+            assertSame(dualState, invocation.getArgument(1), "unexpected dual state");
+            roundHandled.set(true);
+            return null;
+        })
                 .when(mutableState)
                 .handleConsensusRound(any(), any());
 
@@ -304,9 +316,9 @@ class EventRecoveryWorkflowTests {
     }
 
     /**
-     * The running hash implementation is quite bad -- hashing the same object twice is not deterministic since
-     * hashing leaves behind metadata. To work around this, this method creates a fresh copy of an event list that
-     * does not share a metadata link.
+     * The running hash implementation is quite bad -- hashing the same object twice is not deterministic since hashing
+     * leaves behind metadata. To work around this, this method creates a fresh copy of an event list that does not
+     * share a metadata link.
      */
     private List<ConsensusEvent> copyRunningHashEvents(final List<ConsensusEvent> original) {
         final List<ConsensusEvent> copy = new ArrayList<>();
@@ -373,6 +385,37 @@ class EventRecoveryWorkflowTests {
                 hash1,
                 EventRecoveryWorkflow.getHashEventsCons(initialHash1, buildMockRound(events4)),
                 "hash should have changed");
+    }
+
+    @Test
+    void testUpdateEmergencyRecoveryFile() throws IOException {
+        final Random random = RandomUtils.getRandomPrintSeed();
+        final Hash hash = randomHash(random);
+        final long round = randomPositiveLong(random);
+        final Instant stateTimestamp = Instant.ofEpochMilli(randomPositiveLong(random));
+
+        final EmergencyRecoveryFile recoveryFile = new EmergencyRecoveryFile(round, hash, stateTimestamp);
+        recoveryFile.write(tmpDir);
+
+        final Instant bootstrapTime = Instant.ofEpochMilli(randomPositiveLong(random));
+
+        EventRecoveryWorkflow.updateEmergencyRecoveryFile(tmpDir, bootstrapTime);
+
+        final EmergencyRecoveryFile updatedRecoveryFile = EmergencyRecoveryFile.read(tmpDir);
+        assertNotNull(updatedRecoveryFile, "Updated recovery file should not be null");
+        assertEquals(round, updatedRecoveryFile.round(), "round does not match");
+        assertEquals(hash, updatedRecoveryFile.hash(), "hash does not match");
+        assertEquals(stateTimestamp, updatedRecoveryFile.timestamp(), "state timestamp does not match");
+        assertNotNull(updatedRecoveryFile.recovery().boostrap(), "bootstrap should not be null");
+        assertEquals(bootstrapTime,
+                updatedRecoveryFile.recovery().boostrap().timestamp(), "bootstrap timestamp does not match");
+
+        final EmergencyRecoveryFile backupFile = EmergencyRecoveryFile.read(tmpDir.resolve("backup"));
+        assertNotNull(backupFile, "Updated recovery file should not be null");
+        assertEquals(round, backupFile.round(), "round does not match");
+        assertEquals(hash, backupFile.hash(), "hash does not match");
+        assertEquals(stateTimestamp, backupFile.timestamp(), "state timestamp does not match");
+        assertNull(backupFile.recovery().boostrap(), "No bootstrap information should exist in the backup");
     }
 
     // TODO reapplyTransactions() test
