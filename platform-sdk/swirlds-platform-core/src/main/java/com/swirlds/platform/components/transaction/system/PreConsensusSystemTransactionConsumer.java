@@ -14,22 +14,20 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.components;
+package com.swirlds.platform.components.transaction.system;
+
+import java.util.List;
 
 /**
- * Types of response of {@link TransThrottleSyncAndCreateRule}
+ * Should be implemented by objects that wish to handle system transactions pre-consensus
  */
-public enum TransThrottleSyncAndCreateRuleResponse {
+@FunctionalInterface
+public interface PreConsensusSystemTransactionConsumer {
     /**
-     * should not initiate a sync and create an event, and don't check subsequent rules
+     * Reports which pre-consensus system transactions the implementing class wishes to consume, and the methods it
+     * wishes to consume them with
+     *
+     * @return a list of {@link PreConsensusSystemTransactionTypedHandler}s
      */
-    DONT_SYNC_OR_CREATE,
-    /**
-     * should initiate a sync and create an event, and don't check subsequent rules
-     */
-    SYNC_AND_CREATE,
-    /**
-     * continue with checking subsequent rules
-     */
-    PASS
+    List<PreConsensusSystemTransactionTypedHandler<?>> getPreConsensusHandleMethods();
 }

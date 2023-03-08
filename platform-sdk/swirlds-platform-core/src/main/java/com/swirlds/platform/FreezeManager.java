@@ -20,7 +20,7 @@ import static com.swirlds.logging.LogMarker.FREEZE;
 
 import com.swirlds.common.system.EventCreationRule;
 import com.swirlds.common.system.EventCreationRuleResponse;
-import com.swirlds.platform.components.TransThrottleSyncRule;
+import com.swirlds.platform.components.transaction.throttle.TransThrottleSyncRule;
 import com.swirlds.platform.state.signed.SignedState;
 import java.nio.file.Path;
 import org.apache.logging.log4j.LogManager;

@@ -14,18 +14,22 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.components;
+package com.swirlds.platform.components.transaction.throttle;
 
-import com.swirlds.common.system.EventCreationRule;
-
-public interface TransactionPool extends EventCreationRule {
+/**
+ * Types of response of {@link TransThrottleSyncAndCreateRule}
+ */
+public enum TransThrottleSyncAndCreateRuleResponse {
     /**
-     * @return the number of user transactions in the pool
+     * should not initiate a sync and create an event, and don't check subsequent rules
      */
-    int numTransForEvent();
-
+    DONT_SYNC_OR_CREATE,
     /**
-     * @return the number of state signature transactions in the pool
+     * should initiate a sync and create an event, and don't check subsequent rules
      */
-    int numSignatureTransEvent();
+    SYNC_AND_CREATE,
+    /**
+     * continue with checking subsequent rules
+     */
+    PASS
 }
