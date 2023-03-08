@@ -37,7 +37,7 @@ public class SolidityAction {
     private EntityId recipientContract;
     private byte[] invalidSolidityAddress;
     private final long value;
-    private Long gasUsed;
+    private long gasUsed = 0L;
     private byte[] output;
     private byte[] revertReason;
     private byte[] error;
@@ -60,14 +60,15 @@ public class SolidityAction {
     /**
      * Check that the fields are set correctly for the semantics of the underlying protobuf
      *
-     * (Respecting, for example, protobuf `oneof` unions...)
+     * Respecting, for example, protobuf `oneof` unions... (but allowing for `oneof recipient` to be missing
+     * entirely, because that's ok)
      */
     public boolean isValid() {
         boolean ok = true;
         ok &= null != getCallType() && ContractActionType.NO_ACTION != getCallType();
         ok &= 1 == countNonNulls(getCallingAccount(), getCallingContract());
         ok &= null != getInput();
-        ok &= 1 == countNonNulls(getRecipientAccount(), getRecipientContract(), getInvalidSolidityAddress());
+        ok &= 1 >= countNonNulls(getRecipientAccount(), getRecipientContract(), getInvalidSolidityAddress());
         ok &= 1 == countNonNulls(getOutput(), getRevertReason(), getError());
         ok &= null != getCallOperationType() && CallOperationType.OP_UNKNOWN != getCallOperationType();
         return ok;
@@ -192,7 +193,7 @@ public class SolidityAction {
     }
 
     public long getGasUsed() {
-        return null != gasUsed ? gasUsed : 0L;
+        return gasUsed;
     }
 
     public byte[] getRevertReason() {

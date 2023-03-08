@@ -41,6 +41,8 @@ import com.google.common.collect.Sets;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.CallOperationType;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.ContractActionType;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.HederaTracer;
+import com.hedera.node.app.service.mono.contracts.execution.traceability.HederaTracer.EmitActionSidecars;
+import com.hedera.node.app.service.mono.contracts.execution.traceability.HederaTracer.ValidateActionSidecars;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.SolidityAction;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
@@ -51,6 +53,7 @@ import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
@@ -62,6 +65,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.apache.logging.log4j.Level;
 import org.apache.tuweni.bytes.Bytes;
 import org.assertj.core.api.SoftAssertions;
 import org.hyperledger.besu.datatypes.Address;
@@ -120,7 +124,7 @@ class HederaTracerTest {
 
     @BeforeEach
     void setUp() {
-        subject = new HederaTracer(true);
+        subject = new HederaTracer(EmitActionSidecars.ENABLED, ValidateActionSidecars.ENABLED);
     }
 
     /**
@@ -626,7 +630,7 @@ class HederaTracerTest {
     @Test
     void finalizesSystemPrecompileCallAsExpectedWhenActionsNotEnabled() {
         // given
-        subject = new HederaTracer(false);
+        subject = new HederaTracer(EmitActionSidecars.DISABLED, ValidateActionSidecars.DISABLED);
         // when
         subject.tracePostExecution(messageFrame, operationResult);
         subject.tracePrecompileResult(messageFrame, ContractActionType.SYSTEM);
@@ -636,7 +640,7 @@ class HederaTracerTest {
 
     @Test
     void traceAccountCreationResultWhenTraceabilityNotEnabled() {
-        subject = new HederaTracer(false);
+        subject = new HederaTracer(EmitActionSidecars.DISABLED, ValidateActionSidecars.DISABLED);
         final var haltReason = Optional.of(INVALID_SOLIDITY_ADDRESS);
 
         subject.traceAccountCreationResult(messageFrame, haltReason);
@@ -745,7 +749,7 @@ class HederaTracerTest {
 
     @Test
     void actionsAreNotTrackedWhenNotEnabled() {
-        subject = new HederaTracer(false);
+        subject = new HederaTracer(EmitActionSidecars.DISABLED, ValidateActionSidecars.DISABLED);
 
         subject.init(messageFrame);
         subject.tracePostExecution(messageFrame, operationResult);
@@ -953,7 +957,61 @@ class HederaTracerTest {
     }
 
     @Test
-    void finalizeOperationTest() {
+    void finalizeOperationTestWithValidationDisabled() {
+
+        final var badSolidityAction1 = new SolidityAction(CALL, 7, new byte[7], 7, 7);
+        final var goodSolidityAction1 = new SolidityAction(CALL, 7, new byte[7], 7, 7);
+        {
+            goodSolidityAction1.setCallingAccount(new EntityId());
+            goodSolidityAction1.setRecipientAccount(new EntityId());
+            goodSolidityAction1.setGasUsed(7);
+            goodSolidityAction1.setOutput(new byte[7]);
+            goodSolidityAction1.setCallOperationType(OP_CALL);
+        }
+        final var allActions = new ArrayList<>(List.of(badSolidityAction1, goodSolidityAction1));
+        final var invalidActions = new ArrayList<>(List.of(badSolidityAction1));
+
+        final var sut = new HederaTracer(EmitActionSidecars.ENABLED, ValidateActionSidecars.DISABLED) {
+            {
+                logLevel = Level.ERROR;
+            }
+
+            public void setAllActions(final Collection<SolidityAction> sas) {
+                this.allActions = new ArrayList<>(sas);
+            }
+
+            public void setInvalidActions(final Collection<SolidityAction> sas) {
+                this.invalidActions = new ArrayList<>(sas);
+            }
+
+            public Collection<SolidityAction> getAllActions() {
+                return List.copyOf(allActions);
+            }
+        };
+
+        sut.setAllActions(allActions);
+        sut.setInvalidActions(invalidActions);
+        sut.finalizeOperation(messageFrame);
+
+        final var actualActions = sut.getAllActions();
+        assertThat(actualActions).hasSize(2);
+        assertThat(actualActions.stream().filter(SolidityAction::isValid).count())
+                .isEqualTo(1);
+        assertThat(actualActions).hasSameElementsAs(allActions);
+
+        final var actualLogs = Stream.of(
+                        logCaptor.debugLogs().stream(),
+                        logCaptor.infoLogs().stream(),
+                        logCaptor.warnLogs().stream(),
+                        logCaptor.errorLogs().stream())
+                .flatMap(s -> s)
+                .toList();
+        assertThat(actualLogs).isEmpty();
+        logCaptor.clear();
+    }
+
+    @Test
+    void finalizeOperationTestWithValidationEnabled() {
 
         given(messageFrame.getContractAddress()).willReturn(contract);
         given(messageFrame.getOriginatorAddress()).willReturn(originator);
@@ -964,6 +1022,8 @@ class HederaTracerTest {
 
         Function<Collection<SolidityAction>, Collection<SolidityAction>> getOnlyValid =
                 cas -> cas.stream().filter(SolidityAction::isValid).toList();
+        Function<Collection<SolidityAction>, Collection<SolidityAction>> getOnlyInvalid =
+                cas -> cas.stream().filter(sa -> !sa.isValid()).toList();
         Function<Collection<SolidityAction>, Integer> countValid =
                 cas -> getOnlyValid.apply(cas).size();
 
@@ -1013,9 +1073,17 @@ class HederaTracerTest {
         for (final var testStackDepth : IntStream.of(0, 1, 3).toArray())
             for (final var test : powerActions) {
 
-                final var sut = new HederaTracer(true) {
+                final var sut = new HederaTracer(EmitActionSidecars.ENABLED, ValidateActionSidecars.ENABLED) {
+                    {
+                        logLevel = Level.ERROR;
+                    }
+
                     public void setAllActions(final Collection<SolidityAction> sas) {
-                        this.allActions = List.copyOf(sas);
+                        this.allActions = new ArrayList<>(sas);
+                    }
+
+                    public void setInvalidActions(final Collection<SolidityAction> sas) {
+                        this.invalidActions = new ArrayList<>(sas);
                     }
 
                     public Collection<SolidityAction> getAllActions() {
@@ -1031,12 +1099,17 @@ class HederaTracerTest {
                         sas -> sas.stream().map(namedSAs::get).sorted().collect(Collectors.joining(","));
 
                 final var expectedNActions = test.size();
-                final var expectedNValidActions = countValid.apply(test);
-                final var expectedNInvalidActions = expectedNActions - expectedNValidActions;
+
                 final var expectedValidActions = getOnlyValid.apply(test);
+                final var expectedNValidActions = expectedValidActions.size();
+
+                final var expectedInvalidActions = getOnlyInvalid.apply(test);
+                final var expectedNInvalidActions = expectedInvalidActions.size();
+
                 final var expectedTestCaseIsValid = expectedNActions == expectedNValidActions;
 
                 sut.setAllActions(test);
+                sut.setInvalidActions(expectedInvalidActions);
                 for (int k = 0; k < testStackDepth; k++) sut.pushSA();
                 sut.finalizeOperation(messageFrame);
 

@@ -55,15 +55,21 @@ import org.hyperledger.besu.evm.operation.Operation.OperationResult;
 public class HederaTracer implements HederaOperationTracer {
 
     private static final Logger log = LogManager.getLogger(HederaTracer.class);
-    private static final Level logLevel = Level.DEBUG;
+
+    @VisibleForTesting
+    protected Level logLevel = Level.DEBUG;
 
     @VisibleForTesting
     protected List<SolidityAction> allActions;
 
     @VisibleForTesting
+    protected List<SolidityAction> invalidActions;
+
+    @VisibleForTesting
     protected final Deque<SolidityAction> currentActionsStack;
 
-    private final boolean areActionSidecarsEnabled;
+    private final EmitActionSidecars doEmitActionSidecars;
+    private final ValidateActionSidecars doValidateActionSidecars;
 
     private static final int OP_CODE_CREATE = 0xF0;
     private static final int OP_CODE_CALL = 0xF1;
@@ -72,50 +78,60 @@ public class HederaTracer implements HederaOperationTracer {
     private static final int OP_CODE_CREATE2 = 0xF5;
     private static final int OP_CODE_STATICCALL = 0xFA;
 
-    public HederaTracer(final boolean areActionSidecarsEnabled) {
+    public enum EmitActionSidecars {
+        DISABLED,
+        ENABLED
+    }
+
+    public enum ValidateActionSidecars {
+        DISABLED,
+        ENABLED
+    }
+
+    public HederaTracer(
+            final EmitActionSidecars emitActionSidecars, final ValidateActionSidecars validateActionSidecars) {
         this.currentActionsStack = new ArrayDeque<>();
         this.allActions = new ArrayList<>();
-        this.areActionSidecarsEnabled = areActionSidecarsEnabled;
+        this.invalidActions = new ArrayList<>();
+        this.doEmitActionSidecars = emitActionSidecars;
+        this.doValidateActionSidecars = validateActionSidecars;
     }
 
     @Override
     public void init(final MessageFrame initialFrame) {
-        if (areActionSidecarsEnabled) {
+        if (areActionSidecarsEnabled()) {
             trackTopLevelActionFor(initialFrame);
         }
     }
 
     @Override
     public void finalizeOperation(final MessageFrame initialFrame) {
-        if (areActionSidecarsEnabled) {
-            // make sure only valid actions are left in allActions
-            final var validActions =
-                    allActions.stream().filter(SolidityAction::isValid).toList();
-
+        if (areActionSidecarsEnabled() && isActionSidecarValidationEnabled()) {
             // Two possible error conditions are that invalid actions (mainly `oneof` fields that
             // don't have _exactly_ one alternative set) are added to the set of actions (which can
             // cause problems when ingesting sidecar records elsewhere) and that the current actions
             // stack is out-of-sync (due to some error elsewhere).  (The latter condition has not yet
             // been observed outside deliberate fault injection and probably doesn't happen in a
             // running system.)
-            if (!currentActionsStack.isEmpty() || validActions.size() != allActions.size()) {
+            if (!currentActionsStack.isEmpty() || !invalidActions.isEmpty()) {
                 log.atLevel(logLevel)
                         .log(
                                 "Invalid at end of EVM run: {} ({})",
-                                () -> formatAnomaliesAtFinalizationForLog(validActions),
+                                () -> formatAnomaliesAtFinalizationForLog(invalidActions),
                                 () -> formatFrameContextForLog(initialFrame));
             }
 
             // Keep only _valid_ actions (this avoids problems when _ingesting_ action sidecars)
-            if (validActions.size() != allActions.size()) {
-                allActions = validActions;
+            if (!invalidActions.isEmpty()) {
+                allActions.removeAll(invalidActions);
+                invalidActions.clear();
             }
         }
     }
 
     @Override
     public void tracePostExecution(final MessageFrame currentFrame, final OperationResult operationResult) {
-        if (areActionSidecarsEnabled) {
+        if (areActionSidecarsEnabled()) {
             final var frameState = currentFrame.getState();
             if (frameState != State.CODE_EXECUTING) {
                 if (frameState == State.CODE_SUSPENDED) {
@@ -170,6 +186,9 @@ public class HederaTracer implements HederaOperationTracer {
         actionConfig.accept(action);
 
         allActions.add(action);
+        if (isActionSidecarValidationEnabled() && !action.isValid()) {
+            invalidActions.add(action);
+        }
         currentActionsStack.push(action);
     }
 
@@ -211,8 +230,6 @@ public class HederaTracer implements HederaOperationTracer {
                                     bytes -> action.setRevertReason(bytes.toArrayUnsafe()),
                                     () -> action.setRevertReason(new byte[0]));
                     if (frame.getType().equals(CONTRACT_CREATION)) {
-                        action.setTargetedAddress(
-                                action.getRecipientContract().toEvmAddress().toArray());
                         action.setRecipientContract(null);
                     }
                 }
@@ -236,7 +253,6 @@ public class HederaTracer implements HederaOperationTracer {
                                 && exceptionalHaltReason.equals(INVALID_SOLIDITY_ADDRESS)) {
                             final var syntheticInvalidAction = new SolidityAction(
                                     CALL, frame.getRemainingGas(), null, 0, frame.getMessageStackDepth() + 1);
-                            syntheticInvalidAction.setGasUsed(0L);
                             syntheticInvalidAction.setCallingContract(
                                     EntityId.fromAddress(asMirrorAddress(frame.getContractAddress(), frame)));
                             syntheticInvalidAction.setTargetedAddress(
@@ -251,9 +267,6 @@ public class HederaTracer implements HederaOperationTracer {
                         action.setError(new byte[0]);
                     }
                     if (frame.getType().equals(CONTRACT_CREATION)) {
-                        // TODO: Is this the correct semantics?
-                        action.setTargetedAddress(
-                                action.getRecipientContract().toEvmAddress().toArray());
                         action.setRecipientContract(null);
                     }
                 }
@@ -263,7 +276,7 @@ public class HederaTracer implements HederaOperationTracer {
 
     @Override
     public void tracePrecompileResult(final MessageFrame frame, final ContractActionType type) {
-        if (areActionSidecarsEnabled) {
+        if (areActionSidecarsEnabled()) {
             popActionStack(frame).ifPresent(lastAction -> {
                 lastAction.setCallType(type);
                 lastAction.setRecipientAccount(null);
@@ -277,7 +290,7 @@ public class HederaTracer implements HederaOperationTracer {
     @Override
     public void traceAccountCreationResult(final MessageFrame frame, final Optional<ExceptionalHaltReason> haltReason) {
         frame.setExceptionalHaltReason(haltReason);
-        if (areActionSidecarsEnabled) {
+        if (areActionSidecarsEnabled()) {
             // we take the last action from the list since there is a chance
             // it has already been popped from the stack
             final var lastAction = allActions.get(allActions.size() - 1);
@@ -287,6 +300,14 @@ public class HederaTracer implements HederaOperationTracer {
 
     public List<SolidityAction> getActions() {
         return allActions;
+    }
+
+    private boolean areActionSidecarsEnabled() {
+        return EmitActionSidecars.ENABLED == doEmitActionSidecars;
+    }
+
+    private boolean isActionSidecarValidationEnabled() {
+        return ValidateActionSidecars.ENABLED == doValidateActionSidecars;
     }
 
     private ContractActionType toContractActionType(final MessageFrame.Type type) {
@@ -326,15 +347,12 @@ public class HederaTracer implements HederaOperationTracer {
         }
     }
 
-    private String formatAnomaliesAtFinalizationForLog(final List<SolidityAction> validActions) {
+    private String formatAnomaliesAtFinalizationForLog(final List<SolidityAction> invalidActions) {
         final var msgs = new ArrayList<String>();
         if (!this.currentActionsStack.isEmpty())
             msgs.add("currentActionsStack not empty, has %d elements left".formatted(this.currentActionsStack.size()));
-        if (validActions.size() != this.allActions.size()) {
-            msgs.add("of %d actions given, %d were invalid"
-                    .formatted(this.allActions.size(), this.allActions.size() - validActions.size()));
-            final var invalidActions = new ArrayList<>(allActions);
-            invalidActions.removeIf(SolidityAction::isValid);
+        if (!invalidActions.isEmpty()) {
+            msgs.add("of %d actions given, %d were invalid".formatted(this.allActions.size(), invalidActions.size()));
             for (final var ia : invalidActions) {
                 msgs.add("invalid: %s".formatted(ia.toFullString()));
             }

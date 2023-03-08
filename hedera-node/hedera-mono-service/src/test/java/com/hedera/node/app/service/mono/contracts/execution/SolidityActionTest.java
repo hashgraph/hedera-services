@@ -50,6 +50,8 @@ class SolidityActionTest {
 
     @Test
     void isValidTest() {
+        // "gasUsed" and missing "oneof recipient" omitted in these tests because those are okay never having been set
+
         final byte[] BYTES = new byte[5];
         record SACtor(boolean good, Supplier<SolidityAction> ctor) {}
         final var ctors = Map.of(
@@ -69,36 +71,27 @@ class SolidityActionTest {
                 "recipientAccount", sa -> sa.setRecipientAccount(sender),
                 "recipientContract", sa -> sa.setRecipientContract(sender),
                 "invalidSolidityAddress", sa -> sa.setTargetedAddress(BYTES),
-                "gasUsed", sa -> sa.setGasUsed(10),
                 "output", sa -> sa.setOutput(BYTES),
                 "revertReason", sa -> sa.setRevertReason(BYTES),
                 "error", sa -> sa.setError(BYTES),
                 "callOperationType", sa -> sa.setCallOperationType(CallOperationType.OP_DELEGATECALL));
         record SAFields(boolean good, String... fields) {}
         final var fields = List.<SAFields>of(
-                new SAFields(true, "callingAccount", "recipientAccount", "gasUsed", "output", "callOperationType"),
+                new SAFields(true, "callingAccount", "recipientAccount", "output", "callOperationType"),
+                new SAFields(true, "callingContract", "recipientContract", "revertReason", "callOperationType"),
+                new SAFields(true, "callingAccount", "invalidSolidityAddress", "error", "callOperationType"),
+                new SAFields(true, "callingContract", "recipientAccount", "revertReason", "callOperationType"),
+                new SAFields(true, "callingAccount", "recipientContract", "output", "callOperationType"),
+                new SAFields(false, "recipientAccount", "output", "callOperationType"),
+                new SAFields(true, "callingAccount", "error", "callOperationType"),
                 new SAFields(
-                        true, "callingContract", "recipientContract", "gasUsed", "revertReason", "callOperationType"),
-                new SAFields(true, "callingAccount", "invalidSolidityAddress", "gasUsed", "error", "callOperationType"),
-                new SAFields(
-                        true, "callingContract", "recipientAccount", "gasUsed", "revertReason", "callOperationType"),
-                new SAFields(true, "callingAccount", "recipientContract", "gasUsed", "output", "callOperationType"),
-                new SAFields(false, "recipientAccount", "gasUsed", "output", "callOperationType"),
-                new SAFields(
-                        false,
-                        "callingAccount",
-                        "callingContract",
-                        "recipientAccount",
-                        "gasUsed",
-                        "output",
-                        "callOperationType"),
-                new SAFields(false, "callingAccount", "gasUsed", "output", "callOperationType"),
+                        false, "callingAccount", "callingContract", "recipientAccount", "output", "callOperationType"),
+                new SAFields(true, "callingAccount", "output", "callOperationType"),
                 new SAFields(
                         false,
                         "callingAccount",
                         "recipientAccount",
                         "invalidSolidityAddress",
-                        "gasUsed",
                         "output",
                         "callOperationType"),
                 new SAFields(
@@ -107,37 +100,22 @@ class SolidityActionTest {
                         "recipientAccount",
                         "recipientContract",
                         "invalidSolidityAddress",
-                        "gasUsed",
                         "output",
                         "callOperationType"),
-                new SAFields(false, "callingAccount", "recipientContract", "output", "callOperationType"),
-                new SAFields(false, "callingContract", "invalidSolidityAddress", "gasUsed", "callOperationType"),
+                new SAFields(false, "callingContract", "invalidSolidityAddress", "callOperationType"),
                 new SAFields(
-                        false,
-                        "callingAccount",
-                        "recipientAccount",
-                        "gasUsed",
-                        "output",
-                        "revertReason",
-                        "callOperationType"),
+                        false, "callingAccount", "recipientAccount", "output", "revertReason", "callOperationType"),
                 new SAFields(
-                        false,
-                        "callingContract",
-                        "recipientContract",
-                        "gasUsed",
-                        "revertReason",
-                        "error",
-                        "callOperationType"),
+                        false, "callingContract", "recipientContract", "revertReason", "error", "callOperationType"),
                 new SAFields(
                         false,
                         "callingAccount",
                         "invalidSolidityAddress",
-                        "gasUsed",
                         "output",
                         "revertReason",
                         "error",
                         "callOperationType"),
-                new SAFields(false, "callingContract", "recipientAccount", "gasUsed", "output"));
+                new SAFields(false, "callingContract", "recipientAccount", "output"));
 
         // sanity check validity of 'fields' test cases
         assertThat(fields.stream()
@@ -173,7 +151,7 @@ class SolidityActionTest {
         }
         softly.assertAll();
         assertThat(ncases).isEqualTo(80);
-        assertThat(ngood).isEqualTo(15);
+        assertThat(ngood).isEqualTo(21);
     }
 
     @Test
@@ -259,7 +237,7 @@ class SolidityActionTest {
                 .isEqualTo(
                         """
                 SolidityAction(callType: CREATE, callOperationType: <null>, value: 11, gas: 7, \
-                gasUsed: <null>, callDepth: 13, callingAccount: <null>, callingContract: <null>, \
+                gasUsed: 0, callDepth: 13, callingAccount: <null>, callingContract: <null>, \
                 recipientAccount: <null>, recipientContract: <null>, invalidSolidityAddress \
                 (aka targetedAddress): <null>, input: <empty>, output: <null>, \
                 revertReason: <null>, error: <null>)\

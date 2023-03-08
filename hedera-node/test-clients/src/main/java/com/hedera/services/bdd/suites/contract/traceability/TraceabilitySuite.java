@@ -4330,8 +4330,6 @@ public class TraceabilitySuite extends HapiSuite {
                                                 .setGas(931868)
                                                 .setCallDepth(1)
                                                 .setGasUsed(201)
-                                                // TODO: need to setTargetedAddress here, but with what???
-                                                // (also scenarios 18 and 20)
                                                 .setRevertReason(EMPTY)
                                                 .build())))));
     }
