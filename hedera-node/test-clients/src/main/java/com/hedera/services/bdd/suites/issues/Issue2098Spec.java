@@ -48,8 +48,8 @@ public class Issue2098Spec extends HapiSuite {
         return List.of(new HapiSpec[]{
                 queryApiPermissionsChangeImmediately(),
                 txnApiPermissionsChangeImmediately(),
-            adminsCanQueryNoMatterPermissions(),
-            adminsCanTransactNoMatterPermissions(),
+                adminsCanQueryNoMatterPermissions(),
+                adminsCanTransactNoMatterPermissions(),
         });
     }
 

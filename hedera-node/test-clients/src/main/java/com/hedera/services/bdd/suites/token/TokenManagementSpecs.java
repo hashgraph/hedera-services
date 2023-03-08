@@ -93,16 +93,16 @@ public class TokenManagementSpecs extends HapiSuite {
         return List.of(new HapiSpec[]{
                 freezeMgmtSuccessCasesWork(),
                 kycMgmtFailureCasesWork(),
-            kycMgmtSuccessCasesWork(),
-            supplyMgmtSuccessCasesWork(),
-            wipeAccountFailureCasesWork(),
-            wipeAccountSuccessCasesWork(),
-            supplyMgmtFailureCasesWork(),
-            burnTokenFailsDueToInsufficientTreasuryBalance(),
-            frozenTreasuryCannotBeMintedOrBurned(),
-            revokedKYCTreasuryCannotBeMintedOrBurned(),
-            fungibleCommonMaxSupplyReachWork(),
-            mintingMaxLongValueWorks(),
+                kycMgmtSuccessCasesWork(),
+                supplyMgmtSuccessCasesWork(),
+                wipeAccountFailureCasesWork(),
+                wipeAccountSuccessCasesWork(),
+                supplyMgmtFailureCasesWork(),
+                burnTokenFailsDueToInsufficientTreasuryBalance(),
+                frozenTreasuryCannotBeMintedOrBurned(),
+                revokedKYCTreasuryCannotBeMintedOrBurned(),
+                fungibleCommonMaxSupplyReachWork(),
+                mintingMaxLongValueWorks(),
             nftMintProvidesMintedNftsAndNewTotalSupply(),
             zeroUnitTokenOperationsWorkAsExpected()
         });
@@ -490,10 +490,7 @@ public class TokenManagementSpecs extends HapiSuite {
                 .given(newKeyNamed(SUPPLY_KEY))
                 .when(
                         tokenCreate(RIGID),
-                        tokenCreate(SUPPLE)
-                                .supplyKey(SUPPLY_KEY)
-                                .decimals(16)
-                                .initialSupply(1))
+                        tokenCreate(SUPPLE).supplyKey(SUPPLY_KEY).decimals(16).initialSupply(1))
                 .then(
                         mintToken(RIGID, 1).signedBy(GENESIS).hasKnownStatus(TOKEN_HAS_NO_SUPPLY_KEY),
                         burnToken(RIGID, 1).signedBy(GENESIS).hasKnownStatus(TOKEN_HAS_NO_SUPPLY_KEY),

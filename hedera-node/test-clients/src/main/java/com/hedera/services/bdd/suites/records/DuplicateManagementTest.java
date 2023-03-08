@@ -61,7 +61,7 @@ public class DuplicateManagementTest extends HapiSuite {
         return List.of(new HapiSpec[]{
                 usesUnclassifiableIfNoClassifiableAvailable(),
                 hasExpectedDuplicates(),
-            classifiableTakesPriorityOverUnclassifiable(),
+                classifiableTakesPriorityOverUnclassifiable(),
         });
     }
 

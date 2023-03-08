@@ -51,7 +51,7 @@ public class Issue2051Spec extends HapiSuite {
         return List.of(new HapiSpec[]{
                 transferAccountCannotBeDeletedForContractTarget(),
                 transferAccountCannotBeDeleted(),
-            tbdCanPayForItsOwnDeletion(),
+                tbdCanPayForItsOwnDeletion(),
         });
     }
 

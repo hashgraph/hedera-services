@@ -592,10 +592,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
                         newKeyNamed(ADMIN),
                         newKeyNamed("mint"),
                         newKeyNamed("newMint"),
-                        tokenCreate(TOKEN_A)
-                                .adminKey(ADMIN)
-                                .supplyKey("mint")
-                                .via(CREATE_TXN),
+                        tokenCreate(TOKEN_A).adminKey(ADMIN).supplyKey("mint").via(CREATE_TXN),
                         scheduleCreate("tokenMintScheduled", txnBody)
                                 .waitForExpiry()
                                 .withRelativeExpiry(CREATE_TXN, 8))
@@ -764,11 +761,7 @@ public class ScheduleLongTermSignSpecs extends HapiSuite {
 
     public HapiSpec retestsActivationOnSignWithEmptySigMap() {
         return defaultHapiSpec("RetestsActivationOnCreateWithEmptySigMapAtExpiry")
-                .given(
-                        newKeyNamed("a"),
-                        newKeyNamed("b"),
-                        newKeyListNamed("ab", List.of("a", "b")),
-                        newKeyNamed(ADMIN))
+                .given(newKeyNamed("a"), newKeyNamed("b"), newKeyListNamed("ab", List.of("a", "b")), newKeyNamed(ADMIN))
                 .when(
                         cryptoCreate(SENDER).key("ab").balance(667L).via(SENDER_TXN),
                         scheduleCreate(

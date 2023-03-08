@@ -62,7 +62,7 @@ public class AssortedHcsOps extends HapiSuite {
         return List.of(new HapiSpec[]{
                 //						runMisc(),
                 testRechargingPayer(),
-            //						infoLookup(),
+                //						infoLookup(),
         });
     }
 

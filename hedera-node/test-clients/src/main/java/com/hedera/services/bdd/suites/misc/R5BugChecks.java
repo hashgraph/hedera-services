@@ -88,14 +88,14 @@ public class R5BugChecks extends HapiSuite {
         return List.of(new HapiSpec[]{
                 //						genesisUpdatesFeesForFree(),
                 //						canGetDeletedFileInfo(),
-            enforcesSigRequirements(),
-            //						contractCannotTransferToReceiverSigRequired(),
-            //						cannotTransferEntirePayerBalance(),
-            //						costAnswerGetAccountInfoRejectsInvalidId(),
-            //						cannotUseThresholdWithM0(),
+                enforcesSigRequirements(),
+                //						contractCannotTransferToReceiverSigRequired(),
+                //						cannotTransferEntirePayerBalance(),
+                //						costAnswerGetAccountInfoRejectsInvalidId(),
+                //						cannotUseThresholdWithM0(),
 
-            /* --- MISC --- */
-            //						cannotTransferToDeleted(),
+                /* --- MISC --- */
+                //						cannotTransferToDeleted(),
         });
     }
 

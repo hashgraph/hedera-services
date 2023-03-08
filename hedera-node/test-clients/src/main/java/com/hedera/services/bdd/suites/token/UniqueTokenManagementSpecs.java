@@ -105,16 +105,16 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
         return List.of(new HapiSpec[]{
                 mintFailsWithLargeBatchSize(),
                 mintFailsWithTooLongMetadata(),
-            mintFailsWithInvalidMetadataFromBatch(),
-            mintUniqueTokenHappyPath(),
-            mintTokenWorksWhenAccountsAreFrozenByDefault(),
-            mintFailsWithDeletedToken(),
-            mintUniqueTokenWorksWithRepeatedMetadata(),
-            mintDistinguishesFeeSubTypes(),
-            mintUniqueTokenReceiptCheck(),
-            populatingMetadataForFungibleDoesNotWork(),
-            populatingAmountForNonFungibleDoesNotWork(),
-            finiteNftReachesMaxSupplyProperly(),
+                mintFailsWithInvalidMetadataFromBatch(),
+                mintUniqueTokenHappyPath(),
+                mintTokenWorksWhenAccountsAreFrozenByDefault(),
+                mintFailsWithDeletedToken(),
+                mintUniqueTokenWorksWithRepeatedMetadata(),
+                mintDistinguishesFeeSubTypes(),
+                mintUniqueTokenReceiptCheck(),
+                populatingMetadataForFungibleDoesNotWork(),
+                populatingAmountForNonFungibleDoesNotWork(),
+                finiteNftReachesMaxSupplyProperly(),
             burnHappyPath(),
             canOnlyBurnFromTreasury(),
             burnFailsOnInvalidSerialNumber(),
@@ -686,9 +686,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         cryptoTransfer(movingUnique(NFT, 1, 2).between(TOKEN_TREASURY, ACCOUNT)))
                 .when()
                 .then(wipeTokenAccount(
-                        NFT,
-                        ACCOUNT,
-                        LongStream.range(0, 1000).boxed().collect(Collectors.toList()))
+                        NFT, ACCOUNT, LongStream.range(0, 1000).boxed().collect(Collectors.toList()))
                         .hasPrecheck(BATCH_SIZE_LIMIT_EXCEEDED));
     }
 

@@ -72,7 +72,7 @@ public class ValidateCongestionPricingAfterReconnect extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(new HapiSpec[]{
-            runTransfersBeforeReconnect(), validateCongestionPricing(),
+                runTransfersBeforeReconnect(), validateCongestionPricing(),
         });
     }
 

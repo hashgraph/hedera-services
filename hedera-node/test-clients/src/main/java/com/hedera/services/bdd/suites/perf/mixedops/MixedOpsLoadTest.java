@@ -106,16 +106,16 @@ public class MixedOpsLoadTest extends LoadTest {
         AtomicInteger scheduleId = new AtomicInteger(0);
 
         Supplier<HapiSpecOperation[]> mixedOpsBurst = () -> new HapiSpecOperation[] {
-            cryptoTransfer(tinyBarsFromTo(sender, receiver, 1L))
-                    .noLogging()
-                    .payingWith(sender)
-                    .signedBy(GENESIS)
-                    .suppressStats(true)
-                    .fee(ONE_HBAR)
-                    .hasKnownStatusFrom(SUCCESS, OK, INSUFFICIENT_PAYER_BALANCE, UNKNOWN, TRANSACTION_EXPIRED)
-                    .hasRetryPrecheckFrom(
-                            BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, PAYER_ACCOUNT_NOT_FOUND)
-                    .deferStatusResolution(),
+                cryptoTransfer(tinyBarsFromTo(sender, receiver, 1L))
+                        .noLogging()
+                        .payingWith(sender)
+                        .signedBy(GENESIS)
+                        .suppressStats(true)
+                        .fee(ONE_HBAR)
+                        .hasKnownStatusFrom(SUCCESS, OK, INSUFFICIENT_PAYER_BALANCE, UNKNOWN, TRANSACTION_EXPIRED)
+                        .hasRetryPrecheckFrom(
+                                BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, PAYER_ACCOUNT_NOT_FOUND)
+                        .deferStatusResolution(),
                 submitMessageTo(topic)
                         .message(ArrayUtils.addAll(
                                 ByteBuffer.allocate(8)
@@ -125,18 +125,18 @@ public class MixedOpsLoadTest extends LoadTest {
                         .noLogging()
                         .payingWith(GENESIS)
                         .signedBy(sender, SUBMIT_KEY)
-                    .fee(ONE_HBAR)
-                    .suppressStats(true)
-                    .hasRetryPrecheckFrom(
-                            BUSY,
-                            DUPLICATE_TRANSACTION,
-                            PLATFORM_TRANSACTION_NOT_CREATED,
-                            TOPIC_EXPIRED,
-                            INVALID_TOPIC_ID,
-                            INSUFFICIENT_PAYER_BALANCE)
-                    .hasKnownStatusFrom(
-                            SUCCESS, OK, INVALID_TOPIC_ID, INSUFFICIENT_PAYER_BALANCE, UNKNOWN, TRANSACTION_EXPIRED)
-                    .deferStatusResolution(),
+                        .fee(ONE_HBAR)
+                        .suppressStats(true)
+                        .hasRetryPrecheckFrom(
+                                BUSY,
+                                DUPLICATE_TRANSACTION,
+                                PLATFORM_TRANSACTION_NOT_CREATED,
+                                TOPIC_EXPIRED,
+                                INVALID_TOPIC_ID,
+                                INSUFFICIENT_PAYER_BALANCE)
+                        .hasKnownStatusFrom(
+                                SUCCESS, OK, INVALID_TOPIC_ID, INSUFFICIENT_PAYER_BALANCE, UNKNOWN, TRANSACTION_EXPIRED)
+                        .deferStatusResolution(),
                 r.nextInt(100) > 5
                         ? cryptoTransfer(moving(1, TOKEN + r.nextInt(NUM_SUBMISSIONS))
                         .between(sender, receiver))
@@ -149,16 +149,16 @@ public class MixedOpsLoadTest extends LoadTest {
                                 OK,
                                 INSUFFICIENT_PAYER_BALANCE,
                                 EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS,
-                                    DUPLICATE_TRANSACTION)
-                            .hasRetryPrecheckFrom(permissiblePrechecks)
-                            .hasKnownStatusFrom(
-                                    SUCCESS,
-                                    OK,
-                                    INSUFFICIENT_TOKEN_BALANCE,
-                                    TRANSACTION_EXPIRED,
-                                    INVALID_TOKEN_ID,
-                                    UNKNOWN,
-                                    TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
+                                DUPLICATE_TRANSACTION)
+                        .hasRetryPrecheckFrom(permissiblePrechecks)
+                        .hasKnownStatusFrom(
+                                SUCCESS,
+                                OK,
+                                INSUFFICIENT_TOKEN_BALANCE,
+                                TRANSACTION_EXPIRED,
+                                INVALID_TOKEN_ID,
+                                UNKNOWN,
+                                TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
                             .deferStatusResolution()
                     : scheduleSign(schedule + "-" + getHostName() + "-" + r.nextInt(NUM_SUBMISSIONS))
                             .ignoreIfMissing()

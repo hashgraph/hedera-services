@@ -294,12 +294,18 @@ public class ValidationScenarios extends HapiSuite {
         try {
             return customHapiSpec("EnsureBytecodeForFeeSnapshots")
                     .withProperties(Map.of(
-                            NODES, nodes(),
-                            DEFAULT_PAYER1, primaryPayer(),
-                            DEFAULT_NODE, defaultNode(),
-                            FEES_USE_FIXED_OFFER, "true",
-                            "fees.fixedOffer", "" + feeToOffer(),
-                            DEFAULT_PAYER_KEY, payerKeySeed()))
+                            NODES,
+                            nodes(),
+                            DEFAULT_PAYER1,
+                            primaryPayer(),
+                            DEFAULT_NODE,
+                            defaultNode(),
+                            FEES_USE_FIXED_OFFER,
+                            "true",
+                            "fees.fixedOffer",
+                            "" + feeToOffer(),
+                            DEFAULT_PAYER_KEY,
+                            payerKeySeed()))
                     .given()
                     .when()
                     .then(withOpContext((spec, opLog) -> {
@@ -338,13 +344,20 @@ public class ValidationScenarios extends HapiSuite {
         try {
             return customHapiSpec("FeeSnapshots")
                     .withProperties(Map.of(
-                            NODES, nodes(),
-                            "default.fee", "" + tinyBarsToOffer,
-                            DEFAULT_PAYER1, primaryPayer(),
-                            DEFAULT_NODE, defaultNode(),
-                            "cost.snapshot.dir", "fees",
-                            "cost.snapshot.mode", "TAKE",
-                            DEFAULT_PAYER_KEY, payerKeySeed()))
+                            NODES,
+                            nodes(),
+                            "default.fee",
+                            "" + tinyBarsToOffer,
+                            DEFAULT_PAYER1,
+                            primaryPayer(),
+                            DEFAULT_NODE,
+                            defaultNode(),
+                            "cost.snapshot.dir",
+                            "fees",
+                            "cost.snapshot.mode",
+                            "TAKE",
+                            DEFAULT_PAYER_KEY,
+                            payerKeySeed()))
                     .given(
                             keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
                                     .name(SCENARIO_PAYER_NAME)
@@ -485,8 +498,7 @@ public class ValidationScenarios extends HapiSuite {
                                     .fee(tinyBarsToOffer)
                                     .payingWith(SCENARIO_PAYER_NAME)
                                     .bytecode(() -> String.format(
-                                            PATTERN,
-                                            feeSnapshots.getOpsConfig().getBytecode()))
+                                            PATTERN, feeSnapshots.getOpsConfig().getBytecode()))
                                     .adminKey("contractFirstKey")
                                     .balance(1),
                             contractCall(CONTRACT_TBD)
@@ -522,12 +534,18 @@ public class ValidationScenarios extends HapiSuite {
         try {
             return customHapiSpec("UpdatePaymentCsv")
                     .withProperties(Map.of(
-                            NODES, nodes(),
-                            DEFAULT_PAYER1, primaryPayer(),
-                            DEFAULT_NODE, defaultNode(),
-                            FEES_USE_FIXED_OFFER, "true",
-                            "fees.fixedOffer", "" + feeToOffer(),
-                            DEFAULT_PAYER_KEY, payerKeySeed()))
+                            NODES,
+                            nodes(),
+                            DEFAULT_PAYER1,
+                            primaryPayer(),
+                            DEFAULT_NODE,
+                            defaultNode(),
+                            FEES_USE_FIXED_OFFER,
+                            "true",
+                            "fees.fixedOffer",
+                            "" + feeToOffer(),
+                            DEFAULT_PAYER_KEY,
+                            payerKeySeed()))
                     .given()
                     .when()
                     .then(withOpContext((spec, opLog) -> {
@@ -608,16 +626,22 @@ public class ValidationScenarios extends HapiSuite {
             int numNodes = targetNetwork().getNodes().size();
             return customHapiSpec("DoJustTransfers")
                     .withProperties(Map.of(
-                            NODES, nodes(),
-                            DEFAULT_PAYER1, primaryPayer(),
-                            DEFAULT_NODE, defaultNode(),
-                            FEES_USE_FIXED_OFFER, "true",
-                            "fees.fixedOffer", "" + feeToOffer(),
-                            DEFAULT_PAYER_KEY, payerKeySeed()))
+                            NODES,
+                            nodes(),
+                            DEFAULT_PAYER1,
+                            primaryPayer(),
+                            DEFAULT_NODE,
+                            defaultNode(),
+                            FEES_USE_FIXED_OFFER,
+                            "true",
+                            "fees.fixedOffer",
+                            "" + feeToOffer(),
+                            DEFAULT_PAYER_KEY,
+                            payerKeySeed()))
                     .given(keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
                             .name(SCENARIO_PAYER_NAME)
-                            .linkedTo(() ->
-                                    String.format(PATTERN, targetNetwork().getScenarioPayer())))
+                            .linkedTo(
+                                    () -> String.format(PATTERN, targetNetwork().getScenarioPayer())))
                     .when()
                     .then(IntStream.range(0, numNodes)
                             .mapToObj(i -> cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L))
@@ -647,12 +671,18 @@ public class ValidationScenarios extends HapiSuite {
         try {
             return customHapiSpec("SysFilesUp")
                     .withProperties(Map.of(
-                            NODES, nodes(),
-                            DEFAULT_PAYER1, primaryPayer(),
-                            DEFAULT_NODE, defaultNode(),
-                            FEES_USE_FIXED_OFFER, "true",
-                            "fees.fixedOffer", "" + feeToOffer(),
-                            DEFAULT_PAYER_KEY, payerKeySeed()))
+                            NODES,
+                            nodes(),
+                            DEFAULT_PAYER1,
+                            primaryPayer(),
+                            DEFAULT_NODE,
+                            defaultNode(),
+                            FEES_USE_FIXED_OFFER,
+                            "true",
+                            "fees.fixedOffer",
+                            "" + feeToOffer(),
+                            DEFAULT_PAYER_KEY,
+                            payerKeySeed()))
                     .given(LongStream.of(payers)
                             .mapToObj(payer -> keyFromPem(() -> pemForAccount(payer))
                                     .name(String.format("payer%d", payer))
@@ -697,16 +727,22 @@ public class ValidationScenarios extends HapiSuite {
         try {
             return customHapiSpec("SysFilesDown")
                     .withProperties(Map.of(
-                            NODES, nodes(),
-                            DEFAULT_PAYER1, primaryPayer(),
-                            DEFAULT_NODE, defaultNode(),
-                            FEES_USE_FIXED_OFFER, "true",
-                            "fees.fixedOffer", "" + feeToOffer(),
-                            DEFAULT_PAYER_KEY, payerKeySeed()))
+                            NODES,
+                            nodes(),
+                            DEFAULT_PAYER1,
+                            primaryPayer(),
+                            DEFAULT_NODE,
+                            defaultNode(),
+                            FEES_USE_FIXED_OFFER,
+                            "true",
+                            "fees.fixedOffer",
+                            "" + feeToOffer(),
+                            DEFAULT_PAYER_KEY,
+                            payerKeySeed()))
                     .given(keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
                             .name(SCENARIO_PAYER_NAME)
-                            .linkedTo(() ->
-                                    String.format(PATTERN, targetNetwork().getScenarioPayer())))
+                            .linkedTo(
+                                    () -> String.format(PATTERN, targetNetwork().getScenarioPayer())))
                     .when()
                     .then(Arrays.stream(targets)
                             .mapToObj(fileNum -> appropriateQuery(sys, fileNum))
@@ -780,12 +816,18 @@ public class ValidationScenarios extends HapiSuite {
         try {
             return customHapiSpec("GetSystemKeys")
                     .withProperties(Map.of(
-                            NODES, nodes(),
-                            DEFAULT_PAYER1, primaryPayer(),
-                            DEFAULT_NODE, defaultNode(),
-                            FEES_USE_FIXED_OFFER, "true",
-                            "fees.fixedOffer", "" + feeToOffer(),
-                            DEFAULT_PAYER_KEY, payerKeySeed()))
+                            NODES,
+                            nodes(),
+                            DEFAULT_PAYER1,
+                            primaryPayer(),
+                            DEFAULT_NODE,
+                            defaultNode(),
+                            FEES_USE_FIXED_OFFER,
+                            "true",
+                            "fees.fixedOffer",
+                            "" + feeToOffer(),
+                            DEFAULT_PAYER_KEY,
+                            payerKeySeed()))
                     .given()
                     .when()
                     .then(flattened(
@@ -810,12 +852,18 @@ public class ValidationScenarios extends HapiSuite {
         try {
             return customHapiSpec("RecordPayerBalance")
                     .withProperties(Map.of(
-                            NODES, nodes(),
-                            DEFAULT_PAYER1, primaryPayer(),
-                            DEFAULT_NODE, defaultNode(),
-                            FEES_USE_FIXED_OFFER, "true",
-                            "fees.fixedOffer", "" + feeToOffer(),
-                            DEFAULT_PAYER_KEY, payerKeySeed()))
+                            NODES,
+                            nodes(),
+                            DEFAULT_PAYER1,
+                            primaryPayer(),
+                            DEFAULT_NODE,
+                            defaultNode(),
+                            FEES_USE_FIXED_OFFER,
+                            "true",
+                            "fees.fixedOffer",
+                            "" + feeToOffer(),
+                            DEFAULT_PAYER_KEY,
+                            payerKeySeed()))
                     .given()
                     .when()
                     .then(withOpContext((spec, opLog) -> {
@@ -839,12 +887,18 @@ public class ValidationScenarios extends HapiSuite {
             long minStartingBalance = targetNetwork().getEnsureScenarioPayerHbars() * TINYBARS_PER_HBAR;
             return customHapiSpec("EnsureScenarioPayer")
                     .withProperties(Map.of(
-                            NODES, nodes(),
-                            DEFAULT_PAYER1, primaryPayer(),
-                            DEFAULT_NODE, defaultNode(),
-                            FEES_USE_FIXED_OFFER, "true",
-                            "fees.fixedOffer", "" + feeToOffer(),
-                            DEFAULT_PAYER_KEY, payerKeySeed()))
+                            NODES,
+                            nodes(),
+                            DEFAULT_PAYER1,
+                            primaryPayer(),
+                            DEFAULT_NODE,
+                            defaultNode(),
+                            FEES_USE_FIXED_OFFER,
+                            "true",
+                            "fees.fixedOffer",
+                            "" + feeToOffer(),
+                            DEFAULT_PAYER_KEY,
+                            payerKeySeed()))
                     .given()
                     .when()
                     .then(ensureValidatedAccountExistence(
@@ -875,16 +929,22 @@ public class ValidationScenarios extends HapiSuite {
                     .toArray();
             return customHapiSpec("VersionsScenario")
                     .withProperties(Map.of(
-                            NODES, nodes(),
-                            DEFAULT_PAYER1, primaryPayer(),
-                            DEFAULT_NODE, defaultNode(),
-                            FEES_USE_FIXED_OFFER, "true",
-                            "fees.fixedOffer", "" + feeToOffer(),
-                            DEFAULT_PAYER_KEY, payerKeySeed()))
+                            NODES,
+                            nodes(),
+                            DEFAULT_PAYER1,
+                            primaryPayer(),
+                            DEFAULT_NODE,
+                            defaultNode(),
+                            FEES_USE_FIXED_OFFER,
+                            "true",
+                            "fees.fixedOffer",
+                            "" + feeToOffer(),
+                            DEFAULT_PAYER_KEY,
+                            payerKeySeed()))
                     .given(keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
                             .name(SCENARIO_PAYER_NAME)
-                            .linkedTo(() ->
-                                    String.format(PATTERN, targetNetwork().getScenarioPayer())))
+                            .linkedTo(
+                                    () -> String.format(PATTERN, targetNetwork().getScenarioPayer())))
                     .when()
                     .then(getVersionInfo().payingWith(SCENARIO_PAYER_NAME).setNodeFrom(ValidationScenarios::nextNode));
         } catch (Exception e) {
@@ -906,12 +966,18 @@ public class ValidationScenarios extends HapiSuite {
             long expectedDelta = params.isNovelContent() ? 2L : 1L;
             return customHapiSpec("CryptoScenario")
                     .withProperties(Map.of(
-                            NODES, nodes(),
-                            DEFAULT_PAYER1, primaryPayer(),
-                            DEFAULT_NODE, defaultNode(),
-                            FEES_USE_FIXED_OFFER, "true",
-                            "fees.fixedOffer", "" + feeToOffer(),
-                            DEFAULT_PAYER_KEY, payerKeySeed()))
+                            NODES,
+                            nodes(),
+                            DEFAULT_PAYER1,
+                            primaryPayer(),
+                            DEFAULT_NODE,
+                            defaultNode(),
+                            FEES_USE_FIXED_OFFER,
+                            "true",
+                            "fees.fixedOffer",
+                            "" + feeToOffer(),
+                            DEFAULT_PAYER_KEY,
+                            payerKeySeed()))
                     .given(
                             keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
                                     .name(SCENARIO_PAYER_NAME)
@@ -1049,12 +1115,18 @@ public class ValidationScenarios extends HapiSuite {
 
             return customHapiSpec("FileScenario")
                     .withProperties(Map.of(
-                            NODES, nodes(),
-                            DEFAULT_PAYER1, primaryPayer(),
-                            DEFAULT_NODE, defaultNode(),
-                            FEES_USE_FIXED_OFFER, "true",
-                            "fees.fixedOffer", "" + feeToOffer(),
-                            DEFAULT_PAYER_KEY, payerKeySeed()))
+                            NODES,
+                            nodes(),
+                            DEFAULT_PAYER1,
+                            primaryPayer(),
+                            DEFAULT_NODE,
+                            defaultNode(),
+                            FEES_USE_FIXED_OFFER,
+                            "true",
+                            "fees.fixedOffer",
+                            "" + feeToOffer(),
+                            DEFAULT_PAYER_KEY,
+                            payerKeySeed()))
                     .given(
                             keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
                                     .name(SCENARIO_PAYER_NAME)
@@ -1201,12 +1273,18 @@ public class ValidationScenarios extends HapiSuite {
 
             return customHapiSpec("ContractScenario")
                     .withProperties(Map.of(
-                            NODES, nodes(),
-                            DEFAULT_PAYER1, primaryPayer(),
-                            DEFAULT_NODE, defaultNode(),
-                            FEES_USE_FIXED_OFFER, "true",
-                            "fees.fixedOffer", "" + feeToOffer(),
-                            DEFAULT_PAYER_KEY, payerKeySeed()))
+                            NODES,
+                            nodes(),
+                            DEFAULT_PAYER1,
+                            primaryPayer(),
+                            DEFAULT_NODE,
+                            defaultNode(),
+                            FEES_USE_FIXED_OFFER,
+                            "true",
+                            "fees.fixedOffer",
+                            "" + feeToOffer(),
+                            DEFAULT_PAYER_KEY,
+                            payerKeySeed()))
                     .given(
                             keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
                                     .name(SCENARIO_PAYER_NAME)
@@ -1397,12 +1475,18 @@ public class ValidationScenarios extends HapiSuite {
 
             return customHapiSpec("ConsensusScenario")
                     .withProperties(Map.of(
-                            NODES, nodes(),
-                            DEFAULT_PAYER1, primaryPayer(),
-                            DEFAULT_NODE, defaultNode(),
-                            FEES_USE_FIXED_OFFER, "true",
-                            "fees.fixedOffer", "" + feeToOffer(),
-                            DEFAULT_PAYER_KEY, payerKeySeed()))
+                            NODES,
+                            nodes(),
+                            DEFAULT_PAYER1,
+                            primaryPayer(),
+                            DEFAULT_NODE,
+                            defaultNode(),
+                            FEES_USE_FIXED_OFFER,
+                            "true",
+                            "fees.fixedOffer",
+                            "" + feeToOffer(),
+                            DEFAULT_PAYER_KEY,
+                            payerKeySeed()))
                     .given(
                             keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
                                     .name(SCENARIO_PAYER_NAME)
@@ -1443,16 +1527,22 @@ public class ValidationScenarios extends HapiSuite {
 
             return customHapiSpec("StakingScenario")
                     .withProperties(Map.of(
-                            NODES, nodes(),
-                            DEFAULT_PAYER1, primaryPayer(),
-                            DEFAULT_NODE, defaultNode(),
-                            FEES_USE_FIXED_OFFER, "true",
-                            "fees.fixedOffer", "" + feeToOffer(),
-                            DEFAULT_PAYER_KEY, payerKeySeed()))
+                            NODES,
+                            nodes(),
+                            DEFAULT_PAYER1,
+                            primaryPayer(),
+                            DEFAULT_NODE,
+                            defaultNode(),
+                            FEES_USE_FIXED_OFFER,
+                            "true",
+                            "fees.fixedOffer",
+                            "" + feeToOffer(),
+                            DEFAULT_PAYER_KEY,
+                            payerKeySeed()))
                     .given(keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
                             .name(SCENARIO_PAYER_NAME)
-                            .linkedTo(() ->
-                                    String.format(PATTERN, targetNetwork().getScenarioPayer())))
+                            .linkedTo(
+                                    () -> String.format(PATTERN, targetNetwork().getScenarioPayer())))
                     .when()
                     .then(withOpContext((spec, opLog) -> {
                         final AtomicReference<NodeAddressBook> addressBook = new AtomicReference<>();
@@ -1504,14 +1594,15 @@ public class ValidationScenarios extends HapiSuite {
                         .payingWith(SCENARIO_PAYER_NAME)
                         .setNodeFrom(ValidationScenarios::nextNode)
                         .signedBy(SCENARIO_PAYER_NAME, NOVEL_TOPIC_ADMIN)
-                    .submitKey(EMPTY_KEY),
-            submitMessageTo(NOVEL_TOPIC_NAME)
-                    .payingWith(SCENARIO_PAYER_NAME)
-                    .setNodeFrom(ValidationScenarios::nextNode)
-                    .signedBy(SCENARIO_PAYER_NAME),
-            deleteTopic(NOVEL_TOPIC_NAME).payingWith(SCENARIO_PAYER_NAME).setNodeFrom(ValidationScenarios::nextNode),
-            withOpContext((spec, opLog) -> novelTopicUsed.set(
-                    HapiPropertySource.asTopicString(spec.registry().getTopicID(NOVEL_TOPIC_NAME))))
+                        .submitKey(EMPTY_KEY),
+                submitMessageTo(NOVEL_TOPIC_NAME)
+                        .payingWith(SCENARIO_PAYER_NAME)
+                        .setNodeFrom(ValidationScenarios::nextNode)
+                        .signedBy(SCENARIO_PAYER_NAME),
+                deleteTopic(NOVEL_TOPIC_NAME).payingWith(SCENARIO_PAYER_NAME).setNodeFrom(
+                        ValidationScenarios::nextNode),
+                withOpContext((spec, opLog) -> novelTopicUsed.set(
+                        HapiPropertySource.asTopicString(spec.registry().getTopicID(NOVEL_TOPIC_NAME))))
         };
     }
 

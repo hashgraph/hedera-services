@@ -57,7 +57,6 @@ public class PrivilegedOpsSuite extends HapiSuite {
     private static final String NEW_88 = "new88";
     private static final int BURST_SIZE = 10;
 
-
     public static void main(String... args) {
         new PrivilegedOpsSuite().runSuiteSync();
     }
@@ -66,12 +65,12 @@ public class PrivilegedOpsSuite extends HapiSuite {
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(new HapiSpec[]{
                 superusersAreNeverThrottledOnTransfers(),
-            superusersAreNeverThrottledOnMiscTxns(),
-            superusersAreNeverThrottledOnHcsTxns(),
-            superusersAreNeverThrottledOnMiscQueries(),
-            superusersAreNeverThrottledOnHcsQueries(),
-            systemAccountUpdatePrivilegesAsExpected(),
-            freezeAdminPrivilegesAsExpected(),
+                superusersAreNeverThrottledOnMiscTxns(),
+                superusersAreNeverThrottledOnHcsTxns(),
+                superusersAreNeverThrottledOnMiscQueries(),
+                superusersAreNeverThrottledOnHcsQueries(),
+                systemAccountUpdatePrivilegesAsExpected(),
+                freezeAdminPrivilegesAsExpected(),
         });
     }
 

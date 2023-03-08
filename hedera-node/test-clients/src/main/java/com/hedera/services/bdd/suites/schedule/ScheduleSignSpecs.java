@@ -623,13 +623,13 @@ public class ScheduleSignSpecs extends HapiSuite {
                         newKeyNamed(SHARED_KEY),
                         cryptoCreate("payerWithSharedKey").key(SHARED_KEY))
                 .when(scheduleCreate(
-                                "deferredCreation",
+                        "deferredCreation",
                         cryptoCreate("yetToBe")
                                 .signedBy()
                                 .receiverSigRequired(true)
                                 .key(SHARED_KEY)
-                                        .balance(123L)
-                                        .fee(ONE_HBAR))
+                                .balance(123L)
+                                .fee(ONE_HBAR))
                         .payingWith("payerWithSharedKey")
                         .via("creation"))
                 .then(getTxnRecord("creation").scheduled());
@@ -689,11 +689,7 @@ public class ScheduleSignSpecs extends HapiSuite {
 
     public HapiSpec retestsActivationOnSignWithEmptySigMap() {
         return defaultHapiSpec("RetestsActivationOnCreateWithEmptySigMap")
-                .given(
-                        newKeyNamed("a"),
-                        newKeyNamed("b"),
-                        newKeyListNamed("ab", List.of("a", "b")),
-                        newKeyNamed(ADMIN))
+                .given(newKeyNamed("a"), newKeyNamed("b"), newKeyListNamed("ab", List.of("a", "b")), newKeyNamed(ADMIN))
                 .when(
                         cryptoCreate(SENDER).key("ab").balance(667L),
                         scheduleCreate(

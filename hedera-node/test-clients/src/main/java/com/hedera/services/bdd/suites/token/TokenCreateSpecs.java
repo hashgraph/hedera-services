@@ -289,10 +289,7 @@ public class TokenCreateSpecs extends HapiSuite {
         return defaultHapiSpec("CreationSetsExpectedName")
                 .given(cryptoCreate(TOKEN_TREASURY).balance(0L))
                 .when(tokenCreate(PRIMARY).name(saltedName).treasury(TOKEN_TREASURY))
-                .then(getTokenInfo(PRIMARY)
-                        .logged()
-                        .hasRegisteredId(PRIMARY)
-                        .hasName(saltedName));
+                .then(getTokenInfo(PRIMARY).logged().hasRegisteredId(PRIMARY).hasName(saltedName));
     }
 
     public HapiSpec creationWithoutKYCSetsCorrectStatus() {
@@ -510,10 +507,7 @@ public class TokenCreateSpecs extends HapiSuite {
                                     .getSeconds();
                             spec.registry().saveExpiry(PRIMARY, timestamp + THREE_MONTHS_IN_SECONDS);
                         }),
-                        getTokenInfo(PRIMARY)
-                                .logged()
-                                .hasRegisteredId(PRIMARY)
-                                .hasValidExpiry());
+                        getTokenInfo(PRIMARY).logged().hasRegisteredId(PRIMARY).hasValidExpiry());
     }
 
     public HapiSpec creationValidatesExpiry() {

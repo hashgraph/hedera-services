@@ -256,8 +256,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
                                 STAKING_FEES_NODE_REWARD_PERCENTAGE,
                                 HapiSpecSetup.getDefaultNodeProps().get(STAKING_FEES_NODE_REWARD_PERCENTAGE),
                                 STAKING_FEES_STAKING_REWARD_PERCENTAGE,
-                                HapiSpecSetup.getDefaultNodeProps()
-                                        .get(STAKING_FEES_STAKING_REWARD_PERCENTAGE))));
+                                HapiSpecSetup.getDefaultNodeProps().get(STAKING_FEES_STAKING_REWARD_PERCENTAGE))));
     }
 
     static TransactionID scheduledVersionOf(TransactionID txnId) {

@@ -553,7 +553,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                         .freezeKey(FREEZE_KEY)
                         .freezeDefault(false),
                 tokenCreate(KNOWABLE_TOKEN).treasury(TOKEN_TREASURY).kycKey("kycKey"),
-            tokenCreate(VANILLA_TOKEN).treasury(TOKEN_TREASURY)
+                tokenCreate(VANILLA_TOKEN).treasury(TOKEN_TREASURY)
         };
     }
 

@@ -988,10 +988,10 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         tokenAssociate(RECEIVER, List.of(NFT)),
                         cryptoTransfer(movingUnique(NFT, 1).between(TOKEN_TREASURY, ACCOUNT)),
                         contractCall(
-                                        ORDINARY_CALLS_CONTRACT,
-                                        "transferNFTCall",
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(NFT))),
+                                ORDINARY_CALLS_CONTRACT,
+                                "transferNFTCall",
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(NFT))),
                                 HapiParserUtil.asHeadlongAddress(
                                         asAddress(spec.registry().getAccountID(ACCOUNT))),
                                 HapiParserUtil.asHeadlongAddress(
@@ -1046,10 +1046,10 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         tokenAssociate(RECEIVER, List.of(NFT)),
                         cryptoTransfer(movingUnique(NFT, 1).between(TOKEN_TREASURY, ACCOUNT)),
                         contractCall(
-                                        ORDINARY_CALLS_CONTRACT,
-                                        "transferNFTCall",
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(NFT))),
+                                ORDINARY_CALLS_CONTRACT,
+                                "transferNFTCall",
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(NFT))),
                                 HapiParserUtil.asHeadlongAddress(
                                         asAddress(spec.registry().getAccountID(ACCOUNT))),
                                 HapiParserUtil.asHeadlongAddress(
