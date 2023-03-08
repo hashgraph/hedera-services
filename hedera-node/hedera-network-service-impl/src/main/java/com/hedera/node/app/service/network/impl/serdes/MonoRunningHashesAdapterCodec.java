@@ -66,6 +66,6 @@ public class MonoRunningHashesAdapterCodec implements Codec<RecordsRunningHashLe
     @NonNull
     @Override
     public RecordsRunningHashLeaf parseStrict(@NonNull DataInput dataInput) throws IOException {
-        return null;
+        return parse(dataInput);
     }
 }

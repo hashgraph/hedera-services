@@ -65,6 +65,6 @@ public class MonoSpecialFilesAdapterCodec implements Codec<MerkleSpecialFiles> {
     @NonNull
     @Override
     public MerkleSpecialFiles parseStrict(@NonNull DataInput dataInput) throws IOException {
-        return null;
+        return parse(dataInput);
     }
 }
