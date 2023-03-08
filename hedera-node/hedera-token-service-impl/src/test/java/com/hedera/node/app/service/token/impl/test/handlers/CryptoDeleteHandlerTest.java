@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
-import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
@@ -24,22 +23,24 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.token.CryptoDeleteTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteHandler;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.token.CryptoDeleteTransactionBody;
-import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.hapi.node.base.TransactionID;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
-    private final AccountID deleteAccountId = AccountID.newBuilder().accountNum(3213).build();
-    private final AccountID transferAccountId = AccountID.newBuilder().accountNum(32134).build();
+    private final AccountID deleteAccountId =
+            AccountID.newBuilder().accountNum(3213).build();
+    private final AccountID transferAccountId =
+            AccountID.newBuilder().accountNum(32134).build();
     private final Long deleteAccountNum = deleteAccountId.accountNum().get();
     private final Long transferAccountNum = transferAccountId.accountNum().get();
 
@@ -211,8 +212,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
     private TransactionBody deleteAccountTransaction(
             final AccountID deleteAccountId, final AccountID transferAccountId) {
-        final var transactionID =
-                TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
+        final var transactionID = TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
         final var deleteTxBody = CryptoDeleteTransactionBody.newBuilder()
                 .deleteAccountID(deleteAccountId)
                 .transferAccountID(transferAccountId);

@@ -28,7 +28,7 @@ import static com.hedera.test.factories.scenarios.TokenFeeScheduleUpdateScenario
 import static com.hedera.test.factories.scenarios.TokenFeeScheduleUpdateScenarios.UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_MISSING_FEE_COLLECTOR;
 import static com.hedera.test.factories.scenarios.TokenFeeScheduleUpdateScenarios.UPDATE_TOKEN_WITH_NO_FEE_SCHEDULE_KEY;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
-import static com.hedera.test.utils.KeyUtils.sanityRestored;
+import static com.hedera.test.utils.KeyUtils.sanityRestoredToPbj;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
@@ -56,7 +56,7 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
 
         assertTrue(context.failed());
         assertEquals(INVALID_TOKEN_ID, context.getStatus());
-        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
         assertEquals(Collections.emptyList(), context.getRequiredNonPayerKeys());
     }
 
@@ -69,7 +69,7 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
         // may look odd, but is intentional --- we fail in the handle(), not in preHandle()
         assertFalse(context.failed());
         assertEquals(OK, context.getStatus());
-        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
         assertEquals(Collections.emptyList(), context.getRequiredNonPayerKeys());
     }
 
@@ -81,11 +81,11 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
 
         assertFalse(context.failed());
         assertEquals(OK, context.getStatus());
-        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
         assertEquals(2, context.getRequiredNonPayerKeys().size());
         assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_FEE_SCHEDULE_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+                sanityRestoredToPbj(context.getRequiredNonPayerKeys()),
+                contains(TOKEN_FEE_SCHEDULE_KT.asPbjKey(), RECEIVER_SIG_KT.asPbjKey()));
     }
 
     @Test
@@ -96,9 +96,9 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
 
         assertFalse(context.failed());
         assertEquals(OK, context.getStatus());
-        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
         assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(TOKEN_FEE_SCHEDULE_KT.asKey()));
+        assertThat(sanityRestoredToPbj(context.getRequiredNonPayerKeys()), contains(TOKEN_FEE_SCHEDULE_KT.asPbjKey()));
     }
 
     @Test
@@ -109,11 +109,11 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
 
         assertFalse(context.failed());
         assertEquals(OK, context.getStatus());
-        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
         assertEquals(2, context.getRequiredNonPayerKeys().size());
         assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_FEE_SCHEDULE_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+                sanityRestoredToPbj(context.getRequiredNonPayerKeys()),
+                contains(TOKEN_FEE_SCHEDULE_KT.asPbjKey(), RECEIVER_SIG_KT.asPbjKey()));
     }
 
     @Test
@@ -124,9 +124,9 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
 
         assertFalse(context.failed());
         assertEquals(OK, context.getStatus());
-        assertEquals(sanityRestored(context.getPayerKey()), RECEIVER_SIG_KT.asKey());
+        assertEquals(sanityRestoredToPbj(context.getPayerKey()), RECEIVER_SIG_KT.asPbjKey());
         assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(TOKEN_FEE_SCHEDULE_KT.asKey()));
+        assertThat(sanityRestoredToPbj(context.getRequiredNonPayerKeys()), contains(TOKEN_FEE_SCHEDULE_KT.asPbjKey()));
     }
 
     @Test
@@ -137,9 +137,9 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
 
         assertFalse(context.failed());
         assertEquals(OK, context.getStatus());
-        assertEquals(List.of(NO_RECEIVER_SIG_KT.asKey()), sanityRestored(List.of(context.getPayerKey())));
+        assertEquals(List.of(NO_RECEIVER_SIG_KT.asPbjKey()), sanityRestoredToPbj(List.of(context.getPayerKey())));
         assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(TOKEN_FEE_SCHEDULE_KT.asKey()));
+        assertThat(sanityRestoredToPbj(context.getRequiredNonPayerKeys()), contains(TOKEN_FEE_SCHEDULE_KT.asPbjKey()));
     }
 
     @Test

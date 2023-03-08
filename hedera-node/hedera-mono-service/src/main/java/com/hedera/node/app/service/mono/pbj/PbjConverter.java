@@ -25,6 +25,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
@@ -44,6 +45,14 @@ public final class PbjConverter {
                 .realmNum(accountID.getRealmNum())
                 .accountNum(accountID.getAccountNum())
                 .alias(Bytes.wrap(accountID.getAlias().toByteArray()))
+                .build();
+    }
+
+    public static @NonNull TokenID toPbj(com.hederahashgraph.api.proto.java.TokenID tokenID) {
+        return TokenID.newBuilder()
+                .shardNum(tokenID.getShardNum())
+                .realmNum(tokenID.getRealmNum())
+                .tokenNum(tokenID.getTokenNum())
                 .build();
     }
 
@@ -665,6 +674,14 @@ public final class PbjConverter {
                 .setShardNum(id.shardNum())
                 .setRealmNum(id.realmNum())
                 .setTopicNum(id.topicNum())
+                .build();
+    }
+
+    public static com.hederahashgraph.api.proto.java.TokenID fromPbj(TokenID id) {
+        return com.hederahashgraph.api.proto.java.TokenID.newBuilder()
+                .setShardNum(id.shardNum())
+                .setRealmNum(id.realmNum())
+                .setTokenNum(id.tokenNum())
                 .build();
     }
 

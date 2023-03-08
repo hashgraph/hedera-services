@@ -16,31 +16,28 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.IdUtils.asToken;
-import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
-import com.google.protobuf.BoolValue;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.token.CryptoAllowance;
+import com.hedera.hapi.node.token.CryptoApproveAllowanceTransactionBody;
+import com.hedera.hapi.node.token.NftAllowance;
+import com.hedera.hapi.node.token.TokenAllowance;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.impl.handlers.CryptoApproveAllowanceHandler;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.token.CryptoAllowance;
-import com.hedera.hapi.node.token.CryptoApproveAllowanceTransactionBody;
-import com.hedera.hapi.node.token.NftAllowance;
-import com.hedera.hapi.node.token.TokenAllowance;
-import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.hapi.node.base.TransactionID;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -50,7 +47,8 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
     private final TokenID nft = TokenID.newBuilder().tokenNum(56789).build();
     private final TokenID token = TokenID.newBuilder().tokenNum(6789).build();
     private final AccountID spender = AccountID.newBuilder().accountNum(12345).build();
-    private final AccountID delegatingSpender = AccountID.newBuilder().accountNum(1234567).build();
+    private final AccountID delegatingSpender =
+            AccountID.newBuilder().accountNum(1234567).build();
     private final AccountID owner = AccountID.newBuilder().accountNum(123456).build();
     private final HederaKey ownerKey = asHederaKey(A_COMPLEX_KEY).get();
 
@@ -89,7 +87,8 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoApproveAllowanceVanilla() {
-        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum().get()))).willReturn(ownerAccount);
+        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum().get())))
+                .willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, false);
@@ -102,7 +101,8 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoApproveAllowanceFailsWithInvalidOwner() {
-        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum().get()))).willReturn(null);
+        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum().get())))
+                .willReturn(null);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, false);
         final var context = new PreHandleContext(store, txn, payer);
@@ -114,7 +114,8 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoApproveAllowanceDoesntAddIfOwnerSameAsPayer() {
-        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum().get()))).willReturn(ownerAccount);
+        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum().get())))
+                .willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
         final var txn = cryptoApproveAllowanceTransaction(owner, false);
@@ -127,9 +128,12 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoApproveAllowanceAddsDelegatingSpender() {
-        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum().get()))).willReturn(ownerAccount);
+        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum().get())))
+                .willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
-        given(accounts.get(EntityNumVirtualKey.fromLong(delegatingSpender.accountNum().get()))).willReturn(payerAccount);
+        given(accounts.get(EntityNumVirtualKey.fromLong(
+                        delegatingSpender.accountNum().get())))
+                .willReturn(payerAccount);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, true);
         final var context = new PreHandleContext(store, txn, payer);
@@ -141,9 +145,12 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoApproveAllowanceFailsIfDelegatingSpenderMissing() {
-        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum().get()))).willReturn(ownerAccount);
+        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum().get())))
+                .willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
-        given(accounts.get(EntityNumVirtualKey.fromLong(delegatingSpender.accountNum().get()))).willReturn(null);
+        given(accounts.get(EntityNumVirtualKey.fromLong(
+                        delegatingSpender.accountNum().get())))
+                .willReturn(null);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, true);
         final var context = new PreHandleContext(store, txn, payer);
@@ -160,8 +167,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     private TransactionBody cryptoApproveAllowanceTransaction(
             final AccountID id, final boolean isWithDelegatingSpender) {
-        final var transactionID =
-                TransactionID.newBuilder().accountID(id).transactionValidStart(consensusTimestamp);
+        final var transactionID = TransactionID.newBuilder().accountID(id).transactionValidStart(consensusTimestamp);
         final var allowanceTxnBody = CryptoApproveAllowanceTransactionBody.newBuilder()
                 .cryptoAllowances(cryptoAllowance)
                 .tokenAllowances(tokenAllowance)

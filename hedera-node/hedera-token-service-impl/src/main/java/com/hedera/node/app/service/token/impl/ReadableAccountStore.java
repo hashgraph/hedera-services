@@ -23,7 +23,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MODIFYING_IMMUTABLE_CON
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.PRESENT_BUT_NOT_REQUIRED;
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withFailureReason;
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
@@ -49,12 +48,8 @@ import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.pbj.runtime.io.Bytes;
-import com.hedera.pbj.runtime.io.DataBuffer;
-import com.hedera.pbj.runtime.io.DataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -187,9 +182,7 @@ public class ReadableAccountStore implements AccountAccess {
                     case UNSET -> throw new RuntimeException("Account number not set in protobuf!!");
                 };
 
-        return accountNum == null
-                ? null
-                : accountState.get(EntityNumVirtualKey.fromLong(accountNum));
+        return accountNum == null ? null : accountState.get(EntityNumVirtualKey.fromLong(accountNum));
     }
 
     /**

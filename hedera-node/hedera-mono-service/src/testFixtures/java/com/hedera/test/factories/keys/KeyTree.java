@@ -16,6 +16,8 @@
 
 package com.hedera.test.factories.keys;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
+
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.Key;
@@ -61,6 +63,10 @@ public class KeyTree {
 
     public Key asKey() {
         return asKey(KeyFactory.getDefaultInstance());
+    }
+
+    public com.hedera.hapi.node.base.Key asPbjKey(){
+        return toPbj(asKey());
     }
 
     public Key asKey(final KeyFactory factoryToUse) {

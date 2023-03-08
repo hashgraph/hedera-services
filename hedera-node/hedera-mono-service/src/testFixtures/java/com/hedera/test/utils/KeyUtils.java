@@ -16,6 +16,8 @@
 
 package com.hedera.test.utils;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
+
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.hapi.node.base.Key;
@@ -93,5 +95,25 @@ public class KeyUtils {
         } catch (Exception ignore) {
             throw new AssertionError("All keys should be mappable!");
         }
+    }
+
+    public static com.hedera.hapi.node.base.Key sanityRestoredToPbj(HederaKey jKey) {
+        try {
+            return toPbj(JKey.mapJKey((JKey) jKey));
+        } catch (Exception ignore) {
+            throw new AssertionError("All keys should be mappable!");
+        }
+    }
+
+    public static List<com.hedera.hapi.node.base.Key> sanityRestoredToPbj(List<? extends HederaKey> jKeys) {
+        return jKeys.stream()
+                .map(jKey -> {
+                    try {
+                        return toPbj(JKey.mapJKey((JKey) jKey));
+                    } catch (Exception ignore) {
+                    }
+                    throw new AssertionError("All keys should be mappable!");
+                })
+                .toList();
     }
 }

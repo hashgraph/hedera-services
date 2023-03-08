@@ -17,9 +17,9 @@
 package com.hedera.node.app.service.token.impl.serdes;
 
 import com.hedera.pbj.runtime.Codec;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import com.hedera.pbj.runtime.io.DataInput;
 import com.hedera.pbj.runtime.io.DataOutput;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 

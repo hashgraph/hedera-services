@@ -16,14 +16,13 @@
 
 package com.hedera.node.app.service.token.impl.test.serdes;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.impl.serdes.EntityNumCodec;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.hedera.pbj.runtime.io.DataInput;
 import com.hedera.pbj.runtime.io.DataOutput;
 import java.io.IOException;
@@ -42,12 +41,6 @@ class EntityNumSerdesTest {
     @Mock
     private DataOutput output;
 
-    @Mock
-    private SerializableDataInputStream in;
-
-    @Mock
-    private SerializableDataOutputStream out;
-
     final EntityNumCodec subject = new EntityNumCodec();
 
     @Test
@@ -58,7 +51,7 @@ class EntityNumSerdesTest {
 
     @Test
     void canDeserializeFromAppropriateStream() throws IOException {
-        given(in.readInt()).willReturn(SOME_NUM.intValue());
+        given(input.readInt()).willReturn(SOME_NUM.intValue());
 
         final var parsed = subject.parse(input);
 
@@ -69,12 +62,6 @@ class EntityNumSerdesTest {
     void canSerializeToAppropriateStream() throws IOException {
         subject.write(SOME_NUM, output);
 
-        verify(out).writeInt(SOME_NUM.intValue());
-    }
-
-    @Test
-    void doesntSupportOtherStreams() {
-        assertThrows(IllegalArgumentException.class, () -> subject.parse(input));
-        assertThrows(IllegalArgumentException.class, () -> subject.write(SOME_NUM, output));
+        verify(output).writeInt(SOME_NUM.intValue());
     }
 }

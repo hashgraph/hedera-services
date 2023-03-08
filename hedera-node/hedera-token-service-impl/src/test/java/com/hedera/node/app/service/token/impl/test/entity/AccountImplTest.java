@@ -24,11 +24,10 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.google.protobuf.ByteString;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.node.app.service.token.impl.entity.AccountBuilderImpl;
 import com.hedera.node.app.service.token.impl.entity.AccountImpl;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.hapi.node.base.Key;
 import com.hedera.pbj.runtime.io.Bytes;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;

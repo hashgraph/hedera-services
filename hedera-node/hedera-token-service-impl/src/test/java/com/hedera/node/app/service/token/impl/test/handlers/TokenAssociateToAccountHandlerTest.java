@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.test.factories.scenarios.TokenAssociateScenarios.TOKEN_ASSOCIATE_WITH_CUSTOM_PAYER_PAID_KNOWN_TARGET;
 import static com.hedera.test.factories.scenarios.TokenAssociateScenarios.TOKEN_ASSOCIATE_WITH_IMMUTABLE_TARGET;
 import static com.hedera.test.factories.scenarios.TokenAssociateScenarios.TOKEN_ASSOCIATE_WITH_KNOWN_TARGET;
@@ -24,8 +27,6 @@ import static com.hedera.test.factories.scenarios.TokenAssociateScenarios.TOKEN_
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CUSTOM_PAYER_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
 import static com.hedera.test.utils.KeyUtils.sanityRestored;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -50,7 +51,8 @@ class TokenAssociateToAccountHandlerTest extends ParityTestBase {
         assertFalse(context.failed());
         assertEquals(OK, context.getStatus());
         assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), Matchers.contains(MISC_ACCOUNT_KT.asKey()));
+        assertThat(
+                sanityRestored(context.getRequiredNonPayerKeys()), Matchers.contains(toPbj(MISC_ACCOUNT_KT.asKey())));
     }
 
     @Test
@@ -76,7 +78,8 @@ class TokenAssociateToAccountHandlerTest extends ParityTestBase {
         assertEquals(OK, context.getStatus());
         assertEquals(1, context.getRequiredNonPayerKeys().size());
         assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()), Matchers.contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
+                sanityRestored(context.getRequiredNonPayerKeys()),
+                Matchers.contains(toPbj(CUSTOM_PAYER_ACCOUNT_KT.asKey())));
     }
 
     @Test

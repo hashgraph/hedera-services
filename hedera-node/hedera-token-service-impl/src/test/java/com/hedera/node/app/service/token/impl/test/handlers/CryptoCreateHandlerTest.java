@@ -19,11 +19,11 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.hedera.node.app.service.token.impl.handlers.CryptoCreateHandler;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.node.app.service.token.impl.handlers.CryptoCreateHandler;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -63,8 +63,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     }
 
     private TransactionBody createAccountTransaction(final boolean receiverSigReq) {
-        final var transactionID =
-                TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
+        final var transactionID = TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
         final var createTxnBody = CryptoCreateTransactionBody.newBuilder()
                 .key(key)
                 .receiverSigRequired(receiverSigReq)
