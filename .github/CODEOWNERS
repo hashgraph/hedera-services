@@ -75,7 +75,7 @@ gradlew.bat                                     @hashgraph/release-engineering @
 **/*.gradle.*                                   @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 # Self-protection for root CODEOWNERS files (this file should not exist and should definitely require approval)
-CODEOWNERS                                      @hashgraph/release-engineering @hashgraph/release-engineering-managers
+/CODEOWNERS                                      @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 # Protect the repository root files
 /README.md                                      @hashgraph/release-engineering @hashgraph/release-engineering-managers
