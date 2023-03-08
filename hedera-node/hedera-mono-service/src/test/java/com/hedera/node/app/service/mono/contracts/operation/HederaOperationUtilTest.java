@@ -126,7 +126,6 @@ class HederaOperationUtilTest {
     @Test
     void haltsWithInvalidSolidityAddressWhenAccountSignatureCheckExecution() {
         // given:
-        given(messageFrame.getWorldUpdater()).willReturn(hederaWorldUpdater);
         given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
 
         // when:
@@ -143,8 +142,6 @@ class HederaOperationUtilTest {
         assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, result.getHaltReason());
         assertEquals(expectedHaltGas, result.getGasCost());
         // and:
-        verify(messageFrame).getWorldUpdater();
-        verify(hederaWorldUpdater).get(Address.ZERO);
         verify(gasSupplier).getAsLong();
         verify(executionSupplier, never()).get();
     }
