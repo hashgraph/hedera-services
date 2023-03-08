@@ -28,7 +28,7 @@ import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.time.Time;
 import com.swirlds.platform.components.EventCreationRules;
 import com.swirlds.platform.components.EventMapper;
-import com.swirlds.platform.components.TransactionSupplier;
+import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.GossipEvent;
 import java.util.function.Consumer;

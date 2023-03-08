@@ -17,10 +17,11 @@
 package com.hedera.node.app.state.merkle.logic;
 
 import com.hedera.node.app.service.mono.state.org.StateMetadata;
+import com.hedera.node.app.state.HederaState;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SwirldDualState;
 
 @FunctionalInterface
 public interface OnHandleConsensusRound {
-    void accept(Round round, SwirldDualState dualState, StateMetadata metadata);
+    void accept(Round round, HederaState state, SwirldDualState dualState, StateMetadata metadata);
 }
