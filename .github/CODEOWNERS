@@ -4,6 +4,7 @@
 
 # Hedera Node Root Protections
 /hedera-node/                             @hashgraph/hedera-services
+/hedera-node/README.md                    @hashgraph/hedera-services @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 # Hedera Node Deployments - Configuration & Grafana Dashboards
 /hedera-node/configuration/**             @hashgraph/release-engineering @hashgraph/devops @hashgraph/hedera-services @hashgraph/platform-hashgraph
@@ -13,15 +14,33 @@
 /hedera-node/docker/                      @hashgraph/hedera-services @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 # Hedera Node Modules
-/hedera-node/hedera-evm*/                 @hashgraph/hedera-services @hashgraph/hedera-smart-contracts
-/hedera-node/hedera-smart-contract*/      @hashgraph/hedera-services @hashgraph/hedera-smart-contracts
+/hedera-node/hedera-mono-service/         @hashgraph/hedera-services
+/hedera-node/hapi*/                       @hashgraph/hedera-services
+/hedera-node/hedera-admin*/               @hashgraph/hedera-services @kimbor @povolev15
+/hedera-node/hedera-app*/                 @hashgraph/hedera-services @hashgraph/platform-base
+/hedera-node/hedera-consensus*/           @hashgraph/hedera-services @povolev15 @iwsimon
+/hedera-node/hedera-evm*/                 @hashgraph/hedera-smart-contracts
+/hedera-node/hedera-file*/                @hashgraph/hedera-services @povolev15 @iwsimon
+/hedera-node/hedera-network*/             @hashgraph/hedera-services @kimbor @povolev15
+/hedera-node/hedera-schedule*/            @hashgraph/hedera-services @iwsimon @kimbor
+/hedera-node/hedera-smart-contract*/      @hashgraph/hedera-smart-contracts @tinker-michaelj
+/hedera-node/hedera-token*/               @hashgraph/hedera-services @mhess-swl @Neeharika-Sompalli
+/hedera-node/hedera-util*/                @hashgraph/hedera-services
+/hedera-node/hedera-staking*/             @hashgraph/hedera-services
+/hedera-node/test-clients/                @hashgraph/hedera-services
 /hedera-node/**/module-info.java          @hashgraph/hedera-services @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 #########################
 ##### Platform SDK ######
 #########################
 
-# Platform SDK General Files
+# Platform SDK Root Protections
+/platform-sdk/                            @hashgraph/platform-base @hashgraph/platform-hashgraph @hashgraph/platform-data
+/platform-sdk/README.md                   @hashgraph/platform-base @hashgraph/release-engineering @hashgraph/release-engineering-managers
+
+# Platform SDK Modules
+# TBD
+
 
 
 #########################
@@ -48,8 +67,8 @@ gradlew.bat                               @hashgraph/release-engineering @hashgr
 CODEOWNERS                                @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 # Protect the repository root files
-/*.md                                     @hashgraph/release-engineering @hashgraph/release-engineering-managers
-**/LICENSE                                   @hashgraph/release-engineering @hashgraph/release-engineering-managers
+/README.md                                @hashgraph/release-engineering @hashgraph/release-engineering-managers
+**/LICENSE                                @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 # CodeCov configuration
 **/codecov.yml                            @hashgraph/release-engineering @hashgraph/release-engineering-managers
