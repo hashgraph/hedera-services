@@ -20,7 +20,7 @@ import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -46,7 +46,7 @@ class ScheduleHandlerTestBase {
     protected AccountID payer = AccountID.newBuilder().setAccountNum(2001L).build();
 
     @Mock
-    protected AccountKeyLookup keyLookup;
+    protected AccountAccess keyLookup;
 
     @Mock
     protected HederaKey payerKey;
