@@ -45,7 +45,7 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
     private final MultiQueueThread handleThread;
 
     /**
-     * Used to the minimum generation non-ancient onto the handle queue.
+     * Used to push the minimum generation non-ancient onto the handle queue.
      */
     private final BlockingQueueInserter<Long> minimumGenerationNonAncientInserter;
 
@@ -56,9 +56,10 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
 
     /**
      * Create a new AsyncPreConsensusEventWriter.
+     *
      * @param threadManager responsible for creating new threads
-     * @param config preconsensus event stream configuration
-     * @param writer the writer to which events will be written, wrapped by this class
+     * @param config        preconsensus event stream configuration
+     * @param writer        the writer to which events will be written, wrapped by this class
      */
     public AsyncPreConsensusEventWriter(
             final ThreadManager threadManager,
@@ -153,7 +154,7 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
      * {@inheritDoc}
      */
     @Override
-    public void requestFlush(EventImpl event) {
+    public void requestFlush(final EventImpl event) {
         writer.requestFlush(event);
     }
 

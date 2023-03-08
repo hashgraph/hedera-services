@@ -155,6 +155,59 @@ class CountUpLatchTests {
 
     @ParameterizedTest
     @MethodSource("buildArguments")
+    @DisplayName("Increment On Creating Thread With Timeout Test")
+    void incrementOnCreatingThreadWithTimeoutTest(final MinMaxCount minMaxCount) throws InterruptedException {
+        final Random random = getRandomPrintSeed();
+
+        final long minCount = minMaxCount.minCount();
+        final long maxCount = minMaxCount.maxCount();
+
+        final int threadCount = 10;
+        final int waitsPerThread = 100;
+        final long maxIncrement = (maxCount - minCount) / 1000;
+
+        final AtomicBoolean error = new AtomicBoolean(false);
+        final CountDownLatch finishedLatch = new CountDownLatch(threadCount);
+
+        final CountUpLatch latch = new CountUpLatch(minCount);
+
+        // Create a bunch of threads that will wait for random counts
+        for (int threadIndex = 0; threadIndex < threadCount; threadIndex++) {
+            final Random threadRandom = new Random(random.nextLong());
+            new ThreadConfiguration(getStaticThreadManager())
+                    .setThreadName("testThread-" + threadIndex)
+                    .setInterruptableRunnable(() -> {
+                        long desiredCount = minCount;
+                        for (int iteration = 0; iteration < waitsPerThread; iteration++) {
+                            desiredCount = threadRandom.nextLong(desiredCount, maxCount);
+
+                            if (!latch.await(desiredCount, Duration.ofSeconds(1)) || latch.getCount() < desiredCount) {
+                                error.set(true);
+                                break;
+                            }
+                        }
+                        finishedLatch.countDown();
+                    })
+                    .build(true);
+        }
+
+        // Increment the count a little at a time
+        while (latch.getCount() < maxCount - maxIncrement) {
+            if (random.nextBoolean()) {
+                latch.increment();
+            } else {
+                latch.add(random.nextLong(maxIncrement));
+            }
+        }
+
+        latch.set(maxCount);
+
+        assertTrue(finishedLatch.await(1, TimeUnit.SECONDS));
+        assertFalse(error.get());
+    }
+
+    @ParameterizedTest
+    @MethodSource("buildArguments")
     @DisplayName("Increment On Another Thread Test")
     void incrementOnAnotherThreadTest(final MinMaxCount minMaxCount) throws InterruptedException {
         final Random random = getRandomPrintSeed();

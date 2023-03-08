@@ -188,6 +188,7 @@ class PreConsensusEventFileManagerTests {
 
         final long maxDelta = random.nextLong(10, 20);
         long minimumGeneration = random.nextLong(0, 1000);
+        final long nonExistentGeneration = minimumGeneration - 1;
         long maximumGeneration = random.nextLong(minimumGeneration, minimumGeneration + maxDelta);
         Instant timestamp = Instant.now();
 
@@ -215,8 +216,18 @@ class PreConsensusEventFileManagerTests {
         final PreConsensusEventFileManager manager =
                 new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
 
-        assertIteratorEquality(
-                files.iterator(), manager.getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION));
+        assertIteratorEquality(files.iterator(),
+                manager.getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION, false));
+
+        assertIteratorEquality(files.iterator(),
+                manager.getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION, true));
+
+        // attempt to start a non-existent generation
+        assertIteratorEquality(files.iterator(),
+                manager.getFileIterator(nonExistentGeneration, false));
+
+        assertThrows(IllegalStateException.class,
+                () -> manager.getFileIterator(nonExistentGeneration, true));
     }
 
     @ParameterizedTest

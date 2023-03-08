@@ -29,6 +29,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
@@ -136,7 +137,7 @@ public record PreConsensusEventFile(
      * 		if the file could not be parsed
      */
     public static PreConsensusEventFile of(final Path filePath) throws IOException {
-        throwArgNull(filePath, "filePath");
+        Objects.requireNonNull(filePath, "filePath");
 
         if (!filePath.toString().endsWith(EVENT_FILE_EXTENSION)) {
             throw new IOException("File " + filePath + " has the wrong type");

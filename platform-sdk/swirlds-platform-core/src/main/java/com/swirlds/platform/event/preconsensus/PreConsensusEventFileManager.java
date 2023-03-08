@@ -90,10 +90,9 @@ public class PreConsensusEventFileManager {
     /**
      * Instantiate an event file collection. Loads all event files in the specified directory.
      *
-     * @param time
-     * 		provides wall clock time
-     * @param configuration
-     * 		configuration for preconsensus events
+     * @param time          provides wall clock time
+     * @param configuration configuration for preconsensus events
+     * @param metrics       encapsulates metrics for the preconsensus event stream
      */
     public PreConsensusEventFileManager(
             final Time time, final PreConsensusEventStreamConfig configuration, final PreconsensusEventMetrics metrics)
@@ -138,8 +137,7 @@ public class PreConsensusEventFileManager {
     /**
      * Parse a file into a PreConsensusEventFile wrapper object.
      *
-     * @param path
-     * 		the path to the file
+     * @param path the path to the file
      * @return the wrapper object, or null if the file can't be parsed
      */
     private static PreConsensusEventFile parseFile(final Path path) {
@@ -153,11 +151,10 @@ public class PreConsensusEventFileManager {
     }
 
     /**
-     * Build a handler for new files parsed from disk. Does basic sanity checks on the files, and adds them to the
-     * file list if they are valid.
+     * Build a handler for new files parsed from disk. Does basic sanity checks on the files, and adds them to the file
+     * list if they are valid.
      *
-     * @param permitGaps
-     * 		if gaps are permitted in sequence number
+     * @param permitGaps if gaps are permitted in sequence number
      * @return the handler
      */
     private Consumer<PreConsensusEventFile> buildFileHandler(final boolean permitGaps) {
@@ -187,8 +184,8 @@ public class PreConsensusEventFileManager {
     }
 
     /**
-     * Do a sanity check on an event file parsed from disk. Throw if an irregularity is detected.
-     * Better to crash than to have an ISS due to improper event playback.
+     * Do a sanity check on an event file parsed from disk. Throw if an irregularity is detected. Better to crash than
+     * to have an ISS due to improper event playback.
      */
     private static void fileSanityChecks(
             final boolean permitGaps,
@@ -240,21 +237,19 @@ public class PreConsensusEventFileManager {
      * </p>
      *
      * <p>
-     * Note: this iterator is not thread safe when events are actively being written. A future task will be
-     * to make it thread safe. Until then, don't use this iterator while events are being written.
+     * Note: this iterator is not thread safe when events are actively being written. A future task will be to make it
+     * thread safe. Until then, don't use this iterator while events are being written.
      * </p>
      *
-     * @param minimumGeneration
-     * 		the desired minimum generation, iterator is guaranteed to walk over all files that may
-     * 		contain events with a generation greater or equal to this value. A value of {@link #NO_MINIMUM_GENERATION}
-     * 		will cause the returned iterator to walk over all available event files.
+     * @param minimumGeneration the desired minimum generation, iterator is guaranteed to walk over all files that may
+     *                          contain events with a generation greater or equal to this value. A value of
+     *                          {@link #NO_MINIMUM_GENERATION} will cause the returned iterator to walk over all
+     *                          available event files.
      * @return an iterator that walks over event files in order
      */
     public Iterator<PreConsensusEventFile> getFileIterator(final long minimumGeneration) {
         return getFileIterator(minimumGeneration, false);
     }
-
-    // TODO unit test with requireMinimumGeneration = true
 
     /**
      * <p>
@@ -262,19 +257,18 @@ public class PreConsensusEventFileManager {
      * </p>
      *
      * <p>
-     * Note: this iterator is not thread safe when events are actively being written. A future task will be
-     * to make it thread safe. Until then, don't use this iterator while events are being written.
+     * Note: this iterator is not thread safe when events are actively being written. A future task will be to make it
+     * thread safe. Until then, don't use this iterator while events are being written.
      * </p>
      *
-     * @param minimumGeneration
-     * 		the desired minimum generation, iterator is guaranteed to walk over all files that may
-     * 		contain events with a generation greater or equal to this value. A value of {@link #NO_MINIMUM_GENERATION}
-     * 		will cause the returned iterator to walk over all available event files.
-     * @param requireMinimumGeneration
-     * 		if true, then throw if data for the requested minimum generation is not
-     * 		available in the event files. If false, then the iterator will walk over
-     * 		events starting at the first generation on disk that is greater or equal
-     * 		to the requested minimum generation.
+     * @param minimumGeneration        the desired minimum generation, iterator is guaranteed to walk over all files
+     *                                 that may contain events with a generation greater or equal to this value. A value
+     *                                 of {@link #NO_MINIMUM_GENERATION} will cause the returned iterator to walk over
+     *                                 all available event files.
+     * @param requireMinimumGeneration if true, then throw if data for the requested minimum generation is not available
+     *                                 in the event files. If false, then the iterator will walk over events starting at
+     *                                 the first generation on disk that is greater or equal to the requested minimum
+     *                                 generation.
      * @return an iterator that walks over event files in order
      */
     public Iterator<PreConsensusEventFile> getFileIterator(
@@ -302,7 +296,7 @@ public class PreConsensusEventFileManager {
 
             return files.iterator(index);
         } catch (final NoSuchElementException e) {
-            if (requireMinimumGeneration) {
+            if (requireMinimumGeneration && minimumGeneration != NO_MINIMUM_GENERATION) {
                 throw new IllegalStateException(
                         "No event file contains data for the requested minimum generation: " + minimumGeneration, e);
             } else {
@@ -319,13 +313,12 @@ public class PreConsensusEventFileManager {
      * </p>
      *
      * <p>
-     * Note: this iterator is not thread safe when events are actively being written. A future task will be
-     * to make it thread safe. Until then, don't use this iterator while events are being written.
+     * Note: this iterator is not thread safe when events are actively being written. A future task will be to make it
+     * thread safe. Until then, don't use this iterator while events are being written.
      * </p>
      *
-     * @param minimumGeneration
-     * 		the minimum generation, all events in the stream with this generation or higher
-     * 		are guaranteed to be returned by the iterator.
+     * @param minimumGeneration the minimum generation, all events in the stream with this generation or higher are
+     *                          guaranteed to be returned by the iterator.
      * @return an iterator that walks over events
      */
     public PreConsensusEventMultiFileIterator getEventIterator(final long minimumGeneration) {
@@ -335,8 +328,7 @@ public class PreConsensusEventFileManager {
     /**
      * Build a function used to do a binary file search.
      *
-     * @param minimumGeneration
-     * 		the minimum generation desired by the caller
+     * @param minimumGeneration the minimum generation desired by the caller
      * @return a function for finding a starting file guaranteed for the generation requested by the user
      */
     private LongToIntFunction buildBinarySearchComparisonLambda(final long minimumGeneration) {
@@ -360,8 +352,8 @@ public class PreConsensusEventFileManager {
     }
 
     /**
-     * Create a new event file descriptor for the next event file, and start tracking it. (Note, this method
-     * doesn't actually open the file, it just permits the file to be opened by the caller.)
+     * Create a new event file descriptor for the next event file, and start tracking it. (Note, this method doesn't
+     * actually open the file, it just permits the file to be opened by the caller.)
      *
      * @return a new event file descriptor
      */
@@ -411,11 +403,10 @@ public class PreConsensusEventFileManager {
     }
 
     /**
-     * The event file writer calls this method when it finishes writing an event file.
-     * This allows metrics to be updated.
+     * The event file writer calls this method when it finishes writing an event file. This allows metrics to be
+     * updated.
      *
-     * @param file
-     * 		the file that has been completely written
+     * @param file the file that has been completely written
      */
     public void finishedWritingFile(final PreConsensusEventMutableFile file) {
         totalFileByteCount += file.fileSize();
@@ -428,13 +419,12 @@ public class PreConsensusEventFileManager {
     }
 
     /**
-     * Prune old event files. Files are pruned if they are too old AND if they do not contain events with
-     * high enough generations.
+     * Prune old event files. Files are pruned if they are too old AND if they do not contain events with high enough
+     * generations.
      *
-     * @param minimumGeneration
-     * 		the minimum generation that we need to keep in the database. It's possible that this operation won't
-     * 		delete all files with events older than this value, but this operation is guaranteed not to delete any files
-     * 		that may contain events with a higher generation.
+     * @param minimumGeneration the minimum generation that we need to keep in the database. It's possible that this
+     *                          operation won't delete all files with events older than this value, but this operation
+     *                          is guaranteed not to delete any files that may contain events with a higher generation.
      */
     public void pruneOldFiles(final long minimumGeneration) throws IOException {
         final Instant minimumTimestamp = time.now().minus(minimumRetentionPeriod);
