@@ -15,33 +15,34 @@
  */
 
 plugins {
-  id("com.swirlds.platform.conventions")
-  id("com.swirlds.platform.library")
-  id("com.swirlds.platform.maven-publish")
-  id("org.gradle.java-test-fixtures")
+    id("com.swirlds.platform.conventions")
+    id("com.swirlds.platform.library")
+    id("com.swirlds.platform.maven-publish")
+    id("org.gradle.java-test-fixtures")
 }
 
 extraJavaModuleInfo { failOnMissingModuleInfo.set(false) }
 
 dependencies {
-  // Individual Dependencies
-  implementation(project(":swirlds-common"))
-  api(testLibs.junit.jupiter.api)
+    // Individual Dependencies
+    implementation(project(":swirlds-common"))
+    api(testLibs.junit.jupiter.api)
+    compileOnly(libs.spotbugs.annotations)
 
-  // Test Dependencies
+    // Test Dependencies
 
-  // These should not be implementation() based deps, but this requires refactoring to eliminate.
-  implementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
+    // These should not be implementation() based deps, but this requires refactoring to eliminate.
+    implementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
 
-  testImplementation(libs.bundles.logging.impl)
-  testImplementation(testLibs.bundles.junit)
-  testImplementation(testLibs.bundles.mocking)
-  testImplementation(testLibs.bundles.utils)
-  testImplementation(project(":swirlds-config-impl"))
-  testImplementation(testFixtures(project(":swirlds-common")))
+    testImplementation(libs.bundles.logging.impl)
+    testImplementation(testLibs.bundles.junit)
+    testImplementation(testLibs.bundles.mocking)
+    testImplementation(testLibs.bundles.utils)
+    testImplementation(project(":swirlds-config-impl"))
+    testImplementation(testFixtures(project(":swirlds-common")))
 
-  testImplementation(libs.prometheus.httpserver) {
-    exclude("io.prometheus", "simpleclient_tracer_otel")
-    exclude("io.prometheus", "simpleclient_tracer_otel_agent")
-  }
+    testImplementation(libs.prometheus.httpserver) {
+        exclude("io.prometheus", "simpleclient_tracer_otel")
+        exclude("io.prometheus", "simpleclient_tracer_otel_agent")
+    }
 }

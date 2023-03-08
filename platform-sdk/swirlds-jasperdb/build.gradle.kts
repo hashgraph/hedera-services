@@ -15,24 +15,25 @@
  */
 
 plugins {
-  id("com.swirlds.platform.conventions")
-  id("com.swirlds.platform.library")
-  id("com.swirlds.platform.maven-publish")
-  id("com.swirlds.platform.benchmark-conventions")
+    id("com.swirlds.platform.conventions")
+    id("com.swirlds.platform.library")
+    id("com.swirlds.platform.maven-publish")
+    id("com.swirlds.platform.benchmark-conventions")
 }
 
 dependencies {
-  // Individual Dependencies
-  api(project(":swirlds-virtualmap"))
-  api(project(":swirlds-config-api"))
+    // Individual Dependencies
+    api(project(":swirlds-virtualmap"))
+    api(project(":swirlds-config-api"))
+    compileOnly(libs.spotbugs.annotations)
 
-  // Bundle Dependencies
-  implementation(libs.bundles.eclipse)
+    // Bundle Dependencies
+    implementation(libs.bundles.eclipse)
 
-  // Test Dependencies
-  testImplementation(project(":swirlds-config-impl"))
-  testImplementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
-  testImplementation(project(":swirlds-unit-tests:common:swirlds-common-test"))
-  testImplementation(testLibs.bundles.junit)
-  testImplementation(testLibs.bundles.mocking)
+    // Test Dependencies
+    testImplementation(project(":swirlds-config-impl"))
+    testImplementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
+    testImplementation(project(":swirlds-unit-tests:common:swirlds-common-test"))
+    testImplementation(testLibs.bundles.junit)
+    testImplementation(testLibs.bundles.mocking)
 }

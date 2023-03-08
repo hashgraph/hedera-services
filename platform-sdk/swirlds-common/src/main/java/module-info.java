@@ -181,4 +181,6 @@ module com.swirlds.common {
     /* Prometheus Java client */
     requires io.prometheus.simpleclient;
     requires io.prometheus.simpleclient.httpserver;
+
+    requires static com.github.spotbugs.annotations;
 }

@@ -15,12 +15,13 @@
  */
 
 plugins {
-  id("com.swirlds.platform.conventions")
-  id("com.swirlds.platform.library")
-  id("com.swirlds.platform.maven-publish")
+    id("com.swirlds.platform.conventions")
+    id("com.swirlds.platform.library")
+    id("com.swirlds.platform.maven-publish")
 }
 
 dependencies {
-  // Test Dependencies
-  testImplementation(testLibs.bundles.junit)
+    // Test Dependencies
+    testImplementation(testLibs.bundles.junit)
+    compileOnly(libs.spotbugs.annotations)
 }

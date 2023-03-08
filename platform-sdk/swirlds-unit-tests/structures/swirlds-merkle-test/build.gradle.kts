@@ -15,24 +15,25 @@
  */
 
 plugins {
-  id("com.swirlds.platform.conventions")
-  id("com.swirlds.platform.library")
+    id("com.swirlds.platform.conventions")
+    id("com.swirlds.platform.library")
 }
 
 dependencies {
-  // Individual Dependencies
-  implementation(project(":swirlds-merkle"))
+    // Individual Dependencies
+    implementation(project(":swirlds-merkle"))
+    compileOnly(libs.spotbugs.annotations)
 
-  // Bundle Dependencies
-  implementation(libs.bundles.logging.impl)
+    // Bundle Dependencies
+    implementation(libs.bundles.logging.impl)
 
-  // Test Dependencies
+    // Test Dependencies
 
-  // These should not be implementation() based deps, but this requires refactoring to eliminate.
-  implementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
-  implementation(project(":swirlds-unit-tests:common:swirlds-common-test"))
-  implementation(testLibs.junit.jupiter.api)
+    // These should not be implementation() based deps, but this requires refactoring to eliminate.
+    implementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
+    implementation(project(":swirlds-unit-tests:common:swirlds-common-test"))
+    implementation(testLibs.junit.jupiter.api)
 
-  testImplementation(libs.commons.io)
-  testImplementation(testLibs.bundles.junit)
+    testImplementation(libs.commons.io)
+    testImplementation(testLibs.bundles.junit)
 }

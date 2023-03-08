@@ -15,14 +15,15 @@
  */
 
 plugins {
-  id("com.swirlds.platform.conventions")
-  id("com.swirlds.platform.library")
-  id("com.swirlds.platform.benchmark-conventions")
+    id("com.swirlds.platform.conventions")
+    id("com.swirlds.platform.library")
+    id("com.swirlds.platform.benchmark-conventions")
 }
 
 dependencies {
-  // Individual Dependencies
-  implementation(project(":swirlds-config-impl"))
+    // Individual Dependencies
+    implementation(project(":swirlds-config-impl"))
+    compileOnly(libs.spotbugs.annotations)
 }
 
 tasks.withType<Javadoc>() { enabled = false }
