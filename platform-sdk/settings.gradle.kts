@@ -20,6 +20,8 @@ rootProject.name = "swirlds-platform"
 
 include(":swirlds")
 
+include(":swirlds-base")
+
 include(":swirlds-logging")
 
 include(":swirlds-common")
