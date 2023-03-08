@@ -100,7 +100,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.inject.Singleton;
 
-@Module(includes = HandleLogicModule.class)
+@Module(includes = {HandleLogicModule.class})
 public interface StateModule {
 
     interface ConsoleCreator {

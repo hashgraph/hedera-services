@@ -21,6 +21,7 @@ import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileChannel;
@@ -29,13 +30,13 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * The aim for a DataFileReader is to facilitate fast highly concurrent random reading of items from a data file. It is
- * designed to be used concurrently from many threads.
+ * The aim for a DataFileReader is to facilitate fast highly concurrent random reading of items from
+ * a data file. It is designed to be used concurrently from many threads.
  *
- * @param <D>
- * 		Data item type
+ * @param <D> Data item type
  */
 @SuppressWarnings({"DuplicatedCode", "NullableProblems"})
 public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFileReader<D>>, IndexedObject {
@@ -49,21 +50,19 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
     private final DataFileMetadata metadata;
     /** Serializer for converting raw data to/from data items */
     private final DataItemSerializer<D> dataItemSerializer;
+    /** A flag for if the underlying file is fully written and ready to be compacted. */
+    private final AtomicBoolean fileCompleted = new AtomicBoolean(false);
     /**
-     * Flag for if this file can be included in merging, it defaults to false and has to be set to true by file writing
-     * and merging after updating any indexes. But the file can still be read from during that time.
+     * The size of this file in bytes, cached as need it often. This size is updated in {@link
+     * #setFileCompleted()}, which is called for existing files right after the reader is created,
+     * and for newly created files right after they are fully written and available to compact.
      */
-    private final AtomicBoolean fileAvailableForMerging = new AtomicBoolean(false);
-    /** The size of this file in bytes, cached as need it often, and it's constant as file is immutable. */
-    private final long fileSizeBytes;
-
+    private final AtomicLong fileSizeBytes = new AtomicLong(0);
     /**
      * Open an existing data file, reading the metadata from the file
      *
-     * @param path
-     * 		the path to the data file
-     * @param dataItemSerializer
-     * 		Serializer for converting raw data to/from data items
+     * @param path the path to the data file
+     * @param dataItemSerializer Serializer for converting raw data to/from data items
      */
     public DataFileReader(final Path path, final DataItemSerializer<D> dataItemSerializer) throws IOException {
         this(path, dataItemSerializer, new DataFileMetadata(path));
@@ -72,12 +71,9 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
     /**
      * Open an existing data file, using the provided metadata
      *
-     * @param path
-     * 		the path to the data file
-     * @param dataItemSerializer
-     * 		Serializer for converting raw data to/from data items
-     * @param metadata
-     * 		the file's metadata to save loading from file
+     * @param path the path to the data file
+     * @param dataItemSerializer Serializer for converting raw data to/from data items
+     * @param metadata the file's metadata to save loading from file
      */
     public DataFileReader(
             final Path path, final DataItemSerializer<D> dataItemSerializer, final DataFileMetadata metadata)
@@ -90,26 +86,31 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
         this.metadata = metadata;
         this.dataItemSerializer = dataItemSerializer;
         this.fileChannel = FileChannel.open(path, StandardOpenOption.READ);
-        this.fileSizeBytes = this.fileChannel.size();
     }
 
     /**
-     * Get fileAvailableForMerging a flag for if this file can be included in merging.
+     * Returns if this file is completed and ready to be compacted.
      *
-     * @return if true the file can be included in merging, false then it can not be included
+     * @return if true the file is completed (read only and ready to compact)
      */
-    public boolean getFileAvailableForMerging() {
-        return fileAvailableForMerging.get();
+    public boolean isFileCompleted() {
+        return fileCompleted.get();
     }
 
     /**
-     * Set fileAvailableForMerging a flag for if this file can be included in merging.
-     *
-     * @param newValue
-     * 		When true the file can be included in merging, false then it can not be included
+     * Marks the reader as completed, so it can be included into future compactions. If the reader
+     * is created for an existing file, it's usually marked as completed immediately. If the reader
+     * is created for a new file, which is still being written in a different thread, it's marked as
+     * completed right after the file is fully written and the writer is closed.
      */
-    public void setFileAvailableForMerging(boolean newValue) {
-        fileAvailableForMerging.set(newValue);
+    public void setFileCompleted() {
+        try {
+            fileSizeBytes.set(fileChannel.size());
+        } catch (final IOException e) {
+            throw new UncheckedIOException("Failed to update data file reader size", e);
+        } finally {
+            fileCompleted.set(true);
+        }
     }
 
     /**
@@ -122,27 +123,23 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
         return metadata.getIndex();
     }
 
-    /**
-     * Get the files metadata
-     */
+    /** Get the files metadata */
     public DataFileMetadata getMetadata() {
         return metadata;
     }
 
-    /**
-     * Get the path to this data file
-     */
+    /** Get the path to this data file */
     public Path getPath() {
         return path;
     }
 
     /**
-     * Create an iterator to iterate over the data items in this data file. It opens its own file handle so can be used
-     * in a separate thread. It must therefore be closed when you are finished with it.
+     * Create an iterator to iterate over the data items in this data file. It opens its own file
+     * handle so can be used in a separate thread. It must therefore be closed when you are finished
+     * with it.
      *
      * @return new data item iterator
-     * @throws IOException
-     * 		if there was a problem creating a new DataFileIterator
+     * @throws IOException if there was a problem creating a new DataFileIterator
      */
     public DataFileIterator createIterator() throws IOException {
         return new DataFileIterator(path, metadata, dataItemSerializer);
@@ -151,32 +148,32 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
     /**
      * Read a data item from file at dataLocation.
      *
-     * @param dataLocation
-     * 		The file index combined with the offset for the starting block of the data in the file
-     * @throws IOException
-     * 		If there was a problem reading from data file
-     * @throws ClosedChannelException
-     * 		if the data file was closed
+     * @param dataLocation The file index combined with the offset for the starting block of the
+     *     data in the file
+     * @throws IOException If there was a problem reading from data file
+     * @throws ClosedChannelException if the data file was closed
      */
     public D readDataItem(final long dataLocation) throws IOException {
         return readDataItem(dataLocation, true);
     }
 
     /**
-     * Read data item bytes from file at dataLocation and deserialize them into the Java object, if requested.
+     * Read data item bytes from file at dataLocation and deserialize them into the Java object, if
+     * requested.
      *
-     * @param dataLocation
-     * 		The file index combined with the offset for the starting block of the data in the file
-     * @param deserialize
-     * 		A flag to avoid deserialization cost
-     * @return
-     * 		Deserialized data item, or {@code null} if deserialization is not requested
-     * @throws IOException
-     * 		If there was a problem reading from data file
-     * @throws ClosedChannelException
-     * 		if the data file was closed
+     * @param dataLocation The file index combined with the offset for the starting block of the
+     *     data in the file
+     * @param deserialize A flag to avoid deserialization cost
+     * @return Deserialized data item, or {@code null} if deserialization is not requested
+     * @throws IOException If there was a problem reading from data file
+     * @throws ClosedChannelException if the data file was closed
      */
     public D readDataItem(final long dataLocation, final boolean deserialize) throws IOException {
+        final ByteBuffer data = readDataItemBytes(dataLocation);
+        return deserialize ? dataItemSerializer.deserialize(data, metadata.getSerializationVersion()) : null;
+    }
+
+    public ByteBuffer readDataItemBytes(final long dataLocation) throws IOException {
         final long byteOffset = DataFileCommon.byteOffsetFromDataLocation(dataLocation);
         final int bytesToRead;
         if (dataItemSerializer.isVariableSize()) {
@@ -187,22 +184,20 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
         } else {
             bytesToRead = dataItemSerializer.getSerializedSize();
         }
-        final ByteBuffer data = read(byteOffset, bytesToRead);
-        return deserialize ? dataItemSerializer.deserialize(data, metadata.getSerializationVersion()) : null;
+        return read(byteOffset, bytesToRead);
     }
 
     /**
-     * Get the size of this file in bytes
+     * Get the size of this file in bytes. This method should only be called for files available to
+     * merging (compaction), i.e. after they are fully written.
      *
      * @return file size in bytes
      */
     public long getSize() {
-        return fileSizeBytes;
+        return fileSizeBytes.get();
     }
 
-    /**
-     * Equals for use when comparing in collections, based on matching file paths
-     */
+    /** Equals for use when comparing in collections, based on matching file paths */
     @SuppressWarnings("rawtypes")
     @Override
     public boolean equals(final Object o) {
@@ -216,17 +211,13 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
         return path.equals(that.path);
     }
 
-    /**
-     * hashCode for use when comparing in collections, based on file path
-     */
+    /** hashCode for use when comparing in collections, based on file path */
     @Override
     public int hashCode() {
         return path.hashCode();
     }
 
-    /**
-     * Compares this Data File to another based on creation date and index
-     */
+    /** Compares this Data File to another based on creation date and index */
     @Override
     public int compareTo(final DataFileReader o) {
         Objects.requireNonNull(o);
@@ -254,9 +245,7 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
         return fileChannel != null && fileChannel.isOpen();
     }
 
-    /**
-     * Close this data file, it can not be used once closed.
-     */
+    /** Close this data file, it can not be used once closed. */
     public void close() throws IOException {
         fileChannel.close();
     }
@@ -265,20 +254,16 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
     // Private methods
 
     /**
-     * Read bytesToRead bytes of data from the file starting at byteOffsetInFile unless we reach the end of file. If we
-     * reach the end of file then returned buffer's limit will be set to the number of bytes read and be less than
-     * bytesToRead.
+     * Read bytesToRead bytes of data from the file starting at byteOffsetInFile unless we reach the
+     * end of file. If we reach the end of file then returned buffer's limit will be set to the
+     * number of bytes read and be less than bytesToRead.
      *
-     * @param byteOffsetInFile
-     * 		Offset to start reading at
-     * @param bytesToRead
-     * 		Number of bytes to read
-     * @return ByteBuffer containing read data. This is a reused per thread buffer, so you can use it till your thread
-     * 		calls read again.
-     * @throws IOException
-     * 		if there was a problem reading
-     * @throws ClosedChannelException
-     * 		if the file was closed
+     * @param byteOffsetInFile Offset to start reading at
+     * @param bytesToRead Number of bytes to read
+     * @return ByteBuffer containing read data. This is a reused per thread buffer, so you can use
+     *     it till your thread calls read again.
+     * @throws IOException if there was a problem reading
+     * @throws ClosedChannelException if the file was closed
      */
     private ByteBuffer read(final long byteOffsetInFile, final int bytesToRead) throws IOException {
         // get or create cached buffer

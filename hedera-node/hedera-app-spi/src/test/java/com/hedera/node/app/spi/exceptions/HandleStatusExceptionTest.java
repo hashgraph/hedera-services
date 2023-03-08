@@ -28,4 +28,30 @@ class HandleStatusExceptionTest {
 
         assertEquals(MEMO_TOO_LONG, ex.getStatus());
     }
+
+    @Test
+    void trueIsntProblematic() {
+        assertDoesNotThrow(() -> HandleStatusException.validateTrue(true, MEMO_TOO_LONG));
+    }
+
+    @Test
+    void falseIsProblem() {
+        final var failure = assertThrows(
+                HandleStatusException.class, () -> HandleStatusException.validateTrue(false, MEMO_TOO_LONG));
+
+        assertEquals(MEMO_TOO_LONG, failure.getStatus());
+    }
+
+    @Test
+    void trueIsProblemFromOtherPerspective() {
+        final var failure = assertThrows(
+                HandleStatusException.class, () -> HandleStatusException.validateFalse(true, MEMO_TOO_LONG));
+
+        assertEquals(MEMO_TOO_LONG, failure.getStatus());
+    }
+
+    @Test
+    void falseIsOkFromOtherPerspective() {
+        assertDoesNotThrow(() -> HandleStatusException.validateFalse(false, MEMO_TOO_LONG));
+    }
 }

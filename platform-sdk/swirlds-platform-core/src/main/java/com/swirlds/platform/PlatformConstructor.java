@@ -21,6 +21,7 @@ import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.config.CryptoConfig;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
@@ -32,8 +33,9 @@ import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
-import com.swirlds.platform.components.SystemTransactionHandler;
 import com.swirlds.platform.components.common.output.RoundAppliedToStateConsumer;
+import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
@@ -148,20 +150,23 @@ final class PlatformConstructor {
     /**
      * Creates a new instance of {@link SwirldStateManager}.
      *
-     * @param threadManager            responsible for creating and managing threads
-     * @param selfId                   this node's id
-     * @param systemTransactionHandler the handler of system transactions
-     * @param metrics                  reference to the metrics-system
-     * @param settings                 static settings provider
-     * @param consEstimateSupplier     supplier of an estimated consensus time for transactions
-     * @param initialState             the initial state
+     * @param threadManager                         responsible for creating and managing threads
+     * @param selfId                                this node's id
+     * @param preConsensusSystemTransactionManager  the manager which handles system transactions pre-consensus
+     * @param postConsensusSystemTransactionManager the manager which handles system transactions post-consensus
+     * @param metrics                               reference to the metrics-system
+     * @param settings                              static settings provider
+     * @param consEstimateSupplier                  supplier of an estimated consensus time for transactions
+     * @param initialState                          the initial state
      * @return the newly constructed instance of {@link SwirldStateManager}
      */
     static SwirldStateManager swirldStateManager(
             final ThreadManager threadManager,
             final NodeId selfId,
-            final SystemTransactionHandler systemTransactionHandler,
-            final PlatformContext platformContext,
+            @NonNull final PlatformContext platformContext,
+            final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager,
+            final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager,
+            final Metrics metrics,
             final SettingsProvider settings,
             final Supplier<Instant> consEstimateSupplier,
             final BooleanSupplier inFreezeChecker,
@@ -170,8 +175,9 @@ final class PlatformConstructor {
         if (initialState.getSwirldState() instanceof SwirldState2) {
             return new SwirldStateManagerDouble(
                     selfId,
-                    systemTransactionHandler,
-                    new SwirldStateMetrics(platformContext.getMetrics()),
+                    preConsensusSystemTransactionManager,
+                    postConsensusSystemTransactionManager,
+                    new SwirldStateMetrics(metrics),
                     settings,
                     inFreezeChecker,
                     initialState);
@@ -179,10 +185,11 @@ final class PlatformConstructor {
             return new SwirldStateManagerSingle(
                     threadManager,
                     selfId,
-                    systemTransactionHandler,
                     platformContext,
-                    new SwirldStateMetrics(platformContext.getMetrics()),
-                    new ConsensusMetricsImpl(selfId, platformContext.getMetrics()),
+                    preConsensusSystemTransactionManager,
+                    postConsensusSystemTransactionManager,
+                    new SwirldStateMetrics(metrics),
+                    new ConsensusMetricsImpl(selfId, metrics),
                     settings,
                     consEstimateSupplier,
                     inFreezeChecker,
@@ -199,6 +206,7 @@ final class PlatformConstructor {
      *
      * @param threadManager      responsible for creating and managing threads
      * @param selfId             this node's id
+     * @param platformContext    the platform context
      * @param swirldStateManager the instance of {@link SwirldStateManager}
      * @param consensusMetrics   the class that records stats relating to {@link SwirldStateManager}
      * @return the newly constructed instance of {@link PreConsensusEventHandler}
