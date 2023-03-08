@@ -133,7 +133,6 @@ class HederaStaticCallOperationTest {
         given(addressValidator.test(any(), any())).willReturn(true);
 
         given(evmMsgFrame.getRecipientAddress()).willReturn(Address.ALTBN128_ADD);
-        given(evmMsgFrame.isStatic()).willReturn(true);
 
         var opRes = subject.execute(evmMsgFrame, evm);
         assertNull(opRes.getHaltReason());
