@@ -44,7 +44,7 @@ public class UpdateTrackingAccount<A extends Account> implements MutableAccount,
     private Wei balance;
     private HederaEvmEntityAccess hederaEvmEntityAccess;
     private boolean storageWasCleared = false;
-    private final UpdatedAccountTracker trackingAccounts;
+    private final UpdatedAccountTracker updatedAccountTracker;
     private final NavigableMap<UInt256, UInt256> updatedStorage;
 
     @Nullable
@@ -56,7 +56,7 @@ public class UpdateTrackingAccount<A extends Account> implements MutableAccount,
     @Nullable
     private Hash updatedCodeHash;
 
-    public UpdateTrackingAccount(final Address address, @Nullable final UpdatedAccountTracker trackingAccounts) {
+    public UpdateTrackingAccount(final Address address, @Nullable final UpdatedAccountTracker updatedAccountTracker) {
         Preconditions.checkNotNull(address);
         this.address = address;
         addressHash = Hash.hash(address);
@@ -65,18 +65,18 @@ public class UpdateTrackingAccount<A extends Account> implements MutableAccount,
         nonce = 0L;
         updatedCode = Bytes.EMPTY;
         updatedStorage = new TreeMap<>();
-        this.trackingAccounts = trackingAccounts;
+        this.updatedAccountTracker = updatedAccountTracker;
     }
 
     @SuppressWarnings("unchecked")
-    public UpdateTrackingAccount(final A account, @Nullable final UpdatedAccountTracker trackingAccounts) {
+    public UpdateTrackingAccount(final A account, @Nullable final UpdatedAccountTracker updatedAccountTracker) {
         Preconditions.checkNotNull(account);
         this.account = account;
         address = account.getAddress();
         this.addressHash = account instanceof UpdateTrackingAccount
                 ? ((UpdateTrackingAccount<A>) account).addressHash
                 : Hash.hash(account.getAddress());
-        this.trackingAccounts = trackingAccounts;
+        this.updatedAccountTracker = updatedAccountTracker;
         balance = account.getBalance();
         nonce = account.getNonce();
         updatedStorage = new TreeMap<>();
@@ -144,8 +144,8 @@ public class UpdateTrackingAccount<A extends Account> implements MutableAccount,
     @Override
     public void setBalance(final Wei value) {
         balance = value;
-        if (trackingAccounts != null) {
-            trackingAccounts.setBalance(address, value.toLong());
+        if (updatedAccountTracker != null) {
+            updatedAccountTracker.setBalance(address, value.toLong());
         }
     }
 
@@ -260,6 +260,6 @@ public class UpdateTrackingAccount<A extends Account> implements MutableAccount,
     }
 
     public UpdatedAccountTracker getAccountTracker() {
-        return trackingAccounts;
+        return updatedAccountTracker;
     }
 }
