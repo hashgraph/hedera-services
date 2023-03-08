@@ -16,7 +16,9 @@
 
 package com.swirlds.platform;
 
+import static com.swirlds.virtualmap.DefaultVirtualMapSettings.DEFAULT_COPY_FLUSH_THRESHOLD;
 import static com.swirlds.virtualmap.DefaultVirtualMapSettings.DEFAULT_FLUSH_INTERVAL;
+import static com.swirlds.virtualmap.DefaultVirtualMapSettings.DEFAULT_TOTAL_FLUSH_THRESHOLD;
 import static com.swirlds.virtualmap.DefaultVirtualMapSettings.DEFAULT_FLUSH_THROTTLE_STEP_SIZE;
 import static com.swirlds.virtualmap.DefaultVirtualMapSettings.DEFAULT_MAXIMUM_FLUSH_THROTTLE_PERIOD;
 import static com.swirlds.virtualmap.DefaultVirtualMapSettings.DEFAULT_MAXIMUM_VIRTUAL_MAP_SIZE;
@@ -51,7 +53,9 @@ public class VirtualMapSettingsImpl extends SubSetting implements VirtualMapSett
     public long maximumVirtualMapSize = DEFAULT_MAXIMUM_VIRTUAL_MAP_SIZE;
     public long virtualMapWarningThreshold = DEFAULT_VIRTUAL_MAP_WARNING_THRESHOLD;
     public long virtualMapWarningInterval = DEFAULT_VIRTUAL_MAP_WARNING_INTERVAL;
+    public long copyFlushThreshold = DEFAULT_COPY_FLUSH_THRESHOLD;
     public int flushInterval = DEFAULT_FLUSH_INTERVAL;
+    public long totalFlushThreshold = DEFAULT_TOTAL_FLUSH_THRESHOLD;
     public int preferredFlushQueueSize = DEFAULT_PREFERRED_FLUSH_QUEUE_SIZE;
     public Duration flushThrottleStepSize = DEFAULT_FLUSH_THROTTLE_STEP_SIZE;
     public Duration maximumFlushThrottlePeriod = DEFAULT_MAXIMUM_FLUSH_THROTTLE_PERIOD;
@@ -170,6 +174,18 @@ public class VirtualMapSettingsImpl extends SubSetting implements VirtualMapSett
      * {@inheritDoc}
      */
     @Override
+    public long getCopyFlushThreshold() {
+        return copyFlushThreshold;
+    }
+
+    public void setCopyFlushThreshold(final long flushThreshold) {
+        this.copyFlushThreshold = flushThreshold;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public int getFlushInterval() {
         return flushInterval;
     }
@@ -179,6 +195,18 @@ public class VirtualMapSettingsImpl extends SubSetting implements VirtualMapSett
             throw new IllegalArgumentException("Cannot configure flushInterval=" + flushInterval);
         }
         this.flushInterval = flushInterval;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public long getTotalFlushThreshold() {
+        return totalFlushThreshold;
+    }
+
+    public void setTotalFlushThreshold(final long flushThreshold) {
+        this.totalFlushThreshold = flushThreshold;
     }
 
     /**

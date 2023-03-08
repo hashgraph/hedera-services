@@ -236,7 +236,7 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
      * If true, then this copy of {@link VirtualRootNode} should eventually be flushed to disk. A heuristic is
      * used to determine which copy is flushed.
      */
-    private boolean shouldBeFlushed;
+    private final AtomicBoolean shouldBeFlushed = new AtomicBoolean(false);
 
     /**
      * This latch is used to implement {@link #waitUntilFlushed()}.
@@ -322,7 +322,6 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
         this.fastCopyVersion = 0;
         this.cache = new VirtualNodeCache<>();
         this.hasher = new VirtualHasher<>();
-        this.shouldBeFlushed = false;
         this.dataSourceBuilder = enforce ? Objects.requireNonNull(dataSourceBuilder) : dataSourceBuilder;
     }
 
@@ -355,7 +354,6 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
         // These three will be set in postInit. This is very unfortunate, but stems from the
         // way serialization / deserialization are implemented which requires partially constructed objects.
         this.state = null;
-        this.shouldBeFlushed = false;
         this.records = null;
 
         this.statistics = source.statistics;
@@ -376,7 +374,11 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
         }
 
         this.state = Objects.requireNonNull(state);
-        this.shouldBeFlushed = fastCopyVersion != 0 && fastCopyVersion % settings.getFlushInterval() == 0;
+        final long flushThreshold = settings.getTotalFlushThreshold();
+        if (flushThreshold <= 0) {
+            // If flush threshold is not set, use flush interval
+            this.shouldBeFlushed.set(fastCopyVersion != 0 && fastCopyVersion % settings.getFlushInterval() == 0);
+        }
         if (this.dataSourceBuilder != null && this.dataSource == null) {
             this.dataSource = this.dataSourceBuilder.build(state.getLabel(), true);
         }
@@ -831,6 +833,7 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
         if (statistics != null) {
             statistics.recordMergeLatency(end - (double) start);
         }
+        logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "Merged in {} ms", end - start);
     }
 
     /**
@@ -849,14 +852,14 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
      * If called, this copy of the map will eventually be flushed.
      */
     public void enableFlush() {
-        this.shouldBeFlushed = true;
+        this.shouldBeFlushed.set(true);
     }
 
     /**
      * {@inheritDoc}
      */
     public boolean shouldBeFlushed() {
-        return shouldBeFlushed;
+        return shouldBeFlushed.get();
     }
 
     /**
@@ -940,6 +943,16 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
             logger.error(EXCEPTION.getMarker(), "Error while flushing VirtualMap", ex);
             throw new UncheckedIOException(ex);
         }
+    }
+
+    @Override
+    public long estimatedSize() {
+        final long estimatedDirtyLeavesCount =
+                cache.estimatedDirtyLeavesCount(state.getFirstLeafPath(), state.getLastLeafPath());
+        final long estimatedInternalsCount = cache.estimatedInternalsCount(state.getFirstLeafPath());
+        final long estimatedFlushSize = dataSource.estimatedSize(
+                estimatedInternalsCount, estimatedDirtyLeavesCount, 0);
+        return estimatedFlushSize;
     }
 
     /*

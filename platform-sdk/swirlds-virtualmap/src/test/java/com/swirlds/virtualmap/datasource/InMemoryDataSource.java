@@ -16,6 +16,7 @@
 
 package com.swirlds.virtualmap.datasource;
 
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.virtualmap.VirtualKey;
@@ -368,5 +369,11 @@ public class InMemoryDataSource<K extends VirtualKey<? super K>, V extends Virtu
             this.keyToPathMap.remove(rec.getKey());
             this.leafRecords.remove(rec.getPath());
         }
+    }
+
+    @Override
+    public long estimatedSize(final long dirtyInternals, final long dirtyLeaves, final long deletedLeaves) {
+        // It doesn't have to be very precise as this data source is used for testing purposed only
+        return dirtyInternals * (Long.BYTES + DigestType.SHA_384.digestLength()) + dirtyLeaves * 1024;
     }
 }

@@ -55,19 +55,6 @@ public interface KeySerializer<K extends VirtualKey<?>> extends BaseSerializer<K
     }
 
     /**
-     * For variable sized keys get the typical number of bytes a key takes when serialized.
-     *
-     * @return Either for fixed size same as getSerializedSize() or an estimated typical size for
-     *     keys
-     */
-    default int getTypicalSerializedSize() {
-        if (isVariableSize()) {
-            throw new IllegalStateException("Variable sized implementations have to override this method");
-        }
-        return getSerializedSize();
-    }
-
-    /**
      * Deserialize key size from the given byte buffer
      *
      * @param buffer The byte buffer to read from

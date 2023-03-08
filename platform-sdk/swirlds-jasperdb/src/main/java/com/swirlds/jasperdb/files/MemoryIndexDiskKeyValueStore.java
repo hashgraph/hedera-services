@@ -133,6 +133,10 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
                 storeDir, storeName, legacyStoreName, dataItemSerializer, combinedLoadedDataCallback);
     }
 
+    public DataItemSerializer<D> getSerializer() {
+        return fileCollection.getDataItemSerializer();
+    }
+
     /**
      * Merge all files that match the given filter
      *

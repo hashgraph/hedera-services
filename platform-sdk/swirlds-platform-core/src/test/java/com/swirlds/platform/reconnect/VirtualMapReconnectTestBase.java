@@ -345,14 +345,23 @@ public abstract class VirtualMapReconnectTestBase {
         }
 
         @Override
-        public void copyStatisticsFrom(final VirtualDataSource<TestKey, TestValue> that) {}
+        public void copyStatisticsFrom(final VirtualDataSource<TestKey, TestValue> that) {
+            delegate.copyStatisticsFrom(that);
+        }
 
         @Override
-        public void registerMetrics(final Metrics metrics) {}
+        public void registerMetrics(final Metrics metrics) {
+            delegate.registerMetrics(metrics);
+        }
 
         @Override
         public VirtualKeySet<TestKey> buildKeySet() {
             return delegate.buildKeySet();
+        }
+
+        @Override
+        public long estimatedSize(final long dirtyInternals, final long dirtyLeaves, final long deletedLeaves) {
+            return delegate.estimatedSize(dirtyInternals, dirtyLeaves, deletedLeaves);
         }
     }
 }

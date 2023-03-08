@@ -281,14 +281,6 @@ public class ExampleLongKeyVariableSize implements VirtualLongKey {
 
         /** {@inheritDoc} */
         @Override
-        public void serialize(final SerializableDataOutputStream out) throws IOException {}
-
-        /** {@inheritDoc} */
-        @Override
-        public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {}
-
-        /** {@inheritDoc} */
-        @Override
         public int hashCode() {
             return super.hashCode();
         }

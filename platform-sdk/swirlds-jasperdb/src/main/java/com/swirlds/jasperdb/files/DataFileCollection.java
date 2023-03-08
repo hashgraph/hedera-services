@@ -224,6 +224,10 @@ public class DataFileCollection<D> implements Snapshotable {
         }
     }
 
+    DataItemSerializer<D> getDataItemSerializer() {
+        return dataItemSerializer;
+    }
+
     /**
      * Get the valid range of keys for data items currently stored by this data file collection. Any data items with
      * keys below this can be deleted during a merge.

@@ -60,6 +60,10 @@ import java.time.Duration;
  * 		The interval between flushing of copies. This value defines the value of N where every Nth copy is flushed. The
  * 		value must be positive and will typically be a fairly small number, such as 20. The first copy is not flushed,
  * 		but every Nth copy thereafter is.
+ * @param copyFlushThreshold
+ *      Copy flush threshold
+ * @param totalFlushThreshold
+ *      Total flush threshold
  * @param preferredFlushQueueSize
  * 		The preferred maximum number of virtual maps waiting to be flushed. If more maps than this number are awaiting
  * 		flushing then slow down fast copies of the virtual map so that flushing can catch up.
@@ -83,6 +87,8 @@ public record VirtualMapConfig(
         @ConstraintMethod("virtualMapWarningIntervalValidation") @Min(1) @ConfigProperty(defaultValue = "100000")
                 long virtualMapWarningInterval,
         @Min(1) @ConfigProperty(defaultValue = "20") int flushInterval,
+        @ConfigProperty(defaultValue = "500000000") long copyFlushThreshold,
+        @ConfigProperty(defaultValue = "2500000000") long totalFlushThreshold,
         @ConfigProperty(defaultValue = "2") int preferredFlushQueueSize,
         @ConfigProperty(defaultValue = "200ms") Duration flushThrottleStepSize,
         @ConfigProperty(defaultValue = "5s") Duration maximumFlushThrottlePeriod) {

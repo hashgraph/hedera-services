@@ -204,6 +204,11 @@ public class CloseFlushTest {
                 public VirtualKeySet<K> buildKeySet() {
                     return delegate.buildKeySet();
                 }
+
+                @Override
+                public long estimatedSize(final long dirtyInternals, final long dirtyLeaves, final long deletedLeaves) {
+                    return delegate.estimatedSize(dirtyInternals, dirtyLeaves, deletedLeaves);
+                }
             };
         }
     }

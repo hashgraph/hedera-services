@@ -24,6 +24,7 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.KeyRange.INVALID_KEY_RANGE;
 
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
@@ -951,6 +952,19 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
         }
     }
 
+    @Override
+    public long estimatedSize(final long dirtyInternals, final long dirtyLeaves, final long deletedLeaves) {
+        // Deleted leaves count is ignored, as deleted leaves aren't flushed to data source
+        final long estimatedSize =
+                dirtyInternals * (Long.BYTES + DigestType.SHA_384.digestLength()) + // path and hash
+                        dirtyLeaves * (Long.BYTES + // path
+                                DigestType.SHA_384.digestLength() + // hash
+                                tableConfig.getKeySerializer().getTypicalSerializedSize() + // key
+                                tableConfig.getValueSerializer().getTypicalSerializedSize()); // value
+        logger.debug(MERKLE_DB.getMarker(), "Estimated flush size {}", estimatedSize);
+        return estimatedSize;
+    }
+
     /** toString for debugging */
     @Override
     public String toString() {
@@ -1154,7 +1168,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
         } catch (final InterruptedException e) {
             logger.warn(EXCEPTION.getMarker(), "[{}] Interrupted while waiting on executors to shutdown", tableName, e);
             Thread.currentThread().interrupt();
-            throw new IOException("Interrupted while waiting for merge to finish.", e);
+            throw new IOException("Interrupted while waiting for shutdown to finish.", e);
         }
     }
 

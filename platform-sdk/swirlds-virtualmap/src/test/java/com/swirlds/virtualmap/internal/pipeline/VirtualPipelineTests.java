@@ -164,6 +164,7 @@ class VirtualPipelineTests {
                         }
                     }
                 } else {
+                    // A copy, which is not merged or flushed, must prevent further copies from flushing
                     oldestUndestroyedFound = true;
                 }
             }
@@ -636,8 +637,8 @@ class VirtualPipelineTests {
 
         assertTrue(copies.get(0).isMerged(), "copy should be merged");
 
-        // release copies 1 through 4.
-        for (int i = 1; i < 5; i++) {
+        // release copies 1 through 5
+        for (int i = 1; i < 6; i++) {
             copies.get(i).release();
         }
 
@@ -645,7 +646,7 @@ class VirtualPipelineTests {
         assertTrue(copies.get(5).isFlushed(), "copy should be flushed by now");
 
         // release remaining copies
-        for (int i = 5; i < copyCount; i++) {
+        for (int i = 6; i < copyCount; i++) {
             copies.get(i).release();
         }
         copies.get(0).release();

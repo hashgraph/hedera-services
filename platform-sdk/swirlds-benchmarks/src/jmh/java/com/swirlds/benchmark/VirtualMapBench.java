@@ -22,6 +22,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import com.swirlds.virtualmap.internal.pipeline.VirtualRoot;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -169,20 +170,16 @@ public abstract class VirtualMapBench extends BaseBench {
             final VirtualMap<BenchmarkKey, BenchmarkValue> virtualMap) {
         final long start = System.currentTimeMillis();
         VirtualMap<BenchmarkKey, BenchmarkValue> curMap = virtualMap;
-        for (; ; ) {
-            final VirtualMap<BenchmarkKey, BenchmarkValue> oldCopy = curMap;
-            curMap = curMap.copy();
-            oldCopy.release();
-            final VirtualRoot root = oldCopy.getRight();
-            if (root.shouldBeFlushed()) {
-                try {
-                    root.waitUntilFlushed();
-                } catch (InterruptedException ex) {
-                    logger.warn("Interrupted", ex);
-                    Thread.currentThread().interrupt();
-                }
-                break;
-            }
+        final VirtualMap<BenchmarkKey, BenchmarkValue> oldCopy = curMap;
+        curMap = curMap.copy();
+        oldCopy.release();
+        final VirtualRootNode<BenchmarkKey, BenchmarkValue> root = oldCopy.getRight();
+        root.enableFlush();
+        try {
+            root.waitUntilFlushed();
+        } catch (InterruptedException ex) {
+            logger.warn("Interrupted", ex);
+            Thread.currentThread().interrupt();
         }
         logger.info("Flushed map in {} ms", System.currentTimeMillis() - start);
 

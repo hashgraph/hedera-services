@@ -23,15 +23,19 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CompareTo;
+import com.swirlds.virtualmap.VirtualMapSettings;
 import com.swirlds.virtualmap.VirtualMapSettingsFactory;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
@@ -152,9 +156,15 @@ public class VirtualPipeline {
     private final ExecutorService executorService;
 
     /**
-     * The number of copies waiting to be flushed.
+     * The copies waiting to be flushed.
      */
-    private final AtomicInteger flushBacklog = new AtomicInteger(0);
+    private final Set<VirtualRoot> flushBacklog = ConcurrentHashMap.newKeySet();
+
+    /**
+     * A flag that indicates whether hash/flush/merge work is scheduled. It's set to true when
+     * a new copy is added to the pipeline, and reset to false right before the work is started.
+     */
+    private final AtomicBoolean workScheduled = new AtomicBoolean(false);
 
     /**
      * Create a new pipeline for a family of fast copies on a virtual root.
@@ -190,7 +200,7 @@ public class VirtualPipeline {
      * @return the number of copies awaiting flushing
      */
     public int getFlushBacklogSize() {
-        return flushBacklog.get();
+        return flushBacklog.size();
     }
 
     /**
@@ -198,7 +208,7 @@ public class VirtualPipeline {
      */
     private void applyFlushBackpressure() {
         final int backlogExcess =
-                flushBacklog.get() - VirtualMapSettingsFactory.get().getPreferredFlushQueueSize();
+                flushBacklog.size() - VirtualMapSettingsFactory.get().getPreferredFlushQueueSize();
 
         if (backlogExcess <= 0) {
             return;
@@ -213,6 +223,7 @@ public class VirtualPipeline {
         final Duration sleepTime = CompareTo.min(computedSleepTime, maxSleepTime);
 
         try {
+            logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "Flush backpressure: {} ms", sleepTime.toMillis());
             MILLISECONDS.sleep(sleepTime.toMillis());
         } catch (final InterruptedException ex) {
             Thread.currentThread().interrupt();
@@ -243,7 +254,7 @@ public class VirtualPipeline {
         }
 
         if (copy.shouldBeFlushed()) {
-            flushBacklog.getAndIncrement();
+            flushBacklog.add(copy);
         }
 
         undestroyedCopies.getAndIncrement();
@@ -255,7 +266,7 @@ public class VirtualPipeline {
         mostRecentCopy.set(copy);
         synchronized (this) {
             if (alive) {
-                executorService.submit(this::doWork);
+                scheduleWork();
             }
         }
 
@@ -296,7 +307,7 @@ public class VirtualPipeline {
             // Let pipeline shutdown gracefully, e.g. complete any flushes in progress
             shutdown(false);
         } else {
-            executorService.submit(this::doWork);
+            scheduleWork();
         }
     }
 
@@ -368,9 +379,15 @@ public class VirtualPipeline {
         final AtomicReference<T> ret = new AtomicReference<>();
         pausePipelineAndExecute("detach", () -> ret.set(copy.detach(targetDirectory)));
         if (alive) {
-            executorService.submit(this::doWork);
+            scheduleWork();
         }
         return ret.get();
+    }
+
+    private void scheduleWork() {
+        if (workScheduled.compareAndSet(false, true)) {
+            executorService.submit(this::doWork);
+        }
     }
 
     /**
@@ -391,12 +408,32 @@ public class VirtualPipeline {
     /**
      * Check if this copy should be flushed.
      */
-    private static boolean shouldFlush(final VirtualRoot copy) {
-        return copy.shouldBeFlushed()
-                && // not all copies need to be flushed
-                copy.isImmutable()
-                && // only flush immutable copies
-                !copy.isFlushed(); // don't flush twice
+    private boolean shouldBeFlushed(final VirtualRoot copy) {
+        return (copy.shouldBeFlushed() || copySizeToFlush(copy) || totalSizeToFlush()) &&
+                (copy.isDestroyed() || copy.isDetached());
+    }
+
+    private boolean totalSizeToFlush() {
+        long totalEstimatedSize = 0;
+        for (PipelineListNode<VirtualRoot> node = copies.getFirst(); node != null; node = node.getNext()) {
+            final VirtualRoot copy = node.getValue();
+            if (!copy.isImmutable()) {
+                continue;
+            }
+            final long estimatedSize = copy.estimatedSize();
+            totalEstimatedSize += estimatedSize;
+        }
+        final VirtualMapSettings settings = VirtualMapSettingsFactory.get();
+        return totalEstimatedSize >= settings.getTotalFlushThreshold();
+    }
+
+    private boolean copySizeToFlush(final VirtualRoot copy) {
+        if (!copy.isImmutable()) {
+            return false;
+        }
+        final long estimatedSize = copy.estimatedSize();
+        final VirtualMapSettings settings = VirtualMapSettingsFactory.get();
+        return estimatedSize >= settings.getCopyFlushThreshold();
     }
 
     /**
@@ -413,22 +450,22 @@ public class VirtualPipeline {
             hashCopy(copy);
         }
         copy.flush();
-        flushBacklog.getAndDecrement();
+        flushBacklog.remove(copy);
     }
 
     /**
      * Copies can only be merged into younger copies that are themselves immutable. Check if that is the case.
      */
-    private static boolean shouldMerge(final PipelineListNode<VirtualRoot> mergeCandidate) {
+    private boolean canBeMerged(final PipelineListNode<VirtualRoot> mergeCandidate) {
         final VirtualRoot copy = mergeCandidate.getValue();
         final PipelineListNode<VirtualRoot> mergeTarget = mergeCandidate.getNext();
 
-        return copy.shouldBeMerged()
-                && // not all copies need to be merged
+        return !copy.shouldBeFlushed()
+                && // not explicitly requested to flush
+                !copySizeToFlush(copy)
+                && // don't let merged copies grow too much
                 (copy.isDestroyed() || copy.isDetached())
                 && // copy must be destroyed or detached
-                !copy.isMerged()
-                && // don't merge twice
                 mergeTarget != null
                 && // target must exist
                 mergeTarget.getValue().isImmutable(); // target must be immutable
@@ -461,56 +498,39 @@ public class VirtualPipeline {
     }
 
     /**
-     * Check if a copy should be removed from the pipeline. Only remove copies when they are at
-     * the end of their lifecycle.
-     */
-    private static boolean shouldBeRemovedFromPipeline(final VirtualRoot copy) {
-        return copy.isDestroyed() && (copy.isFlushed() || copy.isMerged());
-    }
-
-    /**
-     * Check if a copy should prevent newer copies from being flushed.
-     */
-    private static boolean shouldBlockFlushes(final VirtualRoot copy) {
-        return !(copy.isDestroyed() || copy.isDetached())
-                || (copy.shouldBeMerged() && !copy.isMerged())
-                || (copy.shouldBeFlushed() && !copy.isFlushed());
-    }
-
-    /**
      * Hash, flush, and merge all copies currently capable of these operations.
      */
     private void hashFlushMerge() {
         PipelineListNode<VirtualRoot> next = copies.getFirst();
 
-        // We can only flush a copy if there exists no older copy that is not
-        // either destroyed or detached. Once we encounter the first that is neither,
-        // all newer copies will be prevented from flushing.
-        boolean flushBlocked = false;
-
         // iterate from the oldest copy to the newest
         while (next != null && !Thread.currentThread().isInterrupted()) {
             final VirtualRoot copy = next.getValue();
 
-            if (shouldFlush(copy)) {
-                if (!flushBlocked) {
-                    flush(copy);
-                }
-            } else if (shouldMerge(next)) {
+            // The newest copy. Nothing can be done to it
+            if (!copy.isImmutable()) {
+                break;
+            }
+
+            if (canBeMerged(next)) {
+                // Always try to merge first
+                assert !copy.isMerged();
                 merge(next);
-            }
-
-            if (shouldBeRemovedFromPipeline(copy)) {
                 copies.remove(next);
+            } else if (next == copies.getFirst()) {
+                // The oldest copy can be flushed, if explicitly requested or based on size
+                if (shouldBeFlushed(copy)) {
+                    flush(copy);
+                    copies.remove(next);
+                }
             }
-
-            flushBlocked |= shouldBlockFlushes(copy);
 
             next = next.getNext();
         }
     }
 
     private void doWork() {
+        workScheduled.set(false);
         try {
             hashFlushMerge();
         } catch (final Throwable e) { // NOSONAR: Must cleanup and log if an error occurred since this is on a thread.
@@ -624,9 +644,9 @@ public class VirtualPipeline {
         while (next != null) {
             final VirtualRoot copy = next.getValue();
 
-            sb.append(index).append(" should be flushed = ").append(uppercaseBoolean(copy.shouldBeFlushed()));
-            sb.append(", ready to be flushed = ").append(uppercaseBoolean(shouldFlush(copy)));
-            sb.append(", ready to be merged = ").append(uppercaseBoolean(shouldMerge(next)));
+            sb.append(index);
+            sb.append(", should be flushed = ").append(uppercaseBoolean(shouldBeFlushed(copy)));
+            sb.append(", can be merged = ").append(uppercaseBoolean(canBeMerged(next)));
             sb.append(", flushed = ").append(uppercaseBoolean(copy.isFlushed()));
             sb.append(", destroyed = ").append(uppercaseBoolean(copy.isDestroyed()));
             sb.append(", hashed = ").append(uppercaseBoolean(copy.isHashed()));

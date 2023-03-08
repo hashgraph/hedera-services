@@ -49,45 +49,29 @@ import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("ALL")
 class VirtualRootNodeTest extends VirtualTestBase {
-    @Test
-    void testVirtualMapFlushFrequencySettings() throws ExecutionException, InterruptedException {
-        // Save the previous settings
-        final VirtualMapSettings originalSettings = VirtualMapSettingsFactory.get();
 
-        // Reconfigure the settings
-        final VirtualMapSettings settings = new TestVirtualMapSettings(originalSettings) {
-            @Override
-            public int getFlushInterval() {
-                return 3;
-            }
-        };
+    void testEnableVirtualRootFlush() throws ExecutionException, InterruptedException {
+        VirtualRootNode<TestKey, TestValue> fcm0 = createRoot();
+        fcm0.postInit(new DummyVirtualStateAccessor());
+        assertFalse(fcm0.shouldBeFlushed(), "map should not yet be flushed");
 
-        try {
-            VirtualMapSettingsFactory.configure(settings);
-            VirtualRootNode<TestKey, TestValue> fcm0 = createRoot();
-            fcm0.postInit(new DummyVirtualStateAccessor());
-            assertFalse(fcm0.shouldBeFlushed(), "map should not yet be flushed");
+        VirtualRootNode<TestKey, TestValue> fcm1 = fcm0.copy();
+        fcm1.postInit(new DummyVirtualStateAccessor());
+        assertFalse(fcm1.shouldBeFlushed(), "map should not yet be flushed");
 
-            VirtualRootNode<TestKey, TestValue> fcm1 = fcm0.copy();
-            fcm1.postInit(new DummyVirtualStateAccessor());
-            assertFalse(fcm1.shouldBeFlushed(), "map should not yet be flushed");
+        VirtualRootNode<TestKey, TestValue> fcm2 = fcm1.copy();
+        fcm2.postInit(new DummyVirtualStateAccessor());
+        assertFalse(fcm1.shouldBeFlushed(), "map should not yet be flushed");
 
-            VirtualRootNode<TestKey, TestValue> fcm2 = fcm1.copy();
-            fcm2.postInit(new DummyVirtualStateAccessor());
-            assertFalse(fcm1.shouldBeFlushed(), "map should not yet be flushed");
+        VirtualRootNode<TestKey, TestValue> fcm3 = fcm2.copy();
+        fcm3.postInit(new DummyVirtualStateAccessor());
+        fcm3.enableFlush();
+        assertTrue(fcm3.shouldBeFlushed(), "map should now be flushed");
 
-            VirtualRootNode<TestKey, TestValue> fcm3 = fcm2.copy();
-            fcm3.postInit(new DummyVirtualStateAccessor());
-            assertTrue(fcm3.shouldBeFlushed(), "map should now be flushed");
-
-            fcm0.release();
-            fcm1.release();
-            fcm2.release();
-            fcm3.release();
-        } finally {
-            // Revert to original settings
-            VirtualMapSettingsFactory.configure(originalSettings);
-        }
+        fcm0.release();
+        fcm1.release();
+        fcm2.release();
+        fcm3.release();
     }
 
     @Test

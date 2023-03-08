@@ -71,6 +71,16 @@ public class TestVirtualMapSettings implements VirtualMapSettings {
     }
 
     @Override
+    public long getTotalFlushThreshold() {
+        return original.getTotalFlushThreshold();
+    }
+
+    @Override
+    public long getCopyFlushThreshold() {
+        return original.getCopyFlushThreshold();
+    }
+
+    @Override
     public int getPreferredFlushQueueSize() {
         return original.getPreferredFlushQueueSize();
     }

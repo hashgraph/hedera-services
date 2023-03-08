@@ -75,13 +75,8 @@ public interface VirtualRoot extends MerkleNode {
      */
     void waitUntilFlushed() throws InterruptedException;
 
-    /**
-     * Check if this copy should be merged.
-     *
-     * @return if this copy should be merged
-     */
-    default boolean shouldBeMerged() {
-        return !shouldBeFlushed();
+    default long estimatedSize() {
+        return -1;
     }
 
     /**

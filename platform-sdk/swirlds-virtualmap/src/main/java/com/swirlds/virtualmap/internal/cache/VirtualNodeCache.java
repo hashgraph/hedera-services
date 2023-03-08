@@ -602,19 +602,20 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * be called if there is no longer any leaf at this path. This happens when we add leaves
      * and the leaf at firstLeafPath is moved and replaced by an internal node, or when a leaf
      * is deleted and the lastLeafPath is moved or removed.
-     * <p>
+     *
      * This method should only be called from the <strong>HANDLE TRANSACTION THREAD</strong>.
      * It is NOT threadsafe!
      *
      * @param path
      * 		The path to clear. After this call, there is no longer a leaf at this path.
+     * @return {@code true} if a new mutation was inserted to the cache as a result of this action
      * @throws MutabilityException
      * 		if the cache is immutable for leaf changes
      */
-    public void clearLeafPath(long path) {
+    public boolean clearLeafPath(long path) {
         throwIfLeafImmutable();
         // Note: this marks the mutation as deleted, in addition to clearing the value of the mutation
-        updatePaths(null, path, pathToDirtyLeafIndex, dirtyLeafPaths);
+        return updatePaths(null, path, pathToDirtyLeafIndex, dirtyLeafPaths);
     }
 
     /**
@@ -768,6 +769,15 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
     }
 
     /**
+     * Gets estimated number of dirty leaf nodes in this cache.
+     *
+     * @return Estimated number of dirty leaf nodes
+     */
+    public long estimatedDirtyLeavesCount(long firstLeafPath, long lastLeafPath) {
+        return (dirtyLeaves == null) ? 0 : dirtyLeaves.size();
+    }
+
+    /**
      * Gets a stream of deleted leaves <strong>from this cache instance</strong>.
      * <p>
      * This method may be called concurrently from multiple threads (although in practice, this should never happen).
@@ -893,9 +903,9 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
         // create a new value and a new mutation and return the new mutation.
         if (forModify && mutation.version < fastCopyVersion.get()) {
             assert !internalIndexesAreImmutable.get() : "You cannot create internal records at this time!";
-            final VirtualInternalRecord virtualRecord = new VirtualInternalRecord(path, null);
-            updatePaths(virtualRecord, path, pathToDirtyInternalIndex, dirtyInternals);
-            return virtualRecord;
+            final VirtualInternalRecord internal = new VirtualInternalRecord(path, null);
+            putInternal(internal);
+            return internal;
         }
 
         return mutation.value;
@@ -916,7 +926,7 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * @throws MutabilityException
      * 		if called on a non-sealed cache instance.
      */
-    public Stream<VirtualInternalRecord> dirtyInternals(long firstLeafPath) {
+    public Stream<VirtualInternalRecord> dirtyInternals(final long firstLeafPath) {
         if (!dirtyInternals.isImmutable()) {
             throw new MutabilityException("Cannot get the dirty internal records for a non-sealed cache.");
         }
@@ -928,6 +938,16 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
                 .filter(mutation -> dedupeByPath(mutation, lastSeen))
                 .filter(mutation -> !mutation.deleted)
                 .map(mutation -> mutation.value);
+    }
+
+    /**
+     * Gets estimated number of dirty internal nodes in this cache.
+     *
+     * @return
+     * 		Estimated number of dirty internal nodes
+     */
+    public long estimatedInternalsCount(final long firstLeafPath) {
+        return (dirtyInternals == null) ? 0 : dirtyInternals.size();
     }
 
     /**
@@ -1080,14 +1100,16 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * 		Cannot be null.
      * @param <T>
      * 		The type of data stored in the mutation. Either a leaf key (K) or an internal record.
+     * @return {@code true} if a new mutation was inserted to the cache as a result of this action
      * @throws NullPointerException
      * 		if {@code dirtyPaths} is null.
      */
-    private <T> void updatePaths(
+    private <T> boolean updatePaths(
             final T value,
             final long path,
             final Map<Long, Mutation<T>> index,
             final ConcurrentArray<Mutation<T>> dirtyPaths) {
+        final AtomicBoolean newMutation = new AtomicBoolean(false);
         index.compute(path, (key, mutation) -> {
             // If there is no mutation or the mutation isn't for this version, then we need to create a new mutation.
             // Note that this code DEPENDS on hashing only a single round at a time. VirtualPipeline
@@ -1106,10 +1128,21 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
                 nextMutation.deleted = value == null;
                 // Hold a reference to this newest mutation in this cache
                 dirtyPaths.add(nextMutation);
+                newMutation.set(true);
             } else {
                 // This mutation already exists in this version. Simply update its value and deleted status.
                 nextMutation.value = value;
-                nextMutation.deleted = value == null;
+                final boolean deleted = value == null;
+                if (nextMutation.deleted != deleted) {
+                    // If mutation is changed from dirty to deleted or vice versa, consider it as a
+                    // new mutation to increase the corresponding node counter. There is an issue here:
+                    // if a node is changed from dirty to deleted and then back to dirty, dirty counter
+                    // will be 2, and deleted counter will be 1, while they should be 1 and 0,
+                    // respectively. It shouldn't be a problem, though, the cache will just be flushed
+                    // slightly earlier than it could be
+                    newMutation.set(true);
+                }
+                nextMutation.deleted = deleted;
             }
             if (previousMutation != null) {
                 previousMutation.next = nextMutation;
@@ -1118,6 +1151,7 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
             }
             return mutation;
         });
+        return newMutation.get();
     }
 
     /**

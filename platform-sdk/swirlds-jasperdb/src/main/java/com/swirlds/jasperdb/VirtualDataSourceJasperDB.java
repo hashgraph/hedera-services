@@ -23,6 +23,7 @@ import static com.swirlds.logging.LogMarker.ERROR;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.JASPER_DB;
 
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
@@ -604,6 +605,12 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
      */
     public long getLastLeafPath() {
         return this.validLeafPathRange.getMaxValidKey();
+    }
+
+    @Override
+    public long estimatedSize(final long dirtyInternals, final long dirtyLeaves, final long deletedLeaves) {
+        return dirtyInternals * (Long.BYTES + DigestType.SHA_384.digestLength()) +
+                dirtyLeaves * pathToHashKeyValue.getSerializer().getTypicalSerializedSize();
     }
 
     /**
