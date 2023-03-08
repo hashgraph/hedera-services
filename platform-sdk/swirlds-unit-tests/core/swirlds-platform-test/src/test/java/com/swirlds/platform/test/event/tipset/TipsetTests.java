@@ -26,157 +26,160 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.function.IntToLongFunction;
+import java.util.function.LongToIntFunction;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("Tipset Tests")
 class TipsetTests {
 
-	private static void validateTipset(final Tipset tipset, final Map<Long, Long> expectedTipGenerations) {
-		assertEquals(expectedTipGenerations.size(), tipset.size());
+    // TODO tests with non-consecutive node IDs
 
-		for (final Long nodeId : expectedTipGenerations.keySet()) {
-			assertEquals(expectedTipGenerations.get(nodeId), tipset.getTipGeneration(nodeId));
-		}
-	}
+    private static final LongToIntFunction nodeIdToIndex = x -> (int) x;
+    private static final IntToLongFunction indexToWeight = x -> 1;
 
-	@Test
-	@DisplayName("Advancement Test")
-	void advancementTest() {
-		final Random random = getRandomPrintSeed();
+    private static void validateTipset(final Tipset tipset, final Map<Long, Long> expectedTipGenerations) {
+        for (final Long nodeId : expectedTipGenerations.keySet()) {
+            assertEquals(expectedTipGenerations.get(nodeId), tipset.getTipGeneration(nodeId));
+        }
+    }
 
-		final Tipset tipset = new Tipset();
-		assertEquals(0, tipset.size());
+    @Test
+    @DisplayName("Advancement Test")
+    void advancementTest() {
+        final Random random = getRandomPrintSeed();
 
-		// Values not in the tipset should have a generation of 0
-		for (int i = 0; i < 100; i++) {
-			assertEquals(0, tipset.getTipGeneration(i));
-		}
+        final int nodeCount = 100;
 
-		final Map<Long, Long> expected = new HashMap<>();
+        final Tipset tipset = new Tipset(nodeCount, nodeIdToIndex, indexToWeight);
+        assertEquals(nodeCount, tipset.size());
 
-		for (int i = 0; i < 100; i++) {
-			final long creator = random.nextLong(100);
-			final long generation = random.nextLong(1, 100);
+        final Map<Long, Long> expected = new HashMap<>();
 
-			tipset.advance(creator, generation);
-			expected.put(creator, Math.max(generation, expected.getOrDefault(creator, 0L)));
-			validateTipset(tipset, expected);
-		}
-	}
+        for (int iteration = 0; iteration < 10; iteration++) {
+            for (long creator = 0; creator < 100; creator++) {
+                final long generation = random.nextLong(1, 100);
 
-	@Test
-	@DisplayName("Merge Test")
-	void mergeTest() {
-		final Random random = getRandomPrintSeed();
+                tipset.advance(creator, generation);
+                expected.put(creator, Math.max(generation, expected.getOrDefault(creator, 0L)));
+                validateTipset(tipset, expected);
+            }
+        }
+    }
 
-		for (int count = 0; count < 10; count++) {
-			final List<Tipset> tipsets = new ArrayList<>();
-			final Map<Long, Long> expected = new HashMap<>();
+    @Test
+    @DisplayName("Merge Test")
+    void mergeTest() {
+        final Random random = getRandomPrintSeed();
 
-			for (int tipsetIndex = 0; tipsetIndex < 10; tipsetIndex++) {
-				final Tipset tipset = new Tipset();
-				for (int entryIndex = 0; entryIndex < random.nextInt(20); entryIndex++) {
-					final long creator = random.nextLong(100);
-					final long generation = random.nextLong(1, 100);
-					tipset.advance(creator, generation);
-					expected.put(creator, Math.max(generation, expected.getOrDefault(creator, 0L)));
-				}
-				tipsets.add(tipset);
-			}
+        final int nodeCount = 100;
 
-			final Tipset merged = Tipset.merge(tipsets);
-			validateTipset(merged, expected);
-		}
-	}
+        for (int count = 0; count < 10; count++) {
+            final List<Tipset> tipsets = new ArrayList<>();
+            final Map<Long, Long> expected = new HashMap<>();
 
-	@Test
-	@DisplayName("getAdvancementCount() Test")
-	void getAdvancementCountTest() {
-		final Random random = getRandomPrintSeed();
-		final long nodeId = random.nextLong(100);
+            for (int tipsetIndex = 0; tipsetIndex < 10; tipsetIndex++) {
+                final Tipset tipset = new Tipset(nodeCount, nodeIdToIndex, indexToWeight);
+                for (long creator = 0; creator < nodeCount; creator++) {
+                    final long generation = random.nextLong(1, 100);
+                    tipset.advance(creator, generation);
+                    expected.put(creator, Math.max(generation, expected.getOrDefault(creator, 0L)));
+                }
+                tipsets.add(tipset);
+            }
 
-		final Tipset initialTipset = new Tipset();
-		for (int entryIndex = 0; entryIndex < 100; entryIndex++) {
-			final long creator = random.nextLong(100);
-			final long generation = random.nextLong(1, 100);
-			initialTipset.advance(creator, generation);
-		}
+            final Tipset merged = Tipset.merge(tipsets);
+            validateTipset(merged, expected);
+        }
+    }
 
-		// Merging the tipset with itself will result in a copy
-		final Tipset comparisonTipset = Tipset.merge(List.of(initialTipset));
-		assertEquals(initialTipset.size(), comparisonTipset.size());
-		for (int creatorId = 0; creatorId < 100; creatorId++) {
-			assertEquals(initialTipset.getTipGeneration(creatorId), comparisonTipset.getTipGeneration(creatorId));
-		}
+    @Test
+    @DisplayName("getAdvancementCount() Test")
+    void getAdvancementCountTest() {
+        final Random random = getRandomPrintSeed();
+        final long nodeId = random.nextLong(100);
 
-		// Cause the comparison tipset to advance in a random way
-		for (int entryIndex = 0; entryIndex < 100; entryIndex++) {
-			final long creator = random.nextLong(100);
-			final long generation = random.nextLong(1, 100);
+        final int nodeCount = 100;
 
-			comparisonTipset.advance(creator, generation);
-		}
+        final Tipset initialTipset = new Tipset(nodeCount, nodeIdToIndex, indexToWeight);
+        for (long creator = 0; creator < nodeCount; creator++) {
+            final long generation = random.nextLong(1, 100);
+            initialTipset.advance(creator, generation);
+        }
 
-		long expectedAdvancementCount = 0;
-		for (int i = 0; i < 100; i++) {
-			if (i == nodeId) {
-				// Self advancements are not counted
-				continue;
-			}
-			if (initialTipset.getTipGeneration(i) < comparisonTipset.getTipGeneration(i)) {
-				expectedAdvancementCount++;
-			}
-		}
+        // Merging the tipset with itself will result in a copy
+        final Tipset comparisonTipset = Tipset.merge(List.of(initialTipset));
+        assertEquals(initialTipset.size(), comparisonTipset.size());
+        for (int creatorId = 0; creatorId < 100; creatorId++) {
+            assertEquals(initialTipset.getTipGeneration(creatorId), comparisonTipset.getTipGeneration(creatorId));
+        }
 
-		assertEquals(expectedAdvancementCount, initialTipset.getAdvancementCount(nodeId, comparisonTipset, x -> 1L));
-	}
+        // Cause the comparison tipset to advance in a random way
+        for (int entryIndex = 0; entryIndex < 100; entryIndex++) {
+            final long creator = random.nextLong(100);
+            final long generation = random.nextLong(1, 100);
 
-	@Test
-	@DisplayName("Weighted getAdvancementCount() Test")
-	void weightedGetAdvancementCountTest() {
-		final Random random = getRandomPrintSeed();
-		final long nodeId = random.nextLong(100);
+            comparisonTipset.advance(creator, generation);
+        }
 
-		final Map<Long, Long> weights = new HashMap<>();
-		for (int i = 0; i < 100; i++) {
-			weights.put((long) i, random.nextLong(1_000_000));
-		}
+        long expectedAdvancementCount = 0;
+        for (int i = 0; i < 100; i++) {
+            if (i == nodeId) {
+                // Self advancements are not counted
+                continue;
+            }
+            if (initialTipset.getTipGeneration(i) < comparisonTipset.getTipGeneration(i)) {
+                expectedAdvancementCount++;
+            }
+        }
 
-		final Tipset initialTipset = new Tipset();
-		for (int entryIndex = 0; entryIndex < 100; entryIndex++) {
-			final long creator = random.nextLong(100);
-			final long generation = random.nextLong(1, 100);
-			initialTipset.advance(creator, generation);
-		}
+        assertEquals(expectedAdvancementCount, initialTipset.getAdvancementCount(nodeId, comparisonTipset));
+    }
 
-		// Merging the tipset with itself will result in a copy
-		final Tipset comparisonTipset = Tipset.merge(List.of(initialTipset));
-		assertEquals(initialTipset.size(), comparisonTipset.size());
-		for (int creatorId = 0; creatorId < 100; creatorId++) {
-			assertEquals(initialTipset.getTipGeneration(creatorId), comparisonTipset.getTipGeneration(creatorId));
-		}
+    @Test
+    @DisplayName("Weighted getAdvancementCount() Test")
+    void weightedGetAdvancementCountTest() {
+        final Random random = getRandomPrintSeed();
+        final int nodeCount = 100;
+        final long nodeId = random.nextLong(nodeCount);
 
-		// Cause the comparison tipset to advance in a random way
-		for (int entryIndex = 0; entryIndex < 100; entryIndex++) {
-			final long creator = random.nextLong(100);
-			final long generation = random.nextLong(1, 100);
+        final Map<Long, Long> weights = new HashMap<>();
+        for (int i = 0; i < 100; i++) {
+            weights.put((long) i, random.nextLong(1_000_000));
+        }
 
-			comparisonTipset.advance(creator, generation);
-		}
+        final Tipset initialTipset = new Tipset(nodeCount, nodeIdToIndex, x -> weights.get((long) x));
+        for (long creator = 0; creator < 100; creator++) {
+            final long generation = random.nextLong(1, 100);
+            initialTipset.advance(creator, generation);
+        }
 
-		long expectedAdvancementCount = 0;
-		for (int i = 0; i < 100; i++) {
-			if (i == nodeId) {
-				// Self advancements are not counted
-				continue;
-			}
-			if (initialTipset.getTipGeneration(i) < comparisonTipset.getTipGeneration(i)) {
-				expectedAdvancementCount += weights.get((long) i);
-			}
-		}
+        // Merging the tipset with itself will result in a copy
+        final Tipset comparisonTipset = Tipset.merge(List.of(initialTipset));
+        assertEquals(initialTipset.size(), comparisonTipset.size());
+        for (int creatorId = 0; creatorId < 100; creatorId++) {
+            assertEquals(initialTipset.getTipGeneration(creatorId), comparisonTipset.getTipGeneration(creatorId));
+        }
 
-		assertEquals(expectedAdvancementCount,
-				initialTipset.getAdvancementCount(nodeId, comparisonTipset, weights::get));
-	}
+        // Cause the comparison tipset to advance in a random way
+        for (long creator = 0; creator < 100; creator++) {
+            final long generation = random.nextLong(1, 100);
+
+            comparisonTipset.advance(creator, generation);
+        }
+
+        long expectedAdvancementCount = 0;
+        for (int i = 0; i < 100; i++) {
+            if (i == nodeId) {
+                // Self advancements are not counted
+                continue;
+            }
+            if (initialTipset.getTipGeneration(i) < comparisonTipset.getTipGeneration(i)) {
+                expectedAdvancementCount += weights.get((long) i);
+            }
+        }
+
+        assertEquals(expectedAdvancementCount, initialTipset.getAdvancementCount(nodeId, comparisonTipset));
+    }
 }

@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Computes and tracks tipsets for non-ancient events.
+ * Computes and tracks tipsets for non-ancient events. TODO consider a rename of this class
  */
 public class TipsetTracker {
 
