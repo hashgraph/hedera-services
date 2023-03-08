@@ -57,7 +57,7 @@ public class HederaTracer implements HederaOperationTracer {
     private static final Logger log = LogManager.getLogger(HederaTracer.class);
 
     @VisibleForTesting
-    protected Level logLevel = Level.DEBUG;
+    protected Level logLevel = Level.WARN;
 
     @VisibleForTesting
     protected List<SolidityAction> allActions;
@@ -193,79 +193,67 @@ public class HederaTracer implements HederaOperationTracer {
 
         switch (frameState) {
             case NOT_STARTED, CODE_EXECUTING, CODE_SUSPENDED:
-                {
-                    // these states are not "final" states needing to finalize the actions
-                }
+                // these states are not "final" states needing to finalize the actions
                 break;
 
             case CODE_SUCCESS, COMPLETED_SUCCESS:
-                {
-                    action.setGasUsed(action.getGas() - frame.getRemainingGas());
-                    // externalize output for calls only - create output is externalized in bytecode sidecar
-                    if (action.getCallType() != CREATE) {
-                        action.setOutput(frame.getOutputData().toArrayUnsafe());
-                        if (action.getInvalidSolidityAddress() != null) {
-                            // we had a successful lazy create, replace targeted address
-                            // with its new Hedera id
-                            final var recipientAsHederaId = EntityId.fromAddress(
-                                    asMirrorAddress(Address.wrap(Bytes.of(action.getInvalidSolidityAddress())), frame));
-                            action.setTargetedAddress(null);
-                            action.setRecipientAccount(recipientAsHederaId);
-                        }
-                    } else {
-                        action.setOutput(new byte[0]);
+                action.setGasUsed(action.getGas() - frame.getRemainingGas());
+                // externalize output for calls only - create output is externalized in bytecode sidecar
+                if (action.getCallType() != CREATE) {
+                    action.setOutput(frame.getOutputData().toArrayUnsafe());
+                    if (action.getInvalidSolidityAddress() != null) {
+                        // we had a successful lazy create, replace targeted address with its new Hedera id
+                        final var recipientAsHederaId = EntityId.fromAddress(
+                                asMirrorAddress(Address.wrap(Bytes.of(action.getInvalidSolidityAddress())), frame));
+                        action.setTargetedAddress(null);
+                        action.setRecipientAccount(recipientAsHederaId);
                     }
+                } else {
+                    action.setOutput(new byte[0]);
                 }
                 break;
 
             case REVERT:
-                {
-                    // deliberate failures do not burn extra gas
-                    action.setGasUsed(action.getGas() - frame.getRemainingGas());
-                    frame.getRevertReason()
-                            .ifPresentOrElse(
-                                    bytes -> action.setRevertReason(bytes.toArrayUnsafe()),
-                                    () -> action.setRevertReason(new byte[0]));
-                    if (frame.getType().equals(CONTRACT_CREATION)) {
-                        action.setRecipientContract(null);
-                    }
+                // deliberate failures do not burn extra gas
+                action.setGasUsed(action.getGas() - frame.getRemainingGas());
+                frame.getRevertReason()
+                        .ifPresentOrElse(
+                                bytes -> action.setRevertReason(bytes.toArrayUnsafe()),
+                                () -> action.setRevertReason(new byte[0]));
+                if (frame.getType().equals(CONTRACT_CREATION)) {
+                    action.setRecipientContract(null);
                 }
                 break;
 
             case EXCEPTIONAL_HALT, COMPLETED_FAILED:
-                {
-                    // exceptional exits always burn all gas
-                    action.setGasUsed(action.getGas());
-                    final var exceptionalHaltReasonOptional = frame.getExceptionalHaltReason();
-                    if (exceptionalHaltReasonOptional.isPresent()) {
-                        final var exceptionalHaltReason = exceptionalHaltReasonOptional.get();
-                        action.setError(exceptionalHaltReason.name().getBytes(StandardCharsets.UTF_8));
-                        // when a contract tries to call a non-existing address (resulting in a
-                        // INVALID_SOLIDITY_ADDRESS failure),
-                        // we have to create a synthetic action recording this, otherwise the details of the
-                        // intended call
-                        // (e.g. the targeted invalid address) and sequence of events leading to the failure
-                        // are lost
-                        if (action.getCallType().equals(CALL)
-                                && exceptionalHaltReason.equals(INVALID_SOLIDITY_ADDRESS)) {
-                            final var syntheticInvalidAction = new SolidityAction(
-                                    CALL, frame.getRemainingGas(), null, 0, frame.getMessageStackDepth() + 1);
-                            syntheticInvalidAction.setCallingContract(
-                                    EntityId.fromAddress(asMirrorAddress(frame.getContractAddress(), frame)));
-                            syntheticInvalidAction.setTargetedAddress(
-                                    Words.toAddress(frame.getStackItem(1)).toArray());
-                            syntheticInvalidAction.setError(
-                                    INVALID_SOLIDITY_ADDRESS.name().getBytes(StandardCharsets.UTF_8));
-                            syntheticInvalidAction.setCallOperationType(toCallOperationType(
-                                    frame.getCurrentOperation().getOpcode()));
-                            allActions.add(syntheticInvalidAction);
-                        }
-                    } else {
-                        action.setError(new byte[0]);
+                // exceptional exits always burn all gas
+                action.setGasUsed(action.getGas());
+                final var exceptionalHaltReasonOptional = frame.getExceptionalHaltReason();
+                if (exceptionalHaltReasonOptional.isPresent()) {
+                    final var exceptionalHaltReason = exceptionalHaltReasonOptional.get();
+                    action.setError(exceptionalHaltReason.name().getBytes(StandardCharsets.UTF_8));
+                    // when a contract tries to call a non-existing address (resulting in a INVALID_SOLIDITY_ADDRESS
+                    // failure), we have to create a synthetic action recording this, otherwise the details of the
+                    // intended call (e.g. the targeted invalid address) and sequence of events leading to the failure
+                    // are lost
+                    if (action.getCallType().equals(CALL) && exceptionalHaltReason.equals(INVALID_SOLIDITY_ADDRESS)) {
+                        final var syntheticInvalidAction = new SolidityAction(
+                                CALL, frame.getRemainingGas(), null, 0, frame.getMessageStackDepth() + 1);
+                        syntheticInvalidAction.setCallingContract(
+                                EntityId.fromAddress(asMirrorAddress(frame.getContractAddress(), frame)));
+                        syntheticInvalidAction.setTargetedAddress(
+                                Words.toAddress(frame.getStackItem(1)).toArray());
+                        syntheticInvalidAction.setError(
+                                INVALID_SOLIDITY_ADDRESS.name().getBytes(StandardCharsets.UTF_8));
+                        syntheticInvalidAction.setCallOperationType(
+                                toCallOperationType(frame.getCurrentOperation().getOpcode()));
+                        allActions.add(syntheticInvalidAction);
                     }
-                    if (frame.getType().equals(CONTRACT_CREATION)) {
-                        action.setRecipientContract(null);
-                    }
+                } else {
+                    action.setError(new byte[0]);
+                }
+                if (frame.getType().equals(CONTRACT_CREATION)) {
+                    action.setRecipientContract(null);
                 }
                 break;
         }
