@@ -19,7 +19,7 @@ package com.swirlds.platform;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.EventCreationRule;
 import com.swirlds.common.system.EventCreationRuleResponse;
-import com.swirlds.platform.components.TransThrottleSyncRule;
+import com.swirlds.platform.components.transaction.throttle.TransThrottleSyncRule;
 import java.time.Instant;
 import java.util.function.Supplier;
 

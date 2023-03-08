@@ -26,9 +26,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * A wrapper for a HashList that has two modes, direct pass though or an overlaid cache buffer.
- * <p>
+ *
  * We block all threads calling put methods while we are switching between modes.
- * </p>
+ *
  */
 public class HashListBufferedWrapper implements HashList {
 
@@ -67,8 +67,8 @@ public class HashListBufferedWrapper implements HashList {
     /**
      * Set if we are in pass though or overlay mode
      *
-     * <p><b>Important: it is require there be external locking to prevent this method and put methods being called at
-     * the same time.</b></p>
+     * <b>Important: it is require there be external locking to prevent this method and put methods being called at
+     * the same time.</b>
      *
      * @param useOverlay
      * 		true puts us in overlay mode and false puts us in pass though mode.

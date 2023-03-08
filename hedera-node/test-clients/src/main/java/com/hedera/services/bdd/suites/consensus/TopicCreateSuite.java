@@ -18,17 +18,22 @@ package com.hedera.services.bdd.suites.consensus;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createDefaultContract;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
+import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.PAY_RECEIVABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_ACCOUNT_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -69,7 +74,8 @@ public class TopicCreateSuite extends HapiSuite {
                 .then(createTopic("testTopic")
                         .adminKeyName(NONSENSE_KEY)
                         .signedBy(GENESIS)
-                        .hasPrecheck(BAD_ENCODING));
+                        .hasPrecheckFrom(OK, BAD_ENCODING)
+                        .hasKnownStatus(BAD_ENCODING));
     }
 
     private HapiSpec submitKeyIsValidated() {
@@ -100,17 +106,21 @@ public class TopicCreateSuite extends HapiSuite {
                         .payingWith("payer")
                         .autoRenewAccountId("autoRenewAccount")
                         .signedBy("payer", "autoRenewAccount")
-                        /* If autoRenewAccount is specified, adminKey should be present */
-                        .hasKnownStatus(AUTORENEW_ACCOUNT_NOT_ALLOWED));
+                        // In hedera-app, we will allow an immutable topic to have an auto-renew account
+                        .hasKnownStatusFrom(SUCCESS, AUTORENEW_ACCOUNT_NOT_ALLOWED));
     }
 
     private HapiSpec autoRenewPeriodIsValidated() {
+        final var tooShortAutoRenewPeriod = "tooShortAutoRenewPeriod";
+        final var tooLongAutoRenewPeriod = "tooLongAutoRenewPeriod";
         return defaultHapiSpec("autoRenewPeriodIsValidated")
                 .given()
                 .when()
                 .then(
-                        createTopic("testTopic").autoRenewPeriod(0L).hasKnownStatus(AUTORENEW_DURATION_NOT_IN_RANGE),
-                        createTopic("testTopic")
+                        createTopic(tooShortAutoRenewPeriod)
+                                .autoRenewPeriod(0L)
+                                .hasKnownStatus(AUTORENEW_DURATION_NOT_IN_RANGE),
+                        createTopic(tooLongAutoRenewPeriod)
                                 .autoRenewPeriod(Long.MAX_VALUE)
                                 .hasKnownStatus(AUTORENEW_DURATION_NOT_IN_RANGE));
     }
@@ -119,11 +129,15 @@ public class TopicCreateSuite extends HapiSuite {
         return defaultHapiSpec("noAutoRenewPeriod")
                 .given()
                 .when()
-                .then(createTopic("testTopic").clearAutoRenewPeriod().hasKnownStatus(INVALID_RENEWAL_PERIOD));
+                .then(createTopic("testTopic")
+                        .clearAutoRenewPeriod()
+                        // No obvious reason to require INVALID_RENEWAL_PERIOD here
+                        .hasKnownStatusFrom(INVALID_RENEWAL_PERIOD, AUTORENEW_DURATION_NOT_IN_RANGE));
     }
 
     private HapiSpec signingRequirementsEnforced() {
         long PAYER_BALANCE = 1_999_999_999L;
+        final var contractWithAdminKey = "nonCryptoAccount";
 
         return defaultHapiSpec("SigningRequirementsEnforced")
                 .given(
@@ -132,15 +146,24 @@ public class TopicCreateSuite extends HapiSuite {
                         newKeyNamed("wrongKey"),
                         cryptoCreate("payer").balance(PAYER_BALANCE),
                         cryptoCreate("autoRenewAccount"),
-                        createDefaultContract("nonCryptoAccount"))
+                        // This will have an admin key
+                        createDefaultContract(contractWithAdminKey),
+                        uploadInitCode(PAY_RECEIVABLE_CONTRACT),
+                        // And this won't
+                        contractCreate(PAY_RECEIVABLE_CONTRACT).omitAdminKey())
                 .when(
                         createTopic("testTopic")
                                 .payingWith("payer")
                                 .signedBy("wrongKey")
                                 .hasPrecheck(INVALID_SIGNATURE),
+                        // In hedera-app, we'll allow contracts with admin keys to be auto-renew accounts
                         createTopic("nonExistentAutoRenewAccount")
-                                .autoRenewAccountId("nonCryptoAccount")
-                                .hasKnownStatus(INVALID_AUTORENEW_ACCOUNT),
+                                .autoRenewAccountId(contractWithAdminKey)
+                                .hasKnownStatusFrom(SUCCESS, INVALID_AUTORENEW_ACCOUNT),
+                        // But contracts without admin keys will get INVALID_SIGNATURE (can't sign!)
+                        createTopic("NotToBe")
+                                .autoRenewAccountId(PAY_RECEIVABLE_CONTRACT)
+                                .hasKnownStatusFrom(INVALID_SIGNATURE),
                         createTopic("testTopic")
                                 .payingWith("payer")
                                 .autoRenewAccountId("autoRenewAccount")

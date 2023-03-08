@@ -887,21 +887,6 @@ public class EventImpl extends AbstractSerializableHashable
         internalEventData.setFirstWitnessS(firstWitnessS);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public boolean isLastOneBeforeShutdown() {
-        return internalEventData.isLastEventBeforeShutdown();
-    }
-
-    /**
-     * @param isLastEventBeforeShutdown
-     * 		whether this event is the last event to be written to event stream before shut down
-     */
-    public void setLastOneBeforeShutdown(final boolean isLastEventBeforeShutdown) {
-        internalEventData.setLastEventBeforeShutdown(isLastEventBeforeShutdown);
-    }
-
     //////////////////////////////////////////
     //	Event interface methods
     //////////////////////////////////////////
