@@ -103,8 +103,8 @@ public class TokenManagementSpecs extends HapiSuite {
                 revokedKYCTreasuryCannotBeMintedOrBurned(),
                 fungibleCommonMaxSupplyReachWork(),
                 mintingMaxLongValueWorks(),
-            nftMintProvidesMintedNftsAndNewTotalSupply(),
-            zeroUnitTokenOperationsWorkAsExpected()
+                nftMintProvidesMintedNftsAndNewTotalSupply(),
+                zeroUnitTokenOperationsWorkAsExpected()
         });
     }
 

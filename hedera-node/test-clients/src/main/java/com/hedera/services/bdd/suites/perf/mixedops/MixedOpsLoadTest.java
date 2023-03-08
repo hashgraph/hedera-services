@@ -105,7 +105,7 @@ public class MixedOpsLoadTest extends LoadTest {
         AtomicInteger tokenId = new AtomicInteger(0);
         AtomicInteger scheduleId = new AtomicInteger(0);
 
-        Supplier<HapiSpecOperation[]> mixedOpsBurst = () -> new HapiSpecOperation[] {
+        Supplier<HapiSpecOperation[]> mixedOpsBurst = () -> new HapiSpecOperation[]{
                 cryptoTransfer(tinyBarsFromTo(sender, receiver, 1L))
                         .noLogging()
                         .payingWith(sender)
@@ -159,16 +159,16 @@ public class MixedOpsLoadTest extends LoadTest {
                                 INVALID_TOKEN_ID,
                                 UNKNOWN,
                                 TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
-                            .deferStatusResolution()
-                    : scheduleSign(schedule + "-" + getHostName() + "-" + r.nextInt(NUM_SUBMISSIONS))
-                            .ignoreIfMissing()
-                            .noLogging()
-                            .alsoSigningWith(receiver)
-                            .hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)
-                            .hasKnownStatusFrom(
-                                    SUCCESS,
-                                    OK,
-                                    TRANSACTION_EXPIRED,
+                        .deferStatusResolution()
+                        : scheduleSign(schedule + "-" + getHostName() + "-" + r.nextInt(NUM_SUBMISSIONS))
+                                .ignoreIfMissing()
+                                .noLogging()
+                                .alsoSigningWith(receiver)
+                                .hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)
+                                .hasKnownStatusFrom(
+                                        SUCCESS,
+                                        OK,
+                                        TRANSACTION_EXPIRED,
                                     INVALID_SCHEDULE_ID,
                                     UNKNOWN,
                                     SCHEDULE_ALREADY_EXECUTED)
