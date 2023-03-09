@@ -18,6 +18,7 @@ package com.hedera.node.app.service.evm.store.contracts;
 
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.store.models.UpdatedHederaEvmAccount;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -38,15 +39,21 @@ public abstract class AbstractLedgerEvmWorldUpdater<W extends WorldView, A exten
     private Map<Address, UpdatedHederaEvmAccount<A>> updatedEvmAccounts = new HashMap<>();
     private HederaEvmEntityAccess hederaEvmEntityAccess;
 
+    private TokenAccessor tokenAccessor;
+
     protected AbstractLedgerEvmWorldUpdater(final W world, final AccountAccessor accountAccessor) {
         this.world = world;
         this.accountAccessor = accountAccessor;
     }
 
     protected AbstractLedgerEvmWorldUpdater(
-            final W world, final AccountAccessor accountAccessor, final HederaEvmEntityAccess hederaEvmEntityAccess) {
+            final W world,
+            final AccountAccessor accountAccessor,
+            final HederaEvmEntityAccess hederaEvmEntityAccess,
+            TokenAccessor tokenAccessor) {
         this(world, accountAccessor);
         this.hederaEvmEntityAccess = hederaEvmEntityAccess;
+        this.tokenAccessor = tokenAccessor;
     }
 
     /**
@@ -139,5 +146,9 @@ public abstract class AbstractLedgerEvmWorldUpdater<W extends WorldView, A exten
         account.setEvmEntityAccess(hederaEvmEntityAccess);
         updatedEvmAccounts.put(account.getAddress(), account);
         return account;
+    }
+
+    public TokenAccessor tokenAccessor() {
+        return this.tokenAccessor;
     }
 }

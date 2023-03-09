@@ -42,7 +42,10 @@ public class HederaCreateOperation extends HederaEvmCreateOperation {
             final SyntheticTxnFactory syntheticTxnFactory,
             final RecordsHistorian recordsHistorian,
             final GlobalDynamicProperties dynamicProperties) {
-        super(gasCalculator, dynamicProperties,
-                new HederaCreateOperationExternalizer(creator, syntheticTxnFactory, recordsHistorian, dynamicProperties));
+        super(
+                gasCalculator,
+                dynamicProperties,
+                new HederaCreateOperationExternalizer(
+                        creator, syntheticTxnFactory, recordsHistorian, dynamicProperties));
     }
 }
