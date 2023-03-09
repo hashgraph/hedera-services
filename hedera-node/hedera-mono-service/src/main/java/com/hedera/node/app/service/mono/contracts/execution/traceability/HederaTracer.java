@@ -28,6 +28,7 @@ import static com.hedera.node.app.service.mono.contracts.execution.traceability.
 import static com.hedera.node.app.service.mono.contracts.execution.traceability.ContractActionType.CREATE;
 import static org.hyperledger.besu.evm.frame.MessageFrame.Type.CONTRACT_CREATION;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import java.nio.charset.StandardCharsets;
@@ -37,6 +38,10 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.code.CodeV0;
@@ -49,9 +54,22 @@ import org.hyperledger.besu.evm.operation.Operation.OperationResult;
 
 public class HederaTracer implements HederaOperationTracer {
 
-    private final List<SolidityAction> allActions;
-    private final Deque<SolidityAction> currentActionsStack;
-    private final boolean areActionSidecarsEnabled;
+    private static final Logger log = LogManager.getLogger(HederaTracer.class);
+
+    @VisibleForTesting
+    protected Level logLevel = Level.WARN;
+
+    @VisibleForTesting
+    protected List<SolidityAction> allActions;
+
+    @VisibleForTesting
+    protected List<SolidityAction> invalidActions;
+
+    @VisibleForTesting
+    protected final Deque<SolidityAction> currentActionsStack;
+
+    private final EmitActionSidecars doEmitActionSidecars;
+    private final ValidateActionSidecars doValidateActionSidecars;
 
     private static final int OP_CODE_CREATE = 0xF0;
     private static final int OP_CODE_CALL = 0xF1;
@@ -60,29 +78,68 @@ public class HederaTracer implements HederaOperationTracer {
     private static final int OP_CODE_CREATE2 = 0xF5;
     private static final int OP_CODE_STATICCALL = 0xFA;
 
-    public HederaTracer(final boolean areActionSidecarsEnabled) {
+    public enum EmitActionSidecars {
+        DISABLED,
+        ENABLED
+    }
+
+    public enum ValidateActionSidecars {
+        DISABLED,
+        ENABLED
+    }
+
+    public HederaTracer(
+            final EmitActionSidecars emitActionSidecars, final ValidateActionSidecars validateActionSidecars) {
         this.currentActionsStack = new ArrayDeque<>();
         this.allActions = new ArrayList<>();
-        this.areActionSidecarsEnabled = areActionSidecarsEnabled;
+        this.invalidActions = new ArrayList<>();
+        this.doEmitActionSidecars = emitActionSidecars;
+        this.doValidateActionSidecars = validateActionSidecars;
     }
 
     @Override
     public void init(final MessageFrame initialFrame) {
-        if (areActionSidecarsEnabled) {
+        if (areActionSidecarsEnabled()) {
             trackTopLevelActionFor(initialFrame);
         }
     }
 
     @Override
+    public void finalizeOperation(final MessageFrame initialFrame) {
+        if (areActionSidecarsEnabled() && isActionSidecarValidationEnabled()) {
+            // Two possible error conditions are that invalid actions (mainly `oneof` fields that
+            // don't have _exactly_ one alternative set) are added to the set of actions (which can
+            // cause problems when ingesting sidecar records elsewhere) and that the current actions
+            // stack is out-of-sync (due to some error elsewhere).  (The latter condition has not yet
+            // been observed outside deliberate fault injection and probably doesn't happen in a
+            // running system.)
+            if (!currentActionsStack.isEmpty() || !invalidActions.isEmpty()) {
+                log.atLevel(logLevel)
+                        .log(
+                                "Invalid at end of EVM run: {} ({})",
+                                () -> formatAnomaliesAtFinalizationForLog(invalidActions),
+                                () -> formatFrameContextForLog(initialFrame));
+            }
+
+            // Keep only _valid_ actions (this avoids problems when _ingesting_ action sidecars)
+            if (!invalidActions.isEmpty()) {
+                allActions.removeAll(invalidActions);
+                invalidActions.clear();
+            }
+        }
+    }
+
+    @Override
     public void tracePostExecution(final MessageFrame currentFrame, final OperationResult operationResult) {
-        if (areActionSidecarsEnabled) {
+        if (areActionSidecarsEnabled()) {
             final var frameState = currentFrame.getState();
             if (frameState != State.CODE_EXECUTING) {
                 if (frameState == State.CODE_SUSPENDED) {
                     final var nextFrame = currentFrame.getMessageFrameStack().peek();
                     trackInnerActionFor(nextFrame, currentFrame);
                 } else {
-                    finalizeActionFor(currentActionsStack.pop(), currentFrame, frameState);
+                    popActionStack(currentFrame)
+                            .ifPresent(action -> finalizeActionFor(action, currentFrame, frameState));
                 }
             }
         }
@@ -133,83 +190,96 @@ public class HederaTracer implements HederaOperationTracer {
     }
 
     private void finalizeActionFor(final SolidityAction action, final MessageFrame frame, final State frameState) {
-        if (frameState == State.CODE_SUCCESS || frameState == State.COMPLETED_SUCCESS) {
-            action.setGasUsed(action.getGas() - frame.getRemainingGas());
-            // externalize output for calls only - create output is externalized in bytecode sidecar
-            if (action.getCallType() != CREATE) {
-                action.setOutput(frame.getOutputData().toArrayUnsafe());
-                if (action.getInvalidSolidityAddress() != null) {
-                    // we had a successful lazy create, replace targeted address
-                    // with its new Hedera id
-                    final var recipientAsHederaId = EntityId.fromAddress(
-                            asMirrorAddress(Address.wrap(Bytes.of(action.getInvalidSolidityAddress())), frame));
-                    action.setTargetedAddress(null);
-                    action.setRecipientAccount(recipientAsHederaId);
+
+        switch (frameState) {
+            case NOT_STARTED, CODE_EXECUTING, CODE_SUSPENDED:
+                // these states are not "final" states needing to finalize the actions
+                break;
+
+            case CODE_SUCCESS, COMPLETED_SUCCESS:
+                action.setGasUsed(action.getGas() - frame.getRemainingGas());
+                // externalize output for calls only - create output is externalized in bytecode sidecar
+                if (action.getCallType() != CREATE) {
+                    action.setOutput(frame.getOutputData().toArrayUnsafe());
+                    if (action.getInvalidSolidityAddress() != null) {
+                        // we had a successful lazy create, replace targeted address with its new Hedera id
+                        final var recipientAsHederaId = EntityId.fromAddress(
+                                asMirrorAddress(Address.wrap(Bytes.of(action.getInvalidSolidityAddress())), frame));
+                        action.setTargetedAddress(null);
+                        action.setRecipientAccount(recipientAsHederaId);
+                    }
+                } else {
+                    action.setOutput(new byte[0]);
                 }
-            } else {
-                action.setOutput(new byte[0]);
-            }
-        } else if (frameState == State.REVERT) {
-            // deliberate failures do not burn extra gas
-            action.setGasUsed(action.getGas() - frame.getRemainingGas());
-            frame.getRevertReason()
-                    .ifPresentOrElse(
-                            bytes -> action.setRevertReason(bytes.toArrayUnsafe()),
-                            () -> action.setRevertReason(new byte[0]));
-            if (frame.getType().equals(CONTRACT_CREATION)) {
-                action.setRecipientContract(null);
-            }
-        } else if (frameState == State.EXCEPTIONAL_HALT) {
-            // exceptional exits always burn all gas
-            action.setGasUsed(action.getGas());
-            final var exceptionalHaltReasonOptional = frame.getExceptionalHaltReason();
-            if (exceptionalHaltReasonOptional.isPresent()) {
-                final var exceptionalHaltReason = exceptionalHaltReasonOptional.get();
-                action.setError(exceptionalHaltReason.name().getBytes(StandardCharsets.UTF_8));
-                // when a contract tries to call a non-existing address (resulting in a
-                // INVALID_SOLIDITY_ADDRESS failure),
-                // we have to create a synthetic action recording this, otherwise the details of the
-                // intended call
-                // (e.g. the targeted invalid address) and sequence of events leading to the failure
-                // are lost
-                if (action.getCallType().equals(CALL) && exceptionalHaltReason.equals(INVALID_SOLIDITY_ADDRESS)) {
-                    final var syntheticInvalidAction = new SolidityAction(
-                            CALL, frame.getRemainingGas(), null, 0, frame.getMessageStackDepth() + 1);
-                    syntheticInvalidAction.setCallingContract(
-                            EntityId.fromAddress(asMirrorAddress(frame.getContractAddress(), frame)));
-                    syntheticInvalidAction.setTargetedAddress(
-                            Words.toAddress(frame.getStackItem(1)).toArray());
-                    syntheticInvalidAction.setError(
-                            INVALID_SOLIDITY_ADDRESS.name().getBytes(StandardCharsets.UTF_8));
-                    syntheticInvalidAction.setCallOperationType(
-                            toCallOperationType(frame.getCurrentOperation().getOpcode()));
-                    allActions.add(syntheticInvalidAction);
+                break;
+
+            case REVERT:
+                // deliberate failures do not burn extra gas
+                action.setGasUsed(action.getGas() - frame.getRemainingGas());
+                frame.getRevertReason()
+                        .ifPresentOrElse(
+                                bytes -> action.setRevertReason(bytes.toArrayUnsafe()),
+                                () -> action.setRevertReason(new byte[0]));
+                if (frame.getType().equals(CONTRACT_CREATION)) {
+                    action.setRecipientContract(null);
                 }
-            } else {
-                action.setError(new byte[0]);
-            }
-            if (frame.getType().equals(CONTRACT_CREATION)) {
-                action.setRecipientContract(null);
-            }
+                break;
+
+            case EXCEPTIONAL_HALT, COMPLETED_FAILED:
+                // exceptional exits always burn all gas
+                action.setGasUsed(action.getGas());
+                final var exceptionalHaltReasonOptional = frame.getExceptionalHaltReason();
+                if (exceptionalHaltReasonOptional.isPresent()) {
+                    final var exceptionalHaltReason = exceptionalHaltReasonOptional.get();
+                    action.setError(exceptionalHaltReason.name().getBytes(StandardCharsets.UTF_8));
+                    // when a contract tries to call a non-existing address (resulting in a INVALID_SOLIDITY_ADDRESS
+                    // failure), we have to create a synthetic action recording this, otherwise the details of the
+                    // intended call (e.g. the targeted invalid address) and sequence of events leading to the failure
+                    // are lost
+                    if (action.getCallType().equals(CALL) && exceptionalHaltReason.equals(INVALID_SOLIDITY_ADDRESS)) {
+                        final var syntheticInvalidAction = new SolidityAction(
+                                CALL, frame.getRemainingGas(), null, 0, frame.getMessageStackDepth() + 1);
+                        syntheticInvalidAction.setCallingContract(
+                                EntityId.fromAddress(asMirrorAddress(frame.getContractAddress(), frame)));
+                        syntheticInvalidAction.setTargetedAddress(
+                                Words.toAddress(frame.getStackItem(1)).toArray());
+                        syntheticInvalidAction.setError(
+                                INVALID_SOLIDITY_ADDRESS.name().getBytes(StandardCharsets.UTF_8));
+                        syntheticInvalidAction.setCallOperationType(
+                                toCallOperationType(frame.getCurrentOperation().getOpcode()));
+                        allActions.add(syntheticInvalidAction);
+                    }
+                } else {
+                    action.setError(new byte[0]);
+                }
+                if (frame.getType().equals(CONTRACT_CREATION)) {
+                    action.setRecipientContract(null);
+                }
+                break;
+        }
+
+        if (isActionSidecarValidationEnabled() && !action.isValid()) {
+            invalidActions.add(action);
         }
     }
 
     @Override
     public void tracePrecompileResult(final MessageFrame frame, final ContractActionType type) {
-        if (areActionSidecarsEnabled) {
-            final var lastAction = currentActionsStack.pop();
-            lastAction.setCallType(type);
-            lastAction.setRecipientAccount(null);
-            lastAction.setTargetedAddress(null);
-            lastAction.setRecipientContract(EntityId.fromAddress(frame.getContractAddress()));
-            finalizeActionFor(lastAction, frame, frame.getState());
+        if (areActionSidecarsEnabled()) {
+            popActionStack(frame).ifPresent(lastAction -> {
+                lastAction.setCallType(type);
+                lastAction.setRecipientAccount(null);
+                lastAction.setTargetedAddress(null);
+                lastAction.setRecipientContract(EntityId.fromAddress(frame.getContractAddress()));
+                finalizeActionFor(lastAction, frame, frame.getState());
+            });
         }
     }
 
     @Override
     public void traceAccountCreationResult(final MessageFrame frame, final Optional<ExceptionalHaltReason> haltReason) {
         frame.setExceptionalHaltReason(haltReason);
-        if (areActionSidecarsEnabled) {
+        if (areActionSidecarsEnabled()) {
             // we take the last action from the list since there is a chance
             // it has already been popped from the stack
             final var lastAction = allActions.get(allActions.size() - 1);
@@ -219,6 +289,14 @@ public class HederaTracer implements HederaOperationTracer {
 
     public List<SolidityAction> getActions() {
         return allActions;
+    }
+
+    private boolean areActionSidecarsEnabled() {
+        return EmitActionSidecars.ENABLED == doEmitActionSidecars;
+    }
+
+    private boolean isActionSidecarValidationEnabled() {
+        return ValidateActionSidecars.ENABLED == doValidateActionSidecars;
     }
 
     private ContractActionType toContractActionType(final MessageFrame.Type type) {
@@ -247,5 +325,48 @@ public class HederaTracer implements HederaOperationTracer {
     private Address asMirrorAddress(final Address addressOrAlias, final MessageFrame messageFrame) {
         final var aliases = ((HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater()).aliases();
         return aliases.resolveForEvm(addressOrAlias);
+    }
+
+    private Optional<SolidityAction> popActionStack(final MessageFrame frame) {
+        if (!currentActionsStack.isEmpty()) {
+            return Optional.of(currentActionsStack.pop());
+        } else {
+            log.atLevel(logLevel).log("Action stack prematurely empty ({})", () -> formatFrameContextForLog(frame));
+            return Optional.empty();
+        }
+    }
+
+    private String formatAnomaliesAtFinalizationForLog(final List<SolidityAction> invalidActions) {
+        final var msgs = new ArrayList<String>();
+        if (!this.currentActionsStack.isEmpty())
+            msgs.add("currentActionsStack not empty, has %d elements left".formatted(this.currentActionsStack.size()));
+        if (!invalidActions.isEmpty()) {
+            msgs.add("of %d actions given, %d were invalid".formatted(this.allActions.size(), invalidActions.size()));
+            for (final var ia : invalidActions) {
+                msgs.add("invalid: %s".formatted(ia.toFullString()));
+            }
+        }
+        return String.join("; ", msgs);
+    }
+
+    private static String formatFrameContextForLog(final MessageFrame frame) {
+        if (null == frame) return "<no frame for context>";
+
+        final Function<Address, String> addressToString = Address::toUnprefixedHexString;
+
+        final var originator = get(frame, MessageFrame::getOriginatorAddress, addressToString);
+        final var sender = get(frame, MessageFrame::getSenderAddress, addressToString);
+        final var recipient = get(frame, MessageFrame::getRecipientAddress, addressToString);
+        final var contract = get(frame, MessageFrame::getContractAddress, addressToString);
+        final var type = get(frame, MessageFrame::getType, Object::toString);
+        final var state = get(frame, MessageFrame::getState, Object::toString);
+
+        return "originator %s sender %s recipient %s contract %s type %s state %s"
+                .formatted(originator, sender, recipient, contract, type, state);
+    }
+
+    private static <E, I> String get(
+            final E subject, final Function<E, I> getter, final Function<I, String> processor) {
+        return null != subject ? processor.compose(getter).apply(subject) : "null";
     }
 }
