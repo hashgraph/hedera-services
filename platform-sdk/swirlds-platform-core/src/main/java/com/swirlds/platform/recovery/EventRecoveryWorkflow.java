@@ -84,7 +84,7 @@ public final class EventRecoveryWorkflow {
      * Read a signed state from disk and apply events from an event stream on disk. Write the resulting signed state to
      * disk.
      *
-     * @param signedStateFile         the initial signed state file
+     * @param signedStateFile         the bootstrap signed state file
      * @param configurationFiles      files containing configuration
      * @param eventStreamDirectory    a directory containing the event stream
      * @param mainClassName           the fully qualified class name of the {@link SwirldMain} for the app
