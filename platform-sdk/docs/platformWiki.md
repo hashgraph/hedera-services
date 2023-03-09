@@ -2,7 +2,7 @@
 
 This document contains information about the Swirlds Platform. It is currently a work in progress.
 
-![](./components/components.drawio.svg)
+![](./components/preconsensusEventStream.svg)
 
 ## Components and Algorithms
 
