@@ -163,10 +163,6 @@ import java.nio.file.Path;
  * 		sync, to reduce the probability of creating an event that will become stale.
  * @param eventIntakeQueueThrottleSize
  * 		The value for the event intake queue at which the node should stop syncing
- * @param transThrottle
- * 		if on, transThrottle will stop initiating syncs and thus stop generating events if the are no non consensus user
- * 		transactions. If states are being saved to disk, it will only stop after all user transactions have been
- * 		handled by a state that has been saved to disk.
  * @param transactionMaxBytes
  * 		maximum number of bytes allowed in a transaction
  * @param useTLS
@@ -250,7 +246,6 @@ public record BasicConfig(
         @ConfigProperty(value = "pingTransFreq", defaultValue = "1") long pingTransFreq,
         @ConfigProperty(value = "staleEventPreventionThreshold", defaultValue = "5") int staleEventPreventionThreshold,
         @ConfigProperty(value = "eventIntakeQueueThrottleSize", defaultValue = "1000") int eventIntakeQueueThrottleSize,
-        @ConfigProperty(value = "transThrottle", defaultValue = "false") boolean transThrottle,
         @ConfigProperty(value = "transactionMaxBytes", defaultValue = "6144") int transactionMaxBytes,
         @ConfigProperty(value = "useTLS", defaultValue = "true") boolean useTLS,
         @ConfigProperty(value = "socketIpTos", defaultValue = "-1") int socketIpTos,
