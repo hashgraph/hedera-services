@@ -166,7 +166,7 @@ public final class EventRecoveryWorkflow {
             }
             final Path backupDir = recoveryFileDir.resolve("backup");
             if (!Files.exists(backupDir)) {
-                Files.createDirectory(backupDir);
+                Files.createDirectories(backupDir);
             }
             oldRecoveryFile.write(backupDir);
 
