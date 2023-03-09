@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.dispatcher;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.WorkingStateAccessor;
@@ -44,6 +45,18 @@ class WritableStoreFactoryTest {
     void setUp() {
         workingStateAccessor = new WorkingStateAccessor();
         subject = new WritableStoreFactory(workingStateAccessor);
+    }
+
+    @Test
+    void emptyConstructor() {
+        assertNotNull(new WritableStoreFactory(workingStateAccessor));
+    }
+
+    @Test
+    void createsWritableStore() {
+        given(state.createWritableStates(ConsensusService.NAME)).willReturn(writableStates);
+        subject = new WritableStoreFactory(workingStateAccessor);
+        assertNotNull(subject.createTopicStore());
     }
 
     @Test
