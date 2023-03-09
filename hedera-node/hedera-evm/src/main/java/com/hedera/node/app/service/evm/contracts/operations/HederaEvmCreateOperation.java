@@ -38,12 +38,12 @@ public class HederaEvmCreateOperation extends AbstractEvmRecordingCreateOperatio
     }
 
     @Override
-    public boolean isEnabled() {
+    protected boolean isEnabled() {
         return true;
     }
 
     @Override
-    public Address targetContractAddress(MessageFrame frame) {
+    protected Address targetContractAddress(MessageFrame frame) {
         final var updater = (HederaEvmWorldUpdater) frame.getWorldUpdater();
         final Address address = updater.newContractAddress(frame.getRecipientAddress());
         frame.warmUpAddress(address);

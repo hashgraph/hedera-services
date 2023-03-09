@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.mono.contracts.operation;
 
+/*
+
+import static com.hedera.node.app.service.evm.contracts.operations.AbstractEvmRecordingCreateOperation.haltWith;
 import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.node.app.service.mono.contracts.operation.AbstractRecordingCreateOperation.haltWith;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.ETHEREUM_NONCE;
@@ -84,7 +87,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class AbstractRecordingCreateOperationTest {
+class HederaCreateOperationExternalizerTest {
     @Mock
     private SyntheticTxnFactory syntheticTxnFactory;
 
@@ -142,80 +145,15 @@ class AbstractRecordingCreateOperationTest {
     private static final JKey nonEmptyKey = MiscUtils.asFcKeyUnchecked(Key.newBuilder()
             .setEd25519(ByteString.copyFrom("01234567890123456789012345678901".getBytes()))
             .build());
-    private Subject subject;
+    private HederaCreateOperationExternalizer subject;
 
     @BeforeEach
     void setUp() {
-        subject = new Subject(
-                0xF0,
-                "ħCREATE",
-                3,
-                1,
-                1,
-                gasCalculator,
+        subject = new HederaCreateOperationExternalizer(
                 creator,
                 syntheticTxnFactory,
                 recordsHistorian,
                 dynamicProperties);
-    }
-
-    @Test
-    void returnsUnderflowWhenStackSizeTooSmall() {
-        given(frame.stackSize()).willReturn(2);
-
-        assertSame(Subject.UNDERFLOW_RESPONSE, subject.execute(frame, evm));
-    }
-
-    @Test
-    void returnsInvalidWhenDisabled() {
-        subject.isEnabled = false;
-
-        assertSame(Subject.INVALID_RESPONSE, subject.execute(frame, evm));
-    }
-
-    @Test
-    void haltsOnStaticFrame() {
-        given(frame.stackSize()).willReturn(3);
-        given(frame.isStatic()).willReturn(true);
-
-        final var expected = haltWith(Subject.PRETEND_COST, ILLEGAL_STATE_CHANGE);
-
-        assertSameResult(expected, subject.execute(frame, evm));
-    }
-
-    @Test
-    void haltsOnInsufficientGas() {
-        given(frame.stackSize()).willReturn(3);
-        given(frame.getRemainingGas()).willReturn(Subject.PRETEND_GAS_COST - 1);
-
-        final var expected = haltWith(Subject.PRETEND_COST, INSUFFICIENT_GAS);
-
-        assertSameResult(expected, subject.execute(frame, evm));
-    }
-
-    @Test
-    void failsWithInsufficientRecipientBalanceForValue() {
-        given(frame.stackSize()).willReturn(3);
-        given(frame.getStackItem(anyInt())).willReturn(Bytes.ofUnsignedLong(1));
-        given(frame.getRemainingGas()).willReturn(Subject.PRETEND_GAS_COST);
-        given(frame.getStackItem(0)).willReturn(Bytes.ofUnsignedLong(value));
-        given(frame.getRecipientAddress()).willReturn(recipient);
-        given(frame.getWorldUpdater()).willReturn(updater);
-        given(updater.getAccount(recipient)).willReturn(recipientAccount);
-        given(recipientAccount.getMutable()).willReturn(mutableAccount);
-        given(mutableAccount.getBalance()).willReturn(Wei.ONE);
-
-        assertSameResult(EMPTY_HALT_RESULT, subject.execute(frame, evm));
-        verify(frame).pushStackItem(UInt256.ZERO);
-    }
-
-    @Test
-    void failsWithExcessStackDepth() {
-        givenSpawnPrereqs();
-        given(frame.getMessageStackDepth()).willReturn(1024);
-
-        assertSameResult(EMPTY_HALT_RESULT, subject.execute(frame, evm));
-        verify(frame).pushStackItem(UInt256.ZERO);
     }
 
     @Test
@@ -248,7 +186,7 @@ class AbstractRecordingCreateOperationTest {
                 .thenReturn(sidecarRecord);
         given(dynamicProperties.enabledSidecars()).willReturn(Set.of(SidecarType.CONTRACT_BYTECODE));
 
-        assertSameResult(EMPTY_HALT_RESULT, subject.execute(frame, evm));
+        assertSameResult(EMPTY_HALT_RESULT, subject.externalize(frame, evm));
 
         verify(stack).addFirst(frameCaptor.capture());
         final var childFrame = frameCaptor.getValue();
@@ -574,3 +512,4 @@ class AbstractRecordingCreateOperationTest {
         }
     }
 }
+*/

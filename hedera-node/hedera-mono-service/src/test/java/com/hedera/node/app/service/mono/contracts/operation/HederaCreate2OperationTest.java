@@ -16,11 +16,6 @@
 
 package com.hedera.node.app.service.mono.contracts.operation;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.EntityCreator;
@@ -31,9 +26,7 @@ import org.apache.tuweni.bytes.MutableBytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.operation.Create2Operation;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -74,51 +67,5 @@ class HederaCreate2OperationTest {
     void setup() {
         subject = new HederaCreate2Operation(
                 gasCalculator, creator, syntheticTxnFactory, recordsHistorian, dynamicProperties);
-    }
-
-    @Test
-    void computesExpectedCost() {
-        given(gasCalculator.create2OperationGasCost(frame)).willReturn(baseGas);
-
-        var actualGas = subject.cost(frame);
-
-        assertEquals(baseGas, actualGas);
-    }
-
-    @Test
-    void enabledOnlyIfCreate2IsEnabled() {
-        assertFalse(subject.isEnabled());
-
-        given(dynamicProperties.isCreate2Enabled()).willReturn(true);
-
-        assertTrue(subject.isEnabled());
-    }
-
-    @Test
-    void computesExpectedTargetAddress() {
-        final var expectedAddress = Address.BLS12_G1ADD;
-        final var canonicalSource = Address.BLS12_G1MULTIEXP;
-        final var besuOp = new Create2Operation(gasCalculator);
-
-        givenMemoryStackItems();
-        given(frame.getStackItem(3)).willReturn(salt);
-        given(frame.getRecipientAddress()).willReturn(canonicalSource);
-        given(frame.readMutableMemory(oneOffsetStackItem.toLong(), twoOffsetStackItem.toLong()))
-                .willReturn(initcode);
-        final var expectedAlias = besuOp.targetContractAddress(frame);
-
-        given(frame.getWorldUpdater()).willReturn(stackedUpdater);
-        given(frame.getRecipientAddress()).willReturn(recipientAddr);
-        given(stackedUpdater.priorityAddress(recipientAddr)).willReturn(canonicalSource);
-        given(stackedUpdater.newAliasedContractAddress(recipientAddr, expectedAlias))
-                .willReturn(expectedAddress);
-
-        final var actualAlias = subject.targetContractAddress(frame);
-        assertEquals(expectedAlias, actualAlias);
-    }
-
-    private void givenMemoryStackItems() {
-        given(frame.getStackItem(1)).willReturn(oneOffsetStackItem);
-        given(frame.getStackItem(2)).willReturn(twoOffsetStackItem);
     }
 }

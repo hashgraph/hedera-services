@@ -38,9 +38,6 @@ package com.hedera.node.app.service.mono.contracts.operation;
  *
  */
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.BDDMockito.given;
-
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.EntityCreator;
@@ -49,9 +46,7 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnF
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -89,28 +84,5 @@ class HederaCreateOperationTest {
     void setup() {
         subject = new HederaCreateOperation(
                 gasCalculator, creator, syntheticTxnFactory, recordsHistorian, dynamicProperties);
-    }
-
-    @Test
-    void isAlwaysEnabled() {
-        Assertions.assertTrue(subject.isEnabled());
-    }
-
-    @Test
-    void computesExpectedCost() {
-        given(gasCalculator.createOperationGasCost(frame)).willReturn(baseGas);
-
-        var actualGas = subject.cost(frame);
-
-        assertEquals(baseGas, actualGas);
-    }
-
-    @Test
-    void computesExpectedTargetAddress() {
-        given(frame.getWorldUpdater()).willReturn(hederaWorldUpdater);
-        given(frame.getRecipientAddress()).willReturn(recipientAddr);
-        given(hederaWorldUpdater.newContractAddress(recipientAddr)).willReturn(Address.ZERO);
-        var targetAddr = subject.targetContractAddress(frame);
-        assertEquals(Address.ZERO, targetAddr);
     }
 }

@@ -22,7 +22,6 @@ import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.EntityCreator;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import javax.inject.Inject;
-import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 public class HederaCreate2Operation extends HederaEvmCreate2Operation {
@@ -39,10 +38,5 @@ public class HederaCreate2Operation extends HederaEvmCreate2Operation {
                 dynamicProperties,
                 new HederaCreateOperationExternalizer(
                         creator, syntheticTxnFactory, recordsHistorian, dynamicProperties));
-    }
-
-    @Override
-    protected long cost(final MessageFrame frame) {
-        return gasCalculator().create2OperationGasCost(frame);
     }
 }
