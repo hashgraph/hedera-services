@@ -27,6 +27,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -227,8 +228,18 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
     public PrecompileContractResult computePrecompile(
             final Bytes input, @NonNull final MessageFrame frame) {
         prepareFields(frame);
-        prepareComputation(input, updater::unaliased);
-
+        try {
+            prepareComputation(input, updater::unaliased);
+        } catch (InvalidTransactionException e) {
+            if (NOT_SUPPORTED.equals(e.getResponseCode())) {
+                return PrecompileContractResult.halt(
+                        null, Optional.of(HederaExceptionalHaltReason.NOT_SUPPORTED));
+            } else {
+                return PrecompileContractResult.halt(
+                        null,
+                        Optional.of(HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT));
+            }
+        }
         gasRequirement = defaultGas();
         if (this.precompile == null || this.transactionBody == null) {
             frame.setExceptionalHaltReason(Optional.of(ERROR_DECODING_PRECOMPILE_INPUT));
