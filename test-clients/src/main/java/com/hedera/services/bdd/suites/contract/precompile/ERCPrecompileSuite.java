@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -52,7 +53,9 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.reduceFeeFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
@@ -207,7 +210,8 @@ public class ERCPrecompileSuite extends HapiSuite {
                 erc20TransferFrom(),
                 erc20TransferFromSelf(),
                 getErc20TokenNameExceedingLimits(),
-                transferErc20TokenFromContract());
+                transferErc20TokenFromContract(),
+                erc20TransferFromDoesNotWorkIfFlagIsDisabled());
     }
 
     List<HapiSpec> erc721() {
@@ -4309,6 +4313,61 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                                                 FunctionType
                                                                                         .ERC_ALLOWANCE)
                                                                         .withAllowance(0)))));
+    }
+
+    private HapiSpec erc20TransferFromDoesNotWorkIfFlagIsDisabled() {
+
+        return defaultHapiSpec("erc20TransferFromDoesNotWorkIfFlagIsDisabled")
+                .given(
+                        overriding("hedera.allowances.isEnabled", "false"),
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(RECIPIENT),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .initialSupply(10L)
+                                .maxSupply(1000L)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY),
+                        uploadInitCode(ERC_20_CONTRACT),
+                        contractCreate(ERC_20_CONTRACT),
+                        tokenAssociate(OWNER, FUNGIBLE_TOKEN),
+                        tokenAssociate(RECIPIENT, FUNGIBLE_TOKEN),
+                        tokenAssociate(ERC_20_CONTRACT, FUNGIBLE_TOKEN),
+                        cryptoTransfer(moving(10, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, OWNER)))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCall(
+                                                                ERC_20_CONTRACT,
+                                                                TRANSFER_FROM,
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                OWNER))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECIPIENT))),
+                                                                BigInteger.TWO)
+                                                        .gas(500_000L)
+                                                        .via(TRANSFER_FROM_ACCOUNT_TXN)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .then(
+                        getTxnRecord(TRANSFER_FROM_ACCOUNT_TXN).logged(),
+                        resetToDefault("hedera.allowances.isEnabled"));
     }
 
     private HapiSpec erc20TransferFromSelf() {
