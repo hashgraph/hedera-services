@@ -1,3 +1,5 @@
+[root](../platformWiki.md)
+
 # Pre-Consensus Event Stream
 
 ## Purpose
@@ -13,6 +15,6 @@ In order to achieve this goal with minimal latency, we start writing each event 
 
 ## Data Flow
 
-![Pre-Consensus Event Stream](./preConsensusEventStream.svg)
+![](./preConsensusEventStream.svg)
 
 TODO expand docoument
