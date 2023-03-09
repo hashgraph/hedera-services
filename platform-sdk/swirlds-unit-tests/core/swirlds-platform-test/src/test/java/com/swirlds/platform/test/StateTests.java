@@ -24,13 +24,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
+import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
 import com.swirlds.common.test.io.InputOutputStream;
-import com.swirlds.common.test.state.DummySwirldState2;
+import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.platform.state.DualStateImpl;
 import com.swirlds.platform.state.State;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.IOException;
 import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeAll;
@@ -57,7 +57,7 @@ class StateTests {
 
         state = new State();
         state.setPlatformState(randomPlatformState(false));
-        state.setSwirldState(new DummySwirldState2());
+        state.setSwirldState(new DummySwirldState());
         state.setDualState(new DualStateImpl());
 
         state.invalidateHash();
@@ -70,7 +70,7 @@ class StateTests {
     @Tag(TestComponentTags.IO)
     @DisplayName("State Serialization Test")
     void stateSerializationTest() throws IOException {
-        InputOutputStream io = new InputOutputStream();
+        final InputOutputStream io = new InputOutputStream();
 
         io.getOutput().writeMerkleTree(testDirectory, state);
 

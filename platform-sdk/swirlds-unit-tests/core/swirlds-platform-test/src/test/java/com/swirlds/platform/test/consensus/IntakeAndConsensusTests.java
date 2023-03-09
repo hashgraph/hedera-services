@@ -20,6 +20,7 @@ import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.EventConstants;
 import com.swirlds.platform.test.event.DynamicValue;
@@ -29,7 +30,6 @@ import com.swirlds.platform.test.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.event.source.EventSource;
 import com.swirlds.platform.test.event.source.StandardEventSource;
 import com.swirlds.platform.test.graph.OtherParentMatrixFactory;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Stream;

@@ -25,9 +25,9 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
 import com.swirlds.common.crypto.config.CryptoConfig;
+import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
 import com.swirlds.common.threading.futures.FuturePool;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.util.Arrays;
@@ -81,7 +81,7 @@ public class TransactionSignatureTests {
 
         cryptoProvider.verifySync(singleSignature);
 
-        Future<Void> future = singleSignature.waitForFuture();
+        final Future<Void> future = singleSignature.waitForFuture();
         assertNotNull(future);
         future.get();
 
@@ -319,11 +319,12 @@ public class TransactionSignatureTests {
         checkSignatures(signatures);
     }
 
-    private void checkSignatures(TransactionSignature... signatures) throws ExecutionException, InterruptedException {
+    private void checkSignatures(final TransactionSignature... signatures)
+            throws ExecutionException, InterruptedException {
         int numInvalid = 0;
 
         for (final TransactionSignature sig : signatures) {
-            Future<Void> future = sig.waitForFuture();
+            final Future<Void> future = sig.waitForFuture();
             assertNotNull(future);
             future.get();
 
@@ -369,7 +370,7 @@ public class TransactionSignatureTests {
             final int fOffset = offset;
             final int fSliceLength = sliceLength;
 
-            Future<Void> future = executorService.submit(new Callable<Void>() {
+            final Future<Void> future = executorService.submit(new Callable<Void>() {
                 @Override
                 public Void call() throws Exception {
                     executor.accept(signatures, fOffset, fOffset + fSliceLength);

@@ -24,11 +24,11 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.test.TransactionUtils;
+import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
 import com.swirlds.common.test.io.SerializationUtils;
 import com.swirlds.platform.Settings;
 import com.swirlds.platform.test.event.RandomEventUtils;
 import com.swirlds.test.framework.TestTypeTags;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.IOException;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
@@ -53,8 +53,8 @@ public class SerializationTests {
     @Tag(TestTypeTags.FUNCTIONAL)
     @DisplayName("Serialize then deserialize SelfSerializable class")
     @MethodSource("selfSerializableProvider")
-    public <T extends SelfSerializable> void serializeDeserializeTest(T generated) throws IOException {
-        T serDes = SerializationUtils.serializeDeserialize(generated);
+    public <T extends SelfSerializable> void serializeDeserializeTest(final T generated) throws IOException {
+        final T serDes = SerializationUtils.serializeDeserialize(generated);
         assertEquals(generated, serDes);
     }
 

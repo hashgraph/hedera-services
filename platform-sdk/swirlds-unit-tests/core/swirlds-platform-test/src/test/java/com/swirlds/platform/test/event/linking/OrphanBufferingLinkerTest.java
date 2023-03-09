@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.test.RandomUtils;
+import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
@@ -32,7 +33,6 @@ import com.swirlds.platform.test.event.GossipEventBuilder;
 import com.swirlds.platform.test.event.generator.GraphGenerator;
 import com.swirlds.platform.test.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.event.source.StandardEventSource;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -101,9 +101,8 @@ class OrphanBufferingLinkerTest {
      * |
      * 1
      * </pre>
-     *
-     * Added in the following order: 2 1
-     * Expected output: 1 2
+     * <p>
+     * Added in the following order: 2 1 Expected output: 1 2
      */
     @Test
     void singleMissingParent() {
@@ -126,10 +125,9 @@ class OrphanBufferingLinkerTest {
 
     /**
      * Tests graph: {@link #buildGraph(Random)}
-     *
-     * Added in the following order: 0 2 3 4 1
-     * Expected output: 0 1 2 (3 4)
-     * Note: it is ok for events in brackets to be reordered
+     * <p>
+     * Added in the following order: 0 2 3 4 1 Expected output: 0 1 2 (3 4) Note: it is ok for events in brackets to be
+     * reordered
      */
     @Test
     void multipleMissingParents() {
@@ -158,11 +156,9 @@ class OrphanBufferingLinkerTest {
 
     /**
      * Tests graph: {@link #buildGraph(Random)}
-     *
-     * Added in the following order: 2 0 4 3
-     * Event 1 is never added, but its generation becomes ancient
-     * Expected output: 0 2 (3 4)
-     * Note: it is ok for events in brackets to be reordered
+     * <p>
+     * Added in the following order: 2 0 4 3 Event 1 is never added, but its generation becomes ancient Expected output:
+     * 0 2 (3 4) Note: it is ok for events in brackets to be reordered
      */
     @Test
     void missingExpires() {
@@ -187,8 +183,8 @@ class OrphanBufferingLinkerTest {
     }
 
     /**
-     * Creates events with a {@link GraphGenerator}, shuffles them so that they are not in topological order,
-     * adds them to the {@link OrphanBufferingLinker}. Expects all events to be returned by the linker.
+     * Creates events with a {@link GraphGenerator}, shuffles them so that they are not in topological order, adds them
+     * to the {@link OrphanBufferingLinker}. Expects all events to be returned by the linker.
      */
     @Test
     void eventGenerator() {

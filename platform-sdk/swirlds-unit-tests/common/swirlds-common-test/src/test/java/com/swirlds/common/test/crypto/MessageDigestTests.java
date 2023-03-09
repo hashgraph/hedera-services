@@ -24,8 +24,8 @@ import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Message;
 import com.swirlds.common.crypto.config.CryptoConfig;
+import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.util.Arrays;
@@ -156,7 +156,7 @@ public class MessageDigestTests {
         checkMessages(messages);
     }
 
-    private void checkMessages(Message... messages) throws ExecutionException, InterruptedException {
+    private void checkMessages(final Message... messages) throws ExecutionException, InterruptedException {
         int numInvalid = 0;
 
         for (final Message m : messages) {

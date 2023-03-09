@@ -37,13 +37,13 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
 import com.swirlds.common.time.OSTime;
 import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.triggers.error.CatastrophicIssTrigger;
 import com.swirlds.platform.dispatch.triggers.error.SelfIssTrigger;
 import com.swirlds.platform.state.iss.ConsensusHashManager;
 import com.swirlds.platform.state.iss.internal.HashValidityStatus;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -279,8 +279,8 @@ class ConsensusHashManagerTests {
     }
 
     /**
-     * The method generateNodeHashes() doesn't account for self ID, and therefore doesn't guarantee that
-     * any particular node will have an ISS. Regenerate data until we find a data set that results in a self ISS.
+     * The method generateNodeHashes() doesn't account for self ID, and therefore doesn't guarantee that any particular
+     * node will have an ISS. Regenerate data until we find a data set that results in a self ISS.
      */
     private static RoundHashValidatorTests.HashGenerationData generateDataWithSelfIss(
             final Random random, final AddressBook addressBook, final long selfId, final long targetRound) {
@@ -481,8 +481,8 @@ class ConsensusHashManagerTests {
     }
 
     /**
-     * Generate data in an order that will cause a catastrophic ISS after the timeout, assuming the bare minimum
-     * to meet &ge;2/3 has been met.
+     * Generate data in an order that will cause a catastrophic ISS after the timeout, assuming the bare minimum to meet
+     * &ge;2/3 has been met.
      */
     @SuppressWarnings("SameParameterValue")
     private static List<RoundHashValidatorTests.NodeHashInfo> generateCatastrophicTimeoutIss(

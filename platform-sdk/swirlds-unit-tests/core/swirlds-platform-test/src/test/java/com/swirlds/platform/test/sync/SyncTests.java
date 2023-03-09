@@ -29,6 +29,7 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.internal.SettingsCommon;
+import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
 import com.swirlds.common.test.threading.ReplaceSyncPhaseParallelExecutor;
 import com.swirlds.common.test.threading.SyncPhaseParallelExecutor;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
@@ -46,7 +47,6 @@ import com.swirlds.platform.test.event.source.StandardEventSource;
 import com.swirlds.platform.test.graph.OtherParentMatrixFactory;
 import com.swirlds.platform.test.graph.PartitionedGraphCreator;
 import com.swirlds.platform.test.graph.SplitForkGraphCreator;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.FileNotFoundException;
 import java.net.SocketException;
 import java.util.List;
@@ -619,13 +619,14 @@ public class SyncTests {
             caller.expireBelow(listenerMaxGen);
 
             listenerMaxGen = SyncUtils.getMaxGen(listener.getShadowGraph().getTips());
-            long callerMinGen = SyncUtils.getMinGen(caller.getShadowGraph()
+            final long callerMinGen = SyncUtils.getMinGen(caller.getShadowGraph()
                     .findAncestors(caller.getShadowGraph().getTips(), (e) -> true));
 
             assertEquals(listenerMaxGen, callerMinGen, "listener max gen and caller min gen should be equal.");
 
-            long callerMaxGen = SyncUtils.getMaxGen(caller.getShadowGraph().getTips());
-            long listenerMinGen = SyncUtils.getMinGen(listener.getShadowGraph()
+            final long callerMaxGen =
+                    SyncUtils.getMaxGen(caller.getShadowGraph().getTips());
+            final long listenerMinGen = SyncUtils.getMinGen(listener.getShadowGraph()
                     .findAncestors(listener.getShadowGraph().getTips(), (e) -> true));
 
             when(caller.getConsensus().getMaxRoundGeneration()).thenReturn(callerMaxGen);
@@ -657,9 +658,9 @@ public class SyncTests {
                 null,
                 () -> {
                     // Expire the events from the hash graph
-                    List<ShadowEvent> callerTips =
+                    final List<ShadowEvent> callerTips =
                             executor.getCaller().getShadowGraph().getTips();
-                    Set<ShadowEvent> allCallerEvents =
+                    final Set<ShadowEvent> allCallerEvents =
                             executor.getCaller().getShadowGraph().findAncestors(callerTips, e -> true);
                     allCallerEvents.forEach(e -> e.getEvent().clear());
 
@@ -755,8 +756,8 @@ public class SyncTests {
             listener.setSaveGeneratedEvents(true);
         });
 
-        Runnable addEvents = () -> {
-            for (SyncNode node : List.of(executor.getCaller(), executor.getListener())) {
+        final Runnable addEvents = () -> {
+            for (final SyncNode node : List.of(executor.getCaller(), executor.getListener())) {
                 node.generateAndAdd(numToAddInPhase);
             }
         };
@@ -792,8 +793,8 @@ public class SyncTests {
             listener.setSaveGeneratedEvents(true);
         });
 
-        Runnable addEvents = () -> {
-            for (SyncNode node : List.of(executor.getCaller(), executor.getListener())) {
+        final Runnable addEvents = () -> {
+            for (final SyncNode node : List.of(executor.getCaller(), executor.getListener())) {
                 node.generateAndAdd(numToAddInPhase);
             }
         };
@@ -813,10 +814,8 @@ public class SyncTests {
      * Tests scenarios in which events that need to be sent to the peer are requested to be expired before they are
      * sent. Because generations are reserved in a sync, the events should not be expired while a sync is in progress.
      *
-     * @param expireAfterPhase
-     * 		the phase after which events that need to be sent should be requested to be expired
-     * @param params
-     * 		Sync parameters
+     * @param expireAfterPhase the phase after which events that need to be sent should be requested to be expired
+     * @param params           Sync parameters
      */
     @ParameterizedTest
     @MethodSource("requiredEventsExpire")
@@ -921,7 +920,7 @@ public class SyncTests {
 
         try {
             executor.execute();
-        } catch (Exception e) {
+        } catch (final Exception e) {
             final Exception syncException = executor.getCaller().getSyncException();
             Throwable wrappedException = (syncException != null) ? syncException.getCause() : null;
             while (wrappedException != null) {

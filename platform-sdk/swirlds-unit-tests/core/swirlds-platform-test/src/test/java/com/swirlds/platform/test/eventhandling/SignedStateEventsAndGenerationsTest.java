@@ -19,10 +19,10 @@ package com.swirlds.platform.test.eventhandling;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.swirlds.common.config.ConsensusConfig;
+import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
 import com.swirlds.platform.eventhandling.SignedStateEventsAndGenerations;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.test.framework.TestQualifierTags;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.Random;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -40,7 +40,7 @@ class SignedStateEventsAndGenerationsTest {
                 new TestConfigBuilder().getOrCreateConfig().getConfigData(ConsensusConfig.class);
         final SignedStateEventsAndGenerations sseag = new SignedStateEventsAndGenerations(consensusConfig);
         for (long i = 1; i < 1000; i++) {
-            long randomDiff = new Random().longs(1, -15, +15).findFirst().orElseThrow();
+            final long randomDiff = new Random().longs(1, -15, +15).findFirst().orElseThrow();
             final long roundGeneration = Math.max(1, (i * 10) + randomDiff);
 
             final EventImpl e1 = Mockito.mock(EventImpl.class);

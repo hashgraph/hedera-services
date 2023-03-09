@@ -24,8 +24,8 @@ import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.crypto.config.CryptoConfig;
+import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.security.NoSuchAlgorithmException;
 import java.util.SplittableRandom;
 import org.junit.jupiter.api.BeforeAll;
@@ -36,7 +36,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 public class SigningProviderTest {
     private static CryptoConfig cryptoConfig;
     private static Cryptography cryptography;
-    private static int TEST_TIMES = 100;
+    private static final int TEST_TIMES = 100;
 
     @BeforeAll
     public static void startup() throws NoSuchAlgorithmException {
@@ -50,8 +50,8 @@ public class SigningProviderTest {
     @ParameterizedTest
     @Tag(TIME_CONSUMING)
     @ValueSource(ints = {1, 32, 500, 1000})
-    void ECDSASigningProviderTest(int transactionSize) throws Exception {
-        SplittableRandom random = new SplittableRandom();
+    void ECDSASigningProviderTest(final int transactionSize) throws Exception {
+        final SplittableRandom random = new SplittableRandom();
         final ECDSASigningProvider ecdsaSigningProvider = new ECDSASigningProvider();
         assertTrue(ecdsaSigningProvider.isAlgorithmAvailable(), "Check ECDSA is supported");
         assertEquals(EcdsaUtils.SIGNATURE_LENGTH, ecdsaSigningProvider.getSignatureLength(), "Check signature length");
@@ -72,8 +72,8 @@ public class SigningProviderTest {
     @ParameterizedTest
     @Tag(TIME_CONSUMING)
     @ValueSource(ints = {1, 32, 500, 1000})
-    void ED25519SigningProviderTest(int transactionSize) throws Exception {
-        SplittableRandom random = new SplittableRandom();
+    void ED25519SigningProviderTest(final int transactionSize) throws Exception {
+        final SplittableRandom random = new SplittableRandom();
         final ED25519SigningProvider ed25519SigningProvider = new ED25519SigningProvider();
         assertTrue(ed25519SigningProvider.isAlgorithmAvailable(), "Check ED25519 is supported");
         assertEquals(

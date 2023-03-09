@@ -30,19 +30,17 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.SwirldState2;
 import com.swirlds.common.test.fixtures.context.TestPlatformContextBuilder;
+import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.utility.ThrowingRunnable;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
-import com.swirlds.platform.state.SwirldStateManagerDouble;
-import com.swirlds.platform.state.SwirldStateManagerSingle;
+import com.swirlds.platform.state.SwirldStateManagerImpl;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.test.framework.TestQualifierTags;
 import java.time.Duration;
@@ -58,8 +56,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.api.Test;
 
 class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
 
@@ -157,12 +154,10 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
 
     /**
      * Tests that consensus events are passed to {@link EventStreamManager#addEvents(List)} exactly once.
-     *
-     * @param swirldState the instance of {@link SwirldState} to initialize {@link ConsensusRoundHandler} with
      */
-    @ParameterizedTest
-    @MethodSource("swirldStates")
-    void testConsensusEventStream(final SwirldState swirldState) {
+    @Test
+    void testConsensusEventStream() {
+        final SwirldState swirldState = new DummySwirldState();
         initConsensusHandler(swirldState);
         testEventStream(eventStreamManager, consensusRoundHandler::consensusRound);
     }
@@ -188,29 +183,14 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
 
         when(settingsProvider.getMaxEventQueueForCons()).thenReturn(500);
 
-        final SwirldStateManager swirldStateManager;
-        if (swirldState instanceof SwirldState2) {
-            swirldStateManager = new SwirldStateManagerDouble(
-                    selfId,
-                    preConsensusSystemTransactionManager,
-                    postConsensusSystemTransactionManager,
-                    mock(SwirldStateMetrics.class),
-                    settingsProvider,
-                    () -> false,
-                    state);
-        } else {
-            swirldStateManager = new SwirldStateManagerSingle(
-                    getStaticThreadManager(),
-                    selfId,
-                    preConsensusSystemTransactionManager,
-                    postConsensusSystemTransactionManager,
-                    mock(SwirldStateMetrics.class),
-                    mock(ConsensusMetrics.class),
-                    settingsProvider,
-                    consEstimateSupplier,
-                    () -> false,
-                    state);
-        }
+        final SwirldStateManager swirldStateManager = new SwirldStateManagerImpl(
+                selfId,
+                preConsensusSystemTransactionManager,
+                postConsensusSystemTransactionManager,
+                mock(SwirldStateMetrics.class),
+                settingsProvider,
+                () -> false,
+                state);
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();

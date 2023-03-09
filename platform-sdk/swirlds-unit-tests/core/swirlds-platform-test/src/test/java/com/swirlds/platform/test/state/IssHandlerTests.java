@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
 import com.swirlds.common.time.OSTime;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
@@ -31,7 +32,6 @@ import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
 import com.swirlds.platform.dispatch.triggers.control.StateDumpRequestedTrigger;
 import com.swirlds.platform.state.iss.IssHandler;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

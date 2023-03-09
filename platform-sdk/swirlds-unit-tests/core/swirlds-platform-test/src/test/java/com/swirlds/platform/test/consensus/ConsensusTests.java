@@ -18,10 +18,10 @@ package com.swirlds.platform.test.consensus;
 
 import static com.swirlds.common.test.StakeGenerators.BALANCED;
 
+import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.TestTypeTags;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;

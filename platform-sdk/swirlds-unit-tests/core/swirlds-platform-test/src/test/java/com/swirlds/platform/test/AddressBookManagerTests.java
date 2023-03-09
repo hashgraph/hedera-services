@@ -34,12 +34,12 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.address.AddressBookManager;
 import com.swirlds.common.test.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.platform.state.address.AddressBookManagerImpl;
 import com.swirlds.platform.state.address.AddressBookStore;
-import com.swirlds.platform.state.address.BranchingAddressBookStore;
 import com.swirlds.platform.state.address.MutableAddressBookManager;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.platform.state.address.SequentialAddressBookStore;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -69,7 +69,7 @@ class AddressBookManagerTests {
     private AddressBookStore buildInitialStore(
             final RandomAddressBookGenerator generator, final long firstRound, final int size) {
 
-        final AddressBookStore addressBookStore = new BranchingAddressBookStore();
+        final AddressBookStore addressBookStore = new SequentialAddressBookStore();
 
         for (long round = firstRound; round < firstRound + size; round++) {
             final AddressBook addressBook = generator.build().setRound(round);
@@ -108,7 +108,7 @@ class AddressBookManagerTests {
                 () -> {
                     try {
                         return manager.get(round);
-                    } catch (InterruptedException e) {
+                    } catch (final InterruptedException e) {
                         throw new RuntimeException(e);
                     }
                 },
@@ -147,7 +147,7 @@ class AddressBookManagerTests {
                     try {
                         latch.countDown();
                         value = manager.get(round);
-                    } catch (InterruptedException e) {
+                    } catch (final InterruptedException e) {
                         throw new RuntimeException(e);
                     }
 
