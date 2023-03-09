@@ -37,10 +37,9 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.SwirldState2;
+import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.test.RandomUtils;
-import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.EmergencyRecoveryFile;
 import com.swirlds.platform.state.MinGenInfo;
@@ -246,35 +245,35 @@ class EventRecoveryWorkflowTests {
         final List<EventImpl> preHandleList = new ArrayList<>();
         final AtomicBoolean roundHandled = new AtomicBoolean(false);
 
-        final SwirldState2 immutableState = mock(SwirldState2.class);
+        final SwirldState immutableState = mock(SwirldState.class);
         doAnswer(invocation -> {
-            assertFalse(roundHandled.get(), "round should not have been handled yet");
-            preHandleList.add(invocation.getArgument(0));
-            return null;
-        })
+                    assertFalse(roundHandled.get(), "round should not have been handled yet");
+                    preHandleList.add(invocation.getArgument(0));
+                    return null;
+                })
                 .when(immutableState)
                 .preHandle(any());
         doAnswer(invocation -> {
-            fail("mutable state should handle transactions");
-            return null;
-        })
+                    fail("mutable state should handle transactions");
+                    return null;
+                })
                 .when(immutableState)
                 .handleConsensusRound(any(), any());
 
-        final SwirldState2 mutableState = mock(SwirldState2.class);
+        final SwirldState mutableState = mock(SwirldState.class);
         doAnswer(invocation -> {
-            fail("immutable state should pre-handle transactions");
-            return null;
-        })
+                    fail("immutable state should pre-handle transactions");
+                    return null;
+                })
                 .when(mutableState)
                 .preHandle(any());
         doAnswer(invocation -> {
-            assertFalse(roundHandled.get(), "round should only be handled once");
-            assertSame(round, invocation.getArgument(0), "unexpected round");
-            assertSame(dualState, invocation.getArgument(1), "unexpected dual state");
-            roundHandled.set(true);
-            return null;
-        })
+                    assertFalse(roundHandled.get(), "round should only be handled once");
+                    assertSame(round, invocation.getArgument(0), "unexpected round");
+                    assertSame(dualState, invocation.getArgument(1), "unexpected dual state");
+                    roundHandled.set(true);
+                    return null;
+                })
                 .when(mutableState)
                 .handleConsensusRound(any(), any());
 
@@ -408,8 +407,10 @@ class EventRecoveryWorkflowTests {
         assertEquals(hash, updatedRecoveryFile.hash(), "hash does not match");
         assertEquals(stateTimestamp, updatedRecoveryFile.timestamp(), "state timestamp does not match");
         assertNotNull(updatedRecoveryFile.recovery().boostrap(), "bootstrap should not be null");
-        assertEquals(bootstrapTime,
-                updatedRecoveryFile.recovery().boostrap().timestamp(), "bootstrap timestamp does not match");
+        assertEquals(
+                bootstrapTime,
+                updatedRecoveryFile.recovery().boostrap().timestamp(),
+                "bootstrap timestamp does not match");
 
         // Verify the contents of the backup recovery file (copy of the original)
         final EmergencyRecoveryFile backupFile = EmergencyRecoveryFile.read(tmpDir.resolve("backup"));

@@ -29,7 +29,7 @@ import com.hedera.node.app.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Factory for all readable stores.
+ * Factory for all readable stores. It creates new readable stores based on the {@link HederaState}.
  */
 public class ReadableStoreFactory {
 

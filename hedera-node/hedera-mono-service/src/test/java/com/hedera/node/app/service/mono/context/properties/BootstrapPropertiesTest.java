@@ -90,6 +90,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_REDIRECT_TO
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_REFERENCE_SLOT_LIFETIME;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECARS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECAR_VALIDATION_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_STORAGE_SLOT_PRICE_TIERS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_THROTTLE_THROTTLE_BY_GAS;
 import static com.hedera.node.app.spi.config.PropertyNames.CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED;
@@ -489,6 +490,7 @@ class BootstrapPropertiesTest {
             entry(TOKENS_MAX_AGGREGATE_RELS, 10_000_000L),
             entry(UTIL_PRNG_IS_ENABLED, true),
             entry(CONTRACTS_SIDECARS, EnumSet.of(SidecarType.CONTRACT_STATE_CHANGE, SidecarType.CONTRACT_BYTECODE)),
+            entry(CONTRACTS_SIDECAR_VALIDATION_ENABLED, false),
             entry(HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB, 256),
             entry(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION, true),
             entry(TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO, 9L),

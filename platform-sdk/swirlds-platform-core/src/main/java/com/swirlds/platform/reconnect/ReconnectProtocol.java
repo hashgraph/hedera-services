@@ -32,10 +32,7 @@ import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/**
- * Implements the reconnect protocol over a bidirectional network. This reconnect implementation is used when the
- * chatter protocol is enabled.
- */
+/** Implements the reconnect protocol over a bidirectional network */
 public class ReconnectProtocol implements Protocol {
 
     private static final Logger logger = LogManager.getLogger(ReconnectProtocol.class);
@@ -53,13 +50,13 @@ public class ReconnectProtocol implements Protocol {
     private SignedState teacherState;
 
     /**
-     * @param threadManager           responsible for creating and managing threads
-     * @param peerId                  the ID of the peer we are communicating with
-     * @param teacherThrottle         restricts reconnects as a teacher
+     * @param threadManager responsible for creating and managing threads
+     * @param peerId the ID of the peer we are communicating with
+     * @param teacherThrottle restricts reconnects as a teacher
      * @param lastCompleteSignedState provides the latest completely signed state
-     * @param reconnectSocketTimeout  the socket timeout to use when executing a reconnect
-     * @param reconnectMetrics        tracks reconnect metrics
-     * @param reconnectController     controls reconnecting as a learner
+     * @param reconnectSocketTimeout the socket timeout to use when executing a reconnect
+     * @param reconnectMetrics tracks reconnect metrics
+     * @param reconnectController controls reconnecting as a learner
      */
     public ReconnectProtocol(
             final ThreadManager threadManager,
@@ -82,9 +79,7 @@ public class ReconnectProtocol implements Protocol {
         this.fallenBehindManager = fallenBehindManager;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public boolean shouldInitiate() {
         // if this neighbor has not told me I have fallen behind, I will not reconnect with him
@@ -100,18 +95,14 @@ public class ReconnectProtocol implements Protocol {
         return acquiredPermit;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public void initiateFailed() {
         reconnectController.cancelLearnerPermit();
         initiatedBy = InitiatedBy.NO_ONE;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public boolean shouldAccept() {
         // we should not be the teacher if we have fallen behind
@@ -127,7 +118,7 @@ public class ReconnectProtocol implements Protocol {
         if (teacherState == null) {
             logger.info(
                     RECONNECT.getMarker(),
-                    "Rejecting reconnect request from node {} " + "due to lack of a fully signed state",
+                    "Rejecting reconnect request from node {} due to lack of a fully signed state",
                     peerId.getId());
             return false;
         }
@@ -146,9 +137,9 @@ public class ReconnectProtocol implements Protocol {
             teacherState = null;
             logger.error(
                     RECONNECT.getMarker(),
-                    "Rejecting reconnect request from node {} "
-                            + "due to lack of a fully signed state. The signed state manager attempted to provide "
-                            + "a state that was not fully signed, which should not be possible.",
+                    "Rejecting reconnect request from node {} due to lack of a fully signed state."
+                            + " The signed state manager attempted to provide a state that was not"
+                            + " fully signed, which should not be possible.",
                     peerId.getId());
             return false;
         }
@@ -165,9 +156,7 @@ public class ReconnectProtocol implements Protocol {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public void acceptFailed() {
         teacherState.release();
@@ -175,9 +164,7 @@ public class ReconnectProtocol implements Protocol {
         teacherThrottle.reconnectAttemptFinished();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public boolean acceptOnSimultaneousInitiate() {
         // if both nodes fall behind, it makes no sense to reconnect with each other
@@ -185,9 +172,7 @@ public class ReconnectProtocol implements Protocol {
         return false;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public void runProtocol(final Connection connection)
             throws NetworkProtocolException, IOException, InterruptedException {
@@ -196,7 +181,7 @@ public class ReconnectProtocol implements Protocol {
                 case PEER -> teacher(connection);
                 case SELF -> learner(connection);
                 default -> throw new NetworkProtocolException(
-                        "runProtocol() called but it is unclear who the teacher and who the learner is");
+                        "runProtocol() called but it is unclear who the teacher and who the learner" + " is");
             }
         } finally {
             initiatedBy = InitiatedBy.NO_ONE;

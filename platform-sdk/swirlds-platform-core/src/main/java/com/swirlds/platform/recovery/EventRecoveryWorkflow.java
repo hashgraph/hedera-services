@@ -36,7 +36,7 @@ import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldMain;
-import com.swirlds.common.system.SwirldState2;
+import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.state.notifications.NewRecoveredStateListener;
 import com.swirlds.common.system.state.notifications.NewRecoveredStateNotification;
@@ -64,13 +64,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * <p>
  * Handles the event stream recovery workflow.
- * </p>
- *
- * <p>
- * Note: this workflow is only compatible with {@link SwirldState2} applications.
- * </p>
  */
 public final class EventRecoveryWorkflow {
 
@@ -167,8 +161,7 @@ public final class EventRecoveryWorkflow {
             // Read the existing recovery file and write it to a backup directory
             final EmergencyRecoveryFile oldRecoveryFile = EmergencyRecoveryFile.read(recoveryFileDir);
             if (oldRecoveryFile == null) {
-                logger.error(EXCEPTION.getMarker(),
-                        "Recovery file does not exist at {}", recoveryFileDir);
+                logger.error(EXCEPTION.getMarker(), "Recovery file does not exist at {}", recoveryFileDir);
                 return;
             }
             final Path backupDir = recoveryFileDir.resolve("backup");
@@ -178,12 +171,12 @@ public final class EventRecoveryWorkflow {
             oldRecoveryFile.write(backupDir);
 
             // Create a new recovery file with the bootstrap time, overwriting the original
-            final EmergencyRecoveryFile newRecoveryFile = new EmergencyRecoveryFile(
-                    oldRecoveryFile.recovery().state(),
-                    bootstrapTime);
+            final EmergencyRecoveryFile newRecoveryFile =
+                    new EmergencyRecoveryFile(oldRecoveryFile.recovery().state(), bootstrapTime);
             newRecoveryFile.write(recoveryFileDir);
         } catch (final IOException e) {
-            logger.error(EXCEPTION.getMarker(),
+            logger.error(
+                    EXCEPTION.getMarker(),
                     "Exception occurred when updating the emergency recovery file with the bootstrap time");
         }
     }
@@ -392,8 +385,8 @@ public final class EventRecoveryWorkflow {
      * @param round          the current round
      */
     static void applyTransactions(
-            final SwirldState2 immutableState,
-            final SwirldState2 mutableState,
+            final SwirldState immutableState,
+            final SwirldState mutableState,
             final SwirldDualState dualState,
             final Round round) {
 

@@ -16,14 +16,11 @@
 
 package com.swirlds.demo.virtualmerkle.map.smartcontracts.data;
 
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-/**
- * This class is the serializer of {@link SmartContractMapValue}.
- */
+/** This class is the serializer of {@link SmartContractMapValue}. */
 public final class SmartContractMapValueSerializerMerkleDb implements ValueSerializer<SmartContractMapValue> {
 
     // Serializer class ID
@@ -58,10 +55,9 @@ public final class SmartContractMapValueSerializerMerkleDb implements ValueSeria
     }
 
     @Override
-    public int serialize(final SmartContractMapValue data, final SerializableDataOutputStream outputStream)
-            throws IOException {
+    public int serialize(final SmartContractMapValue data, final ByteBuffer buffer) throws IOException {
         final byte[] value = data.getValue();
-        outputStream.write(value);
+        buffer.put(value);
         return SmartContractMapValue.getSizeInBytes();
     }
 

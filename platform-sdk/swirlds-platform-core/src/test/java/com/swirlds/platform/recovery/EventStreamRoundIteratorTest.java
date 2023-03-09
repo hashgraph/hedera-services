@@ -184,17 +184,30 @@ class EventStreamRoundIteratorTest {
 
             final List<EventImpl> deserializedEvents = new ArrayList<>();
 
-            while (iterator.hasNext()) {
+            try {
+                while (iterator.hasNext()) {
 
-                final Round peekRound = iterator.peek();
-                final Round nextRound = iterator.next();
-                assertSame(peekRound, nextRound, "peek returned wrong object");
+                    final Round peekRound = iterator.peek();
+                    final Round nextRound = iterator.next();
+                    assertSame(peekRound, nextRound, "peek returned wrong object");
 
-                nextRound.iterator().forEachRemaining(event -> {
-                    deserializedEvents.add((EventImpl) event);
-                    assertEquals(
-                            nextRound.getRoundNum(), ((EventImpl) event).getRoundReceived(), "event in wrong round");
-                });
+                    nextRound.iterator().forEachRemaining(event -> {
+                        deserializedEvents.add((EventImpl) event);
+                        assertEquals(
+                                nextRound.getRoundNum(),
+                                ((EventImpl) event).getRoundReceived(),
+                                "event in wrong round");
+                    });
+                }
+            } catch (final IOException e) {
+                if (e.getMessage().contains("does not contain any events")) {
+                    // The last file had too few events and the truncated file had no events.
+                    // This happens randomly, but especially when the original file has 3 or less events in it.
+                    // abort the unit tests in a successful state.
+                    return;
+                } else {
+                    throw e;
+                }
             }
 
             assertEquals(events.size(), deserializedEvents.size(), "wrong number of events read");
@@ -257,17 +270,30 @@ class EventStreamRoundIteratorTest {
 
             final List<EventImpl> deserializedEvents = new ArrayList<>();
 
-            while (iterator.hasNext()) {
+            try {
+                while (iterator.hasNext()) {
 
-                final Round peekRound = iterator.peek();
-                final Round nextRound = iterator.next();
-                assertSame(peekRound, nextRound, "peek returned wrong object");
+                    final Round peekRound = iterator.peek();
+                    final Round nextRound = iterator.next();
+                    assertSame(peekRound, nextRound, "peek returned wrong object");
 
-                nextRound.iterator().forEachRemaining(event -> {
-                    deserializedEvents.add((EventImpl) event);
-                    assertEquals(
-                            nextRound.getRoundNum(), ((EventImpl) event).getRoundReceived(), "event in wrong round");
-                });
+                    nextRound.iterator().forEachRemaining(event -> {
+                        deserializedEvents.add((EventImpl) event);
+                        assertEquals(
+                                nextRound.getRoundNum(),
+                                ((EventImpl) event).getRoundReceived(),
+                                "event in wrong round");
+                    });
+                }
+            } catch (final IOException e) {
+                if (e.getMessage().contains("does not contain any events")) {
+                    // The last file had too few events and the truncated file had no events.
+                    // This happens randomly, but especially when the original file has 3 or less events in it.
+                    // abort the unit tests in a successful state.
+                    return;
+                } else {
+                    throw e;
+                }
             }
 
             assertTrue(events.size() > deserializedEvents.size(), "all original events should not be read");

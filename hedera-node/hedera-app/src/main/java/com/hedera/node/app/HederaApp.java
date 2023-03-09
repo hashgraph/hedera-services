@@ -19,6 +19,7 @@ package com.hedera.node.app;
 import com.hedera.node.app.annotations.MaxSignedTxnSize;
 import com.hedera.node.app.components.IngestComponent;
 import com.hedera.node.app.components.QueryComponent;
+import com.hedera.node.app.fees.AdaptedFeeCalculatorModule;
 import com.hedera.node.app.service.mono.ServicesApp;
 import com.hedera.node.app.service.mono.config.ConfigModule;
 import com.hedera.node.app.service.mono.context.ContextModule;
@@ -43,7 +44,11 @@ import com.hedera.node.app.service.mono.throttling.ThrottlingModule;
 import com.hedera.node.app.service.mono.txns.TransactionsModule;
 import com.hedera.node.app.service.mono.txns.submission.SubmissionModule;
 import com.hedera.node.app.services.ServiceModule;
+import com.hedera.node.app.state.HederaStateModule;
+import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.workflows.handle.HandleWorkflowModule;
+import com.hedera.node.app.workflows.prehandle.AdaptedMonoEventExpansion;
+import com.hedera.node.app.workflows.prehandle.PreHandleWorkflowModule;
 import com.hedera.node.app.workflows.query.QueryWorkflowModule;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
@@ -85,13 +90,20 @@ import javax.inject.Singleton;
             ExpiryModule.class,
             ServiceModule.class,
             QueryWorkflowModule.class,
-            HandleWorkflowModule.class
+            HandleWorkflowModule.class,
+            PreHandleWorkflowModule.class,
+            HederaStateModule.class,
+            AdaptedFeeCalculatorModule.class
         })
 public interface HederaApp extends ServicesApp {
     /* Needed by ServicesState */
     Provider<QueryComponent.Factory> queryComponentFactory();
 
     Provider<IngestComponent.Factory> ingestComponentFactory();
+
+    WorkingStateAccessor workingStateAccessor();
+
+    AdaptedMonoEventExpansion adaptedMonoEventExpansion();
 
     @Component.Builder
     interface Builder {

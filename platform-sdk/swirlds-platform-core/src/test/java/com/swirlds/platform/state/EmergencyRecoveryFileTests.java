@@ -74,8 +74,10 @@ public class EmergencyRecoveryFileTests {
         assertEquals(toWrite.hash(), readIn.hash(), "hash does not match");
         assertEquals(toWrite.timestamp(), readIn.timestamp(), "state timestamp does not match");
         assertNotNull(readIn.recovery().boostrap(), "bootstrap should not be null");
-        assertEquals(toWrite.recovery().boostrap().timestamp(),
-                readIn.recovery().boostrap().timestamp(), "bootstrap timestamp does not match");
+        assertEquals(
+                toWrite.recovery().boostrap().timestamp(),
+                readIn.recovery().boostrap().timestamp(),
+                "bootstrap timestamp does not match");
     }
 
     @Test
@@ -111,21 +113,16 @@ public class EmergencyRecoveryFileTests {
         assertThrows(
                 IOException.class, () -> EmergencyRecoveryFile.read(tmpDir), "Reading an invalid file should throw");
         writeFileWithBootstrap(
-                Pair.of(FIELD_NAME_HASH, randomHashString(r)),
-                Pair.of(FIELD_NAME_TIMESTAMP, randomInstantString(r)));
+                Pair.of(FIELD_NAME_HASH, randomHashString(r)), Pair.of(FIELD_NAME_TIMESTAMP, randomInstantString(r)));
         assertThrows(
                 IOException.class, () -> EmergencyRecoveryFile.read(tmpDir), "Reading an invalid file should throw");
-        writeFile(
-                Pair.of(FIELD_NAME_ROUND, randomLongString(r)),
-                Pair.of(FIELD_NAME_HASH, randomHashString(r)));
+        writeFile(Pair.of(FIELD_NAME_ROUND, randomLongString(r)), Pair.of(FIELD_NAME_HASH, randomHashString(r)));
         assertDoesNotThrow(() -> EmergencyRecoveryFile.read(tmpDir), "Reading a valid file should not throw");
         writeFileWithBootstrap(
-                Pair.of(FIELD_NAME_ROUND, randomLongString(r)),
-                Pair.of(FIELD_NAME_HASH, randomHashString(r)));
+                Pair.of(FIELD_NAME_ROUND, randomLongString(r)), Pair.of(FIELD_NAME_HASH, randomHashString(r)));
         assertDoesNotThrow(() -> EmergencyRecoveryFile.read(tmpDir), "Reading a valid file should not throw");
         writeFile(
-                Pair.of(FIELD_NAME_ROUND, randomLongString(r)),
-                Pair.of(FIELD_NAME_TIMESTAMP, randomInstantString(r)));
+                Pair.of(FIELD_NAME_ROUND, randomLongString(r)), Pair.of(FIELD_NAME_TIMESTAMP, randomInstantString(r)));
         assertThrows(
                 IOException.class, () -> EmergencyRecoveryFile.read(tmpDir), "Reading an invalid file should throw");
     }
@@ -174,8 +171,8 @@ public class EmergencyRecoveryFileTests {
     }
 
     private EmergencyRecoveryFile createRecoveryFileWithBootstrap(final Random r) {
-        final EmergencyRecoveryFile orig = new EmergencyRecoveryFile(r.nextLong(), randomHash(r),
-                Instant.ofEpochMilli(r.nextLong()));
+        final EmergencyRecoveryFile orig =
+                new EmergencyRecoveryFile(r.nextLong(), randomHash(r), Instant.ofEpochMilli(r.nextLong()));
         return new EmergencyRecoveryFile(orig.recovery().state(), Instant.ofEpochMilli(r.nextLong()));
     }
 

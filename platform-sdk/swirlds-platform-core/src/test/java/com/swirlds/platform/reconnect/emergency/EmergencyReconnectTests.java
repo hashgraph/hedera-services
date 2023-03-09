@@ -59,7 +59,6 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
 import java.io.IOException;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
@@ -106,8 +105,8 @@ public class EmergencyReconnectTests {
         final Random random = RandomUtils.getRandomPrintSeed();
         final Hash stateHash = RandomUtils.randomHash(random);
         final NotificationEngine notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
-        final EmergencyRecoveryFile emergencyRecoveryFile = new EmergencyRecoveryFile(1L, stateHash,
-                RandomUtils.randomInstant(random));
+        final EmergencyRecoveryFile emergencyRecoveryFile =
+                new EmergencyRecoveryFile(1L, stateHash, RandomUtils.randomInstant(random));
 
         final ReconnectController reconnectController = mock(ReconnectController.class);
         when(reconnectController.acquireLearnerPermit()).thenReturn(true);
@@ -196,8 +195,8 @@ public class EmergencyReconnectTests {
         verify(reconnectController, times(0).description("Connection should be provided"))
                 .provideLearnerConnection(any(Connection.class));
         verify(
-                reconnectController,
-                times(1).description("Permit should be canceled if the reconnect does not complete"))
+                        reconnectController,
+                        times(1).description("Permit should be canceled if the reconnect does not complete"))
                 .cancelLearnerPermit();
     }
 

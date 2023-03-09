@@ -152,10 +152,9 @@ public record EmergencyRecoveryFile(Recovery recovery) {
      */
     public record State(
             long round,
-            @JsonSerialize(using = ToStringSerializer.class) @JsonDeserialize(using = HashDeserializer.class)
-            Hash hash,
+            @JsonSerialize(using = ToStringSerializer.class) @JsonDeserialize(using = HashDeserializer.class) Hash hash,
             @JsonSerialize(using = ToStringSerializer.class) @JsonDeserialize(using = InstantDeserializer.class)
-            Instant timestamp) {}
+                    Instant timestamp) {}
 
     /**
      * Data about the bootstrap state loaded during event recovery (the starting state)
@@ -164,6 +163,5 @@ public record EmergencyRecoveryFile(Recovery recovery) {
      */
     public record Boostrap(
             @JsonSerialize(using = ToStringSerializer.class) @JsonDeserialize(using = InstantDeserializer.class)
-            Instant timestamp) {}
-
+                    Instant timestamp) {}
 }

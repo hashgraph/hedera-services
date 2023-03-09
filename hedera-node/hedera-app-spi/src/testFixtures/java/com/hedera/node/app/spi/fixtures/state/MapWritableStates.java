@@ -40,7 +40,7 @@ public class MapWritableStates implements WritableStates {
     @SuppressWarnings("unchecked")
     @NonNull
     @Override
-    public <K extends Comparable<K>, V> WritableKVState<K, V> get(@NonNull String stateKey) {
+    public <K extends Comparable<? super K>, V> WritableKVState<K, V> get(@NonNull String stateKey) {
         final var state = states.get(Objects.requireNonNull(stateKey));
         if (state == null) {
             throw new IllegalArgumentException("Unknown k/v state key " + stateKey);
