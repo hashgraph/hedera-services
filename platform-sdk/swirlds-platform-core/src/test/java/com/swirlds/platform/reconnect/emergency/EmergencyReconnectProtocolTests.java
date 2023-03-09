@@ -38,6 +38,7 @@ import com.swirlds.platform.state.EmergencyRecoveryFile;
 import com.swirlds.platform.state.EmergencyRecoveryManager;
 import com.swirlds.platform.state.signed.SignedStateManager;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -83,7 +84,7 @@ public class EmergencyReconnectProtocolTests {
         final EmergencyRecoveryManager emergencyRecoveryManager = mock(EmergencyRecoveryManager.class);
         if (initiateParams.emergencyStateRequired) {
             when(emergencyRecoveryManager.isEmergencyStateRequired()).thenReturn(true);
-            final EmergencyRecoveryFile file = new EmergencyRecoveryFile(1L, RandomUtils.randomHash());
+            final EmergencyRecoveryFile file = new EmergencyRecoveryFile(1L, RandomUtils.randomHash(), Instant.now());
             when(emergencyRecoveryManager.getEmergencyRecoveryFile()).thenReturn(file);
         } else {
             when(emergencyRecoveryManager.isEmergencyStateRequired()).thenReturn(false);

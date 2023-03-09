@@ -17,8 +17,7 @@
 package com.swirlds.platform.test.eventflow;
 
 import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.SwirldState2;
-import com.swirlds.platform.state.SwirldStateManagerDouble;
+import com.swirlds.platform.state.SwirldStateManagerImpl;
 import com.swirlds.test.framework.TestQualifierTags;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -32,21 +31,21 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * Tests the flow of transactions and events through the system for {@link SwirldState2} applications
+ * Tests the flow of transactions and events through the system
  */
-public class SwirldState2FlowTests extends EventFlowTests {
+public class SwirldStateFlowTests extends EventFlowTests {
 
-    private SwirldState2Tracker origSwirldState;
+    private SwirldStateTracker origSwirldState;
 
     private static Stream<Arguments> preConsParams() {
         return Stream.of(
-                Arguments.of(null, 4, 1_000, new SwirldState2Tracker(selfId)),
-                Arguments.of(null, 4, 10_000, new SwirldState2Tracker(selfId)));
+                Arguments.of(null, 4, 1_000, new SwirldStateTracker(selfId)),
+                Arguments.of(null, 4, 10_000, new SwirldStateTracker(selfId)));
     }
 
     @BeforeEach
     void setup() {
-        origSwirldState = new SwirldState2Tracker();
+        origSwirldState = new SwirldStateTracker();
     }
 
     @Override
@@ -147,9 +146,9 @@ public class SwirldState2FlowTests extends EventFlowTests {
         verifyNoStateFailures();
     }
 
-    private SwirldState2Tracker getLatestImmutableState() {
-        final SwirldStateManagerDouble ssm2 = (SwirldStateManagerDouble) swirldStateManager;
-        return (SwirldState2Tracker) ssm2.getLatestImmutableState().getSwirldState();
+    private SwirldStateTracker getLatestImmutableState() {
+        final SwirldStateManagerImpl ssm = (SwirldStateManagerImpl) swirldStateManager;
+        return (SwirldStateTracker) ssm.getLatestImmutableState().getSwirldState();
     }
 
     private void verifyNoStateFailures() {

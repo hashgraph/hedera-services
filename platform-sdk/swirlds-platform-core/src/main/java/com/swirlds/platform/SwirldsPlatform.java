@@ -100,12 +100,10 @@ import com.swirlds.platform.components.EventTaskCreator;
 import com.swirlds.platform.components.EventTaskDispatcher;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
 import com.swirlds.platform.components.state.StateManagementComponent;
-import com.swirlds.platform.components.transaction.TransactionTracker;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManagerFactory;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManagerFactory;
-import com.swirlds.platform.components.transaction.throttle.TransThrottleSyncAndCreateRules;
 import com.swirlds.platform.components.wiring.ManualWiring;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.crypto.CryptoStatic;
@@ -208,7 +206,6 @@ import com.swirlds.platform.util.PlatformComponents;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -344,8 +341,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private final StateManagementComponent stateManagementComponent;
     /** last time stamp when pause check timer is active */
     private long pauseCheckTimeStamp;
-    /** Tracks user transactions in the hashgraph */
-    private TransactionTracker transactionTracker;
     /** Tracks recent events created in the network */
     private CriticalQuorum criticalQuorum;
 
@@ -837,8 +832,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             chatterCore.loadFromSignedState(signedState);
         }
 
-        transactionTracker.reset();
-
         logger.info(
                 STARTUP.getMarker(),
                 "Last known events after restart are {}",
@@ -961,8 +954,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 swirldStateManager::submitTransaction,
                 new TransactionMetrics(metrics));
 
-        this.transactionTracker = new TransactionTracker();
-
         if (loadedState.signedStateFromDisk != null) {
             loadIntoConsensusAndEventMapper(loadedState.signedStateFromDisk);
         } else {
@@ -1024,7 +1015,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 preConsensusEventHandler,
                 eventMapper,
                 addedEventMetrics,
-                transactionTracker,
                 criticalQuorum,
                 eventIntakeMetrics);
         if (settings.getChatter().isChatterUsed()) {
@@ -1075,7 +1065,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     eventIntake::addEvent,
                     eventMapper,
                     eventMapper,
-                    transactionTracker,
                     swirldStateManager.getTransactionPool(),
                     freezeManager::isFreezeStarted,
                     new EventCreationRules(List.of()));
@@ -1159,13 +1148,11 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             final State state, final QueueThread<SignedState> stateHashSignQueueThread) {
 
         swirldStateManager = PlatformConstructor.swirldStateManager(
-                threadManager,
                 selfId,
                 preConsensusSystemTransactionManager,
                 postConsensusSystemTransactionManager,
                 metrics,
                 PlatformConstructor.settingsProvider(),
-                this::estimateTime,
                 freezeManager::isFreezeStarted,
                 state);
 
@@ -1199,12 +1186,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 selfId,
                 new EventCreationRules(List.of(
                         selfId, swirldStateManager.getTransactionPool(), startUpEventFrozenManager, freezeManager)),
-                List.of(freezeManager, startUpEventFrozenManager),
-                new TransThrottleSyncAndCreateRules(
-                        List.of(swirldStateManager.getTransactionPool(), swirldStateManager)),
-                stateManagementComponent::getLastRoundSavedToDisk,
-                stateManagementComponent::getLastCompleteRound,
-                transactionTracker,
                 criticalQuorum,
                 initialAddressBook,
                 fallenBehindManager));
@@ -1669,13 +1650,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     }
 
     /**
-     * @return the object that tracks user transactions in the hashgraph
-     */
-    TransactionTracker getTransactionTracker() {
-        return transactionTracker;
-    }
-
-    /**
      * Checks the status of the platform and notifies the SwirldMain if there is a change in status
      */
     void checkPlatformStatus() {
@@ -1764,23 +1738,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     @Override
     public boolean createTransaction(final byte[] trans) {
         return transactionSubmitter.submitTransaction(new SwirldTransaction(trans));
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public Instant estimateTime() {
-        // Estimated consensus times are predicted only here and in Event.estimateTime().
-
-        /* seconds from self creating an event to self creating the next event */
-        double c2c = 1.0 / Math.max(0.5, addedEventMetrics.getEventsCreatedPerSecond());
-        /* seconds from self creating an event to the consensus timestamp that event receives */
-        double c2t = consensusMetrics.getAvgSelfCreatedTimestamp();
-
-        // for now, just use 0. A more sophisticated formula could be used
-        c2c = 0;
-        c2t = 0;
-
-        return Instant.now().plus((long) ((c2c / 2.0 + c2t) * 1_000_000_000.0), ChronoUnit.NANOS);
     }
 
     /**

@@ -22,7 +22,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.SwirldState2;
+import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
 import java.io.IOException;
 import java.util.Objects;
@@ -31,7 +31,7 @@ import java.util.concurrent.CountDownLatch;
 /**
  * A dummy swirld state for SignedStateManager unit tests.
  */
-public class DummySwirldState2 extends AbstractDummySwirldState implements SwirldState2 {
+public class DummySwirldState extends AbstractDummySwirldState implements SwirldState {
 
     // The version history of this class.
     // Versions that have been released must NEVER be given a different value.
@@ -52,11 +52,11 @@ public class DummySwirldState2 extends AbstractDummySwirldState implements Swirl
 
     private CountDownLatch serializationLatch;
 
-    public DummySwirldState2() {
+    public DummySwirldState() {
         super();
     }
 
-    public DummySwirldState2(final AddressBook addressBook) {
+    public DummySwirldState(final AddressBook addressBook) {
         super();
         this.addressBook = addressBook;
     }
@@ -67,11 +67,11 @@ public class DummySwirldState2 extends AbstractDummySwirldState implements Swirl
      * @param protectionEnabled If protection is enabled then this SignedState can only be deleted after explicitly
      *                          enabled.
      */
-    public DummySwirldState2(final boolean protectionEnabled) {
+    public DummySwirldState(final boolean protectionEnabled) {
         super(protectionEnabled);
     }
 
-    private DummySwirldState2(final DummySwirldState2 that) {
+    private DummySwirldState(final DummySwirldState that) {
         super(that);
         this.addressBook = that.addressBook;
     }
@@ -93,9 +93,9 @@ public class DummySwirldState2 extends AbstractDummySwirldState implements Swirl
      * {@inheritDoc}
      */
     @Override
-    public DummySwirldState2 copy() {
+    public DummySwirldState copy() {
         throwIfImmutable();
-        return new DummySwirldState2(this);
+        return new DummySwirldState(this);
     }
 
     /**
@@ -106,7 +106,7 @@ public class DummySwirldState2 extends AbstractDummySwirldState implements Swirl
         if (obj == this) {
             return true;
         }
-        if (!(obj instanceof final DummySwirldState2 that)) {
+        if (!(obj instanceof final DummySwirldState that)) {
             return false;
         }
         return Objects.equals(this.addressBook, that.addressBook);

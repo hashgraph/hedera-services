@@ -22,7 +22,7 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.state.DummySwirldState2;
+import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
@@ -33,9 +33,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-public class SwirldStateManagerDoubleTests {
+public class SwirldStateManagerImplTests {
 
-    private SwirldStateManagerDouble swirldStateManagerDouble;
+    private SwirldStateManagerImpl swirldStateManagerImpl;
     private State initialState;
 
     @BeforeEach
@@ -43,7 +43,7 @@ public class SwirldStateManagerDoubleTests {
         final SwirldsPlatform platform = mock(SwirldsPlatform.class);
         when(platform.getAddressBook()).thenReturn(mock(AddressBook.class));
         initialState = newState();
-        swirldStateManagerDouble = new SwirldStateManagerDouble(
+        swirldStateManagerImpl = new SwirldStateManagerImpl(
                 new NodeId(false, 0L),
                 mock(PreConsensusSystemTransactionManager.class),
                 mock(PostConsensusSystemTransactionManager.class),
@@ -62,7 +62,7 @@ public class SwirldStateManagerDoubleTests {
                 "The initial state is copied and should be referenced once as the previous immutable state.");
         assertEquals(
                 1,
-                swirldStateManagerDouble.getConsensusState().getReservationCount(),
+                swirldStateManagerImpl.getConsensusState().getReservationCount(),
                 "The consensus state should have one reference.");
     }
 
@@ -70,29 +70,29 @@ public class SwirldStateManagerDoubleTests {
     @DisplayName("Load From Signed State - state reference counts")
     void loadFromSignedStateRefCount() {
         final SignedState ss1 = newSignedState();
-        swirldStateManagerDouble.loadFromSignedState(ss1);
+        swirldStateManagerImpl.loadFromSignedState(ss1);
 
         assertEquals(
                 2,
                 ss1.getState().getReservationCount(),
                 "Loading from signed state should increment the reference count, because it is now referenced by the "
-                        + "signed state and the previous immutable state in SwirldStateManagerDouble.");
+                        + "signed state and the previous immutable state in SwirldStateManager.");
         assertEquals(
                 1,
-                swirldStateManagerDouble.getConsensusState().getReservationCount(),
+                swirldStateManagerImpl.getConsensusState().getReservationCount(),
                 "The current consensus state should have a single reference count.");
 
         final SignedState ss2 = newSignedState();
-        swirldStateManagerDouble.loadFromSignedState(ss2);
+        swirldStateManagerImpl.loadFromSignedState(ss2);
 
         assertEquals(
                 2,
                 ss2.getState().getReservationCount(),
                 "Loading from signed state should increment the reference count, because it is now referenced by the "
-                        + "signed state and the previous immutable state in SwirldStateManagerDouble.");
+                        + "signed state and the previous immutable state in SwirldStateManager.");
         assertEquals(
                 1,
-                swirldStateManagerDouble.getConsensusState().getReservationCount(),
+                swirldStateManagerImpl.getConsensusState().getReservationCount(),
                 "The current consensus state should have a single reference count.");
         assertEquals(
                 1,
@@ -103,7 +103,7 @@ public class SwirldStateManagerDoubleTests {
 
     private static State newState() {
         final State state = new State();
-        state.setSwirldState(new DummySwirldState2());
+        state.setSwirldState(new DummySwirldState());
         assertEquals(0, state.getReservationCount(), "A brand new state should have no references.");
         return state;
     }
