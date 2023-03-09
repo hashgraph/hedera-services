@@ -33,7 +33,6 @@ import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
-import com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
 import com.hedera.node.app.service.mono.fees.calculation.RenewAssessment;
@@ -42,6 +41,7 @@ import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
 import com.hedera.node.app.service.mono.fees.calculation.consensus.txns.UpdateTopicResourceUsage;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
@@ -91,8 +91,8 @@ class AdaptedMonoFeeCalculatorTest {
             true,
             Bytes.wrap("MOCK_RUNNING_HASH".getBytes()),
             "MOCK_MEMO",
-            PbjKeyConverter.fromGrpcKey(A_COMPLEX_KEY),
-            PbjKeyConverter.fromGrpcKey(B_COMPLEX_KEY));
+            PbjConverter.fromGrpcKey(A_COMPLEX_KEY),
+            PbjConverter.fromGrpcKey(B_COMPLEX_KEY));
 
     private static final TransactionBody MOCK_TXN = TransactionBody.newBuilder()
             .setConsensusUpdateTopic(ConsensusUpdateTopicTransactionBody.newBuilder()

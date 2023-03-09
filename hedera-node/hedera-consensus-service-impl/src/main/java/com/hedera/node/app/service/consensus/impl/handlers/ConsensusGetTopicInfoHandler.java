@@ -19,6 +19,7 @@ package com.hedera.node.app.service.consensus.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromGrpcKey;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
@@ -37,7 +38,6 @@ import com.hedera.hapi.node.consensus.ConsensusGetTopicInfoResponse;
 import com.hedera.hapi.node.consensus.ConsensusTopicInfo;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
-import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.spi.meta.QueryContext;
@@ -159,9 +159,12 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
             info.runningHash(Bytes.wrap(meta.runningHash()));
             info.sequenceNumber(meta.sequenceNumber());
             info.expirationTime(meta.expirationTimestamp());
-            meta.adminKey().ifPresent(key -> info.adminKey(asKeyUnchecked((JKey) key)));
-            meta.submitKey().ifPresent(key -> info.submitKey(asKeyUnchecked((JKey) key)));
-            info.autoRenewPeriod(Duration.newBuilder().seconds(meta.autoRenewDurationSeconds()));
+            meta.adminKey().ifPresent(key -> info.adminKey(
+                    fromGrpcKey(asKeyUnchecked((JKey) key))));
+            meta.submitKey().ifPresent(key -> info.submitKey(
+                    fromGrpcKey(asKeyUnchecked((JKey) key))));
+            info.autoRenewPeriod(Duration.newBuilder().seconds(
+                    meta.autoRenewDurationSeconds()));
             meta.autoRenewAccountId()
                     .ifPresent(account ->
                             info.autoRenewAccount(AccountID.newBuilder().accountNum(account)));

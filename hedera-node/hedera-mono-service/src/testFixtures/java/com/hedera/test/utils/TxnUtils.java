@@ -16,6 +16,7 @@
 
 package com.hedera.test.utils;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -30,6 +31,7 @@ import com.hedera.node.app.service.mono.exceptions.ResourceLimitException;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.submerkle.CurrencyAdjustments;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
@@ -265,6 +267,19 @@ public class TxnUtils {
                 .payerKt(payerKey)
                 .transfers(TinyBarsFromTo.tinyBarsFromTo(payer, beneficiary, amount))
                 .get();
+    }
+
+    public static com.hedera.hapi.node.base.Transaction payerSponsoredPbjTransfer(
+            String payer,
+            KeyTree payerKey,
+            String beneficiary,
+            long amount) {
+        try {
+            final var monoTransfer = payerSponsoredTransfer(payer, payerKey, beneficiary, amount);
+            return toPbj(monoTransfer);
+        } catch (final Throwable e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static byte[] randomUtf8Bytes(int n) {

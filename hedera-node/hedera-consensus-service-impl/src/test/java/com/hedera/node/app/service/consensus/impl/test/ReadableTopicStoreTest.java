@@ -43,7 +43,7 @@ class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
     @Test
     void getsTopicMetadataIfTopicExists() {
         givenValidTopic();
-        final var topicMeta = subject.getTopicMetadata(topicId);
+        final var topicMeta = subject.getTopicMetadata(WELL_KNOWN_TOPIC_ID);
 
         assertNotNull(topicMeta);
         assertNotNull(topicMeta.metadata());
@@ -56,7 +56,7 @@ class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
         assertEquals(adminKey.toString(), meta.submitKey().map(Object::toString).orElse("N/A"));
         assertEquals(topic.sequenceNumber(), meta.sequenceNumber());
         assertEquals(topic.autoRenewPeriod(), meta.autoRenewDurationSeconds());
-        assertEquals(OptionalLong.of(autoRenewId.getAccountNum()), meta.autoRenewAccountId());
+        assertEquals(OptionalLong.of(autoRenewId.accountNum().get()), meta.autoRenewAccountId());
         assertEquals(Optional.of(memo), meta.memo());
         assertFalse(meta.isDeleted());
         assertArrayEquals(runningHash, meta.runningHash());
@@ -69,8 +69,8 @@ class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
                 Optional.of(adminKey),
                 Optional.of(adminKey),
                 100L,
-                OptionalLong.of(autoRenewId.getAccountNum()),
-                Timestamp.newBuilder().setSeconds(100L).build(),
+                OptionalLong.of(autoRenewId.accountNum().get()),
+                WELL_KNOWN_EXPIRY,
                 1L,
                 new byte[48],
                 topicEntityNum.longValue(),
@@ -90,8 +90,8 @@ class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
                 Optional.of(adminKey),
                 Optional.of(adminKey),
                 100L,
-                OptionalLong.of(autoRenewId.getAccountNum()),
-                Timestamp.newBuilder().setSeconds(100L).build(),
+                OptionalLong.of(autoRenewId.accountNum().get()),
+                WELL_KNOWN_EXPIRY,
                 1L,
                 new byte[48],
                 topicEntityNum.longValue(),
@@ -109,7 +109,7 @@ class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
         readableStore = new ReadableTopicStore(readableStates);
         subject = new ReadableTopicStore(readableStates);
 
-        final var topicMeta = subject.getTopicMetadata(topicId);
+        final var topicMeta = subject.getTopicMetadata(WELL_KNOWN_TOPIC_ID);
 
         assertNotNull(topicMeta);
         assertNotNull(topicMeta.metadata());
@@ -136,7 +136,7 @@ class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
         given(readableStates.<Long, MerkleTopic>get(TOPICS)).willReturn(state);
         subject = new ReadableTopicStore(readableStates);
 
-        final var topicMeta = subject.getTopicMetadata(topicId);
+        final var topicMeta = subject.getTopicMetadata(WELL_KNOWN_TOPIC_ID);
 
         assertNotNull(topicMeta);
         assertNull(topicMeta.metadata());

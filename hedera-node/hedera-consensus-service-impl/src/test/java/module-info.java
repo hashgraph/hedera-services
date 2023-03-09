@@ -15,4 +15,5 @@ open module com.hedera.node.app.service.consensus.impl.test {
     requires org.apache.commons.codec;
     requires com.hedera.node.hapi;
     requires com.hedera.hashgraph.pbj.runtime;
+    requires com.github.spotbugs.annotations;
 }

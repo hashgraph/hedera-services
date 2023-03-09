@@ -17,29 +17,29 @@
 package com.hedera.node.app.fees;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toProtoQuery;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.QueryHeader;
+import com.hedera.hapi.node.consensus.ConsensusGetTopicInfoQuery;
 import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.hashgraph.pbj.runtime.io.Bytes;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
-import com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter;
 import com.hedera.node.app.service.mono.fees.calculation.consensus.queries.GetTopicInfoResourceUsage;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.pbj.runtime.io.Bytes;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoQuery;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.TopicID;
+
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -61,8 +61,10 @@ class MonoGetTopicInfoUsageTest {
 
     private final Key key = A_COMPLEX_KEY;
     private final EntityNum topicEntityNum = EntityNum.fromLong(1L);
-    private final TopicID topicId =
-            TopicID.newBuilder().setTopicNum(topicEntityNum.longValue()).build();
+    private final com.hedera.hapi.node.base.TopicID topicId =
+            com.hedera.hapi.node.base.TopicID.newBuilder()
+                    .topicNum(topicEntityNum.longValue())
+                    .build();
     private final String memo = "test memo";
     private final long expirationTime = 1_234_567L;
     private final long sequenceNumber = 1L;
@@ -70,7 +72,7 @@ class MonoGetTopicInfoUsageTest {
     private final boolean deleted = true;
 
     private final Topic topic = new Topic(
-            topicId.getTopicNum(),
+            topicId.topicNum(),
             sequenceNumber,
             expirationTime,
             autoRenewSecs,
@@ -78,8 +80,8 @@ class MonoGetTopicInfoUsageTest {
             deleted,
             Bytes.wrap(runningHash),
             memo,
-            PbjKeyConverter.fromGrpcKey(key),
-            PbjKeyConverter.fromGrpcKey(key));
+            PbjConverter.fromGrpcKey(key),
+            PbjConverter.fromGrpcKey(key));
 
     private final MerkleTopic adapterTopic = new MerkleTopic(
             memo,
@@ -104,16 +106,17 @@ class MonoGetTopicInfoUsageTest {
 
     @Test
     void usesDelegateWithAdaptedMerkleTopic() {
-        final var query = Query.newBuilder()
-                .setConsensusGetTopicInfo(ConsensusGetTopicInfoQuery.newBuilder()
-                        .setHeader(QueryHeader.newBuilder().setResponseType(ResponseType.ANSWER_STATE_PROOF))
-                        .setTopicID(topicId))
+        final var query = com.hedera.hapi.node.transaction.Query.newBuilder()
+                .consensusGetTopicInfo(ConsensusGetTopicInfoQuery.newBuilder()
+                        .header(QueryHeader.newBuilder()
+                                .responseType(com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF))
+                        .topicID(topicId))
                 .build();
         given(topicStore.getTopicLeaf(topicId)).willReturn(Optional.of(topic));
         given(delegate.usageGivenTypeAndTopic(adapterTopic, ResponseType.ANSWER_STATE_PROOF))
                 .willReturn(mockUsage);
 
-        final var usage = subject.computeUsage(query, topicStore);
+        final var usage = subject.computeUsage(toProtoQuery(query), topicStore);
 
         assertSame(mockUsage, usage);
     }

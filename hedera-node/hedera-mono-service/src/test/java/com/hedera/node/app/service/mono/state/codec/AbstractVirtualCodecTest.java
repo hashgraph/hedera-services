@@ -19,6 +19,9 @@ package com.hedera.node.app.service.mono.state.codec;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.Bytes;
 import com.hedera.pbj.runtime.io.BytesBuffer;
+import com.hedera.pbj.runtime.io.DataBuffer;
+import com.hedera.pbj.runtime.io.DataInputStream;
+import com.hedera.pbj.runtime.io.DataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import org.junit.jupiter.api.Assertions;
@@ -87,7 +90,7 @@ abstract class AbstractVirtualCodecTest<T extends Record> {
         final var baos = new ByteArrayOutputStream();
         final var out = new SerializableDataOutputStream(baos);
         try {
-            subject.write(instance, out);
+            subject.write(instance, new DataOutputStream(out));
             out.flush();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -97,7 +100,7 @@ abstract class AbstractVirtualCodecTest<T extends Record> {
 
     protected byte[] writeUsingBuffer(final T instance) {
         final var buffer = ByteBuffer.allocate(MAX_SUPPORTED_SERIALIZED_SIZE);
-        final var bb = new ByteBufferDataOutput(buffer);
+        final var bb = DataBuffer.wrap(buffer);
         try {
             subject.write(instance, bb);
         } catch (IOException e) {
@@ -113,7 +116,7 @@ abstract class AbstractVirtualCodecTest<T extends Record> {
         final var in = new SerializableDataInputStream(bais);
         byte[] leftover;
         try {
-            instance = subject.parse(in);
+            instance = subject.parse(new DataInputStream(in));
             leftover = in.readAllBytes();
         } catch (IOException e) {
             throw new UncheckedIOException(e);

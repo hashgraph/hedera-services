@@ -16,12 +16,12 @@
 
 package com.hedera.node.app.service.consensus.impl;
 
-import static com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter.fromPbjKey;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjKey;
 
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
@@ -41,9 +41,9 @@ public class TopicStore {
                 fromPbjKey(topic.submitKey()),
                 topic.autoRenewPeriod(),
                 maybeAutoRenewNum,
-                Timestamp.newBuilder().setSeconds(topic.expiry()).build(),
+                Timestamp.newBuilder().seconds(topic.expiry()).build(),
                 topic.sequenceNumber(),
-                PbjKeyConverter.unwrapPbj(topic.runningHash()),
+                PbjConverter.unwrapPbj(topic.runningHash()),
                 topic.topicNumber(),
                 topic.deleted());
     }

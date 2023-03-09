@@ -47,6 +47,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.files.HFileMeta;
 import com.hedera.node.app.service.mono.files.HederaFs;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
@@ -87,6 +88,16 @@ import org.apache.commons.codec.DecoderException;
 
 public interface TxnHandlingScenario {
     PlatformTxnAccessor platformTxn() throws Throwable;
+
+    default com.hedera.hapi.node.transaction.TransactionBody pbjTxnBody() {
+        try {
+            return PbjConverter.protoToPbj(
+                    platformTxn().getTxn(),
+                    com.hedera.hapi.node.transaction.TransactionBody.class);
+        } catch (final Throwable e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     KeyFactory overlapFactory = new KeyFactory(OverlappingKeyGenerator.withDefaultOverlaps());
 

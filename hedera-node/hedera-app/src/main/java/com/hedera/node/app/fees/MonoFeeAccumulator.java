@@ -17,7 +17,6 @@
 package com.hedera.node.app.fees;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_GET_TOPIC_INFO;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
@@ -32,6 +31,8 @@ import java.util.HashMap;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_GET_TOPIC_INFO;
 
 /**
  * Adapter for {@link UsageBasedFeeCalculator} to be used in {@link QueryWorkflow}. This class is
@@ -75,7 +76,7 @@ public class MonoFeeAccumulator implements FeeAccumulator {
         // resource estimator would hit a ClassCastException
         if (functionality == CONSENSUS_GET_TOPIC_INFO) {
             final var topicStore = readableStoreFactory.createTopicStore();
-            final var usage = getTopicInfoUsage.computeUsage(query, topicStore);
+            final var usage = getTopicInfoUsage.computeUsage(monoQuery, topicStore);
             return feeCalculator.computeFromQueryResourceUsage(usage, usagePrices, monoNow);
         }
         return feeCalculator.computePayment(monoQuery, usagePrices, stateView.get(), monoNow, new HashMap<>());

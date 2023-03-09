@@ -16,29 +16,7 @@
 
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
-import static com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter.fromGrpcKey;
-import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_A;
-import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_B;
-import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertOkResponse;
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doThrow;
-
+import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
@@ -55,17 +33,6 @@ import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.test.utils.IdUtils;
-import com.hedera.test.utils.KeyUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import java.time.Instant;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -73,10 +40,32 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
+import java.util.List;
+
+import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_A;
+import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_B;
+import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertOkResponse;
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
+import static com.hedera.test.utils.KeyUtils.A_COMPLEX_PBJ_KEY;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doThrow;
+
 @ExtendWith(MockitoExtension.class)
 class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
-    static final AccountID ACCOUNT_ID_3 = IdUtils.asAccount("0.0.3");
-    private static final AccountID AUTO_RENEW_ACCOUNT = IdUtils.asAccount("0.0.4");
+    static final com.hedera.hapi.node.base.AccountID ACCOUNT_ID_3 =
+            com.hedera.hapi.node.base.AccountID.newBuilder().accountNum(3L).build();
+    private static final com.hedera.hapi.node.base.AccountID AUTO_RENEW_ACCOUNT =
+            com.hedera.hapi.node.base.AccountID.newBuilder().accountNum(4L).build();
 
     @Mock
     private AccountAccess keyFinder;
@@ -96,24 +85,28 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
     private WritableTopicStore topicStore;
     private ConsensusCreateTopicHandler subject;
 
-    private static TransactionBody newCreateTxn(Key adminKey, Key submitKey, boolean hasAutoRenewAccount) {
-        final var txnId = TransactionID.newBuilder().setAccountID(ACCOUNT_ID_3).build();
-        final var createTopicBuilder = ConsensusCreateTopicTransactionBody.newBuilder();
+    private com.hedera.hapi.node.transaction.TransactionBody newCreateTxn(
+            com.hedera.hapi.node.base.Key adminKey,
+            com.hedera.hapi.node.base.Key submitKey,
+            boolean hasAutoRenewAccount) {
+        final var txnId = com.hedera.hapi.node.base.TransactionID.newBuilder()
+                .accountID(ACCOUNT_ID_3)
+                .build();
+        final var createTopicBuilder = com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody.newBuilder();
         if (adminKey != null) {
-            createTopicBuilder.setAdminKey(adminKey);
+            createTopicBuilder.adminKey(adminKey);
         }
         if (submitKey != null) {
-            createTopicBuilder.setSubmitKey(submitKey);
+            createTopicBuilder.submitKey(submitKey);
         }
-        createTopicBuilder.setAutoRenewPeriod(
-                Duration.newBuilder().setSeconds(10000L).build());
-        createTopicBuilder.setMemo("memo");
+        createTopicBuilder.autoRenewPeriod(WELL_KNOWN_AUTO_RENEW_PERIOD);
+        createTopicBuilder.memo("memo");
         if (hasAutoRenewAccount) {
-            createTopicBuilder.setAutoRenewAccount(AUTO_RENEW_ACCOUNT);
+            createTopicBuilder.autoRenewAccount(AUTO_RENEW_ACCOUNT);
         }
-        return TransactionBody.newBuilder()
-                .setTransactionID(txnId)
-                .setConsensusCreateTopic(createTopicBuilder.build())
+        return com.hedera.hapi.node.transaction.TransactionBody.newBuilder()
+                .transactionID(txnId)
+                .consensusCreateTopic(createTopicBuilder.build())
                 .build();
     }
 
@@ -217,17 +210,18 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
     @DisplayName("Fails if payer is not found")
     void createFailsWhenPayerNotFound() {
         // given:
-        given(keyFinder.getKey((AccountID) any()))
+        final var missing = com.hedera.hapi.node.base.AccountID.newBuilder().accountNum(1234).build();
+        given(keyFinder.getKey(missing))
                 .willReturn(KeyOrLookupFailureReason.withFailureReason(
-                        ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST)); // Any error response code
+                        com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST)); // Any error response code
         final var inputTxn = newCreateTxn(null, null, false);
 
         // when:
-        final var context = new PreHandleContext(keyFinder, inputTxn, IdUtils.asAccount("0.0.1234"));
+        final var context = new PreHandleContext(keyFinder, inputTxn, missing);
         subject.preHandle(context);
 
         // then:
-        assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID);
+        assertThat(context.getStatus()).isEqualTo(com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID);
         assertThat(context.failed()).isTrue();
         assertThat(context.getPayerKey()).isNull();
         assertThat(context.getRequiredNonPayerKeys()).isEmpty();
@@ -238,15 +232,15 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
     void autoAccountKeyIsNull() {
         // given:
         mockPayerLookup();
-        final var acct1234 = IdUtils.asAccount("0.0.1234");
+        final var acct1234 = com.hedera.hapi.node.base.AccountID.newBuilder().accountNum(1234).build();
         given(keyFinder.getKey(acct1234))
                 .willReturn(KeyOrLookupFailureReason.withFailureReason(
-                        ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST)); // Any error response code
-        final var inputTxn = TransactionBody.newBuilder()
-                .setTransactionID(
-                        TransactionID.newBuilder().setAccountID(ACCOUNT_ID_3).build())
-                .setConsensusCreateTopic(ConsensusCreateTopicTransactionBody.newBuilder()
-                        .setAutoRenewAccount(acct1234)
+                        com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST)); // Any error response code
+        final var inputTxn = com.hedera.hapi.node.transaction.TransactionBody.newBuilder()
+                .transactionID(
+                        com.hedera.hapi.node.base.TransactionID.newBuilder().accountID(ACCOUNT_ID_3).build())
+                .consensusCreateTopic(ConsensusCreateTopicTransactionBody.newBuilder()
+                        .autoRenewAccount(acct1234)
                         .build())
                 .build();
 
@@ -255,7 +249,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         subject.preHandle(context);
 
         // then:
-        assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
+        assertThat(context.getStatus()).isEqualTo(com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
         assertThat(context.failed()).isTrue();
     }
 
@@ -280,16 +274,16 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
     void handleWorksAsExpected() {
         final var adminKey = SIMPLE_KEY_A;
         final var submitKey = SIMPLE_KEY_B;
-        final var op = newCreateTxn(adminKey, submitKey, true).getConsensusCreateTopic();
+        final var op = newCreateTxn(adminKey, submitKey, true).consensusCreateTopic().get();
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
                 .willReturn(new ExpiryMeta(
-                        1_234_567L + op.getAutoRenewPeriod().getSeconds(),
-                        op.getAutoRenewPeriod().getSeconds(),
-                        op.getAutoRenewAccount().getAccountNum()));
+                        1_234_567L + op.autoRenewPeriod().seconds(),
+                        op.autoRenewPeriod().seconds(),
+                        op.autoRenewAccount().accountNum().get()));
         given(handleContext.newEntityNumSupplier()).willReturn(() -> 1_234L);
 
         subject.handle(handleContext, op, config, recordBuilder, topicStore);
@@ -300,11 +294,11 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var actualTopic = createdTopic.get();
         assertEquals(0L, actualTopic.sequenceNumber());
         assertEquals("memo", actualTopic.memo());
-        assertEquals(fromGrpcKey(adminKey), actualTopic.adminKey());
-        assertEquals(fromGrpcKey(submitKey), actualTopic.submitKey());
+        assertEquals(adminKey, actualTopic.adminKey());
+        assertEquals(submitKey, actualTopic.submitKey());
         assertEquals(1244567, actualTopic.expiry());
         assertEquals(10000, actualTopic.autoRenewPeriod());
-        assertEquals(AUTO_RENEW_ACCOUNT.getAccountNum(), actualTopic.autoRenewAccountNumber());
+        assertEquals(AUTO_RENEW_ACCOUNT.accountNum(), actualTopic.autoRenewAccountNumber());
         assertEquals(1_234L, recordBuilder.getCreatedTopic());
         assertTrue(topicStore.get(1234L).isPresent());
     }
@@ -312,16 +306,16 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
     @Test
     @DisplayName("Handle works as expected without keys")
     void handleDoesntRequireKeys() {
-        final var op = newCreateTxn(null, null, true).getConsensusCreateTopic();
+        final var op = newCreateTxn(null, null, true).consensusCreateTopic().get();
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
                 .willReturn(new ExpiryMeta(
-                        1_234_567L + op.getAutoRenewPeriod().getSeconds(),
-                        op.getAutoRenewPeriod().getSeconds(),
-                        op.getAutoRenewAccount().getAccountNum()));
+                        1_234_567L + op.autoRenewPeriod().seconds(),
+                        op.autoRenewPeriod().seconds(),
+                        op.autoRenewAccount().accountNum().get()));
         given(handleContext.newEntityNumSupplier()).willReturn(() -> 1_234L);
 
         subject.handle(handleContext, op, config, recordBuilder, topicStore);
@@ -336,7 +330,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         assertNull(actualTopic.submitKey());
         assertEquals(1244567, actualTopic.expiry());
         assertEquals(10000, actualTopic.autoRenewPeriod());
-        assertEquals(AUTO_RENEW_ACCOUNT.getAccountNum(), actualTopic.autoRenewAccountNumber());
+        assertEquals(AUTO_RENEW_ACCOUNT.accountNum().get(), actualTopic.autoRenewAccountNumber());
         assertEquals(1_234L, recordBuilder.getCreatedTopic());
         assertTrue(topicStore.get(1234L).isPresent());
     }
@@ -344,35 +338,35 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
     @Test
     @DisplayName("Translates INVALID_EXPIRATION_TIME to AUTO_RENEW_DURATION_NOT_IN_RANGE")
     void translatesInvalidExpiryException() {
-        final var op = newCreateTxn(null, null, true).getConsensusCreateTopic();
+        final var op = newCreateTxn(null, null, true).consensusCreateTopic().get();
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
-                .willThrow(new HandleStatusException(INVALID_EXPIRATION_TIME));
+                .willThrow(new HandleStatusException(com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME));
 
         final var failure = assertThrows(
                 HandleStatusException.class,
                 () -> subject.handle(handleContext, op, config, recordBuilder, topicStore));
-        assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, failure.getStatus());
+        assertEquals(com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE, failure.getStatus());
     }
 
     @Test
     @DisplayName("Doesnt translate INVALID_AUTORENEW_ACCOUNT")
     void doesntTranslateInvalidAutoRenewNum() {
-        final var op = newCreateTxn(null, null, true).getConsensusCreateTopic();
+        final var op = newCreateTxn(null, null, true).consensusCreateTopic().get();
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
-                .willThrow(new HandleStatusException(INVALID_AUTORENEW_ACCOUNT));
+                .willThrow(new HandleStatusException(com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT));
 
         final var failure = assertThrows(
                 HandleStatusException.class,
                 () -> subject.handle(handleContext, op, config, recordBuilder, topicStore));
-        assertEquals(INVALID_AUTORENEW_ACCOUNT, failure.getStatus());
+        assertEquals(com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT, failure.getStatus());
     }
 
     @Test
@@ -380,11 +374,12 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
     void handleThrowsIfAttributeValidatorFails() {
         final var adminKey = SIMPLE_KEY_A;
         final var submitKey = SIMPLE_KEY_B;
-        final var op = newCreateTxn(adminKey, submitKey, true).getConsensusCreateTopic();
+        final var op = newCreateTxn(adminKey, submitKey, true).consensusCreateTopic().get();
 
         given(handleContext.attributeValidator()).willReturn(validator);
 
-        doThrow(new HandleStatusException(MEMO_TOO_LONG)).when(validator).validateMemo(op.getMemo());
+        doThrow(new HandleStatusException(com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG))
+                .when(validator).validateMemo(op.memo());
 
         assertThrows(
                 HandleStatusException.class,
@@ -397,11 +392,11 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
     void handleThrowsIfKeyValidatorFails() {
         final var adminKey = SIMPLE_KEY_A;
         final var submitKey = SIMPLE_KEY_B;
-        final var op = newCreateTxn(adminKey, submitKey, true).getConsensusCreateTopic();
+        final var op = newCreateTxn(adminKey, submitKey, true).consensusCreateTopic().get();
 
         given(handleContext.attributeValidator()).willReturn(validator);
 
-        doThrow(new HandleStatusException(BAD_ENCODING)).when(validator).validateKey(adminKey);
+        doThrow(new HandleStatusException(com.hedera.hapi.node.base.ResponseCodeEnum.BAD_ENCODING)).when(validator).validateKey(adminKey);
         assertThrows(
                 HandleStatusException.class,
                 () -> subject.handle(handleContext, op, config, recordBuilder, topicStore));
@@ -413,7 +408,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
     void failsWhenMaxRegimeExceeds() {
         final var adminKey = SIMPLE_KEY_A;
         final var submitKey = SIMPLE_KEY_B;
-        final var op = newCreateTxn(adminKey, submitKey, true).getConsensusCreateTopic();
+        final var op = newCreateTxn(adminKey, submitKey, true).consensusCreateTopic().get();
         final var writableState = writableTopicStateWithOneKey();
 
         given(writableStates.<EntityNum, Topic>get(TOPICS)).willReturn(writableState);
@@ -426,7 +421,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var msg = assertThrows(
                 HandleStatusException.class,
                 () -> subject.handle(handleContext, op, config, recordBuilder, topicStore));
-        assertEquals(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, msg.getStatus());
+        assertEquals(com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, msg.getStatus());
         assertEquals(0, topicStore.modifiedTopics().size());
     }
 
@@ -435,7 +430,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
     void validatedAutoRenewAccount() {
         final var adminKey = SIMPLE_KEY_A;
         final var submitKey = SIMPLE_KEY_B;
-        final var op = newCreateTxn(adminKey, submitKey, true).getConsensusCreateTopic();
+        final var op = newCreateTxn(adminKey, submitKey, true).consensusCreateTopic().get();
         final var writableState = writableTopicStateWithOneKey();
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
@@ -463,10 +458,10 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
     // Note: there are more tests in ConsensusCreateTopicHandlerParityTest.java
 
     private HederaKey mockPayerLookup() {
-        return mockPayerLookup(KeyUtils.A_COMPLEX_KEY);
+        return mockPayerLookup(A_COMPLEX_PBJ_KEY);
     }
 
-    private HederaKey mockPayerLookup(Key key) {
+    private HederaKey mockPayerLookup(com.hedera.hapi.node.base.Key key) {
         final var returnKey = asHederaKey(key).orElseThrow();
         given(keyFinder.getKey(ACCOUNT_ID_3)).willReturn(withKey(returnKey));
         return returnKey;

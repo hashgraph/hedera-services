@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.consensus.impl.test;
 
-import com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -25,7 +24,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class UtilsConstructorTest {
-    private static final Set<Class<?>> toBeTested = new HashSet<>(Arrays.asList(PbjKeyConverter.class));
+    private static final Set<Class<?>> toBeTested = new HashSet<>(Arrays.asList());
 
     @Test
     void throwsInConstructor() {

@@ -1,10 +1,10 @@
 package com.hedera.node.app.service.mono.state.codec;
 
 import com.hedera.pbj.runtime.Codec;
-import com.hedera.pbj.runtime.io.BytesBuffer;
 import com.hedera.pbj.runtime.io.DataBuffer;
 import com.hedera.pbj.runtime.io.DataInput;
 import com.hedera.pbj.runtime.io.DataOutput;
+import com.hedera.pbj.runtime.io.DataOutputStream;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -85,15 +85,8 @@ public class MonoMapCodecAdapter {
             @Override
             public T parse(final @NonNull DataInput input) throws IOException {
                 final var item = factory.get();
-                // TODO - this will never be true, we need the filtered stream from (DataInputStream) in
-                if (input instanceof SerializableDataInputStream in) {
-                    item.deserialize(in, version);
-                } else if (input instanceof DataBuffer db) {
-                    // TODO - need to have access to the wrapped ByteBuffer here
-                } else {
-                    throw new IllegalArgumentException(
-                            "Unsupported DataInput type: " + input.getClass().getName());
-                }
+                final var in = new SerializableDataInputStream(PbjInputStream.wrapping(input));
+                item.deserialize(in, version);
                 return item;
             }
 
@@ -105,15 +98,8 @@ public class MonoMapCodecAdapter {
 
             @Override
             public void write(final @NonNull T item, final @NonNull DataOutput output) throws IOException {
-                // TODO - this will never be true, we need the filtered stream from (DataOutputStream) out
-                if (output instanceof SerializableDataOutputStream out) {
-                    item.serialize(out);
-                } else if (output instanceof DataBuffer db) {
-                    // TODO - need to have access to the wrapped ByteBuffer here
-                } else {
-                    throw new IllegalArgumentException(
-                            "Unsupported DataOutput type: " + output.getClass().getName());
-                }
+                final var out = new SerializableDataOutputStream(PbjOutputStream.wrapping(output));
+                item.serialize(out);
             }
 
             @Override
@@ -140,15 +126,8 @@ public class MonoMapCodecAdapter {
             @Override
             public T parse(final @NonNull DataInput input) throws IOException {
                 final var item = factory.get();
-                // TODO - this will never be true, we need the filtered stream from (DataInputStream) in
-                if (input instanceof SerializableDataInputStream in) {
-                    item.deserialize(in, version);
-                } else if (input instanceof DataBuffer db) {
-                    // TODO - need to have access to the wrapped ByteBuffer here
-                } else {
-                    throw new IllegalArgumentException(
-                            "Unsupported DataInput type: " + input.getClass().getName());
-                }
+                final var in = new SerializableDataInputStream(PbjInputStream.wrapping(input));
+                item.deserialize(in, version);
                 return item;
             }
 
@@ -160,15 +139,8 @@ public class MonoMapCodecAdapter {
 
             @Override
             public void write(final @NonNull T item, final @NonNull DataOutput output) throws IOException {
-                // TODO - this will never be true, we need the filtered stream from (DataOutputStream) out
-                if (output instanceof SerializableDataOutputStream out) {
-                    item.serialize(out);
-                } else if (output instanceof DataBuffer db) {
-                    // TODO - need to have access to the wrapped ByteBuffer here
-                } else {
-                    throw new IllegalArgumentException(
-                            "Unsupported DataOutput type: " + output.getClass().getName());
-                }
+                final var out = new SerializableDataOutputStream(PbjOutputStream.wrapping(output));
+                item.serialize(out);
             }
 
             @Override

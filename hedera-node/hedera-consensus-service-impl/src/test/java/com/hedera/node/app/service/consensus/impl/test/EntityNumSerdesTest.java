@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.service.consensus.impl.serdes.EntityNumCodec;
+import com.hedera.node.app.service.consensus.impl.codecs.EntityNumCodec;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;

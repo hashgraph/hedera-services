@@ -18,6 +18,7 @@ package com.hedera.test.utils;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -57,6 +58,8 @@ public class KeyUtils {
                             .addKeys(KEY_BUILDER.apply(B_NAME))
                             .addKeys(A_THRESHOLD_KEY)))
             .build();
+    public static final com.hedera.hapi.node.base.Key A_COMPLEX_PBJ_KEY = PbjConverter.protoToPbj(
+            A_COMPLEX_KEY, com.hedera.hapi.node.base.Key.class);
     public static final Key B_COMPLEX_KEY = Key.newBuilder()
             .setThresholdKey(ThresholdKey.newBuilder()
                     .setThreshold(2)
