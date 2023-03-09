@@ -21,10 +21,15 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.exception.InvalidAccountIDException;
 import com.hedera.node.app.service.mono.legacy.exception.KeyPrefixMismatchException;
+import com.hedera.node.app.service.mono.sigs.Expansion;
+import com.hedera.node.app.service.mono.sigs.factories.TxnScopedPlatformSigFactory;
+import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.node.app.service.mono.sigs.verification.PrecheckVerifier;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.state.HederaState;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -33,9 +38,11 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.TransactionSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -46,9 +53,47 @@ import javax.inject.Singleton;
 public class MonoSignaturePreparer implements SignaturePreparer {
     private final PrecheckVerifier precheckVerifier;
 
+    private final Expansion.CryptoSigsCreation cryptoSigsCreation;
+    private final Function<SignatureMap, PubKeyToSigBytes> keyToSigFactory;
+    private final Function<TxnAccessor, TxnScopedPlatformSigFactory> scopedFactoryProvider;
+
     @Inject
-    public MonoSignaturePreparer(final @NonNull PrecheckVerifier precheckVerifier) {
+    public MonoSignaturePreparer(
+            final @NonNull PrecheckVerifier precheckVerifier,
+            final @NonNull Expansion.CryptoSigsCreation cryptoSigsCreation,
+            final @NonNull Function<SignatureMap, PubKeyToSigBytes> keyToSigFactory,
+            final @NonNull Function<TxnAccessor, TxnScopedPlatformSigFactory> scopedFactoryProvider) {
         this.precheckVerifier = Objects.requireNonNull(precheckVerifier);
+        this.cryptoSigsCreation = Objects.requireNonNull(cryptoSigsCreation);
+        this.keyToSigFactory = Objects.requireNonNull(keyToSigFactory);
+        this.scopedFactoryProvider = Objects.requireNonNull(scopedFactoryProvider);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public SigExpansionResult expandedSigsFor(
+            final @NonNull Transaction transaction,
+            final @NonNull HederaKey payerKey,
+            final @NonNull List<HederaKey> otherPartyKeys) {
+        final var accessor = SignedTxnAccessor.uncheckedFrom(transaction);
+        final var keyToSig = keyToSigFactory.apply(accessor.getSigMap());
+        final var scopedFactory = scopedFactoryProvider.apply(accessor);
+
+        final List<TransactionSignature> netCryptoSigs = new ArrayList<>();
+        final var payerResult = cryptoSigsCreation.createFrom(List.of((JKey) payerKey), keyToSig, scopedFactory);
+        if (payerResult.hasFailed()) {
+            return new SigExpansionResult(netCryptoSigs, payerResult.asCode());
+        }
+        netCryptoSigs.addAll(payerResult.getPlatformSigs());
+        final var otherPartiesResult = cryptoSigsCreation.createFrom((List) otherPartyKeys, keyToSig, scopedFactory);
+        if (otherPartiesResult.hasFailed()) {
+            return new SigExpansionResult(netCryptoSigs, otherPartiesResult.asCode());
+        }
+        netCryptoSigs.addAll(otherPartiesResult.getPlatformSigs());
+        return new SigExpansionResult(netCryptoSigs, OK);
     }
 
     @Override

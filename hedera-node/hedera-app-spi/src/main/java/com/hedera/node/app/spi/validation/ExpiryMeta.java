@@ -26,7 +26,20 @@ package com.hedera.node.app.spi.validation;
  * @param autoRenewPeriod the number of seconds between auto-renewals
  * @param autoRenewNum the number of the account to be charged for auto-renewals
  */
-public record ExpiryMeta(long expiry, long autoRenewPeriod, long autoRenewNum) {
+public record ExpiryMeta(
+        long expiry, long autoRenewPeriod, long autoRenewShard, long autoRenewRealm, long autoRenewNum) {
+
+    /**
+     * For convenience in tests, creates an instance with the given expiry, auto-renew period,
+     * and auto-renew account number with zeros for the shard and realm of the auto-renew account.
+     *
+     * @param expiry the consensus second at which the entity expires
+     * @param autoRenewPeriod the number of seconds between auto-renewals
+     */
+    public ExpiryMeta(long expiry, long autoRenewPeriod, long autoRenewNum) {
+        this(expiry, autoRenewPeriod, 0, 0, autoRenewNum);
+    }
+
     /**
      * A sentinel value indicating some part of the metadata is not available..
      */

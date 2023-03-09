@@ -42,7 +42,6 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -62,8 +61,6 @@ public class SignedStateFileManager implements Startable {
      * written to disk.
      */
     private Instant previousSavedStateTimestamp;
-
-    private final AtomicLong lastRoundSavedToDisk = new AtomicLong(-1);
 
     /**
      * The ID of this node.
@@ -234,7 +231,6 @@ public class SignedStateFileManager implements Startable {
         return saveSignedStateToDisk(
                 signedState, getSignedStateDir(signedState.getRound()), "periodic snapshot", success -> {
                     if (success) {
-                        lastRoundSavedToDisk.set(signedState.getRound());
                         deleteOldStates();
                     }
                 });
@@ -334,7 +330,6 @@ public class SignedStateFileManager implements Startable {
      */
     public synchronized void registerSignedStateFromDisk(final SignedState signedState) {
         previousSavedStateTimestamp = signedState.getConsensusTimestamp();
-        lastRoundSavedToDisk.set(signedState.getRound());
     }
 
     /**
@@ -353,14 +348,5 @@ public class SignedStateFileManager implements Startable {
                 // Intentionally ignored, deleteDirectoryAndLog will log any exceptions that happen
             }
         }
-    }
-
-    /**
-     * Get the last round that was saved to disk.
-     *
-     * @return the last round that was saved to disk, or -1 if no round was recently saved to disk
-     */
-    public long getLastRoundSavedToDisk() {
-        return lastRoundSavedToDisk.get();
     }
 }
