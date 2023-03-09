@@ -2,9 +2,6 @@
 
 This document contains information about the Swirlds Platform. It is currently a work in progress.
 
-![](./mindmap-node.drawio.svg)
-[mindmap](./mindmap-node.html)
-
 ## Components and Algorithms
 
 - Gossip
