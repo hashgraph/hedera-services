@@ -84,6 +84,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_REDIRECT_TO
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_REFERENCE_SLOT_LIFETIME;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECARS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECAR_VALIDATION_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_STORAGE_SLOT_PRICE_TIERS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_THROTTLE_THROTTLE_BY_GAS;
 import static com.hedera.node.app.spi.config.PropertyNames.CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED;
@@ -261,6 +262,7 @@ public final class BootstrapProperties implements PropertySource {
         }
         return in;
     };
+
     private static ThrowingStreamProvider fileStreamProvider = loc -> Files.newInputStream(Paths.get(loc));
 
     private final boolean logEnabled;
@@ -443,6 +445,7 @@ public final class BootstrapProperties implements PropertySource {
             CONTRACTS_MAX_NUM,
             CONTRACTS_CHAIN_ID,
             CONTRACTS_SIDECARS,
+            CONTRACTS_SIDECAR_VALIDATION_ENABLED,
             CONTRACTS_STORAGE_SLOT_PRICE_TIERS,
             CONTRACTS_REFERENCE_SLOT_LIFETIME,
             CONTRACTS_ITEMIZE_STORAGE_FEES,
@@ -740,6 +743,7 @@ public final class BootstrapProperties implements PropertySource {
             entry(CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL, AS_INT),
             entry(CONTRACTS_CHAIN_ID, AS_INT),
             entry(CONTRACTS_SIDECARS, AS_SIDECARS),
+            entry(CONTRACTS_SIDECAR_VALIDATION_ENABLED, AS_BOOLEAN),
             entry(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, AS_INT),
             entry(CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT, AS_LONG),
             entry(CONTRACTS_REDIRECT_TOKEN_CALLS, AS_BOOLEAN),
