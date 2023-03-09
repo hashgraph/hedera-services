@@ -106,7 +106,6 @@ public class IdUtils {
                 .build();
     }
 
-    @Deprecated
     public static TokenID asToken(String v) {
         long[] nativeParts = asDotDelimitedLongArray(v);
         return TokenID.newBuilder()
@@ -115,7 +114,6 @@ public class IdUtils {
                 .setTokenNum(nativeParts[2])
                 .build();
     }
-    @Deprecated
     public static ScheduleID asSchedule(String v) {
         long[] nativeParts = asDotDelimitedLongArray(v);
         return ScheduleID.newBuilder()
@@ -172,40 +170,4 @@ public class IdUtils {
                 .setSerialNumber(serialNo)
                 .build();
     }
-
-    public static com.hedera.hapi.node.base.AccountID asAliasAccount(Bytes alias) {
-        return com.hedera.hapi.node.base.AccountID.newBuilder()
-                .shardNum(0)
-                .realmNum(0)
-                .alias(alias)
-                .build();
-    }
-
-    public static com.hedera.hapi.node.base.ContractID asContract(Bytes v) {
-        long[] nativeParts = asDotDelimitedLongArray(v.asUtf8String());
-        return com.hedera.hapi.node.base.ContractID.newBuilder()
-                .shardNum(nativeParts[0])
-                .realmNum(nativeParts[1])
-                .contractNum(nativeParts[2])
-                .build();
-    }
-
-    public static com.hedera.hapi.node.base.AccountID asAccount(Bytes v) {
-        long[] nativeParts = asDotDelimitedLongArray(v.asUtf8String());
-        return com.hedera.hapi.node.base.AccountID.newBuilder()
-                .shardNum(nativeParts[0])
-                .realmNum(nativeParts[1])
-                .accountNum(nativeParts[2])
-                .build();
-    }
-
-    public static com.hedera.hapi.node.base.TokenID asToken(Bytes v) {
-        long[] nativeParts = asDotDelimitedLongArray(v.asUtf8String());
-        return com.hedera.hapi.node.base.TokenID.newBuilder()
-                .shardNum(nativeParts[0])
-                .realmNum(nativeParts[1])
-                .tokenNum(nativeParts[2])
-                .build();
-    }
-
 }

@@ -47,7 +47,6 @@ import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.pbj.runtime.io.Bytes;
 import com.hedera.test.utils.KeyUtils;
 import com.swirlds.common.utility.CommonUtils;
-
 import java.util.Optional;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
@@ -81,8 +80,9 @@ class ReadableAccountStoreTest {
     private final byte[] evmAddress = CommonUtils.unhex("6aea3773ea468a814d954e6dec795bfee7d76e25");
     private final ContractID contractAlias =
             ContractID.newBuilder().evmAddress(Bytes.wrap(evmAddress)).build();
-    private final ContractID contract = asContract(Bytes.wrap("0.0.1234"));
-    private final AccountID payer = asAccount(Bytes.wrap("0.0.3"));
+    private final ContractID contract =
+            ContractID.newBuilder().contractNum(1234).build();
+    private final AccountID payer = AccountID.newBuilder().accountNum(3).build();
     private final Long payerNum = 3L;
     private static final String ACCOUNTS = "ACCOUNTS";
     private static final String ALIASES = "ALIASES";
@@ -236,7 +236,9 @@ class ReadableAccountStoreTest {
     void getsMirrorAddress() {
         final var num = EntityNum.fromLong(payerNum);
         final Address mirrorAddress = num.toEvmAddress();
-        final var mirrorAccount = asAliasAccount(Bytes.wrap(mirrorAddress.toArrayUnsafe()));
+        final var mirrorAccount = AccountID.newBuilder()
+                .alias(Bytes.wrap(mirrorAddress.toArrayUnsafe()))
+                .build();
 
         given(accounts.get(EntityNumVirtualKey.fromLong(payerNum))).willReturn(account);
         given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
@@ -252,7 +254,9 @@ class ReadableAccountStoreTest {
     void failsIfMirrorAddressDoesntExist() {
         final var num = EntityNum.fromLong(payerNum);
         final Address mirrorAddress = num.toEvmAddress();
-        final var mirrorAccount = asAliasAccount(Bytes.wrap(mirrorAddress.toArrayUnsafe()));
+        final var mirrorAccount = AccountID.newBuilder()
+                .alias(Bytes.wrap(mirrorAddress.toArrayUnsafe()))
+                .build();
 
         given(accounts.get(EntityNumVirtualKey.fromLong(payerNum))).willReturn(null);
 

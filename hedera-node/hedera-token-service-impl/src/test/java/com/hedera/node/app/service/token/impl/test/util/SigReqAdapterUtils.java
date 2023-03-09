@@ -65,8 +65,7 @@ public class SigReqAdapterUtils {
                         toPbj(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK),
                         toPbj(KNOWN_TOKEN_WITH_SUPPLY),
                         toPbj(KNOWN_TOKEN_WITH_WIPE))
-                .forEach(id -> destination.put(EntityNum.fromLong(id.tokenNum()),
-                        source.get(fromPbj(id))));
+                .forEach(id -> destination.put(EntityNum.fromLong(id.tokenNum()), source.get(fromPbj(id))));
         final var wrappedState = new MapReadableKVState<>("TOKENS", destination);
         final var state = new StateKeyAdapter<>(wrappedState, EntityNum::fromLong);
         return new ReadableTokenStore(mockStates(Map.of(TOKENS_KEY, state)));

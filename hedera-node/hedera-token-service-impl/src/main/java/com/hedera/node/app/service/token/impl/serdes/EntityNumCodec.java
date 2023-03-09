@@ -48,7 +48,7 @@ public class EntityNumCodec implements Codec<EntityNum> {
 
     @Override
     public int measureRecord(EntityNum entityNum) {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 
     @Override

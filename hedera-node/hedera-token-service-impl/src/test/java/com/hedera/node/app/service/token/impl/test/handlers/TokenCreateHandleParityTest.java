@@ -58,10 +58,10 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.token.impl.handlers.TokenCreateHandler;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -356,7 +356,8 @@ class TokenCreateHandleParityTest {
         subject.preHandle(context);
 
         assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
-        assertThat(sanityRestoredToPbj(context.getRequiredNonPayerKeys()), contains(CUSTOM_PAYER_ACCOUNT_KT.asPbjKey()));
+        assertThat(
+                sanityRestoredToPbj(context.getRequiredNonPayerKeys()), contains(CUSTOM_PAYER_ACCOUNT_KT.asPbjKey()));
         basicContextAssertions(context, 1, false, ResponseCodeEnum.OK);
     }
 
