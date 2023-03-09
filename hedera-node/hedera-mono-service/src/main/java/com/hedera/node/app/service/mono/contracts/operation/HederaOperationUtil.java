@@ -43,7 +43,6 @@ import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.BiPredicate;
@@ -86,7 +85,7 @@ public final class HederaOperationUtil {
      * @return The operation result of the execution
      */
     public static Operation.OperationResult addressSignatureCheckExecution(
-            @Nullable final EvmSigsVerifier sigsVerifier,
+            final EvmSigsVerifier sigsVerifier,
             final MessageFrame frame,
             final Address address,
             final LongSupplier supplierHaltGasCost,
