@@ -25,7 +25,6 @@ import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
-import com.swirlds.platform.components.transaction.throttle.TransThrottleSyncAndCreateRuleResponse;
 import com.swirlds.platform.eventhandling.EventTransactionPool;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -300,14 +299,6 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
     public State getStateForSigning() {
         fastCopyAndUpdateRefs(stateRef.get());
         return latestImmutableState.get();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public TransThrottleSyncAndCreateRuleResponse shouldSyncAndCreate() {
-        return SwirldStateManagerUtils.shouldSyncAndCreate(getConsensusState());
     }
 
     /**
