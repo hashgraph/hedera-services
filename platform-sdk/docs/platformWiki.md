@@ -2,41 +2,51 @@
 
 This document contains information about the Swirlds Platform. It is currently a work in progress.
 
-## Components and Algorithms
+The platform code is split into three categories: Core, Base, and Data. TODO expand
 
-- Gossip
-  - Sync gossip algorithm
-  - Out of order gossip algorithm
-- Hashgraph
-- State management
-  - State snapshots
-  - Hashing
+## Core
+
+This code is maintained by the "Platform Hashgraph" team.
+
+- Components
+  - Gossip
+    - Sync gossip algorithm
+    - Out of order gossip algorithm
+  - Hashgraph
+  -  State management
+    - State snapshots
+    - Hashing
+    - State Signing
+    - ISS Detection
   - Reconnect
   - Transaction Handling
-  - State Signing
-- [Pre-consensus event stream](components/preConsensusEventStream.md)
-- Post-consensus event stream
-- BLS
+  - BLS
+- Event Flow
+  - [Pre-consensus event stream](components/preConsensusEventStream.md)
+  - Post-consensus event stream
 - State Proofs
 
-## Utilities
+## Base
 
 - Configuration
 - Metrics
+  - Prometheus
 - Logging
 - Thread Management
 - Notification Engine
 
-## Data Structures
+## Data
 
 - Merkle APIs
   - Fast Copies
-    - Mutability
+  - Mutability
   - Reference Counting
   - Hashing
   - Serialization
-- VirtualMap
-  - MerkleDB
-- MerkleMap
-- FCHashMap
-- FCQueue
+- Data Strucutres
+  - VirtualMap
+    - MerkleDB
+  - MerkleMap
+  - FCHashMap
+  - FCQueue
+- Reconnect
