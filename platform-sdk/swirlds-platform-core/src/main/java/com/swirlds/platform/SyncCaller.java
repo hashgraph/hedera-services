@@ -162,11 +162,6 @@ class SyncCaller implements Runnable {
                         callerNumber);
             }
 
-            // check transThrottle, if there is no reason to call, don't call anyone
-            if (!platform.getSyncManager().transThrottle()) {
-                return -1;
-            }
-
             // check with sync manager for any reasons not to sync
             if (!platform.getSyncManager().shouldInitiateSync()) {
                 return -1;
@@ -185,7 +180,6 @@ class SyncCaller implements Runnable {
                                 selfId.getId() /*selfId assumed to be main*/); // otherID (so self will count as the
                 // "other")
                 Thread.sleep(50);
-                platform.getSyncManager().successfulSync();
                 // selfId assumed to be main
                 return selfId.getIdAsInt(); // say that self just "synced" with self, and created an event for it
             }
@@ -273,7 +267,6 @@ class SyncCaller implements Runnable {
             }
 
             if (syncAccepted) {
-                platform.getSyncManager().successfulSync();
                 return otherId;
             } else {
                 return -1;
