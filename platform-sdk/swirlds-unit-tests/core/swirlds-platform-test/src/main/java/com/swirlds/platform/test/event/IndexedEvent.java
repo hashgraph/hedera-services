@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.event;
 
+import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.events.ConsensusData;
@@ -64,6 +65,20 @@ public class IndexedEvent extends EventImpl {
                 event.getConsensusData(),
                 event.getSelfParent(),
                 event.getOtherParent());
+    }
+
+    /**
+     * Convert this object into a regular EventImpl (as opposed to the IndexedEvent subclass).
+     */
+    public EventImpl convertToEventImpl() {
+        final EventImpl event = new EventImpl(
+                getBaseEventHashedData(),
+                getBaseEventUnhashedData(),
+                getConsensusData(),
+                getSelfParent(),
+                getOtherParent());
+        CryptographyHolder.get().digestSync(event);
+        return event;
     }
 
     /**
