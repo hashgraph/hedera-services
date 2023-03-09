@@ -25,7 +25,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 class UtilsConstructorTest {
-    private static final Set<Class<?>> toBeTested = new HashSet<>(Arrays.asList(MonoMapCodecAdapter.class, com.hedera.node.app.spi.state.serdes.CodecFactory.class));
+    private static final Set<Class<?>> toBeTested = new HashSet<>(Arrays.asList(MonoMapCodecAdapter.class, CodecFactory.class));
 
     @Test
     void throwsInConstructor() {
