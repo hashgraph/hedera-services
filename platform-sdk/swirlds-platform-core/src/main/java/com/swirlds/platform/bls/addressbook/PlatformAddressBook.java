@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.bls.addressbook;
 
 import com.swirlds.common.system.NodeId;
@@ -67,8 +68,7 @@ public class PlatformAddressBook {
     public PlatformAddressBook(final PlatformAddressBook otherAddressBook) {
         final Map<NodeId, BlsNodeData> copiedNodeDataMap = new HashMap<>();
 
-        for (final Map.Entry<NodeId, BlsNodeData> nodeDataEntry :
-                otherAddressBook.nodeDataMap.entrySet()) {
+        for (final Map.Entry<NodeId, BlsNodeData> nodeDataEntry : otherAddressBook.nodeDataMap.entrySet()) {
             final NodeId nodeId = nodeDataEntry.getKey();
             final BlsNodeData nodeData = nodeDataEntry.getValue();
 
@@ -99,8 +99,7 @@ public class PlatformAddressBook {
      */
     public int getNodeShareCount(final NodeId nodeId) {
         if (!containsNode(nodeId)) {
-            throw new IllegalArgumentException(
-                    "Cannot get share count for node that isn't in the address book");
+            throw new IllegalArgumentException("Cannot get share count for node that isn't in the address book");
         }
 
         return nodeDataMap.get(nodeId).getShareCount();
@@ -125,8 +124,7 @@ public class PlatformAddressBook {
      */
     public BlsPublicKey getIbePublicKey(final NodeId nodeId) {
         if (!containsNode(nodeId)) {
-            throw new IllegalArgumentException(
-                    "Cannot get public key for node that isn't in the address book");
+            throw new IllegalArgumentException("Cannot get public key for node that isn't in the address book");
         }
 
         return nodeDataMap.get(nodeId).getIbePublicKey();
@@ -223,8 +221,7 @@ public class PlatformAddressBook {
         checkDirty("getNodeShareIds");
 
         if (!containsNode(nodeId)) {
-            throw new IllegalArgumentException(
-                    "Cannot get share ids for node that isn't in the address book");
+            throw new IllegalArgumentException("Cannot get share ids for node that isn't in the address book");
         }
 
         return nodeDataMap.get(nodeId).getShareIds();
@@ -258,11 +255,8 @@ public class PlatformAddressBook {
      * @param offlineNodes the set of offline nodes
      * @return the combined share count of nodes in neither malicious nor offline sets
      */
-    public int getNonDisqualifiedShareCount(
-            final Set<NodeId> maliciousNodes, final Set<NodeId> offlineNodes) {
-        return getTotalShares()
-                - getCombinedShares(maliciousNodes)
-                - getCombinedShares(offlineNodes);
+    public int getNonDisqualifiedShareCount(final Set<NodeId> maliciousNodes, final Set<NodeId> offlineNodes) {
+        return getTotalShares() - getCombinedShares(maliciousNodes) - getCombinedShares(offlineNodes);
     }
 
     /**
@@ -282,8 +276,7 @@ public class PlatformAddressBook {
      */
     public int getSharesSatisfyingThreshold(final Threshold threshold) {
         if (sortedNodeIds.isEmpty()) {
-            throw new IllegalStateException(
-                    "Cannot determine threshold if address book contains no nodes");
+            throw new IllegalStateException("Cannot determine threshold if address book contains no nodes");
         }
 
         // don't enforce a threshold
@@ -306,8 +299,7 @@ public class PlatformAddressBook {
      */
     public void setIbePublicKey(final NodeId nodeId, final BlsPublicKey ibePublicKey) {
         if (!nodeDataMap.containsKey(nodeId)) {
-            throw new IllegalArgumentException(
-                    "Cannot set IBE public key for node that doesn't exist in address book");
+            throw new IllegalArgumentException("Cannot set IBE public key for node that doesn't exist in address book");
         }
 
         if (nodeDataMap.get(nodeId).getIbePublicKey() != null) {
@@ -325,8 +317,7 @@ public class PlatformAddressBook {
      */
     public void setNodeStake(final NodeId nodeId, final long newStake) {
         if (!nodeDataMap.containsKey(nodeId)) {
-            throw new IllegalArgumentException(
-                    "Cannot set stake for node that doesn't exist in address book");
+            throw new IllegalArgumentException("Cannot set stake for node that doesn't exist in address book");
         }
 
         nodeDataMap.get(nodeId).setStake(newStake);
@@ -346,7 +337,6 @@ public class PlatformAddressBook {
             return;
         }
 
-        throw new IllegalStateException(
-                "Cannot " + attemptedOperation + ", since address book is dirty");
+        throw new IllegalStateException("Cannot " + attemptedOperation + ", since address book is dirty");
     }
 }

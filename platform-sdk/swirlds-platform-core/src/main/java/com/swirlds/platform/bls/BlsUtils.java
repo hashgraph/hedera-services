@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.bls;
 
 import com.hedera.platform.bls.api.BilinearMap;
@@ -32,14 +33,14 @@ public class BlsUtils {
      * @param elementName the name of the element, to record errors
      */
     public static void assertSignatureGroupMembership(
-            final BilinearMap bilinearMap,
-            final GroupElement groupElement,
-            final String elementName) {
+            final BilinearMap bilinearMap, final GroupElement groupElement, final String elementName) {
 
-        if (!(groupElement.group().getClass().equals(bilinearMap.signatureGroup().getClass()))) {
+        if (!(groupElement
+                .group()
+                .getClass()
+                .equals(bilinearMap.signatureGroup().getClass()))) {
             throw new IllegalArgumentException(
-                    String.format(
-                            "%s must be in the signature group of the bilinear map", elementName));
+                    String.format("%s must be in the signature group of the bilinear map", elementName));
         }
     }
 
@@ -51,14 +52,11 @@ public class BlsUtils {
      * @param elementName the name of the element, to record errors
      */
     public static void assertPublicKeyGroupMembership(
-            final BilinearMap bilinearMap,
-            final GroupElement groupElement,
-            final String elementName) {
+            final BilinearMap bilinearMap, final GroupElement groupElement, final String elementName) {
 
         if (!(groupElement.group().getClass().equals(bilinearMap.keyGroup().getClass()))) {
             throw new IllegalArgumentException(
-                    String.format(
-                            "%s must be in the public key group of the bilinear map", elementName));
+                    String.format("%s must be in the public key group of the bilinear map", elementName));
         }
     }
 }

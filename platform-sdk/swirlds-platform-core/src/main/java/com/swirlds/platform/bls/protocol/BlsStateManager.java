@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.bls.protocol;
 
 /** An object to manage the current state of a protocol */
@@ -46,8 +47,7 @@ public class BlsStateManager {
     /** Marks the finish process as complete */
     public void finishComplete() {
         if (state != BlsProtocolState.FINISHING) {
-            throw new IllegalStateException(
-                    String.format("A protocol cannot be finished while in [%s] state", state));
+            throw new IllegalStateException(String.format("A protocol cannot be finished while in [%s] state", state));
         }
 
         state = BlsProtocolState.FINISHED;
@@ -56,8 +56,7 @@ public class BlsStateManager {
     /** Increments {@link #roundsStarted} */
     public void roundStarted() {
         if (state != BlsProtocolState.NOT_STARTED && state != BlsProtocolState.RUNNING) {
-            throw new IllegalStateException(
-                    String.format("A round cannot be started while in [%s] state", state));
+            throw new IllegalStateException(String.format("A round cannot be started while in [%s] state", state));
         }
 
         if (state == BlsProtocolState.NOT_STARTED) {
@@ -70,8 +69,7 @@ public class BlsStateManager {
     /** Increments {@link #roundsCompleted} */
     public void roundCompleted() {
         if (state != BlsProtocolState.RUNNING) {
-            throw new IllegalStateException(
-                    String.format("A round cannot be completed while in [%s] state", state));
+            throw new IllegalStateException(String.format("A round cannot be completed while in [%s] state", state));
         }
 
         ++roundsCompleted;

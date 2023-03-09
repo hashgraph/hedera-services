@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.bls.addressbook;
 
 /** Represents different kinds of thresholds that have to be met */

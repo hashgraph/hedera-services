@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.bls.message;
 
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
@@ -44,8 +45,7 @@ public class CommitmentMessage extends AbstractMessage {
         throwArgNull(commitment, "commitment");
 
         if (commitment.length != SHA256_DIGEST_SIZE) {
-            throw new IllegalArgumentException(
-                    String.format("commitment must be of length %s", SHA256_DIGEST_SIZE));
+            throw new IllegalArgumentException(String.format("commitment must be of length %s", SHA256_DIGEST_SIZE));
         }
 
         this.commitment = commitment;

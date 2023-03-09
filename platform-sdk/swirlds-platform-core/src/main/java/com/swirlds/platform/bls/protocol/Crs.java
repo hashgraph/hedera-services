@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.bls.protocol;
 
 import static com.swirlds.platform.bls.BlsUtils.assertPublicKeyGroupMembership;
@@ -34,8 +35,7 @@ import com.hedera.platform.bls.api.GroupElement;
  * @param ibeGenerator independent generator, used for IBE encryption. exists in the key group of
  *     the bilinear map, since the generator is used to create IBE public keys
  */
-public record Crs(
-        BilinearMap bilinearMap, GroupElement thresholdGenerator, GroupElement ibeGenerator)
+public record Crs(BilinearMap bilinearMap, GroupElement thresholdGenerator, GroupElement ibeGenerator)
         implements ProtocolOutput {
 
     /**

@@ -16,17 +16,21 @@
 
 package com.swirlds.platform.bls.protocol;
 
-import com.swirlds.platform.bls.message.ProtocolMessage;
+import com.swirlds.bls.message.ProtocolMessage;
 import java.util.List;
 
-/** A functional interface representing a single round of a {@link BlsProtocol} */
+/**
+ * A functional interface for performing the final step of a protocol
+ *
+ * @param <T> the type of the output object
+ */
 @FunctionalInterface
-public interface BlsProtocolRound {
+public interface BlsProtocolFinisher<T extends ProtocolOutput> {
     /**
-     * A function which executes a single protocol round
+     * Performs the final step of a protocol
      *
-     * @param inputMessages the messages required as input for the protocol round
-     * @return the message produced by the protocol round
+     * @param inputMessages the messages required as input for the protocol finishing calculations
+     * @return the protocol output
      */
-    ProtocolMessage execute(List<ProtocolMessage> inputMessages);
+    T performFinish(List<ProtocolMessage> inputMessages);
 }

@@ -16,17 +16,15 @@
 
 package com.swirlds.platform.bls.protocol;
 
-import com.swirlds.platform.bls.message.ProtocolMessage;
-import java.util.List;
-
-/** A functional interface representing a single round of a {@link BlsProtocol} */
+/**
+ * Interface representing a function which checks the viability of a protocol
+ */
 @FunctionalInterface
-public interface BlsProtocolRound {
+public interface ProtocolViabilityChecker {
     /**
-     * A function which executes a single protocol round
+     * Checks the viability of a protocol
      *
-     * @param inputMessages the messages required as input for the protocol round
-     * @return the message produced by the protocol round
+     * @return true if the protocol is still viable, otherwise false
      */
-    ProtocolMessage execute(List<ProtocolMessage> inputMessages);
+    boolean checkViability();
 }

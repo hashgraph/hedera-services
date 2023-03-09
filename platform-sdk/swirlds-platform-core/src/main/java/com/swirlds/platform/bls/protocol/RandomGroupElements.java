@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.bls.protocol;
 
 import static com.swirlds.common.test.RandomUtils.randomByteArray;
@@ -53,11 +54,15 @@ public class RandomGroupElements {
      * @param random a source of randomness
      */
     public RandomGroupElements(final BilinearMap bilinearMap, final Random random) {
-        this.randomGroupElement1 =
-                bilinearMap.keyGroup().randomElement(randomByteArray(random, 32)).compress();
+        this.randomGroupElement1 = bilinearMap
+                .keyGroup()
+                .randomElement(randomByteArray(random, 32))
+                .compress();
 
-        this.randomGroupElement2 =
-                bilinearMap.keyGroup().randomElement(randomByteArray(random, 32)).compress();
+        this.randomGroupElement2 = bilinearMap
+                .keyGroup()
+                .randomElement(randomByteArray(random, 32))
+                .compress();
 
         this.bilinearMap = bilinearMap;
     }

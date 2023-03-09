@@ -16,17 +16,17 @@
 
 package com.swirlds.platform.bls.protocol;
 
-import com.swirlds.platform.bls.message.ProtocolMessage;
-import java.util.List;
+import com.swirlds.common.system.NodeId;
 
-/** A functional interface representing a single round of a {@link BlsProtocol} */
+/**
+ * A functional interface for cleaning up a protocol after disqualifying a counterparty
+ */
 @FunctionalInterface
-public interface BlsProtocolRound {
+public interface DisqualificationCleanup {
     /**
-     * A function which executes a single protocol round
+     * Cleans up a protocol after disqualifying a counterparty
      *
-     * @param inputMessages the messages required as input for the protocol round
-     * @return the message produced by the protocol round
+     * @param disqualifiedNodeId the id of the counterparty which was disqualified
      */
-    ProtocolMessage execute(List<ProtocolMessage> inputMessages);
+    void cleanUp(NodeId disqualifiedNodeId);
 }
