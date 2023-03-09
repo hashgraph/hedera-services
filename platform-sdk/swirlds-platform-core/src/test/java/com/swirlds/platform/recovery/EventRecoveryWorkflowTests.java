@@ -34,7 +34,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.SwirldState2;
+import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.MinGenInfo;
@@ -234,7 +234,7 @@ class EventRecoveryWorkflowTests {
         final List<EventImpl> preHandleList = new ArrayList<>();
         final AtomicBoolean roundHandled = new AtomicBoolean(false);
 
-        final SwirldState2 immutableState = mock(SwirldState2.class);
+        final SwirldState immutableState = mock(SwirldState.class);
         doAnswer(invocation -> {
                     assertFalse(roundHandled.get(), "round should not have been handled yet");
                     preHandleList.add(invocation.getArgument(0));
@@ -249,7 +249,7 @@ class EventRecoveryWorkflowTests {
                 .when(immutableState)
                 .handleConsensusRound(any(), any());
 
-        final SwirldState2 mutableState = mock(SwirldState2.class);
+        final SwirldState mutableState = mock(SwirldState.class);
         doAnswer(invocation -> {
                     fail("immutable state should pre-handle transactions");
                     return null;
