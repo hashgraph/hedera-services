@@ -2,8 +2,7 @@
 
 This document contains information about the Swirlds Platform. It is currently a work in progress.
 
-- [👉 Mindmap](./mindmap-node.html)
-- [👉 Component Diagram](./mindmap-node.html)
+![](./components/components.drawio.svg)
 
 ## Components and Algorithms
 
