@@ -19,6 +19,4 @@ TODO
 
 ## Data Flow
 
-<span style="color:orange;">
 ![](./preconsensusEventStream.svg)
-</span>
