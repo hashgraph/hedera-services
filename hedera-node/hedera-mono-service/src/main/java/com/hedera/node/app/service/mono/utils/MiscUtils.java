@@ -60,6 +60,7 @@ import static com.hedera.node.app.service.mono.grpc.controllers.NetworkControlle
 import static com.hedera.node.app.service.mono.grpc.controllers.NetworkController.GET_VERSION_INFO_METRIC;
 import static com.hedera.node.app.service.mono.grpc.controllers.NetworkController.UNCHECKED_SUBMIT_METRIC;
 import static com.hedera.node.app.service.mono.legacy.core.jproto.JKey.mapJKey;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.protoToPbj;
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.signedLowOrder32From;
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.unsignedHighOrder32From;
 import static com.hedera.node.app.service.mono.stats.ServicesStatsConfig.SYSTEM_DELETE_METRIC;
@@ -169,6 +170,7 @@ import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
@@ -469,6 +471,14 @@ public final class MiscUtils {
             return mapJKey(fcKey);
         } catch (final Exception impossible) {
             return Key.getDefaultInstance();
+        }
+    }
+
+    public static com.hedera.hapi.node.base.Key asPbjKeyUnchecked(final JKey fcKey) {
+        try {
+            return protoToPbj(mapJKey(fcKey), com.hedera.hapi.node.base.Key.class);
+        } catch (final Exception impossible) {
+            return com.hedera.hapi.node.base.Key.newBuilder().build();
         }
     }
 
