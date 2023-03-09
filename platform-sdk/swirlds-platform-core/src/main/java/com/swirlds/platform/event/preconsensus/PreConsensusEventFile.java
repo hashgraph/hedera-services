@@ -18,7 +18,6 @@ package com.swirlds.platform.event.preconsensus;
 
 import static com.swirlds.common.formatting.StringFormattingUtils.parseSanitizedTimestamp;
 import static com.swirlds.common.formatting.StringFormattingUtils.sanitizeTimestamp;
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
 import com.swirlds.common.utility.NonCryptographicHashing;
 import com.swirlds.platform.internal.EventImpl;
@@ -52,17 +51,12 @@ import java.util.stream.Stream;
  * [root directory]/[4 digit year][2 digit month][2 digit day]/[file name]
  * </pre>
  *
- * @param sequenceNumber
- * 		the sequence number of the file. All file sequence numbers are unique.
- * 		Sequence numbers are allocated in monotonically increasing order.
- * @param minimumGeneration
- * 		the minimum generation of events that are permitted to be in this file
- * @param maximumGeneration
- * 		the maximum generation of events that are permitted to be in this file
- * @param timestamp
- * 		the timestamp of when the writing of this file began
- * @param path
- * 		the location where this file can be found
+ * @param sequenceNumber    the sequence number of the file. All file sequence numbers are unique. Sequence numbers are
+ *                          allocated in monotonically increasing order.
+ * @param minimumGeneration the minimum generation of events that are permitted to be in this file
+ * @param maximumGeneration the maximum generation of events that are permitted to be in this file
+ * @param timestamp         the timestamp of when the writing of this file began
+ * @param path              the location where this file can be found
  */
 public record PreConsensusEventFile(
         long sequenceNumber, long minimumGeneration, long maximumGeneration, Instant timestamp, Path path)
@@ -96,16 +90,11 @@ public record PreConsensusEventFile(
     /**
      * Create a new event file descriptor.
      *
-     * @param sequenceNumber
-     * 		the sequence number of the descriptor
-     * @param minimumGeneration
-     * 		the minimum event generation permitted to be in this file (inclusive)
-     * @param maximumGeneration
-     * 		the maximum event generation permitted to be in this file (inclusive)
-     * @param timestamp
-     * 		the timestamp when this file was created (wall clock time)
-     * @param rootDirectory
-     * 		the directory where event stream files are stored
+     * @param sequenceNumber    the sequence number of the descriptor
+     * @param minimumGeneration the minimum event generation permitted to be in this file (inclusive)
+     * @param maximumGeneration the maximum event generation permitted to be in this file (inclusive)
+     * @param timestamp         the timestamp when this file was created (wall clock time)
+     * @param rootDirectory     the directory where event stream files are stored
      * @return a description of the file
      */
     public static PreConsensusEventFile of(
@@ -130,11 +119,9 @@ public record PreConsensusEventFile(
     /**
      * Create a new event file descriptor by parsing a file path.
      *
-     * @param filePath
-     * 		the path to the file
+     * @param filePath the path to the file
      * @return a description of the file
-     * @throws IOException
-     * 		if the file could not be parsed
+     * @throws IOException if the file could not be parsed
      */
     public static PreConsensusEventFile of(final Path filePath) throws IOException {
         Objects.requireNonNull(filePath, "filePath");
@@ -165,8 +152,8 @@ public record PreConsensusEventFile(
     }
 
     /**
-     * Get an object that can be used to write events to this file. Throws if there already exists
-     * a file on disk with the same path.
+     * Get an object that can be used to write events to this file. Throws if there already exists a file on disk with
+     * the same path.
      *
      * @return a writer for this file
      */
@@ -175,11 +162,10 @@ public record PreConsensusEventFile(
     }
 
     /**
-     * Delete a file. Automatically deletes parent directories if
-     * empty up until the root directory is reached, which is never deleted.
+     * Delete a file. Automatically deletes parent directories if empty up until the root directory is reached, which is
+     * never deleted.
      *
-     * @param rootDirectory
-     * 		the root directory where event files are stored
+     * @param rootDirectory the root directory where event files are stored
      */
     public void deleteFile(final Path rootDirectory) throws IOException {
         if (!Files.exists(path)) {
@@ -211,8 +197,7 @@ public record PreConsensusEventFile(
      * Get an iterator that walks over the events in this file. The iterator will only return events that have a
      * generation equal to or greater to the minimum generation.
      *
-     * @param minimumGeneration
-     * 		the minimum generation of the events to return
+     * @param minimumGeneration the minimum generation of the events to return
      * @return an iterator over the events in this file
      */
     public PreConsensusEventFileIterator iterator(final long minimumGeneration) throws IOException {
@@ -222,10 +207,8 @@ public record PreConsensusEventFile(
     /**
      * Build the parent directory for a new event file.
      *
-     * @param rootDirectory
-     * 		the root directory where all event files are stored
-     * @param timestamp
-     * 		the timestamp of the new file
+     * @param rootDirectory the root directory where all event files are stored
+     * @param timestamp     the timestamp of the new file
      * @return the parent directory of the new file
      */
     private static Path buildParentDirectory(final Path rootDirectory, final Instant timestamp) {
@@ -239,14 +222,10 @@ public record PreConsensusEventFile(
     /**
      * Derive the name for this file.
      *
-     * @param sequenceNumber
-     * 		the sequence number of the file
-     * @param minimumGeneration
-     * 		the minimum generation of events permitted in this file
-     * @param maximumGeneration
-     * 		the maximum generation of events permitted in this file
-     * @param timestamp
-     * 		the timestamp of when the file was created
+     * @param sequenceNumber    the sequence number of the file
+     * @param minimumGeneration the minimum generation of events permitted in this file
+     * @param maximumGeneration the maximum generation of events permitted in this file
+     * @param timestamp         the timestamp of when the file was created
      * @return the file name
      */
     private static String buildFileName(
@@ -280,8 +259,7 @@ public record PreConsensusEventFile(
     /**
      * Check if it is legal for the file described by this object to contain a particular event.
      *
-     * @param event
-     * 		the event in question
+     * @param event the event in question
      * @return true if it is legal for this event to be in the file described by this object
      */
     public boolean canContain(final EventImpl event) {

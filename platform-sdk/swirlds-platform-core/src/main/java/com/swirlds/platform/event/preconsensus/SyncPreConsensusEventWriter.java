@@ -203,8 +203,9 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
         if (minimumGenerationNonAncient < this.minimumGenerationNonAncient) {
             logger.error(
                     EXCEPTION.getMarker(),
-                    "Minimum generation non-ancient cannot be decreased. Current = " + this.minimumGenerationNonAncient
-                            + ", requested = " + minimumGenerationNonAncient);
+                    "Minimum generation non-ancient cannot be decreased. Current = {}, requested = {}",
+                    this.minimumGenerationNonAncient,
+                    minimumGenerationNonAncient);
             return;
         }
 

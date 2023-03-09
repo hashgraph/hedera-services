@@ -216,18 +216,16 @@ class PreConsensusEventFileManagerTests {
         final PreConsensusEventFileManager manager =
                 new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
 
-        assertIteratorEquality(files.iterator(),
-                manager.getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION, false));
+        assertIteratorEquality(
+                files.iterator(), manager.getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION, false));
 
-        assertIteratorEquality(files.iterator(),
-                manager.getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION, true));
+        assertIteratorEquality(
+                files.iterator(), manager.getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION, true));
 
         // attempt to start a non-existent generation
-        assertIteratorEquality(files.iterator(),
-                manager.getFileIterator(nonExistentGeneration, false));
+        assertIteratorEquality(files.iterator(), manager.getFileIterator(nonExistentGeneration, false));
 
-        assertThrows(IllegalStateException.class,
-                () -> manager.getFileIterator(nonExistentGeneration, true));
+        assertThrows(IllegalStateException.class, () -> manager.getFileIterator(nonExistentGeneration, true));
     }
 
     @ParameterizedTest
@@ -732,7 +730,8 @@ class PreConsensusEventFileManagerTests {
 
         // Increase the timestamp a little at a time. We should gradually delete files up until
         // all files before the middle file have been deleted.
-        final Instant endingTime = middleFile.timestamp().plus(Duration.ofMinutes(60).minus(Duration.ofNanos(1)));
+        final Instant endingTime =
+                middleFile.timestamp().plus(Duration.ofMinutes(60).minus(Duration.ofNanos(1)));
         while (time.now().isBefore(endingTime)) {
             manager.pruneOldFiles(lastFile.maximumGeneration() + 1);
 
