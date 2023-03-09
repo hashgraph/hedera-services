@@ -938,7 +938,8 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
                                 .has(
                                         accountDetailsWith()
                                                 .tokenAllowancesContaining(
-                                                        FUNGIBLE_TOKEN, CONTRACT, allowance)))
+                                                        FUNGIBLE_TOKEN, CONTRACT, allowance))
+                )
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {

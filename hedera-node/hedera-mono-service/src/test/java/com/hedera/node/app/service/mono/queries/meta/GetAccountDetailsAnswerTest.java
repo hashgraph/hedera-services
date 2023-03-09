@@ -373,7 +373,7 @@ class GetAccountDetailsAnswerTest {
         // setup:
         final Query query = validQuery(COST_ANSWER, fee, target);
 
-        given(optionValidator.queryableAccountStatus(eq(EntityNum.fromAccountId(payerId)), any()))
+        given(optionValidator.queryableAccountOrContractStatus(eq(EntityNum.fromAccountId(payerId)), any()))
                 .willReturn(ACCOUNT_DELETED);
 
         // when:
@@ -390,7 +390,7 @@ class GetAccountDetailsAnswerTest {
 
         given(aliasManager.lookupIdBy(any())).willReturn(entityNum);
 
-        given(optionValidator.queryableAccountStatus(eq(entityNum), any()))
+        given(optionValidator.queryableAccountOrContractStatus(eq(entityNum), any()))
                 .willReturn(INVALID_ACCOUNT_ID);
 
         final ResponseCodeEnum validity = subject.checkValidity(query, view);

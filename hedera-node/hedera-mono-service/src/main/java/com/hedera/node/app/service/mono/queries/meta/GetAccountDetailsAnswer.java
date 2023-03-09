@@ -63,7 +63,7 @@ public class GetAccountDetailsAnswer implements AnswerService {
                 id.getAlias().isEmpty()
                         ? EntityNum.fromAccountId(id)
                         : aliasManager.lookupIdBy(id.getAlias());
-        return optionValidator.queryableAccountStatus(entityNum, view.accounts());
+        return optionValidator.queryableAccountOrContractStatus(entityNum, view.accounts());
     }
 
     @Override

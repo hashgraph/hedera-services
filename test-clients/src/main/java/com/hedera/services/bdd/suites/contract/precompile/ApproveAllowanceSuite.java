@@ -15,7 +15,10 @@
  */
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -33,17 +36,22 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
@@ -51,10 +59,14 @@ import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
+
 import java.math.BigInteger;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -74,7 +86,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
     private static final String APPROVE_FOR_ALL_SIGNATURE = "ApprovalForAll(address,address,bool)";
 
     public static void main(String... args) {
-        new ApproveAllowanceSuite().runSuiteSync();
+        new ApproveAllowanceSuite().runSuiteAsync();
     }
 
     @Override
@@ -90,8 +102,18 @@ public class ApproveAllowanceSuite extends HapiSuite {
                 nftApprove(),
                 nftIsApprovedForAll(),
                 nftGetApproved(),
-                nftSetApprovalForAll());
+                nftSetApprovalForAll(),
+                testIndirectApprovalWith(DELEGATE_PRECOMPILE_CALLEE, false),
+                testIndirectApprovalWith(DIRECT_PRECOMPILE_CALLEE, true),
+                testIndirectApprovalWith(DELEGATE_ERC_CALLEE, false),
+                testIndirectApprovalWith(DIRECT_ERC_CALLEE, true)
+        );
     }
+
+    private static final String DELEGATE_PRECOMPILE_CALLEE = "PretendCallee";
+    private static final String DIRECT_PRECOMPILE_CALLEE = "DirectPrecompileCallee";
+    private static final String DELEGATE_ERC_CALLEE = "ERC20DelegateCallee";
+    private static final String DIRECT_ERC_CALLEE = "NonDelegateCallee";
 
     @Override
     public boolean canRunConcurrent() {
@@ -133,23 +155,23 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                         allRunFor(
                                                 spec,
                                                 contractCall(
-                                                                HTS_APPROVE_ALLOWANCE_CONTRACT,
-                                                                "htsAllowance",
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                FUNGIBLE_TOKEN))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                OWNER))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                theSpender))))
+                                                        HTS_APPROVE_ALLOWANCE_CONTRACT,
+                                                        "htsAllowance",
+                                                        asHeadlongAddress(
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getTokenID(
+                                                                                        FUNGIBLE_TOKEN))),
+                                                        asHeadlongAddress(
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getAccountID(
+                                                                                        OWNER))),
+                                                        asHeadlongAddress(
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getAccountID(
+                                                                                        theSpender))))
                                                         .payingWith(OWNER)
                                                         .via(allowanceTxn)
                                                         .hasKnownStatus(SUCCESS))))
@@ -199,19 +221,19 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                         allRunFor(
                                                 spec,
                                                 contractCall(
-                                                                HTS_APPROVE_ALLOWANCE_CONTRACT,
-                                                                "htsApprove",
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                FUNGIBLE_TOKEN))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                theSpender))),
-                                                                BigInteger.valueOf(10))
+                                                        HTS_APPROVE_ALLOWANCE_CONTRACT,
+                                                        "htsApprove",
+                                                        asHeadlongAddress(
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getTokenID(
+                                                                                        FUNGIBLE_TOKEN))),
+                                                        asHeadlongAddress(
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getAccountID(
+                                                                                        theSpender))),
+                                                        BigInteger.valueOf(10))
                                                         .payingWith(OWNER)
                                                         .gas(4_000_000L)
                                                         .via(approveTxn)
@@ -228,8 +250,8 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                     final var idOfToken =
                                             "0.0."
                                                     + (spec.registry()
-                                                            .getTokenID(FUNGIBLE_TOKEN)
-                                                            .getTokenNum());
+                                                    .getTokenID(FUNGIBLE_TOKEN)
+                                                    .getTokenNum());
                                     var txnRecord =
                                             getTxnRecord(approveTxn)
                                                     .hasPriority(
@@ -294,19 +316,19 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                         allRunFor(
                                                 spec,
                                                 contractCall(
-                                                                HTS_APPROVE_ALLOWANCE_CONTRACT,
-                                                                "htsApproveNFT",
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                NON_FUNGIBLE_TOKEN))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                theSpender))),
-                                                                BigInteger.valueOf(2L))
+                                                        HTS_APPROVE_ALLOWANCE_CONTRACT,
+                                                        "htsApproveNFT",
+                                                        asHeadlongAddress(
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getTokenID(
+                                                                                        NON_FUNGIBLE_TOKEN))),
+                                                        asHeadlongAddress(
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getAccountID(
+                                                                                        theSpender))),
+                                                        BigInteger.valueOf(2L))
                                                         .payingWith(OWNER)
                                                         .gas(4_000_000L)
                                                         .via(approveTxn))))
@@ -321,8 +343,8 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                     final var idOfToken =
                                             "0.0."
                                                     + (spec.registry()
-                                                            .getTokenID(NON_FUNGIBLE_TOKEN)
-                                                            .getTokenNum());
+                                                    .getTokenID(NON_FUNGIBLE_TOKEN)
+                                                    .getTokenNum());
                                     var txnRecord =
                                             getTxnRecord(approveTxn)
                                                     .hasPriority(
@@ -404,45 +426,45 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                         allRunFor(
                                                 spec,
                                                 contractCall(
-                                                                HTS_APPROVE_ALLOWANCE_CONTRACT,
-                                                                "htsIsApprovedForAll",
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                NON_FUNGIBLE_TOKEN))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                OWNER))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                RECIPIENT))))
+                                                        HTS_APPROVE_ALLOWANCE_CONTRACT,
+                                                        "htsIsApprovedForAll",
+                                                        asHeadlongAddress(
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getTokenID(
+                                                                                        NON_FUNGIBLE_TOKEN))),
+                                                        asHeadlongAddress(
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getAccountID(
+                                                                                        OWNER))),
+                                                        asHeadlongAddress(
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getAccountID(
+                                                                                        RECIPIENT))))
                                                         .payingWith(OWNER)
                                                         .via(approvedForAllTxn)
                                                         .hasKnownStatus(SUCCESS)
                                                         .gas(GAS_TO_OFFER),
                                                 contractCall(
-                                                                HTS_APPROVE_ALLOWANCE_CONTRACT,
-                                                                "htsIsApprovedForAll",
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                NON_FUNGIBLE_TOKEN))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                OWNER))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                ACCOUNT))))
+                                                        HTS_APPROVE_ALLOWANCE_CONTRACT,
+                                                        "htsIsApprovedForAll",
+                                                        asHeadlongAddress(
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getTokenID(
+                                                                                        NON_FUNGIBLE_TOKEN))),
+                                                        asHeadlongAddress(
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getAccountID(
+                                                                                        OWNER))),
+                                                        asHeadlongAddress(
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getAccountID(
+                                                                                        ACCOUNT))))
                                                         .payingWith(OWNER)
                                                         .via(notApprovedTxn)
                                                         .hasKnownStatus(SUCCESS)
@@ -520,14 +542,14 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                         allRunFor(
                                                 spec,
                                                 contractCall(
-                                                                HTS_APPROVE_ALLOWANCE_CONTRACT,
-                                                                "htsGetApproved",
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                NON_FUNGIBLE_TOKEN))),
-                                                                BigInteger.ONE)
+                                                        HTS_APPROVE_ALLOWANCE_CONTRACT,
+                                                        "htsGetApproved",
+                                                        asHeadlongAddress(
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getTokenID(
+                                                                                        NON_FUNGIBLE_TOKEN))),
+                                                        BigInteger.ONE)
                                                         .payingWith(OWNER)
                                                         .via(allowanceTxn)
                                                         .hasKnownStatus(SUCCESS))))
@@ -593,19 +615,19 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                         allRunFor(
                                                 spec,
                                                 contractCall(
-                                                                HTS_APPROVE_ALLOWANCE_CONTRACT,
-                                                                "htsSetApprovalForAll",
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                NON_FUNGIBLE_TOKEN))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                theSpender))),
-                                                                true)
+                                                        HTS_APPROVE_ALLOWANCE_CONTRACT,
+                                                        "htsSetApprovalForAll",
+                                                        asHeadlongAddress(
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getTokenID(
+                                                                                        NON_FUNGIBLE_TOKEN))),
+                                                        asHeadlongAddress(
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getAccountID(
+                                                                                        theSpender))),
+                                                        true)
                                                         .payingWith(OWNER)
                                                         .gas(5_000_000L)
                                                         .via(allowanceTxn)
@@ -621,8 +643,8 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                     final var idOfToken =
                                             "0.0."
                                                     + (spec.registry()
-                                                            .getTokenID(NON_FUNGIBLE_TOKEN)
-                                                            .getTokenNum());
+                                                    .getTokenID(NON_FUNGIBLE_TOKEN)
+                                                    .getTokenNum());
                                     var txnRecord =
                                             getTxnRecord(allowanceTxn)
                                                     .hasPriority(
@@ -651,5 +673,64 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                                     .logged();
                                     allRunFor(spec, txnRecord);
                                 }));
+    }
+
+    private HapiSpec testIndirectApprovalWith(
+            final String callee,
+            final boolean expectGrantedApproval) {
+        final var PRETEND_PAIR = "PretendPair";
+        final var PRETEND_ATTACKER = "PretendAttacker";
+
+        final var attackCall = "attackCall";
+        final AtomicReference<TokenID> tokenID = new AtomicReference<>();
+        final AtomicReference<String> attackerMirrorAddr = new AtomicReference<>();
+        final AtomicReference<String> calleeMirrorAddr = new AtomicReference<>();
+
+        return defaultHapiSpec("TestIndirectApprovalWith" + callee)
+                .given(
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(PRETEND_ATTACKER).exposingCreatedIdTo(
+                                id -> attackerMirrorAddr.set(asHexedSolidityAddress(id))),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .initialSupply(Long.MAX_VALUE)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .exposingCreatedIdTo(id -> tokenID.set(asToken(id))),
+                        uploadInitCode(PRETEND_PAIR),
+                        contractCreate(PRETEND_PAIR).adminKey(DEFAULT_PAYER),
+                        uploadInitCode(callee),
+                        contractCreate(callee).adminKey(DEFAULT_PAYER)
+                                .exposingNumTo(num ->
+                                        calleeMirrorAddr.set(asHexedSolidityAddress(0, 0, num))),
+                        tokenAssociate(PRETEND_PAIR, FUNGIBLE_TOKEN),
+                        tokenAssociate(callee, FUNGIBLE_TOKEN))
+                .when(
+                        sourcing(() -> contractCall(
+                                        PRETEND_PAIR,
+                                        "callTo",
+                                        asHeadlongAddress(calleeMirrorAddr.get()),
+                                        asHeadlongAddress(asSolidityAddress(tokenID.get())),
+                                        asHeadlongAddress(attackerMirrorAddr.get())
+                                ).via(attackCall)
+                                        .gas(5_000_000L)
+                                        .hasKnownStatus(SUCCESS)
+                        )
+                ).then(
+                        getTxnRecord(attackCall)
+                                .andAllChildRecords()
+                                .logged(),
+                        // Under no circumstances should the pair ever have an allowance
+                        getAccountDetails(PRETEND_PAIR)
+                                .has(
+                                        accountDetailsWith()
+                                                .tokenAllowancesCount(0))
+                                .logged(),
+                        // Unless the callee tried to do a delegatecall to the redirect,
+                        // we _should_ see the allowance on the callee
+                        expectGrantedApproval
+                                ? getAccountDetails(callee)
+                                .has(accountDetailsWith().tokenAllowancesCount(1)).logged()
+                                : getAccountDetails(callee)
+                                .has(accountDetailsWith().tokenAllowancesCount(0)).logged());
     }
 }
