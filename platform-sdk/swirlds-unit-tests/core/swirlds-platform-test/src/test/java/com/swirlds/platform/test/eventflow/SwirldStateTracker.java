@@ -19,11 +19,11 @@ package com.swirlds.platform.test.eventflow;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.SwirldState1;
 import com.swirlds.common.system.events.ConsensusEvent;
+import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.system.transaction.Transaction;
-import com.swirlds.common.test.state.DummySwirldState1;
+import com.swirlds.common.test.state.DummySwirldState;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -35,12 +35,12 @@ import java.util.Set;
  * An implementation of {@link SwirldState} that tracks transactions passed to it and
  * keeps other information important for testing.
  */
-public class SwirldState1Tracker extends DummySwirldState1 implements TransactionTracker, SwirldState1 {
+public class SwirldStateTracker extends DummySwirldState implements TransactionTracker, SwirldState {
     private static final int VERSION_ORIGINAL = 1;
 
     private static final int CLASS_VERSION = VERSION_ORIGINAL;
 
-    private static final long CLASS_ID = 0xa7d6e4b5feda7dd4L;
+    private static final long CLASS_ID = 0xa7d6e4b5feda7ce4L;
 
     /**
      * Static because preHandle() is called once globally, not once per state, and may not change this object's
@@ -48,8 +48,6 @@ public class SwirldState1Tracker extends DummySwirldState1 implements Transactio
      */
     private static final HashSet<Transaction> preHandleTxns = new HashSet<>();
 
-    private final HashSet<Transaction> preConsensusSelfTxns = new HashSet<>();
-    private final HashSet<Transaction> preConsensusOtherTxns = new HashSet<>();
     private final HashSet<ConsensusTransaction> consensusSelfTxns = new HashSet<>();
     private final HashSet<ConsensusTransaction> consensusOtherTxns = new HashSet<>();
     private final List<HandledTransaction> allTxns = new ArrayList<>();
@@ -62,66 +60,44 @@ public class SwirldState1Tracker extends DummySwirldState1 implements Transactio
      * Determines if the handle methods should check that metadata was set on the transaction before
      * handling
      */
-    private boolean checkMetadata = false;
+    private boolean checkForMetadata = false;
 
     // needed for constructable registry
-    public SwirldState1Tracker() {
+    public SwirldStateTracker() {
         super();
         selfId = 0L;
     }
 
-    public SwirldState1Tracker waitForMetadata(final boolean waitForMetadata) {
-        this.checkMetadata = waitForMetadata;
+    public SwirldStateTracker(final long selfId) {
+        this.selfId = selfId;
+    }
+
+    public SwirldStateTracker waitForMetadata(final boolean waitForMetadata) {
+        this.checkForMetadata = waitForMetadata;
         return this;
     }
 
-    public SwirldState1Tracker(final SwirldState1Tracker that) {
+    public SwirldStateTracker(final SwirldStateTracker that) {
         this.selfId = that.selfId;
-        this.preConsensusOtherTxns.addAll(that.preConsensusOtherTxns);
-        this.preConsensusSelfTxns.addAll(that.preConsensusSelfTxns);
         this.consensusOtherTxns.addAll(that.consensusOtherTxns);
         this.consensusSelfTxns.addAll(that.consensusSelfTxns);
         this.allTxns.addAll(that.allTxns);
         this.failure = that.failure;
-    }
-
-    @Override
-    public synchronized void preHandle(final Transaction trans) {
-        trans.setMetadata(Boolean.TRUE);
-        if (!preHandleTxns.add(trans)) {
-            addFailure(String.format("Encountered duplicate preHandle transaction: %s", trans));
-        }
-    }
-
-    @Override
-    public synchronized void handleTransaction(
-            final long creatorId,
-            final Instant timeCreated,
-            final Instant timestamp,
-            final Transaction trans,
-            final SwirldDualState swirldDualState) {
-
-        if (checkMetadata) {
-            if (trans.getMetadata() != Boolean.TRUE) {
-                addFailure("metadata is not set or is not the correct value: " + trans.getMetadata());
-            }
-        }
-
-        addHandledTransaction(trans, null);
-
-        if (selfId == creatorId) {
-            if (!preConsensusSelfTxns.add(trans)) {
-                addFailure(String.format("Encountered duplicate self pre-consensus transaction: %s", trans));
-            }
-        } else {
-            if (!preConsensusOtherTxns.add(trans)) {
-                addFailure(String.format("Encountered duplicate other pre-consensus transaction: %s", trans));
-            }
-        }
+        this.checkForMetadata = that.checkForMetadata;
     }
 
     private void addFailure(final String msg) {
         failure.append(msg).append("\n");
+    }
+
+    @Override
+    public synchronized void preHandle(final Event event) {
+        event.forEachTransaction(trans -> {
+            trans.setMetadata(Boolean.TRUE);
+            if (!preHandleTxns.add(trans)) {
+                addFailure(String.format("Encountered duplicate preHandle transaction: %s", trans));
+            }
+        });
     }
 
     @Override
@@ -134,7 +110,14 @@ public class SwirldState1Tracker extends DummySwirldState1 implements Transactio
             final ConsensusEvent event = eventIt.next();
             for (final Iterator<ConsensusTransaction> transIt = event.consensusTransactionIterator();
                     transIt.hasNext(); ) {
+
                 final ConsensusTransaction trans = transIt.next();
+
+                if (checkForMetadata) {
+                    if (trans.getMetadata() != Boolean.TRUE) {
+                        addFailure("metadata is not set or is not the correct value: " + trans.getMetadata());
+                    }
+                }
 
                 addHandledTransaction(trans, trans.getConsensusTimestamp());
                 final long creatorId = event.getCreatorId();
@@ -165,13 +148,14 @@ public class SwirldState1Tracker extends DummySwirldState1 implements Transactio
     }
 
     @Override
-    public SwirldState1Tracker copy() {
+    public SwirldStateTracker copy() {
         throwIfImmutable();
-        return new SwirldState1Tracker(this);
+        return new SwirldStateTracker(this);
     }
 
-    public synchronized Set<Transaction> getPreConsensusSelfTransactions() {
-        return preConsensusSelfTxns;
+    @Override
+    public Set<Transaction> getPreHandleTransactions() {
+        return preHandleTxns;
     }
 
     @Override
@@ -179,17 +163,14 @@ public class SwirldState1Tracker extends DummySwirldState1 implements Transactio
         return consensusSelfTxns;
     }
 
-    public synchronized Set<Transaction> getPreConsensusOtherTransactions() {
-        return preConsensusOtherTxns;
-    }
-
     @Override
     public synchronized Set<ConsensusTransaction> getPostConsensusOtherTransactions() {
         return consensusOtherTxns;
     }
 
-    public Set<Transaction> getPreHandleTransactions() {
-        return preHandleTxns;
+    @Override
+    public synchronized List<HandledTransaction> getOrderedTransactions() {
+        return allTxns;
     }
 
     /**
@@ -225,12 +206,7 @@ public class SwirldState1Tracker extends DummySwirldState1 implements Transactio
     }
 
     @Override
-    public synchronized List<HandledTransaction> getOrderedTransactions() {
-        return allTxns;
-    }
-
-    @Override
-    public SwirldState1Tracker getSwirldState() {
+    public SwirldStateTracker getSwirldState() {
         return this;
     }
 }
