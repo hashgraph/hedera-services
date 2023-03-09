@@ -40,10 +40,9 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.network.RandomGraph;
 import com.swirlds.platform.reconnect.FallenBehindManagerImpl;
 import com.swirlds.platform.state.SwirldStateManager;
-import com.swirlds.platform.state.SwirldStateManagerDouble;
-import com.swirlds.platform.state.SwirldStateManagerSingle;
+import com.swirlds.platform.state.SwirldStateManagerImpl;
+import java.time.Instant;
 import java.util.List;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -55,11 +54,6 @@ import org.junit.jupiter.params.provider.Arguments;
 public class SyncManagerTest {
     private static final long ID = 0L;
     private static final NodeId OTHER_ID = new NodeId(false, 1L);
-
-    private static Stream<Arguments> swirldStateManagers() {
-        return Stream.of(
-                Arguments.of(spy(SwirldStateManagerSingle.class)), Arguments.of(spy(SwirldStateManagerDouble.class)));
-    }
 
     /**
      * A helper class that contains dummy data to feed into SyncManager lambdas.

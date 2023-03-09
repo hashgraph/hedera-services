@@ -46,7 +46,7 @@ import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.test.fixtures.FakeTime;
-import com.swirlds.common.test.state.DummySwirldState2;
+import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
@@ -224,7 +224,7 @@ class SignedStateFileManagerTests {
                 .build();
 
         final SignedState signedState = new RandomSignedStateGenerator().build();
-        ((DummySwirldState2) signedState.getSwirldState()).enableBlockingSerialization();
+        ((DummySwirldState) signedState.getSwirldState()).enableBlockingSerialization();
 
         final AtomicBoolean finished = new AtomicBoolean(false);
         final StateToDiskAttemptConsumer consumer = (ssw, path, success) -> {
@@ -256,7 +256,7 @@ class SignedStateFileManagerTests {
         assertFalse(finished.get(), "shouldn't be able to finish yet");
         assertTrue(thread.isAlive(), "thread should still be blocked");
 
-        ((DummySwirldState2) signedState.getSwirldState()).unblockSerialization();
+        ((DummySwirldState) signedState.getSwirldState()).unblockSerialization();
         thread.join(1000);
         assertTrue(finished.get(), "should be finished");
 
@@ -352,7 +352,7 @@ class SignedStateFileManagerTests {
             final AtomicInteger statesWritten) {
 
         if (stateIndex < queueSize + 1) {
-            ((DummySwirldState2) state.getSwirldState()).unblockSerialization();
+            ((DummySwirldState) state.getSwirldState()).unblockSerialization();
             assertEventuallyEquals(
                     stateIndex + 1, statesWritten::get, Duration.ofSeconds(1), "state should eventually be saved");
             assertEventuallyEquals(
@@ -397,7 +397,7 @@ class SignedStateFileManagerTests {
         final List<SignedState> states = new ArrayList<>();
         for (int i = 0; i < queueSize * 2; i++) {
             final SignedState signedState = new RandomSignedStateGenerator().build();
-            ((DummySwirldState2) signedState.getSwirldState()).enableBlockingSerialization();
+            ((DummySwirldState) signedState.getSwirldState()).enableBlockingSerialization();
             states.add(signedState);
         }
 

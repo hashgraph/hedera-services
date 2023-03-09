@@ -206,7 +206,6 @@ import com.swirlds.platform.util.PlatformComponents;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -1149,13 +1148,11 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             final State state, final QueueThread<SignedState> stateHashSignQueueThread) {
 
         swirldStateManager = PlatformConstructor.swirldStateManager(
-                threadManager,
                 selfId,
                 preConsensusSystemTransactionManager,
                 postConsensusSystemTransactionManager,
                 metrics,
                 PlatformConstructor.settingsProvider(),
-                this::estimateTime,
                 freezeManager::isFreezeStarted,
                 state);
 
@@ -1741,23 +1738,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     @Override
     public boolean createTransaction(final byte[] trans) {
         return transactionSubmitter.submitTransaction(new SwirldTransaction(trans));
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public Instant estimateTime() {
-        // Estimated consensus times are predicted only here and in Event.estimateTime().
-
-        /* seconds from self creating an event to self creating the next event */
-        double c2c = 1.0 / Math.max(0.5, addedEventMetrics.getEventsCreatedPerSecond());
-        /* seconds from self creating an event to the consensus timestamp that event receives */
-        double c2t = consensusMetrics.getAvgSelfCreatedTimestamp();
-
-        // for now, just use 0. A more sophisticated formula could be used
-        c2c = 0;
-        c2t = 0;
-
-        return Instant.now().plus((long) ((c2c / 2.0 + c2t) * 1_000_000_000.0), ChronoUnit.NANOS);
     }
 
     /**

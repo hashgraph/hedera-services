@@ -21,7 +21,6 @@ import static com.swirlds.platform.state.SwirldStateManagerUtils.fastCopy;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.SwirldState2;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
@@ -38,7 +37,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * <p>Manages all interactions with the state object required by {@link SwirldState2}.</p>
+ * <p>Manages all interactions with the state object required by {@link SwirldState}.</p>
  *
  * <p>Two threads interact with states in this class: pre-consensus event handler and consensus event handler.
  * Transactions are submitted by a different thread. Other threads can access the states by calling
@@ -46,10 +45,10 @@ import org.apache.logging.log4j.Logger;
  * an active freeze period. Careful attention must be paid to changes in this class regarding locking and
  * synchronization in this class and its utility classes.</p>
  */
-public class SwirldStateManagerDouble implements SwirldStateManager {
+public class SwirldStateManagerImpl implements SwirldStateManager {
 
     /** use this for all logging, as controlled by the optional data/log4j2.xml file */
-    private static final Logger logger = LogManager.getLogger(SwirldStateManagerDouble.class);
+    private static final Logger logger = LogManager.getLogger(SwirldStateManagerImpl.class);
 
     /** Stats relevant to SwirldState operations. */
     private final SwirldStateMetrics stats;
@@ -77,7 +76,7 @@ public class SwirldStateManagerDouble implements SwirldStateManager {
     private final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager;
 
     // Used for creating mock instances in unit testing
-    public SwirldStateManagerDouble() {
+    public SwirldStateManagerImpl() {
         stats = null;
         transactionPool = null;
         preConsensusSystemTransactionManager = null;
@@ -103,7 +102,7 @@ public class SwirldStateManagerDouble implements SwirldStateManager {
      * @param state
      * 		the genesis state
      */
-    public SwirldStateManagerDouble(
+    public SwirldStateManagerImpl(
             final NodeId selfId,
             final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager,
             final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager,
@@ -139,7 +138,7 @@ public class SwirldStateManagerDouble implements SwirldStateManager {
         while (!immutableState.tryReserve()) {
             immutableState = latestImmutableState.get();
         }
-        transactionHandler.preHandle(event, (SwirldState2) immutableState.getSwirldState());
+        transactionHandler.preHandle(event, immutableState.getSwirldState());
         immutableState.release();
 
         stats.preHandleTime(startTime, System.nanoTime());
@@ -203,7 +202,7 @@ public class SwirldStateManagerDouble implements SwirldStateManager {
     @Override
     public void clear() {
         // clear the transactions
-        logger.info(RECONNECT.getMarker(), "SwirldStateManagerDouble: clearing transactionPool");
+        logger.info(RECONNECT.getMarker(), "SwirldStateManager: clearing transactionPool");
         transactionPool.clear();
     }
 
