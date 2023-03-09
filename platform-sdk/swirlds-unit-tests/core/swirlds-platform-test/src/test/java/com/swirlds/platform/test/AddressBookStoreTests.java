@@ -37,7 +37,6 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.address.AddressBookValidator;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.platform.state.address.AddressBookStore;
-import com.swirlds.platform.state.address.BranchingAddressBookStore;
 import com.swirlds.platform.state.address.SequentialAddressBookStore;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
@@ -95,10 +94,6 @@ class AddressBookStoreTests {
 
     static Stream<Arguments> addressBookStoreImpls() {
         return Stream.of(
-                Arguments.of(new AddressBookStoreImpl(
-                        BranchingAddressBookStore.class.getSimpleName(), BranchingAddressBookStore::new, true)),
-                Arguments.of(new AddressBookStoreImpl(
-                        BranchingAddressBookStore.class.getSimpleName(), BranchingAddressBookStore::new, false)),
                 Arguments.of(new AddressBookStoreImpl(
                         SequentialAddressBookStore.class.getSimpleName(), SequentialAddressBookStore::new, true)),
                 Arguments.of(new AddressBookStoreImpl(
@@ -402,12 +397,7 @@ class AddressBookStoreTests {
         final AddressBookStore copy = store.copy();
 
         assertTrue(copy.isMutable(), "copy should always be mutable");
-
-        if (store instanceof BranchingAddressBookStore) {
-            assertTrue(copy.isMutable(), "original should always be mutable for branching store");
-        } else if (store instanceof SequentialAddressBookStore) {
-            assertTrue(store.isImmutable(), "original should become immutable for sequential store");
-        }
+        assertTrue(store.isImmutable(), "original should become immutable for sequential store");
 
         MerkleCryptoFactory.getInstance().digestTreeSync(store);
         MerkleCryptoFactory.getInstance().digestTreeSync(copy);
