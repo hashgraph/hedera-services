@@ -15,6 +15,6 @@ In order to achieve this goal with minimal latency, we start writing each event 
 
 ## Data Flow
 
-![data flow](preConsensusEventStream.svg)
+![](./preconsensusEventStream.svg)
 
 TODO expand docoument
