@@ -19,7 +19,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -4366,6 +4365,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                         .via(TRANSFER_FROM_ACCOUNT_TXN)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(
+                        // gasUsed is little less than supplied 500K in contractCall result
                         getTxnRecord(TRANSFER_FROM_ACCOUNT_TXN).logged(),
                         resetToDefault("hedera.allowances.isEnabled"));
     }

@@ -231,14 +231,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
         try {
             prepareComputation(input, updater::unaliased);
         } catch (InvalidTransactionException e) {
-            if (NOT_SUPPORTED.equals(e.getResponseCode())) {
-                return PrecompileContractResult.halt(
-                        null, Optional.of(HederaExceptionalHaltReason.NOT_SUPPORTED));
-            } else {
-                return PrecompileContractResult.halt(
-                        null,
-                        Optional.of(HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT));
-            }
+            final var haltReason =
+                    NOT_SUPPORTED.equals(e.getResponseCode())
+                            ? HederaExceptionalHaltReason.NOT_SUPPORTED
+                            : HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
+            return PrecompileContractResult.halt(null, Optional.of(haltReason));
         }
         gasRequirement = defaultGas();
         if (this.precompile == null || this.transactionBody == null) {
