@@ -35,4 +35,5 @@ dependencies {
   testImplementation(project(":swirlds-unit-tests:common:swirlds-common-test"))
   testImplementation(testLibs.bundles.junit)
   testImplementation(testLibs.bundles.mocking)
+  testImplementation(testFixtures(project(":swirlds-common")))
 }

@@ -51,9 +51,9 @@ import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.TestQualifierTags;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.virtualmap.datasource.InMemoryDataSource;
 import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapStatistics;
@@ -983,11 +983,9 @@ class VirtualMapTests extends VirtualTestBase {
     }
 
     /**
-     * This test validates that for the basic tree below, the routes are set correctly.
-     * When the tests are moved to the swirlds-test module, we should use a MerkleMap
-     * and insert one million elements, and insert the same elements into a
-     * {@link VirtualMap}. Then, we iterate over the routes of both maps and their
-     * routes should match.
+     * This test validates that for the basic tree below, the routes are set correctly. When the tests are moved to the
+     * swirlds-test module, we should use a MerkleMap and insert one million elements, and insert the same elements into
+     * a {@link VirtualMap}. Then, we iterate over the routes of both maps and their routes should match.
      *
      * <pre>
      *                      VirtualMap
@@ -1054,9 +1052,8 @@ class VirtualMapTests extends VirtualTestBase {
      **/
 
     /**
-     * Bug #4233 was caused by an NPE when flushing a copy that had been detached for the
-     * sake of state saving. This happened because the detach for state saving does not
-     * result in the detached state having a data source.
+     * Bug #4233 was caused by an NPE when flushing a copy that had been detached for the sake of state saving. This
+     * happened because the detach for state saving does not result in the detached state having a data source.
      */
     @Test
     void canFlushDetachedStateForStateSaving() throws InterruptedException {

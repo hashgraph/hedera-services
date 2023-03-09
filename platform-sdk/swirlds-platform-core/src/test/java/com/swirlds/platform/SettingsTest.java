@@ -117,13 +117,13 @@ import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.settings.ParsingUtils;
+import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.chatter.ChatterSubSetting;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.reconnect.ReconnectSettingsImpl;
 import com.swirlds.platform.state.StateSettings;
 import com.swirlds.test.framework.TestTypeTags;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -269,9 +269,8 @@ class SettingsTest {
     }
 
     /**
-     * Currently disabled until the Settings class gets rewritten to not use a singleton
-     * design pattern. There are tests that are run that modify these default values
-     * before this test is run, therefore resulting in this test failing.
+     * Currently disabled until the Settings class gets rewritten to not use a singleton design pattern. There are tests
+     * that are run that modify these default values before this test is run, therefore resulting in this test failing.
      */
     @Test
     @Disabled
@@ -455,9 +454,8 @@ class SettingsTest {
     }
 
     /**
-     * Currently disabled until the Settings class gets rewritten to not use a singleton
-     * design pattern. There are tests that are run that modify these default values
-     * before this test is run, therefore resulting in this test failing.
+     * Currently disabled until the Settings class gets rewritten to not use a singleton design pattern. There are tests
+     * that are run that modify these default values before this test is run, therefore resulting in this test failing.
      */
     @Test
     @Disabled
@@ -489,9 +487,8 @@ class SettingsTest {
     }
 
     /**
-     * Currently disabled until the Settings class gets rewritten to not use a singleton
-     * design pattern. There are tests that are run that modify these default values
-     * before this test is run, therefore resulting in this test failing.
+     * Currently disabled until the Settings class gets rewritten to not use a singleton design pattern. There are tests
+     * that are run that modify these default values before this test is run, therefore resulting in this test failing.
      */
     @Test
     @Disabled
@@ -530,9 +527,8 @@ class SettingsTest {
     }
 
     /**
-     * Currently disabled until the Settings class gets rewritten to not use a singleton
-     * design pattern. There are tests that are run that modify these default values
-     * before this test is run, therefore resulting in this test failing.
+     * Currently disabled until the Settings class gets rewritten to not use a singleton design pattern. There are tests
+     * that are run that modify these default values before this test is run, therefore resulting in this test failing.
      */
     @Test
     @Disabled
@@ -571,9 +567,8 @@ class SettingsTest {
     }
 
     /**
-     * Currently disabled until the Settings class gets rewritten to not use a singleton
-     * design pattern. There are tests that are run that modify these default values
-     * before this test is run, therefore resulting in this test failing.
+     * Currently disabled until the Settings class gets rewritten to not use a singleton design pattern. There are tests
+     * that are run that modify these default values before this test is run, therefore resulting in this test failing.
      */
     @Test
     @Disabled
@@ -625,9 +620,8 @@ class SettingsTest {
     }
 
     /**
-     * Currently disabled until the Settings class gets rewritten to not use a singleton
-     * design pattern. There are tests that are run that modify these default values
-     * before this test is run, therefore resulting in this test failing.
+     * Currently disabled until the Settings class gets rewritten to not use a singleton design pattern. There are tests
+     * that are run that modify these default values before this test is run, therefore resulting in this test failing.
      */
     @Test
     @Disabled
@@ -664,9 +658,8 @@ class SettingsTest {
     }
 
     /**
-     * Currently disabled until the Settings class gets rewritten to not use a singleton
-     * design pattern. There are tests that are run that modify these default values
-     * before this test is run, therefore resulting in this test failing.
+     * Currently disabled until the Settings class gets rewritten to not use a singleton design pattern. There are tests
+     * that are run that modify these default values before this test is run, therefore resulting in this test failing.
      */
     @Test
     @Disabled
@@ -728,9 +721,8 @@ class SettingsTest {
     }
 
     /**
-     * Currently disabled until the Settings class gets rewritten to not use a singleton
-     * design pattern. There are tests that are run that modify these default values
-     * before this test is run, therefore resulting in this test failing.
+     * Currently disabled until the Settings class gets rewritten to not use a singleton design pattern. There are tests
+     * that are run that modify these default values before this test is run, therefore resulting in this test failing.
      */
     @Test
     @Disabled
@@ -765,9 +757,8 @@ class SettingsTest {
     }
 
     /**
-     * Currently disabled until the Settings class gets rewritten to not use a singleton
-     * design pattern. There are tests that are run that modify these default values
-     * before this test is run, therefore resulting in this test failing.
+     * Currently disabled until the Settings class gets rewritten to not use a singleton design pattern. There are tests
+     * that are run that modify these default values before this test is run, therefore resulting in this test failing.
      */
     @Test
     @Disabled
@@ -846,9 +837,8 @@ class SettingsTest {
     }
 
     /**
-     * Currently disabled until the Settings class gets rewritten to not use a singleton
-     * design pattern. There are tests that are run that modify these default values
-     * before this test is run, therefore resulting in this test failing.
+     * Currently disabled until the Settings class gets rewritten to not use a singleton design pattern. There are tests
+     * that are run that modify these default values before this test is run, therefore resulting in this test failing.
      */
     @Test
     @Disabled
@@ -887,9 +877,8 @@ class SettingsTest {
     }
 
     /**
-     * Currently disabled until the Settings class gets rewritten to not use a singleton
-     * design pattern. There are tests that are run that modify these default values
-     * before this test is run, therefore resulting in this test failing.
+     * Currently disabled until the Settings class gets rewritten to not use a singleton design pattern. There are tests
+     * that are run that modify these default values before this test is run, therefore resulting in this test failing.
      */
     @Test
     @Disabled
@@ -941,8 +930,8 @@ class SettingsTest {
         Assertions.assertEquals(150000, chatterSubSetting.getFutureGenerationLimit());
     }
 
-    private String readValueFromFile(Path settingsPath, String propertyName) throws IOException {
-        try (BufferedReader br = new BufferedReader(new FileReader(settingsPath.toFile()))) {
+    private String readValueFromFile(final Path settingsPath, final String propertyName) throws IOException {
+        try (final BufferedReader br = new BufferedReader(new FileReader(settingsPath.toFile()))) {
             return br.lines()
                     .filter(line -> line.endsWith(propertyName))
                     .findAny()

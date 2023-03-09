@@ -29,9 +29,9 @@ import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.platform.DefaultCounter;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
+import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
@@ -110,13 +110,13 @@ class MetricsDocUtilsTest {
 
         final String expectedOutput =
                 """
-                Category	Identifier	Name	Metric Type	Data Type	Unit	Description
-                category1	category1.metric.A	metric.A	COUNTER	INT	unit.A	Metric A description
-                category1	category1.metric.B	metric.B	COUNTER	INT	unit.B	Metric B description
-                category2	category2.metric.C	metric.C	COUNTER	INT	unit.C	Metric C description
-                category2	category2.metric.D	metric.D	COUNTER	INT	unit.D	Metric D description
-                category3	category3.metric.E	metric.E	COUNTER	INT	unit.E	Metric E description
-                """;
+                        Category	Identifier	Name	Metric Type	Data Type	Unit	Description
+                        category1	category1.metric.A	metric.A	COUNTER	INT	unit.A	Metric A description
+                        category1	category1.metric.B	metric.B	COUNTER	INT	unit.B	Metric B description
+                        category2	category2.metric.C	metric.C	COUNTER	INT	unit.C	Metric C description
+                        category2	category2.metric.D	metric.D	COUNTER	INT	unit.D	Metric D description
+                        category3	category3.metric.E	metric.E	COUNTER	INT	unit.E	Metric E description
+                        """;
 
         final String actualOutput = Files.contentOf(docFile, StandardCharsets.UTF_8);
         assertEquals(expectedOutput, actualOutput, "The metrics document contents was not generated correctly.");

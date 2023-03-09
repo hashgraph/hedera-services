@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,17 @@
  * limitations under the License.
  */
 
-package com.swirlds.test.framework.config;
+package com.swirlds.common.test.fixtures.config;
 
 import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.config.sources.SimpleConfigSource;
-import com.swirlds.common.threading.locks.AutoClosableLock;
-import com.swirlds.common.threading.locks.Locks;
-import com.swirlds.common.threading.locks.locked.Locked;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Helper for use the config in test and change the config for specific tests. Instance can be used per class or per
@@ -33,7 +32,7 @@ import com.swirlds.config.api.source.ConfigSource;
  */
 public class TestConfigBuilder {
 
-    private final AutoClosableLock configLock = Locks.createAutoLock();
+    private final Lock configLock = new ReentrantLock();
 
     private Configuration configuration = null;
 
@@ -48,11 +47,9 @@ public class TestConfigBuilder {
 
     /**
      * Creates a new instance and add all records on classpath that are annotated with {@link ConfigData} as config data
-     * types if the
-     * {@code registerAllTypes} param is true.
+     * types if the {@code registerAllTypes} param is true.
      *
-     * @param registerAllTypes
-     * 		if true all config data records on classpath will automatically be registered
+     * @param registerAllTypes if true all config data records on classpath will automatically be registered
      */
     public TestConfigBuilder(final boolean registerAllTypes) {
         if (registerAllTypes) {
@@ -65,10 +62,8 @@ public class TestConfigBuilder {
     /**
      * Sets the value for the config.
      *
-     * @param propertyName
-     * 		name of the property
-     * @param value
-     * 		the value
+     * @param propertyName name of the property
+     * @param value        the value
      * @return the {@link TestConfigBuilder} instance (for fluent API)
      */
     public TestConfigBuilder withValue(final String propertyName, final String value) {
@@ -78,10 +73,8 @@ public class TestConfigBuilder {
     /**
      * Sets the value for the config.
      *
-     * @param propertyName
-     * 		name of the property
-     * @param value
-     * 		the value
+     * @param propertyName name of the property
+     * @param value        the value
      * @return the {@link TestConfigBuilder} instance (for fluent API)
      */
     public TestConfigBuilder withValue(final String propertyName, final int value) {
@@ -91,10 +84,8 @@ public class TestConfigBuilder {
     /**
      * Sets the value for the config.
      *
-     * @param propertyName
-     * 		name of the property
-     * @param value
-     * 		the value
+     * @param propertyName name of the property
+     * @param value        the value
      * @return the {@link TestConfigBuilder} instance (for fluent API)
      */
     public TestConfigBuilder withValue(final String propertyName, final double value) {
@@ -104,10 +95,8 @@ public class TestConfigBuilder {
     /**
      * Sets the value for the config.
      *
-     * @param propertyName
-     * 		name of the property
-     * @param value
-     * 		the value
+     * @param propertyName name of the property
+     * @param value        the value
      * @return the {@link TestConfigBuilder} instance (for fluent API)
      */
     public TestConfigBuilder withValue(final String propertyName, final long value) {
@@ -117,10 +106,8 @@ public class TestConfigBuilder {
     /**
      * Sets the value for the config.
      *
-     * @param propertyName
-     * 		name of the property
-     * @param value
-     * 		the value
+     * @param propertyName name of the property
+     * @param value        the value
      * @return the {@link TestConfigBuilder} instance (for fluent API)
      */
     public TestConfigBuilder withValue(final String propertyName, final boolean value) {
@@ -128,36 +115,41 @@ public class TestConfigBuilder {
     }
 
     /**
-     * This method returns the {@link Configuration} instance. If the method is called for the first time the
-     * {@link Configuration} instance will be created. All values that have been set (see
-     * {@link #withValue(String, int)}) methods will be part of the config. Next to this the config will support
-     * all config data record types (see {@link ConfigData}) that are on the classpath.
+     * This method returns the {@link Configuration} instance. If the method is called for the first time the {@link
+     * Configuration} instance will be created. All values that have been set (see {@link #withValue(String, int)})
+     * methods will be part of the config. Next to this the config will support all config data record types (see {@link
+     * ConfigData}) that are on the classpath.
      *
      * @return the created configuration
      */
     public Configuration getOrCreateConfig() {
-        try (Locked ignore = configLock.lock()) {
+        configLock.lock();
+        try {
             if (configuration == null) {
                 configuration = builder.build();
                 ConfigurationHolder.getInstance().setConfiguration(configuration);
             }
             return configuration;
+        } finally {
+            configLock.unlock();
         }
     }
 
     private void checkConfigState() {
-        try (Locked ignore = configLock.lock()) {
+        configLock.lock();
+        try {
             if (configuration != null) {
                 throw new IllegalStateException("Configuration already created!");
             }
+        } finally {
+            configLock.unlock();
         }
     }
 
     /**
      * Adds the given config source to the builder
      *
-     * @param configSource
-     * 		the config source that will be added
+     * @param configSource the config source that will be added
      * @return the {@link TestConfigBuilder} instance (for fluent API)
      */
     public TestConfigBuilder withSource(final ConfigSource configSource) {

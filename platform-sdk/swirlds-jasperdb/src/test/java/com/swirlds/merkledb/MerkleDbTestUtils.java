@@ -31,9 +31,9 @@ import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
 import com.swirlds.common.utility.Units;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -62,15 +62,15 @@ import javax.management.MBeanServer;
 @SuppressWarnings("unused")
 public class MerkleDbTestUtils {
     /**
-     * The amount of direct memory used by JVM and caches. This needs to be big enough to allow for
-     * variations in test runs while being small enough to catch leaks in tests.
+     * The amount of direct memory used by JVM and caches. This needs to be big enough to allow for variations in test
+     * runs while being small enough to catch leaks in tests.
      */
     private static final long DIRECT_MEMORY_BASE_USAGE = 4 * Units.MEBIBYTES_TO_BYTES;
 
     /**
-     * Run a callable test in the background and then make sure no direct memory is leaked and not
-     * databases are left open. Running test in a thread helps by allowing the thread to be killed
-     * so we can clean up any thread local cached data used in the test.
+     * Run a callable test in the background and then make sure no direct memory is leaked and not databases are left
+     * open. Running test in a thread helps by allowing the thread to be killed so we can clean up any thread local
+     * cached data used in the test.
      *
      * @param callable The test to run
      * @throws Exception If there was a problem running the test
@@ -111,15 +111,14 @@ public class MerkleDbTestUtils {
     }
 
     /**
-     * Check if direct memory used is less than base usage, calling gc() up to 20 times to try and
-     * clean it up, checking each time. The limit of was chosen as big enough to not be effected by
-     * any JVM internal use of direct memory and any cache maintained by sun.nio.ch.Util.
+     * Check if direct memory used is less than base usage, calling gc() up to 20 times to try and clean it up, checking
+     * each time. The limit of was chosen as big enough to not be effected by any JVM internal use of direct memory and
+     * any cache maintained by sun.nio.ch.Util.
      *
      * <p><b>It is possible this is non-deterministic, because gc() is not guaranteed to free memory
      * and is async.</b>
      *
-     * @param directMemoryBytesBefore The number of bytes of direct memory allocated before test was
-     *     started
+     * @param directMemoryBytesBefore The number of bytes of direct memory allocated before test was started
      * @return True if more than base usage of direct memory is being used after 20 gc() calls.
      */
     public static boolean checkDirectMemoryIsCleanedUpToLessThanBaseUsage(final long directMemoryBytesBefore) {
@@ -154,9 +153,8 @@ public class MerkleDbTestUtils {
     }
 
     /**
-     * Creates a hash of the status of all files in a directory, that is their names, sizes and
-     * modification dates. This is useful to be able to check if any modifications have happened on
-     * a directory.
+     * Creates a hash of the status of all files in a directory, that is their names, sizes and modification dates. This
+     * is useful to be able to check if any modifications have happened on a directory.
      *
      * @param dir The directory to scan and hash
      * @return null if directory doesn't exist or hash of status of contents

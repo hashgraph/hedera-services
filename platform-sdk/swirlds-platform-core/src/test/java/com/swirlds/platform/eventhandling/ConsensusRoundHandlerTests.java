@@ -31,6 +31,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.SwirldState2;
+import com.swirlds.common.test.fixtures.context.TestPlatformContextBuilder;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.utility.ThrowingRunnable;
@@ -44,7 +45,6 @@ import com.swirlds.platform.state.SwirldStateManagerDouble;
 import com.swirlds.platform.state.SwirldStateManagerSingle;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.test.framework.TestQualifierTags;
-import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -77,8 +77,8 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
     }
 
     /**
-     * Verify that the consensus handler thread does not make reconnect wait for it to drain the queue of
-     * consensus rounds.
+     * Verify that the consensus handler thread does not make reconnect wait for it to drain the queue of consensus
+     * rounds.
      */
     @RepeatedTest(10)
     @Tag(TestQualifierTags.TIME_CONSUMING)
@@ -158,8 +158,7 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
     /**
      * Tests that consensus events are passed to {@link EventStreamManager#addEvents(List)} exactly once.
      *
-     * @param swirldState
-     * 		the instance of {@link SwirldState} to initialize {@link ConsensusRoundHandler} with
+     * @param swirldState the instance of {@link SwirldState} to initialize {@link ConsensusRoundHandler} with
      */
     @ParameterizedTest
     @MethodSource("swirldStates")
@@ -171,10 +170,8 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
     /**
      * Verifies that {@link EventStreamManager#addEvents(List)} is called the desired number of times.
      *
-     * @param eventStreamManager
-     * 		the instance of {@link EventStreamManager} used by {@link ConsensusRoundHandler}
-     * @param roundConsumer
-     * 		the round consumer to test
+     * @param eventStreamManager the instance of {@link EventStreamManager} used by {@link ConsensusRoundHandler}
+     * @param roundConsumer      the round consumer to test
      */
     private void testEventStream(
             final EventStreamManager<EventImpl> eventStreamManager, final Consumer<ConsensusRound> roundConsumer) {

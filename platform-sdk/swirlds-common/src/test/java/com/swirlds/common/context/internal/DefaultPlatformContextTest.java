@@ -22,8 +22,8 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.MetricsProvider;
 import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import org.junit.jupiter.api.Test;
 
 class DefaultPlatformContextTest {

@@ -43,6 +43,7 @@ import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomUtils;
+import com.swirlds.common.test.fixtures.context.TestPlatformContextBuilder;
 import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
@@ -66,7 +67,6 @@ import com.swirlds.platform.state.SwirldStateManagerSingle;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.stats.CycleTimingStat;
 import com.swirlds.platform.test.NoOpConsensusMetrics;
-import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.FileNotFoundException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -214,8 +214,8 @@ class EventFlowTests {
     }
 
     /**
-     * Verifies that all transactions from consensus events created are sent to
-     * {@link SwirldState#handleConsensusRound(Round, SwirldDualState)} in a round exactly once.
+     * Verifies that all transactions from consensus events created are sent to {@link
+     * SwirldState#handleConsensusRound(Round, SwirldDualState)} in a round exactly once.
      *
      * @param seed            random seed this test uses for address book generation
      * @param numNodes        the number of nodes in the network
@@ -228,8 +228,8 @@ class EventFlowTests {
     }
 
     /**
-     * Verifies that all transactions from consensus events created are sent to
-     * {@link SwirldState#handleConsensusRound(Round, SwirldDualState)} in a round exactly once.
+     * Verifies that all transactions from consensus events created are sent to {@link
+     * SwirldState#handleConsensusRound(Round, SwirldDualState)} in a round exactly once.
      *
      * @param seed      random seed this test uses for address book generation
      * @param numEvents the number of events to submit
@@ -275,8 +275,8 @@ class EventFlowTests {
     }
 
     /**
-     * Verifies that signed states are created for the appropriate rounds given the
-     * {@link SettingsProvider#getSignedStateFreq()}.
+     * Verifies that signed states are created for the appropriate rounds given the {@link
+     * SettingsProvider#getSignedStateFreq()}.
      * <p>
      * Some developers have seen this test hang when running locally. There is a known memory leak with SS1
      * (https://github.com/swirlds/swirlds-platform/issues/4776) that causes the hang-up when running with multiple SS1

@@ -37,6 +37,8 @@ import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.test.AssertionUtils;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomUtils;
+import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
+import com.swirlds.common.test.fixtures.context.TestPlatformContextBuilder;
 import com.swirlds.common.test.metrics.NoOpMetrics;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.common.utility.AutoCloseableWrapper;
@@ -45,8 +47,6 @@ import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
-import com.swirlds.test.framework.config.TestConfigBuilder;
-import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashMap;
@@ -524,7 +524,7 @@ class StateManagementComponentTests {
             return MerkleCryptoFactory.getInstance()
                     .digestTreeAsync(signedState.getState())
                     .get();
-        } catch (InterruptedException | ExecutionException e) {
+        } catch (final InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
         }
     }

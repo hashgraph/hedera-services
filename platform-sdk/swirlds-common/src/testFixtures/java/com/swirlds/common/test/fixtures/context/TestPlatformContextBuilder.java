@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package com.swirlds.test.framework.context;
+package com.swirlds.common.test.fixtures.context;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.test.fixtures.config.TestConfigBuilder;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 
 /**
  * A simple builder to create a {@link PlatformContext} for unit tests.
@@ -47,8 +47,7 @@ public final class TestPlatformContextBuilder {
     /**
      * Adds a {@link Configuration} builder
      *
-     * @param testConfigBuilder
-     * 		the config builder
+     * @param testConfigBuilder the config builder
      * @return the builder instance
      */
     public TestPlatformContextBuilder withConfigBuilder(final TestConfigBuilder testConfigBuilder) {
