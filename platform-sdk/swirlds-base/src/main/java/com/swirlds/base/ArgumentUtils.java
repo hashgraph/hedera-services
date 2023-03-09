@@ -21,16 +21,12 @@ import java.util.Objects;
 /**
  * Class that contains common checks like null checks as static methods.
  */
-public class Checks {
+public class ArgumentUtils {
 
     /**
      * Private constructor to prevent instantiation.
-     *
-     * @throws IllegalAccessException if the constructor is called
      */
-    private Checks() throws IllegalAccessException {
-        throw new IllegalAccessException("Check should never be instantiated!");
-    }
+    private ArgumentUtils() {}
 
     /**
      * Throw an {@link NullPointerException} if the supplied argument is {@code null}.

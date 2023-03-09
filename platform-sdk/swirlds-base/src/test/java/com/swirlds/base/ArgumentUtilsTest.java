@@ -16,11 +16,13 @@
 
 package com.swirlds.base;
 
-import org.junit.jupiter.api.Assertions;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-class ChecksTest {
+class ArgumentUtilsTest {
 
     @Test
     @DisplayName("Check null argument")
@@ -30,7 +32,7 @@ class ChecksTest {
         final String argumentName = "argument";
 
         // then
-        Assertions.assertThrows(NullPointerException.class, () -> Checks.throwArgNull(argument, argumentName));
+        assertThrows(NullPointerException.class, () -> ArgumentUtils.throwArgNull(argument, argumentName));
     }
 
     @Test
@@ -41,10 +43,10 @@ class ChecksTest {
         final String argumentName = null;
 
         // when
-        final Object value = Checks.throwArgNull(argument, argumentName);
+        final Object value = ArgumentUtils.throwArgNull(argument, argumentName);
 
         // then
-        Assertions.assertEquals(argument, value);
+        assertEquals(argument, value);
     }
 
     @Test
@@ -55,10 +57,10 @@ class ChecksTest {
         final String argumentName = null;
 
         // when
-        final NullPointerException nullPointerException =
-                Assertions.assertThrows(NullPointerException.class, () -> Checks.throwArgNull(argument, argumentName));
+        final NullPointerException npe =
+                assertThrows(NullPointerException.class, () -> ArgumentUtils.throwArgNull(argument, argumentName));
 
         // then
-        Assertions.assertEquals("The supplied argument 'null' cannot be null!", nullPointerException.getMessage());
+        assertEquals("The supplied argument 'null' cannot be null!", npe.getMessage());
     }
 }
