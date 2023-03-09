@@ -227,12 +227,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
             prepareComputation(input, updater::unaliased);
         } catch (InvalidTransactionException e) {
             if (NOT_SUPPORTED.equals(e.getResponseCode())) {
-                return PrecompileContractResult.halt(
-                        null, Optional.of(HederaExceptionalHaltReason.NOT_SUPPORTED));
+                return PrecompileContractResult.halt(null, Optional.of(HederaExceptionalHaltReason.NOT_SUPPORTED));
             } else {
                 return PrecompileContractResult.halt(
-                        null,
-                        Optional.of(HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT));
+                        null, Optional.of(HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT));
             }
         }
 

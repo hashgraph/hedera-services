@@ -258,36 +258,24 @@ public class ERCPrecompileSuite extends HapiSuite {
                         tokenAssociate(RECIPIENT, FUNGIBLE_TOKEN),
                         tokenAssociate(ERC_20_CONTRACT, FUNGIBLE_TOKEN),
                         cryptoTransfer(moving(10, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, OWNER)))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                        ERC_20_CONTRACT,
-                                                        TRANSFER_FROM,
-                                                        HapiParserUtil.asHeadlongAddress(
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        FUNGIBLE_TOKEN))),
-                                                        HapiParserUtil.asHeadlongAddress(
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        OWNER))),
-                                                        HapiParserUtil.asHeadlongAddress(
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        RECIPIENT))),
-                                                        BigInteger.TWO)
-                                                        .gas(500_000L)
-                                                        .via(TRANSFER_FROM_ACCOUNT_TXN)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        ERC_20_CONTRACT,
+                                        TRANSFER_FROM,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(OWNER))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(RECIPIENT))),
+                                        BigInteger.TWO)
+                                .gas(500_000L)
+                                .via(TRANSFER_FROM_ACCOUNT_TXN)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(
                         getTxnRecord(TRANSFER_FROM_ACCOUNT_TXN)
-                                .logged(),// has gasUsed little less than supplied 500K in contractCall result
+                                .logged(), // has gasUsed little less than supplied 500K in contractCall result
                         resetToDefault("hedera.allowances.isEnabled"));
     }
 
