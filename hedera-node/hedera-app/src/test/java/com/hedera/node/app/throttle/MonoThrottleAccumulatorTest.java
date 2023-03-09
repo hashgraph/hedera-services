@@ -18,15 +18,22 @@ package com.hedera.node.app.throttle;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
+import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -43,8 +50,17 @@ class MonoThrottleAccumulatorTest {
     }
 
     @Test
-    void transactionThrottlingNotYetSupported() {
-        assertThrows(UnsupportedOperationException.class, () -> subject.shouldThrottle(CryptoTransfer));
+    void delegatesToMonoThrottlingForTransactions() {
+        final ArgumentCaptor<TxnAccessor> captor = ArgumentCaptor.forClass(TxnAccessor.class);
+
+        final var txnFunction = CryptoTransfer;
+        given(hapiThrottling.shouldThrottleTxn(any())).willReturn(true);
+
+        assertTrue(subject.shouldThrottle(TRANSACTION_BODY));
+
+        verify(hapiThrottling).shouldThrottleTxn(captor.capture());
+        final var throttledFunction = captor.getValue().getFunction();
+        assertEquals(txnFunction, throttledFunction);
     }
 
     @Test
@@ -57,4 +73,13 @@ class MonoThrottleAccumulatorTest {
         assertTrue(subject.shouldThrottleQuery(queryFunction, mockQuery));
         verify(hapiThrottling).shouldThrottleQuery(queryFunction, mockQuery);
     }
+
+    private static final AccountID ACCOUNT_ID =
+            AccountID.newBuilder().setAccountNum(42L).build();
+    private static final TransactionID TRANSACTION_ID =
+            TransactionID.newBuilder().setAccountID(ACCOUNT_ID).build();
+    private static final TransactionBody TRANSACTION_BODY = TransactionBody.newBuilder()
+            .setTransactionID(TRANSACTION_ID)
+            .setCryptoTransfer(CryptoTransferTransactionBody.newBuilder().build())
+            .build();
 }

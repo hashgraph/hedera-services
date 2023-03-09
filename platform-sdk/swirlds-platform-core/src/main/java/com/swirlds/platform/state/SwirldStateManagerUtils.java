@@ -17,11 +17,11 @@
 package com.swirlds.platform.state;
 
 import static com.swirlds.common.utility.Units.NANOSECONDS_TO_MICROSECONDS;
-import static com.swirlds.platform.components.TransThrottleSyncAndCreateRuleResponse.PASS;
-import static com.swirlds.platform.components.TransThrottleSyncAndCreateRuleResponse.SYNC_AND_CREATE;
+import static com.swirlds.platform.components.transaction.throttle.TransThrottleSyncAndCreateRuleResponse.PASS;
+import static com.swirlds.platform.components.transaction.throttle.TransThrottleSyncAndCreateRuleResponse.SYNC_AND_CREATE;
 
-import com.swirlds.platform.components.TransThrottleSyncAndCreateRule;
-import com.swirlds.platform.components.TransThrottleSyncAndCreateRuleResponse;
+import com.swirlds.platform.components.transaction.throttle.TransThrottleSyncAndCreateRule;
+import com.swirlds.platform.components.transaction.throttle.TransThrottleSyncAndCreateRuleResponse;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;

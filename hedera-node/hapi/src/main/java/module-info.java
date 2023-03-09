@@ -45,4 +45,7 @@ module com.hedera.node.hapi {
     exports com.hedera.hapi.streams.parser;
     exports com.hedera.hapi.streams.schema;
     exports com.hedera.hapi.streams.writer;
+    exports com.hedera.hapi.node.state.consensus.writer;
+    exports com.hedera.hapi.node.state.consensus.parser;
+    exports com.hedera.hapi.node.state.consensus;
 }

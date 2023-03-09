@@ -87,8 +87,6 @@ public class ServicesMain implements SwirldMain {
 
     @Override
     public SwirldState2 newState() {
-        // TODO - replace this flag with a check whether the set of workflow-enabled
-        // operations is non-empty (https://github.com/hashgraph/hedera-services/issues/4945)
         final var workflowsEnabled = new BootstrapProperties(false).getFunctionsProperty(WORKFLOWS_ENABLED);
         return stateWithWorkflowsEnabled(!workflowsEnabled.isEmpty());
     }
@@ -109,10 +107,14 @@ public class ServicesMain implements SwirldMain {
         final var migration = migrationFactory.apply(servicesSemVer);
         return new MerkleHederaState(
                 migration,
-                (event, metadata, provider) -> metadata.app().eventExpansion().expandAllSigs(event, provider),
-                (round, dualState, metadata) -> {
+                (event, metadata, immutableState) -> {
+                    final var metaApp = metadata.app();
+                    ((HederaApp) metaApp).adaptedMonoEventExpansion().expand(event, immutableState);
+                },
+                (round, state, dualState, metadata) -> {
                     final var metaApp = metadata.app();
                     metaApp.dualStateAccessor().setDualState(dualState);
+                    ((HederaApp) metaApp).workingStateAccessor().setHederaState(state);
                     metaApp.logic().incorporateConsensus(round);
                 });
     }

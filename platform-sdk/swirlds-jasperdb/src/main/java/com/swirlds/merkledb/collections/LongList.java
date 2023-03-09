@@ -43,7 +43,7 @@ import java.util.stream.StreamSupport;
  * instead trigger an automatic expansion of the list's capacity. Thus a {@link LongList} behaves
  * more like a long-to-long map than a traditional list.
  */
-public abstract class LongList implements CASable, Closeable {
+public abstract class LongList implements CASableLongIndex, Closeable {
     /** A suitable default for the maximum number of longs that may be stored (32GB of longs). */
     protected static final long DEFAULT_MAX_LONGS_TO_STORE = 4_000_000_000L;
     /** The maximum number of longs to store per chunk. */
@@ -243,7 +243,7 @@ public abstract class LongList implements CASable, Closeable {
     /**
      * Write all longs in this LongList into a file
      *
-     * <p><b> It is not guaranteed what version of data will be written if the LongList is changed
+     * <b> It is not guaranteed what version of data will be written if the LongList is changed
      * via put methods while this LongList is being written to a file. If you need consistency while
      * calling put concurrently then use a BufferedLongListWrapper. </b>
      *
@@ -291,7 +291,7 @@ public abstract class LongList implements CASable, Closeable {
      * Lookup a long in data
      *
      * @param chunkIndex the index of the chunk the long is contained in
-     * @param subIndex   The sub index of the long in that chunk
+     * @param subIndex The sub index of the long in that chunk
      * @return The stored long value at given index
      */
     protected abstract long lookupInChunk(final long chunkIndex, final long subIndex);
@@ -310,7 +310,7 @@ public abstract class LongList implements CASable, Closeable {
      *
      * @param value the value to check
      * @param index the index to check
-     * @throws IllegalArgumentException  if the value is impermissible
+     * @throws IllegalArgumentException if the value is impermissible
      * @throws IndexOutOfBoundsException if the index is out-of-bounds
      */
     protected final void checkValueAndIndex(final long value, final long index) {
@@ -319,6 +319,38 @@ public abstract class LongList implements CASable, Closeable {
         }
         if (value == IMPERMISSIBLE_VALUE) {
             throw new IllegalArgumentException("Cannot put " + IMPERMISSIBLE_VALUE + " into a LongList");
+        }
+    }
+
+    /**
+     * Current min valid index in the list. By default, it's zero, but some implementations may provide
+     * more fine grained values.
+     *
+     * @return min valid index
+     */
+    protected long getCurrentMin() {
+        return 0;
+    }
+
+    /**
+     * Current max valid index in the list. By default, it's equal to the size of the list, but some
+     * implementations may provide more fine grained values.
+     *
+     * @return max valid index
+     */
+    protected long getCurrentMax() {
+        return size();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public <T extends Throwable> void forEach(final LongAction<T> action) throws InterruptedException, T {
+        final long max = getCurrentMax();
+        for (long i = getCurrentMin(); i < max; i++) {
+            final long value = get(i);
+            if (value != IMPERMISSIBLE_VALUE) {
+                action.handle(i, value);
+            }
         }
     }
 }

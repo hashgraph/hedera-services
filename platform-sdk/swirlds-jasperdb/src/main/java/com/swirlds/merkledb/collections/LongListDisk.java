@@ -108,9 +108,13 @@ public class LongListDisk extends LongList {
     }
 
     /**
-     * Write all longs in this LongList into a file
+     * Write all longs in this LongList into a file.
      *
-     * <p><b> It is not guaranteed what version of data will be written if the LongList is changed
+     * <b> It is not guaranteed what version of data will be written if the LongList is changed via put methods
+     * while this LongList is being written to a file. If you need consistency while calling put concurrently then
+     * use a BufferedLongListWrapper. </b>
+     *
+     * <b> It is not guaranteed what version of data will be written if the LongList is changed
      * via put methods while this LongList is being written to a file. If you need consistency while
      * calling put concurrently then use a BufferedLongListWrapper. </b>
      *

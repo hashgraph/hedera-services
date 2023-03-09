@@ -20,13 +20,13 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.service.mono.ServicesApp;
 import com.hedera.node.app.service.mono.ServicesState;
-import com.hedera.node.app.service.mono.sigs.EventExpansion;
 import com.hedera.node.app.service.mono.state.DualStateAccessor;
 import com.hedera.node.app.service.mono.state.org.StateMetadata;
 import com.hedera.node.app.service.mono.txns.ProcessLogic;
+import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
+import com.hedera.node.app.workflows.prehandle.AdaptedMonoEventExpansion;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.events.Event;
@@ -52,7 +52,7 @@ class StateChoiceTest {
     private Consumer<MerkleHederaState> migration;
 
     @Mock
-    private EventExpansion eventExpansion;
+    private AdaptedMonoEventExpansion adaptedMonoEventExpansion;
 
     @Mock
     private ProcessLogic processLogic;
@@ -61,7 +61,10 @@ class StateChoiceTest {
     private DualStateAccessor dualStateAccessor;
 
     @Mock
-    private ServicesApp app;
+    private WorkingStateAccessor workingStateAccessor;
+
+    @Mock
+    private HederaApp app;
 
     @Mock
     private StateMetadata metadata;
@@ -92,11 +95,11 @@ class StateChoiceTest {
         workflowsState.setMetadata(metadata);
 
         given(metadata.app()).willReturn(app);
-        given(app.eventExpansion()).willReturn(eventExpansion);
+        given(app.adaptedMonoEventExpansion()).willReturn(adaptedMonoEventExpansion);
 
         workflowsState.preHandle(event);
 
-        verify(eventExpansion).expandAllSigs(event, workflowsState);
+        verify(adaptedMonoEventExpansion).expand(event, workflowsState);
     }
 
     @Test
@@ -106,11 +109,13 @@ class StateChoiceTest {
 
         given(metadata.app()).willReturn(app);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+        given(app.workingStateAccessor()).willReturn(workingStateAccessor);
         given(app.logic()).willReturn(processLogic);
 
         workflowsState.handleConsensusRound(round, dualState);
 
         verify(dualStateAccessor).setDualState(dualState);
+        verify(workingStateAccessor).setHederaState(workflowsState);
         verify(processLogic).incorporateConsensus(round);
     }
 }
