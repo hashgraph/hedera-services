@@ -14,7 +14,7 @@ This document contains information about the Swirlds Platform. It is currently a
   - Reconnect
   - Transaction Handling
   - State Signing
-- [Pre-consensus event stream](./components/preConsensusEventStream.md)
+- [Pre-consensus event stream](components/preConsensusEventStream.md)
 - Post-consensus event stream
 - BLS
 - State Proofs
