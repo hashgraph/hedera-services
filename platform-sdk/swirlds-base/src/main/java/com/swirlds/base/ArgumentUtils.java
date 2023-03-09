@@ -35,7 +35,9 @@ public class ArgumentUtils {
      * @param argumentName the name of the argument
      */
     public static <T> T throwArgNull(final T argument, final String argumentName) {
-        return Objects.requireNonNull(
-                argument, () -> String.format("The supplied argument '%s' cannot be null!", argumentName));
+        if (argument == null) {
+            throw new NullPointerException(String.format("The supplied argument '%s' cannot be null!", argumentName));
+        }
+        return argument;
     }
 }
