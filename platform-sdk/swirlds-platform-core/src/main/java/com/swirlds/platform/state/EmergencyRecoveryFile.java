@@ -83,14 +83,14 @@ public record EmergencyRecoveryFile(Recovery recovery) {
     }
 
     /**
-     * @return the YAML structure of the emergency recovery file
+     * @return the structure of the emergency recovery file
      */
     public Recovery recovery() {
         return recovery;
     }
 
     /**
-     * Write the data in this record to a yaml file at the specified directory.
+     * Write the data in this record to a file at the specified directory.
      *
      * @param directory the directory to write to. Must exist and be writable.
      * @throws IOException if an exception occurs creating or writing to the file

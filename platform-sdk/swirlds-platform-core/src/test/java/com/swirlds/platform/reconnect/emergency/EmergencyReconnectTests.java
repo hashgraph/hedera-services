@@ -103,9 +103,11 @@ public class EmergencyReconnectTests {
     @DisplayName("Verify learner-teacher interaction when teacher does not has a compatible state")
     @Test
     void teacherDoesNotHaveCompatibleState() throws InterruptedException {
-        final Hash stateHash = RandomUtils.randomHash();
+        final Random random = RandomUtils.getRandomPrintSeed();
+        final Hash stateHash = RandomUtils.randomHash(random);
         final NotificationEngine notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
-        final EmergencyRecoveryFile emergencyRecoveryFile = new EmergencyRecoveryFile(1L, stateHash, Instant.now());
+        final EmergencyRecoveryFile emergencyRecoveryFile = new EmergencyRecoveryFile(1L, stateHash,
+                RandomUtils.randomInstant(random));
 
         final ReconnectController reconnectController = mock(ReconnectController.class);
         when(reconnectController.acquireLearnerPermit()).thenReturn(true);
@@ -161,7 +163,7 @@ public class EmergencyReconnectTests {
         TimeUnit.MILLISECONDS.sleep(100);
 
         final EmergencyRecoveryFile emergencyRecoveryFile =
-                new EmergencyRecoveryFile(emergencyRound, emergencyStateHash, Instant.now());
+                new EmergencyRecoveryFile(emergencyRound, emergencyStateHash, RandomUtils.randomInstant(random));
 
         learnerProtocol = createLearnerProtocol(notificationEngine, emergencyRecoveryFile, reconnectController);
         teacherProtocol = createTeacherProtocol(notificationEngine, reconnectController);
@@ -194,8 +196,8 @@ public class EmergencyReconnectTests {
         verify(reconnectController, times(0).description("Connection should be provided"))
                 .provideLearnerConnection(any(Connection.class));
         verify(
-                        reconnectController,
-                        times(1).description("Permit should be canceled if the reconnect does not complete"))
+                reconnectController,
+                times(1).description("Permit should be canceled if the reconnect does not complete"))
                 .cancelLearnerPermit();
     }
 

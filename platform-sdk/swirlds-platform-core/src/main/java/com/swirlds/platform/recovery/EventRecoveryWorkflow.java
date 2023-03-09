@@ -183,7 +183,8 @@ public final class EventRecoveryWorkflow {
                     bootstrapTime);
             newRecoveryFile.write(recoveryFileDir);
         } catch (final IOException e) {
-            logger.error(EXCEPTION.getMarker(), "Exception occurred when updating the emergency recovery file");
+            logger.error(EXCEPTION.getMarker(),
+                    "Exception occurred when updating the emergency recovery file with the bootstrap time");
         }
     }
 

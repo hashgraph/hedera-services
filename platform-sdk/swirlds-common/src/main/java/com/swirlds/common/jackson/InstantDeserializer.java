@@ -31,7 +31,7 @@ public class InstantDeserializer extends StdDeserializer<Instant> {
         this(null);
     }
 
-    public InstantDeserializer(Class<?> vc) {
+    public InstantDeserializer(final Class<?> vc) {
         super(vc);
     }
 

@@ -30,6 +30,7 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import java.time.Instant;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -59,13 +60,16 @@ public class EmergencySignedStateValidatorTests {
     @DisplayName("Invalid State - Too Old")
     @Test
     void stateTooOld() {
+        final Random random = RandomUtils.getRandomPrintSeed();
         final SignedState oldState = new RandomSignedStateGenerator()
                 .setAddressBook(addressBook)
                 .setRound(EMERGENCY_ROUND - 1)
                 .build();
 
         validator =
-                new EmergencySignedStateValidator(new EmergencyRecoveryFile(EMERGENCY_ROUND, RandomUtils.randomHash(), Instant.now()));
+                new EmergencySignedStateValidator(
+                        new EmergencyRecoveryFile(EMERGENCY_ROUND, RandomUtils.randomHash(random),
+                                RandomUtils.randomInstant(random)));
 
         assertThrows(
                 SignedStateInvalidException.class,
@@ -80,14 +84,17 @@ public class EmergencySignedStateValidatorTests {
     @DisplayName("Invalid State - Hash Does Not Match")
     @Test
     void stateMatchesRoundButNotHash() {
+        final Random random = RandomUtils.getRandomPrintSeed();
         final SignedState stateWithWrongHash = new RandomSignedStateGenerator()
                 .setAddressBook(addressBook)
                 .setRound(EMERGENCY_ROUND)
                 .build();
-        stateWithWrongHash.getState().setHash(RandomUtils.randomHash());
+        stateWithWrongHash.getState().setHash(RandomUtils.randomHash(random));
 
         validator =
-                new EmergencySignedStateValidator(new EmergencyRecoveryFile(EMERGENCY_ROUND, RandomUtils.randomHash(), Instant.now()));
+                new EmergencySignedStateValidator(
+                        new EmergencyRecoveryFile(EMERGENCY_ROUND, RandomUtils.randomHash(),
+                                RandomUtils.randomInstant(random)));
 
         assertThrows(
                 SignedStateInvalidException.class,
@@ -102,14 +109,15 @@ public class EmergencySignedStateValidatorTests {
     @DisplayName("Valid State - Matches Emergency State")
     @Test
     void stateMatchesRoundAndHash() {
-        final Hash hash = RandomUtils.randomHash();
+        final Random random = RandomUtils.getRandomPrintSeed();
+        final Hash hash = RandomUtils.randomHash(random);
         final SignedState matchingState = new RandomSignedStateGenerator()
                 .setAddressBook(addressBook)
                 .setRound(EMERGENCY_ROUND)
                 .build();
         matchingState.getState().setHash(hash);
 
-        validator = new EmergencySignedStateValidator(new EmergencyRecoveryFile(EMERGENCY_ROUND, hash, Instant.now()));
+        validator = new EmergencySignedStateValidator(new EmergencyRecoveryFile(EMERGENCY_ROUND, hash, RandomUtils.randomInstant(random)));
 
         assertDoesNotThrow(
                 () -> validator.validate(matchingState, addressBook, null),
@@ -130,6 +138,7 @@ public class EmergencySignedStateValidatorTests {
     @DisplayName("Valid Later State")
     @Test
     void validLaterState() {
+        final Random random = RandomUtils.getRandomPrintSeed();
         final List<Long> majorityStakeNodes = IntStream.range(0, NUM_NODES - 1)
                 .mapToLong(i -> (long) i)
                 .boxed()
@@ -141,10 +150,11 @@ public class EmergencySignedStateValidatorTests {
                 .setSigningNodeIds(majorityStakeNodes)
                 .build();
 
-        final Hash emergencyHash = RandomUtils.randomHash();
+        final Hash emergencyHash = RandomUtils.randomHash(random);
         laterState.getState().getPlatformState().getPlatformData().setEpochHash(emergencyHash);
 
-        validator = new EmergencySignedStateValidator(new EmergencyRecoveryFile(EMERGENCY_ROUND, emergencyHash, Instant.now()));
+        validator = new EmergencySignedStateValidator(
+                new EmergencyRecoveryFile(EMERGENCY_ROUND, emergencyHash, RandomUtils.randomInstant(random)));
 
         assertDoesNotThrow(
                 () -> validator.validate(laterState, addressBook, null),
@@ -158,6 +168,7 @@ public class EmergencySignedStateValidatorTests {
     @DisplayName("Invalid Later State - Wrong Epoch Hash")
     @Test
     void invalidLaterStateWrongEpochHash() {
+        final Random random = RandomUtils.getRandomPrintSeed();
         final List<Long> majorityStakeNodes = IntStream.range(0, NUM_NODES - 1)
                 .mapToLong(i -> (long) i)
                 .boxed()
@@ -169,11 +180,12 @@ public class EmergencySignedStateValidatorTests {
                 .setSigningNodeIds(majorityStakeNodes)
                 .build();
 
-        final Hash emergencyHash = RandomUtils.randomHash();
-        final Hash badEpochHash = RandomUtils.randomHash();
+        final Hash emergencyHash = RandomUtils.randomHash(random);
+        final Hash badEpochHash = RandomUtils.randomHash(random);
         laterState.getState().getPlatformState().getPlatformData().setNextEpochHash(badEpochHash);
 
-        validator = new EmergencySignedStateValidator(new EmergencyRecoveryFile(EMERGENCY_ROUND, emergencyHash, Instant.now()));
+        validator = new EmergencySignedStateValidator(
+                new EmergencyRecoveryFile(EMERGENCY_ROUND, emergencyHash, RandomUtils.randomInstant(random)));
 
         assertThrows(
                 SignedStateInvalidException.class,
@@ -188,6 +200,7 @@ public class EmergencySignedStateValidatorTests {
     @DisplayName("Invalid Later State - Insufficient Signatures")
     @Test
     void invalidLaterStateNotSignedByMajority() {
+        final Random random = RandomUtils.getRandomPrintSeed();
         final List<Long> lessThanMajorityStakeNodes = IntStream.range(0, NUM_NODES / 2)
                 .mapToLong(i -> (long) i)
                 .boxed()
@@ -199,10 +212,11 @@ public class EmergencySignedStateValidatorTests {
                 .setSigningNodeIds(lessThanMajorityStakeNodes)
                 .build();
 
-        final Hash emergencyHash = RandomUtils.randomHash();
+        final Hash emergencyHash = RandomUtils.randomHash(random);
         laterState.getState().getPlatformState().getPlatformData().setEpochHash(emergencyHash);
 
-        validator = new EmergencySignedStateValidator(new EmergencyRecoveryFile(EMERGENCY_ROUND, emergencyHash, Instant.now()));
+        validator = new EmergencySignedStateValidator(
+                new EmergencyRecoveryFile(EMERGENCY_ROUND, emergencyHash, RandomUtils.randomInstant(random)));
 
         assertThrows(
                 SignedStateInvalidException.class,
