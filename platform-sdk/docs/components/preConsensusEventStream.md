@@ -1,4 +1,4 @@
-[↩](../platformWiki.md)
+[↩ Platform Wiki](../platformWiki.md)
 
 # Pre-Consensus Event Stream
 

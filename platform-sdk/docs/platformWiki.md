@@ -2,6 +2,9 @@
 
 This document contains information about the Swirlds Platform. It is currently a work in progress.
 
+- [👉 Mindmap](./mindmap-node.html)
+- [👉 Component Diagram](./mindmap-node.html)
+
 ## Components and Algorithms
 
 - Gossip
@@ -18,8 +21,6 @@ This document contains information about the Swirlds Platform. It is currently a
 - Post-consensus event stream
 - BLS
 - State Proofs
-
-
 
 ## Utilities
 
