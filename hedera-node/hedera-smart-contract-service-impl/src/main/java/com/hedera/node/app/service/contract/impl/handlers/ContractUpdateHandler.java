@@ -24,7 +24,6 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.contract.ContractUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -66,7 +65,8 @@ public class ContractUpdateHandler implements TransactionHandler {
             final var key = asHederaKey(op.adminKey());
             key.ifPresent(context::addToReqNonPayerKeys);
         }
-        if (op.autoRenewAccountId() != null && !op.autoRenewAccountId().equals(AccountID.newBuilder().build())) {
+        if (op.autoRenewAccountId() != null
+                && !op.autoRenewAccountId().equals(AccountID.newBuilder().build())) {
             context.addNonPayerKey(op.autoRenewAccountId(), INVALID_AUTORENEW_ACCOUNT);
         }
     }

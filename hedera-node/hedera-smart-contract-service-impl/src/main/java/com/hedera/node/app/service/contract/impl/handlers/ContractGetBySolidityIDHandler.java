@@ -18,9 +18,9 @@ package com.hedera.node.app.service.contract.impl.handlers;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.contract.GetBySolidityIDResponse;
 import com.hedera.hapi.node.transaction.Query;

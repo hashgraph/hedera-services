@@ -31,8 +31,6 @@ import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.MISC_A
 import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.SIMPLE_NEW_ADMIN_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.utils.KeyUtils.sanityRestored;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -41,6 +39,7 @@ import com.hedera.node.app.service.contract.impl.handlers.ContractUpdateHandler;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -60,9 +59,9 @@ class ContractUpdateHandlerParityTest {
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
+        assertEquals(
                 sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(toPbj(MISC_ADMIN_KT.asKey()), SIMPLE_NEW_ADMIN_KT.asKey()));
+                List.of(MISC_ADMIN_KT.asKey(), SIMPLE_NEW_ADMIN_KT.asKey()));
     }
 
     @Test
@@ -92,9 +91,9 @@ class ContractUpdateHandlerParityTest {
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
+        assertEquals(
                 sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(toPbj(MISC_ADMIN_KT.asKey()), SIMPLE_NEW_ADMIN_KT.asKey()));
+                List.of(MISC_ADMIN_KT.asKey(), SIMPLE_NEW_ADMIN_KT.asKey()));
     }
 
     @Test
@@ -104,7 +103,7 @@ class ContractUpdateHandlerParityTest {
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(toPbj(MISC_ADMIN_KT.asKey())));
+        assertEquals(sanityRestored(context.getRequiredNonPayerKeys()), List.of(MISC_ADMIN_KT.asKey()));
     }
 
     @Test
@@ -114,7 +113,7 @@ class ContractUpdateHandlerParityTest {
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(toPbj(MISC_ADMIN_KT.asKey())));
+        assertEquals(sanityRestored(context.getRequiredNonPayerKeys()), List.of(MISC_ADMIN_KT.asKey()));
     }
 
     @Test
@@ -124,7 +123,7 @@ class ContractUpdateHandlerParityTest {
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(toPbj(MISC_ADMIN_KT.asKey())));
+        assertEquals(sanityRestored(context.getRequiredNonPayerKeys()), List.of(MISC_ADMIN_KT.asKey()));
     }
 
     @Test
@@ -134,7 +133,7 @@ class ContractUpdateHandlerParityTest {
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(toPbj(MISC_ADMIN_KT.asKey())));
+        assertEquals(sanityRestored(context.getRequiredNonPayerKeys()), List.of(MISC_ADMIN_KT.asKey()));
     }
 
     @Test
@@ -144,7 +143,7 @@ class ContractUpdateHandlerParityTest {
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(toPbj(MISC_ACCOUNT_KT.asKey())));
+        assertEquals(sanityRestored(context.getRequiredNonPayerKeys()), List.of(MISC_ACCOUNT_KT.asKey()));
     }
 
     private TransactionBody txnFrom(final TxnHandlingScenario scenario) {
