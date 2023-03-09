@@ -16,9 +16,11 @@
 
 package com.swirlds.common.system;
 
+import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
+import java.util.List;
 
 /**
  * A Swirld app is defined by creating two classes, one implementing {@link SwirldMain}, and the other
@@ -55,69 +57,48 @@ public interface SwirldState extends MerkleNode {
 
     /**
      * Provides the application an opportunity to perform operations on transactions in an event prior to handling.
-     * Called against a given {@link Event} only once, globally (not once per state instance). This method may modify
-     * the {@link Transaction}s in the event, but such modification is not necessary.
+     * Called against a given {@link Event} only once, globally (not once per state instance) This method may modify
+     * the {@link Transaction}s in the event by doing nothing, adding additional signatures, removing existing
+     * signatures, replacing signatures with versions that expand the public key from an application specific
+     * identifier to an actual public key, or attaching metadata. Additional signatures extracted from the transaction
+     * payload can also be added to the list of signatures to be verified.
      * <p>
-     * No ordering guarantees are given for this method.
-     * The only guarantee is that for all events that reach consensus,
-     * this method will eventually be called as long as the node does not crash.
+     * If signature verification is desired, it is recommended that process be started in this method on a background
+     * thread using one of the methods below to give it time to complete before the transaction is handled
+     * post-consensus.
      * <ul>
-     * <li>
-     * This method is usually invoked on an event before it reaches consensus,
-     * but that is not a hard guarantee.
-     * </li>
-     * <li>
-     * This method may be called after {@link #handleConsensusRound(Round, SwirldDualState)} has been called on that
-     * event's round (although such behavior is expected to be uncommon).
-     * <ul>
-     * <li>
-     * If it is desired that pre-handle always come before handle for a given event, then the application should
-     * implement its own ordering mechanism that causes handle to wait until pre-handle has completed.
-     * </li>
+     *     <li>{@link com.swirlds.common.crypto.Cryptography#verifyAsync(TransactionSignature)}</li>
+     *     <li>{@link com.swirlds.common.crypto.Cryptography#verifyAsync(List)}</li>
      * </ul>
-     * </li>
-     * <li>
-     * The order that events may be passed to this method may be different from their eventual consensus order.
-     * </li>
-     * <li>
-     * It is possible for this method to be called on an event, but for that
-     * event never to reach consensus (thus becoming stale).
-     * </li>
-     * <li>
-     * For events that become stale, this method may be called on some nodes but not others.
-     * </li>
-     * </ul>
-     *
      * <p>
-     * <strong>This method is always invoked on an immutable state. </strong> Which immutable state copy
-     * is not guaranteed, although it will always be a recent copy.
+     * <strong>This method is always invoked on an immutable state.</strong>
      *
-     * @param event the event to perform pre-handling on
+     * @param event
+     * 		the event to perform pre-handling on
      * @see #handleConsensusRound(Round, SwirldDualState)
      */
-    default void preHandle(final Event event) {
-        // Override if needed
-    }
+    default void preHandle(final Event event) {}
 
     /**
-     * Handle transactions in a round apply them to the state.
-     * This method is always called on the mutable state, i.e. the most recent copy.
+     * {@inheritDoc}
      * <p>
-     * After this method returns, all side effects of the transactions in this round must be written to the state.
-     * It is not ok to asynchronously modify the state after this method returns.
-     * <p>
-     * All modifications to the state in this method must be deterministic. That is, the state that results
-     * from applying this method must be guaranteed to always have the same cryptographic merkle hash.
-     * <p>
-     * This method is called on all rounds in sequential order. This method is not called for round N+1 until round
-     * N has been fully handled. Between each call of this method, the state will be fast copied. Each copy of the
-     * state will only have this method called on it once.
-     * <p>
-     * With the exception of the {@link #init(Platform, SwirldDualState, InitTrigger, SoftwareVersion)} method
-     * and serialization migration hooks, it is NEVER ok to modify the state except in this method.
+     * The state of this object must NEVER change except inside the methods below.
      *
-     * @param round           the round to be handled and applied to this state
-     * @param swirldDualState the dual state for this round
+     * <ul>
+     *     <li>{@link #init(Platform, SwirldDualState, InitTrigger, SoftwareVersion)}</li>
+     *     <li>{@link #copy()}</li>
+     *     <li>{@link #handleConsensusRound(Round, SwirldDualState)}</li>
+     *  </ul>
+     * <p>
+     * If signature verification was started on a background thread in {@link #preHandle(Event)}, the process
+     * should be checked for completion. Accessing {@link TransactionSignature#getSignatureStatus()} before this
+     * process is complete will cause it to return {@code null}:
+     *
+     * <pre>
+     *     for (TransactionSignature sig : transaction.getSignatures()) {
+     *         Future&lt;Void&gt; future = sig.waitForFuture().get();
+     *     }
+     * </pre>
      */
     void handleConsensusRound(final Round round, final SwirldDualState swirldDualState);
 
