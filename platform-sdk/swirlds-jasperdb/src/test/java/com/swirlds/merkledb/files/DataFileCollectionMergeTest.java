@@ -520,7 +520,7 @@ class DataFileCollectionMergeTest {
     @DisplayName("Restore with inconsistent index")
     void testInconsistentIndex() throws Exception {
         final int MAXKEYS = 100;
-        final LongList index = new LongListOffHeap();
+        final LongList<?> index = new LongListOffHeap();
         final Path testDir = tempFileDir.resolve("testInconsistentIndex");
         final DataFileCollection<long[]> store =
                 new DataFileCollection<>(testDir, "testInconsistentIndex", new ExampleFixedSizeDataSerializer(), null);
@@ -575,7 +575,7 @@ class DataFileCollectionMergeTest {
         }
 
         // Create a new data collection from the snapshot
-        LongList index2 = new LongListOffHeap(savedIndex);
+        LongList<?> index2 = new LongListOffHeap(savedIndex);
         final DataFileCollection<long[]> store2 =
                 new DataFileCollection<>(snapshot, "testInconsistentIndex", new ExampleFixedSizeDataSerializer(), null);
 

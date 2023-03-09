@@ -25,7 +25,6 @@ import java.nio.ByteOrder;
 import java.nio.LongBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLongArray;
 
@@ -47,14 +46,11 @@ import java.util.concurrent.atomic.AtomicLongArray;
  * here for example</a>).
  */
 @SuppressWarnings("unused")
-public final class LongListHeap extends LongList {
-
-    /** A copy-on-write list of data arrays. Expands as needed. */
-    private final CopyOnWriteArrayList<AtomicLongArray> data = new CopyOnWriteArrayList<>();
+public final class LongListHeap extends LongList<AtomicLongArray> {
 
     /** Construct a new LongListHeap with the default number of longs per chunk. */
     public LongListHeap() {
-        this(DEFAULT_NUM_LONGS_PER_CHUNK);
+        this(DEFAULT_NUM_LONGS_PER_CHUNK, DEFAULT_MAX_LONGS_TO_STORE, 0);
     }
 
     /**
@@ -62,7 +58,7 @@ public final class LongListHeap extends LongList {
      * longs to store.
      */
     public LongListHeap(final int numLongsPerChunk) {
-        super(numLongsPerChunk, DEFAULT_MAX_LONGS_TO_STORE);
+        super(numLongsPerChunk, Math.min(DEFAULT_MAX_LONGS_TO_STORE, (long) numLongsPerChunk * MAX_NUM_CHUNKS), 0);
     }
 
     /**
@@ -72,8 +68,8 @@ public final class LongListHeap extends LongList {
      * @param numLongsPerChunk number of longs to store in each chunk of memory allocated
      * @param maxLongs the maximum number of longs permissible for this LongList
      */
-    public LongListHeap(final int numLongsPerChunk, final long maxLongs) {
-        super(numLongsPerChunk, maxLongs);
+    public LongListHeap(final int numLongsPerChunk, final long maxLongs, final long reservedBufferLength) {
+        super(numLongsPerChunk, maxLongs, reservedBufferLength);
     }
 
     /**
@@ -82,7 +78,15 @@ public final class LongListHeap extends LongList {
      * @throws IOException If there was a problem reading the file
      */
     public LongListHeap(final Path file) throws IOException {
-        super(FileChannel.open(file, StandardOpenOption.READ));
+        super(file, DEFAULT_RESERVED_BUFFER_LENGTH);
+    }
+
+    public LongListHeap(final Path file, final long reservedBufferLength) throws IOException {
+        super(file, reservedBufferLength);
+    }
+
+    @Override
+    protected void readBodyFromFileChannelOnInit(String sourceFileName, FileChannel fileChannel) throws IOException {
         // read data
         final int numOfArrays = (int) Math.ceil((double) size() / (double) numLongsPerChunk);
         final ByteBuffer buffer = allocateDirect(memoryChunkSize);
@@ -97,38 +101,24 @@ public final class LongListHeap extends LongList {
                 atomicLongArray.set(index, buffer.getLong());
                 index++;
             }
-            data.add(atomicLongArray);
+            chunkList.set(i, atomicLongArray);
         }
-        // close file channel as we are done with it
-        fileChannel.close();
-        fileChannel = null;
-    }
-
-    /** Close and free all resources */
-    @Override
-    public void close() {
-        size.set(0);
-        data.clear();
     }
 
     /** {@inheritDoc} */
     @Override
     public void put(final long index, final long value) {
         checkValueAndIndex(value, index);
-        expandIfNeeded(index);
-        final int dataIndex = (int) (index / numLongsPerChunk);
         final int subIndex = (int) (index % numLongsPerChunk);
-        data.get(dataIndex).set(subIndex, value);
+        createOrGetChunk(index).set(subIndex, value);
     }
 
     /** {@inheritDoc} */
     @Override
     public boolean putIfEqual(final long index, final long oldValue, final long newValue) {
         checkValueAndIndex(newValue, index);
-        expandIfNeeded(index);
-        final int dataIndex = (int) (index / numLongsPerChunk);
-        final AtomicLongArray chunk = data.get(dataIndex);
         final int subIndex = (int) (index % numLongsPerChunk);
+        final AtomicLongArray chunk = createOrGetChunk(index);
         return chunk.compareAndSet(subIndex, oldValue, newValue);
     }
 
@@ -165,35 +155,6 @@ public final class LongListHeap extends LongList {
         }
     }
 
-    // =================================================================================================================
-    // Private helper methods
-
-    /**
-     * Expand the available data storage if needed to allow storage of an item at newIndex
-     *
-     * @param newIndex the index of the new item we would like to add to storage
-     */
-    private void expandIfNeeded(final long newIndex) {
-        // This is important to be lock free which means two or more threads can be inside the loop
-        // at a time. This
-        // means two threads can be making the buffer bigger at the same time. The most that can
-        // happen in this case is
-        // the buffer is bigger than needed. Because the index for inserting the value is fixed,
-        // there is no contention
-        // over the index only over the size of the buffer.
-        while (calculateNumberOfChunks(newIndex) > data.size()) {
-            // need to expand
-            data.add(new AtomicLongArray(numLongsPerChunk));
-        }
-
-        // updates the index to the max of new index and its current value. If two threads are
-        // trying to do this at the
-        // same time they will both keep trying till each one gets a clean chance of setting the
-        // value. The largest will
-        // always win, which is what matters.
-        size.getAndUpdate(oldSize -> newIndex >= oldSize ? (newIndex + 1) : oldSize);
-    }
-
     /**
      * Lookup a long in data
      *
@@ -203,6 +164,23 @@ public final class LongListHeap extends LongList {
      */
     @Override
     protected long lookupInChunk(final long chunkIndex, final long subIndex) {
-        return data.get((int) chunkIndex).get((int) subIndex);
+        return chunkList.get((int) chunkIndex).get((int) subIndex);
+    }
+
+    @Override
+    protected void fullChunkCleanup(AtomicLongArray chunk) {
+        // no action needed, the array will be collected by GC
+    }
+
+    @Override
+    protected void partialChunkCleanup(int chunkIndex, long entriesToCleanUp) {
+        for (int i = 0; i < entriesToCleanUp; i++) {
+            chunkList.get(chunkIndex).set(i, IMPERMISSIBLE_VALUE);
+        }
+    }
+
+    @Override
+    protected AtomicLongArray createChunk() {
+        return new AtomicLongArray(numLongsPerChunk);
     }
 }

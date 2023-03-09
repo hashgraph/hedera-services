@@ -49,7 +49,7 @@ import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
  * A specialized map like disk based data store with long keys. It is assumed the keys are a single
  * sequential block of numbers that does not need to start at zero. The index from long key to disk
  * location for value is in RAM and the value data is stored in a set of files on disk.
- *
+ * <p>
  * There is an assumption that keys are a contiguous range of incrementing numbers. This allows
  * easy deletion during merging by accepting any key/value with a key outside this range is not
  * needed any more. This design comes from being used where keys are leaf paths in a binary tree.
@@ -66,7 +66,7 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
      * Index mapping, it uses our key as the index within the list and the value is the dataLocation
      * in fileCollection where the key/value pair is stored.
      */
-    private final LongList index;
+    private final LongList<?> index;
     /** On disk set of DataFiles that contain our key/value pairs */
     private final DataFileCollection<D> fileCollection;
     /**
@@ -100,7 +100,7 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
             final String legacyStoreName,
             final DataItemSerializer<D> dataItemSerializer,
             final LoadedDataCallback loadedDataCallback,
-            final LongList keyToDiskLocationIndex)
+            final LongList<?> keyToDiskLocationIndex)
             throws IOException {
         this.storeName = storeName;
         index = keyToDiskLocationIndex;
