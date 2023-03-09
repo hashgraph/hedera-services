@@ -17,11 +17,13 @@
 package com.hedera.node.app.service.network.impl.serdes;
 
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.io.DataInput;
+import com.hedera.pbj.runtime.io.DataOutput;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.DataInput;
-import java.io.DataOutput;
+
 import java.io.IOException;
 
 public class EntityNumCodec implements Codec<EntityNum> {
@@ -50,12 +52,18 @@ public class EntityNumCodec implements Codec<EntityNum> {
     }
 
     @Override
-    public int typicalSize() {
+    public int measureRecord(final @NonNull EntityNum entityNum) {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public boolean fastEquals(final @NonNull EntityNum item, final @NonNull DataInput input) {
         throw new UnsupportedOperationException();
+    }
+
+    @NonNull
+    @Override
+    public EntityNum parseStrict(@NonNull DataInput dataInput) throws IOException {
+        return parse(dataInput);
     }
 }

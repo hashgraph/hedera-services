@@ -27,7 +27,7 @@ import com.hedera.node.app.service.network.impl.serdes.MonoSpecialFilesAdapterCo
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.app.spi.state.serdes.MonoMapCodecAdapter;
+import com.hedera.node.app.service.mono.state.codec.MonoMapCodecAdapter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 

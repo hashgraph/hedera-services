@@ -22,7 +22,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
 import com.hedera.node.app.service.mono.state.merkle.internals.BytesElement;
 import com.hedera.node.app.service.network.impl.serdes.MonoSpecialFilesAdapterCodec;
-import com.hederahashgraph.api.proto.java.FileID;
+import com.hedera.hapi.node.base.FileID;
+import com.hedera.pbj.runtime.io.DataInput;
+import com.hedera.pbj.runtime.io.DataOutput;
+
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -31,15 +34,14 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.fcqueue.FCQueue;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataInput;
-import java.io.DataOutput;
+
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 class MonoSpecialFilesAdapterSerdesTest {
     private static final FileID SOME_FILE_ID =
-            FileID.newBuilder().setFileNum(666).build();
+            FileID.newBuilder().fileNum(666).build();
     private static final MerkleSpecialFiles SOME_SPECIAL_FILES = new MerkleSpecialFiles();
 
     static {
@@ -56,7 +58,7 @@ class MonoSpecialFilesAdapterSerdesTest {
 
     @Test
     void doesntSupportUnnecessary() {
-        assertThrows(UnsupportedOperationException.class, subject::typicalSize);
+        assertThrows(UnsupportedOperationException.class, () -> subject.measureRecord(SOME_SPECIAL_FILES));
         assertThrows(UnsupportedOperationException.class, () -> subject.measure(input));
         assertThrows(UnsupportedOperationException.class, () -> subject.fastEquals(SOME_SPECIAL_FILES, input));
     }
@@ -69,11 +71,11 @@ class MonoSpecialFilesAdapterSerdesTest {
                 .registerConstructable(new ClassConstructorPair(BytesElement.class, BytesElement::new));
         final var baos = new ByteArrayOutputStream();
         final var actualOut = new SerializableDataOutputStream(baos);
-        subject.write(SOME_SPECIAL_FILES, actualOut);
+        subject.write(SOME_SPECIAL_FILES, output);
         actualOut.flush();
 
         final var actualIn = new SerializableDataInputStream(new ByteArrayInputStream(baos.toByteArray()));
-        final var parsed = subject.parse(actualIn);
+        final var parsed = subject.parse(input);
         assertEquals(SOME_SPECIAL_FILES.getHash(), parsed.getHash());
     }
 

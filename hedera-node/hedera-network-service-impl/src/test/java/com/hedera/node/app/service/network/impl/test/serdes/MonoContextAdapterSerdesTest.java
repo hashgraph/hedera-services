@@ -26,8 +26,9 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataInput;
-import java.io.DataOutput;
+import com.hedera.pbj.runtime.io.DataInput;
+import com.hedera.pbj.runtime.io.DataOutput;
+
 import java.io.IOException;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
@@ -50,7 +51,7 @@ class MonoContextAdapterSerdesTest {
 
     @Test
     void doesntSupportUnnecessary() {
-        assertThrows(UnsupportedOperationException.class, subject::typicalSize);
+        assertThrows(UnsupportedOperationException.class, () -> subject.measureRecord(SOME_CONTEXT));
         assertThrows(UnsupportedOperationException.class, () -> subject.measure(input));
         assertThrows(UnsupportedOperationException.class, () -> subject.fastEquals(SOME_CONTEXT, input));
     }
@@ -59,11 +60,11 @@ class MonoContextAdapterSerdesTest {
     void canSerializeAndDeserializeFromAppropriateStream() throws IOException {
         final var baos = new ByteArrayOutputStream();
         final var actualOut = new SerializableDataOutputStream(baos);
-        subject.write(SOME_CONTEXT, actualOut);
+        subject.write(SOME_CONTEXT, output);
         actualOut.flush();
 
         final var actualIn = new SerializableDataInputStream(new ByteArrayInputStream(baos.toByteArray()));
-        final var parsed = subject.parse(actualIn);
+        final var parsed = subject.parse(input);
         assertSomeFields(SOME_CONTEXT, parsed);
     }
 
