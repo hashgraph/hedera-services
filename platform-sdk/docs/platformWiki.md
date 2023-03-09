@@ -24,6 +24,7 @@ This code is maintained by the "Platform Hashgraph" team.
 - Event Flow
   - [Pre-consensus event stream](components/preConsensusEventStream.md)
   - Post-consensus event stream
+  - Threading Diagram
 - State Proofs
 
 ## Base
@@ -50,3 +51,11 @@ This code is maintained by the "Platform Hashgraph" team.
   - FCHashMap
   - FCQueue
 - Reconnect
+
+## Process
+
+### Testing
+### Pull Requests
+### Documentation
+#### Markdown Wiki
+#### Mindmap
