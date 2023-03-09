@@ -523,7 +523,11 @@ public final class MerkleDb {
         if (!Files.exists(defaultInstancePath.resolve(METADATA_FILENAME))) {
             Files.createDirectories(defaultInstancePath);
             hardLinkTree(source.resolve(METADATA_FILENAME), defaultInstancePath.resolve(METADATA_FILENAME));
-            hardLinkTree(source.resolve(SHARED_DIRNAME), defaultInstancePath.resolve(SHARED_DIRNAME));
+            final Path sharedDirPath = source.resolve(SHARED_DIRNAME);
+            // No shared data yet, so the folder may be empty or even may not exist
+            if (Files.exists(sharedDirPath)) {
+                hardLinkTree(sharedDirPath, defaultInstancePath.resolve(SHARED_DIRNAME));
+            }
             hardLinkTree(source.resolve(TABLES_DIRNAME), defaultInstancePath.resolve(TABLES_DIRNAME));
         } else {
             // Check the target database:
