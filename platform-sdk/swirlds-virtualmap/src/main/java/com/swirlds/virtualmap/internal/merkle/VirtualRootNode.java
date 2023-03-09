@@ -535,7 +535,7 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
     @Override
     protected void destroyNode() {
         if (pipeline != null) {
-            pipeline.destroyCopy();
+            pipeline.destroyCopy(this);
         }
     }
 
@@ -858,7 +858,7 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
     /**
      * {@inheritDoc}
      */
-    public boolean shouldBeFlushed() {
+    public boolean requestedToFlush() {
         return shouldBeFlushed.get();
     }
 
@@ -1446,6 +1446,11 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
         }
 
         return false;
+    }
+
+    @Override
+    public long getFastCopyVersion() {
+        return cache.getFastCopyVersion();
     }
 
     /*

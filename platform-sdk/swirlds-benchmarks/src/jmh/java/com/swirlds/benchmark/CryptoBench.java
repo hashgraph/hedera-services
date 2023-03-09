@@ -31,6 +31,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -201,8 +203,12 @@ public abstract class CryptoBench extends VirtualMapBench {
         final long[] map = new long[verify ? maxKey : 0];
         VirtualMap<BenchmarkKey, BenchmarkValue> virtualMap = createMap(map);
 
-        final ExecutorService prefetchPool =
-                Executors.newCachedThreadPool(new ThreadConfiguration(getStaticThreadManager())
+        // Use a custom queue and executor for warmups. It may happen that some warmup jobs
+        // aren't complete by the end of the round, so they will start piling up. To fix it,
+        // clear the queue in the end of each round
+        final BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>();
+        final ExecutorService prefetchPool = new ThreadPoolExecutor(numThreads, numThreads, 1, TimeUnit.SECONDS, queue,
+                new ThreadConfiguration(getStaticThreadManager())
                         .setComponent("benchmark")
                         .setThreadName("prefetch")
                         .setExceptionHandler((t, ex) -> logger.error("Uncaught exception during prefetching", ex))
@@ -212,19 +218,25 @@ public abstract class CryptoBench extends VirtualMapBench {
 
         initializeFixedAccounts(virtualMap);
 
+        final List<VirtualMap<BenchmarkKey, BenchmarkValue>> toRelease = new ArrayList<>();
+
         long prevTime = System.currentTimeMillis();
         for (int i = 1; i <= numFiles; ++i) {
+            toRelease.add(virtualMap);
+
             // Generate a new set of unique random keys
             final Integer[] keys = generateKeySet();
 
             // Warm keys in parallel asynchronously
             final VirtualMap<BenchmarkKey, BenchmarkValue> currentMap = virtualMap;
-            for (int thread = 0; thread < numThreads; ++thread) {
-                final int idx = thread;
+            for (int j = 0; j < keys.length; j += KEYS_PER_RECORD) {
+                final int key = j;
                 prefetchPool.execute(() -> {
-                    for (int j = idx * KEYS_PER_RECORD; j < keys.length; j += numThreads * KEYS_PER_RECORD) {
-                        currentMap.warm(new BenchmarkKey(keys[j]));
-                        currentMap.warm(new BenchmarkKey(keys[j + 1]));
+                    try {
+                        currentMap.warm(new BenchmarkKey(keys[key]));
+                        currentMap.warm(new BenchmarkKey(keys[key + 1]));
+                    } catch (final Exception e) {
+                        logger.error("Warmup exception", e);
                     }
                 });
             }
@@ -267,12 +279,43 @@ public abstract class CryptoBench extends VirtualMapBench {
                 }
             }
 
-            virtualMap = copyMap(virtualMap);
+            queue.clear();
+
+            // Add some chaos. Don't release the map on copy
+            virtualMap = copyMap(virtualMap, false);
+            // Either release a random previous copy, or two copies, or none
+            int randomInt = Utils.randomInt(100);
+            final VirtualMap<BenchmarkKey, BenchmarkValue> mapToRelease1;
+            final VirtualMap<BenchmarkKey, BenchmarkValue> mapToRelease2;
+            if (randomInt < 60) {
+                final int indexToRelease = Utils.randomInt(toRelease.size());
+                mapToRelease1 = toRelease.remove(indexToRelease);
+                mapToRelease2 = null;
+            } else if (randomInt < 80) {
+                final int indexToRelease = Utils.randomInt(toRelease.size());
+                mapToRelease1 = toRelease.remove(indexToRelease);
+                mapToRelease2 = (toRelease.size() > 0) ? toRelease.remove(0) : null;
+            } else {
+                mapToRelease1 = null;
+                mapToRelease2 = null;
+            }
+            if (mapToRelease1 != null) {
+                mapToRelease1.release();
+            }
+            if (mapToRelease2 != null) {
+                mapToRelease2.release();
+            }
 
             // Report TPS
             final long curTime = System.currentTimeMillis();
             updateTPS(i, curTime - prevTime);
             prevTime = curTime;
+        }
+
+        logger.debug("Maps left to release: " + toRelease.size());
+        // Now release the remaining copies
+        for (VirtualMap<BenchmarkKey, BenchmarkValue> m : toRelease) {
+            m.release();
         }
 
         // Ensure the map is done with hashing/merging/flushing

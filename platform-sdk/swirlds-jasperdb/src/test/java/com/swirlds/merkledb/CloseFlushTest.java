@@ -84,7 +84,7 @@ public class CloseFlushTest {
             while (true) {
                 copy = map.copy();
                 root = map.getRight();
-                if (root.shouldBeFlushed()) {
+                if (root.requestedToFlush()) {
                     final VirtualMap<VirtualLongKey, ExampleByteArrayVirtualValue> finalCopy = copy;
                     new Thread(() -> {
                                 try {

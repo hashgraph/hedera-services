@@ -55,6 +55,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @DisplayName("VirtualPipeline Tests")
 class VirtualPipelineTests {
@@ -110,7 +111,7 @@ class VirtualPipelineTests {
 
             // Flushing and merging are mutually exclusive, and only those marked
             // "shouldBeFlushed" should ever be flushed
-            if (copy.shouldBeFlushed()) {
+            if (copy.requestedToFlush()) {
                 assertFalse(copy.isMerged(), "copy should be flushed, not merged. Copy #" + copy.getCopyIndex());
             } else {
                 assertFalse(copy.isFlushed(), "copy is not marked for flushing. Copy #" + copy.getCopyIndex());
@@ -131,7 +132,7 @@ class VirtualPipelineTests {
 
             if (oldestUndestroyedFound) {
                 // The oldest undestroyed copy has been found, and it's older than this copy
-                if (copy.shouldBeFlushed()) {
+                if (copy.requestedToFlush()) {
                     assertFalse(copy.isFlushed(), "only the oldest copy can be flushed. Copy #" + copy.getCopyIndex());
                 } else {
                     if ((copy.isDestroyed() || copy.isDetached()) && copy.isImmutable()) {
@@ -148,7 +149,7 @@ class VirtualPipelineTests {
                 // The oldest undestroyed copy has not yet been encountered
                 if (copy.isDestroyed() || copy.isDetached()) {
                     if (copy.isImmutable()) {
-                        if (copy.shouldBeFlushed()) {
+                        if (copy.requestedToFlush()) {
                             interruptOnTimeout(
                                     2_000,
                                     copy::waitUntilFlushed,
@@ -386,9 +387,9 @@ class VirtualPipelineTests {
         root.flushFinishedLatch.countDown();
 
         // None of these should be flushable
-        assertFalse(copy1.shouldBeFlushed(), "Should not be flushable");
-        assertFalse(copy2.shouldBeFlushed(), "Should not be flushable");
-        assertFalse(copy3.shouldBeFlushed(), "Should not be flushable");
+        assertFalse(copy1.requestedToFlush(), "Should not be flushable");
+        assertFalse(copy2.requestedToFlush(), "Should not be flushable");
+        assertFalse(copy3.requestedToFlush(), "Should not be flushable");
 
         // I'll take the latch out of the way, so that IF copy1 were to be processed,
         // we wouldn't block it. But it won't be processed because we haven't destroyed
@@ -590,32 +591,98 @@ class VirtualPipelineTests {
         }
     }
 
+    @ParameterizedTest
+    @Tag(TestTypeTags.FUNCTIONAL)
+    @Tag(TestComponentTags.VMAP)
+    @ValueSource(ints = { 11, 50, 99, 100, 500, 1000, 1111 })
+    @DisplayName("Size based flushes")
+    public void sizeBasedFlushes(int copyCount) throws InterruptedException {
+        final VirtualMapSettings settings = VirtualMapSettingsFactory.get();
+        final List<DummyVirtualRoot> copies = setupCopies(copyCount, i -> false);
+        DummyVirtualRoot last = copies.get(copies.size() - 1);
+        DummyVirtualRoot afterCopy = last.copy();
+        afterCopy.setShouldBeFlushed(true);
+        afterCopy.copy(); // make it immutable and eligible to flush
+        for (int i = 0; i < copyCount; i++) {
+            DummyVirtualRoot copy = copies.get(i);
+            // Every 11th copy should be flushed
+            copy.setEstimatedSize(settings.getCopyFlushThreshold() / 10 - 1);
+        }
+        for (DummyVirtualRoot copy : copies) {
+            copy.release();
+        }
+        afterCopy.release();
+        afterCopy.waitUntilFlushed();
+        int flushedCount = 0;
+        for (DummyVirtualRoot copy : copies) {
+            if (copy.isFlushed()) {
+                flushedCount++;
+            }
+        }
+        assertEquals(copyCount / 11, flushedCount, "There should be " + copyCount / 11 + " flushed copies");
+    }
+
     @Test
     @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
-    @DisplayName("Undestroyed Flushed Copy Blocks Flushes")
-    void undestroyedFlushedCopyBlocksFlushes() throws InterruptedException {
+    @DisplayName("Small copies are never flushed")
+    void smallCopiesAreNeverFlushed() throws InterruptedException {
+        final int copyCount = 1000;
+        final VirtualMapSettings settings = VirtualMapSettingsFactory.get();
+        final List<DummyVirtualRoot> copies = setupCopies(copyCount, i -> false);
+        for (int i = 0; i < copyCount; i++) {
+            DummyVirtualRoot copy = copies.get(i);
+            // Set all copies small enough, so none of them should be flushed even after merge
+            copy.setEstimatedSize(settings.getCopyFlushThreshold() / (copyCount + 1));
+        }
+        DummyVirtualRoot last = copies.get(copies.size() - 1);
+        DummyVirtualRoot afterCopy = last.copy();
+        afterCopy.setShouldBeFlushed(true);
+        afterCopy.copy(); // make afterCopy immutable / eligible to flush
+        for (DummyVirtualRoot copy : copies) {
+            copy.release();
+        }
+        last.waitUntilMerged();
+        for (DummyVirtualRoot copy : copies) {
+            assertFalse(copy.isFlushed(), "Small copy should not be flushed");
+        }
+        afterCopy.release();
+        afterCopy.waitUntilFlushed();
+        assertTrue(afterCopy.isFlushed());
+    }
+
+
+    @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
+    @Tag(TestComponentTags.VMAP)
+    @DisplayName("Undestroyed Copy Blocks Flushes")
+    void undestroyedCopyBlocksFlushes() throws InterruptedException {
         final int copyCount = 10;
 
         // Copies 0 and 5 need to be flushed
         final List<DummyVirtualRoot> copies = setupCopies(copyCount, i -> i == 0 || i == 5);
 
-        copies.get(0).waitUntilFlushed();
-
-        // release copies 1 through 4. 5 should be prevented from flushing due to copy 0 not being destroyed.
-        for (int i = 1; i < 5; i++) {
+        // release copies 1 through 5. 5 should be prevented from flushing due to copy 0 not being destroyed.
+        for (int i = 1; i <= 5; i++) {
             copies.get(i).release();
         }
 
-        MILLISECONDS.sleep(100);
-        assertFalse(copies.get(5).isFlushed(), "copy should not yet be flushed");
+        copies.get(4).waitUntilMerged();
+        for (int i = 0; i < copyCount; i++) {
+            DummyVirtualRoot copy = copies.get(i);
+            assertFalse(copy.isFlushed(), "Copy should not yet be flushed");
+            if ((i != 0) && (i < 5)) {
+                assertTrue(copy.isMerged(), "Copy should be merged by now " + copy.getCopyIndex());
+            }
+        }
 
         copies.get(0).release();
         copies.get(5).waitUntilFlushed();
+        assertTrue(copies.get(0).isFlushed(), "copy should be flushed by now");
         assertTrue(copies.get(5).isFlushed(), "copy should be flushed by now");
 
         // release remaining copies
-        for (int i = 5; i < copyCount; i++) {
+        for (int i = 6; i < copyCount; i++) {
             copies.get(i).release();
         }
     }

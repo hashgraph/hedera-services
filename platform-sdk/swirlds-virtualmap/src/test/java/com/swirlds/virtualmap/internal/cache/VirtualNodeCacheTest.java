@@ -61,7 +61,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
@@ -1072,7 +1071,6 @@ class VirtualNodeCacheTest extends VirtualTestBase {
     @Test
     @Tags({@Tag("VirtualMerkle"), @Tag("VirtualNodeCache"), @Tag("Internal")})
     @DisplayName("Exception when getting an internal on a released cache")
-    @Disabled("Actually, this now should work...")
     void gettingAnInternalOnReleasedCacheThrows() {
         final VirtualNodeCache<TestKey, TestValue> cache0 = cache;
         nextRound();
@@ -1082,9 +1080,7 @@ class VirtualNodeCacheTest extends VirtualTestBase {
         cache0.seal();
         cache0.release();
 
-        assertThrows(
-                ReferenceCountException.class,
-                () -> cache0.lookupLeafByPath(ROOT_PATH, false),
+        assertNull(cache0.lookupLeafByPath(ROOT_PATH, false),
                 "should not be able to look up value on destroyed cache");
     }
 
@@ -1369,16 +1365,14 @@ class VirtualNodeCacheTest extends VirtualTestBase {
     @Test
     @Tags({@Tag("VirtualMerkle"), @Tag("VirtualNodeCache"), @Tag("Leaf")})
     @DisplayName("Exception when getting a leaf on a destroyed cache")
-    @Disabled("Actually, this now should work...")
     void gettingALeafOnDestroyedCacheThrows() {
         final VirtualLeafRecord<TestKey, TestValue> appleLeaf0 = appleLeaf(A_PATH);
         cache.putLeaf(appleLeaf0);
         cache.seal();
         cache.release();
 
-        assertThrows(
-                ReferenceCountException.class,
-                () -> cache.lookupLeafByKey(A_KEY, false),
+        assertNull(
+                cache.lookupLeafByKey(A_KEY, false),
                 "shouldn't be able to key on destroyed cache");
     }
 

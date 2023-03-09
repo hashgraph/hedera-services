@@ -27,10 +27,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.virtualmap.TestKey;
 import com.swirlds.virtualmap.TestValue;
-import com.swirlds.virtualmap.TestVirtualMapSettings;
 import com.swirlds.virtualmap.VirtualMap;
-import com.swirlds.virtualmap.VirtualMapSettings;
-import com.swirlds.virtualmap.VirtualMapSettingsFactory;
 import com.swirlds.virtualmap.VirtualTestBase;
 import com.swirlds.virtualmap.datasource.InMemoryBuilder;
 import com.swirlds.virtualmap.datasource.InMemoryDataSource;
@@ -41,7 +38,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
@@ -53,20 +49,20 @@ class VirtualRootNodeTest extends VirtualTestBase {
     void testEnableVirtualRootFlush() throws ExecutionException, InterruptedException {
         VirtualRootNode<TestKey, TestValue> fcm0 = createRoot();
         fcm0.postInit(new DummyVirtualStateAccessor());
-        assertFalse(fcm0.shouldBeFlushed(), "map should not yet be flushed");
+        assertFalse(fcm0.requestedToFlush(), "map should not yet be flushed");
 
         VirtualRootNode<TestKey, TestValue> fcm1 = fcm0.copy();
         fcm1.postInit(new DummyVirtualStateAccessor());
-        assertFalse(fcm1.shouldBeFlushed(), "map should not yet be flushed");
+        assertFalse(fcm1.requestedToFlush(), "map should not yet be flushed");
 
         VirtualRootNode<TestKey, TestValue> fcm2 = fcm1.copy();
         fcm2.postInit(new DummyVirtualStateAccessor());
-        assertFalse(fcm1.shouldBeFlushed(), "map should not yet be flushed");
+        assertFalse(fcm1.requestedToFlush(), "map should not yet be flushed");
 
         VirtualRootNode<TestKey, TestValue> fcm3 = fcm2.copy();
         fcm3.postInit(new DummyVirtualStateAccessor());
         fcm3.enableFlush();
-        assertTrue(fcm3.shouldBeFlushed(), "map should now be flushed");
+        assertTrue(fcm3.requestedToFlush(), "map should now be flushed");
 
         fcm0.release();
         fcm1.release();
@@ -76,7 +72,6 @@ class VirtualRootNodeTest extends VirtualTestBase {
 
     @Test
     @DisplayName("A new map with a datasource with a root hash reveals it")
-    @Disabled("This test needs some rework due to the complicated VirtualRootNode lifecycle.")
     void mapWithExistingHashedDataHasNonNullRootHash() throws ExecutionException, InterruptedException {
         // The builder I will use with this map is unique in that each call to "build" returns THE SAME DATASOURCE.
         final InMemoryDataSource<TestKey, TestValue> ds = new InMemoryDataSource<>(
@@ -92,15 +87,15 @@ class VirtualRootNodeTest extends VirtualTestBase {
         copy.postInit(fcm.getState());
 
         fcm.getHash();
-        final Hash expectedHash = fcm.getChild(1).getHash();
+        final Hash expectedHash = fcm.getChild(0).getHash();
+        fcm.release();
         fcm.waitUntilFlushed();
 
         final VirtualRootNode<TestKey, TestValue> fcm2 = new VirtualRootNode<>(builder);
-        fcm2.postInit(new DummyVirtualStateAccessor());
-        assertNotNull(fcm2.getChild(1), "child should not be null");
-        assertEquals(expectedHash, fcm2.getChild(1).getHash(), "hash should match expected");
+        fcm2.postInit(copy.getState());
+        assertNotNull(fcm2.getChild(0), "child should not be null");
+        assertEquals(expectedHash, fcm2.getChild(0).getHash(), "hash should match expected");
 
-        fcm.release();
         copy.release();
         fcm2.release();
     }

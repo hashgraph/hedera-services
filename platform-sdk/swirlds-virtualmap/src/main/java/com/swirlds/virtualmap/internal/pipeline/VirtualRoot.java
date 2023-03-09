@@ -28,34 +28,22 @@ public interface VirtualRoot extends MerkleNode {
      * Check if this copy is a copy that has been designated for flushing. Once designated
      * as a flushable copy, this method should still return true after the flush has completed.
      *
+     * All virtual roots enabled for flushing will eventually be flushed to disk. Some virtual
+     * roots not explicitly enabled for flushing may also be flushed, for example, based on
+     * memory consumption of the corresponding node cache.
+     *
      * @return true if this copy should be flushed.
      */
-    boolean shouldBeFlushed();
+    boolean requestedToFlush();
 
     /**
-     * <p>
-     * Flush the contents of this data structure to disk. Will be called at most once. Will only be called iff
-     * </p>
+     * Flush the contents of this data structure to disk. Will be called at most once.
      *
-     * <ul>
-     * <li>
-     * {@link #shouldBeFlushed()} is true
-     * </li>
-     * <li>
-     * the copy on question is the oldest unreleased copy
-     * </li>
-     * <li>
-     * the copy is immutable
-     * </li>
-     * </ul>
+     * This method is called only for the oldest released copy after it becomes immutable and before
+     * it's fully evicted from memory (when released). Copies with {@link #requestedToFlush()}
+     * returning true are guaranteed to be flushed, but other copies may be flushed, too.
      *
-     * <p>
-     * If a copy should be flushed, it will always be flushed before it is fully evicted from memory (when released).
-     * </p>
-     *
-     * <p>
      * This method can be expensive and may block for a long time before returning.
-     * </p>
      */
     void flush();
 
@@ -68,7 +56,7 @@ public interface VirtualRoot extends MerkleNode {
 
     /**
      * Block until this copy has been flushed.
-     * May block forever if this copy returns false for {@link #shouldBeFlushed()}.
+     * May block forever if this copy returns false for {@link #requestedToFlush()}.
      *
      * @throws InterruptedException
      * 		if the calling thread is interrupted
@@ -81,7 +69,7 @@ public interface VirtualRoot extends MerkleNode {
 
     /**
      * Merge this copy into the next available newer copy. Will never be called on the mutable copy. Will not be called
-     * if {@link #shouldBeFlushed()} returns true.
+     * if {@link #requestedToFlush()} returns true.
      */
     void merge();
 
@@ -142,4 +130,14 @@ public interface VirtualRoot extends MerkleNode {
      * 		if true then the pipeline is being shut down immediately, without waiting for work to complete
      */
     void onShutdown(boolean immediately);
+
+    /**
+     * Gets this virtual root fast copy version. The version is increased every time a mutable
+     * virtual root is copied.
+     *
+     * @return Fast copy version.
+     */
+    default long getFastCopyVersion() {
+        return 0;
+    }
 }

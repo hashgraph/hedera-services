@@ -828,7 +828,6 @@ class VirtualMapTests extends VirtualTestBase {
 
     @Test(/* no exception expected */ )
     @DisplayName("Partly dirty maps have missing hashes only on dirty leaves and parents")
-    @Disabled("Need to work out how to test ths properly")
     void nullHashesOnDirtyNodes() throws ExecutionException, InterruptedException {
         VirtualMap<TestKey, TestValue> fcm = createMap();
         fcm.put(A_KEY, APPLE);
@@ -1080,6 +1079,7 @@ class VirtualMapTests extends VirtualTestBase {
         map1.getRoot().detach(Path.of("tmp"));
         map0.release();
 
+        map1.release();
         final CountDownLatch finishedFlushing = new CountDownLatch(1);
         final Thread th = new Thread(() -> {
             try {
@@ -1093,12 +1093,11 @@ class VirtualMapTests extends VirtualTestBase {
         th.start();
 
         try {
-            if (!finishedFlushing.await(1, SECONDS)) {
+            if (!finishedFlushing.await(4, SECONDS)) {
                 th.interrupt();
                 fail("Timed out, which happens if the test fails or the test has a bug but never if it passes");
             }
         } finally {
-            map1.release();
             map2.release();
         }
     }
@@ -1130,7 +1129,7 @@ class VirtualMapTests extends VirtualTestBase {
                 root.enableFlush();
             }
 
-            if (root.shouldBeFlushed()) {
+            if (root.requestedToFlush()) {
                 flushCount++;
             }
         }

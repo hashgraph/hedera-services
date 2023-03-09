@@ -999,6 +999,15 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
     }
 
     /**
+     * Get fast copy version of the cache.
+     *
+     * @return Fast copy version
+     */
+    public long getFastCopyVersion() {
+        return fastCopyVersion.get();
+    }
+
+    /**
      * Creates a new instance of a {@link VirtualNodeCache}
      * with {@code pathToDirtyInternalIndex}, {@code pathToDirtyLeafIndex}, and
      * {@code keyToDirtyLeafIndex}, containing only elements not marked for deletion,
