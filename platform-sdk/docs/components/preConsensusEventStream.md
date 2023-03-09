@@ -1,4 +1,4 @@
-[root](../platformWiki.md)
+[↩](../platformWiki.md)
 
 # Pre-Consensus Event Stream
 
