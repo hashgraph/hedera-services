@@ -41,6 +41,7 @@ import com.swirlds.platform.state.signed.SignedStateFileWriter;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -264,7 +265,7 @@ public class SavedStateLoaderTests {
 
     private void writeEmergencyFile(final long round) {
         try {
-            new EmergencyRecoveryFile(round, RandomUtils.randomHash()).write(tmpDir);
+            new EmergencyRecoveryFile(round, RandomUtils.randomHash(), Instant.now()).write(tmpDir);
         } catch (final IOException e) {
             fail("Unable to write emergency recovery file to temporary dir " + tmpDir);
         }

@@ -369,11 +369,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     }
 
     @Override
-    public long getLastRoundSavedToDisk() {
-        return signedStateFileManager.getLastRoundSavedToDisk();
-    }
-
-    @Override
     public List<SignedStateInfo> getSignedStateInfo() {
         return signedStateManager.getSignedStateInfo();
     }
