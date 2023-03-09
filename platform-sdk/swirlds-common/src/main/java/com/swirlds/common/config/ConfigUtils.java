@@ -25,7 +25,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfoList;
 import io.github.classgraph.ScanResult;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -65,9 +64,7 @@ public final class ConfigUtils {
             return scanAndRegisterAllConfigTypes(configurationBuilder, Collections.emptySet(), Collections.emptyList());
         } else {
             return scanAndRegisterAllConfigTypes(
-                    configurationBuilder,
-                    Arrays.stream(packagePrefixes).collect(Collectors.toSet()),
-                    Collections.emptyList());
+                    configurationBuilder, Set.of(packagePrefixes), Collections.emptyList());
         }
     }
 
@@ -91,15 +88,15 @@ public final class ConfigUtils {
 
     @NonNull
     private static Set<Class<? extends Record>> loadAllConfigDataRecords(
-            @NonNull final Set<String> packagePrefix,
+            @NonNull final Set<String> packagePrefixes,
             @NonNull final List<URLClassLoaderWithLookup> additionalClassLoaders) {
-        CommonUtils.throwArgNull(packagePrefix, "packagePrefix");
+        CommonUtils.throwArgNull(packagePrefixes, "packagePrefix");
         CommonUtils.throwArgNull(additionalClassLoaders, "additionalClassLoaders");
 
         final ClassGraph classGraph = new ClassGraph().enableAnnotationInfo();
 
-        if (!packagePrefix.isEmpty()) {
-            classGraph.whitelistPackages(packagePrefix.toArray(new String[packagePrefix.size()]));
+        if (!packagePrefixes.isEmpty()) {
+            classGraph.whitelistPackages(packagePrefixes.toArray(new String[packagePrefixes.size()]));
         }
 
         if (!additionalClassLoaders.isEmpty()) {
