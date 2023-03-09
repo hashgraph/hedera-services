@@ -86,7 +86,7 @@ public final class FileManipulation {
      * @param bytes
      * 		the bytes to write, may exceed the number actually written
      * @param numberOfBytesToWrite
-     * 		the number of butes to write
+     * 		the number of bytes to write
      */
     private static void writeSomeOfTheseBytes(final Path file, final byte[] bytes, final int numberOfBytesToWrite)
             throws IOException {

@@ -43,6 +43,7 @@ public class PreconsensusEventMetrics {
 
     private static final DoubleGauge.Config PRECONSENSUS_EVENT_FILE_TOTAL_SIZE_GB_CONFIG = new DoubleGauge.Config(
                     CATEGORY, "preconsensusEventFileTotalSizeGB")
+            .withUnit("gigabytes")
             .withDescription("The total size of all preconsensus event files, in gigabytes.");
     private final DoubleGauge preconsensusEventFileTotalSizeGB;
 
@@ -54,6 +55,7 @@ public class PreconsensusEventMetrics {
 
     private static final RunningAverageMetric.Config PRECONSENSUS_EVENT_AVERAGE_FILE_SPAN_CONFIG =
             new RunningAverageMetric.Config(CATEGORY, "preconsensusEventAverageFileSpan")
+                    .withUnit("generations")
                     .withDescription("The average generational span of preconsensus event files. Only reflects"
                             + "files written since the last restart.");
     private final RunningAverageMetric preconsensusEventAverageFileSpan;
