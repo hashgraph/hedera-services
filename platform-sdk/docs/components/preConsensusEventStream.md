@@ -11,10 +11,14 @@ In order to achieve this goal with minimal latency, we start writing each event 
 
 ## Keystone Events
 
+TODO
+
 ## File Format
+
+TODO
 
 ## Data Flow
 
+<span style="color:orange;">
 ![](./preconsensusEventStream.svg)
-
-TODO expand docoument
+</span>

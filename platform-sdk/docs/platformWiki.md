@@ -2,8 +2,6 @@
 
 This document contains information about the Swirlds Platform. It is currently a work in progress.
 
-![](./components/preconsensusEventStream.svg)
-
 ## Components and Algorithms
 
 - Gossip
