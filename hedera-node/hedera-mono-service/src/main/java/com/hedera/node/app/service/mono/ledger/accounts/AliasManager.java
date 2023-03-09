@@ -29,12 +29,15 @@ import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.pbj.runtime.io.Bytes;
 import com.hederahashgraph.api.proto.java.Key;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.ByteArrayInputStream;
+import java.io.InputStreamReader;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
@@ -252,7 +255,6 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
     }
 
     @Nullable
-    @Deprecated
     public static byte[] keyAliasToEVMAddress(final ByteString alias) {
         try {
             final Key key = Key.parseFrom(alias);
@@ -267,7 +269,9 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
     @Nullable
     public static byte[] keyAliasToEVMAddress(final Bytes alias) {
         try {
-            final Key key = Key.parseFrom(alias.asUtf8String().getBytes());
+            final var ret = new byte[alias.getLength()];
+            alias.getBytes(0, ret);
+            final Key key = Key.parseFrom(ret);
             final JKey jKey = JKey.mapKey(key);
             return tryAddressRecovery(jKey, ADDRESS_RECOVERY_FN);
         } catch (InvalidProtocolBufferException | DecoderException | IllegalArgumentException ignore) {

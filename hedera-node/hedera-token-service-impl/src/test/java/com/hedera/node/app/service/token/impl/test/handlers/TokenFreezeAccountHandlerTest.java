@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.test.factories.scenarios.TokenFreezeScenarios.VALID_FREEZE_WITH_EXTANT_TOKEN;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
 import static com.hedera.test.utils.KeyUtils.sanityRestored;
+import static com.hedera.test.utils.KeyUtils.sanityRestoredToPbj;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -43,6 +44,6 @@ class TokenFreezeAccountHandlerTest extends ParityTestBase {
         assertFalse(context.failed());
         assertEquals(OK, context.getStatus());
         assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(toPbj(TOKEN_FREEZE_KT.asKey())));
+        assertThat(sanityRestoredToPbj(context.getRequiredNonPayerKeys()), contains(TOKEN_FREEZE_KT.asPbjKey()));
     }
 }

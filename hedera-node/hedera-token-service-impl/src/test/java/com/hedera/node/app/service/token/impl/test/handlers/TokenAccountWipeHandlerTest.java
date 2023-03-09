@@ -18,13 +18,12 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.test.factories.scenarios.TokenWipeScenarios.VALID_WIPE_WITH_EXTANT_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenWipeScenarios.WIPE_FOR_TOKEN_WITHOUT_KEY;
 import static com.hedera.test.factories.scenarios.TokenWipeScenarios.WIPE_WITH_MISSING_TOKEN;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_WIPE_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
-import static com.hedera.test.utils.KeyUtils.sanityRestored;
+import static com.hedera.test.utils.KeyUtils.sanityRestoredToPbj;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -48,7 +47,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
         assertFalse(context.failed());
         assertEquals(OK, context.getStatus());
         assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(toPbj(TOKEN_WIPE_KT.asKey())));
+        assertThat(sanityRestoredToPbj(context.getRequiredNonPayerKeys()), contains(TOKEN_WIPE_KT.asPbjKey()));
     }
 
     @Test
@@ -60,7 +59,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
 
         assertTrue(context.failed());
         assertEquals(INVALID_TOKEN_ID, context.getStatus());
-        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
         assertEquals(0, context.getRequiredNonPayerKeys().size());
     }
 
@@ -73,7 +72,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
 
         assertFalse(context.failed());
         assertEquals(OK, context.getStatus());
-        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
         assertEquals(0, context.getRequiredNonPayerKeys().size());
     }
 }

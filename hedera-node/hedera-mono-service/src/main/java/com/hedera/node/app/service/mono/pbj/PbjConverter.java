@@ -58,8 +58,11 @@ public final class PbjConverter {
 
     public static TransactionBody toPbj(com.hederahashgraph.api.proto.java.TransactionBody txBody) {
         try {
+            System.out.println("Protobuf" + txBody);
             final var bytes = txBody.toByteArray();
-            return TransactionBody.PROTOBUF.parse(DataBuffer.wrap(bytes));
+            final var ret =  TransactionBody.PROTOBUF.parse(DataBuffer.wrap(bytes));
+            System.out.println("PBJ" + ret);
+            return  ret;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
