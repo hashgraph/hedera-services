@@ -60,6 +60,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_REDIRECT_TO
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_REFERENCE_SLOT_LIFETIME;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECARS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECAR_VALIDATION_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_STORAGE_SLOT_PRICE_TIERS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_THROTTLE_THROTTLE_BY_GAS;
 import static com.hedera.node.app.spi.config.PropertyNames.CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED;
@@ -261,6 +262,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     private long maxNumSchedules;
     private boolean utilPrngEnabled;
     private Set<SidecarType> enabledSidecars;
+    private boolean sidecarValidationEnabled;
     private boolean requireMinStakeToReward;
     private Map<Long, Long> nodeMaxMinStakeRatios;
     private int sidecarMaxSizeMb;
@@ -368,6 +370,7 @@ public class GlobalDynamicProperties implements EvmProperties {
         create2Enabled = properties.getBooleanProperty(CONTRACTS_ALLOW_CREATE2);
         redirectTokenCalls = properties.getBooleanProperty(CONTRACTS_REDIRECT_TOKEN_CALLS);
         enabledSidecars = properties.getSidecarsProperty(CONTRACTS_SIDECARS);
+        sidecarValidationEnabled = properties.getBooleanProperty(CONTRACTS_SIDECAR_VALIDATION_ENABLED);
         enableAllowances = properties.getBooleanProperty(HEDERA_ALLOWANCES_IS_ENABLED);
         final var autoRenewTargetTypes = properties.getTypesProperty(AUTO_RENEW_TARGET_TYPES);
         expireAccounts = autoRenewTargetTypes.contains(ACCOUNT);
@@ -818,6 +821,10 @@ public class GlobalDynamicProperties implements EvmProperties {
 
     public Set<SidecarType> enabledSidecars() {
         return enabledSidecars;
+    }
+
+    public boolean validateSidecarsEnabled() {
+        return sidecarValidationEnabled;
     }
 
     public boolean requireMinStakeToReward() {

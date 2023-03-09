@@ -100,6 +100,7 @@ public class PropertyNames {
     public static final String CONTRACTS_MAX_NUM = "contracts.maxNumber";
     public static final String CONTRACTS_CHAIN_ID = "contracts.chainId";
     public static final String CONTRACTS_SIDECARS = "contracts.sidecars";
+    public static final String CONTRACTS_SIDECAR_VALIDATION_ENABLED = "contracts.sidecarValidationEnabled";
     public static final String CONTRACTS_THROTTLE_THROTTLE_BY_GAS = "contracts.throttle.throttleByGas";
     public static final String CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT = "contracts.maxRefundPercentOfGasLimit";
     public static final String CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT = "contracts.scheduleThrottleMaxGasLimit";
