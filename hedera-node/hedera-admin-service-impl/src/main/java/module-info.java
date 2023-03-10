@@ -5,6 +5,7 @@ module com.hedera.node.app.service.admin.impl {
     requires com.github.spotbugs.annotations;
     requires dagger;
     requires javax.inject;
+    requires com.hedera.pbj.runtime;
 
     provides com.hedera.node.app.service.admin.FreezeService with
             FreezeServiceImpl;
