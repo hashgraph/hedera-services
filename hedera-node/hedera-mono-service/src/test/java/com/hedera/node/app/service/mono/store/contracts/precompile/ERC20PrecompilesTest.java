@@ -152,7 +152,9 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -177,6 +179,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ERC20PrecompilesTest {
+
+    @Mock private org.hyperledger.besu.evm.account.Account acc;
+    @Mock private Deque<MessageFrame> stack;
+    @Mock private Iterator<MessageFrame> dequeIterator;
     @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private GasCalculator gasCalculator;
     @Mock private MessageFrame frame;
@@ -451,6 +457,7 @@ class ERC20PrecompilesTest {
     @Test
     void invalidNestedFunctionSelector() {
         final Bytes nestedPretendArguments = Bytes.of(0, 0, 0, 0);
+        givenIfDelegateCall();
         final Bytes pretendArguments =
                 givenMinimalFrameContextWithoutParentUpdater(nestedPretendArguments);
 
@@ -482,6 +489,7 @@ class ERC20PrecompilesTest {
         given(mockFeeObject.getNodeFee()).willReturn(1L);
         given(mockFeeObject.getNetworkFee()).willReturn(1L);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
+        givenIfDelegateCall();
         given(evmEncoder.encodeName(any())).willReturn(successResult);
         given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
         given(frame.getBlockValues()).willReturn(blockValues);
@@ -562,6 +570,7 @@ class ERC20PrecompilesTest {
         given(worldUpdater.aliases()).willReturn(aliases);
         given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
         given(encoder.encodeEcFungibleTransfer(true)).willReturn(successResult);
+        givenIfDelegateCall();
         given(frame.getBlockValues()).willReturn(blockValues);
         given(blockValues.getTimestamp()).willReturn(TEST_CONSENSUS_TIME);
         when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
@@ -1749,4 +1758,13 @@ class ERC20PrecompilesTest {
 
     public static final ApproveWrapper APPROVE_NFT_WRAPPER =
             new ApproveWrapper(token, receiver, BigInteger.ONE, BigInteger.ZERO, false);
+
+    private void givenIfDelegateCall() {
+        given(frame.getContractAddress()).willReturn(contractAddress);
+        given(frame.getRecipientAddress()).willReturn(recipientAddress);
+        given(worldUpdater.get(recipientAddress)).willReturn(acc);
+        given(acc.getNonce()).willReturn(-1L);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(frame.getMessageFrameStack().iterator()).willReturn(dequeIterator);
+    }
 }

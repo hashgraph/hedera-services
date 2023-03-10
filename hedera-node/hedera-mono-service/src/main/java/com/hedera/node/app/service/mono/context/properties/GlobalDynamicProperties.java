@@ -161,6 +161,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     private boolean lazyCreationEnabled;
     private boolean cryptoCreateWithAliasAndEvmAddressEnabled;
     private boolean enforceContractCreationThrottle;
+    private Set<Address> permittedDelegateCallers;
     private EntityScaleFactors entityScaleFactors;
     private LegacyContractIdActivations legacyContractIdActivations;
 
@@ -332,6 +333,7 @@ public class GlobalDynamicProperties implements EvmProperties {
                 properties.getBooleanProperty(CONTRACTS_ENFORCE_CREATION_THROTTLE);
         entityScaleFactors =
                 properties.getEntityScaleFactorsProperty(FEES_PERCENT_UTILIZATION_SCALE_FACTORS);
+        permittedDelegateCallers = properties.getEvmAddresses(CONTRACTS_PERMITTED_DELEGATE_CALLERS);
         legacyContractIdActivations =
                 properties.getLegacyActivationsProperty(CONTRACTS_KEYS_LEGACY_ACTIVATIONS);
     }
@@ -802,5 +804,9 @@ public class GlobalDynamicProperties implements EvmProperties {
 
     public boolean isImplicitCreationEnabled() {
         return autoCreationEnabled && lazyCreationEnabled;
+    }
+
+    public Set<Address> permittedDelegateCallers() {
+        return permittedDelegateCallers;
     }
 }
