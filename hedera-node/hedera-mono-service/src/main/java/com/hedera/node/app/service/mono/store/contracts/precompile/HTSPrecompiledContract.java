@@ -136,7 +136,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
             new PrecompileContractResult(
                     null, true, MessageFrame.State.COMPLETED_FAILED, Optional.empty());
 
-    private static final PrecompileContractResult INVALID_DELEGATE =
+    public static final PrecompileContractResult INVALID_DELEGATE =
             new PrecompileContractResult(
                     null,
                     true,
@@ -258,7 +258,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                 : PrecompiledContract.PrecompileContractResult.success(result);
     }
 
-    boolean unqualifiedDelegateDetected(MessageFrame frame) {
+    public boolean unqualifiedDelegateDetected(MessageFrame frame) {
         // if the first message frame is not a delegate, it's not a delegate
         if (!isDelegateCall(frame)) {
             return false;
@@ -271,9 +271,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
         if (isToken(frame, recipient)
                 || dynamicProperties.permittedDelegateCallers().contains(recipient)) {
             // make sure we have a parent calling context
-            var frames = frame.getMessageFrameStack().iterator();
+            final var stack = frame.getMessageFrameStack();
+            final var frames = stack.iterator();
             frames.next();
             if (!frames.hasNext()) {
+                // Impossible to get here w/o a catastrophic EVM bug
+                log.error("Delegate call frame had no parent");
                 return false;
             }
             // If the token redirect contract was called via delegate, then it's a delegate
