@@ -59,6 +59,7 @@ import org.apache.logging.log4j.Logger;
 public class QueryOnlyLoadTest extends LoadTest {
     private static final Logger log = LogManager.getLogger(QueryOnlyLoadTest.class);
     private static final Random r = new Random();
+    private static final String ACCOUNT_PATTERN = "0.0.%d";
 
     private static int startingScheduleNum = 0;
     private static int startingTokenNum = 0;
@@ -105,7 +106,7 @@ public class QueryOnlyLoadTest extends LoadTest {
 
     private static HapiSpecOperation opGetAcctBalance(PerfTestLoadSettings settings) {
         String acctToQuery = String.format(
-                "0.0.%d", settings.getTestTreasureStartAccount() + r.nextInt(settings.getTotalAccounts()));
+                ACCOUNT_PATTERN, settings.getTestTreasureStartAccount() + r.nextInt(settings.getTotalAccounts()));
 
         return QueryVerbs.getAccountBalance(acctToQuery)
                 .payingWith(GENESIS)
@@ -118,7 +119,7 @@ public class QueryOnlyLoadTest extends LoadTest {
 
     private static HapiSpecOperation opGetAcctRecords(PerfTestLoadSettings settings) {
         String acctRecordsQuery = String.format(
-                "0.0.%d", settings.getTestTreasureStartAccount() + r.nextInt(settings.getTotalAccounts()));
+                ACCOUNT_PATTERN, settings.getTestTreasureStartAccount() + r.nextInt(settings.getTotalAccounts()));
 
         return QueryVerbs.getAccountRecords(acctRecordsQuery)
                 .payingWith(GENESIS)
@@ -132,7 +133,7 @@ public class QueryOnlyLoadTest extends LoadTest {
 
     private static HapiSpecOperation opGetAcctInfo(PerfTestLoadSettings settings) {
         String acctInfoQuery = String.format(
-                "0.0.%d", settings.getTestTreasureStartAccount() + r.nextInt(settings.getTotalAccounts()));
+                ACCOUNT_PATTERN, settings.getTestTreasureStartAccount() + r.nextInt(settings.getTotalAccounts()));
 
         return QueryVerbs.getAccountInfo(acctInfoQuery)
                 .payingWith(GENESIS)
@@ -150,7 +151,7 @@ public class QueryOnlyLoadTest extends LoadTest {
             // This and the two assignments should be thread-safe in this context.
             startingTopicNum = settings.getTestTreasureStartAccount() + settings.getTotalAccounts();
         }
-        String topicInfoQuery = String.format("0.0.%d", startingTopicNum + r.nextInt(settings.getTotalTopics()));
+        String topicInfoQuery = String.format(ACCOUNT_PATTERN, startingTopicNum + r.nextInt(settings.getTotalTopics()));
 
         return QueryVerbs.getTopicInfo(topicInfoQuery)
                 .payingWith(GENESIS)
@@ -172,7 +173,7 @@ public class QueryOnlyLoadTest extends LoadTest {
                     settings.getTestTreasureStartAccount() + settings.getTotalAccounts() + settings.getTotalTopics();
         }
 
-        String tokenInfoQuery = String.format("0.0.%d", startingTokenNum + r.nextInt(settings.getTotalTokens()));
+        String tokenInfoQuery = String.format(ACCOUNT_PATTERN, startingTokenNum + r.nextInt(settings.getTotalTokens()));
 
         return QueryVerbs.getTokenInfo(tokenInfoQuery)
                 .payingWith(GENESIS)
@@ -197,7 +198,7 @@ public class QueryOnlyLoadTest extends LoadTest {
                     + settings.getTotalTokenAssociations();
         }
         String scheduleInfoQuery =
-                String.format("0.0.%d", startingScheduleNum + r.nextInt(settings.getTotalScheduled()));
+                String.format(ACCOUNT_PATTERN, startingScheduleNum + r.nextInt(settings.getTotalScheduled()));
 
         return QueryVerbs.getScheduleInfo(scheduleInfoQuery)
                 .payingWith(GENESIS)

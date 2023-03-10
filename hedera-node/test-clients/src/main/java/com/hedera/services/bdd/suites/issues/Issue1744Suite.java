@@ -34,6 +34,7 @@ import org.apache.logging.log4j.Logger;
 
 public class Issue1744Suite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(Issue1744Suite.class);
+    private static final String PAYER = "payer";
 
     public static void main(String... args) {
         new Issue1744Suite().runSuiteSync();
@@ -56,17 +57,17 @@ public class Issue1744Suite extends HapiSuite {
                             spec.registry().saveAmount("fee", fee);
                             spec.registry().saveAmount("balance", fee * 2);
                         }))
-                .when(cryptoCreate("payer").balance(spec -> spec.registry().getAmount("balance")))
+                .when(cryptoCreate(PAYER).balance(spec -> spec.registry().getAmount("balance")))
                 .then(
                         UtilVerbs.inParallel(
-                                cryptoTransfer(tinyBarsFromTo("payer", FUNDING, spec -> spec.registry()
+                                cryptoTransfer(tinyBarsFromTo(PAYER, FUNDING, spec -> spec.registry()
                                                 .getAmount("fee")))
-                                        .payingWith("payer")
+                                        .payingWith(PAYER)
                                         .via("txnA")
                                         .hasAnyKnownStatus(),
-                                cryptoTransfer(tinyBarsFromTo("payer", FUNDING, spec -> spec.registry()
+                                cryptoTransfer(tinyBarsFromTo(PAYER, FUNDING, spec -> spec.registry()
                                                 .getAmount("fee")))
-                                        .payingWith("payer")
+                                        .payingWith(PAYER)
                                         .via("txnB")
                                         .hasAnyKnownStatus()),
                         getTxnRecord("txnA").logged(),
