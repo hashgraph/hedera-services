@@ -102,11 +102,12 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     private static final String RECEIVER2 = "receiver2";
     private static final String SENDER = "sender";
     private static final String SENDER2 = "sender2";
+    private static final String NON_DELEGATE_TRANSFER = "NonDelegateCryptoTransfer";
     private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE =
             KeyShape.threshOf(1, KeyShape.SIMPLE, DELEGATE_CONTRACT);
 
     private static final String DELEGATE_KEY = "contractKey";
-    private static final String CONTRACT = "CryptoTransfer";
+    private static final String CONTRACT = "NonDelegateCryptoTransfer";
     private static final String MULTI_KEY = "purpose";
     private static final String HTS_TRANSFER_FROM_CONTRACT = "HtsTransferFrom";
     private static final String OWNER = "Owner";
@@ -608,8 +609,8 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                         cryptoTransfer(
                                 moving(senderStartBalance, FUNGIBLE_TOKEN)
                                         .between(TOKEN_TREASURY, SENDER)),
-                        uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT))
+                        uploadInitCode(NON_DELEGATE_TRANSFER),
+                        contractCreate(NON_DELEGATE_TRANSFER))
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -622,11 +623,13 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                             newKeyNamed(DELEGATE_KEY)
                                                     .shape(
                                                             DELEGATE_CONTRACT_KEY_SHAPE.signedWith(
-                                                                    sigs(ON, CONTRACT))),
+                                                                    sigs(
+                                                                            ON,
+                                                                            NON_DELEGATE_TRANSFER))),
                                             cryptoUpdate(SENDER).key(DELEGATE_KEY),
                                             cryptoUpdate(RECEIVER).key(DELEGATE_KEY),
                                             contractCall(
-                                                            CONTRACT,
+                                                            NON_DELEGATE_TRANSFER,
                                                             TRANSFER_MULTIPLE_TOKENS,
                                                             (Object)
                                                                     new Tuple[] {
