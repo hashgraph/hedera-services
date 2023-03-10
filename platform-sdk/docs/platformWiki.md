@@ -52,7 +52,7 @@ This code is maintained by the "Platform Data" team.
     - Reference Counting
     - Hashing
     - Serialization
-- Data Strucutres
+- Data Structures
     - VirtualMap
         - MerkleDB
     - MerkleMap
