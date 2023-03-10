@@ -22,9 +22,9 @@ import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.service.token.impl.serdes.StringSerdes;
-import java.io.DataInput;
-import java.io.DataOutput;
+import com.hedera.node.app.service.token.impl.serdes.StringCodec;
+import com.hedera.pbj.runtime.io.DataInput;
+import com.hedera.pbj.runtime.io.DataOutput;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,18 +41,12 @@ class StringSerdesTest {
     @Mock
     private DataOutput out;
 
-    final StringSerdes subject = new StringSerdes();
-
-    @Test
-    void givesTypicalSize() {
-        assertEquals(255, subject.typicalSize());
-    }
+    final StringCodec subject = new StringCodec();
 
     @Test
     void providesFastEquals() throws IOException {
         given(in.readInt()).willReturn(SOME_STRING.getBytes().length);
         subject.fastEquals(SOME_STRING, in);
-        assertEquals(255, subject.typicalSize());
     }
 
     @Test
@@ -63,7 +57,7 @@ class StringSerdesTest {
 
     @Test
     void providesFastEqualsWhenExceptionThrown() throws IOException {
-        final var s = mock(StringSerdes.class);
+        final var s = mock(StringCodec.class);
         given(s.parse(in)).willThrow(IOException.class);
         willCallRealMethod().given(s).fastEquals(SOME_STRING, in);
 
@@ -77,7 +71,7 @@ class StringSerdesTest {
         subject.parse(in);
 
         verify(in).readInt();
-        verify(in).readFully(new byte[SOME_STRING.getBytes().length]);
+        verify(in).readBytes(new byte[SOME_STRING.getBytes().length]);
     }
 
     @Test

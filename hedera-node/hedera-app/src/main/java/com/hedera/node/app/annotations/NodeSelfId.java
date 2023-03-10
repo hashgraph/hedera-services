@@ -16,11 +16,12 @@
 
 package com.hedera.node.app.annotations;
 
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import javax.inject.Qualifier;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * This annotation is used with dependency injection to inject the node's self ID (account ID?) as an argument to a

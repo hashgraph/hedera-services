@@ -22,11 +22,8 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.network.impl.serdes.EntityNumCodec;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.hedera.pbj.runtime.io.DataInput;
 import com.hedera.pbj.runtime.io.DataOutput;
-
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

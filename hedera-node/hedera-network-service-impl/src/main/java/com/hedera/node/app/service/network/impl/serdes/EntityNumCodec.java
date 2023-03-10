@@ -23,7 +23,6 @@ import com.hedera.pbj.runtime.io.DataOutput;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.io.IOException;
 
 public class EntityNumCodec implements Codec<EntityNum> {

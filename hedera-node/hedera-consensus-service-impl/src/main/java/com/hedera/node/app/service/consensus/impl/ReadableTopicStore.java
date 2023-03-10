@@ -22,9 +22,7 @@ import static com.hedera.node.app.service.consensus.impl.ReadableTopicStore.Topi
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TopicID;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.state.ReadableKVState;
@@ -74,7 +72,8 @@ public class ReadableTopicStore extends TopicStore {
     }
 
     public Optional<Topic> getTopicLeaf(TopicID id) {
-        return Optional.ofNullable(Objects.requireNonNull(topicState).get(EntityNum.fromTopicId(PbjConverter.fromPbj(id))));
+        return Optional.ofNullable(
+                Objects.requireNonNull(topicState).get(EntityNum.fromTopicId(PbjConverter.fromPbj(id))));
     }
 
     /**

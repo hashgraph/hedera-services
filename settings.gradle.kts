@@ -34,30 +34,55 @@ plugins {
 }
 
 include(":hedera-node")
+
 include(":hedera-node:hedera-admin-service")
+
 include(":hedera-node:hedera-admin-service-impl")
+
 include(":hedera-node:hedera-consensus-service")
+
 include(":hedera-node:hedera-consensus-service-impl")
+
 include(":hedera-node:hedera-file-service")
+
 include(":hedera-node:hedera-file-service-impl")
+
 include(":hedera-node:hedera-network-service")
+
 include(":hedera-node:hedera-network-service-impl")
+
 include(":hedera-node:hedera-schedule-service")
+
 include(":hedera-node:hedera-schedule-service-impl")
+
 include(":hedera-node:hedera-smart-contract-service")
+
 include(":hedera-node:hedera-smart-contract-service-impl")
+
 include(":hedera-node:hedera-token-service")
+
 include(":hedera-node:hedera-token-service-impl")
+
 include(":hedera-node:hedera-util-service")
+
 include(":hedera-node:hedera-util-service-impl")
+
 include(":hedera-node:hapi-utils")
+
 include(":hedera-node:hapi-fees")
+
 include(":hedera-node:hapi")
+
 include(":hedera-node:hedera-app")
+
 include(":hedera-node:hedera-app-spi")
+
 include(":hedera-node:hedera-evm")
+
 include(":hedera-node:hedera-evm-impl")
+
 include(":hedera-node:hedera-mono-service")
+
 include(":hedera-node:test-clients")
 
 // Enable Gradle Build Scan
@@ -255,30 +280,32 @@ dependencyResolutionManagement {
               "mockito-jupiter",
               "hamcrest",
               "awaitility",
-              "assertj-core"
-          )
-      )
+              "assertj-core"))
 
       library("awaitility", "org.awaitility", "awaitility").versionRef("awaitility-version")
-      library("besu-internal", "org.hyperledger.besu.internal", "crypto").versionRef("besu-internal-version")
-      library(
-          "commons-collections4",
-          "org.apache.commons",
-          "commons-collections4"
-      ).versionRef("commons-collections4-version")
+      library("besu-internal", "org.hyperledger.besu.internal", "crypto")
+          .versionRef("besu-internal-version")
+      library("commons-collections4", "org.apache.commons", "commons-collections4")
+          .versionRef("commons-collections4-version")
       library("hamcrest", "org.hamcrest", "hamcrest").versionRef("hamcrest-version")
-      library("helidon-grpc-client", "io.helidon.grpc", "helidon-grpc-client").versionRef("helidon-version")
+      library("helidon-grpc-client", "io.helidon.grpc", "helidon-grpc-client")
+          .versionRef("helidon-version")
       library("json", "org.json", "json").versionRef("json-version")
       library("junit-jupiter", "org.junit.jupiter", "junit-jupiter").versionRef("junit5-version")
-      library("junit-jupiter-api", "org.junit.jupiter", "junit-jupiter-api").versionRef("junit5-version")
-      library("junit-jupiter-params", "org.junit.jupiter", "junit-jupiter-params").versionRef("junit5-version")
+      library("junit-jupiter-api", "org.junit.jupiter", "junit-jupiter-api")
+          .versionRef("junit5-version")
+      library("junit-jupiter-params", "org.junit.jupiter", "junit-jupiter-params")
+          .versionRef("junit5-version")
       library("mockito-inline", "org.mockito", "mockito-inline").versionRef("mockito-version")
-      library("mockito-jupiter", "org.mockito", "mockito-junit-jupiter").versionRef("mockito-version")
+      library("mockito-jupiter", "org.mockito", "mockito-junit-jupiter")
+          .versionRef("mockito-version")
       library("mockito-inline", "org.mockito", "mockito-inline").versionRef("mockito-version")
       library("picocli", "info.picocli", "picocli").versionRef("picocli-version")
       library("snakeyaml", "org.yaml", "snakeyaml").versionRef("snakeyaml-version")
-      library("testcontainers-core", "org.testcontainers", "testcontainers").versionRef("testcontainers-version")
-      library("testcontainers-junit", "org.testcontainers", "junit-jupiter").versionRef("testcontainers-version")
+      library("testcontainers-core", "org.testcontainers", "testcontainers")
+          .versionRef("testcontainers-version")
+      library("testcontainers-junit", "org.testcontainers", "junit-jupiter")
+          .versionRef("testcontainers-version")
       library("classgraph", "io.github.classgraph", "classgraph").versionRef("classgraph-version")
       library("assertj-core", "org.assertj", "assertj-core").versionRef("assertj-version")
     }

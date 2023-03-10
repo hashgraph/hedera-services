@@ -16,6 +16,15 @@
 
 package com.hedera.node.app.service.schedule.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
@@ -29,25 +38,17 @@ import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualVa
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleSignHandler;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.state.ReadableKVStateBase;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import java.util.List;
-import java.util.Optional;
-
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SCHEDULE_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 
 class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
-    private final ScheduleID scheduleID = ScheduleID.newBuilder().scheduleNum(100L).build();
+    private final ScheduleID scheduleID =
+            ScheduleID.newBuilder().scheduleNum(100L).build();
 
     @Mock
     protected JKey adminJKey;
@@ -161,8 +162,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
 
     private TransactionBody givenSetupForScheduleSign(TransactionBody txn) {
         scheduledTxn = TransactionBody.newBuilder()
-                .transactionID(
-                        TransactionID.newBuilder().accountID(scheduler).build())
+                .transactionID(TransactionID.newBuilder().accountID(scheduler).build())
                 .cryptoCreateAccount(CryptoCreateTransactionBody.newBuilder().build())
                 .build();
         given(schedulesById.get(scheduleID.scheduleNum())).willReturn(schedule);

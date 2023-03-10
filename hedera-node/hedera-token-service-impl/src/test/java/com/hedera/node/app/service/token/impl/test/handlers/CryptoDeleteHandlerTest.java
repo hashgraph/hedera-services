@@ -16,32 +16,33 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.token.CryptoDeleteTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteHandler;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
-    private final AccountID deleteAccountId = asAccount("0.0.3213");
-    private final AccountID transferAccountId = asAccount("0.0.32134");
-    private final Long deleteAccountNum = deleteAccountId.getAccountNum();
-    private final Long transferAccountNum = transferAccountId.getAccountNum();
+    private final AccountID deleteAccountId =
+            AccountID.newBuilder().accountNum(3213).build();
+    private final AccountID transferAccountId =
+            AccountID.newBuilder().accountNum(32134).build();
+    private final Long deleteAccountNum = deleteAccountId.accountNum().get();
+    private final Long transferAccountNum = transferAccountId.accountNum().get();
 
     @Mock
     private MerkleAccount deleteAccount;
@@ -193,7 +194,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         given(accounts.get(EntityNumVirtualKey.fromLong(deleteAccountNum))).willReturn(deleteAccount);
         given(deleteAccount.getAccountKey()).willReturn(keyUsed);
 
-        final var txn = deleteAccountTransaction(deleteAccountId, AccountID.getDefaultInstance());
+        final var txn = deleteAccountTransaction(deleteAccountId, AccountID.DEFAULT_INSTANCE);
 
         final var context = new PreHandleContext(store, txn, payer);
         subject.preHandle(context);
@@ -211,15 +212,14 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
     private TransactionBody deleteAccountTransaction(
             final AccountID deleteAccountId, final AccountID transferAccountId) {
-        final var transactionID =
-                TransactionID.newBuilder().setAccountID(payer).setTransactionValidStart(consensusTimestamp);
+        final var transactionID = TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
         final var deleteTxBody = CryptoDeleteTransactionBody.newBuilder()
-                .setDeleteAccountID(deleteAccountId)
-                .setTransferAccountID(transferAccountId);
+                .deleteAccountID(deleteAccountId)
+                .transferAccountID(transferAccountId);
 
         return TransactionBody.newBuilder()
-                .setTransactionID(transactionID)
-                .setCryptoDelete(deleteTxBody)
+                .transactionID(transactionID)
+                .cryptoDelete(deleteTxBody)
                 .build();
     }
 }

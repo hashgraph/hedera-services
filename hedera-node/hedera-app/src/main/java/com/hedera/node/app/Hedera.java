@@ -85,8 +85,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import io.helidon.grpc.server.GrpcRouting;
 import io.helidon.grpc.server.GrpcServer;
 import io.helidon.grpc.server.GrpcServerConfiguration;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
@@ -95,6 +93,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Represents the Hedera Consensus Node.
@@ -117,10 +117,7 @@ public final class Hedera implements SwirldMain {
      * @param registry The {@link MerkleSchemaRegistry} with which the service registers its schemas.
      */
     private record ServiceRegistration(
-            @NonNull String name,
-            @NonNull Service service,
-            @NonNull MerkleSchemaRegistry registry) {
-    }
+            @NonNull String name, @NonNull Service service, @NonNull MerkleSchemaRegistry registry) {}
 
     /** The registry of all known services */
     private final Map<String, ServiceRegistration> serviceRegistry;
@@ -143,10 +140,10 @@ public final class Hedera implements SwirldMain {
     private HederaApp daggerApp;
 
     /*==================================================================================================================
-     *
-     * Hedera Object Construction.
-     *
-     =================================================================================================================*/
+    *
+    * Hedera Object Construction.
+    *
+    =================================================================================================================*/
 
     /**
      * Create a new Hedera instance.
@@ -154,23 +151,25 @@ public final class Hedera implements SwirldMain {
      * @param constructableRegistry The registry to use during the deserialization process
      * @param bootstrapProps The bootstrap properties
      */
-    Hedera(@NonNull final ConstructableRegistry constructableRegistry,
-           @NonNull final BootstrapProperties bootstrapProps) {
+    Hedera(
+            @NonNull final ConstructableRegistry constructableRegistry,
+            @NonNull final BootstrapProperties bootstrapProps) {
 
         // Load properties, configuration, and other things that can be done before a state is created.
         this.bootstrapProps = Objects.requireNonNull(bootstrapProps);
 
         // Read the software version
         version = SEMANTIC_VERSIONS.deployedSoftwareVersion();
-        logger.info("Creating Hedera Consensus Node v{} with HAPI v{}",
-                version.getServices(), version.getProto());
+        logger.info("Creating Hedera Consensus Node v{} with HAPI v{}", version.getServices(), version.getProto());
 
         // Create all the service implementations, and register their schemas.
         logger.info("Registering schemas for services");
         final var path = System.getProperty("merkle.db.path", null); // Might want to move to Bootstrap props
         serviceRegistry = createServicesRegistry(constructableRegistry, path == null ? null : Path.of(path));
-        serviceRegistry.values().forEach(reg ->
-                logger.info("Registered service {} with implementation {}", reg.name, reg.service.getClass()));
+        serviceRegistry
+                .values()
+                .forEach(reg ->
+                        logger.info("Registered service {} with implementation {}", reg.name, reg.service.getClass()));
 
         // Register MerkleHederaState with the ConstructableRegistry, so we can use a constructor
         // OTHER THAN the default constructor to make sure it has the config and other info
@@ -191,8 +190,7 @@ public final class Hedera implements SwirldMain {
      * to migrate each service to its latest schema.
      */
     private Map<String, ServiceRegistration> createServicesRegistry(
-            @NonNull final ConstructableRegistry constructableRegistry,
-            @Nullable final Path storageDir) {
+            @NonNull final ConstructableRegistry constructableRegistry, @Nullable final Path storageDir) {
 
         final var services = Map.of(
                 ConsensusService.NAME, new ConsensusServiceImpl(),
@@ -232,10 +230,10 @@ public final class Hedera implements SwirldMain {
     }
 
     /*==================================================================================================================
-     *
-     * Initialization Step 1: Create a new state (either genesis or restart, once per node).
-     *
-     =================================================================================================================*/
+    *
+    * Initialization Step 1: Create a new state (either genesis or restart, once per node).
+    *
+    =================================================================================================================*/
 
     /**
      * {@inheritDoc}
@@ -253,11 +251,11 @@ public final class Hedera implements SwirldMain {
     }
 
     /*==================================================================================================================
-     *
-     * Initialization Step 2: Initialize the state. Either genesis or restart or reconnect or some other trigger.
-     * Includes migration when needed.
-     *
-     =================================================================================================================*/
+    *
+    * Initialization Step 2: Initialize the state. Either genesis or restart or reconnect or some other trigger.
+    * Includes migration when needed.
+    *
+    =================================================================================================================*/
 
     /**
      * Invoked by the platform when the state should be initialized. This happens <b>BEFORE</b>
@@ -272,14 +270,15 @@ public final class Hedera implements SwirldMain {
 
         //noinspection ConstantValue
         assert dualState != null : "Platform should never pass a null dual state";
-        logger.info("Initializing Hedera state with trigger {} and previous version {}",
-                trigger, previousVersion);
+        logger.info("Initializing Hedera state with trigger {} and previous version {}", trigger, previousVersion);
 
         // We do not support downgrading from one version to an older version.
         final var deserializedVersion = (SerializableSemVers) previousVersion;
         if (isDowngrade(version, deserializedVersion)) {
-            logger.error("Fatal error, state source version {} is after node software version {}",
-                    deserializedVersion, version);
+            logger.error(
+                    "Fatal error, state source version {} is after node software version {}",
+                    deserializedVersion,
+                    version);
             System.exit(1);
         }
 
@@ -304,8 +303,7 @@ public final class Hedera implements SwirldMain {
      * Called by this class when we detect it is time to do migration.
      */
     private void onMigrate(
-            @NonNull final MerkleHederaState state,
-            @NonNull final SerializableSemVers deserializedVersion) {
+            @NonNull final MerkleHederaState state, @NonNull final SerializableSemVers deserializedVersion) {
         final var previousVersion = PbjConverter.toPbj(deserializedVersion.getServices());
         final var currentVersion = PbjConverter.toPbj(version.getServices());
         logger.info("Migrating from version {} to {}", previousVersion, currentVersion);
@@ -317,10 +315,10 @@ public final class Hedera implements SwirldMain {
     }
 
     /*==================================================================================================================
-     *
-     * Initialization Step 3: Initialize the app. Happens once at startup.
-     *
-     =================================================================================================================*/
+    *
+    * Initialization Step 3: Initialize the app. Happens once at startup.
+    *
+    =================================================================================================================*/
 
     /**
      * {@inheritDoc}
@@ -342,16 +340,19 @@ public final class Hedera implements SwirldMain {
         // in string handling that will lead to ISS.
         final var defaultCharset = daggerApp.nativeCharset().get();
         if (!isUTF8(defaultCharset)) {
-            logger.error("Fatal precondition violation in HederaNode#{}:" +
-                            "default charset is {} and not UTF-8", daggerApp.nodeId(), defaultCharset);
+            logger.error(
+                    "Fatal precondition violation in HederaNode#{}:" + "default charset is {} and not UTF-8",
+                    daggerApp.nodeId(),
+                    defaultCharset);
             daggerApp.systemExits().fail(1);
         }
 
         // Check that the digest factory supports SHA-384.
         final var digestFactory = daggerApp.digestFactory();
         if (!sha384DigestIsAvailable(digestFactory)) {
-            logger.error("Fatal precondition violation in HederaNode#{}:" +
-                            "digest factory does not support SHA-384", daggerApp.nodeId());
+            logger.error(
+                    "Fatal precondition violation in HederaNode#{}:" + "digest factory does not support SHA-384",
+                    daggerApp.nodeId());
             daggerApp.systemExits().fail(1);
         }
 
@@ -414,10 +415,10 @@ public final class Hedera implements SwirldMain {
     }
 
     /*==================================================================================================================
-     *
-     * Run the app.
-     *
-     =================================================================================================================*/
+    *
+    * Run the app.
+    *
+    =================================================================================================================*/
 
     /**
      * {@inheritDoc}
@@ -437,8 +438,10 @@ public final class Hedera implements SwirldMain {
         // from `hedera-app`, and some from `mono-service`. Eventually we'll transition all facilities to be
         // from the app module. But this code can be ignorant of that complexity, since the Dagger dependency
         // graph takes care of it.
-        final var ingestWorkflow = daggerApp.ingestComponentFactory().get().create().ingestWorkflow();
-        final var queryWorkflow = daggerApp.queryComponentFactory().get().create().queryWorkflow();
+        final var ingestWorkflow =
+                daggerApp.ingestComponentFactory().get().create().ingestWorkflow();
+        final var queryWorkflow =
+                daggerApp.queryComponentFactory().get().create().queryWorkflow();
 
         // Setup and start the grpc server.
         // At some point I'd like to somehow move the metadata for which transactions are supported
@@ -488,10 +491,10 @@ public final class Hedera implements SwirldMain {
     }
 
     /*==================================================================================================================
-     *
-     * Shutdown of a Hedera node
-     *
-     =================================================================================================================*/
+    *
+    * Shutdown of a Hedera node
+    *
+    =================================================================================================================*/
 
     /**
      * Called to perform orderly shutdown of the gRPC servers.
@@ -501,10 +504,10 @@ public final class Hedera implements SwirldMain {
     }
 
     /*==================================================================================================================
-     *
-     * Genesis Initialization
-     *
-     =================================================================================================================*/
+    *
+    * Genesis Initialization
+    *
+    =================================================================================================================*/
 
     /** Implements the code flow for initializing the state of a new Hedera node with NO SAVED STATE. */
     private void genesis(@NonNull final MerkleHederaState state) {
@@ -531,9 +534,10 @@ public final class Hedera implements SwirldMain {
 
         // TODO Not sure
         daggerApp.initializationFlow().runWith(stateChildren, bootstrapProps);
-        daggerApp.sysAccountsCreator().ensureSystemAccounts(
-                daggerApp.backingAccounts(),
-                daggerApp.workingState().addressBook());
+        daggerApp
+                .sysAccountsCreator()
+                .ensureSystemAccounts(
+                        daggerApp.backingAccounts(), daggerApp.workingState().addressBook());
         daggerApp.sysFilesManager().createManagedFilesIfMissing();
         daggerApp.stakeStartupHelper().doGenesisHousekeeping(stateChildren.addressBook());
 
@@ -558,9 +562,7 @@ public final class Hedera implements SwirldMain {
      * schemas to provide ad-hoc dependencies.
      */
     private void createSpecialGenesisChildren(
-            @NonNull final MerkleHederaState state,
-            @NonNull final AddressBook addressBook,
-            final long seqStart) {
+            @NonNull final MerkleHederaState state, @NonNull final AddressBook addressBook, final long seqStart) {
 
         // Prepopulate the NetworkServices state with default values for genesis
         // Can these be moved to Schema version 1 of NetworkServicesImpl?
@@ -585,8 +587,7 @@ public final class Hedera implements SwirldMain {
     }
 
     private MerkleNetworkContext genesisNetworkCtxWith(final long seqStart) {
-        return new MerkleNetworkContext(null,
-                new SequenceNumber(seqStart), seqStart - 1, new ExchangeRates());
+        return new MerkleNetworkContext(null, new SequenceNumber(seqStart), seqStart - 1, new ExchangeRates());
     }
 
     private void buildStakingInfoMap(
@@ -606,10 +607,10 @@ public final class Hedera implements SwirldMain {
     }
 
     /*==================================================================================================================
-     *
-     * Restart Initialization
-     *
-     =================================================================================================================*/
+    *
+    * Restart Initialization
+    *
+    =================================================================================================================*/
 
     /** Initialize flow for when a node has been restarted. This means it was started from a saved state. */
     private void restart(
@@ -652,30 +653,30 @@ public final class Hedera implements SwirldMain {
     }
 
     /*==================================================================================================================
-     *
-     * Reconnect Initialization
-     *
-     =================================================================================================================*/
+    *
+    * Reconnect Initialization
+    *
+    =================================================================================================================*/
 
     private void reconnect() {
         // No-op
     }
 
     /*==================================================================================================================
-     *
-     * Event Stream Recovery Initialization
-     *
-     =================================================================================================================*/
+    *
+    * Event Stream Recovery Initialization
+    *
+    =================================================================================================================*/
 
     private void eventStreamRecovery() {
         // No-op
     }
 
     /*==================================================================================================================
-     *
-     * Random private helper methods
-     *
-     =================================================================================================================*/
+    *
+    * Random private helper methods
+    *
+    =================================================================================================================*/
 
     private void initializeDagger(@NonNull final MerkleHederaState state) {
         logger.debug("Initializing dagger");
@@ -683,10 +684,13 @@ public final class Hedera implements SwirldMain {
         if (daggerApp == null) {
             // Today, the alias map has to be constructed by walking over all accounts.
             // TODO Populate aliases properly
-            final var aliases = new HashMap<ByteString, EntityNum>(); // Unfortunately, have to keep this Google protobuf dependency for the moment :-(
+            final var aliases = new HashMap<
+                    ByteString,
+                    EntityNum>(); // Unfortunately, have to keep this Google protobuf dependency for the moment :-(
             stateChildren = state.getStateChildrenProvider(platform, aliases);
             final var nodeAddress = stateChildren.addressBook().getAddress(selfId);
-            final var initialHash = stateChildren.runningHashLeaf().getRunningHash().getHash();
+            final var initialHash =
+                    stateChildren.runningHashLeaf().getRunningHash().getHash();
             // Fully qualified so as to not confuse javadoc
             daggerApp = com.hedera.node.app.DaggerHederaApp.builder()
                     .staticAccountMemo(nodeAddress.getMemo())

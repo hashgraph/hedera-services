@@ -24,10 +24,9 @@ import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
-import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusUpdateTopicRecordBuilder;
@@ -121,7 +120,8 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         validateFalse(topic.deleted(), ResponseCodeEnum.INVALID_TOPIC_ID);
 
         // First validate this topic is mutable; and the pending mutations are allowed
-        validateFalse(topic.adminKey() == null && wantsToMutateNonExpiryField(topicUpdate), ResponseCodeEnum.UNAUTHORIZED);
+        validateFalse(
+                topic.adminKey() == null && wantsToMutateNonExpiryField(topicUpdate), ResponseCodeEnum.UNAUTHORIZED);
         validateMaybeNewAttributes(handleContext, topicUpdate, topic);
 
         // Now we apply the mutations to a builder

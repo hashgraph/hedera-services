@@ -16,42 +16,43 @@
 
 package com.hedera.node.app.service.token.impl.serdes;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.pbj.runtime.Codec;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.hedera.pbj.runtime.io.DataInput;
+import com.hedera.pbj.runtime.io.DataOutput;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.DataInput;
-import java.io.DataOutput;
 import java.io.IOException;
 
 public class EntityNumCodec implements Codec<EntityNum> {
     @NonNull
     @Override
     public EntityNum parse(final @NonNull DataInput input) throws IOException {
-        if (input instanceof SerializableDataInputStream in) {
-            return new EntityNum(in.readInt());
-        } else {
-            throw new IllegalArgumentException("Expected a SerializableDataInputStream");
-        }
+        requireNonNull(input);
+        return new EntityNum(input.readInt());
+    }
+
+    @NonNull
+    @Override
+    public EntityNum parseStrict(@NonNull DataInput dataInput) throws IOException {
+        return parse(requireNonNull(dataInput));
     }
 
     @Override
     public void write(final @NonNull EntityNum item, final @NonNull DataOutput output) throws IOException {
-        if (output instanceof SerializableDataOutputStream out) {
-            out.writeInt(item.intValue());
-        } else {
-            throw new IllegalArgumentException("Expected a SerializableDataOutputStream");
-        }
+        requireNonNull(item);
+        requireNonNull(output);
+        output.writeInt(item.intValue());
     }
 
     @Override
-    public int measure(final @NonNull DataInput input) throws IOException {
+    public int measure(final @NonNull DataInput input) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public int typicalSize() {
+    public int measureRecord(EntityNum entityNum) {
         throw new UnsupportedOperationException();
     }
 

@@ -19,14 +19,11 @@ package com.hedera.node.app.service.consensus.impl.handlers;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.codec.KeyProtoCodec;
-import com.hedera.pbj.runtime.io.Bytes;
-import com.hedera.pbj.runtime.io.DataBuffer;
-import com.hedera.pbj.runtime.io.DataOutputStream;
-import com.hedera.pbj.runtime.io.DataInputStream;
-import com.hedera.pbj.runtime.io.DataOutputStream;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.pbj.runtime.io.Bytes;
+import com.hedera.pbj.runtime.io.DataInputStream;
+import com.hedera.pbj.runtime.io.DataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayInputStream;

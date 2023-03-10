@@ -16,31 +16,31 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
-    private final AccountID updateAccountId = asAccount("0.0.32132");
+    private final AccountID updateAccountId =
+            AccountID.newBuilder().accountNum(32132).build();
     private final HederaKey updateAccountKey = asHederaKey(A_COMPLEX_KEY).get();
 
     @Mock
@@ -51,7 +51,8 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     @Test
     void cryptoUpdateVanilla() {
         final var txn = cryptoUpdateTransaction(payer, updateAccountId);
-        given(accounts.get(EntityNumVirtualKey.fromLong(updateAccountId.getAccountNum())))
+        given(accounts.get(EntityNumVirtualKey.fromLong(
+                        updateAccountId.accountNum().get())))
                 .willReturn(updateAccount);
         given(updateAccount.getAccountKey()).willReturn((JKey) updateAccountKey);
         given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(false);
@@ -67,7 +68,8 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     @Test
     void cryptoUpdateNewSignatureKeyWaivedVanilla() {
         final var txn = cryptoUpdateTransaction(payer, updateAccountId);
-        given(accounts.get(EntityNumVirtualKey.fromLong(updateAccountId.getAccountNum())))
+        given(accounts.get(EntityNumVirtualKey.fromLong(
+                        updateAccountId.accountNum().get())))
                 .willReturn(updateAccount);
         given(updateAccount.getAccountKey()).willReturn((JKey) updateAccountKey);
         given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(true);
@@ -96,7 +98,8 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     @Test
     void cryptoUpdatePayerMissingFails() {
         final var txn = cryptoUpdateTransaction(updateAccountId, updateAccountId);
-        given(accounts.get(EntityNumVirtualKey.fromLong(updateAccountId.getAccountNum())))
+        given(accounts.get(EntityNumVirtualKey.fromLong(
+                        updateAccountId.accountNum().get())))
                 .willReturn(null);
 
         given(waivers.isNewKeySignatureWaived(txn, updateAccountId)).willReturn(false);
@@ -111,7 +114,8 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     @Test
     void cryptoUpdatePayerMissingFailsWhenNoOtherSigsRequired() {
         final var txn = cryptoUpdateTransaction(updateAccountId, updateAccountId);
-        given(accounts.get(EntityNumVirtualKey.fromLong(updateAccountId.getAccountNum())))
+        given(accounts.get(EntityNumVirtualKey.fromLong(
+                        updateAccountId.accountNum().get())))
                 .willReturn(null);
 
         given(waivers.isNewKeySignatureWaived(txn, updateAccountId)).willReturn(true);
@@ -126,7 +130,8 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     @Test
     void cryptoUpdateUpdateAccountMissingFails() {
         final var txn = cryptoUpdateTransaction(payer, updateAccountId);
-        given(accounts.get(EntityNumVirtualKey.fromLong(updateAccountId.getAccountNum())))
+        given(accounts.get(EntityNumVirtualKey.fromLong(
+                        updateAccountId.accountNum().get())))
                 .willReturn(null);
 
         given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(true);
@@ -148,14 +153,14 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
             setUpPayer();
         }
         final var transactionID =
-                TransactionID.newBuilder().setAccountID(payerId).setTransactionValidStart(consensusTimestamp);
+                TransactionID.newBuilder().accountID(payerId).transactionValidStart(consensusTimestamp);
         final var updateTxnBody = CryptoUpdateTransactionBody.newBuilder()
-                .setAccountIDToUpdate(accountToUpdate)
-                .setKey(key)
+                .accountIDToUpdate(accountToUpdate)
+                .key(key)
                 .build();
         return TransactionBody.newBuilder()
-                .setTransactionID(transactionID)
-                .setCryptoUpdateAccount(updateTxnBody)
+                .transactionID(transactionID)
+                .cryptoUpdateAccount(updateTxnBody)
                 .build();
     }
 }

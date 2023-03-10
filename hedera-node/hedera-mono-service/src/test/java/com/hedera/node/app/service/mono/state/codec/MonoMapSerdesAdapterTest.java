@@ -61,7 +61,7 @@ class MonoMapSerdesAdapterTest {
         final var bais = new ByteArrayInputStream(baos.toByteArray());
         final var unusableIn = DataBuffer.wrap(ByteBuffer.wrap(baos.toByteArray()));
         final var in = new DataInputStream(bais);
-        in.reset();  // without this line, the test fails
+        in.reset(); // without this line, the test fails
 
         assertThrows(IllegalArgumentException.class, () -> longSerdes.parse(unusableIn));
         final var parsedLongValue = longSerdes.parse(in);
@@ -73,8 +73,8 @@ class MonoMapSerdesAdapterTest {
 
     @Test
     void mustUseRecognizableDataInputAndOutputForVirtualKeys() {
-        final var subject = MonoMapCodecAdapter.codecForVirtualKey(
-                VirtualBlobKey.CURRENT_VERSION, VirtualBlobKey::new, SERIALIZER);
+        final var subject =
+                MonoMapCodecAdapter.codecForVirtualKey(VirtualBlobKey.CURRENT_VERSION, VirtualBlobKey::new, SERIALIZER);
 
         assertThrows(IllegalArgumentException.class, () -> subject.parse(input));
         final var keyToFailWith = new VirtualBlobKey();

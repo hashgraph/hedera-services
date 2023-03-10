@@ -19,7 +19,6 @@ package com.hedera.node.app.service.token.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ALIAS_IS_IMMUTABLE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAlias;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -31,7 +30,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -51,8 +50,8 @@ public class CryptoTransferHandler implements TransactionHandler {
     public CryptoTransferHandler() {}
 
     /**
-     * Validates a {@link com.hederahashgraph.api.proto.java.CryptoTransfer} that is part of a
-     * {@link com.hederahashgraph.api.proto.java.Query}.
+     * Validates a {@link CryptoTransfer} that is part of a
+     * {@link com.hedera.hapi.node.base.Query}.
      *
      * @param txn the {@link TransactionBody} of the {@code CryptoTransfer}
      * @throws PreCheckException if validation fails
@@ -201,8 +200,8 @@ public class CryptoTransferHandler implements TransactionHandler {
     private boolean receivesFungibleValue(
             final AccountID target, final CryptoTransferTransactionBody op, final ReadableAccountStore accountStore) {
         for (var adjust : op.transfers().accountAmounts()) {
-            final var unaliasedAccount = accountStore.getAccount(adjust.accountID());
-            final var unaliasedTarget = accountStore.getAccount(target);
+            final var unaliasedAccount = accountStore.getAccountById(adjust.accountID());
+            final var unaliasedTarget = accountStore.getAccountById(target);
             if (unaliasedAccount.isPresent()
                     && unaliasedTarget.isPresent()
                     && adjust.amount() > 0
@@ -212,8 +211,8 @@ public class CryptoTransferHandler implements TransactionHandler {
         }
         for (var transfers : op.tokenTransfers()) {
             for (var adjust : transfers.transfers()) {
-                final var unaliasedAccount = accountStore.getAccount(adjust.accountID());
-                final var unaliasedTarget = accountStore.getAccount(target);
+                final var unaliasedAccount = accountStore.getAccountById(adjust.accountID());
+                final var unaliasedTarget = accountStore.getAccountById(target);
                 if (unaliasedAccount.isPresent()
                         && unaliasedTarget.isPresent()
                         && adjust.amount() > 0

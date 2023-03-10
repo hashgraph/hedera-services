@@ -60,20 +60,20 @@ class DataBufferTest {
     @Test
     void canReadThings() {
         buffer = ByteBuffer.wrap(new byte[] {
-                1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
-                1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
-                1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
-                1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
         });
         subject = DataBuffer.wrap(buffer);
 
-//        assertTrue(subject.readBoolean());
+        //        assertTrue(subject.readBoolean());
         subject.readByte();
         assertEquals(2, subject.readByte());
         assertEquals(3, subject.readUnsignedByte());
-//        assertEquals(1029, subject.readShort());
-//        assertEquals(1543, subject.readUnsignedShort());
-//        assertEquals(2057, subject.readChar());
+        //        assertEquals(1029, subject.readShort());
+        //        assertEquals(1543, subject.readUnsignedShort());
+        //        assertEquals(2057, subject.readChar());
         subject.readBytes(6);
         assertEquals(66051, subject.readInt());
         assertEquals(289644378304610305L, subject.readLong());
@@ -87,20 +87,20 @@ class DataBufferTest {
         buffer = ByteBuffer.wrap(new byte[] {0});
         subject = DataBuffer.wrap(buffer);
 
-//        assertFalse(subject.readBoolean());
+        //        assertFalse(subject.readBoolean());
     }
 
     @Test
     @Disabled("Enable once reading Strings is supported")
     void cannotReadStrings() {
-//        assertThrows(UnsupportedOperationException.class, () -> subject.readLine());
-//        assertThrows(UnsupportedOperationException.class, () -> subject.readUTF());
+        //        assertThrows(UnsupportedOperationException.class, () -> subject.readLine());
+        //        assertThrows(UnsupportedOperationException.class, () -> subject.readUTF());
     }
 
     @Test
     @Disabled("Enable once direct access to buffer is supported")
     void returnsDelegate() {
-//        assertSame(buffer, subject.getBuffer());
+        //        assertSame(buffer, subject.getBuffer());
     }
 
     @Test
@@ -112,11 +112,11 @@ class DataBufferTest {
         subject.writeByte((byte) 12);
         subject.writeBytes(bytes);
         subject.writeBytes(bytes, 1, 3);
-//        subject.writeBoolean(true);
-//        subject.writeBoolean(false);
+        //        subject.writeBoolean(true);
+        //        subject.writeBoolean(false);
         subject.writeByte((byte) 42);
-//        subject.writeShort(13);
-//        subject.writeChar(14);
+        //        subject.writeShort(13);
+        //        subject.writeChar(14);
         subject.writeInt(15);
         subject.writeLong(16L);
         subject.writeFloat(17.0f);
@@ -125,11 +125,11 @@ class DataBufferTest {
         inOrder.verify(buffer).put((byte) 12);
         inOrder.verify(buffer).put(bytes);
         inOrder.verify(buffer).put(bytes, 1, 3);
-//        inOrder.verify(buffer).put((byte) 1);
-//        inOrder.verify(buffer).put((byte) 0);
+        //        inOrder.verify(buffer).put((byte) 1);
+        //        inOrder.verify(buffer).put((byte) 0);
         inOrder.verify(buffer).put((byte) 42);
-//        inOrder.verify(buffer).putShort((short) 13);
-//        inOrder.verify(buffer).putChar((char) 14);
+        //        inOrder.verify(buffer).putShort((short) 13);
+        //        inOrder.verify(buffer).putChar((char) 14);
         inOrder.verify(buffer).putInt(15);
         inOrder.verify(buffer).putLong(16L);
         inOrder.verify(buffer).putFloat(17.0f);
@@ -139,8 +139,8 @@ class DataBufferTest {
     @Test
     @Disabled("Enable once writing Strings is supported")
     void cannotWriteStrings() {
-//        assertThrows(UnsupportedOperationException.class, () -> subject.writeBytes("foo"));
-//        assertThrows(UnsupportedOperationException.class, () -> subject.writeChars("foo"));
-//        assertThrows(UnsupportedOperationException.class, () -> subject.writeUTF("foo"));
+        //        assertThrows(UnsupportedOperationException.class, () -> subject.writeBytes("foo"));
+        //        assertThrows(UnsupportedOperationException.class, () -> subject.writeChars("foo"));
+        //        assertThrows(UnsupportedOperationException.class, () -> subject.writeUTF("foo"));
     }
 }

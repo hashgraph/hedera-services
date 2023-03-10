@@ -20,7 +20,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -38,7 +37,7 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
     public TokenFreezeAccountHandler() {}
 
     /**
-     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#TokenFreezeAccount}
+     * Pre-handles a {@link com.hedera.hapi.node.base.HederaFunctionality#TokenFreezeAccount}
      * transaction, returning the metadata required to, at minimum, validate the signatures of all
      * required signing keys.
      *
