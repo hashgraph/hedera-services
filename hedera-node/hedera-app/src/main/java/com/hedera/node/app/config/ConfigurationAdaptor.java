@@ -16,11 +16,11 @@
 
 package com.hedera.node.app.config;
 
-import com.hedera.node.app.spi.config.PropertyNames;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.spi.config.GlobalConfig;
 import com.hedera.node.app.spi.config.NodeConfig;
 import com.hedera.node.app.spi.config.Profile;
+import com.hedera.node.app.spi.config.PropertyNames;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
@@ -167,11 +167,11 @@ public class ConfigurationAdaptor implements Configuration {
         return new NodeConfig(
                 propertySource.getTypedProperty(Integer.class, PropertyNames.GRPC_PORT),
                 propertySource.getTypedProperty(Integer.class, PropertyNames.GRPC_TLS_PORT),
-                propertySource.getTypedProperty(Long.class,
-                        PropertyNames.STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS),
+                propertySource.getTypedProperty(
+                        Long.class, PropertyNames.STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS),
                 propertySource.getTypedProperty(Long.class, PropertyNames.STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS),
-                propertySource.getTypedProperty(Long.class,
-                        PropertyNames.STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS),
+                propertySource.getTypedProperty(
+                        Long.class, PropertyNames.STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS),
                 propertySource.getTypedProperty(Profile.class, PropertyNames.HEDERA_PROFILES_ACTIVE),
                 propertySource.getTypedProperty(Double.class, PropertyNames.STATS_SPEEDOMETER_HALF_LIFE_SECS),
                 propertySource.getTypedProperty(Double.class, PropertyNames.STATS_RUNNING_AVG_HALF_LIFE_SECS),

@@ -17,9 +17,6 @@
 package com.hedera.node.app.state.merkle;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.state.merkle.adapters.MerkleMapLikeAdapter;
-import com.hedera.node.app.state.merkle.adapters.ScheduledTransactionsAdapter;
-import com.hedera.node.app.state.merkle.adapters.VirtualMapLikeAdapter;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.contract.ContractService;
@@ -75,6 +72,9 @@ import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.RecordCache;
+import com.hedera.node.app.state.merkle.adapters.MerkleMapLikeAdapter;
+import com.hedera.node.app.state.merkle.adapters.ScheduledTransactionsAdapter;
+import com.hedera.node.app.state.merkle.adapters.VirtualMapLikeAdapter;
 import com.hedera.node.app.state.merkle.disk.OnDiskReadableKVState;
 import com.hedera.node.app.state.merkle.disk.OnDiskWritableKVState;
 import com.hedera.node.app.state.merkle.memory.InMemoryReadableKVState;
@@ -643,8 +643,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      */
     @Deprecated(forRemoval = true)
     public StateChildrenProvider getStateChildrenProvider(
-            @NonNull final Platform platform,
-            @NonNull final Map<ByteString, EntityNum> aliases) {
+            @NonNull final Platform platform, @NonNull final Map<ByteString, EntityNum> aliases) {
         return new StateChildrenProvider() {
             @Override
             @SuppressWarnings("unchecked")
@@ -713,8 +712,8 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             @Override
             public ScheduledTransactions scheduleTxs() {
                 return new ScheduledTransactionsAdapter(
-                        ((SingletonNode<MerkleScheduledTransactionsState>)
-                                getChild(findNodeIndex(ScheduleService.NAME, ScheduleServiceImpl.SCHEDULING_STATE_KEY)))
+                        ((SingletonNode<MerkleScheduledTransactionsState>) getChild(
+                                        findNodeIndex(ScheduleService.NAME, ScheduleServiceImpl.SCHEDULING_STATE_KEY)))
                                 .getValue(),
                         MerkleMapLikeAdapter.unwrapping(
                                 (StateMetadata<EntityNumVirtualKey, ScheduleVirtualValue>)
@@ -722,19 +721,23 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
                                 getChild(findNodeIndex(ScheduleService.NAME, ScheduleServiceImpl.SCHEDULES_BY_ID_KEY))),
                         MerkleMapLikeAdapter.unwrapping(
                                 (StateMetadata<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue>)
-                                        services.get(ScheduleService.NAME).get(ScheduleServiceImpl.SCHEDULES_BY_EXPIRY_SEC_KEY),
-                                getChild(findNodeIndex(ScheduleService.NAME, ScheduleServiceImpl.SCHEDULES_BY_EXPIRY_SEC_KEY))),
+                                        services.get(ScheduleService.NAME)
+                                                .get(ScheduleServiceImpl.SCHEDULES_BY_EXPIRY_SEC_KEY),
+                                getChild(findNodeIndex(
+                                        ScheduleService.NAME, ScheduleServiceImpl.SCHEDULES_BY_EXPIRY_SEC_KEY))),
                         MerkleMapLikeAdapter.unwrapping(
                                 (StateMetadata<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue>)
-                                        services.get(ScheduleService.NAME).get(ScheduleServiceImpl.SCHEDULES_BY_EQUALITY_KEY),
-                                getChild(findNodeIndex(ScheduleService.NAME, ScheduleServiceImpl.SCHEDULES_BY_EQUALITY_KEY))));
+                                        services.get(ScheduleService.NAME)
+                                                .get(ScheduleServiceImpl.SCHEDULES_BY_EQUALITY_KEY),
+                                getChild(findNodeIndex(
+                                        ScheduleService.NAME, ScheduleServiceImpl.SCHEDULES_BY_EQUALITY_KEY))));
             }
 
             @Override
             @SuppressWarnings("unchecked")
             public MerkleNetworkContext networkCtx() {
                 return ((SingletonNode<MerkleNetworkContext>)
-                        getChild(findNodeIndex(NetworkService.NAME, NetworkServiceImpl.CONTEXT_KEY)))
+                                getChild(findNodeIndex(NetworkService.NAME, NetworkServiceImpl.CONTEXT_KEY)))
                         .getValue();
             }
 
@@ -747,7 +750,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             @Override
             public MerkleSpecialFiles specialFiles() {
                 return ((SingletonNode<MerkleSpecialFiles>)
-                        getChild(findNodeIndex(NetworkService.NAME, NetworkServiceImpl.SPECIAL_FILES_KEY)))
+                                getChild(findNodeIndex(NetworkService.NAME, NetworkServiceImpl.SPECIAL_FILES_KEY)))
                         .getValue();
             }
 
@@ -768,7 +771,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             @Override
             public RecordsRunningHashLeaf runningHashLeaf() {
                 return ((SingletonNode<RecordsRunningHashLeaf>)
-                        getChild(findNodeIndex(NetworkService.NAME, NetworkServiceImpl.RUNNING_HASHES_KEY)))
+                                getChild(findNodeIndex(NetworkService.NAME, NetworkServiceImpl.RUNNING_HASHES_KEY)))
                         .getValue();
             }
 

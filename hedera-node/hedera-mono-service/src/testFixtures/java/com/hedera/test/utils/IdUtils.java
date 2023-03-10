@@ -19,8 +19,6 @@ package com.hedera.test.utils;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.ledger.BalanceChange;
 import com.hedera.node.app.service.mono.store.models.Id;
-import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.pbj.runtime.io.Bytes;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -64,15 +62,6 @@ public class IdUtils {
                 .build();
     }
 
-    public static com.hedera.hapi.node.base.AccountID asPbjAccount(String v) {
-        long[] nativeParts = asDotDelimitedLongArray(v);
-        return com.hedera.hapi.node.base.AccountID.newBuilder()
-                .shardNum(nativeParts[0])
-                .realmNum(nativeParts[1])
-                .accountNum(nativeParts[2])
-                .build();
-    }
-
     public static AccountID asAliasAccount(ByteString alias) {
         return AccountID.newBuilder()
                 .setShardNum(0)
@@ -80,12 +69,9 @@ public class IdUtils {
                 .setAlias(alias)
                 .build();
     }
+
     public static AccountID asAccountWithAlias(String alias) {
         return AccountID.newBuilder().setAlias(ByteString.copyFromUtf8(alias)).build();
-    }
-
-    public static AccountID fromKey(EntityNum mk) {
-        return asAccount(String.format("0.0.%d", mk.longValue()));
     }
 
     public static ContractID asContract(String v) {
@@ -114,6 +100,7 @@ public class IdUtils {
                 .setTokenNum(nativeParts[2])
                 .build();
     }
+
     public static ScheduleID asSchedule(String v) {
         long[] nativeParts = asDotDelimitedLongArray(v);
         return ScheduleID.newBuilder()

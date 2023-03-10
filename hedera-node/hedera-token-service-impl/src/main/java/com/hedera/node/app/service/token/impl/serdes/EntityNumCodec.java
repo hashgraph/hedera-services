@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.token.impl.serdes;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.DataInput;
@@ -27,17 +29,20 @@ public class EntityNumCodec implements Codec<EntityNum> {
     @NonNull
     @Override
     public EntityNum parse(final @NonNull DataInput input) throws IOException {
+        requireNonNull(input);
         return new EntityNum(input.readInt());
     }
 
     @NonNull
     @Override
     public EntityNum parseStrict(@NonNull DataInput dataInput) throws IOException {
-        return parse(dataInput);
+        return parse(requireNonNull(dataInput));
     }
 
     @Override
     public void write(final @NonNull EntityNum item, final @NonNull DataOutput output) throws IOException {
+        requireNonNull(item);
+        requireNonNull(output);
         output.writeInt(item.intValue());
     }
 

@@ -16,13 +16,14 @@
 
 package com.hedera.node.app.service.mono.state.codec;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.SplittableRandom;
 import java.util.stream.Stream;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.jupiter.api.Test;
 
 class VirtualKeySerdesAdapterTest extends AbstractVirtualCodecTest<VirtualBlobKey> {
     private static final int NUM_INSTANCES = 42;
@@ -30,8 +31,7 @@ class VirtualKeySerdesAdapterTest extends AbstractVirtualCodecTest<VirtualBlobKe
     private static final VirtualBlobKeySerializer SERIALIZER = new VirtualBlobKeySerializer();
 
     public VirtualKeySerdesAdapterTest() {
-        super(MonoMapCodecAdapter.codecForVirtualKey(
-                VirtualBlobKey.CURRENT_VERSION, VirtualBlobKey::new, SERIALIZER));
+        super(MonoMapCodecAdapter.codecForVirtualKey(VirtualBlobKey.CURRENT_VERSION, VirtualBlobKey::new, SERIALIZER));
     }
 
     @Test

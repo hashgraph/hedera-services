@@ -22,7 +22,6 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
-import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
@@ -35,9 +34,9 @@ import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.spi.meta.HandleContext;
-import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -106,8 +105,10 @@ public class TransactionDispatcher {
         switch (function) {
             case CONSENSUS_CREATE_TOPIC -> dispatchConsensusCreateTopic(
                     txn.consensusCreateTopic().orElseThrow(), topicStore, usageLimits);
-            case CONSENSUS_UPDATE_TOPIC -> dispatchConsensusUpdateTopic(txn.consensusUpdateTopic().orElseThrow(), topicStore);
-            case CONSENSUS_DELETE_TOPIC -> dispatchConsensusDeleteTopic(txn.consensusDeleteTopic().orElseThrow(), topicStore);
+            case CONSENSUS_UPDATE_TOPIC -> dispatchConsensusUpdateTopic(
+                    txn.consensusUpdateTopic().orElseThrow(), topicStore);
+            case CONSENSUS_DELETE_TOPIC -> dispatchConsensusDeleteTopic(
+                    txn.consensusDeleteTopic().orElseThrow(), topicStore);
             case CONSENSUS_SUBMIT_MESSAGE -> dispatchConsensusSubmitMessage(txn, topicStore);
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
         }
@@ -121,7 +122,7 @@ public class TransactionDispatcher {
      * @param context the context of the pre-handle workflow
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-//    @SuppressWarnings("java:S1479") // ignore too many branches warning
+    //    @SuppressWarnings("java:S1479") // ignore too many branches warning
     public void dispatchPreHandle(
             @NonNull final ReadableStoreFactory storeFactory, @NonNull final PreHandleContext context) {
         requireNonNull(storeFactory);
@@ -129,7 +130,8 @@ public class TransactionDispatcher {
 
         final var txBody = context.getTxn();
         switch (txBody.data().kind()) {
-            case CONSENSUS_CREATE_TOPIC -> handlers.consensusCreateTopicHandler().preHandle(context);
+            case CONSENSUS_CREATE_TOPIC -> handlers.consensusCreateTopicHandler()
+                    .preHandle(context);
             case CONSENSUS_UPDATE_TOPIC -> handlers.consensusUpdateTopicHandler()
                     .preHandle(context, storeFactory.createTopicStore());
             case CONSENSUS_DELETE_TOPIC -> handlers.consensusDeleteTopicHandler()
@@ -153,7 +155,8 @@ public class TransactionDispatcher {
             case CRYPTO_DELETE_ALLOWANCE -> handlers.cryptoDeleteAllowanceHandler()
                     .preHandle(context);
             case CRYPTO_ADD_LIVE_HASH -> handlers.cryptoAddLiveHashHandler().preHandle(context);
-            case CRYPTO_DELETE_LIVE_HASH -> handlers.cryptoDeleteLiveHashHandler().preHandle(context);
+            case CRYPTO_DELETE_LIVE_HASH -> handlers.cryptoDeleteLiveHashHandler()
+                    .preHandle(context);
 
             case FILE_CREATE -> handlers.fileCreateHandler().preHandle(context);
             case FILE_UPDATE -> handlers.fileUpdateHandler().preHandle(context);
@@ -174,8 +177,7 @@ public class TransactionDispatcher {
             case TOKEN_UPDATE -> handlers.tokenUpdateHandler().preHandle(context, storeFactory.createTokenStore());
             case TOKEN_MINT -> handlers.tokenMintHandler().preHandle(context, storeFactory.createTokenStore());
             case TOKEN_BURN -> handlers.tokenBurnHandler().preHandle(context, storeFactory.createTokenStore());
-            case TOKEN_DELETION -> handlers.tokenDeleteHandler()
-                    .preHandle(context, storeFactory.createTokenStore());
+            case TOKEN_DELETION -> handlers.tokenDeleteHandler().preHandle(context, storeFactory.createTokenStore());
             case TOKEN_WIPE -> handlers.tokenAccountWipeHandler().preHandle(context, storeFactory.createTokenStore());
             case TOKEN_FREEZE -> handlers.tokenFreezeAccountHandler()
                     .preHandle(context, storeFactory.createTokenStore());
@@ -186,7 +188,8 @@ public class TransactionDispatcher {
             case TOKEN_REVOKE_KYC -> handlers.tokenRevokeKycFromAccountHandler()
                     .preHandle(context, storeFactory.createTokenStore());
             case TOKEN_ASSOCIATE -> handlers.tokenAssociateToAccountHandler().preHandle(context);
-            case TOKEN_DISSOCIATE -> handlers.tokenDissociateFromAccountHandler().preHandle(context);
+            case TOKEN_DISSOCIATE -> handlers.tokenDissociateFromAccountHandler()
+                    .preHandle(context);
             case TOKEN_FEE_SCHEDULE_UPDATE -> handlers.tokenFeeScheduleUpdateHandler()
                     .preHandle(context, storeFactory.createTokenStore());
             case TOKEN_PAUSE -> handlers.tokenPauseHandler().preHandle(context);
@@ -250,9 +253,8 @@ public class TransactionDispatcher {
                         dynamicProperties.maxNumTopics(), dynamicProperties.messageMaxBytesAllowed()),
                 recordBuilder,
                 topicStore);
-        txnCtx.setCreated(PbjConverter.fromPbj(TopicID.newBuilder()
-                .topicNum(recordBuilder.getCreatedTopic())
-                .build()));
+        txnCtx.setCreated(PbjConverter.fromPbj(
+                TopicID.newBuilder().topicNum(recordBuilder.getCreatedTopic()).build()));
         usageLimits.refreshTopics();
         // TODO: Commit will be called in workflow or some other place when handle workflow is implemented
         // This is temporary solution to make sure that topic is created

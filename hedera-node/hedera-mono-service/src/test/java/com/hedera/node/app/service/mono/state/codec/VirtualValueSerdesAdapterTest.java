@@ -16,11 +16,12 @@
 
 package com.hedera.node.app.service.mono.state.codec;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.nio.ByteBuffer;
 import java.util.SplittableRandom;
 import java.util.stream.Stream;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.jupiter.api.Test;
 
 public class VirtualValueSerdesAdapterTest extends AbstractVirtualCodecTest<VirtualBlobValue> {
     private static final int NUM_INSTANCES = 42;

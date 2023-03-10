@@ -57,7 +57,8 @@ public class AdaptedMonoTransitionRunner extends TransitionRunner {
         super(ids, txnCtx, lookup);
         this.dispatcher = Objects.requireNonNull(dispatcher);
         this.functionsToDispatch = Objects.requireNonNull(staticProperties).workflowsEnabled().stream()
-                .map(PbjConverter::toPbj).collect(Collectors.toSet());
+                .map(PbjConverter::toPbj)
+                .collect(Collectors.toSet());
         this.writableStoreFactory = Objects.requireNonNull(storeFactory);
     }
 

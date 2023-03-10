@@ -74,7 +74,8 @@ class ConsensusCreateTopicHandlerParityTest {
         final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_NO_ADDITIONAL_KEYS_SCENARIO);
 
         // when:
-        final var context = new PreHandleContext(keyLookup, PbjConverter.toPbj(txn), PbjConverter.toPbj(CUSTOM_PAYER_ACCOUNT));
+        final var context =
+                new PreHandleContext(keyLookup, PbjConverter.toPbj(txn), PbjConverter.toPbj(CUSTOM_PAYER_ACCOUNT));
         subject.preHandle(context);
 
         // then:
@@ -105,7 +106,8 @@ class ConsensusCreateTopicHandlerParityTest {
         final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_SCENARIO);
 
         // when:
-        final var context = new PreHandleContext(keyLookup, PbjConverter.toPbj(txn), PbjConverter.toPbj(CUSTOM_PAYER_ACCOUNT));
+        final var context =
+                new PreHandleContext(keyLookup, PbjConverter.toPbj(txn), PbjConverter.toPbj(CUSTOM_PAYER_ACCOUNT));
         subject.preHandle(context);
 
         // then:
@@ -137,7 +139,8 @@ class ConsensusCreateTopicHandlerParityTest {
         final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_SCENARIO);
 
         // when:
-        final var context = new PreHandleContext(keyLookup, PbjConverter.toPbj(txn), PbjConverter.toPbj(CUSTOM_PAYER_ACCOUNT));
+        final var context =
+                new PreHandleContext(keyLookup, PbjConverter.toPbj(txn), PbjConverter.toPbj(CUSTOM_PAYER_ACCOUNT));
         subject.preHandle(context);
 
         // then:
@@ -153,7 +156,8 @@ class ConsensusCreateTopicHandlerParityTest {
         final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_CUSTOM_PAYER_SCENARIO);
 
         // when:
-        final var context = new PreHandleContext(keyLookup, PbjConverter.toPbj(txn), PbjConverter.toPbj(CUSTOM_PAYER_ACCOUNT));
+        final var context =
+                new PreHandleContext(keyLookup, PbjConverter.toPbj(txn), PbjConverter.toPbj(CUSTOM_PAYER_ACCOUNT));
         subject.preHandle(context);
 
         // then:
@@ -169,7 +173,8 @@ class ConsensusCreateTopicHandlerParityTest {
         final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_PAYER_SCENARIO);
 
         // when:
-        final var context = new PreHandleContext(keyLookup, PbjConverter.toPbj(txn), PbjConverter.toPbj(CUSTOM_PAYER_ACCOUNT));
+        final var context =
+                new PreHandleContext(keyLookup, PbjConverter.toPbj(txn), PbjConverter.toPbj(CUSTOM_PAYER_ACCOUNT));
         subject.preHandle(context);
 
         // then:
@@ -188,7 +193,8 @@ class ConsensusCreateTopicHandlerParityTest {
         final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_CUSTOM_PAYER_SCENARIO);
 
         // when:
-        final var context = new PreHandleContext(keyLookup, PbjConverter.toPbj(txn), PbjConverter.toPbj(CUSTOM_PAYER_ACCOUNT));
+        final var context =
+                new PreHandleContext(keyLookup, PbjConverter.toPbj(txn), PbjConverter.toPbj(CUSTOM_PAYER_ACCOUNT));
         subject.preHandle(context);
 
         // then:
@@ -204,7 +210,8 @@ class ConsensusCreateTopicHandlerParityTest {
         final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_CUSTOM_PAYER_SCENARIO);
 
         // when:
-        final var result = new PreHandleContext(keyLookup, PbjConverter.toPbj(txn), PbjConverter.toPbj(CUSTOM_PAYER_ACCOUNT));
+        final var result =
+                new PreHandleContext(keyLookup, PbjConverter.toPbj(txn), PbjConverter.toPbj(CUSTOM_PAYER_ACCOUNT));
         subject.preHandle(result);
 
         // then:
@@ -234,12 +241,12 @@ class ConsensusCreateTopicHandlerParityTest {
         final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_MISSING_AUTORENEW_ACCOUNT_SCENARIO);
 
         // when:
-        final var context = new PreHandleContext(keyLookup, PbjConverter.toPbj(txn), PbjConverter.toPbj(CUSTOM_PAYER_ACCOUNT));
+        final var context =
+                new PreHandleContext(keyLookup, PbjConverter.toPbj(txn), PbjConverter.toPbj(CUSTOM_PAYER_ACCOUNT));
         subject.preHandle(context);
 
         // then:
         Assertions.assertThat(context.failed()).isTrue();
         Assertions.assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
     }
-
- }
+}

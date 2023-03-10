@@ -16,14 +16,15 @@
 
 package com.hedera.node.app.authorization;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermissions;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static java.util.Objects.requireNonNull;
 
 /**
  * An implementation of {@link Authorizer} based on the existing mono-service {@link HapiOpPermissions} facility.

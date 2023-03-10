@@ -16,11 +16,16 @@
 
 package com.hedera.node.app.signature;
 
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.exception.InvalidAccountIDException;
 import com.hedera.node.app.service.mono.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.node.app.service.mono.sigs.Expansion;
@@ -40,10 +45,6 @@ import java.util.Objects;
 import java.util.function.Function;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 
 /**
  * Implementation of {@link SignaturePreparer} that delegates to the respective mono-service's functionality

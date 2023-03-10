@@ -28,7 +28,7 @@ configurations.all {
 }
 
 dependencies {
-  implementation(project(mapOf("path" to ":hedera-node:hapi")))
+  implementation(project(":hedera-node:hapi"))
   annotationProcessor(libs.dagger.compiler)
   api(project(":hedera-node:hedera-token-service"))
   implementation(project(":hedera-node:hedera-mono-service"))

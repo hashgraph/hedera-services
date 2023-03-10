@@ -17,13 +17,15 @@
 package com.hedera.test.utils;
 
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
+import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ThresholdKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.pbj.runtime.io.Bytes;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.function.Function;
 
@@ -41,14 +43,16 @@ public class KeyUtils {
             .thresholdKey(ThresholdKey.newBuilder()
                     .threshold(2)
                     .keys(KeyList.newBuilder()
-                            .keys(KEY_BUILDER.apply(A_NAME).build(),
+                            .keys(
+                                    KEY_BUILDER.apply(A_NAME).build(),
                                     KEY_BUILDER.apply(B_NAME).build(),
                                     KEY_BUILDER.apply(C_NAME).build())
                             .build()))
             .build();
     public static final Key A_KEY_LIST = Key.newBuilder()
             .keyList(KeyList.newBuilder()
-                    .keys(KEY_BUILDER.apply(A_NAME).build(),
+                    .keys(
+                            KEY_BUILDER.apply(A_NAME).build(),
                             KEY_BUILDER.apply(B_NAME).build(),
                             KEY_BUILDER.apply(C_NAME).build()))
             .build();
@@ -56,7 +60,8 @@ public class KeyUtils {
             .thresholdKey(ThresholdKey.newBuilder()
                     .threshold(2)
                     .keys(KeyList.newBuilder()
-                            .keys(KEY_BUILDER.apply(A_NAME).build(),
+                            .keys(
+                                    KEY_BUILDER.apply(A_NAME).build(),
                                     KEY_BUILDER.apply(B_NAME).build(),
                                     A_THRESHOLD_KEY)))
             .build();
@@ -64,7 +69,8 @@ public class KeyUtils {
             .thresholdKey(ThresholdKey.newBuilder()
                     .threshold(2)
                     .keys(KeyList.newBuilder()
-                            .keys(KEY_BUILDER.apply(A_NAME).build(),
+                            .keys(
+                                    KEY_BUILDER.apply(A_NAME).build(),
                                     KEY_BUILDER.apply(B_NAME).build(),
                                     A_COMPLEX_KEY)))
             .build();
@@ -72,7 +78,8 @@ public class KeyUtils {
             .thresholdKey(ThresholdKey.newBuilder()
                     .threshold(2)
                     .keys(KeyList.newBuilder()
-                            .keys(KEY_BUILDER.apply(A_NAME).build(),
+                            .keys(
+                                    KEY_BUILDER.apply(A_NAME).build(),
                                     KEY_BUILDER.apply(B_NAME).build(),
                                     B_COMPLEX_KEY)))
             .build();
@@ -83,8 +90,8 @@ public class KeyUtils {
                     try {
                         return JKey.mapJKey((JKey) jKey);
                     } catch (Exception ignore) {
+                        throw new AssertionError("All keys should be mappable!");
                     }
-                    throw new AssertionError("All keys should be mappable!");
                 })
                 .toList();
     }
@@ -97,22 +104,24 @@ public class KeyUtils {
         }
     }
 
-    public static com.hedera.hapi.node.base.Key sanityRestoredToPbj(HederaKey jKey) {
+    public static com.hedera.hapi.node.base.Key sanityRestoredToPbj(@NonNull HederaKey jKey) {
+        requireNonNull(jKey);
         try {
             return toPbj(JKey.mapJKey((JKey) jKey));
         } catch (Exception ignore) {
-            throw new AssertionError("All keys should be mappable!");
+            throw new AssertionError("All keys should be mappable! But failed for " + jKey);
         }
     }
 
-    public static List<com.hedera.hapi.node.base.Key> sanityRestoredToPbj(List<? extends HederaKey> jKeys) {
+    public static List<com.hedera.hapi.node.base.Key> sanityRestoredToPbj(@NonNull List<? extends HederaKey> jKeys) {
+        requireNonNull(jKeys);
         return jKeys.stream()
                 .map(jKey -> {
                     try {
                         return toPbj(JKey.mapJKey((JKey) jKey));
                     } catch (Exception ignore) {
+                        throw new AssertionError("All keys should be mappable! But failed for " + jKey);
                     }
-                    throw new AssertionError("All keys should be mappable!");
                 })
                 .toList();
     }

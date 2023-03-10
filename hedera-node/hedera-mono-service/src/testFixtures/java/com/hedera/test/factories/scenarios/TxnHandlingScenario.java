@@ -39,18 +39,14 @@ import static com.hedera.test.utils.IdUtils.asFile;
 import static com.hedera.test.utils.IdUtils.asSchedule;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.IdUtils.asTopic;
-import static com.hederahashgraph.api.proto.java.TransactionBody.DataCase.CRYPTOCREATEACCOUNT;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
-import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.files.HFileMeta;
 import com.hedera.node.app.service.mono.files.HederaFs;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
@@ -91,6 +87,7 @@ import org.apache.commons.codec.DecoderException;
 
 public interface TxnHandlingScenario {
     PlatformTxnAccessor platformTxn() throws Throwable;
+
     KeyFactory overlapFactory = new KeyFactory(OverlappingKeyGenerator.withDefaultOverlaps());
 
     default MerkleMap<EntityNum, MerkleAccount> accounts() {

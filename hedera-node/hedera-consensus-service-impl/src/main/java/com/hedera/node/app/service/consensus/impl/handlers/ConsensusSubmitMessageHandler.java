@@ -16,23 +16,23 @@
 
 package com.hedera.node.app.service.consensus.impl.handlers;
 
-import static com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter.unwrapPbj;
-import static com.hedera.node.app.service.mono.state.merkle.MerkleTopic.RUNNING_HASH_VERSION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_MESSAGE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE;
+import static com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter.unwrapPbj;
+import static com.hedera.node.app.service.mono.state.merkle.MerkleTopic.RUNNING_HASH_VERSION;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
@@ -41,7 +41,6 @@ import com.hedera.node.app.service.consensus.impl.records.SubmitMessageRecordBui
 import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.pbj.runtime.io.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -137,9 +136,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
      * @param topic the topic to which the message is being submitted
      */
     private void validateTransaction(
-            final TransactionBody txn,
-            final ConsensusServiceConfig config,
-            final Optional<Topic> topic) {
+            final TransactionBody txn, final ConsensusServiceConfig config, final Optional<Topic> topic) {
         final var txnId = txn.transactionID();
         final var payer = txn.transactionID().accountID();
         final var op = txn.consensusSubmitMessage().get();
@@ -187,8 +184,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             }
 
             /* Validate if the transaction is submitting initial chunk,payer in initial transaction Id should be same as payer of the transaction */
-            if (1 == chunkInfo.number()
-                    && !chunkInfo.initialTransactionID().equals(txnId)) {
+            if (1 == chunkInfo.number() && !chunkInfo.initialTransactionID().equals(txnId)) {
                 throw new HandleStatusException(INVALID_CHUNK_TRANSACTION_ID);
             }
         }
