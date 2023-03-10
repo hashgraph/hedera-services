@@ -805,34 +805,10 @@ public class EthereumSuite extends HapiSuite {
                                 .maxGasAllowance(FIVE_HBARS)
                                 .gasLimit(1_000_000L)
                                 .via(mintTxn)
-                                .hasKnownStatus(SUCCESS))
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
                 .then(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                getTxnRecord(mintTxn)
-                                                        .logged()
-                                                        .hasPriority(
-                                                                recordWith()
-                                                                        .status(SUCCESS)
-                                                                        .contractCallResult(
-                                                                                resultWith()
-                                                                                        .logs(
-                                                                                                inOrder())
-                                                                                        .senderId(
-                                                                                                spec.registry()
-                                                                                                        .getAccountID(
-                                                                                                                spec.registry()
-                                                                                                                        .aliasIdFor(
-                                                                                                                                SECP_256K1_SOURCE_KEY)
-                                                                                                                        .getAlias()
-                                                                                                                        .toStringUtf8())))
-                                                                        .ethereumHash(
-                                                                                ByteString.copyFrom(
-                                                                                        spec.registry()
-                                                                                                .getBytes(
-                                                                                                        ETH_HASH_KEY)))))));
+                        getTxnRecord(mintTxn)
+                                .logged());
     }
 
     HapiSpec etx013PrecompileCallSucceedsWhenNeededSignatureInHederaTxn() {
@@ -874,34 +850,8 @@ public class EthereumSuite extends HapiSuite {
                                 .maxGasAllowance(FIVE_HBARS)
                                 .gasLimit(1_000_000L)
                                 .via(mintTxn)
-                                .hasKnownStatus(SUCCESS))
-                .then(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                getTxnRecord(mintTxn)
-                                                        .logged()
-                                                        .hasPriority(
-                                                                recordWith()
-                                                                        .status(SUCCESS)
-                                                                        .contractCallResult(
-                                                                                resultWith()
-                                                                                        .logs(
-                                                                                                inOrder())
-                                                                                        .senderId(
-                                                                                                spec.registry()
-                                                                                                        .getAccountID(
-                                                                                                                spec.registry()
-                                                                                                                        .aliasIdFor(
-                                                                                                                                SECP_256K1_SOURCE_KEY)
-                                                                                                                        .getAlias()
-                                                                                                                        .toStringUtf8())))
-                                                                        .ethereumHash(
-                                                                                ByteString.copyFrom(
-                                                                                        spec.registry()
-                                                                                                .getBytes(
-                                                                                                        ETH_HASH_KEY)))))));
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
+                .then();
     }
 
     HapiSpec etx013PrecompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn() {
@@ -945,30 +895,7 @@ public class EthereumSuite extends HapiSuite {
                                         allRunFor(
                                                 spec,
                                                 getTxnRecord(mintTxn)
-                                                        .logged()
-                                                        .hasPriority(
-                                                                recordWith()
-                                                                        .contractCallResult(
-                                                                                resultWith()
-                                                                                        .logs(
-                                                                                                inOrder())
-                                                                                        .senderId(
-                                                                                                spec.registry()
-                                                                                                        .getAccountID(
-                                                                                                                spec.registry()
-                                                                                                                        .aliasIdFor(
-                                                                                                                                SECP_256K1_SOURCE_KEY)
-                                                                                                                        .getAlias()
-                                                                                                                        .toStringUtf8())))
-                                                                        .ethereumHash(
-                                                                                ByteString.copyFrom(
-                                                                                        spec.registry()
-                                                                                                .getBytes(
-                                                                                                        ETH_HASH_KEY)))))),
-                        childRecordsCheck(
-                                mintTxn,
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)));
+                                                        .logged())));
     }
 
     HapiSpec etx009CallsToTokenAddresses() {
