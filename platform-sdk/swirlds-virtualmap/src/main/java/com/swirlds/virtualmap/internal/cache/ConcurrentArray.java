@@ -18,7 +18,9 @@ package com.swirlds.virtualmap.internal.cache;
 
 import com.swirlds.common.threading.futures.StandardFuture;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -154,7 +156,7 @@ final class ConcurrentArray<T> {
      * @throws IllegalArgumentException
      * 		if either array is mutable, or if they are the same instance.
      */
-    ConcurrentArray(ConcurrentArray<T> arrayOne, ConcurrentArray<T> arrayTwo) {
+    ConcurrentArray(final ConcurrentArray<T> arrayOne, final ConcurrentArray<T> arrayTwo) {
         Objects.requireNonNull(arrayOne);
         Objects.requireNonNull(arrayTwo);
 
@@ -170,12 +172,15 @@ final class ConcurrentArray<T> {
             throw new IllegalArgumentException("Both arguments should be distinct instances");
         }
 
-        // Copy the pointers to the arrays of arrayOne and arrayTwo into the dequeue. We know
-        // that both sources are immutable, so we can do this safely.
-        this.subarrayCapacity = 1;
-        arrays.addAll(arrayOne.arrays);
-        arrays.addAll(arrayTwo.arrays);
+        // Concurrent array created from existing arrays is immutable, so subarrayCapacity
+        // isn't used and can be set to any value
+        this.subarrayCapacity = 0;
+        // Merge all sub arrays from arrayOne and arrayTwo. They are immutable, so it can be
+        // safely done using System.arraycopy()
+        final SubArray<T> newArray = new SubArray<>(List.of(arrayOne.arrays, arrayTwo.arrays));
+        arrays.add(newArray);
         elementCount.addAndGet(arrayOne.size() + arrayTwo.size());
+
         immutable.set(true);
     }
 
@@ -366,6 +371,31 @@ final class ConcurrentArray<T> {
         @SuppressWarnings("unchecked")
         public SubArray(int capacity) {
             this.array = (T[]) new Object[capacity];
+        }
+
+        /**
+         * Creates a new SubArray from a list of other SubArrays. The resulting array
+         * is effectively read-only, as its size is equal to capacity, which is a sum of
+         * sizes of all the given sub arrays.
+         */
+        @SuppressWarnings("unchecked")
+        public SubArray(final List<Collection<SubArray<T>>> subArrays) {
+            int totalSize = 0;
+            for (final Collection<SubArray<T>> c : subArrays) {
+                for (SubArray<T> a : c) {
+                    totalSize += a.size.get();
+                }
+            }
+            this.array = (T[]) new Object[totalSize];
+            int offset = 0;
+            for (final Collection<SubArray<T>> c : subArrays) {
+                for (SubArray<T> a : c) {
+                    final int aSize = a.size.get();
+                    System.arraycopy(a.array, 0, array, offset, aSize);
+                    offset += aSize;
+                }
+            }
+            size.set(totalSize);
         }
 
         /**
