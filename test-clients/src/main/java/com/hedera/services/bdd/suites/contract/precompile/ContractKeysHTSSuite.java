@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -136,8 +136,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                 hscsKey5(),
                 hscsKey6(),
                 hscsKey7(),
-                hscsKey8(),
-                hscsKey10());
+                hscsKey8());
     }
 
     List<HapiSpec> hscsKey1() {

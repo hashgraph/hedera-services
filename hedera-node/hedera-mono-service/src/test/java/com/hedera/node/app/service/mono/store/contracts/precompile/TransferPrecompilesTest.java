@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,6 +56,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTes
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.nftsTransferList;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.nftsTransferListAliasReceiver;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.receiver;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.recipientAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.sender;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.timestamp;
@@ -159,6 +160,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Deque;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -167,6 +170,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -221,6 +225,10 @@ class TransferPrecompilesTest {
     @Mock private AssetsLoader assetLoader;
     @Mock private HbarCentExchange exchange;
     @Mock private ExchangeRate exchangeRate;
+
+    @Mock private Account acc;
+    @Mock private Deque<MessageFrame> stack;
+    @Mock private Iterator<MessageFrame> dequeIterator;
 
     private static final long TEST_SERVICE_FEE = 5_000_000;
     private static final long TEST_NETWORK_FEE = 400_000;
@@ -1982,6 +1990,9 @@ class TransferPrecompilesTest {
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+
+        givenIfDelegateCall();
+
         transferPrecompile
                 .when(() -> decodeTransferToken(eq(pretendArguments), any(), any()))
                 .thenThrow(new IndexOutOfBoundsException());
@@ -3029,5 +3040,14 @@ class TransferPrecompilesTest {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         given(wrappedLedgers.accounts()).willReturn(accounts);
+    }
+
+    private void givenIfDelegateCall() {
+        given(frame.getContractAddress()).willReturn(contractAddress);
+        given(frame.getRecipientAddress()).willReturn(recipientAddress);
+        given(worldUpdater.get(recipientAddress)).willReturn(acc);
+        given(acc.getNonce()).willReturn(-1L);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(frame.getMessageFrameStack().iterator()).willReturn(dequeIterator);
     }
 }

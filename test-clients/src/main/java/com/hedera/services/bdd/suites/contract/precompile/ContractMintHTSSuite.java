@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -175,6 +175,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                                         BigInteger.valueOf(amount))
                                 .via(FIRST_MINT_TXN)
                                 .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER)
                                 .alsoSigningWithFullPrefix(MULTI_KEY),
                         getTxnRecord(FIRST_MINT_TXN).andAllChildRecords().logged())
                 .then(
@@ -361,6 +362,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                                         "mintFungibleTokenWithEvent",
                                         BigInteger.valueOf(10))
                                 .via(FIRST_MINT_TXN)
+                                .gas(GAS_TO_OFFER)
                                 .payingWith(ACCOUNT)
                                 .alsoSigningWithFullPrefix(MULTI_KEY),
                         getTxnRecord(FIRST_MINT_TXN).andAllChildRecords().logged(),
@@ -589,7 +591,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                                                                                                     1L)
                                                                                             .withSerialNumbers(
                                                                                                     1L))
-                                                                            .gas(3_838_738L)
+                                                                            .gas(3_837_920L)
                                                                             .amount(0L)
                                                                             .functionParameters(
                                                                                     functionParameters()
@@ -686,6 +688,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                                                                 20L)
                                                         .payingWith(GENESIS)
                                                         .via(failedMintTxn)
+                                                        .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 getTxnRecord(failedMintTxn)
                                                         .andAllChildRecords()

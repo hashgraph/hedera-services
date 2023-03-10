@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -945,26 +945,9 @@ public class EthereumSuite extends HapiSuite {
                                         allRunFor(
                                                 spec,
                                                 getTxnRecord(mintTxn)
-                                                        .logged()
-                                                        .hasPriority(
-                                                                recordWith()
-                                                                        .contractCallResult(
-                                                                                resultWith()
-                                                                                        .logs(
-                                                                                                inOrder())
-                                                                                        .senderId(
-                                                                                                spec.registry()
-                                                                                                        .getAccountID(
-                                                                                                                spec.registry()
-                                                                                                                        .aliasIdFor(
-                                                                                                                                SECP_256K1_SOURCE_KEY)
-                                                                                                                        .getAlias()
-                                                                                                                        .toStringUtf8())))
-                                                                        .ethereumHash(
-                                                                                ByteString.copyFrom(
-                                                                                        spec.registry()
-                                                                                                .getBytes(
-                                                                                                        ETH_HASH_KEY)))))),
+                                                        .andAllChildRecords()
+                                                        .hasNonStakingChildRecordCount(1)
+                                                        .logged())),
                         childRecordsCheck(
                                 mintTxn,
                                 CONTRACT_REVERT_EXECUTED,

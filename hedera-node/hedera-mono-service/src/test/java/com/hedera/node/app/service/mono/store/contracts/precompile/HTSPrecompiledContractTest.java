@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,6 +75,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTes
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.nonFungiblePause;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.nonFungibleUnpause;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.nonFungibleWipe;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.recipientAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.tokenUpdateExpiryInfoWrapper;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile.decodeFungibleCreateV2;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile.decodeFungibleCreateV3;
@@ -159,10 +160,13 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Deque;
+import java.util.Iterator;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -202,6 +206,9 @@ class HTSPrecompiledContractTest {
     @Mock private TokenInfoWrapper<TokenID> tokenInfoWrapper;
     @Mock private AccessorFactory accessorFactory;
     @Mock private NetworkInfo networkInfo;
+    @Mock private Account acc;
+    @Mock private Deque<MessageFrame> stack;
+    @Mock private Iterator<MessageFrame> dequeIterator;
 
     private HTSPrecompiledContract subject;
     private PrecompilePricingUtils precompilePricingUtils;
@@ -313,6 +320,15 @@ class HTSPrecompiledContractTest {
 
     private ByteString fromString(final String value) {
         return ByteString.copyFrom(Bytes.fromHexString(value).toArray());
+    }
+
+    private void givenIfDelegateCall() {
+        given(messageFrame.getContractAddress()).willReturn(contractAddress);
+        given(messageFrame.getRecipientAddress()).willReturn(recipientAddress);
+        given(worldUpdater.get(recipientAddress)).willReturn(acc);
+        given(acc.getNonce()).willReturn(-1L);
+        given(messageFrame.getMessageFrameStack()).willReturn(stack);
+        given(messageFrame.getMessageFrameStack().iterator()).willReturn(dequeIterator);
     }
 
     @Test
@@ -889,6 +905,7 @@ class HTSPrecompiledContractTest {
         final Bytes input = Bytes.of(0, 0, 0, 0);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        givenIfDelegateCall();
 
         // when
         subject.prepareFields(messageFrame);
@@ -909,6 +926,7 @@ class HTSPrecompiledContractTest {
                 .thenReturn(fungibleMintAmountOversize);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        givenIfDelegateCall();
 
         // when
         subject.prepareFields(messageFrame);
@@ -927,6 +945,7 @@ class HTSPrecompiledContractTest {
         burnPrecompile.when(() -> BurnPrecompile.decodeBurnV2(any())).thenReturn(nonFungibleBurn);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        givenIfDelegateCall();
 
         // when
         subject.prepareFields(messageFrame);
@@ -947,6 +966,7 @@ class HTSPrecompiledContractTest {
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN));
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        givenIfDelegateCall();
 
         // when
         subject.prepareFields(messageFrame);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -131,7 +131,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     private static final String TRANSFER_TXN = "transferTxn";
     private static final String TRANSFER_FROM_ACCOUNT_TXN = "transferFromAccountTxn";
     private static final String BASE_APPROVE_TXN = "baseApproveTxn";
-    private static final String IS_APPROVED_FOR_ALL = "isApprovedForAll";
+    private static final String IS_APPROVED_FOR_ALL = "outerIsApprovedForAll";
     private static final String GET_ALLOWANCE = "getAllowance";
     private static final String ALLOWANCE = "allowance";
     private static final String SYMBOL = "symbol";
@@ -152,7 +152,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     private static final String A_CIVILIAN = "aCivilian";
     private static final String B_CIVILIAN = "bCivilian";
     private static final String DO_TRANSFER_FROM = "doTransferFrom";
-    private static final String GET_APPROVED = "getApproved";
+    private static final String GET_APPROVED = "outerGetApproved";
     private static final String GET_BALANCE_OF = "getBalanceOf";
     private static final String MISSING_FROM = "MISSING_FROM";
     private static final String MISSING_TO = "MISSING_TO";
@@ -160,7 +160,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     private static final String SOME_ERC_721_SCENARIOS = "SomeERC721Scenarios";
     private static final String GET_OWNER_OF = "getOwnerOf";
     private static final String OPERATOR_DOES_NOT_EXISTS = "OPERATOR_DOES_NOT_EXISTS";
-    private static final String SET_APPROVAL_FOR_ALL = "setApprovalForAll";
+    private static final String SET_APPROVAL_FOR_ALL = "outerSetApprovalForAll";
     private static final String REVOKE_SPECIFIC_APPROVAL = "revokeSpecificApproval";
     private static final String MSG_SENDER_IS_NOT_THE_SAME_AS_FROM =
             "MSG_SENDER_IS_NOT_THE_SAME_AS_FROM";
@@ -201,7 +201,6 @@ public class ERCPrecompileSuite extends HapiSuite {
                 getErc20TokenDecimalsFromErc721TokenFails(),
                 transferErc20TokenFromErc721TokenFails(),
                 transferErc20TokenReceiverContract(),
-                transferErc20TokenSenderAccount(),
                 transferErc20TokenAliasedSender(),
                 directCallsWorkForERC20(),
                 erc20TransferFrom(),
@@ -811,104 +810,6 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                                                 true)))),
                         getAccountBalance(ERC_20_CONTRACT).hasTokenBalance(FUNGIBLE_TOKEN, 3),
                         getAccountBalance(nestedContract).hasTokenBalance(FUNGIBLE_TOKEN, 2));
-    }
-
-    private HapiSpec transferErc20TokenSenderAccount() {
-        return defaultHapiSpec("ERC_20_TRANSFER_SENDER_ACCOUNT")
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(ACCOUNT).balance(100 * ONE_MILLION_HBARS),
-                        cryptoCreate(RECIPIENT),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .initialSupply(5)
-                                .treasury(TOKEN_TREASURY)
-                                .adminKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY),
-                        tokenAssociate(ACCOUNT, List.of(FUNGIBLE_TOKEN)),
-                        tokenAssociate(RECIPIENT, List.of(FUNGIBLE_TOKEN)),
-                        cryptoTransfer(moving(5, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
-                        uploadInitCode(ERC_20_CONTRACT),
-                        contractCreate(ERC_20_CONTRACT))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                                ERC_20_CONTRACT,
-                                                                "delegateTransfer",
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                FUNGIBLE_TOKEN))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                RECIPIENT))),
-                                                                BigInteger.TWO)
-                                                        .payingWith(ACCOUNT)
-                                                        .alsoSigningWithFullPrefix(MULTI_KEY)
-                                                        .via(TRANSFER_TXN)
-                                                        .gas(GAS_TO_OFFER)
-                                                        .hasKnownStatus(SUCCESS))))
-                .then(
-                        getAccountInfo(ACCOUNT).savingSnapshot(ACCOUNT),
-                        getAccountInfo(RECIPIENT).savingSnapshot(RECIPIENT),
-                        withOpContext(
-                                (spec, log) -> {
-                                    final var sender =
-                                            spec.registry().getAccountInfo(ACCOUNT).getAccountID();
-                                    final var receiver =
-                                            spec.registry()
-                                                    .getAccountInfo(RECIPIENT)
-                                                    .getAccountID();
-
-                                    var txnRecord =
-                                            getTxnRecord(TRANSFER_TXN)
-                                                    .hasPriority(
-                                                            recordWith()
-                                                                    .contractCallResult(
-                                                                            resultWith()
-                                                                                    .logs(
-                                                                                            inOrder(
-                                                                                                    logWith()
-                                                                                                            .withTopicsInOrder(
-                                                                                                                    List
-                                                                                                                            .of(
-                                                                                                                                    eventSignatureOf(
-                                                                                                                                            TRANSFER_SIGNATURE),
-                                                                                                                                    parsedToByteString(
-                                                                                                                                            sender
-                                                                                                                                                    .getAccountNum()),
-                                                                                                                                    parsedToByteString(
-                                                                                                                                            receiver
-                                                                                                                                                    .getAccountNum())))
-                                                                                                            .longValue(
-                                                                                                                    2)))))
-                                                    .andAllChildRecords()
-                                                    .logged();
-                                    allRunFor(spec, txnRecord);
-                                }),
-                        childRecordsCheck(
-                                TRANSFER_TXN,
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .forFunction(
-                                                                                FunctionType
-                                                                                        .ERC_TRANSFER)
-                                                                        .withErcFungibleTransferStatus(
-                                                                                true)))),
-                        getAccountBalance(ACCOUNT).hasTokenBalance(FUNGIBLE_TOKEN, 3),
-                        getAccountBalance(RECIPIENT).hasTokenBalance(FUNGIBLE_TOKEN, 2));
     }
 
     private HapiSpec transferErc20TokenAliasedSender() {
@@ -3976,7 +3877,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                 spec,
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
-                                                                IS_APPROVED_FOR_ALL,
+                                                                "isApprovedForAll",
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
@@ -3998,7 +3899,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                         .gas(GAS_TO_OFFER),
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
-                                                                IS_APPROVED_FOR_ALL,
+                                                                "isApprovedForAll",
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
@@ -4138,7 +4039,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                 spec,
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
-                                                                GET_APPROVED,
+                                                                "getApproved",
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()

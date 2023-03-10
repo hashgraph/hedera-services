@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -373,7 +373,9 @@ class GetAccountDetailsAnswerTest {
         // setup:
         final Query query = validQuery(COST_ANSWER, fee, target);
 
-        given(optionValidator.queryableAccountStatus(eq(EntityNum.fromAccountId(payerId)), any()))
+        given(
+                        optionValidator.queryableAccountOrContractStatus(
+                                eq(EntityNum.fromAccountId(payerId)), any()))
                 .willReturn(ACCOUNT_DELETED);
 
         // when:
@@ -390,7 +392,7 @@ class GetAccountDetailsAnswerTest {
 
         given(aliasManager.lookupIdBy(any())).willReturn(entityNum);
 
-        given(optionValidator.queryableAccountStatus(eq(entityNum), any()))
+        given(optionValidator.queryableAccountOrContractStatus(eq(entityNum), any()))
                 .willReturn(INVALID_ACCOUNT_ID);
 
         final ResponseCodeEnum validity = subject.checkValidity(query, view);
