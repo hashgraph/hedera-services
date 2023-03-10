@@ -22,13 +22,12 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.submerkle.ExchangeRates;
 import com.hedera.node.app.service.mono.state.submerkle.SequenceNumber;
 import com.hedera.node.app.service.network.impl.serdes.MonoContextAdapterCodec;
+import com.hedera.pbj.runtime.io.DataInput;
+import com.hedera.pbj.runtime.io.DataOutput;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import com.hedera.pbj.runtime.io.DataInput;
-import com.hedera.pbj.runtime.io.DataOutput;
-
 import java.io.IOException;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;

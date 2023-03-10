@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -39,7 +38,7 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
 
     /**
      * Pre-handles a {@link
-     * com.hederahashgraph.api.proto.java.HederaFunctionality#TokenAssociateToAccount} transaction,
+     * com.hedera.hapi.node.base.HederaFunctionality#TokenAssociateToAccount} transaction,
      * returning the metadata required to, at minimum, validate the signatures of all required
      * signing keys.
      *

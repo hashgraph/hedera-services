@@ -51,7 +51,8 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
     @DisplayName("Fails for invalid payer account")
     void invalidPayer() {
         final var txn = contractCreateTransaction(adminKey, null);
-        given(keyLookup.getKey(payer)).willReturn(KeyOrLookupFailureReason.withFailureReason(ResponseCodeEnum.INVALID_ACCOUNT_ID));
+        given(keyLookup.getKey(payer))
+                .willReturn(KeyOrLookupFailureReason.withFailureReason(ResponseCodeEnum.INVALID_ACCOUNT_ID));
         final var context = new PreHandleContext(keyLookup, txn);
         subject.preHandle(context);
 

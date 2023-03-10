@@ -16,13 +16,13 @@
 
 package com.hedera.node.app.service.consensus.impl.handlers;
 
-import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
-import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;

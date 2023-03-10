@@ -25,13 +25,11 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.signature.SignaturePreparer;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import com.hedera.node.app.workflows.dispatcher.StoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
 import com.swirlds.common.crypto.Cryptography;
@@ -40,14 +38,10 @@ import com.swirlds.common.system.events.Event;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -179,8 +173,10 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             TransactionMetadata innerMetadata = null;
             if (innerContext != null) {
                 final var innerTxBodyBytes = innerContext.getTxn().toByteArray();
-                final var innerPayerSignature = verifyPayerSignature(state, innerContext, innerTxBodyBytes, signatureMap);
-                final var innerOtherSignatures = verifyOtherSignatures(state, innerContext, innerTxBodyBytes, signatureMap);
+                final var innerPayerSignature =
+                        verifyPayerSignature(state, innerContext, innerTxBodyBytes, signatureMap);
+                final var innerOtherSignatures =
+                        verifyOtherSignatures(state, innerContext, innerTxBodyBytes, signatureMap);
                 innerMetadata = createTransactionMetadata(
                         innerContext, signatureMap, innerPayerSignature, innerOtherSignatures, null);
             }

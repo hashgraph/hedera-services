@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.consensus.impl;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.codecs.EntityNumCodec;
 import com.hedera.hapi.node.state.consensus.Topic;
@@ -56,8 +57,7 @@ public final class ConsensusServiceImpl implements ConsensusService {
     private StateDefinition<EntityNum, Topic> topicsDef() {
         final var keyCodec = new EntityNumCodec();
 
-        final var valueCodec = CodecFactory.newInMemoryCodec(
-                Topic.PROTOBUF::parse, Topic.PROTOBUF::write);
+        final var valueCodec = CodecFactory.newInMemoryCodec(Topic.PROTOBUF::parse, Topic.PROTOBUF::write);
 
         return StateDefinition.inMemory(TOPICS_KEY, keyCodec, valueCodec);
     }

@@ -44,7 +44,7 @@ public class TokenServiceImpl implements TokenService {
     private static final int MAX_TOKEN_RELS = 1042;
     private static final int MAX_MINTABLE_NFTS = 4096;
     private static final SemanticVersion CURRENT_VERSION =
-            SemanticVersion.newBuilder().setMinor(34).build();
+            SemanticVersion.newBuilder().minor(34).build();
 
     public static final String NFTS_KEY = "NFTS";
     public static final String TOKENS_KEY = "TOKENS";

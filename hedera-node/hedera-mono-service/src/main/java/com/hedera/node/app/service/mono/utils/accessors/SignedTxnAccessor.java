@@ -135,9 +135,8 @@ public class SignedTxnAccessor implements TxnAccessor {
 
     public static SignedTxnAccessor uncheckedFrom(final com.hedera.hapi.node.base.Transaction validSignedTxn) {
         try {
-            return SignedTxnAccessor.from(PbjConverter.asBytes(
-                    com.hedera.hapi.node.base.Transaction.PROTOBUF,
-                    validSignedTxn));
+            return SignedTxnAccessor.from(
+                    PbjConverter.asBytes(com.hedera.hapi.node.base.Transaction.PROTOBUF, validSignedTxn));
         } catch (final Exception illegal) {
             log.warn("Unexpected use of factory with invalid gRPC transaction", illegal);
             throw new IllegalArgumentException("Argument 'validSignedTxn' must be a valid signed txn");

@@ -23,8 +23,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.token.impl.serdes.StringCodec;
-import java.io.DataInput;
-import java.io.DataOutput;
+import com.hedera.pbj.runtime.io.DataInput;
+import com.hedera.pbj.runtime.io.DataOutput;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,7 +52,6 @@ class StringSerdesTest {
     void providesFastEquals() throws IOException {
         given(in.readInt()).willReturn(SOME_STRING.getBytes().length);
         subject.fastEquals(SOME_STRING, in);
-        assertEquals(255, subject.typicalSize());
     }
 
     @Test
@@ -77,7 +76,7 @@ class StringSerdesTest {
         subject.parse(in);
 
         verify(in).readInt();
-        verify(in).readFully(new byte[SOME_STRING.getBytes().length]);
+        verify(in).readBytes(new byte[SOME_STRING.getBytes().length]);
     }
 
     @Test

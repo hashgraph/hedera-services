@@ -11,10 +11,12 @@ module com.hedera.node.app.service.token.impl.test {
     requires org.hyperledger.besu.datatypes;
     requires org.assertj.core;
     requires org.hamcrest;
-    requires hedera.services.hedera.node.hedera.app.spi.fixtures;
     requires com.swirlds.common;
     requires org.bouncycastle.provider;
     requires com.hedera.node.app.service.evm;
+    requires com.hedera.node.hapi;
+    requires com.hedera.pbj.runtime;
+    requires com.hedera.node.app.spi.fixtures;
 
     opens com.hedera.node.app.service.token.impl.test.entity to
             org.junit.platform.commons;

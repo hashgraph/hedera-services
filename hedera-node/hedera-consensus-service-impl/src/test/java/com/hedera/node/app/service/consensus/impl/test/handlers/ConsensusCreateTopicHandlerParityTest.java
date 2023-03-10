@@ -242,5 +242,4 @@ class ConsensusCreateTopicHandlerParityTest {
         Assertions.assertThat(context.failed()).isTrue();
         Assertions.assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
     }
-
- }
+}

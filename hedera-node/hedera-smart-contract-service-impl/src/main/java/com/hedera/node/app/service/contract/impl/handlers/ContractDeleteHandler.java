@@ -21,7 +21,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -58,9 +57,11 @@ public class ContractDeleteHandler implements TransactionHandler {
 
         context.addNonPayerKey(op.contractID());
 
-        op.transferAccountID().ifPresentOrElse(transferAccountId ->
-            context.addNonPayerKeyIfReceiverSigRequired(transferAccountId, INVALID_TRANSFER_ACCOUNT_ID),
-                () -> op.transferContractID().ifPresent(context::addNonPayerKeyIfReceiverSigRequired));
+        op.transferAccountID()
+                .ifPresentOrElse(
+                        transferAccountId -> context.addNonPayerKeyIfReceiverSigRequired(
+                                transferAccountId, INVALID_TRANSFER_ACCOUNT_ID),
+                        () -> op.transferContractID().ifPresent(context::addNonPayerKeyIfReceiverSigRequired));
     }
 
     /**

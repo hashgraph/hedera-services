@@ -35,7 +35,6 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import java.time.Instant;
 import java.util.List;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

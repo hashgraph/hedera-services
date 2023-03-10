@@ -34,9 +34,9 @@ import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualVa
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.state.ReadableKVStateBase;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.codec.DecoderException;
@@ -113,8 +113,7 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
 
     private void givenSetupForScheduleDelete(TransactionBody txn) {
         scheduledTxn = TransactionBody.newBuilder()
-                .transactionID(
-                        TransactionID.newBuilder().accountID(scheduler).build())
+                .transactionID(TransactionID.newBuilder().accountID(scheduler).build())
                 .cryptoCreateAccount(CryptoCreateTransactionBody.newBuilder().build())
                 .build();
         scheduledMeta = new TransactionMetadata(

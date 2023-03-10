@@ -27,7 +27,6 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
-import com.hedera.node.app.fees.MonoFeeAccumulator;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.calculation.UsageBasedFeeCalculator;

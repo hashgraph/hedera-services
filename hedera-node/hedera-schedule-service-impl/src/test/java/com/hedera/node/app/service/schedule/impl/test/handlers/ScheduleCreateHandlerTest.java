@@ -16,6 +16,13 @@
 
 package com.hedera.node.app.service.schedule.impl.test.handlers;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Timestamp;
@@ -26,13 +33,6 @@ import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 
 class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
 
@@ -62,8 +62,8 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
     @Test
     void preHandleScheduleCreateVanillaNoAdmin() {
         final var subject = new ScheduleCreateHandler();
-        final var txn = ScheduledTxnFactory.scheduleCreateTxnWith(null, "", payer, scheduler,
-                Timestamp.newBuilder().seconds(1L).build());
+        final var txn = ScheduledTxnFactory.scheduleCreateTxnWith(
+                null, "", payer, scheduler, Timestamp.newBuilder().seconds(1L).build());
 
         given(keyLookup.getKey(scheduler)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
         given(keyLookup.getKey(payer)).willReturn(KeyOrLookupFailureReason.withKey(payerKey));
@@ -154,8 +154,8 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
         final var txn = scheduleCreateTransaction(payer);
 
         given(keyLookup.getKey(scheduler)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
-        given(keyLookup.getKey(payer)).willReturn(
-                KeyOrLookupFailureReason.withFailureReason(ResponseCodeEnum.INVALID_ACCOUNT_ID));
+        given(keyLookup.getKey(payer))
+                .willReturn(KeyOrLookupFailureReason.withFailureReason(ResponseCodeEnum.INVALID_ACCOUNT_ID));
 
         final var context = new PreHandleContext(keyLookup, txn, scheduler);
         subject.preHandle(context, dispatcher);
@@ -173,7 +173,11 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
     }
 
     private TransactionBody scheduleCreateTransaction(final AccountID payer) {
-        return ScheduledTxnFactory.scheduleCreateTxnWith(key, "test", payer, scheduler,
+        return ScheduledTxnFactory.scheduleCreateTxnWith(
+                key,
+                "test",
+                payer,
+                scheduler,
                 Timestamp.newBuilder().seconds(1_234_567L).build());
     }
 }

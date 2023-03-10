@@ -32,8 +32,7 @@ class VirtualKeySerdesAdapterTest extends AbstractVirtualCodecTest<VirtualBlobKe
     private static final VirtualBlobKeySerializer SERIALIZER = new VirtualBlobKeySerializer();
 
     public VirtualKeySerdesAdapterTest() {
-        super(MonoMapCodecAdapter.codecForVirtualKey(
-                VirtualBlobKey.CURRENT_VERSION, VirtualBlobKey::new, SERIALIZER));
+        super(MonoMapCodecAdapter.codecForVirtualKey(VirtualBlobKey.CURRENT_VERSION, VirtualBlobKey::new, SERIALIZER));
     }
 
     @Test

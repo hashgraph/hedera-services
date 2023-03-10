@@ -21,6 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.network.impl.serdes.MonoRunningHashesAdapterCodec;
+import com.hedera.pbj.runtime.io.DataInput;
+import com.hedera.pbj.runtime.io.DataOutput;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -30,9 +32,6 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import com.hedera.pbj.runtime.io.DataInput;
-import com.hedera.pbj.runtime.io.DataOutput;
-
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;

@@ -31,7 +31,7 @@ public enum TokenKycRevokeScenarios implements TxnHandlingScenario {
                     .get());
         }
     },
-    REVOKE_WITH_MISSING_TOKEN {
+    REVOKE_WITH_MISSING_TXN_BODY {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(

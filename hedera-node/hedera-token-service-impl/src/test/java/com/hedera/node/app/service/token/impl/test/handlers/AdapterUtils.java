@@ -16,11 +16,13 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.*;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
@@ -31,6 +33,7 @@ import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.StateKeyAdapter;
+import com.hedera.test.utils.TestFixturesKeyLookup;
 import java.util.Map;
 import org.mockito.Mockito;
 
@@ -89,7 +92,7 @@ public class AdapterUtils {
 
     public static TransactionBody txnFrom(final TxnHandlingScenario scenario) {
         try {
-            return scenario.platformTxn().getTxn();
+            return toPbj(scenario.platformTxn().getTxn());
         } catch (final Throwable e) {
             throw new RuntimeException(e);
         }

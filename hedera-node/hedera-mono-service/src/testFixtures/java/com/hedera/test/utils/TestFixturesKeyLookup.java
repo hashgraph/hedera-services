@@ -89,7 +89,11 @@ public class TestFixturesKeyLookup implements AccountAccess {
     }
 
     private AccountID asAccount(final ContractID idOrAlias) {
-        return null;
+        return new AccountID.Builder()
+                .realmNum(idOrAlias.realmNum())
+                .shardNum(idOrAlias.shardNum())
+                .accountNum(idOrAlias.contractNum().orElse(0L))
+                .build();
     }
 
     @Override
@@ -139,7 +143,7 @@ public class TestFixturesKeyLookup implements AccountAccess {
                     }
                 }
                 final var value = aliases.get(alias.asUtf8String());
-                return EntityNumVirtualKey.fromLong(value != null? value : 0L);
+                return EntityNumVirtualKey.fromLong(value != null ? value : 0L);
             }
         }
         return EntityNumVirtualKey.fromLong(id.accountNum().orElse(0L));

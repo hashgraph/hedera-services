@@ -16,6 +16,18 @@
 
 package com.hedera.node.app.workflows.query;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.GET_ACCOUNT_DETAILS;
+import static com.hedera.hapi.node.base.HederaFunctionality.NETWORK_GET_EXECUTION_TIME;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
+import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
+import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER_STATE_PROOF;
+import static com.hedera.node.app.spi.HapiUtils.asTimestamp;
+import static com.swirlds.common.system.PlatformStatus.ACTIVE;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseHeader;
@@ -40,8 +52,8 @@ import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
 import com.hedera.pbj.runtime.io.Bytes;
 import com.hedera.pbj.runtime.io.DataBuffer;
-import com.hedera.pbj.runtime.io.RandomAccessDataInput;
 import com.hedera.pbj.runtime.io.DataOutputStream;
+import com.hedera.pbj.runtime.io.RandomAccessDataInput;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.utility.AutoCloseableWrapper;
@@ -57,17 +69,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import javax.inject.Inject;
-import static com.hedera.hapi.node.base.HederaFunctionality.GET_ACCOUNT_DETAILS;
-import static com.hedera.hapi.node.base.HederaFunctionality.NETWORK_GET_EXECUTION_TIME;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
-import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
-import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER_STATE_PROOF;
-import static com.hedera.node.app.spi.HapiUtils.asTimestamp;
-import static com.swirlds.common.system.PlatformStatus.ACTIVE;
-import static java.util.Objects.requireNonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -93,6 +94,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     private final Map<HederaFunctionality, Counter> received = new EnumMap<>(HederaFunctionality.class);
     /** A map of counter metrics for each type of query answered */
     private final Map<HederaFunctionality, Counter> answered = new EnumMap<>(HederaFunctionality.class);
+
     private final FeeAccumulator feeAccumulator;
     private final QueryContext queryContext;
 

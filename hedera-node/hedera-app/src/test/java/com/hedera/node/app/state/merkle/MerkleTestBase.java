@@ -167,9 +167,7 @@ public class MerkleTestBase extends StateTestBase {
         spaceLabel = StateUtils.computeLabel(SECOND_SERVICE, SPACE_STATE_KEY);
         spaceMerkleMap = createMerkleMap(spaceLabel);
         spaceMetadata = new StateMetadata<>(
-                SECOND_SERVICE,
-                new TestSchema(1),
-                StateDefinition.inMemory(SPACE_STATE_KEY, LONG_CODEC, STRING_CODEC));
+                SECOND_SERVICE, new TestSchema(1), StateDefinition.inMemory(SPACE_STATE_KEY, LONG_CODEC, STRING_CODEC));
     }
 
     protected void setupSingletonCountry() {

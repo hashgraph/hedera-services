@@ -21,8 +21,8 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.DaggerHederaApp;
 import com.hedera.node.app.HederaApp;
-import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.components.QueryComponent;
+import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;

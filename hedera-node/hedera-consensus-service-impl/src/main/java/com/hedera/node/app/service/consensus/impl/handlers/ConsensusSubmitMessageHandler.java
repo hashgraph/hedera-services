@@ -30,9 +30,9 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
@@ -136,9 +136,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
      * @param topic the topic to which the message is being submitted
      */
     private void validateTransaction(
-            final TransactionBody txn,
-            final ConsensusServiceConfig config,
-            final Optional<Topic> topic) {
+            final TransactionBody txn, final ConsensusServiceConfig config, final Optional<Topic> topic) {
         final var txnId = txn.transactionID();
         final var payer = txn.transactionID().accountID();
         final var op = txn.consensusSubmitMessage().get();
@@ -186,8 +184,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             }
 
             /* Validate if the transaction is submitting initial chunk,payer in initial transaction Id should be same as payer of the transaction */
-            if (1 == chunkInfo.number()
-                    && !chunkInfo.initialTransactionID().equals(txnId)) {
+            if (1 == chunkInfo.number() && !chunkInfo.initialTransactionID().equals(txnId)) {
                 throw new HandleStatusException(INVALID_CHUNK_TRANSACTION_ID);
             }
         }

@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-@Suppress("DSL_SCOPE_VIOLATION") // required until Gradle 8.1 due to gradle issue 22797
 plugins {
   id("com.hedera.hashgraph.conventions")
   alias(libs.plugins.pbj)

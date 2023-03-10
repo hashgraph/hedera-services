@@ -26,7 +26,6 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -61,15 +60,15 @@ public class TokenCreateHandler implements TransactionHandler {
     public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
         final var tokenCreateTxnBody = context.getTxn().tokenCreation().orElseThrow();
-        if (tokenCreateTxnBody.treasury() != null) {
+        if (tokenCreateTxnBody.treasury().account().value() != null) {
             final var treasuryId = tokenCreateTxnBody.treasury();
             context.addNonPayerKey(treasuryId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
         }
-        if (tokenCreateTxnBody.autoRenewAccount() != null) {
+        if (tokenCreateTxnBody.autoRenewAccount().account().value() != null) {
             final var autoRenewalAccountId = tokenCreateTxnBody.autoRenewAccount();
             context.addNonPayerKey(autoRenewalAccountId, INVALID_AUTORENEW_ACCOUNT);
         }
-        if (tokenCreateTxnBody.adminKey() != null) {
+        if (tokenCreateTxnBody.adminKey().key().value() != null) {
             final var adminKey = asHederaKey(tokenCreateTxnBody.adminKey());
             adminKey.ifPresent(context::addToReqNonPayerKeys);
         }
@@ -117,6 +116,7 @@ public class TokenCreateHandler implements TransactionHandler {
             } else if (customFee.fractionalFee().isPresent()) {
                 context.addNonPayerKey(collector, INVALID_CUSTOM_FEE_COLLECTOR);
             } else {
+                // TODO: Need to validate if this is actually needed
                 final var royaltyFee = customFee.royaltyFee().orElseThrow();
                 var alwaysAdd = false;
                 if (royaltyFee.fallbackFee() != null) {

@@ -16,6 +16,12 @@
 
 package com.hedera.node.app.workflows.onset;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_OVERSIZE;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
@@ -34,19 +40,14 @@ import com.hedera.pbj.runtime.io.Bytes;
 import com.hedera.pbj.runtime.io.BytesBuffer;
 import com.hedera.pbj.runtime.io.DataBuffer;
 import com.hedera.pbj.runtime.io.DataInput;
-import com.hedera.pbj.runtime.io.RandomAccessDataInput;
 import com.hedera.pbj.runtime.io.DataOutputStream;
+import com.hedera.pbj.runtime.io.RandomAccessDataInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_OVERSIZE;
-import static java.util.Objects.requireNonNull;
 
 /**
  * This class does some pre-processing before each workflow. It parses the provided {@link

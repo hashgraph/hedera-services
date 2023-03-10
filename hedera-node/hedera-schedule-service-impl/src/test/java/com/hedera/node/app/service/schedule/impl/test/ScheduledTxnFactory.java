@@ -31,9 +31,12 @@ public class ScheduledTxnFactory {
     private static final long FEE = 123L;
     private static final String SCHEDULED_TXN_MEMO = "Wait for me!";
     public static final SchedulableTransactionBody scheduledTxn = SchedulableTransactionBody.newBuilder()
-            .transactionFee(FEE).memo(SCHEDULED_TXN_MEMO).cryptoDelete(CryptoDeleteTransactionBody.newBuilder()
+            .transactionFee(FEE)
+            .memo(SCHEDULED_TXN_MEMO)
+            .cryptoDelete(CryptoDeleteTransactionBody.newBuilder()
                     .deleteAccountID(PbjConverter.toPbj(IdUtils.asAccount("0.0.2")))
-                    .transferAccountID(PbjConverter.toPbj(IdUtils.asAccount("0.0.75231")))).build();
+                    .transferAccountID(PbjConverter.toPbj(IdUtils.asAccount("0.0.75231"))))
+            .build();
 
     private ScheduledTxnFactory() {}
 
@@ -54,8 +57,8 @@ public class ScheduledTxnFactory {
             final Timestamp validStart,
             final Timestamp expirationTime,
             final Boolean waitForExpiry) {
-        final var creation = ScheduleCreateTransactionBody.newBuilder().memo(scheduleMemo)
-                .scheduledTransactionBody(scheduledTxn);
+        final var creation =
+                ScheduleCreateTransactionBody.newBuilder().memo(scheduleMemo).scheduledTransactionBody(scheduledTxn);
         if (scheduleAdminKey != null) {
             creation.adminKey(scheduleAdminKey);
         }
@@ -68,8 +71,12 @@ public class ScheduledTxnFactory {
         if (waitForExpiry != null) {
             creation.waitForExpiry(waitForExpiry);
         }
-        return TransactionBody.newBuilder().transactionID(
-                        TransactionID.newBuilder().transactionValidStart(validStart).accountID(scheduler).build())
-                .scheduleCreate(creation).build();
+        return TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder()
+                        .transactionValidStart(validStart)
+                        .accountID(scheduler)
+                        .build())
+                .scheduleCreate(creation)
+                .build();
     }
 }

@@ -53,8 +53,12 @@ module com.hedera.node.app {
             com.swirlds.common;
     exports com.hedera.node.app.state.merkle.singleton to
             com.swirlds.common;
-    exports com.hedera.node.app.authorization to com.swirlds.platform;
-    exports com.hedera.node.app.state.merkle.adapters to com.swirlds.platform;
-    exports com.hedera.node.app.fees to com.swirlds.platform;
-    exports com.hedera.node.app.throttle to com.swirlds.platform;
+    exports com.hedera.node.app.authorization to
+            com.swirlds.platform;
+    exports com.hedera.node.app.state.merkle.adapters to
+            com.swirlds.platform;
+    exports com.hedera.node.app.fees to
+            com.swirlds.platform;
+    exports com.hedera.node.app.throttle to
+            com.swirlds.platform;
 }

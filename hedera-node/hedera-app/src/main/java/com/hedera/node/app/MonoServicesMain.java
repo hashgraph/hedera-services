@@ -16,6 +16,10 @@
 
 package com.hedera.node.app;
 
+import static com.hedera.node.app.service.mono.context.AppsManager.APPS;
+import static com.hedera.node.app.service.mono.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import com.hedera.node.app.service.mono.ServicesApp;
 import com.hedera.node.app.service.mono.ServicesState;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
@@ -29,13 +33,10 @@ import com.swirlds.common.system.SwirldState2;
 import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.platform.Browser;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
-import static com.hedera.node.app.service.mono.context.AppsManager.APPS;
-import static com.hedera.node.app.service.mono.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
-import static java.nio.charset.StandardCharsets.UTF_8;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Implementation of {@link SwirldMain} for the mono-service.

@@ -21,7 +21,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.state.merkle.adapters.MerkleMapLikeAdapter;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerklePayerRecords;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
