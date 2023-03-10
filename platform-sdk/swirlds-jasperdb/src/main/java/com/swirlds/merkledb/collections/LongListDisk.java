@@ -16,6 +16,7 @@
 
 package com.swirlds.merkledb.collections;
 
+import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -23,7 +24,6 @@ import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Deque;
@@ -41,7 +41,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class LongListDisk extends LongList<Long> {
 
-    private static final String STORE_PREFIX = "longListDisk";
+    private static final String STORE_POSTFIX = "longListDisk";
     private static final String DEFAULT_FILE_NAME = "LongListDisk.ll";
     /** A temp byte buffer for reading and writing longs */
     private final ThreadLocal<ByteBuffer> tempLongBufferThreadLocal;
@@ -159,7 +159,7 @@ public class LongListDisk extends LongList<Long> {
     }
 
     private static Path createTempFile(String sourceFileName) throws IOException {
-        return Files.createTempDirectory(STORE_PREFIX).resolve(sourceFileName);
+        return TemporaryFileBuilder.buildTemporaryDirectory(STORE_POSTFIX).resolve(sourceFileName);
     }
 
     @Override
