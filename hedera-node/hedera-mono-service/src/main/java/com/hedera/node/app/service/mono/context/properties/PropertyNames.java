@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,7 +88,8 @@ public class PropertyNames {
     public static final String BALANCES_COMPRESS_ON_CREATION = "balances.compressOnCreation";
     public static final String CACHE_RECORDS_TTL = "cache.records.ttl";
     public static final String CONTRACTS_ITEMIZE_STORAGE_FEES = "contracts.itemizeStorageFees";
-    public static final String CONTRACTS_PERMITTED_DELEGATE_CALLERS = "contracts.permittedDelegateCallers";
+    public static final String CONTRACTS_PERMITTED_DELEGATE_CALLERS =
+            "contracts.permittedDelegateCallers";
     public static final String CONTRACTS_REFERENCE_SLOT_LIFETIME =
             "contracts.referenceSlotLifetime";
     public static final String CONTRACTS_FREE_STORAGE_TIER_LIMIT = "contracts.freeStorageTierLimit";

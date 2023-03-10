@@ -18,7 +18,6 @@ package com.hedera.services.bdd.suites.contract.precompile;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyPropertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
@@ -785,23 +784,26 @@ public class ApproveAllowanceSuite extends HapiSuite {
                         tokenAssociate(DELEGATE_ERC_CALLEE, FUNGIBLE_TOKEN),
                         tokenAssociate(DELEGATE_PRECOMPILE_CALLEE, FUNGIBLE_TOKEN))
                 .when(
-                        sourcing(() ->
+                        sourcing(
+                                () ->
                                         overriding(
                                                 "contracts.permittedDelegateCallers",
                                                 "" + whitelistedCalleeMirrorNum.get())),
                         sourcing(
                                 () ->
                                         contractCall(
-                                                PRETEND_PAIR,
-                                                "callTo",
-                                                asHeadlongAddress(unListedCalleeMirrorAddr.get()),
-                                                asHeadlongAddress(
-                                                        asSolidityAddress(tokenID.get())),
-                                                asHeadlongAddress(attackerMirrorAddr.get()))
+                                                        PRETEND_PAIR,
+                                                        "callTo",
+                                                        asHeadlongAddress(
+                                                                unListedCalleeMirrorAddr.get()),
+                                                        asHeadlongAddress(
+                                                                asSolidityAddress(tokenID.get())),
+                                                        asHeadlongAddress(attackerMirrorAddr.get()))
                                                 .via(attackCall)
                                                 .gas(5_000_000L)
                                                 .hasKnownStatus(SUCCESS)),
-                        // Because this callee isn't on the whitelist, the pair won't have an allowance here
+                        // Because this callee isn't on the whitelist, the pair won't have an
+                        // allowance here
                         getAccountDetails(PRETEND_PAIR)
                                 .has(accountDetailsWith().tokenAllowancesCount(0))
                                 .logged(),
@@ -812,16 +814,16 @@ public class ApproveAllowanceSuite extends HapiSuite {
                         sourcing(
                                 () ->
                                         contractCall(
-                                                PRETEND_PAIR,
-                                                "callTo",
-                                                asHeadlongAddress(whitelistedCalleeMirrorAddr.get()),
-                                                asHeadlongAddress(
-                                                        asSolidityAddress(tokenID.get())),
-                                                asHeadlongAddress(attackerMirrorAddr.get()))
+                                                        PRETEND_PAIR,
+                                                        "callTo",
+                                                        asHeadlongAddress(
+                                                                whitelistedCalleeMirrorAddr.get()),
+                                                        asHeadlongAddress(
+                                                                asSolidityAddress(tokenID.get())),
+                                                        asHeadlongAddress(attackerMirrorAddr.get()))
                                                 .via(attackCall)
                                                 .gas(5_000_000L)
-                                                .hasKnownStatus(SUCCESS))
-                )
+                                                .hasKnownStatus(SUCCESS)))
                 .then(
                         // Even though this is on the whitelist, b/c the whitelisted contract
                         // is going through a delegatecall "chain" via the ERC-20 call, the pair
@@ -832,8 +834,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
                         // Instead of the callee
                         getAccountDetails(DELEGATE_ERC_CALLEE)
                                 .has(accountDetailsWith().tokenAllowancesCount(0))
-                                .logged()
-                );
+                                .logged());
     }
 
     private HapiSpec whitelistPositiveCase() {
@@ -872,31 +873,33 @@ public class ApproveAllowanceSuite extends HapiSuite {
                         tokenAssociate(PRETEND_PAIR, FUNGIBLE_TOKEN),
                         tokenAssociate(DELEGATE_PRECOMPILE_CALLEE, FUNGIBLE_TOKEN))
                 .when(
-                        sourcing(() ->
-                                overriding(
-                                        "contracts.permittedDelegateCallers",
-                                        "" + whitelistedCalleeMirrorNum.get())),
+                        sourcing(
+                                () ->
+                                        overriding(
+                                                "contracts.permittedDelegateCallers",
+                                                "" + whitelistedCalleeMirrorNum.get())),
                         sourcing(
                                 () ->
                                         contractCall(
-                                                PRETEND_PAIR,
-                                                "callTo",
-                                                asHeadlongAddress(whitelistedCalleeMirrorAddr.get()),
-                                                asHeadlongAddress(
-                                                        asSolidityAddress(tokenID.get())),
-                                                asHeadlongAddress(attackerMirrorAddr.get()))
+                                                        PRETEND_PAIR,
+                                                        "callTo",
+                                                        asHeadlongAddress(
+                                                                whitelistedCalleeMirrorAddr.get()),
+                                                        asHeadlongAddress(
+                                                                asSolidityAddress(tokenID.get())),
+                                                        asHeadlongAddress(attackerMirrorAddr.get()))
                                                 .via(attackCall)
                                                 .gas(5_000_000L)
                                                 .hasKnownStatus(SUCCESS)))
                 .then(
-                        // Because this callee is on the whitelist, the pair WILL have an allowance here
+                        // Because this callee is on the whitelist, the pair WILL have an allowance
+                        // here
                         getAccountDetails(PRETEND_PAIR)
                                 .has(accountDetailsWith().tokenAllowancesCount(1))
                                 .logged(),
                         // Instead of the callee
                         getAccountDetails(DELEGATE_PRECOMPILE_CALLEE)
                                 .has(accountDetailsWith().tokenAllowancesCount(0))
-                                .logged()
-                );
+                                .logged());
     }
 }

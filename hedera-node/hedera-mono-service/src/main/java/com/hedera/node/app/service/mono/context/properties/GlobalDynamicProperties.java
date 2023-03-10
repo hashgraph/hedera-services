@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -333,8 +333,7 @@ public class GlobalDynamicProperties implements EvmProperties {
                 properties.getBooleanProperty(CONTRACTS_ENFORCE_CREATION_THROTTLE);
         entityScaleFactors =
                 properties.getEntityScaleFactorsProperty(FEES_PERCENT_UTILIZATION_SCALE_FACTORS);
-        permittedDelegateCallers =
-                properties.getEvmAddresses(CONTRACTS_PERMITTED_DELEGATE_CALLERS);
+        permittedDelegateCallers = properties.getEvmAddresses(CONTRACTS_PERMITTED_DELEGATE_CALLERS);
         legacyContractIdActivations =
                 properties.getLegacyActivationsProperty(CONTRACTS_KEYS_LEGACY_ACTIVATIONS);
     }

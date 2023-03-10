@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,7 +71,8 @@ class GlobalDynamicPropertiesTest {
     private ScaleFactor evenFactor = ScaleFactor.from("7:2");
     private LegacyContractIdActivations contractIdActivations =
             LegacyContractIdActivations.from("1058134by[1062784]");
-    private Set<Address> permittedDelegateCallers = (Set<Address>) AS_EVM_ADDRESSES.apply("1062787,1461860");
+    private Set<Address> permittedDelegateCallers =
+            (Set<Address>) AS_EVM_ADDRESSES.apply("1062787,1461860");
     private GlobalDynamicProperties subject;
 
     @BeforeEach

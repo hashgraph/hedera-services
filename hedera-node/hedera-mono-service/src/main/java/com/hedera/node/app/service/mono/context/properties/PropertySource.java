@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ import com.hedera.node.app.service.mono.keys.LegacyContractIdActivations;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeStartupHelper;
 import com.hedera.node.app.service.mono.throttling.MapAccessType;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
-import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -80,8 +79,8 @@ public interface PropertySource {
     Function<String, Object> AS_CONGESTION_MULTIPLIERS = CongestionMultipliers::from;
 
     Function<String, Object> AS_LEGACY_ACTIVATIONS = LegacyContractIdActivations::from;
-    Function<String, Object> AS_EVM_ADDRESSES = s -> csvStream(s, LegacyContractIdActivations::parsedMirrorAddressOf)
-            .collect(toSet());
+    Function<String, Object> AS_EVM_ADDRESSES =
+            s -> csvStream(s, LegacyContractIdActivations::parsedMirrorAddressOf).collect(toSet());
     Function<String, Object> AS_ENTITY_SCALE_FACTORS = EntityScaleFactors::from;
     Function<String, Object> AS_KNOWN_BLOCK_VALUES = KnownBlockValues::from;
     Function<String, Object> AS_THROTTLE_SCALE_FACTOR = ScaleFactor::from;
