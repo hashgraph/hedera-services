@@ -27,4 +27,10 @@ public interface HederaEvmOperationTracer extends OperationTracer {
      * @param initialFrame the initial frame associated with this EVM execution
      */
     default void init(final MessageFrame initialFrame) {}
+
+    /**
+     * Performs finalization/validation/cleanup logic when EVM execution ends.
+     * @param initialFrame - the initial frame associated with this EVM execution (thus the final result is here)
+     */
+    default void finalizeOperation(final MessageFrame initialFrame) {}
 }

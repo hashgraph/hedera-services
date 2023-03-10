@@ -42,7 +42,7 @@ import com.swirlds.common.system.PlatformWithDeprecatedMethods;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.SwirldState2;
+import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.utility.ByteUtils;
@@ -62,7 +62,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * State for the ISSTestingTool.
  */
-public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldState2, MerkleLeaf {
+public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldState, MerkleLeaf {
 
     private static final Logger logger = LogManager.getLogger(ISSTestingToolState.class);
 
