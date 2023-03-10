@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,6 @@ import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPreco
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -806,9 +805,7 @@ public class EthereumSuite extends HapiSuite {
                                 .gasLimit(1_000_000L)
                                 .via(mintTxn)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
-                .then(
-                        getTxnRecord(mintTxn)
-                                .logged());
+                .then(getTxnRecord(mintTxn).logged());
     }
 
     HapiSpec etx013PrecompileCallSucceedsWhenNeededSignatureInHederaTxn() {
@@ -891,11 +888,7 @@ public class EthereumSuite extends HapiSuite {
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
                 .then(
                         withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                getTxnRecord(mintTxn)
-                                                        .logged())));
+                                (spec, opLog) -> allRunFor(spec, getTxnRecord(mintTxn).logged())));
     }
 
     HapiSpec etx009CallsToTokenAddresses() {
