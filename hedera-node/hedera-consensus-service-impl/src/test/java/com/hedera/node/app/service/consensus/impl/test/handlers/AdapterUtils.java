@@ -41,8 +41,10 @@ public class AdapterUtils {
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
     private static final String ALIASES_KEY = "ALIASES";
 
-    public static final AccountID PARITY_CUSTOM_PAYER = AccountID.newBuilder().accountNum(1216).build();
-    public static final AccountID PARITY_DEFAULT_PAYER = AccountID.newBuilder().accountNum(13257).build();
+    public static final AccountID PARITY_CUSTOM_PAYER =
+            AccountID.newBuilder().accountNum(1216).build();
+    public static final AccountID PARITY_DEFAULT_PAYER =
+            AccountID.newBuilder().accountNum(13257).build();
 
     private AdapterUtils() {
         throw new UnsupportedOperationException("Utility Class");

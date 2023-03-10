@@ -16,14 +16,14 @@
 
 package com.hedera.node.app.service.consensus.impl.handlers;
 
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.unwrapPbj;
-import static com.hedera.node.app.service.mono.state.merkle.MerkleTopic.RUNNING_HASH_VERSION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_MESSAGE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.unwrapPbj;
+import static com.hedera.node.app.service.mono.state.merkle.MerkleTopic.RUNNING_HASH_VERSION;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;

@@ -16,7 +16,8 @@
 
 package com.hedera.node.app.service.consensus.impl.test;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hedera.node.app.service.consensus.impl.ReadableTopicStore.TopicMetaOrLookupFailureReason.withFailureReason;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
@@ -26,7 +27,6 @@ import com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusHandler
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import java.util.Optional;
 import java.util.OptionalLong;
 import org.junit.jupiter.api.BeforeEach;
@@ -77,8 +77,7 @@ class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
                 false);
 
         final var expectedString =
-                "TopicMetadata{memo=Optional[test memo], adminKey=Optional[<JThresholdKey: thd=2, keys=<JKeyList: keys=[<JEd25519Key: ed25519 hex=6161616161616161616161616161616161616161616161616161616161616161>, <JEd25519Key: ed25519 hex=6262626262626262626262626262626262626262626262626262626262626262>, <JThresholdKey: thd=2, keys=<JKeyList: keys=[<JEd25519Key: ed25519 hex=6161616161616161616161616161616161616161616161616161616161616161>, <JEd25519Key: ed25519 hex=6262626262626262626262626262626262626262626262626262626262626262>, <JEd25519Key: ed25519 hex=6363636363636363636363636363636363636363636363636363636363636363>]>>]>>], submitKey=Optional[<JThresholdKey: thd=2, keys=<JKeyList: keys=[<JEd25519Key: ed25519 hex=6161616161616161616161616161616161616161616161616161616161616161>, <JEd25519Key: ed25519 hex=6262626262626262626262626262626262626262626262626262626262626262>, <JThresholdKey: thd=2, keys=<JKeyList: keys=[<JEd25519Key: ed25519 hex=6161616161616161616161616161616161616161616161616161616161616161>, <JEd25519Key: ed25519 hex=6262626262626262626262626262626262626262626262626262626262626262>, <JEd25519Key: ed25519 hex=6363636363636363636363636363636363636363636363636363636363636363>]>>]>>], autoRenewDurationSeconds=100, autoRenewAccountId=OptionalLong[4], expirationTimestamp=seconds: 100\n"
-                        + ", sequenceNumber=1, runningHash=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], key=1, isDeleted=false}";
+                "TopicMetadata{memo=Optional[test memo], adminKey=Optional[<JThresholdKey: thd=2, keys=<JKeyList: keys=[<JEd25519Key: ed25519 hex=6161616161616161616161616161616161616161616161616161616161616161>, <JEd25519Key: ed25519 hex=6262626262626262626262626262626262626262626262626262626262626262>, <JThresholdKey: thd=2, keys=<JKeyList: keys=[<JEd25519Key: ed25519 hex=6161616161616161616161616161616161616161616161616161616161616161>, <JEd25519Key: ed25519 hex=6262626262626262626262626262626262626262626262626262626262626262>, <JEd25519Key: ed25519 hex=6363636363636363636363636363636363636363636363636363636363636363>]>>]>>], submitKey=Optional[<JThresholdKey: thd=2, keys=<JKeyList: keys=[<JEd25519Key: ed25519 hex=6161616161616161616161616161616161616161616161616161616161616161>, <JEd25519Key: ed25519 hex=6262626262626262626262626262626262626262626262626262626262626262>, <JThresholdKey: thd=2, keys=<JKeyList: keys=[<JEd25519Key: ed25519 hex=6161616161616161616161616161616161616161616161616161616161616161>, <JEd25519Key: ed25519 hex=6262626262626262626262626262626262626262626262626262626262626262>, <JEd25519Key: ed25519 hex=6363636363636363636363636363636363636363636363636363636363636363>]>>]>>], autoRenewDurationSeconds=100, autoRenewAccountId=OptionalLong[4], expirationTimestamp=Timestamp[seconds=1234567, nanos=0], sequenceNumber=1, runningHash=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], key=1, isDeleted=false}";
         assertEquals(expectedString, meta.toString());
 
         final var metaCopy = meta;
@@ -153,6 +152,6 @@ class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
     @Test
     void nullArgsFail() {
         assertThrows(NullPointerException.class, () -> new ReadableTopicStore(null));
-        assertThrows(NullPointerException.class, () -> subject.getTopicMetadata(null));
+        assertEquals(withFailureReason(INVALID_TOPIC_ID), subject.getTopicMetadata(null));
     }
 }

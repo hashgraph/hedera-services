@@ -23,7 +23,6 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.pbj.runtime.io.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -66,8 +65,6 @@ public class KeyUtils {
                                     KEY_BUILDER.apply(B_NAME).build(),
                                     A_THRESHOLD_KEY)))
             .build();
-    public static final com.hedera.hapi.node.base.Key A_COMPLEX_PBJ_KEY = PbjConverter.protoToPbj(
-            A_COMPLEX_KEY, com.hedera.hapi.node.base.Key.class);
     public static final Key B_COMPLEX_KEY = Key.newBuilder()
             .thresholdKey(ThresholdKey.newBuilder()
                     .threshold(2)

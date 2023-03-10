@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.fees;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_GET_TOPIC_INFO;
+
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.transaction.Query;
@@ -31,8 +33,6 @@ import java.util.HashMap;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_GET_TOPIC_INFO;
 
 /**
  * Adapter for {@link UsageBasedFeeCalculator} to be used in {@link QueryWorkflow}. This class is

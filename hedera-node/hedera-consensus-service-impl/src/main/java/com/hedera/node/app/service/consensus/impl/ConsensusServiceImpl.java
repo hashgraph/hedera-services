@@ -20,7 +20,6 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.codecs.EntityNumCodec;
-import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.mono.state.codec.CodecFactory;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.state.Schema;

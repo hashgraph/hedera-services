@@ -40,7 +40,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseType;
-
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -63,9 +62,7 @@ class MonoGetTopicInfoUsageTest {
     private final Key key = A_COMPLEX_KEY;
     private final EntityNum topicEntityNum = EntityNum.fromLong(1L);
     private final TopicID topicId =
-            TopicID.newBuilder()
-                    .topicNum(topicEntityNum.longValue())
-                    .build();
+            TopicID.newBuilder().topicNum(topicEntityNum.longValue()).build();
     private final String memo = "test memo";
     private final long expirationTime = 1_234_567L;
     private final long sequenceNumber = 1L;

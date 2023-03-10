@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.mono.state.codec;
 
 import com.hedera.pbj.runtime.Codec;
-import com.hedera.pbj.runtime.io.DataBuffer;
 import com.hedera.pbj.runtime.io.DataInput;
 import com.hedera.pbj.runtime.io.DataInputStream;
 import com.hedera.pbj.runtime.io.DataOutput;
@@ -30,7 +29,6 @@ import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.function.Supplier;
 
 /**

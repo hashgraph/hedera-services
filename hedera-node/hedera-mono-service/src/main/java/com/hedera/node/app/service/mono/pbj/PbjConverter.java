@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.pbj;
 
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.ByteString;
@@ -43,15 +44,12 @@ import com.hedera.pbj.runtime.io.DataInputStream;
 import com.hedera.pbj.runtime.io.DataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Objects;
 import java.util.Optional;
-
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 
 public final class PbjConverter {
     public static @NonNull AccountID toPbj(@NonNull com.hederahashgraph.api.proto.java.AccountID accountID) {
@@ -103,6 +101,7 @@ public final class PbjConverter {
             throw new RuntimeException(e);
         }
     }
+
     public static @NonNull com.hederahashgraph.api.proto.java.AccountID fromPbj(AccountID accountID) {
         requireNonNull(accountID);
         final var builder = com.hederahashgraph.api.proto.java.AccountID.newBuilder()
@@ -1198,19 +1197,14 @@ public final class PbjConverter {
     }
 
     public static <T extends Record, R extends GeneratedMessageV3> R pbjToProto(
-            final T pbj,
-            final Class<T> pbjClass,
-            final Class<R> protoClass) {
+            final T pbj, final Class<T> pbjClass, final Class<R> protoClass) {
         try {
             final var codecField = pbjClass.getDeclaredField("PROTOBUF");
             final var codec = (Codec<T>) codecField.get(null);
             final var bytes = asBytes(codec, pbj);
             final var protocParser = protoClass.getMethod("parseFrom", byte[].class);
             return (R) protocParser.invoke(null, bytes);
-        } catch (NoSuchFieldException |
-                 IllegalAccessException |
-                 NoSuchMethodException |
-                 InvocationTargetException e) {
+        } catch (NoSuchFieldException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
             // Should be impossible, so just propagate an exception
             throw new RuntimeException("Invalid conversion to proto for " + pbjClass.getSimpleName(), e);
         }
@@ -1218,8 +1212,7 @@ public final class PbjConverter {
 
     @SuppressWarnings("unchecked")
     public static <T extends GeneratedMessageV3, R extends Record> @NonNull R protoToPbj(
-            @NonNull final T proto,
-            @NonNull final Class<R> pbjClass) {
+            @NonNull final T proto, @NonNull final Class<R> pbjClass) {
         try {
             final var bytes = Objects.requireNonNull(proto).toByteArray();
             final var codecField = Objects.requireNonNull(pbjClass).getDeclaredField("PROTOBUF");
@@ -1253,7 +1246,8 @@ public final class PbjConverter {
      * @throws IllegalStateException if the conversion fails
      */
     public static @NonNull Key fromGrpcKey(@NonNull final com.hederahashgraph.api.proto.java.Key grpcKey) {
-        try (final var bais = new ByteArrayInputStream(Objects.requireNonNull(grpcKey).toByteArray())) {
+        try (final var bais =
+                new ByteArrayInputStream(Objects.requireNonNull(grpcKey).toByteArray())) {
             return Key.PROTOBUF.parse(new DataInputStream(bais));
         } catch (final IOException e) {
             // Should be impossible, so just propagate an exception
@@ -1283,8 +1277,9 @@ public final class PbjConverter {
             // Should be impossible, so just propagate an exception
             throw new IllegalStateException("Invalid conversion from PBJ for Key", e);
         }
+    }
 
-    public static byte[] asBytes(Bytes b) {
+    public static @NonNull byte[] asBytes(@NonNull Bytes b) {
         final var buf = new byte[b.getLength()];
         b.getBytes(0, buf);
         return buf;

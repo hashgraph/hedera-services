@@ -92,8 +92,7 @@ public interface TxnHandlingScenario {
     default com.hedera.hapi.node.transaction.TransactionBody pbjTxnBody() {
         try {
             return PbjConverter.protoToPbj(
-                    platformTxn().getTxn(),
-                    com.hedera.hapi.node.transaction.TransactionBody.class);
+                    platformTxn().getTxn(), com.hedera.hapi.node.transaction.TransactionBody.class);
         } catch (final Throwable e) {
             // Should be impossible, so just propagate the exception
             throw new RuntimeException("Could not convert body to PBJ", e);

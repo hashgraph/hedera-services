@@ -31,7 +31,6 @@ import com.hedera.node.app.service.mono.exceptions.ResourceLimitException;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.submerkle.CurrencyAdjustments;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
@@ -45,7 +44,6 @@ import com.hedera.test.factories.txns.CryptoTransferFactory;
 import com.hedera.test.factories.txns.TinyBarsFromTo;
 import com.hederahashgraph.api.proto.java.*;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;

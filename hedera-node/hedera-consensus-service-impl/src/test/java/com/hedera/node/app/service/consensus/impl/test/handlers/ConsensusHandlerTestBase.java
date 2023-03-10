@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.protoToPbj;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.protoToPbj;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
@@ -49,8 +49,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class ConsensusHandlerTestBase {
     protected static final String TOPICS = "TOPICS";
-    protected final Key key = protoToPbj(A_COMPLEX_KEY, Key.class);
-    protected final Key anotherKey = protoToPbj(B_COMPLEX_KEY, Key.class);
+    protected final Key key = A_COMPLEX_KEY;
+    protected final Key anotherKey = B_COMPLEX_KEY;
     protected final String payerIdLiteral = "0.0.3";
     protected final AccountID payerId = protoToPbj(asAccount(payerIdLiteral), AccountID.class);
     protected final AccountID autoRenewId = AccountID.newBuilder().accountNum(4).build();
@@ -58,12 +58,12 @@ public class ConsensusHandlerTestBase {
 
     protected final HederaKey adminKey = asHederaKey(key).get();
     protected final EntityNum topicEntityNum = EntityNum.fromLong(1L);
-    protected final TopicID topicId = TopicID.newBuilder().topicNum(topicEntityNum.longValue()).build();
-    protected final Duration WELL_KNOWN_AUTO_RENEW_PERIOD = Duration.newBuilder()
-            .seconds(100).build();
-    protected final Timestamp WELL_KNOWN_EXPIRY = Timestamp.newBuilder()
-            .seconds(1_234_567L)
-            .build();
+    protected final TopicID topicId =
+            TopicID.newBuilder().topicNum(topicEntityNum.longValue()).build();
+    protected final Duration WELL_KNOWN_AUTO_RENEW_PERIOD =
+            Duration.newBuilder().seconds(100).build();
+    protected final Timestamp WELL_KNOWN_EXPIRY =
+            Timestamp.newBuilder().seconds(1_234_567L).build();
     protected final TopicID WELL_KNOWN_TOPIC_ID =
             TopicID.newBuilder().topicNum(topicEntityNum.longValue()).build();
     protected final String beneficiaryIdStr = "0.0.3";

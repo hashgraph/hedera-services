@@ -27,17 +27,14 @@ import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.CONSENSUS_CREATE_TOPIC_ADMIN_KEY_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.CONSENSUS_CREATE_TOPIC_MISSING_AUTORENEW_ACCOUNT_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.CONSENSUS_CREATE_TOPIC_NO_ADDITIONAL_KEYS_SCENARIO;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CUSTOM_PAYER_ACCOUNT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CUSTOM_PAYER_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
 import static com.hedera.test.factories.txns.ConsensusCreateTopicFactory.SIMPLE_TOPIC_ADMIN_KEY;
-import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.utils.KeyUtils.sanityRestored;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.assertj.core.api.Assertions;
@@ -74,7 +71,7 @@ class ConsensusCreateTopicHandlerParityTest {
         final var txn = CONSENSUS_CREATE_TOPIC_NO_ADDITIONAL_KEYS_SCENARIO.pbjTxnBody();
 
         // when:
-        final var context = new PreHandleContext(keyLookup, txn, PbjConverter.toPbj(CUSTOM_PAYER_ACCOUNT));
+        final var context = new PreHandleContext(keyLookup, txn, PARITY_CUSTOM_PAYER);
         subject.preHandle(context);
 
         // then:
@@ -89,7 +86,7 @@ class ConsensusCreateTopicHandlerParityTest {
         final var txn = CONSENSUS_CREATE_TOPIC_ADMIN_KEY_SCENARIO.pbjTxnBody();
 
         // when:
-        final var context = new PreHandleContext(keyLookup, txn, PbjConverter.toPbj(DEFAULT_PAYER));
+        final var context = new PreHandleContext(keyLookup, txn, PARITY_DEFAULT_PAYER);
         subject.preHandle(context);
 
         // then:
@@ -105,7 +102,7 @@ class ConsensusCreateTopicHandlerParityTest {
         final var txn = CONSENSUS_CREATE_TOPIC_ADMIN_KEY_SCENARIO.pbjTxnBody();
 
         // when:
-        final var context = new PreHandleContext(keyLookup, txn, PbjConverter.toPbj(CUSTOM_PAYER_ACCOUNT));
+        final var context = new PreHandleContext(keyLookup, txn, PARITY_CUSTOM_PAYER);
         subject.preHandle(context);
 
         // then:

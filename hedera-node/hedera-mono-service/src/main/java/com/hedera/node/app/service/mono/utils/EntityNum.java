@@ -33,10 +33,9 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-
-import java.util.Objects;
 
 /**
  * An integer whose {@code hashCode()} implementation vastly reduces the risk of hash collisions in

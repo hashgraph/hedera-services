@@ -170,7 +170,6 @@ import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;

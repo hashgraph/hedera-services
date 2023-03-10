@@ -16,6 +16,15 @@
 
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
+import static com.hedera.test.utils.TxnUtils.payerSponsoredPbjTransfer;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -39,14 +48,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
-import static com.hedera.test.utils.TxnUtils.payerSponsoredPbjTransfer;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
@@ -76,7 +77,8 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
                 .build();
         final var response = subject.createEmptyResponse(responseHeader);
         final var expectedResponse = Response.newBuilder()
-                .consensusGetTopicInfo(ConsensusGetTopicInfoResponse.newBuilder().header(responseHeader))
+                .consensusGetTopicInfo(
+                        ConsensusGetTopicInfoResponse.newBuilder().header(responseHeader))
                 .build();
         assertEquals(expectedResponse, response);
     }
@@ -123,8 +125,7 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
     void validatesQueryIfDeletedTopic() throws Throwable {
         givenValidTopic(autoRenewId.accountNum().get(), true);
         readableTopicState = readableTopicState();
-        given(readableStates.<EntityNum, Topic>get(TOPICS))
-                .willReturn(readableTopicState);
+        given(readableStates.<EntityNum, Topic>get(TOPICS)).willReturn(readableTopicState);
         readableStore = new ReadableTopicStore(readableStates);
 
         final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
@@ -140,26 +141,23 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
 
         final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
         final var response = subject.findResponse(query, responseHeader, readableStore, queryContext);
-        assertEquals(ResponseCodeEnum.FAIL_FEE, response.consensusGetTopicInfo().get().header().nodeTransactionPrecheckCode());
         assertEquals(
-                ConsensusTopicInfo.newBuilder().build(),
-                response.consensusGetTopicInfo().get().topicInfo());
+                ResponseCodeEnum.FAIL_FEE,
+                response.consensusGetTopicInfo().get().header().nodeTransactionPrecheckCode());
+        assertNull(response.consensusGetTopicInfo().get().topicInfo());
     }
 
     @Test
     void getsResponseIfOkResponse() {
         givenValidTopic();
         given(queryContext.getLedgerId()).willReturn(ledgerId);
-        final var responseHeader =
-                ResponseHeader.newBuilder()
-                        .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
-                        .build();
+        final var responseHeader = ResponseHeader.newBuilder()
+                .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
+                .build();
         final var expectedInfo = getExpectedInfo();
 
         final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
-        final var response = subject.findResponse(
-                query,
-                responseHeader, readableStore, queryContext);
+        final var response = subject.findResponse(query, responseHeader, readableStore, queryContext);
         final var topicInfoResponse = response.consensusGetTopicInfo().get();
         assertEquals(ResponseCodeEnum.OK, topicInfoResponse.header().nodeTransactionPrecheckCode());
         assertEquals(expectedInfo, topicInfoResponse.topicInfo());
@@ -173,24 +171,20 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
                 .sequenceNumber(topic.sequenceNumber())
                 .expirationTime(Timestamp.newBuilder().seconds(topic.expiry()))
                 .submitKey(key)
-                .autoRenewAccount(AccountID.newBuilder()
-                        .accountNum(topic.autoRenewAccountNumber()))
+                .autoRenewAccount(AccountID.newBuilder().accountNum(topic.autoRenewAccountNumber()))
                 .autoRenewPeriod(WELL_KNOWN_AUTO_RENEW_PERIOD)
                 .ledgerId(ledgerId)
                 .build();
     }
 
     private Query createGetTopicInfoQuery(final int topicId) {
-        final var payment = payerSponsoredPbjTransfer(
-                payerIdLiteral,
-                COMPLEX_KEY_ACCOUNT_KT, beneficiaryIdStr, paymentAmount);
+        final var payment =
+                payerSponsoredPbjTransfer(payerIdLiteral, COMPLEX_KEY_ACCOUNT_KT, beneficiaryIdStr, paymentAmount);
         final var data = ConsensusGetTopicInfoQuery.newBuilder()
                 .topicID(TopicID.newBuilder().topicNum(topicId).build())
                 .header(QueryHeader.newBuilder().payment(payment).build())
                 .build();
 
-        return Query.newBuilder()
-                .consensusGetTopicInfo(data)
-                .build();
+        return Query.newBuilder().consensusGetTopicInfo(data).build();
     }
 }

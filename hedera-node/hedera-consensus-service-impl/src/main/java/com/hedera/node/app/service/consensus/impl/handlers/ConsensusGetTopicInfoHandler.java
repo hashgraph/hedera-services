@@ -21,7 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
-import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asPbjKeyUnchecked;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -44,18 +44,9 @@ import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.pbj.runtime.io.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
+import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.Optional;
-
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
-import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
-import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
-import static com.hedera.node.app.service.mono.utils.MiscUtils.asPbjKeyUnchecked;
-import static java.util.Objects.requireNonNull;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -167,12 +158,9 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
             info.runningHash(Bytes.wrap(meta.runningHash()));
             info.sequenceNumber(meta.sequenceNumber());
             info.expirationTime(meta.expirationTimestamp());
-            meta.adminKey().ifPresent(key -> info.adminKey(
-                    asPbjKeyUnchecked((JKey) key)));
-            meta.submitKey().ifPresent(key -> info.submitKey(
-                    asPbjKeyUnchecked((JKey) key)));
-            info.autoRenewPeriod(Duration.newBuilder().seconds(
-                    meta.autoRenewDurationSeconds()));
+            meta.adminKey().ifPresent(key -> info.adminKey(asPbjKeyUnchecked((JKey) key)));
+            meta.submitKey().ifPresent(key -> info.submitKey(asPbjKeyUnchecked((JKey) key)));
+            info.autoRenewPeriod(Duration.newBuilder().seconds(meta.autoRenewDurationSeconds()));
             meta.autoRenewAccountId()
                     .ifPresent(account ->
                             info.autoRenewAccount(AccountID.newBuilder().accountNum(account)));
