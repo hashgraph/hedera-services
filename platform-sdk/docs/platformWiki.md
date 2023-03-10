@@ -17,7 +17,7 @@ This code is maintained by the "Platform Hashgraph" team.
         - Sync gossip algorithm
         - Out of order gossip algorithm
     - Hashgraph
-    -  State management
+    - State management
     - State snapshots
     - Hashing
     - State Signing
@@ -26,10 +26,10 @@ This code is maintained by the "Platform Hashgraph" team.
     - Transaction Handling
     - BLS
 - Event Flow
+    - Event Intake
     - Pre-consensus event stream
     - Post-consensus event stream
     - Threading Diagram
-- State Proofs
 
 ## Base
 
