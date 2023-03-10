@@ -16,7 +16,18 @@
 
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.QueryHeader;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.base.ResponseType;
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TopicID;
+import com.hedera.hapi.node.consensus.ConsensusGetTopicInfoQuery;
 import com.hedera.hapi.node.consensus.ConsensusGetTopicInfoResponse;
+import com.hedera.hapi.node.consensus.ConsensusTopicInfo;
+import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusGetTopicInfoHandler;
@@ -60,8 +71,8 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
 
     @Test
     void createsEmptyResponse() {
-        final var responseHeader = com.hedera.hapi.node.base.ResponseHeader.newBuilder()
-                .nodeTransactionPrecheckCode(com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_FEE)
+        final var responseHeader = ResponseHeader.newBuilder()
+                .nodeTransactionPrecheckCode(ResponseCodeEnum.FAIL_FEE)
                 .build();
         final var response = subject.createEmptyResponse(responseHeader);
         final var expectedResponse = Response.newBuilder()
@@ -72,18 +83,18 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
 
     @Test
     void requiresPayment() {
-        assertTrue(subject.requiresNodePayment(com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY));
-        assertTrue(subject.requiresNodePayment(com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF));
-        assertFalse(subject.requiresNodePayment(com.hedera.hapi.node.base.ResponseType.COST_ANSWER));
-        assertFalse(subject.requiresNodePayment(com.hedera.hapi.node.base.ResponseType.COST_ANSWER_STATE_PROOF));
+        assertTrue(subject.requiresNodePayment(ResponseType.ANSWER_ONLY));
+        assertTrue(subject.requiresNodePayment(ResponseType.ANSWER_STATE_PROOF));
+        assertFalse(subject.requiresNodePayment(ResponseType.COST_ANSWER));
+        assertFalse(subject.requiresNodePayment(ResponseType.COST_ANSWER_STATE_PROOF));
     }
 
     @Test
     void needsAnswerOnlyCostForCostAnswer() {
-        assertFalse(subject.needsAnswerOnlyCost(com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY));
-        assertFalse(subject.needsAnswerOnlyCost(com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF));
-        assertTrue(subject.needsAnswerOnlyCost(com.hedera.hapi.node.base.ResponseType.COST_ANSWER));
-        assertFalse(subject.needsAnswerOnlyCost(com.hedera.hapi.node.base.ResponseType.COST_ANSWER_STATE_PROOF));
+        assertFalse(subject.needsAnswerOnlyCost(ResponseType.ANSWER_ONLY));
+        assertFalse(subject.needsAnswerOnlyCost(ResponseType.ANSWER_STATE_PROOF));
+        assertTrue(subject.needsAnswerOnlyCost(ResponseType.COST_ANSWER));
+        assertFalse(subject.needsAnswerOnlyCost(ResponseType.COST_ANSWER_STATE_PROOF));
     }
 
     @Test
@@ -92,7 +103,7 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
 
         final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
         final var response = subject.validate(query, readableStore);
-        assertEquals(com.hedera.hapi.node.base.ResponseCodeEnum.OK, response);
+        assertEquals(ResponseCodeEnum.OK, response);
     }
 
     @Test
@@ -105,33 +116,33 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
 
         final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
         final var response = subject.validate(query, store);
-        assertEquals(com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID, response);
+        assertEquals(ResponseCodeEnum.INVALID_TOPIC_ID, response);
     }
 
     @Test
     void validatesQueryIfDeletedTopic() throws Throwable {
         givenValidTopic(autoRenewId.accountNum().get(), true);
         readableTopicState = readableTopicState();
-        given(readableStates.<EntityNum, com.hedera.hapi.node.state.consensus.Topic>get(TOPICS))
+        given(readableStates.<EntityNum, Topic>get(TOPICS))
                 .willReturn(readableTopicState);
         readableStore = new ReadableTopicStore(readableStates);
 
         final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
         final var response = subject.validate(query, readableStore);
-        assertEquals(com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID, response);
+        assertEquals(ResponseCodeEnum.INVALID_TOPIC_ID, response);
     }
 
     @Test
     void getsResponseIfFailedResponse() {
-        final var responseHeader = com.hedera.hapi.node.base.ResponseHeader.newBuilder()
-                .nodeTransactionPrecheckCode(com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_FEE)
+        final var responseHeader = ResponseHeader.newBuilder()
+                .nodeTransactionPrecheckCode(ResponseCodeEnum.FAIL_FEE)
                 .build();
 
         final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
         final var response = subject.findResponse(query, responseHeader, readableStore, queryContext);
-        assertEquals(com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_FEE, response.consensusGetTopicInfo().get().header().nodeTransactionPrecheckCode());
+        assertEquals(ResponseCodeEnum.FAIL_FEE, response.consensusGetTopicInfo().get().header().nodeTransactionPrecheckCode());
         assertEquals(
-                com.hedera.hapi.node.consensus.ConsensusTopicInfo.newBuilder().build(),
+                ConsensusTopicInfo.newBuilder().build(),
                 response.consensusGetTopicInfo().get().topicInfo());
     }
 
@@ -140,8 +151,8 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
         givenValidTopic();
         given(queryContext.getLedgerId()).willReturn(ledgerId);
         final var responseHeader =
-                com.hedera.hapi.node.base.ResponseHeader.newBuilder()
-                        .nodeTransactionPrecheckCode(com.hedera.hapi.node.base.ResponseCodeEnum.OK)
+                ResponseHeader.newBuilder()
+                        .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
                         .build();
         final var expectedInfo = getExpectedInfo();
 
@@ -150,35 +161,35 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
                 query,
                 responseHeader, readableStore, queryContext);
         final var topicInfoResponse = response.consensusGetTopicInfo().get();
-        assertEquals(com.hedera.hapi.node.base.ResponseCodeEnum.OK, topicInfoResponse.header().nodeTransactionPrecheckCode());
+        assertEquals(ResponseCodeEnum.OK, topicInfoResponse.header().nodeTransactionPrecheckCode());
         assertEquals(expectedInfo, topicInfoResponse.topicInfo());
     }
 
-    private com.hedera.hapi.node.consensus.ConsensusTopicInfo getExpectedInfo() {
-        return com.hedera.hapi.node.consensus.ConsensusTopicInfo.newBuilder()
+    private ConsensusTopicInfo getExpectedInfo() {
+        return ConsensusTopicInfo.newBuilder()
                 .memo(topic.memo())
                 .adminKey(key)
                 .runningHash(Bytes.wrap("runningHash"))
                 .sequenceNumber(topic.sequenceNumber())
-                .expirationTime(com.hedera.hapi.node.base.Timestamp.newBuilder().seconds(topic.expiry()))
+                .expirationTime(Timestamp.newBuilder().seconds(topic.expiry()))
                 .submitKey(key)
-                .autoRenewAccount(com.hedera.hapi.node.base.AccountID.newBuilder()
+                .autoRenewAccount(AccountID.newBuilder()
                         .accountNum(topic.autoRenewAccountNumber()))
                 .autoRenewPeriod(WELL_KNOWN_AUTO_RENEW_PERIOD)
                 .ledgerId(ledgerId)
                 .build();
     }
 
-    private com.hedera.hapi.node.transaction.Query createGetTopicInfoQuery(final int topicId) {
+    private Query createGetTopicInfoQuery(final int topicId) {
         final var payment = payerSponsoredPbjTransfer(
                 payerIdLiteral,
                 COMPLEX_KEY_ACCOUNT_KT, beneficiaryIdStr, paymentAmount);
-        final var data = com.hedera.hapi.node.consensus.ConsensusGetTopicInfoQuery.newBuilder()
-                .topicID(com.hedera.hapi.node.base.TopicID.newBuilder().topicNum(topicId).build())
-                .header(com.hedera.hapi.node.base.QueryHeader.newBuilder().payment(payment).build())
+        final var data = ConsensusGetTopicInfoQuery.newBuilder()
+                .topicID(TopicID.newBuilder().topicNum(topicId).build())
+                .header(QueryHeader.newBuilder().payment(payment).build())
                 .build();
 
-        return com.hedera.hapi.node.transaction.Query.newBuilder()
+        return Query.newBuilder()
                 .consensusGetTopicInfo(data)
                 .build();
     }

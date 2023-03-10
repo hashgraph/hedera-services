@@ -28,7 +28,6 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.Transaction;
-import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
@@ -45,6 +44,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Objects;
 import java.util.Optional;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
@@ -657,8 +657,8 @@ public final class PbjConverter {
                 .build();
     }
 
-    public static Transaction toPbj(com.hederahashgraph.api.proto.java.Transaction t) {
-        return protoToPbj(t, Transaction.class);
+    public static @NonNull Transaction toPbj(final @NonNull com.hederahashgraph.api.proto.java.Transaction t) {
+        return protoToPbj(Objects.requireNonNull(t), Transaction.class);
     }
 
     public static Timestamp toPbj(com.hederahashgraph.api.proto.java.Timestamp t) {
@@ -1024,21 +1024,23 @@ public final class PbjConverter {
                  IllegalAccessException |
                  NoSuchMethodException |
                  InvocationTargetException e) {
-            throw new RuntimeException(e);
+            // Should be impossible, so just propagate an exception
+            throw new RuntimeException("Invalid conversion to proto for " + pbjClass.getSimpleName(), e);
         }
     }
 
     @SuppressWarnings("unchecked")
-    public static <T extends GeneratedMessageV3, R extends Record> R protoToPbj(
-            final T proto,
-            final Class<R> pbjClass) {
+    public static <T extends GeneratedMessageV3, R extends Record> @NonNull R protoToPbj(
+            @NonNull final T proto,
+            @NonNull final Class<R> pbjClass) {
         try {
-            final var bytes = proto.toByteArray();
-            final var codecField = pbjClass.getDeclaredField("PROTOBUF");
+            final var bytes = Objects.requireNonNull(proto).toByteArray();
+            final var codecField = Objects.requireNonNull(pbjClass).getDeclaredField("PROTOBUF");
             final var codec = (Codec<R>) codecField.get(null);
             return codec.parse(DataBuffer.wrap(bytes));
         } catch (NoSuchFieldException | IllegalAccessException | IOException e) {
-            throw new RuntimeException(e);
+            // Should be impossible, so just propagate an exception
+            throw new RuntimeException("Invalid conversion to PBJ for " + pbjClass.getSimpleName(), e);
         }
     }
 
@@ -1049,8 +1051,8 @@ public final class PbjConverter {
      * @return the byte array
      * @throws IllegalStateException if the conversion fails
      */
-    public static byte[] unwrapPbj(final Bytes bytes) {
-        final var ret = new byte[bytes.getLength()];
+    public static @NonNull byte[] unwrapPbj(@NonNull final Bytes bytes) {
+        final var ret = new byte[Objects.requireNonNull(bytes).getLength()];
         bytes.getBytes(0, ret);
         return ret;
     }
@@ -1063,11 +1065,12 @@ public final class PbjConverter {
      * @return the PBJ {@link Key}
      * @throws IllegalStateException if the conversion fails
      */
-    public static Key fromGrpcKey(@NonNull final com.hederahashgraph.api.proto.java.Key grpcKey) {
-        try (final var bais = new ByteArrayInputStream(grpcKey.toByteArray())) {
+    public static @NonNull Key fromGrpcKey(@NonNull final com.hederahashgraph.api.proto.java.Key grpcKey) {
+        try (final var bais = new ByteArrayInputStream(Objects.requireNonNull(grpcKey).toByteArray())) {
             return Key.PROTOBUF.parse(new DataInputStream(bais));
         } catch (final IOException e) {
-            throw new IllegalStateException(e);
+            // Should be impossible, so just propagate an exception
+            throw new IllegalStateException("Invalid conversion to PBJ for Key", e);
         }
     }
 
@@ -1079,7 +1082,7 @@ public final class PbjConverter {
      * @return the converted {@link JKey} if valid, or an empty optional if invalid
      * @throws IllegalStateException if the conversion fails
      */
-    public static Optional<HederaKey> fromPbjKey(@Nullable final Key pbjKey) {
+    public static @NonNull Optional<HederaKey> fromPbjKey(@Nullable final Key pbjKey) {
         if (pbjKey == null) {
             return Optional.empty();
         }
@@ -1090,7 +1093,8 @@ public final class PbjConverter {
             final var grpcKey = com.hederahashgraph.api.proto.java.Key.parseFrom(baos.toByteArray());
             return asHederaKey(grpcKey);
         } catch (final IOException e) {
-            throw new IllegalStateException(e);
+            // Should be impossible, so just propagate an exception
+            throw new IllegalStateException("Invalid conversion from PBJ for Key", e);
         }
     }
 }

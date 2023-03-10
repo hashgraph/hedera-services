@@ -16,7 +16,14 @@
 
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Duration;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TopicID;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusUpdateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusUpdateTopicRecordBuilder;
 import com.hedera.node.app.spi.accounts.AccountAccess;
@@ -46,8 +53,8 @@ import static org.mockito.BDDMockito.willThrow;
 
 @ExtendWith(MockitoExtension.class)
 class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
-    private static final com.hedera.hapi.node.base.TopicID WELL_KNOWN_TOPIC_ID =
-            com.hedera.hapi.node.base.TopicID.newBuilder().topicNum(1L).build();
+    private static final TopicID WELL_KNOWN_TOPIC_ID =
+            TopicID.newBuilder().topicNum(1L).build();
 
     private final ConsensusUpdateTopicTransactionBody.Builder OP_BUILDER =
             ConsensusUpdateTopicTransactionBody.newBuilder();
@@ -79,7 +86,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var op = OP_BUILDER.build();
 
         // expect:
-        assertFailsWith(com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID, () -> subject.handle(handleContext, op, writableStore));
+        assertFailsWith(ResponseCodeEnum.INVALID_TOPIC_ID, () -> subject.handle(handleContext, op, writableStore));
     }
 
     @Test
@@ -90,7 +97,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var op = OP_BUILDER.topicID(wellKnownId()).build();
 
         // expect:
-        assertFailsWith(com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID, () -> subject.handle(handleContext, op, writableStore));
+        assertFailsWith(ResponseCodeEnum.INVALID_TOPIC_ID, () -> subject.handle(handleContext, op, writableStore));
     }
 
     @Test
@@ -104,7 +111,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
                 .build();
 
         // expect:
-        assertFailsWith(com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED, () -> subject.handle(handleContext, op, writableStore));
+        assertFailsWith(ResponseCodeEnum.UNAUTHORIZED, () -> subject.handle(handleContext, op, writableStore));
     }
 
     @Test
@@ -114,12 +121,12 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
 
         final var op = OP_BUILDER.topicID(wellKnownId()).adminKey(key).build();
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
-        willThrow(new HandleStatusException(com.hedera.hapi.node.base.ResponseCodeEnum.BAD_ENCODING))
+        willThrow(new HandleStatusException(ResponseCodeEnum.BAD_ENCODING))
                 .given(attributeValidator)
                 .validateKey(key);
 
         // expect:
-        assertFailsWith(com.hedera.hapi.node.base.ResponseCodeEnum.BAD_ENCODING, () -> subject.handle(handleContext, op, writableStore));
+        assertFailsWith(ResponseCodeEnum.BAD_ENCODING, () -> subject.handle(handleContext, op, writableStore));
     }
 
     @Test
@@ -145,12 +152,12 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
 
         final var op = OP_BUILDER.topicID(wellKnownId()).submitKey(key).build();
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
-        willThrow(new HandleStatusException(com.hedera.hapi.node.base.ResponseCodeEnum.BAD_ENCODING))
+        willThrow(new HandleStatusException(ResponseCodeEnum.BAD_ENCODING))
                 .given(attributeValidator)
                 .validateKey(key);
 
         // expect:
-        assertFailsWith(com.hedera.hapi.node.base.ResponseCodeEnum.BAD_ENCODING, () -> subject.handle(handleContext, op, writableStore));
+        assertFailsWith(ResponseCodeEnum.BAD_ENCODING, () -> subject.handle(handleContext, op, writableStore));
     }
 
     @Test
@@ -180,12 +187,12 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
                 .memo("Please mind the vase")
                 .build();
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
-        willThrow(new HandleStatusException(com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG))
+        willThrow(new HandleStatusException(ResponseCodeEnum.MEMO_TOO_LONG))
                 .given(attributeValidator)
                 .validateMemo(op.memo().get());
 
         // expect:
-        assertFailsWith(com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG, () -> subject.handle(handleContext, op, writableStore));
+        assertFailsWith(ResponseCodeEnum.MEMO_TOO_LONG, () -> subject.handle(handleContext, op, writableStore));
     }
 
     @Test
@@ -209,26 +216,26 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
     void validatesNewExpiryViaMeta() {
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
-        final var expiry = com.hedera.hapi.node.base.Timestamp.newBuilder().seconds(123L).build();
+        final var expiry = Timestamp.newBuilder().seconds(123L).build();
         final var op = OP_BUILDER
                 .topicID(wellKnownId())
                 .expirationTime(expiry)
                 .build();
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         final var impliedMeta = new ExpiryMeta(123L, NA, NA);
-        willThrow(new HandleStatusException(com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME))
+        willThrow(new HandleStatusException(ResponseCodeEnum.INVALID_EXPIRATION_TIME))
                 .given(expiryValidator)
                 .resolveUpdateAttempt(currentExpiryMeta, impliedMeta);
 
         // expect:
-        assertFailsWith(com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME, () -> subject.handle(handleContext, op, writableStore));
+        assertFailsWith(ResponseCodeEnum.INVALID_EXPIRATION_TIME, () -> subject.handle(handleContext, op, writableStore));
     }
 
     @Test
     void appliesNewExpiryViaMeta() {
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
-        final var expiry = com.hedera.hapi.node.base.Timestamp.newBuilder().seconds(123L).build();
+        final var expiry = Timestamp.newBuilder().seconds(123L).build();
         final var op = OP_BUILDER
                 .topicID(wellKnownId())
                 .expirationTime(expiry)
@@ -249,25 +256,25 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
     void validatesNewAutoRenewPeriodViaMeta() {
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
-        final var autoRenewPeriod = com.hedera.hapi.node.base.Duration.newBuilder().seconds(123L).build();
+        final var autoRenewPeriod = Duration.newBuilder().seconds(123L).build();
         final var op = OP_BUILDER
                 .topicID(wellKnownId())
                 .autoRenewPeriod(autoRenewPeriod)
                 .build();
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         final var impliedMeta = new ExpiryMeta(NA, 123L, NA);
-        willThrow(new HandleStatusException(com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE))
+        willThrow(new HandleStatusException(ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE))
                 .given(expiryValidator)
                 .resolveUpdateAttempt(currentExpiryMeta, impliedMeta);
 
         // expect:
-        assertFailsWith(com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE, () -> subject.handle(handleContext, op, writableStore));
+        assertFailsWith(ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE, () -> subject.handle(handleContext, op, writableStore));
     }
 
     @Test
     void appliesNewAutoRenewPeriodViaMeta() {
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
-        final var autoRenewPeriod = com.hedera.hapi.node.base.Duration.newBuilder().seconds(123L).build();
+        final var autoRenewPeriod = Duration.newBuilder().seconds(123L).build();
         final var op = OP_BUILDER
                 .topicID(wellKnownId())
                 .autoRenewPeriod(autoRenewPeriod)
@@ -294,19 +301,19 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         final var impliedMeta = new ExpiryMeta(NA, NA, autoRenewId.accountNum().get());
         willThrow(new HandleStatusException(
-                com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT))
+                ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT))
                 .given(expiryValidator)
                 .resolveUpdateAttempt(currentExpiryMeta, impliedMeta);
 
         // expect:
-        assertFailsWith(com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT, () -> subject.handle(handleContext, op, writableStore));
+        assertFailsWith(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT, () -> subject.handle(handleContext, op, writableStore));
     }
 
     @Test
     void appliesNewAutoRenewNumViaMeta() {
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
-        final var autoRenewAccount = com.hedera.hapi.node.base.AccountID.newBuilder()
+        final var autoRenewAccount = AccountID.newBuilder()
                 .accountNum(666).build();
         final var op = OP_BUILDER
                 .topicID(wellKnownId())
@@ -337,7 +344,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
     }
 
     public static void assertFailsWith(
-            final com.hedera.hapi.node.base.ResponseCodeEnum status, final Runnable something) {
+            final ResponseCodeEnum status, final Runnable something) {
         final var ex = assertThrows(HandleStatusException.class, something::run);
         assertEquals(status, ex.getStatus());
     }
@@ -362,7 +369,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
 
     @Test
     void autoRenewPeriodMutationIsNonExpiry() {
-        final var autoRenewPeriod = com.hedera.hapi.node.base.Duration.newBuilder().seconds(123L).build();
+        final var autoRenewPeriod = Duration.newBuilder().seconds(123L).build();
         final var op = OP_BUILDER.autoRenewPeriod(autoRenewPeriod).build();
         assertTrue(ConsensusUpdateTopicHandler.wantsToMutateNonExpiryField(op));
     }
@@ -375,7 +382,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
 
     @Test
     void expiryMutationIsExpiry() {
-        final var expiryTime = com.hedera.hapi.node.base.Timestamp.newBuilder()
+        final var expiryTime = Timestamp.newBuilder()
                 .seconds(123L)
                 .build();
         final var op = OP_BUILDER.expirationTime(expiryTime).build();
@@ -387,7 +394,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         given(accountAccess.getKey(payerId)).willReturn(withKey(adminKey));
 
         final var op =
-                OP_BUILDER.expirationTime(com.hedera.hapi.node.base.Timestamp.newBuilder().build())
+                OP_BUILDER.expirationTime(Timestamp.newBuilder().build())
                         .build();
         final var context = new PreHandleContext(accountAccess, txnWith(op));
 
@@ -404,7 +411,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         given(accountAccess.getKey(payerId)).willReturn(withKey(adminKey));
 
         final var op = OP_BUILDER
-                .topicID(com.hedera.hapi.node.base.TopicID.newBuilder().topicNum(123L).build())
+                .topicID(TopicID.newBuilder().topicNum(123L).build())
                 .build();
         final var context = new PreHandleContext(accountAccess, txnWith(op));
 
@@ -412,7 +419,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
 
         assertThat(context.getPayerKey()).isEqualTo(adminKey);
         assertTrue(context.failed());
-        assertThat(context.getStatus()).isEqualTo(com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID);
+        assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.INVALID_TOPIC_ID);
         assertThat(context.getRequiredNonPayerKeys()).isEmpty();
     }
 
@@ -422,7 +429,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
 
         final var op = OP_BUILDER
                 .adminKey(key)
-                .topicID(com.hedera.hapi.node.base.TopicID.newBuilder().topicNum(1L).build())
+                .topicID(TopicID.newBuilder().topicNum(1L).build())
                 .build();
         final var context = new PreHandleContext(accountAccess, txnWith(op));
 
@@ -430,7 +437,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
 
         assertThat(context.getPayerKey()).isEqualTo(adminKey);
         assertFalse(context.failed());
-        assertThat(context.getStatus()).isEqualTo(com.hedera.hapi.node.base.ResponseCodeEnum.OK);
+        assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.OK);
         // adminKey and op admin key
         assertEquals(2, context.getRequiredNonPayerKeys().size());
         //        assertSame(context.getRequiredNonPayerKeys().get(0), asHederaKey(key).get());
@@ -451,7 +458,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
 
         assertThat(context.getPayerKey()).isEqualTo(adminKey);
         assertFalse(context.failed());
-        assertThat(context.getStatus()).isEqualTo(com.hedera.hapi.node.base.ResponseCodeEnum.OK);
+        assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.OK);
         // adminKey and auto-renew key
         assertEquals(2, context.getRequiredNonPayerKeys().size());
     }
@@ -462,11 +469,11 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
                 .willReturn(withKey(adminKey));
         given(accountAccess.getKey(autoRenewId))
                 .willReturn(withFailureReason(
-                        com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT));
+                        ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT));
 
         final var op = OP_BUILDER
                 .autoRenewAccount(autoRenewId)
-                .topicID(com.hedera.hapi.node.base.TopicID.newBuilder().topicNum(1L).build())
+                .topicID(TopicID.newBuilder().topicNum(1L).build())
                 .build();
         final var context = new PreHandleContext(accountAccess, txnWith(op));
 
@@ -474,22 +481,20 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
 
         assertThat(context.getPayerKey()).isEqualTo(adminKey);
         assertTrue(context.failed());
-        assertThat(context.getStatus()).isEqualTo(com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
+        assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
         // adminKey
         assertEquals(1, context.getRequiredNonPayerKeys().size());
     }
 
-    private com.hedera.hapi.node.transaction.TransactionBody txnWith(
-            final com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody op) {
-        return com.hedera.hapi.node.transaction.TransactionBody.newBuilder()
-                .transactionID(
-                        com.hedera.hapi.node.base.TransactionID.newBuilder().accountID(payerId))
+    private TransactionBody txnWith(final ConsensusUpdateTopicTransactionBody op) {
+        return TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(payerId))
                 .consensusUpdateTopic(op)
                 .build();
     }
 
-    private com.hedera.hapi.node.base.TopicID wellKnownId() {
-        return com.hedera.hapi.node.base.TopicID.newBuilder()
+    private TopicID wellKnownId() {
+        return TopicID.newBuilder()
                 .topicNum(topicEntityNum.longValue())
                 .build();
     }

@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.mono.Utils;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
@@ -39,15 +42,15 @@ import static org.mockito.BDDMockito.given;
 
 public final class ConsensusTestUtils {
 
-    static final com.hedera.hapi.node.base.Key SIMPLE_KEY_A = com.hedera.hapi.node.base.Key.newBuilder()
+    static final Key SIMPLE_KEY_A = Key.newBuilder()
             .ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes()))
             .build();
-    static final com.hedera.hapi.node.base.Key SIMPLE_KEY_B = com.hedera.hapi.node.base.Key.newBuilder()
+    static final Key SIMPLE_KEY_B = Key.newBuilder()
             .ed25519(Bytes.wrap("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".getBytes()))
             .build();
     static final HederaKey A_NONNULL_KEY = new HederaKey() {};
 
-    static final com.hedera.hapi.node.base.AccountID ACCOUNT_ID_4 = com.hedera.hapi.node.base.AccountID
+    static final AccountID ACCOUNT_ID_4 = AccountID
             .newBuilder().accountNum(4L).build();
 
     private ConsensusTestUtils() {
@@ -55,13 +58,13 @@ public final class ConsensusTestUtils {
     }
 
     static void assertOkResponse(PreHandleContext context) {
-        assertThat(context.getStatus()).isEqualTo(com.hedera.hapi.node.base.ResponseCodeEnum.OK);
+        assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.OK);
         assertThat(context.failed()).isFalse();
     }
 
     static HederaKey mockPayerLookup(
-            com.hedera.hapi.node.base.Key key,
-            com.hedera.hapi.node.base.AccountID accountId, AccountAccess keyLookup) {
+            Key key,
+            AccountID accountId, AccountAccess keyLookup) {
         final var returnKey = Utils.asHederaKey(key).orElseThrow();
         given(keyLookup.getKey(accountId)).willReturn(KeyOrLookupFailureReason.withKey(returnKey));
         return returnKey;
@@ -75,13 +78,13 @@ public final class ConsensusTestUtils {
         assertPayer(CUSTOM_PAYER_ACCOUNT_KT.asPbjKey(), context);
     }
 
-    static void assertPayer(com.hedera.hapi.node.base.Key expected, PreHandleContext context) {
+    static void assertPayer(Key expected, PreHandleContext context) {
         Assertions.assertThat(sanityRestored(context.getPayerKey())).isEqualTo(expected);
     }
 
     static void mockTopicLookup(
-            com.hedera.hapi.node.base.Key adminKey,
-            com.hedera.hapi.node.base.Key submitKey,
+            Key adminKey,
+            Key submitKey,
             ReadableTopicStore topicStore) {
         given(topicStore.getTopicMetadata(notNull()))
                 .willReturn(ReadableTopicStore.TopicMetaOrLookupFailureReason.withTopicMeta(newTopicMeta(

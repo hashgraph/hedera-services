@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.*;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
@@ -40,10 +41,8 @@ public class AdapterUtils {
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
     private static final String ALIASES_KEY = "ALIASES";
 
-    public static final com.hedera.hapi.node.base.AccountID PARITY_CUSTOM_PAYER =
-            com.hedera.hapi.node.base.AccountID.newBuilder().accountNum(1216).build();
-    public static final com.hedera.hapi.node.base.AccountID PARITY_DEFAULT_PAYER =
-            com.hedera.hapi.node.base.AccountID.newBuilder().accountNum(13257).build();
+    public static final AccountID PARITY_CUSTOM_PAYER = AccountID.newBuilder().accountNum(1216).build();
+    public static final AccountID PARITY_DEFAULT_PAYER = AccountID.newBuilder().accountNum(13257).build();
 
     private AdapterUtils() {
         throw new UnsupportedOperationException("Utility Class");

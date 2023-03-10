@@ -98,12 +98,12 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         }
     }
 
-    private boolean updatesToNonSentinelAutoRenewAccount(final ConsensusUpdateTopicTransactionBody op) {
+    private boolean updatesToNonSentinelAutoRenewAccount(@NonNull final ConsensusUpdateTopicTransactionBody op) {
         return op.autoRenewAccount() != null &&
                 !AccountID.newBuilder().build().equals(op.autoRenewAccount());
     }
 
-    private boolean onlyExtendsExpiry(final ConsensusUpdateTopicTransactionBody op) {
+    private boolean onlyExtendsExpiry(@NonNull final ConsensusUpdateTopicTransactionBody op) {
         return op.expirationTime() == null
                 && op.memo() == null
                 && op.adminKey() == null
@@ -147,10 +147,10 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
     }
 
     private void resolveMutableBuilderAttributes(
-            final ExpiryValidator expiryValidator,
-            final ConsensusUpdateTopicTransactionBody op,
-            final Topic.Builder builder,
-            final Topic topic) {
+            @NonNull final ExpiryValidator expiryValidator,
+            @NonNull final ConsensusUpdateTopicTransactionBody op,
+            @NonNull final Topic.Builder builder,
+            @NonNull final Topic topic) {
         if (op.adminKey() != null) {
             builder.adminKey(op.adminKey());
         } else {
@@ -173,7 +173,9 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
     }
 
     private void validateMaybeNewAttributes(
-            final HandleContext handleContext, final ConsensusUpdateTopicTransactionBody op, final Topic topic) {
+            @NonNull final HandleContext handleContext,
+            @NonNull final ConsensusUpdateTopicTransactionBody op,
+            @NonNull final Topic topic) {
         validateMaybeNewAdminKey(handleContext.attributeValidator(), op);
         validateMaybeNewSubmitKey(handleContext.attributeValidator(), op);
         validateMaybeNewMemo(handleContext.attributeValidator(), op);
@@ -181,12 +183,16 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
     }
 
     private void validateMaybeNewExpiry(
-            final ExpiryValidator expiryValidator, final ConsensusUpdateTopicTransactionBody op, final Topic topic) {
+            @NonNull final ExpiryValidator expiryValidator,
+            @NonNull final ConsensusUpdateTopicTransactionBody op,
+            @NonNull final Topic topic) {
         resolvedUpdateMetaFrom(expiryValidator, op, topic);
     }
 
     private ExpiryMeta resolvedUpdateMetaFrom(
-            final ExpiryValidator expiryValidator, final ConsensusUpdateTopicTransactionBody op, final Topic topic) {
+            @NonNull final ExpiryValidator expiryValidator,
+            @NonNull final ConsensusUpdateTopicTransactionBody op,
+            @NonNull final Topic topic) {
         final var currentMeta = new ExpiryMeta(topic.expiry(), topic.autoRenewPeriod(), topic.autoRenewAccountNumber());
         if (updatesExpiryMeta(op)) {
             final var updateMeta = new ExpiryMeta(
@@ -201,57 +207,59 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         }
     }
 
-    private long effExpiryOf(final ConsensusUpdateTopicTransactionBody op) {
+    private long effExpiryOf(@NonNull final ConsensusUpdateTopicTransactionBody op) {
         return Optional.ofNullable(op.expirationTime())
                 .map(Timestamp::seconds)
                 .orElse(NA);
     }
 
-    private long effAutoRenewPeriodOf(final ConsensusUpdateTopicTransactionBody op) {
+    private long effAutoRenewPeriodOf(@NonNull final ConsensusUpdateTopicTransactionBody op) {
         return Optional.ofNullable(op.autoRenewPeriod())
                 .map(Duration::seconds)
                 .orElse(NA);
     }
 
-    private long effAutoRenewShardOf(final ConsensusUpdateTopicTransactionBody op) {
+    private long effAutoRenewShardOf(@NonNull final ConsensusUpdateTopicTransactionBody op) {
         return Optional.ofNullable(op.autoRenewAccount())
                 .map(AccountID::shardNum)
                 .orElse(NA);
     }
 
-    private long effAutoRenewNumOf(final ConsensusUpdateTopicTransactionBody op) {
+    private long effAutoRenewNumOf(@NonNull final ConsensusUpdateTopicTransactionBody op) {
         return Optional.ofNullable(op.autoRenewAccount())
                 .flatMap(AccountID::accountNum)
                 .orElse(NA);
     }
 
-    private long effAutoRenewRealmOf(final ConsensusUpdateTopicTransactionBody op) {
+    private long effAutoRenewRealmOf(@NonNull final ConsensusUpdateTopicTransactionBody op) {
         return Optional.ofNullable(op.autoRenewAccount())
                 .map(AccountID::realmNum)
                 .orElse(NA);
     }
 
-    private boolean updatesExpiryMeta(final ConsensusUpdateTopicTransactionBody op) {
+    private boolean updatesExpiryMeta(@NonNull final ConsensusUpdateTopicTransactionBody op) {
         return op.expirationTime() != null
                 || op.autoRenewPeriod() != null
                 || op.autoRenewAccount() != null;
     }
 
     private void validateMaybeNewMemo(
-            final AttributeValidator attributeValidator, final ConsensusUpdateTopicTransactionBody op) {
+            @NonNull final AttributeValidator attributeValidator,
+            @NonNull final ConsensusUpdateTopicTransactionBody op) {
         op.memo().ifPresent(attributeValidator::validateMemo);
     }
 
     private void validateMaybeNewAdminKey(
-            final AttributeValidator attributeValidator, final ConsensusUpdateTopicTransactionBody op) {
+            @NonNull final AttributeValidator attributeValidator,
+            @NonNull final ConsensusUpdateTopicTransactionBody op) {
         if (op.adminKey() != null) {
             attributeValidator.validateKey(op.adminKey());
         }
     }
 
     private void validateMaybeNewSubmitKey(
-            final AttributeValidator attributeValidator,
-            final ConsensusUpdateTopicTransactionBody op) {
+            @NonNull final AttributeValidator attributeValidator,
+            @NonNull final ConsensusUpdateTopicTransactionBody op) {
 
         if (op.submitKey() != null) {
             attributeValidator.validateKey(op.submitKey());
@@ -263,7 +271,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         return new UpdateTopicRecordBuilder();
     }
 
-    public static boolean wantsToMutateNonExpiryField(final ConsensusUpdateTopicTransactionBody op) {
+    public static boolean wantsToMutateNonExpiryField(@NonNull final ConsensusUpdateTopicTransactionBody op) {
         return op.memo() != null
                 || op.adminKey() != null
                 || op.submitKey() != null

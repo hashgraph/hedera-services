@@ -17,7 +17,14 @@
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
 import com.google.protobuf.ByteString;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TopicID;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.consensus.ConsensusMessageChunkInfo;
+import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
@@ -129,7 +136,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
 
         subject.preHandle(context, readableStore);
 
-        assertThat(context.getStatus()).isEqualTo(com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID);
+        assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.INVALID_TOPIC_ID);
         assertThat(context.failed()).isTrue();
     }
 
@@ -140,14 +147,14 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
 
         given(keyLookup.getKey(TEST_DEFAULT_PAYER))
                 .willReturn(KeyOrLookupFailureReason.withFailureReason(
-                        com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST)); // Any error response code
+                        ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST)); // Any error response code
         mockTopicLookup(SIMPLE_KEY_A);
         final var context = new PreHandleContext(
                 keyLookup, newDefaultSubmitMessageTxn(topicEntityNum), TEST_DEFAULT_PAYER);
 
         subject.preHandle(context, readableStore);
 
-        assertThat(context.getStatus()).isEqualTo(com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID);
+        assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID);
         assertThat(context.failed()).isTrue();
         assertThat(context.getPayerKey()).isNull();
     }
@@ -219,7 +226,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
 
             given(readableStore.getTopicMetadata(notNull()))
                     .willReturn(ReadableTopicStore.TopicMetaOrLookupFailureReason.withFailureReason(
-                            com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID));
+                            ResponseCodeEnum.INVALID_TOPIC_ID));
             final var context = new PreHandleContext(keyLookup, txn, TEST_DEFAULT_PAYER);
 
             // when:
@@ -227,7 +234,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
 
             // then:
             Assertions.assertThat(context.failed()).isTrue();
-            Assertions.assertThat(context.getStatus()).isEqualTo(com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID);
+            Assertions.assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.INVALID_TOPIC_ID);
         }
     }
 
@@ -291,7 +298,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         final var msg = assertThrows(
                 HandleStatusException.class,
                 () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
-        assertEquals(com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_MESSAGE, msg.getStatus());
+        assertEquals(ResponseCodeEnum.INVALID_TOPIC_MESSAGE, msg.getStatus());
     }
 
     @Test
@@ -307,7 +314,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         final var msg = assertThrows(
                 HandleStatusException.class,
                 () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
-        assertEquals(com.hedera.hapi.node.base.ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE, msg.getStatus());
+        assertEquals(ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE, msg.getStatus());
     }
 
     @Test
@@ -321,7 +328,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         final var msg = assertThrows(
                 HandleStatusException.class,
                 () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
-        assertEquals(com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID, msg.getStatus());
+        assertEquals(ResponseCodeEnum.INVALID_TOPIC_ID, msg.getStatus());
     }
 
     @Test
@@ -341,7 +348,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         final var msg = assertThrows(
                 HandleStatusException.class,
                 () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
-        assertEquals(com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CHUNK_NUMBER, msg.getStatus());
+        assertEquals(ResponseCodeEnum.INVALID_CHUNK_NUMBER, msg.getStatus());
     }
 
     @Test
@@ -355,15 +362,14 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         final var msg = assertThrows(
                 HandleStatusException.class,
                 () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
-        assertEquals(com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CHUNK_NUMBER, msg.getStatus());
+        assertEquals(ResponseCodeEnum.INVALID_CHUNK_NUMBER, msg.getStatus());
     }
 
     @Test
     @DisplayName("Handle fails if submit message chunk txn payer is not same as initial txn payer")
     void failsIfChunkTxnPayerIsNotInitialPayer() {
         givenValidTopic();
-        final var chunkTxnId =
-                com.hedera.hapi.node.base.TransactionID.newBuilder().accountID(ACCOUNT_ID_3).build();
+        final var chunkTxnId = TransactionID.newBuilder().accountID(ACCOUNT_ID_3).build();
         final var txn = newSubmitMessageTxnWithChunksAndPayer(topicEntityNum, 2, 2, chunkTxnId);
 
         final var recordBuilder = subject.newRecordBuilder();
@@ -371,7 +377,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         final var msg = assertThrows(
                 HandleStatusException.class,
                 () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
-        assertEquals(com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID, msg.getStatus());
+        assertEquals(ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID, msg.getStatus());
     }
 
     @Test
@@ -379,7 +385,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
     void failsIfChunkTxnPayerIsNotInitialID() {
         givenValidTopic();
         final var chunkTxnId =
-                 com.hedera.hapi.node.base.TransactionID.newBuilder().accountID(ACCOUNT_ID_3).build();
+                 TransactionID.newBuilder().accountID(ACCOUNT_ID_3).build();
         final var txn =
                 newSubmitMessageTxnWithChunksAndPayer(topicEntityNum, 1, 2, chunkTxnId);
 
@@ -388,7 +394,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         final var msg = assertThrows(
                 HandleStatusException.class,
                 () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
-        assertEquals(com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID, msg.getStatus());
+        assertEquals(ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID, msg.getStatus());
     }
 
     /* ----------------- Helper Methods ------------------- */
@@ -397,7 +403,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         return ConsensusTestUtils.mockPayerLookup(A_COMPLEX_PBJ_KEY, PARITY_DEFAULT_PAYER, keyLookup);
     }
 
-    private void mockTopicLookup(com.hedera.hapi.node.base.Key submitKey) {
+    private void mockTopicLookup(Key submitKey) {
         ConsensusTestUtils.mockTopicLookup(null, submitKey, readableStore);
     }
 
@@ -405,48 +411,48 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         return ConsensusTestUtils.newTopicMeta(null, submit);
     }
 
-    private com.hedera.hapi.node.transaction.TransactionBody newDefaultSubmitMessageTxn(final EntityNum topicEntityNum) {
+    private TransactionBody newDefaultSubmitMessageTxn(final EntityNum topicEntityNum) {
         return newSubmitMessageTxn(
                 topicEntityNum,
                 "Message for test-" + Instant.now() + "." + Instant.now().getNano());
     }
 
-    private com.hedera.hapi.node.transaction.TransactionBody newSubmitMessageTxn(
+    private TransactionBody newSubmitMessageTxn(
             final EntityNum topicEntityNum,
             final String message) {
-        final var txnId = com.hedera.hapi.node.base.TransactionID.newBuilder().accountID(ACCOUNT_ID_4).build();
-        final var submitMessageBuilder = com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody.newBuilder()
-                .topicID(com.hedera.hapi.node.base.TopicID.newBuilder().topicNum(topicEntityNum.longValue()).build())
+        final var txnId = TransactionID.newBuilder().accountID(ACCOUNT_ID_4).build();
+        final var submitMessageBuilder = ConsensusSubmitMessageTransactionBody.newBuilder()
+                .topicID(TopicID.newBuilder().topicNum(topicEntityNum.longValue()).build())
                 .message(Bytes.wrap(message));
-        return com.hedera.hapi.node.transaction.TransactionBody.newBuilder()
+        return TransactionBody.newBuilder()
                 .transactionID(txnId)
                 .consensusSubmitMessage(submitMessageBuilder.build())
                 .build();
     }
 
-    private com.hedera.hapi.node.transaction.TransactionBody newSubmitMessageTxnWithChunks(
+    private TransactionBody newSubmitMessageTxnWithChunks(
             final EntityNum topicEntityNum, final int currentChunk, final int totalChunk) {
         return newSubmitMessageTxnWithChunksAndPayer(topicEntityNum, currentChunk, totalChunk, null);
     }
 
-    private com.hedera.hapi.node.transaction.TransactionBody newSubmitMessageTxnWithChunksAndPayer(
+    private TransactionBody newSubmitMessageTxnWithChunksAndPayer(
             final EntityNum topicEntityNum,
             final int currentChunk,
             final int totalChunk,
-            final com.hedera.hapi.node.base.TransactionID initialTxnId) {
-        final var txnId = com.hedera.hapi.node.base.TransactionID.newBuilder()
+            final TransactionID initialTxnId) {
+        final var txnId = TransactionID.newBuilder()
                 .accountID(ACCOUNT_ID_4).build();
-        final var submitMessageBuilder = com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody.newBuilder()
-                .topicID(com.hedera.hapi.node.base.TopicID.newBuilder()
+        final var submitMessageBuilder = ConsensusSubmitMessageTransactionBody.newBuilder()
+                .topicID(TopicID.newBuilder()
                         .topicNum(topicEntityNum.longValue())
                         .build())
-                .chunkInfo(com.hedera.hapi.node.consensus.ConsensusMessageChunkInfo.newBuilder()
+                .chunkInfo(ConsensusMessageChunkInfo.newBuilder()
                         .initialTransactionID(initialTxnId != null ? initialTxnId : txnId)
                         .number(currentChunk)
                         .total(totalChunk)
                         .build())
                 .message(Bytes.wrap("test"));
-        return com.hedera.hapi.node.transaction.TransactionBody.newBuilder()
+        return TransactionBody.newBuilder()
                 .transactionID(txnId)
                 .consensusSubmitMessage(submitMessageBuilder.build())
                 .build();

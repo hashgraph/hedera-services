@@ -16,8 +16,12 @@
 
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
@@ -133,7 +137,7 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
         mockPayerLookup();
         given(mockStore.getTopicMetadata(notNull()))
                 .willReturn(ReadableTopicStore.TopicMetaOrLookupFailureReason.withFailureReason(
-                        com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID));
+                        ResponseCodeEnum.INVALID_TOPIC_ID));
         final var context = new PreHandleContext(
                 keyLookup,
                 newDeleteTxn(),
@@ -143,7 +147,7 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
         subject.preHandle(context, mockStore);
 
         // then:
-        assertThat(context.getStatus()).isEqualTo(com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID);
+        assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.INVALID_TOPIC_ID);
         assertThat(context.failed()).isTrue();
     }
 
@@ -153,7 +157,7 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
         // given:
         given(keyLookup.getKey(PARITY_DEFAULT_PAYER))
                 .willReturn(KeyOrLookupFailureReason.withFailureReason(
-                        com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED)); // Any error response code
+                        ResponseCodeEnum.ACCOUNT_DELETED)); // Any error response code
         mockTopicLookup(SIMPLE_KEY_A, SIMPLE_KEY_B);
         final var context = new PreHandleContext(
                 keyLookup,
@@ -165,7 +169,7 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
 
         // then:
         assertThat(context.getStatus())
-                .isEqualTo(com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID);
+                .isEqualTo(ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID);
         assertThat(context.failed()).isTrue();
         assertThat(context.getPayerKey()).isNull();
     }
@@ -185,7 +189,7 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
         subject.preHandle(context, mockStore);
 
         // then:
-        assertThat(context.getStatus()).isEqualTo(com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED);
+        assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.UNAUTHORIZED);
         assertThat(context.failed()).isTrue();
     }
 
@@ -200,7 +204,7 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
 
         final var msg = assertThrows(HandleStatusException.class,
                 () -> subject.handle(txn, writableStore));
-        assertEquals(com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID, msg.getStatus());
+        assertEquals(ResponseCodeEnum.INVALID_TOPIC_ID, msg.getStatus());
     }
 
     @Test
@@ -227,7 +231,7 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
         final var msg = assertThrows(HandleStatusException.class,
                 () -> subject.handle(txn, writableStore));
 
-        assertEquals(com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED, msg.getStatus());
+        assertEquals(ResponseCodeEnum.UNAUTHORIZED, msg.getStatus());
     }
 
     @Test
@@ -270,7 +274,7 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
 
             // then:
             Assertions.assertThat(context.failed()).isTrue();
-            Assertions.assertThat(context.getStatus()).isEqualTo(com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED);
+            Assertions.assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.UNAUTHORIZED);
         }
 
         @Test
@@ -301,7 +305,7 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
             final var txn = CONSENSUS_DELETE_TOPIC_MISSING_TOPIC_SCENARIO.pbjTxnBody();
             given(mockStore.getTopicMetadata(notNull()))
                     .willReturn(ReadableTopicStore.TopicMetaOrLookupFailureReason.withFailureReason(
-                            com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID));
+                            ResponseCodeEnum.INVALID_TOPIC_ID));
             final var context = new PreHandleContext(
                     keyLookup,
                     txn,
@@ -313,7 +317,7 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
             // then:
             Assertions.assertThat(context.failed()).isTrue();
             Assertions.assertThat(context.getStatus())
-                    .isEqualTo(com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID);
+                    .isEqualTo(ResponseCodeEnum.INVALID_TOPIC_ID);
         }
     }
 
@@ -321,19 +325,17 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
         return ConsensusTestUtils.mockPayerLookup(A_COMPLEX_PBJ_KEY, PARITY_DEFAULT_PAYER, keyLookup);
     }
 
-    private void mockTopicLookup(
-            final com.hedera.hapi.node.base.Key adminKey,
-            final com.hedera.hapi.node.base.Key submitKey) {
+    private void mockTopicLookup(final Key adminKey, final Key submitKey) {
         ConsensusTestUtils.mockTopicLookup(adminKey, submitKey, mockStore);
     }
 
-    private com.hedera.hapi.node.transaction.TransactionBody newDeleteTxn() {
-        final var txnId = com.hedera.hapi.node.base.TransactionID.newBuilder()
+    private TransactionBody newDeleteTxn() {
+        final var txnId = TransactionID.newBuilder()
                 .accountID(ACCOUNT_ID_4)
                 .build();
         final var deleteTopicBuilder = ConsensusDeleteTopicTransactionBody.newBuilder()
                 .topicID(WELL_KNOWN_TOPIC_ID);
-        return com.hedera.hapi.node.transaction.TransactionBody.newBuilder()
+        return TransactionBody.newBuilder()
                 .transactionID(txnId)
                 .consensusDeleteTopic(deleteTopicBuilder.build())
                 .build();

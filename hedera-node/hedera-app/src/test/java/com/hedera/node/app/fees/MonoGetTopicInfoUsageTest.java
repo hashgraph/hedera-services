@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.QueryHeader;
+import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.consensus.ConsensusGetTopicInfoQuery;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
@@ -61,8 +62,8 @@ class MonoGetTopicInfoUsageTest {
 
     private final Key key = A_COMPLEX_KEY;
     private final EntityNum topicEntityNum = EntityNum.fromLong(1L);
-    private final com.hedera.hapi.node.base.TopicID topicId =
-            com.hedera.hapi.node.base.TopicID.newBuilder()
+    private final TopicID topicId =
+            TopicID.newBuilder()
                     .topicNum(topicEntityNum.longValue())
                     .build();
     private final String memo = "test memo";

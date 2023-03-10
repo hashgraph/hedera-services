@@ -95,7 +95,8 @@ public interface TxnHandlingScenario {
                     platformTxn().getTxn(),
                     com.hedera.hapi.node.transaction.TransactionBody.class);
         } catch (final Throwable e) {
-            throw new RuntimeException(e);
+            // Should be impossible, so just propagate the exception
+            throw new RuntimeException("Could not convert body to PBJ", e);
         }
     }
 

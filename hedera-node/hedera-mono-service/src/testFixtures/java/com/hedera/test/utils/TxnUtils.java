@@ -44,8 +44,11 @@ import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.factories.txns.CryptoTransferFactory;
 import com.hedera.test.factories.txns.TinyBarsFromTo;
 import com.hederahashgraph.api.proto.java.*;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.UUID;
 
@@ -270,15 +273,20 @@ public class TxnUtils {
     }
 
     public static com.hedera.hapi.node.base.Transaction payerSponsoredPbjTransfer(
-            String payer,
-            KeyTree payerKey,
-            String beneficiary,
-            long amount) {
+            @NonNull final String payer,
+            @NonNull final KeyTree payerKey,
+            @NonNull final String beneficiary,
+            final long amount) {
         try {
-            final var monoTransfer = payerSponsoredTransfer(payer, payerKey, beneficiary, amount);
+            final var monoTransfer = payerSponsoredTransfer(
+                    Objects.requireNonNull(payer),
+                    Objects.requireNonNull(payerKey),
+                    Objects.requireNonNull(beneficiary),
+                    amount);
             return toPbj(monoTransfer);
         } catch (final Throwable e) {
-            throw new RuntimeException(e);
+            // Should be impossible, just propagate
+            throw new RuntimeException("Failed converting to PBJ transfer", e);
         }
     }
 

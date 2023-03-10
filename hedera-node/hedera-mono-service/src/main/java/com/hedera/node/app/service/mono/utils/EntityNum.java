@@ -36,6 +36,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
+import java.util.Objects;
+
 /**
  * An integer whose {@code hashCode()} implementation vastly reduces the risk of hash collisions in
  * structured data using this type, when compared to the {@code java.lang.Integer} boxed type.
@@ -96,7 +98,8 @@ public class EntityNum implements Comparable<EntityNum> {
         return fromLong(grpc.getTokenNum());
     }
 
-    public static EntityNum fromTopicId(final TopicID grpc) {
+    public static @NonNull EntityNum fromTopicId(@NonNull final TopicID grpc) {
+        Objects.requireNonNull(grpc);
         if (!areValidNums(grpc.getShardNum(), grpc.getRealmNum())) {
             return MISSING_NUM;
         }
