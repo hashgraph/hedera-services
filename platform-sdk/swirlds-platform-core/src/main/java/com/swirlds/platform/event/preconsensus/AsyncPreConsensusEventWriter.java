@@ -169,7 +169,8 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
             // this should never throw an InterruptedException.
             logger.error(
                     EXCEPTION.getMarker(),
-                    "interrupted while attempting to call setMinimumGenerationNonAncient on writer", e);
+                    "interrupted while attempting to call setMinimumGenerationNonAncient on writer",
+                    e);
             Thread.currentThread().interrupt();
         }
     }

@@ -340,7 +340,7 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
     private void prepareOutputStream(final EventImpl eventToWrite) throws IOException {
         if (currentMutableFile != null
                 && (!currentMutableFile.canContain(eventToWrite)
-                || currentMutableFile.fileSize() * Units.BYTES_TO_MEBIBYTES >= preferredFileSizeMegabytes)) {
+                        || currentMutableFile.fileSize() * Units.BYTES_TO_MEBIBYTES >= preferredFileSizeMegabytes)) {
             closeFile();
         }
 
