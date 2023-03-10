@@ -104,15 +104,15 @@ public class CongestionPricingSuite extends HapiSuite {
                                 .contents(artificialLimits.toByteArray()),
                         sleepFor(2_000),
                         blockingOrder(IntStream.range(0, 10)
-                                .mapToObj(i -> new HapiSpecOperation[]{
-                                        usableTxnIdNamed("uncheckedTxn" + i).payerId(CIVILIAN_ACCOUNT),
-                                        uncheckedSubmit(contractCall(contract)
-                                                .signedBy(CIVILIAN_ACCOUNT)
-                                                .fee(ONE_HUNDRED_HBARS)
-                                                .sending(ONE_HBAR)
-                                                .txnId("uncheckedTxn" + i))
-                                                .payingWith(GENESIS),
-                                        sleepFor(125)
+                                .mapToObj(i -> new HapiSpecOperation[] {
+                                    usableTxnIdNamed("uncheckedTxn" + i).payerId(CIVILIAN_ACCOUNT),
+                                    uncheckedSubmit(contractCall(contract)
+                                                    .signedBy(CIVILIAN_ACCOUNT)
+                                                    .fee(ONE_HUNDRED_HBARS)
+                                                    .sending(ONE_HBAR)
+                                                    .txnId("uncheckedTxn" + i))
+                                            .payingWith(GENESIS),
+                                    sleepFor(125)
                                 })
                                 .flatMap(Arrays::stream)
                                 .toArray(HapiSpecOperation[]::new)),

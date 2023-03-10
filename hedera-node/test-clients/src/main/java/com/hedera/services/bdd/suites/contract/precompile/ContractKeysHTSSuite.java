@@ -269,9 +269,9 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         withOpContext((spec, opLog) -> allRunFor(
                                 spec,
                                 contractCreate(
-                                        BURN_TOKEN,
-                                        HapiParserUtil.asHeadlongAddress(asAddress(
-                                                spec.registry().getTokenID(TOKEN_USAGE))))
+                                                BURN_TOKEN,
+                                                HapiParserUtil.asHeadlongAddress(asAddress(
+                                                        spec.registry().getTokenID(TOKEN_USAGE))))
                                         .via(CREATION_TX))))
                 .when(
                         newKeyNamed(DELEGATE_KEY).shape(delegateContractKeyShape.signedWith(sigs(ON, BURN_TOKEN))),
@@ -349,12 +349,12 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                         sigs(ON, ON, OUTER_CONTRACT, NESTED_CONTRACT))),
                         cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
                         contractCall(
-                                OUTER_CONTRACT,
-                                "transferDelegateCall",
-                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
-                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                HapiParserUtil.asHeadlongAddress(asAddress(receiverID.get())),
-                                1L)
+                                        OUTER_CONTRACT,
+                                        "transferDelegateCall",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(receiverID.get())),
+                                        1L)
                                 .payingWith(GENESIS)
                                 .alsoSigningWithFullPrefix(ACCOUNT)
                                 .via("delegateTransferCallWithDelegateContractKeyTxn")
@@ -405,12 +405,12 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, OUTER_CONTRACT))),
                         cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
                         contractCall(
-                                OUTER_CONTRACT,
-                                "transferDelegateCall",
-                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
-                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                HapiParserUtil.asHeadlongAddress(asAddress(receiverID.get())),
-                                1L)
+                                        OUTER_CONTRACT,
+                                        "transferDelegateCall",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(receiverID.get())),
+                                        1L)
                                 .payingWith(GENESIS)
                                 .via("delegateTransferCallWithContractKeyTxn")
                                 .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
@@ -453,11 +453,11 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, OUTER_CONTRACT))),
                         tokenUpdate(VANILLA_TOKEN).supplyKey(CONTRACT_KEY),
                         contractCall(
-                                OUTER_CONTRACT,
-                                "burnDelegateCall",
-                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
-                                BigInteger.ZERO,
-                                new long[]{1L})
+                                        OUTER_CONTRACT,
+                                        "burnDelegateCall",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
+                                        BigInteger.ZERO,
+                                        new long[] {1L})
                                 .payingWith(GENESIS)
                                 .via(DELEGATE_BURN_CALL_WITH_CONTRACT_KEY_TXN)
                                 .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
@@ -498,10 +498,10 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, OUTER_CONTRACT))),
                         tokenUpdate(VANILLA_TOKEN).supplyKey(CONTRACT_KEY),
                         contractCall(
-                                OUTER_CONTRACT,
-                                "mintDelegateCall",
-                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
-                                BigInteger.ONE)
+                                        OUTER_CONTRACT,
+                                        "mintDelegateCall",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
+                                        BigInteger.ONE)
                                 .payingWith(GENESIS)
                                 .via(DELEGATE_BURN_CALL_WITH_CONTRACT_KEY_TXN)
                                 .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
@@ -589,12 +589,12 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
                         cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
                         contractCall(
-                                outerContract,
-                                "transferStaticCall",
-                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
-                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                HapiParserUtil.asHeadlongAddress(asAddress(receiverID.get())),
-                                1L)
+                                        outerContract,
+                                        "transferStaticCall",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(receiverID.get())),
+                                        1L)
                                 .payingWith(GENESIS)
                                 .via("staticTransferCallWithContractKeyTxn")
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
@@ -628,11 +628,11 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
                         tokenUpdate(VANILLA_TOKEN).supplyKey(CONTRACT_KEY),
                         contractCall(
-                                outerContract,
-                                "burnStaticCall",
-                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
-                                BigInteger.ZERO,
-                                new long[]{1L})
+                                        outerContract,
+                                        "burnStaticCall",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
+                                        BigInteger.ZERO,
+                                        new long[] {1L})
                                 .payingWith(GENESIS)
                                 .via(STATIC_BURN_CALL_WITH_CONTRACT_KEY_TXN)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
@@ -664,10 +664,10 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
                         tokenUpdate(VANILLA_TOKEN).supplyKey(CONTRACT_KEY),
                         contractCall(
-                                outerContract,
-                                "mintStaticCall",
-                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
-                                BigInteger.ONE)
+                                        outerContract,
+                                        "mintStaticCall",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
+                                        BigInteger.ONE)
                                 .payingWith(GENESIS)
                                 .via(STATIC_BURN_CALL_WITH_CONTRACT_KEY_TXN)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
@@ -710,12 +710,12 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
                         cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
                         contractCall(
-                                outerContract,
-                                "transferStaticCall",
-                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
-                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                HapiParserUtil.asHeadlongAddress(asAddress(receiverID.get())),
-                                1L)
+                                        outerContract,
+                                        "transferStaticCall",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(receiverID.get())),
+                                        1L)
                                 .payingWith(GENESIS)
                                 .via("staticTransferCallWithDelegateContractKeyTxn")
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
@@ -750,11 +750,11 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
                         tokenUpdate(VANILLA_TOKEN).supplyKey(DELEGATE_KEY),
                         contractCall(
-                                outerContract,
-                                "burnStaticCall",
-                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
-                                BigInteger.ZERO,
-                                new long[]{1L})
+                                        outerContract,
+                                        "burnStaticCall",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
+                                        BigInteger.ZERO,
+                                        new long[] {1L})
                                 .payingWith(GENESIS)
                                 .via(STATIC_BURN_CALL_WITH_DELEGATE_CONTRACT_KEY_TXN)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
@@ -788,10 +788,10 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
                         tokenUpdate(VANILLA_TOKEN).supplyKey(DELEGATE_KEY),
                         contractCall(
-                                outerContract,
-                                "mintStaticCall",
-                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
-                                BigInteger.ONE)
+                                        outerContract,
+                                        "mintStaticCall",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
+                                        BigInteger.ONE)
                                 .payingWith(GENESIS)
                                 .via(STATIC_BURN_CALL_WITH_DELEGATE_CONTRACT_KEY_TXN)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
@@ -863,12 +863,12 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 .shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, ORDINARY_CALLS_CONTRACT))),
                         tokenUpdate(TYPE_OF_TOKEN).supplyKey(CONTRACT_KEY),
                         contractCall(
-                                ORDINARY_CALLS_CONTRACT,
-                                "mintTokenCall",
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getTokenID(TYPE_OF_TOKEN))),
-                                BigInteger.valueOf(amount),
-                                new byte[][]{})
+                                        ORDINARY_CALLS_CONTRACT,
+                                        "mintTokenCall",
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(TYPE_OF_TOKEN))),
+                                        BigInteger.valueOf(amount),
+                                        new byte[][] {})
                                 .via(firstMintTxn)
                                 .payingWith(ACCOUNT_NAME))))
                 .then(
@@ -916,12 +916,12 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, ORDINARY_CALLS_CONTRACT))),
                         tokenUpdate(TYPE_OF_TOKEN).supplyKey(DELEGATE_KEY),
                         contractCall(
-                                ORDINARY_CALLS_CONTRACT,
-                                "mintTokenCall",
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getTokenID(TYPE_OF_TOKEN))),
-                                BigInteger.valueOf(amount),
-                                new byte[][]{})
+                                        ORDINARY_CALLS_CONTRACT,
+                                        "mintTokenCall",
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(TYPE_OF_TOKEN))),
+                                        BigInteger.valueOf(amount),
+                                        new byte[][] {})
                                 .via(firstMintTxn)
                                 .payingWith(ACCOUNT_NAME))))
                 .then(
@@ -1282,9 +1282,9 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         withOpContext((spec, opLog) -> allRunFor(
                                 spec,
                                 contractCreate(
-                                        BURN_TOKEN,
-                                        HapiParserUtil.asHeadlongAddress(asAddress(
-                                                spec.registry().getTokenID(TOKEN_USAGE))))
+                                                BURN_TOKEN,
+                                                HapiParserUtil.asHeadlongAddress(asAddress(
+                                                        spec.registry().getTokenID(TOKEN_USAGE))))
                                         .via(CREATION_TX))))
                 .when(
                         newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, BURN_TOKEN))),
@@ -2413,9 +2413,9 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         withOpContext((spec, opLog) -> allRunFor(
                                 spec,
                                 contractCreate(
-                                        BURN_TOKEN,
-                                        HapiParserUtil.asHeadlongAddress(asAddress(
-                                                spec.registry().getTokenID(TOKEN_USAGE))))
+                                                BURN_TOKEN,
+                                                HapiParserUtil.asHeadlongAddress(asAddress(
+                                                        spec.registry().getTokenID(TOKEN_USAGE))))
                                         .via(CREATION_TX))))
                 .when(
                         newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, BURN_TOKEN))),
@@ -2462,24 +2462,24 @@ public class ContractKeysHTSSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                ORDINARY_CALLS_CONTRACT,
-                                "burnTokenCall",
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getTokenID(TYPE_OF_TOKEN))),
-                                BigInteger.ONE,
-                                new long[0])
+                                        ORDINARY_CALLS_CONTRACT,
+                                        "burnTokenCall",
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(TYPE_OF_TOKEN))),
+                                        BigInteger.ONE,
+                                        new long[0])
                                 .via(firstBurnTxn)
                                 .payingWith(ACCOUNT_NAME)
                                 .signedBy(MULTI_KEY)
                                 .signedBy(ACCOUNT_NAME)
                                 .hasKnownStatus(SUCCESS),
                         contractCall(
-                                ORDINARY_CALLS_CONTRACT,
-                                "burnTokenCall",
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getTokenID(TYPE_OF_TOKEN))),
-                                BigInteger.ONE,
-                                new long[0])
+                                        ORDINARY_CALLS_CONTRACT,
+                                        "burnTokenCall",
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(TYPE_OF_TOKEN))),
+                                        BigInteger.ONE,
+                                        new long[0])
                                 .via(secondBurnTxn)
                                 .payingWith(ACCOUNT_NAME)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
@@ -2536,44 +2536,44 @@ public class ContractKeysHTSSuite extends HapiSuite {
                         withOpContext((spec, opLog) -> allRunFor(
                                 spec,
                                 contractCreate(
-                                        outerContract,
-                                        asHeadlongAddress(getNestedContractAddress(nestedContract, spec)))
+                                                outerContract,
+                                                asHeadlongAddress(getNestedContractAddress(nestedContract, spec)))
                                         .via(CREATION_TX),
                                 newKeyNamed(delegateContractDelegateContractKey)
                                         .shape(delegateContractDelegateContractShape.signedWith(
                                                 sigs(ON, nestedContract, outerContract))),
                                 tokenUpdate(TYPE_OF_TOKEN).supplyKey(delegateContractDelegateContractKey),
                                 contractCall(
-                                        outerContract,
-                                        BURN_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_CALL,
-                                        BigInteger.ONE,
-                                        HapiParserUtil.asHeadlongAddress(asAddress(
-                                                spec.registry().getTokenID(TYPE_OF_TOKEN))))
+                                                outerContract,
+                                                BURN_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_CALL,
+                                                BigInteger.ONE,
+                                                HapiParserUtil.asHeadlongAddress(asAddress(
+                                                        spec.registry().getTokenID(TYPE_OF_TOKEN))))
                                         .payingWith(theAccount)
                                         .via(BURN_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_CALL),
                                 contractCall(
-                                        outerContract,
-                                        BURN_DELEGATE_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_DELEGATE_CALL,
-                                        BigInteger.ONE,
-                                        HapiParserUtil.asHeadlongAddress(asAddress(
-                                                spec.registry().getTokenID(TYPE_OF_TOKEN))))
+                                                outerContract,
+                                                BURN_DELEGATE_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_DELEGATE_CALL,
+                                                BigInteger.ONE,
+                                                HapiParserUtil.asHeadlongAddress(asAddress(
+                                                        spec.registry().getTokenID(TYPE_OF_TOKEN))))
                                         .payingWith(theAccount)
                                         .via(BURN_DELEGATE_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_DELEGATE_CALL),
                                 contractCall(
-                                        outerContract,
-                                        BURN_DELEGATE_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_DELEGATE_CALL,
-                                        BigInteger.ONE,
-                                        HapiParserUtil.asHeadlongAddress(asAddress(
-                                                spec.registry().getTokenID(TYPE_OF_TOKEN))))
+                                                outerContract,
+                                                BURN_DELEGATE_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_DELEGATE_CALL,
+                                                BigInteger.ONE,
+                                                HapiParserUtil.asHeadlongAddress(asAddress(
+                                                        spec.registry().getTokenID(TYPE_OF_TOKEN))))
                                         .payingWith(theAccount)
                                         .via(
                                                 BURN_DELEGATE_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_DELEGATE_CALL),
                                 contractCall(
-                                        outerContract,
-                                        BURN_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_DELEGATE_CALL,
-                                        BigInteger.ONE,
-                                        HapiParserUtil.asHeadlongAddress(asAddress(
-                                                spec.registry().getTokenID(TYPE_OF_TOKEN))))
+                                                outerContract,
+                                                BURN_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_DELEGATE_CALL,
+                                                BigInteger.ONE,
+                                                HapiParserUtil.asHeadlongAddress(asAddress(
+                                                        spec.registry().getTokenID(TYPE_OF_TOKEN))))
                                         .payingWith(theAccount)
                                         .via(BURN_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_DELEGATE_CALL))),
                         withOpContext((spec, opLog) -> allRunFor(
@@ -2583,27 +2583,27 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                                 sigs(ON, nestedContract, outerContract))),
                                 tokenUpdate(TYPE_OF_TOKEN).supplyKey(contractDelegateContractKey),
                                 contractCall(
-                                        outerContract,
-                                        BURN_DELEGATE_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_CALL,
-                                        BigInteger.ONE,
-                                        HapiParserUtil.asHeadlongAddress(asAddress(
-                                                spec.registry().getTokenID(TYPE_OF_TOKEN))))
+                                                outerContract,
+                                                BURN_DELEGATE_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_CALL,
+                                                BigInteger.ONE,
+                                                HapiParserUtil.asHeadlongAddress(asAddress(
+                                                        spec.registry().getTokenID(TYPE_OF_TOKEN))))
                                         .payingWith(theAccount)
                                         .via(BURN_DELEGATE_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_CALL),
                                 contractCall(
-                                        outerContract,
-                                        BURN_DELEGATE_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_CALL,
-                                        BigInteger.ONE,
-                                        HapiParserUtil.asHeadlongAddress(asAddress(
-                                                spec.registry().getTokenID(TYPE_OF_TOKEN))))
+                                                outerContract,
+                                                BURN_DELEGATE_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_CALL,
+                                                BigInteger.ONE,
+                                                HapiParserUtil.asHeadlongAddress(asAddress(
+                                                        spec.registry().getTokenID(TYPE_OF_TOKEN))))
                                         .payingWith(theAccount)
                                         .via(BURN_DELEGATE_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_CALL),
                                 contractCall(
-                                        outerContract,
-                                        BURN_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_CALL,
-                                        BigInteger.ONE,
-                                        HapiParserUtil.asHeadlongAddress(asAddress(
-                                                spec.registry().getTokenID(TYPE_OF_TOKEN))))
+                                                outerContract,
+                                                BURN_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_CALL,
+                                                BigInteger.ONE,
+                                                HapiParserUtil.asHeadlongAddress(asAddress(
+                                                        spec.registry().getTokenID(TYPE_OF_TOKEN))))
                                         .payingWith(theAccount)
                                         .via(BURN_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_CALL))),
                         withOpContext((spec, opLog) -> allRunFor(
@@ -2613,11 +2613,11 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                                 sigs(ON, outerContract, nestedContract))),
                                 tokenUpdate(TYPE_OF_TOKEN).supplyKey(contractDelegateContractKey),
                                 contractCall(
-                                        outerContract,
-                                        BURN_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_DELEGATE_CALL,
-                                        BigInteger.ONE,
-                                        HapiParserUtil.asHeadlongAddress(asAddress(
-                                                spec.registry().getTokenID(TYPE_OF_TOKEN))))
+                                                outerContract,
+                                                BURN_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_DELEGATE_CALL,
+                                                BigInteger.ONE,
+                                                HapiParserUtil.asHeadlongAddress(asAddress(
+                                                        spec.registry().getTokenID(TYPE_OF_TOKEN))))
                                         .payingWith(theAccount)
                                         .via(BURN_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_DELEGATE_CALL))),
                         childRecordsCheck(

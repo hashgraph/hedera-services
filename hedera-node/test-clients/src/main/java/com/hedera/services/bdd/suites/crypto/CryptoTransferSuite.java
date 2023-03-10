@@ -345,12 +345,12 @@ public class CryptoTransferSuite extends HapiSuite {
                             otherAccountId.set(registry.getAccountID(OTHER_ACCOUNT));
                         }))
                 .when(cryptoTransfer((spec, b) -> b.addTokenTransfers(TokenTransferList.newBuilder()
-                                .setToken(nftId.get())
-                                .addNftTransfers(
-                                        ocWith(accountId(partyAlias.get()), accountId(counterAlias.get()), 1L)))
-                        .setTransfers(TransferList.newBuilder()
-                                .addAccountAmounts(aaWith(partyId.get(), +2))
-                                .addAccountAmounts(aaWith(otherAccountId.get(), -2))))
+                                        .setToken(nftId.get())
+                                        .addNftTransfers(
+                                                ocWith(accountId(partyAlias.get()), accountId(counterAlias.get()), 1L)))
+                                .setTransfers(TransferList.newBuilder()
+                                        .addAccountAmounts(aaWith(partyId.get(), +2))
+                                        .addAccountAmounts(aaWith(otherAccountId.get(), -2))))
                         .signedBy(DEFAULT_PAYER, PARTY, OTHER_ACCOUNT)
                         .via(NFT_XFER))
                 .then(getTxnRecord(NFT_XFER).logged());
