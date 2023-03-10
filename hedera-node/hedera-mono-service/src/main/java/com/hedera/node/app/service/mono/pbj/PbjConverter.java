@@ -102,7 +102,7 @@ public final class PbjConverter {
         }
     }
 
-    public static @NonNull com.hederahashgraph.api.proto.java.AccountID fromPbj(AccountID accountID) {
+    public static @NonNull com.hederahashgraph.api.proto.java.AccountID fromPbj(@NonNull AccountID accountID) {
         requireNonNull(accountID);
         final var builder = com.hederahashgraph.api.proto.java.AccountID.newBuilder()
                 .setShardNum(accountID.shardNum())
@@ -690,7 +690,8 @@ public final class PbjConverter {
         return protoToPbj(Objects.requireNonNull(t), Transaction.class);
     }
 
-    public static Timestamp toPbj(com.hederahashgraph.api.proto.java.Timestamp t) {
+    public static Timestamp toPbj(@NonNull com.hederahashgraph.api.proto.java.Timestamp t) {
+        requireNonNull(t);
         return Timestamp.newBuilder()
                 .seconds(t.getSeconds())
                 .nanos(t.getNanos())

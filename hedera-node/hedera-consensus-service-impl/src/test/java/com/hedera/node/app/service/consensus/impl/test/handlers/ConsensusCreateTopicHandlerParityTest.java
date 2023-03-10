@@ -135,7 +135,6 @@ class ConsensusCreateTopicHandlerParityTest {
 
         // when:
         final var context = new PreHandleContext(keyLookup, txn, PARITY_CUSTOM_PAYER);
-
         subject.preHandle(context);
 
         // then:

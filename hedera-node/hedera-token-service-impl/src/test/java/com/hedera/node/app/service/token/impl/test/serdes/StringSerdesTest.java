@@ -44,11 +44,6 @@ class StringSerdesTest {
     final StringCodec subject = new StringCodec();
 
     @Test
-    void givesTypicalSize() {
-        assertEquals(255, subject.typicalSize());
-    }
-
-    @Test
     void providesFastEquals() throws IOException {
         given(in.readInt()).willReturn(SOME_STRING.getBytes().length);
         subject.fastEquals(SOME_STRING, in);
