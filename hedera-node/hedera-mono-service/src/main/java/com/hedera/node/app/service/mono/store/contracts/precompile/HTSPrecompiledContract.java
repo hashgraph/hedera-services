@@ -235,6 +235,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
     public PrecompileContractResult computePrecompile(
             final Bytes input, @NonNull final MessageFrame frame) {
         if (unqualifiedDelegateDetected(frame)) {
+            frame.setExceptionalHaltReason(Optional.of(ExceptionalHaltReason.PRECOMPILE_ERROR));
             return INVALID_DELEGATE;
         }
 

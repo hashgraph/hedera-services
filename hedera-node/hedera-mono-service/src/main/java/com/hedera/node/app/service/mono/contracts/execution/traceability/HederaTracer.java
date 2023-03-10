@@ -175,7 +175,7 @@ public class HederaTracer implements HederaOperationTracer {
             if (frame.getType().equals(CONTRACT_CREATION)) {
                 action.setRecipientContract(null);
             }
-        } else if (frameState == State.EXCEPTIONAL_HALT) {
+        } else if (frameState == State.EXCEPTIONAL_HALT || frameState == State.COMPLETED_FAILED) {
             // exceptional exits always burn all gas
             action.setGasUsed(action.getGas());
             final var exceptionalHaltReasonOptional = frame.getExceptionalHaltReason();
