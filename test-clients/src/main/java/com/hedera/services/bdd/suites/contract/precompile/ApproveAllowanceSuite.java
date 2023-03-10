@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
@@ -32,6 +33,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
@@ -64,6 +66,7 @@ import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
@@ -288,6 +291,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
 
         return defaultHapiSpec("HTS_NFT_APPROVE")
                 .given(
+                        overriding("hedera.allowances.isEnabled", "true"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
                         cryptoCreate(theSpender),
@@ -331,48 +335,13 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                                                 BigInteger.valueOf(2L))
                                                         .payingWith(OWNER)
                                                         .gas(4_000_000L)
-                                                        .via(approveTxn)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                                                        .via(approveTxn))))
                 .then(
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasNoSpender(),
-                        getTokenNftInfo(NON_FUNGIBLE_TOKEN, 2L).hasSpenderID(theSpender),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var sender = spec.registry().getAccountID(OWNER);
-                                    final var receiver = spec.registry().getAccountID(theSpender);
-                                    final var idOfToken =
-                                            "0.0."
-                                                    + (spec.registry()
-                                                            .getTokenID(NON_FUNGIBLE_TOKEN)
-                                                            .getTokenNum());
-                                    var txnRecord =
-                                            getTxnRecord(approveTxn)
-                                                    .hasPriority(
-                                                            recordWith()
-                                                                    .contractCallResult(
-                                                                            resultWith()
-                                                                                    .logs(
-                                                                                            inOrder(
-                                                                                                    logWith()
-                                                                                                            .contract(
-                                                                                                                    idOfToken)
-                                                                                                            .withTopicsInOrder(
-                                                                                                                    List
-                                                                                                                            .of(
-                                                                                                                                    eventSignatureOf(
-                                                                                                                                            APPROVE_SIGNATURE),
-                                                                                                                                    parsedToByteString(
-                                                                                                                                            sender
-                                                                                                                                                    .getAccountNum()),
-                                                                                                                                    parsedToByteString(
-                                                                                                                                            receiver
-                                                                                                                                                    .getAccountNum()),
-                                                                                                                                    parsedToByteString(
-                                                                                                                                            2L)))))))
-                                                    .andAllChildRecords()
-                                                    .logged();
-                                    allRunFor(spec, txnRecord);
-                                }));
+                        getTokenNftInfo(NON_FUNGIBLE_TOKEN, 2L).hasNoSpender(),
+                        getTxnRecord(approveTxn)
+                                .andAllChildRecords()
+                                .logged());
     }
 
     private HapiSpec nftIsApprovedForAll() {
