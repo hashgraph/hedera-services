@@ -263,22 +263,22 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
             return false;
         }
 
+        final var recipient = frame.getRecipientAddress();
         // but we accept delegates iff the token redirect contract calls us,
-        // so if they are not a token, then we are a delegate and we are done.
-        var recipient = frame.getRecipientAddress();
-        if (!isToken(frame, recipient)) {
-            return true;
+        // so if they are not a token, or on the permitted callers list, then
+        // we are a delegate and we are done.
+        if (isToken(frame, recipient)
+                || dynamicProperties.permittedDelegateCallers().contains(recipient)) {
+            // make sure we have a parent calling context
+            var frames = frame.getMessageFrameStack().iterator();
+            frames.next();
+            if (!frames.hasNext()) {
+                return false;
+            }
+            // If the token redirect contract was called via delegate, then it's a delegate
+            return isDelegateCall(frames.next());
         }
-
-        // make sure we have a parent calling context
-        var frames = frame.getMessageFrameStack().iterator();
-        frames.next();
-        if (!frames.hasNext()) {
-            return false;
-        }
-
-        // If the token redirect contract was called via delegate, then it's a delegate
-        return isDelegateCall(frames.next());
+        return true;
     }
 
     static boolean isToken(final MessageFrame frame, final Address address) {

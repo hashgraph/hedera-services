@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -224,6 +224,7 @@ public final class BootstrapProperties implements PropertySource {
                     BALANCES_COMPRESS_ON_CREATION,
                     CACHE_RECORDS_TTL,
                     CONTRACTS_DEFAULT_LIFETIME,
+                    CONTRACTS_PERMITTED_DELEGATE_CALLERS,
                     CONTRACTS_KEYS_LEGACY_ACTIVATIONS,
                     CONTRACTS_ENFORCE_CREATION_THROTTLE,
                     CONTRACTS_KNOWN_BLOCK_HASH,
@@ -520,6 +521,7 @@ public final class BootstrapProperties implements PropertySource {
                     entry(TOKENS_NFTS_USE_VIRTUAL_MERKLE, AS_BOOLEAN),
                     entry(TOPICS_MAX_NUM, AS_LONG),
                     entry(CONTRACTS_MAX_NUM, AS_LONG),
+                    entry(CONTRACTS_PERMITTED_DELEGATE_CALLERS, AS_EVM_ADDRESSES),
                     entry(CONTRACTS_KEYS_LEGACY_ACTIVATIONS, AS_LEGACY_ACTIVATIONS),
                     entry(CONTRACTS_KNOWN_BLOCK_HASH, AS_KNOWN_BLOCK_VALUES),
                     entry(CONTRACTS_LOCAL_CALL_EST_RET_BYTES, AS_INT),

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package com.hedera.node.app.service.mono.context.properties;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.*;
+import static com.hedera.node.app.service.mono.context.properties.PropertySource.AS_EVM_ADDRESSES;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,6 +41,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -69,6 +71,8 @@ class GlobalDynamicPropertiesTest {
     private ScaleFactor evenFactor = ScaleFactor.from("7:2");
     private LegacyContractIdActivations contractIdActivations =
             LegacyContractIdActivations.from("1058134by[1062784]");
+    private Set<Address> permittedDelegateCallers =
+            (Set<Address>) AS_EVM_ADDRESSES.apply("1062787,1461860");
     private GlobalDynamicProperties subject;
 
     @BeforeEach
@@ -234,6 +238,7 @@ class GlobalDynamicPropertiesTest {
                 subject.storagePriceTiers());
         assertEquals(evmVersions[1], subject.evmVersion());
         assertEquals(contractIdActivations, subject.legacyContractIdActivations());
+        assertEquals(permittedDelegateCallers, subject.permittedDelegateCallers());
         assertEquals(entityScaleFactors, subject.entityScaleFactors());
     }
 
@@ -552,6 +557,8 @@ class GlobalDynamicPropertiesTest {
                 .willReturn(entityScaleFactors);
         given(properties.getBooleanProperty(CONTRACTS_ENFORCE_CREATION_THROTTLE))
                 .willReturn((i + 91) % 2 == 0);
+        given(properties.getEvmAddresses(CONTRACTS_PERMITTED_DELEGATE_CALLERS))
+                .willReturn(permittedDelegateCallers);
     }
 
     private Set<EntityType> typesFor(final int i) {
