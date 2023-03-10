@@ -4,9 +4,19 @@ This document contains information about the Swirlds Platform. It is currently a
 
 The platform code is split into three categories:
 
-- Core: gossip, consensus, data flow, and various algorithms
 - Base: common utilities and libraries; logging, configuration, metrics, etc.
+- Core: gossip, consensus, data flow, and various algorithms
 - Data: merkle data structures for holding the ledger state
+
+## Base
+
+This code is maintained by the "Platform Base" team.
+
+- [Configuration](./base/configuration/configuration.md)
+- Metrics
+    - Prometheus
+- Logging
+- Thread Management
 
 ## Core
 
@@ -31,16 +41,6 @@ This code is maintained by the "Platform Hashgraph" team.
     - Pre-consensus event stream
     - Post-consensus event stream
     - Threading Diagram
-
-## Base
-
-This code is maintained by the "Platform Base" team.
-
-- [Configuration](./base/configuration/configuration.md)
-- Metrics
-    - Prometheus
-- Logging
-- Thread Management
 
 ## Data
 
