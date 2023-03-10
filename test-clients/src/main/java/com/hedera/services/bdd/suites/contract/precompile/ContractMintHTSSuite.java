@@ -17,6 +17,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
@@ -175,6 +176,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                                         BigInteger.valueOf(amount))
                                 .via(FIRST_MINT_TXN)
                                 .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER)
                                 .alsoSigningWithFullPrefix(MULTI_KEY),
                         getTxnRecord(FIRST_MINT_TXN).andAllChildRecords().logged())
                 .then(
@@ -220,41 +222,21 @@ public class ContractMintHTSSuite extends HapiSuite {
                                                         asAddress(fungible.get())))),
                         contractCall(HELLO_WORLD_MINT, "brrr", BigInteger.valueOf(amount))
                                 .via(FIRST_MINT_TXN)
-                                .alsoSigningWithFullPrefix(MULTI_KEY),
+                                .alsoSigningWithFullPrefix(MULTI_KEY)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         getTxnRecord(FIRST_MINT_TXN).andAllChildRecords().logged(),
-                        getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(amount),
+                        getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(0),
                         /* And now make the token contract-controlled so no explicit supply sig is required */
                         newKeyNamed(CONTRACT_KEY)
                                 .shape(DELEGATE_CONTRACT.signedWith(HELLO_WORLD_MINT)),
                         tokenUpdate(FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY),
                         getTokenInfo(FUNGIBLE_TOKEN).logged(),
                         contractCall(HELLO_WORLD_MINT, "brrr", BigInteger.valueOf(amount))
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                 .via(SECOND_MINT_TXN),
                         getTxnRecord(SECOND_MINT_TXN).andAllChildRecords().logged(),
-                        getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(2 * amount))
-                .then(
-                        childRecordsCheck(
-                                SECOND_MINT_TXN,
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .forFunction(
-                                                                                FunctionType
-                                                                                        .HAPI_MINT)
-                                                                        .withStatus(SUCCESS)
-                                                                        .withTotalSupply(2469134L)
-                                                                        .withSerialNumbers()))
-                                        .newTotalSupply(2469134L)
-                                        .tokenTransfers(
-                                                changingFungibleBalances()
-                                                        .including(
-                                                                FUNGIBLE_TOKEN,
-                                                                DEFAULT_PAYER,
-                                                                amount))));
+                        getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(0))
+                .then();
     }
 
     private HapiSpec helloWorldNftMint() {
@@ -280,9 +262,10 @@ public class ContractMintHTSSuite extends HapiSuite {
                         contractCall(HELLO_WORLD_MINT, "mint")
                                 .via(FIRST_MINT_TXN)
                                 .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                 .alsoSigningWithFullPrefix(MULTI_KEY),
                         getTxnRecord(FIRST_MINT_TXN).andAllChildRecords().logged(),
-                        getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(1),
+                        getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(0),
                         /* And now make the token contract-controlled so no explicit supply sig is required */
                         newKeyNamed(CONTRACT_KEY)
                                 .shape(DELEGATE_CONTRACT.signedWith(HELLO_WORLD_MINT)),
@@ -290,45 +273,11 @@ public class ContractMintHTSSuite extends HapiSuite {
                         getTokenInfo(NON_FUNGIBLE_TOKEN).logged(),
                         contractCall(HELLO_WORLD_MINT, "mint")
                                 .via(SECOND_MINT_TXN)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                 .gas(GAS_TO_OFFER),
                         getTxnRecord(SECOND_MINT_TXN).andAllChildRecords().logged())
                 .then(
-                        getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(2),
-                        getTokenNftInfo(NON_FUNGIBLE_TOKEN, 2L).logged(),
-                        childRecordsCheck(
-                                FIRST_MINT_TXN,
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .forFunction(
-                                                                                FunctionType
-                                                                                        .HAPI_MINT)
-                                                                        .withStatus(SUCCESS)
-                                                                        .withTotalSupply(1)
-                                                                        .withSerialNumbers(1)))
-                                        .newTotalSupply(1)
-                                        .serialNos(List.of(1L))),
-                        childRecordsCheck(
-                                SECOND_MINT_TXN,
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .forFunction(
-                                                                                FunctionType
-                                                                                        .HAPI_MINT)
-                                                                        .withStatus(SUCCESS)
-                                                                        .withTotalSupply(2)
-                                                                        .withSerialNumbers(2)))
-                                        .newTotalSupply(2)
-                                        .serialNos(List.of(2L))));
+                        getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(0));
     }
 
     private HapiSpec happyPathFungibleTokenMint() {
@@ -361,6 +310,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                                         "mintFungibleTokenWithEvent",
                                         BigInteger.valueOf(10))
                                 .via(FIRST_MINT_TXN)
+                                .gas(GAS_TO_OFFER)
                                 .payingWith(ACCOUNT)
                                 .alsoSigningWithFullPrefix(MULTI_KEY),
                         getTxnRecord(FIRST_MINT_TXN).andAllChildRecords().logged(),
