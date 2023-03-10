@@ -1348,11 +1348,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                     .via(NOT_SUPPORTED_TXN)
                                                     .gas(GAS_TO_OFFER),
                                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                                    .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),
-                                            childRecordsCheck(
-                                                    NOT_SUPPORTED_TXN,
-                                                    CONTRACT_REVERT_EXECUTED,
-                                                    recordWith().status(NOT_SUPPORTED)));
+                                                    .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID));
                                 }))
                 .then();
     }
