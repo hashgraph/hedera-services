@@ -29,6 +29,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTes
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungibleWipe;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungibleWipeAmountOversize;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungibleWipeMaxAmount;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.recipientAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.WipeFungiblePrecompile.decodeWipe;
@@ -97,13 +98,16 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -121,6 +125,9 @@ class WipeFungiblePrecompileTest {
 
     private final Bytes pretendArguments =
             Bytes.of(Integers.toBytes(ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE));
+    @Mock private Account acc;
+    @Mock private Deque<MessageFrame> stack;
+    @Mock private Iterator<MessageFrame> dequeIterator;
 
     @Mock private AccountStore accountStore;
     @Mock private TypedTokenStore tokenStore;
@@ -276,6 +283,8 @@ class WipeFungiblePrecompileTest {
         wipeFungiblePrecompile
                 .when(() -> decodeWipe(eq(pretendArguments), any()))
                 .thenReturn(fungibleWipeAmountOversize);
+        givenIfDelegateCall();
+
         // when:
         final var result = subject.computePrecompile(pretendArguments, frame);
         // then:
@@ -298,6 +307,7 @@ class WipeFungiblePrecompileTest {
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+        givenIfDelegateCall();
 
         wipeFungiblePrecompile
                 .when(() -> decodeWipe(eq(pretendArguments), any()))
@@ -470,5 +480,14 @@ class WipeFungiblePrecompileTest {
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+    }
+
+    private void givenIfDelegateCall() {
+        given(frame.getContractAddress()).willReturn(contractAddress);
+        given(frame.getRecipientAddress()).willReturn(recipientAddress);
+        given(worldUpdater.get(recipientAddress)).willReturn(acc);
+        given(acc.getNonce()).willReturn(-1L);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(frame.getMessageFrameStack().iterator()).willReturn(dequeIterator);
     }
 }

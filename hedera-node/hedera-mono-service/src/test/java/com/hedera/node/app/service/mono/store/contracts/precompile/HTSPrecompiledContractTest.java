@@ -968,6 +968,7 @@ class HTSPrecompiledContractTest {
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN));
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        givenIfDelegateCall();
 
         // when
         subject.prepareFields(messageFrame);

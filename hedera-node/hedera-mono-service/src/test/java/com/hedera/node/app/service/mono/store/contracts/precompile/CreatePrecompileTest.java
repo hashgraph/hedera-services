@@ -628,6 +628,7 @@ class CreatePrecompileTest {
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        givenIfDelegateCall();
         final var tokenCreateWrapper =
                 HTSTestsUtil.createTokenCreateWrapperWithKeys(
                         List.of(
@@ -1159,6 +1160,7 @@ class CreatePrecompileTest {
                         false,
                         Collections.emptyList(),
                         null);
+        givenIfDelegateCall();
 
         prepareAndAssertRevertReasonIsSetAndNullIsReturned(invalidTokenCreate);
     }
