@@ -715,7 +715,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                 HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
                                 HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
                                 HapiParserUtil.asHeadlongAddress(asAddress(receiverID.get())),
-                                        1L)
+                                1L)
                                 .payingWith(GENESIS)
                                 .via("staticTransferCallWithDelegateContractKeyTxn")
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)

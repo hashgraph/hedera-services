@@ -121,7 +121,8 @@ public class CryptoDeleteSuite extends HapiSuite {
                         getAccountInfo(TRANSFER_ACCOUNT).has(accountWith().balance(B)),
                         getTxnRecord("deleteTxn")
                                 .hasPriority(recordWith()
-                                        .transfers(including(tinyBarsFromTo(TO_BE_DELETED, TRANSFER_ACCOUNT, B)))));
+                                        .transfers(including(
+                                                tinyBarsFromTo(ACCOUNT_TO_BE_DELETED, TRANSFER_ACCOUNT, B)))));
     }
 
     private HapiSpec cannotDeleteAccountsWithNonzeroTokenBalances() {
@@ -137,19 +138,23 @@ public class CryptoDeleteSuite extends HapiSuite {
                                 .initialSupply(TOKEN_INITIAL_SUPPLY)
                                 .treasury(TOKEN_TREASURY),
                         tokenAssociate(ACCOUNT_TO_BE_DELETED, "misc"),
-                        cryptoTransfer(moving(TOKEN_INITIAL_SUPPLY, "misc").between(TOKEN_TREASURY, TO_BE_DELETED)),
+                        cryptoTransfer(
+                                moving(TOKEN_INITIAL_SUPPLY, "misc").between(TOKEN_TREASURY, ACCOUNT_TO_BE_DELETED)),
                         cryptoDelete(ACCOUNT_TO_BE_DELETED)
                                 .transfer(TRANSFER_ACCOUNT)
                                 .hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES),
-                        cryptoTransfer(moving(TOKEN_INITIAL_SUPPLY, "misc").between(TO_BE_DELETED, TOKEN_TREASURY)),
+                        cryptoTransfer(
+                                moving(TOKEN_INITIAL_SUPPLY, "misc").between(ACCOUNT_TO_BE_DELETED, TOKEN_TREASURY)),
                         tokenDissociate(ACCOUNT_TO_BE_DELETED, "misc"),
-                        cryptoTransfer(moving(TOKEN_INITIAL_SUPPLY, "misc").between(TOKEN_TREASURY, TO_BE_DELETED)),
+                        cryptoTransfer(
+                                moving(TOKEN_INITIAL_SUPPLY, "misc").between(TOKEN_TREASURY, ACCOUNT_TO_BE_DELETED)),
                         cryptoDelete(ACCOUNT_TO_BE_DELETED)
                                 .transfer(TRANSFER_ACCOUNT)
                                 .hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES))
                 .then(
                         cryptoDelete(TOKEN_TREASURY).hasKnownStatus(ACCOUNT_IS_TREASURY),
-                        cryptoTransfer(moving(TOKEN_INITIAL_SUPPLY, "misc").between(TO_BE_DELETED, TOKEN_TREASURY)),
+                        cryptoTransfer(
+                                moving(TOKEN_INITIAL_SUPPLY, "misc").between(ACCOUNT_TO_BE_DELETED, TOKEN_TREASURY)),
                         cryptoDelete(ACCOUNT_TO_BE_DELETED),
                         cryptoDelete(ACCOUNT_TO_BE_DELETED).hasKnownStatus(ACCOUNT_DELETED),
                         tokenDelete("misc"),
