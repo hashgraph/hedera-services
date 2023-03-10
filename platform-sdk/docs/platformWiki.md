@@ -25,6 +25,7 @@ This code is maintained by the "Platform Hashgraph" team.
     - Reconnect
     - Transaction Handling
     - BLS
+    - Notification Engine
 - Event Flow
     - Event Intake
     - Pre-consensus event stream
@@ -40,7 +41,6 @@ This code is maintained by the "Platform Base" team.
     - Prometheus
 - Logging
 - Thread Management
-- Notification Engine
 
 ## Data
 
