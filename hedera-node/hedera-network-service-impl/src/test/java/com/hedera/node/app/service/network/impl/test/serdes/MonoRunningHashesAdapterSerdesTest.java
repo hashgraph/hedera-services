@@ -21,6 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.network.impl.serdes.MonoRunningHashesAdapterCodec;
+import com.hedera.pbj.runtime.io.DataInput;
+import com.hedera.pbj.runtime.io.DataOutput;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -30,8 +32,6 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataInput;
-import java.io.DataOutput;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -50,7 +50,7 @@ class MonoRunningHashesAdapterSerdesTest {
 
     @Test
     void doesntSupportUnnecessary() {
-        assertThrows(UnsupportedOperationException.class, subject::typicalSize);
+        assertThrows(UnsupportedOperationException.class, () -> subject.measureRecord(SOME_HASHES));
         assertThrows(UnsupportedOperationException.class, () -> subject.measure(input));
         assertThrows(UnsupportedOperationException.class, () -> subject.fastEquals(SOME_HASHES, input));
     }
@@ -60,11 +60,11 @@ class MonoRunningHashesAdapterSerdesTest {
         ConstructableRegistry.getInstance().registerConstructable(new ClassConstructorPair(Hash.class, Hash::new));
         final var baos = new ByteArrayOutputStream();
         final var actualOut = new SerializableDataOutputStream(baos);
-        subject.write(SOME_HASHES, actualOut);
+        subject.write(SOME_HASHES, output);
         actualOut.flush();
 
         final var actualIn = new SerializableDataInputStream(new ByteArrayInputStream(baos.toByteArray()));
-        final var parsed = subject.parse(actualIn);
+        final var parsed = subject.parse(input);
         assertEquals(SOME_HASHES.getHash(), parsed.getHash());
     }
 

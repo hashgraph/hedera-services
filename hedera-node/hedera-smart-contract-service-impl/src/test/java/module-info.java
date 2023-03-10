@@ -10,6 +10,7 @@ module com.hedera.node.app.service.contract.impl.test {
     requires org.mockito.junit.jupiter;
     requires com.hedera.node.app.spi;
     requires com.hedera.node.app.spi.fixtures;
+    requires com.hedera.pbj.runtime;
 
     opens com.hedera.node.app.service.contract.impl.test to
             org.junit.platform.commons;

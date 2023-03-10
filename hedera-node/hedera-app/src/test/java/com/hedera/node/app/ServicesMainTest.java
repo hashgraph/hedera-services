@@ -67,7 +67,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ServicesMainTest {
+final class ServicesMainTest {
     private final long selfId = 123L;
     private final long unselfId = 666L;
     private final NodeId nodeId = new NodeId(false, selfId);

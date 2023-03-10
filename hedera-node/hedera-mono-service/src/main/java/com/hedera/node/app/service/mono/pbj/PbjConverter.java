@@ -22,6 +22,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -1172,5 +1173,21 @@ public final class PbjConverter {
             case ALIAS_ALREADY_ASSIGNED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
                 //            case UNRECOGNIZED -> throw new RuntimeException("UNRECOGNIZED Response code!");
         };
+    }
+
+    public static byte[] asBytes(Bytes b) {
+        final var buf = new byte[b.getLength()];
+        b.getBytes(0, buf);
+        return buf;
+    }
+
+    public static com.hederahashgraph.api.proto.java.ContractID fromPbj(ContractID contractID) {
+        return com.hederahashgraph.api.proto.java.ContractID.newBuilder()
+                .setRealmNum(contractID.realmNum())
+                .setShardNum(contractID.shardNum())
+                .setContractNum(contractID.contractNum().orElse(0L))
+                .setEvmAddress(
+                        ByteString.copyFrom(asBytes(contractID.evmAddress().orElse(Bytes.EMPTY_BYTES))))
+                .build();
     }
 }

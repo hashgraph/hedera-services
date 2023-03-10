@@ -16,28 +16,29 @@
 
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.test.factories.scenarios.ContractCreateScenarios.DILIGENT_SIGNING_PAYER_KT;
 import static com.hedera.test.factories.scenarios.ContractCreateScenarios.MISC_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.ContractCreateScenarios.RECEIVER_SIG_KT;
 import static com.hedera.test.factories.scenarios.ContractDeleteScenarios.*;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.utils.KeyUtils.sanityRestored;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.handlers.ContractDeleteHandler;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class ContractDeleteHandlerParityTest {
     private AccountAccess keyLookup;
+
     private final ContractDeleteHandler subject = new ContractDeleteHandler();
 
     @BeforeEach
@@ -53,7 +54,7 @@ class ContractDeleteHandlerParityTest {
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertTrue(sanityRestored(context.getRequiredNonPayerKeys()).isEmpty());
-        assertEquals(MODIFYING_IMMUTABLE_CONTRACT, context.getStatus());
+        assertEquals(ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT, context.getStatus());
     }
 
     @Test
@@ -63,9 +64,9 @@ class ContractDeleteHandlerParityTest {
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
+        assertEquals(
                 sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(MISC_ADMIN_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+                List.of(MISC_ADMIN_KT.asKey(), RECEIVER_SIG_KT.asKey()));
     }
 
     @Test
@@ -75,8 +76,8 @@ class ContractDeleteHandlerParityTest {
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(MISC_ADMIN_KT.asKey()));
-        assertEquals(INVALID_TRANSFER_ACCOUNT_ID, context.getStatus());
+        assertEquals(sanityRestored(context.getRequiredNonPayerKeys()), List.of(MISC_ADMIN_KT.asKey()));
+        assertEquals(ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID, context.getStatus());
     }
 
     @Test
@@ -86,8 +87,8 @@ class ContractDeleteHandlerParityTest {
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(MISC_ADMIN_KT.asKey()));
-        assertEquals(INVALID_CONTRACT_ID, context.getStatus());
+        assertEquals(sanityRestored(context.getRequiredNonPayerKeys()), List.of(MISC_ADMIN_KT.asKey()));
+        assertEquals(ResponseCodeEnum.INVALID_CONTRACT_ID, context.getStatus());
     }
 
     @Test
@@ -97,15 +98,15 @@ class ContractDeleteHandlerParityTest {
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
+        assertEquals(
                 sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(MISC_ADMIN_KT.asKey(), DILIGENT_SIGNING_PAYER_KT.asKey()));
-        assertEquals(OK, context.getStatus());
+                List.of(MISC_ADMIN_KT.asKey(), DILIGENT_SIGNING_PAYER_KT.asKey()));
+        assertEquals(ResponseCodeEnum.OK, context.getStatus());
     }
 
     private TransactionBody txnFrom(final TxnHandlingScenario scenario) {
         try {
-            return scenario.platformTxn().getTxn();
+            return toPbj(scenario.platformTxn().getTxn());
         } catch (final Throwable e) {
             throw new RuntimeException(e);
         }

@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static org.assertj.core.api.FactoryBasedNavigableListAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
@@ -40,7 +40,7 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
         final var context = new PreHandleContext(keyLookup, txn);
         subject.preHandle(context);
         basicMetaAssertions(context, 0, false, OK);
-        assertThat(context.getPayerKey()).isEqualTo(payerKey);
+        assertEquals(context.getPayerKey(), payerKey);
     }
 
     private TransactionBody contractCallTransaction() {

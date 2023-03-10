@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.network.impl;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.node.app.service.mono.state.codec.MonoMapCodecAdapter;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.network.NetworkService;
@@ -27,7 +28,6 @@ import com.hedera.node.app.service.network.impl.serdes.MonoSpecialFilesAdapterCo
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.app.spi.state.serdes.MonoMapCodecAdapter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 

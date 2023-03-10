@@ -21,8 +21,6 @@ import com.hedera.pbj.runtime.io.DataInput;
 import com.hedera.pbj.runtime.io.DataInputStream;
 import com.hedera.pbj.runtime.io.DataOutput;
 import com.hedera.pbj.runtime.io.DataOutputStream;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 
@@ -42,8 +40,8 @@ public final class CodecFactory {
             @NonNull
             @Override
             public T parse(final @NonNull DataInput input) throws IOException {
-                if (input instanceof SerializableDataInputStream in) {
-                    return parser.parse(new DataInputStream(in));
+                if (input instanceof DataInputStream in) {
+                    return parser.parse(in);
                 } else {
                     throw new IllegalArgumentException("Unsupported input type: " + input.getClass());
                 }
@@ -51,8 +49,8 @@ public final class CodecFactory {
 
             @Override
             public void write(final @NonNull T item, final @NonNull DataOutput output) throws IOException {
-                if (output instanceof SerializableDataOutputStream out) {
-                    writer.write(item, new DataOutputStream(out));
+                if (output instanceof DataOutputStream out) {
+                    writer.write(item, out);
                 } else {
                     throw new IllegalArgumentException("Unsupported output type: " + output.getClass());
                 }

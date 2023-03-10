@@ -23,6 +23,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermissions;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -41,6 +42,8 @@ public class AuthorizerImpl implements Authorizer {
     /** {@inheritDoc} */
     @Override
     public boolean isAuthorized(@NonNull final AccountID id, @NonNull final HederaFunctionality function) {
+        Objects.requireNonNull(id);
+        Objects.requireNonNull(function);
         final var permissionStatus = hapiOpPermissions.permissibilityOf2(function, id);
         return permissionStatus == OK;
     }
