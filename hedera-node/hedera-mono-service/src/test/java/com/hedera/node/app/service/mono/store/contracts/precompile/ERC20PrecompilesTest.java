@@ -151,7 +151,9 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -222,6 +224,10 @@ class ERC20PrecompilesTest {
     @Mock private ExchangeRate exchangeRate;
     @Mock private AccessorFactory accessorFactory;
     @Mock private Account account;
+
+    @Mock private org.hyperledger.besu.evm.account.Account acc;
+    @Mock private Deque<MessageFrame> stack;
+    @Mock private Iterator<MessageFrame> dequeIterator;
 
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
@@ -449,6 +455,7 @@ class ERC20PrecompilesTest {
                 givenMinimalFrameContextWithoutParentUpdater(nestedPretendArguments);
 
         given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
+        givenIfDelegateCall();
 
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
@@ -480,6 +487,7 @@ class ERC20PrecompilesTest {
         given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
         given(frame.getBlockValues()).willReturn(blockValues);
         given(blockValues.getTimestamp()).willReturn(TEST_CONSENSUS_TIME);
+        givenIfDelegateCall();
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
@@ -560,6 +568,8 @@ class ERC20PrecompilesTest {
         given(blockValues.getTimestamp()).willReturn(TEST_CONSENSUS_TIME);
         when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
         when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
+        givenIfDelegateCall();
+
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
@@ -1706,6 +1716,15 @@ class ERC20PrecompilesTest {
         given(exchange.rate(any())).willReturn(exchangeRate);
         given(exchangeRate.getCentEquiv()).willReturn(CENTS_RATE);
         given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
+    }
+
+    private void givenIfDelegateCall() {
+        given(frame.getContractAddress()).willReturn(contractAddress);
+        given(frame.getRecipientAddress()).willReturn(recipientAddress);
+        given(worldUpdater.get(recipientAddress)).willReturn(acc);
+        given(acc.getNonce()).willReturn(-1L);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(frame.getMessageFrameStack().iterator()).willReturn(dequeIterator);
     }
 
     public static final BalanceOfWrapper<AccountID> BALANCE_OF_WRAPPER =

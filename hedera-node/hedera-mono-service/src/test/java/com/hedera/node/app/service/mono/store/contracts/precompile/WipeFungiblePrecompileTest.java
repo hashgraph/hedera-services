@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTes
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungibleWipe;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungibleWipeAmountOversize;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungibleWipeMaxAmount;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.recipientAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.WipeFungiblePrecompile.decodeWipe;
@@ -96,13 +97,16 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -156,6 +160,9 @@ class WipeFungiblePrecompileTest {
     @Mock private AssetsLoader assetLoader;
     @Mock private HbarCentExchange exchange;
     @Mock private ExchangeRate exchangeRate;
+    @Mock private Account acc;
+    @Mock private Deque<MessageFrame> stack;
+    @Mock private Iterator<MessageFrame> dequeIterator;
 
     private static final long TEST_SERVICE_FEE = 5_000_000;
     private static final long TEST_NETWORK_FEE = 400_000;
@@ -273,6 +280,14 @@ class WipeFungiblePrecompileTest {
         wipeFungiblePrecompile
                 .when(() -> decodeWipe(eq(pretendArguments), any()))
                 .thenReturn(fungibleWipeAmountOversize);
+
+        given(frame.getContractAddress()).willReturn(contractAddress);
+        given(frame.getRecipientAddress()).willReturn(recipientAddress);
+        given(worldUpdater.get(recipientAddress)).willReturn(acc);
+        given(acc.getNonce()).willReturn(-1L);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(frame.getMessageFrameStack().iterator()).willReturn(dequeIterator);
+
         // when:
         final var result = subject.computePrecompile(pretendArguments, frame);
         // then:
@@ -308,8 +323,14 @@ class WipeFungiblePrecompileTest {
                 .willReturn(new HederaBlockValues(10L, 123L, Instant.ofEpochSecond(123L)));
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any()))
                 .willReturn(DEFAULT_GAS_PRICE);
+        given(frame.getContractAddress()).willReturn(contractAddress);
+        given(frame.getRecipientAddress()).willReturn(recipientAddress);
+        given(worldUpdater.get(recipientAddress)).willReturn(acc);
+        given(acc.getNonce()).willReturn(-1L);
         when(accessorFactory.uncheckedSpecializedAccessor(any()))
                 .thenThrow(new IllegalArgumentException("error"));
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(frame.getMessageFrameStack().iterator()).willReturn(dequeIterator);
 
         // then:
         assertThrows(
