@@ -66,7 +66,7 @@ public class BlsNodeData {
      * @param shareIds the new shareId list
      */
     public void setShareIds(final List<ShareId> shareIds) {
-        this.shareIds = shareIds;
+        this.shareIds = Collections.unmodifiableList(shareIds);
     }
 
     /**
@@ -106,7 +106,7 @@ public class BlsNodeData {
      * @return an unmodifiable view of {@link #shareIds}
      */
     public List<ShareId> getShareIds() {
-        return Collections.unmodifiableList(shareIds);
+        return shareIds;
     }
 
     /**
