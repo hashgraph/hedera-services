@@ -31,7 +31,7 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomUtils;
-import com.swirlds.common.test.state.DummySwirldState2;
+import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.SignedState;
 import java.time.Instant;
@@ -105,7 +105,7 @@ public class RandomSignedStateGenerator {
         final State stateInstance;
         if (state == null) {
             stateInstance = new State();
-            final DummySwirldState2 swirldState = new DummySwirldState2(addressBookInstance);
+            final DummySwirldState swirldState = new DummySwirldState(addressBookInstance);
             stateInstance.setSwirldState(swirldState);
             PlatformState platformState = new PlatformState();
             final PlatformData platformData = new PlatformData();
@@ -232,8 +232,8 @@ public class RandomSignedStateGenerator {
             signedState.getSigSet().addSignature(nodeId, signaturesInstance.get(nodeId));
         }
 
-        if (protectionEnabled && stateInstance.getSwirldState() instanceof final DummySwirldState2 dummySwirldState2) {
-            dummySwirldState2.disableDeletion();
+        if (protectionEnabled && stateInstance.getSwirldState() instanceof final DummySwirldState dummySwirldState) {
+            dummySwirldState.disableDeletion();
         }
 
         return signedState;
@@ -386,7 +386,7 @@ public class RandomSignedStateGenerator {
     }
 
     /**
-     * Default false. If true and a {@link DummySwirldState2} is being used, then disable deletion on the state.
+     * Default false. If true and a {@link DummySwirldState} is being used, then disable deletion on the state.
      *
      * @return this object
      */
