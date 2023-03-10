@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.state.serdes;
+package com.hedera.node.app.service.mono.state.codec;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -23,13 +23,9 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.spi.state.Serdes;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.io.DataInputStream;
+import com.hedera.pbj.runtime.io.DataOutputStream;
 import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,10 +36,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class CodecFactoryTest {
     @Mock
-    private SerializableDataInputStream input;
+    private DataInputStream input;
 
     @Mock
-    private SerializableDataOutputStream output;
+    private DataOutputStream output;
 
     @Mock
     private PbjParser<String> parser;
@@ -51,16 +47,15 @@ class CodecFactoryTest {
     @Mock
     private PbjWriter<String> writer;
 
-    private Serdes<String> subject;
+    private Codec<String> subject;
 
     @BeforeEach
     void setUp() {
-        subject = SerdesFactory.newInMemorySerdes(parser, writer);
+        subject = CodecFactory.newInMemoryCodec(parser, writer);
     }
 
     @Test
     void unusedMethodsAreUnsupported() {
-        assertThrows(UnsupportedOperationException.class, subject::typicalSize);
         assertThrows(UnsupportedOperationException.class, () -> subject.measure(input));
         assertThrows(UnsupportedOperationException.class, () -> subject.fastEquals("A", input));
     }
@@ -73,25 +68,11 @@ class CodecFactoryTest {
     }
 
     @Test
-    void failsOnWrongDataOutput() {
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> subject.write("B", new DataOutputStream(new ByteArrayOutputStream())));
-    }
-
-    @Test
     void delegatesParse() throws IOException {
         given(parser.parse(any())).willReturn("C");
 
         final var value = subject.parse(input);
 
         assertEquals("C", value);
-    }
-
-    @Test
-    void failsOnWrongDataInput() {
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> subject.parse(new DataInputStream(new ByteArrayInputStream(new byte[0]))));
     }
 }

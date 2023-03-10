@@ -16,21 +16,23 @@
 
 package com.hedera.node.app.service.mono.state.codec;
 
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import com.hedera.pbj.runtime.io.DataBuffer;
+import com.hedera.pbj.runtime.io.DataInput;
+import com.hedera.pbj.runtime.io.DataInputStream;
+import com.hedera.pbj.runtime.io.DataOutput;
+import com.hedera.pbj.runtime.io.DataOutputStream;
 import com.swirlds.common.merkle.utility.MerkleLong;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
 class MonoMapSerdesAdapterTest {
@@ -47,8 +49,8 @@ class MonoMapSerdesAdapterTest {
         final var longSerdes = MonoMapCodecAdapter.codecForSelfSerializable(1, MerkleLong::new);
 
         final var baos = new ByteArrayOutputStream();
-        final var unusableOut = new ByteBufferDataOutput(ByteBuffer.allocate(1024));
-        final var out = new SerializableDataOutputStream(baos);
+        final var unusableOut = DataBuffer.allocate(1024);
+        final var out = new DataOutputStream(baos);
         final var longValue = new MerkleLong(1);
 
         assertThrows(IllegalArgumentException.class, () -> longSerdes.write(longValue, unusableOut));
@@ -57,14 +59,14 @@ class MonoMapSerdesAdapterTest {
         out.flush();
         out.close();
         final var bais = new ByteArrayInputStream(baos.toByteArray());
-        final var unusableIn = new ByteBufferDataInput(ByteBuffer.wrap(baos.toByteArray()));
-        final var in = new SerializableDataInputStream(bais);
+        final var unusableIn = DataBuffer.wrap(ByteBuffer.wrap(baos.toByteArray()));
+        final var in = new DataInputStream(bais);
+        in.reset();  // without this line, the test fails
 
         assertThrows(IllegalArgumentException.class, () -> longSerdes.parse(unusableIn));
         final var parsedLongValue = longSerdes.parse(in);
         assertEquals(longValue, parsedLongValue);
 
-        assertThrows(UnsupportedOperationException.class, longSerdes::typicalSize);
         assertThrows(UnsupportedOperationException.class, () -> longSerdes.measure(in));
         assertThrows(UnsupportedOperationException.class, () -> longSerdes.fastEquals(longValue, in));
     }

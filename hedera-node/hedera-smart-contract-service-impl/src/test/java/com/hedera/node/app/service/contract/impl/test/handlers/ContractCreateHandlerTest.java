@@ -16,20 +16,23 @@
 
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hederahashgraph.api.proto.java.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class ContractCreateHandlerTest extends ContractHandlerTestBase {
-    private ContractCreateHandler subject = new ContractCreateHandler();
+    private final ContractCreateHandler subject = new ContractCreateHandler();
 
     @Test
     @DisplayName("Adds valid admin key")
@@ -38,7 +41,7 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
         final var context = new PreHandleContext(keyLookup, txn);
         subject.preHandle(context);
 
-        basicMetaAssertions(context, 1, false, OK);
+        basicMetaAssertions(context, 1, false, ResponseCodeEnum.OK);
         assertThat(context.getPayerKey()).isEqualTo(payerKey);
         //        FUTURE: uncomment this after JKey removal
         //        assertIterableEquals(List.of(adminHederaKey), meta.requiredNonPayerKeys());
@@ -48,11 +51,11 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
     @DisplayName("Fails for invalid payer account")
     void invalidPayer() {
         final var txn = contractCreateTransaction(adminKey, null);
-        given(keyLookup.getKey(payer)).willReturn(KeyOrLookupFailureReason.withFailureReason(INVALID_ACCOUNT_ID));
+        given(keyLookup.getKey(payer)).willReturn(KeyOrLookupFailureReason.withFailureReason(ResponseCodeEnum.INVALID_ACCOUNT_ID));
         final var context = new PreHandleContext(keyLookup, txn);
         subject.preHandle(context);
 
-        basicMetaAssertions(context, 0, true, INVALID_PAYER_ACCOUNT_ID);
+        basicMetaAssertions(context, 0, true, ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID);
         assertThat(context.getPayerKey()).isNull();
     }
 
@@ -63,7 +66,7 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
         final var context = new PreHandleContext(keyLookup, txn);
         subject.preHandle(context);
 
-        basicMetaAssertions(context, 0, false, OK);
+        basicMetaAssertions(context, 0, false, ResponseCodeEnum.OK);
         assertThat(context.getPayerKey()).isEqualTo(payerKey);
     }
 
@@ -74,7 +77,7 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
         final var context = new PreHandleContext(keyLookup, txn);
         subject.preHandle(context);
 
-        basicMetaAssertions(context, 1, false, OK);
+        basicMetaAssertions(context, 1, false, ResponseCodeEnum.OK);
         assertThat(context.getPayerKey()).isEqualTo(payerKey);
         assertThat(context.getRequiredNonPayerKeys()).containsExactly(autoRenewHederaKey);
     }
@@ -86,7 +89,7 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
         final var context = new PreHandleContext(keyLookup, txn);
         subject.preHandle(context);
 
-        basicMetaAssertions(context, 0, false, OK);
+        basicMetaAssertions(context, 0, false, ResponseCodeEnum.OK);
         assertThat(context.getPayerKey()).isEqualTo(payerKey);
         assertThat(context.getRequiredNonPayerKeys()).isEmpty();
     }
@@ -98,7 +101,7 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
         final var context = new PreHandleContext(keyLookup, txn);
         subject.preHandle(context);
 
-        basicMetaAssertions(context, 2, false, OK);
+        basicMetaAssertions(context, 2, false, ResponseCodeEnum.OK);
         assertThat(context.getPayerKey()).isEqualTo(payerKey);
         //        FUTURE: uncomment this after JKey removal
         //        assertEquals(List.of(adminHederaKey, autoRenewHederaKey),
@@ -107,22 +110,22 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
 
     private TransactionBody contractCreateTransaction(final Key adminKey, final AccountID autoRenewId) {
         final var transactionID =
-                TransactionID.newBuilder().setAccountID(payer).setTransactionValidStart(consensusTimestamp);
-        final var createTxnBody = ContractCreateTransactionBody.newBuilder().setMemo("Create Contract");
+                new TransactionID.Builder().accountID(payer).transactionValidStart(consensusTimestamp);
+        final var createTxnBody = new ContractCreateTransactionBody.Builder().memo("Create Contract");
         if (adminKey != null) {
-            createTxnBody.setAdminKey(adminKey);
+            createTxnBody.adminKey(adminKey);
         }
 
         if (autoRenewId != null) {
             if (!autoRenewId.equals(asAccount("0.0.0"))) {
                 given(keyLookup.getKey(autoRenewId)).willReturn(KeyOrLookupFailureReason.withKey(autoRenewHederaKey));
             }
-            createTxnBody.setAutoRenewAccountId(autoRenewId);
+            createTxnBody.autoRenewAccountId(autoRenewId);
         }
 
-        return TransactionBody.newBuilder()
-                .setTransactionID(transactionID)
-                .setContractCreateInstance(createTxnBody)
+        return new TransactionBody.Builder()
+                .transactionID(transactionID)
+                .contractCreateInstance(createTxnBody)
                 .build();
     }
 }

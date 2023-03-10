@@ -1,10 +1,11 @@
 package com.hedera.node.app.service.mono.state.codec;
 
 import com.hedera.pbj.runtime.Codec;
-import com.hedera.pbj.runtime.io.BytesBuffer;
 import com.hedera.pbj.runtime.io.DataBuffer;
 import com.hedera.pbj.runtime.io.DataInput;
+import com.hedera.pbj.runtime.io.DataInputStream;
 import com.hedera.pbj.runtime.io.DataOutput;
+import com.hedera.pbj.runtime.io.DataOutputStream;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -13,6 +14,7 @@ import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.function.Supplier;
 
 /**
@@ -38,10 +40,10 @@ public class MonoMapCodecAdapter {
             @Override
             public T parse(final @NonNull DataInput input) throws IOException {
                 final var item = factory.get();
-                if (input instanceof SerializableDataInputStream in) {
-                    item.deserialize(in, version);
+                if (input instanceof DataInputStream in) {
+                    item.deserialize(new SerializableDataInputStream(in), version);
                 } else {
-                    throw new IllegalArgumentException("Expected a SerializableDataInputStream");
+                    throw new IllegalArgumentException("Expected a DataInputStream, but found: " + input.getClass());
                 }
                 return item;
             }
@@ -54,10 +56,10 @@ public class MonoMapCodecAdapter {
 
             @Override
             public void write(final @NonNull T item, final @NonNull DataOutput output) throws IOException {
-                if (output instanceof SerializableDataOutputStream out) {
-                    item.serialize(out);
+                if (output instanceof DataOutputStream out) {
+                    item.serialize(new SerializableDataOutputStream(out));
                 } else {
-                    throw new IllegalArgumentException("Expected a SerializableDataOutputStream");
+                    throw new IllegalArgumentException("Expected a DataOutputStream, but found: " + output.getClass());
                 }
             }
 
@@ -85,11 +87,16 @@ public class MonoMapCodecAdapter {
             @Override
             public T parse(final @NonNull DataInput input) throws IOException {
                 final var item = factory.get();
-                // TODO - this will never be true, we need the filtered stream from (DataInputStream) in
-                if (input instanceof SerializableDataInputStream in) {
-                    item.deserialize(in, version);
-                } else if (input instanceof DataBuffer db) {
-                    // TODO - need to have access to the wrapped ByteBuffer here
+                if (input instanceof DataInputStream in) {
+                    item.deserialize(new SerializableDataInputStream(in), version);
+                } else if (input instanceof DataBuffer dataBuffer) {
+                    // TODO: Is it possible to get direct access to the underlying ByteBuffer here?
+                    final var byteBuffer = ByteBuffer.allocate(dataBuffer.getCapacity());
+                    dataBuffer.readBytes(byteBuffer);
+                    // TODO: Remove the following line once this was fixed in DataBuffer
+                    dataBuffer.skip(dataBuffer.getRemaining());
+                    byteBuffer.rewind();
+                    item.deserialize(byteBuffer, version);
                 } else {
                     throw new IllegalArgumentException(
                             "Unsupported DataInput type: " + input.getClass().getName());
@@ -105,11 +112,14 @@ public class MonoMapCodecAdapter {
 
             @Override
             public void write(final @NonNull T item, final @NonNull DataOutput output) throws IOException {
-                // TODO - this will never be true, we need the filtered stream from (DataOutputStream) out
-                if (output instanceof SerializableDataOutputStream out) {
-                    item.serialize(out);
-                } else if (output instanceof DataBuffer db) {
-                    // TODO - need to have access to the wrapped ByteBuffer here
+                if (output instanceof DataOutputStream out) {
+                    item.serialize(new SerializableDataOutputStream(out));
+                } else if (output instanceof DataBuffer dataBuffer) {
+                    // TODO: Is it possible to get direct access to the underlying ByteBuffer here?
+                    final var byteBuffer = ByteBuffer.allocate(dataBuffer.getCapacity());
+                    item.serialize(byteBuffer);
+                    byteBuffer.rewind();
+                    dataBuffer.writeBytes(byteBuffer);
                 } else {
                     throw new IllegalArgumentException(
                             "Unsupported DataOutput type: " + output.getClass().getName());
@@ -140,11 +150,16 @@ public class MonoMapCodecAdapter {
             @Override
             public T parse(final @NonNull DataInput input) throws IOException {
                 final var item = factory.get();
-                // TODO - this will never be true, we need the filtered stream from (DataInputStream) in
-                if (input instanceof SerializableDataInputStream in) {
-                    item.deserialize(in, version);
-                } else if (input instanceof DataBuffer db) {
-                    // TODO - need to have access to the wrapped ByteBuffer here
+                if (input instanceof DataInputStream in) {
+                    item.deserialize(new SerializableDataInputStream(in), version);
+                } else if (input instanceof DataBuffer dataBuffer) {
+                    // TODO: Is it possible to get direct access to the underlying ByteBuffer here?
+                    final var byteBuffer = ByteBuffer.allocate(dataBuffer.getCapacity());
+                    dataBuffer.readBytes(byteBuffer);
+                    // TODO: Remove the following line once this was fixed in DataBuffer
+                    dataBuffer.skip(dataBuffer.getRemaining());
+                    byteBuffer.rewind();
+                    item.deserialize(byteBuffer, version);
                 } else {
                     throw new IllegalArgumentException(
                             "Unsupported DataInput type: " + input.getClass().getName());
@@ -160,11 +175,14 @@ public class MonoMapCodecAdapter {
 
             @Override
             public void write(final @NonNull T item, final @NonNull DataOutput output) throws IOException {
-                // TODO - this will never be true, we need the filtered stream from (DataOutputStream) out
-                if (output instanceof SerializableDataOutputStream out) {
-                    item.serialize(out);
-                } else if (output instanceof DataBuffer db) {
-                    // TODO - need to have access to the wrapped ByteBuffer here
+                if (output instanceof DataOutputStream out) {
+                    item.serialize(new SerializableDataOutputStream(out));
+                } else if (output instanceof DataBuffer dataBuffer) {
+                    // TODO: Is it possible to get direct access to the underlying ByteBuffer here?
+                    final var byteBuffer = ByteBuffer.allocate(dataBuffer.getCapacity());
+                    item.serialize(byteBuffer);
+                    byteBuffer.rewind();
+                    dataBuffer.writeBytes(byteBuffer);
                 } else {
                     throw new IllegalArgumentException(
                             "Unsupported DataOutput type: " + output.getClass().getName());
