@@ -24,7 +24,6 @@ import com.swirlds.platform.components.EventHandler;
 import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.transaction.TransactionPool;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
-import com.swirlds.platform.components.transaction.TransactionTracker;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.internal.EventImpl;
 import java.util.function.BooleanSupplier;
@@ -42,7 +41,6 @@ public class AccessibleEventCreator extends EventCreator {
             final Supplier<GraphGenerations> graphGenerationsSupplier,
             final TransactionSupplier transactionSupplier,
             final EventHandler newEventHandler,
-            final TransactionTracker transactionTracker,
             final TransactionPool transactionPool,
             final BooleanSupplier isInFreeze,
             final EventCreationRules eventCreationRules) {
@@ -55,7 +53,6 @@ public class AccessibleEventCreator extends EventCreator {
                 newEventHandler,
                 eventMapper,
                 eventMapper,
-                transactionTracker,
                 transactionPool,
                 isInFreeze,
                 eventCreationRules);
