@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -152,6 +153,9 @@ public class DelegatePrecompileSuite extends HapiSuite {
                                                         .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(
+                        getTxnRecord("delegateTransferCallWithDelegateContractKeyTxn")
+                                .hasNonStakingChildRecordCount(0)
+                                .logged(),
                         getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 1),
                         getAccountBalance(RECEIVER).hasTokenBalance(VANILLA_TOKEN, 0));
     }
@@ -205,7 +209,11 @@ public class DelegatePrecompileSuite extends HapiSuite {
                                                                 "delegateBurnCallWithDelegateContractKeyTxn")
                                                         .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
-                .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(VANILLA_TOKEN, 2));
+                .then(
+                        getTxnRecord("delegateBurnCallWithDelegateContractKeyTxn")
+                                .hasNonStakingChildRecordCount(0)
+                                .logged(),
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(VANILLA_TOKEN, 2));
     }
 
     private HapiSpec delegateCallForMint() {
@@ -254,7 +262,11 @@ public class DelegatePrecompileSuite extends HapiSuite {
                                                                 "delegateBurnCallWithDelegateContractKeyTxn")
                                                         .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
-                .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(VANILLA_TOKEN, 50));
+                .then(
+                        getTxnRecord("delegateBurnCallWithDelegateContractKeyTxn")
+                                .hasNonStakingChildRecordCount(0)
+                                .logged(),
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(VANILLA_TOKEN, 50));
     }
 
     @NotNull
