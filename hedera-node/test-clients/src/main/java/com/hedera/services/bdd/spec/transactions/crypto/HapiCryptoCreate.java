@@ -355,4 +355,8 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
                 .map(receipt -> receipt.getAccountID().getAccountNum())
                 .orElse(-1L);
     }
+
+    public String getAccount() {
+        return account;
+    }
 }
