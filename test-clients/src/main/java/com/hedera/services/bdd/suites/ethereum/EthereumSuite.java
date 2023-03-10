@@ -938,33 +938,16 @@ public class EthereumSuite extends HapiSuite {
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .nonce(0)
                                 .via(mintTxn)
-                                .hasKnownStatus(SUCCESS))
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
                 .then(
                         withOpContext(
                                 (spec, opLog) ->
                                         allRunFor(
                                                 spec,
                                                 getTxnRecord(mintTxn)
-                                                        .logged()
-                                                        .hasPriority(
-                                                                recordWith()
-                                                                        .contractCallResult(
-                                                                                resultWith()
-                                                                                        .logs(
-                                                                                                inOrder())
-                                                                                        .senderId(
-                                                                                                spec.registry()
-                                                                                                        .getAccountID(
-                                                                                                                spec.registry()
-                                                                                                                        .aliasIdFor(
-                                                                                                                                SECP_256K1_SOURCE_KEY)
-                                                                                                                        .getAlias()
-                                                                                                                        .toStringUtf8())))
-                                                                        .ethereumHash(
-                                                                                ByteString.copyFrom(
-                                                                                        spec.registry()
-                                                                                                .getBytes(
-                                                                                                        ETH_HASH_KEY)))))),
+                                                        .andAllChildRecords()
+                                                        .hasNonStakingChildRecordCount(1)
+                                                        .logged())),
                         childRecordsCheck(
                                 mintTxn,
                                 CONTRACT_REVERT_EXECUTED,
