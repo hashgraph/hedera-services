@@ -105,7 +105,7 @@ public class PreConsensusEventFileIterator implements IOIterator<EventImpl> {
     @Override
     public EventImpl next() throws IOException {
         if (!hasNext()) {
-            throw new NoSuchElementException();
+            throw new NoSuchElementException("no files remain in this iterator");
         }
         try {
             return next;

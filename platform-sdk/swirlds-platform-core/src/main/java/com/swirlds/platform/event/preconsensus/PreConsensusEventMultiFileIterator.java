@@ -85,7 +85,7 @@ public class PreConsensusEventMultiFileIterator implements IOIterator<EventImpl>
     @Override
     public EventImpl next() throws IOException {
         if (!hasNext()) {
-            throw new NoSuchElementException();
+            throw new NoSuchElementException("iterator is empty, can not get next element");
         }
         try {
             return next;

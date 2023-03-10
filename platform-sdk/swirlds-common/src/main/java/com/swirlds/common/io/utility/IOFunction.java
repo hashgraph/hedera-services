@@ -22,13 +22,18 @@ import java.util.function.Function;
 /**
  * Similar to {@link Function} but throws an {@link IOException}.
  *
- * @param <T>
- * 		the type of the function argument
- * @param <R>
- * 		the return type of the function
+ * @param <T> the type of the function argument
+ * @param <R> the return type of the function
  */
 @FunctionalInterface
 public interface IOFunction<T, R> {
 
+    /**
+     * Take a value and return another.
+     *
+     * @param t the argument
+     * @return the result
+     * @throws IOException if an I/O error occurs
+     */
     R apply(T t) throws IOException;
 }

@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.event.preconsensus;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-
 import com.swirlds.common.threading.CountUpLatch;
 import com.swirlds.common.utility.LongRunningAverage;
 import com.swirlds.common.utility.Startable;
@@ -28,15 +26,11 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.PriorityQueue;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * This object is responsible for writing events to the database.
  */
 public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Startable, Stoppable {
-
-    private static final Logger logger = LogManager.getLogger(SyncPreConsensusEventWriter.class);
 
     /**
      * Keeps track of the event stream files on disk.
@@ -49,21 +43,21 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
     private PreConsensusEventMutableFile currentMutableFile;
 
     /**
-     * The current minimum generation required to be considered non-ancient.
-     * Only read and written on the handle thread.
+     * The current minimum generation required to be considered non-ancient. Only read and written on the handle
+     * thread.
      */
     private long minimumGenerationNonAncient = 0;
 
     /**
-     * The desired file size, in megabytes. Is not a hard limit, it's possible that we may exceed this
-     * value by a small amount (we never stop in the middle of writing an event). It's also possible that
-     * we may create files that are smaller than this limit.
+     * The desired file size, in megabytes. Is not a hard limit, it's possible that we may exceed this value by a small
+     * amount (we never stop in the middle of writing an event). It's also possible that we may create files that are
+     * smaller than this limit.
      */
     private final int preferredFileSizeMegabytes;
 
     /**
-     * When creating a new file, make sure that it has at least this much generational capacity for events
-     * after the first event written to the file.
+     * When creating a new file, make sure that it has at least this much generational capacity for events after the
+     * first event written to the file.
      */
     private final int minimumGenerationalCapacity;
 
@@ -73,22 +67,21 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
     private long minimumGenerationToStore;
 
     /**
-     * A running average of the generational span utilization in each file. Generational span
-     * utilization is defined as the difference between the highest generation of all events in the
-     * file and the minimum legal generation for that file. Higher generational utilization is always better,
-     * as it means that we have a lower un-utilized generational span. Un-utilized generational span
-     * is defined as the difference between the highest legal generation in a file and the highest actual
-     * generation of all events in the file. The reason why we want to minimize un-utilized generational span
-     * is to reduce the generational overlap between files, which in turn makes it faster to search for events
-     * with particular generations. The purpose of this running average is to intelligently choose
-     * the maximum generation for each new file to minimize un-utilized generational span while
-     * still meeting file size requirements.
+     * A running average of the generational span utilization in each file. Generational span utilization is defined as
+     * the difference between the highest generation of all events in the file and the minimum legal generation for that
+     * file. Higher generational utilization is always better, as it means that we have a lower un-utilized generational
+     * span. Un-utilized generational span is defined as the difference between the highest legal generation in a file
+     * and the highest actual generation of all events in the file. The reason why we want to minimize un-utilized
+     * generational span is to reduce the generational overlap between files, which in turn makes it faster to search
+     * for events with particular generations. The purpose of this running average is to intelligently choose the
+     * maximum generation for each new file to minimize un-utilized generational span while still meeting file size
+     * requirements.
      */
     private final LongRunningAverage averageGenerationalSpanUtilization;
 
     /**
-     * Use this value as a stand-in for the running average if we haven't
-     * yet collected any data for the running average.
+     * Use this value as a stand-in for the running average if we haven't yet collected any data for the running
+     * average.
      */
     private final int bootstrapGenerationalSpan;
 
@@ -116,10 +109,8 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
     /**
      * Create a new PreConsensusEventWriter.
      *
-     * @param config
-     * 		configuration for preconsensus event streams
-     * @param fileManager
-     * 		manages all preconsensus event stream files currently on disk
+     * @param config      configuration for preconsensus event streams
+     * @param fileManager manages all preconsensus event stream files currently on disk
      */
     public SyncPreConsensusEventWriter(
             final PreConsensusEventStreamConfig config, final PreConsensusEventFileManager fileManager) {
@@ -173,7 +164,7 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
                 try {
                     currentMutableFile.flush();
                 } catch (final IOException e) {
-                    throw new UncheckedIOException(e);
+                    throw new UncheckedIOException("unable to flush", e);
                 }
                 markEventsAsFlushed();
                 flushableEvents.remove();
@@ -183,6 +174,7 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
 
     /**
      * Write an event to the file stream.
+     *
      * @param event the event to write
      */
     private void writeEventToStream(final EventImpl event) {
@@ -201,12 +193,8 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
     @Override
     public synchronized void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
         if (minimumGenerationNonAncient < this.minimumGenerationNonAncient) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    "Minimum generation non-ancient cannot be decreased. Current = {}, requested = {}",
-                    this.minimumGenerationNonAncient,
-                    minimumGenerationNonAncient);
-            return;
+            throw new IllegalArgumentException("Minimum generation non-ancient cannot be decreased. Current = "
+                    + this.minimumGenerationNonAncient + ", requested = " + minimumGenerationNonAncient);
         }
 
         this.minimumGenerationNonAncient = minimumGenerationNonAncient;
@@ -264,7 +252,7 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
         try {
             fileManager.pruneOldFiles(minimumGenerationToStore);
         } catch (final IOException e) {
-            throw new UncheckedIOException(e);
+            throw new UncheckedIOException("unable to prune old files", e);
         }
     }
 
@@ -324,7 +312,7 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
             // files incrementally (as opposed to deleting a bunch of files all at once).
             pruneOldFiles();
         } catch (final IOException e) {
-            throw new UncheckedIOException(e);
+            throw new UncheckedIOException("unable to prune files", e);
         }
     }
 
@@ -347,13 +335,12 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
     /**
      * Prepare the output stream for a particular event. May create a new file/stream if needed.
      *
-     * @param eventToWrite
-     * 		the event that is about to be written
+     * @param eventToWrite the event that is about to be written
      */
     private void prepareOutputStream(final EventImpl eventToWrite) throws IOException {
         if (currentMutableFile != null
                 && (!currentMutableFile.canContain(eventToWrite)
-                        || currentMutableFile.fileSize() * Units.BYTES_TO_MEBIBYTES >= preferredFileSizeMegabytes)) {
+                || currentMutableFile.fileSize() * Units.BYTES_TO_MEBIBYTES >= preferredFileSizeMegabytes)) {
             closeFile();
         }
 
