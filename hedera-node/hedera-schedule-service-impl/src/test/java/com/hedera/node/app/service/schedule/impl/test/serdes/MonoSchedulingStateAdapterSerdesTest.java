@@ -21,12 +21,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactionsState;
 import com.hedera.node.app.service.schedule.impl.serdes.MonoSchedulingStateAdapterCodec;
+import com.hedera.pbj.runtime.io.DataInput;
+import com.hedera.pbj.runtime.io.DataInputStream;
+import com.hedera.pbj.runtime.io.DataOutput;
+import com.hedera.pbj.runtime.io.DataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataInput;
-import java.io.DataOutput;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -46,7 +48,6 @@ class MonoSchedulingStateAdapterSerdesTest {
 
     @Test
     void doesntSupportUnnecessary() {
-        assertThrows(UnsupportedOperationException.class, subject::typicalSize);
         assertThrows(UnsupportedOperationException.class, () -> subject.measure(input));
         assertThrows(UnsupportedOperationException.class, () -> subject.fastEquals(SOME_SCHEDULING_STATE, input));
     }
@@ -55,11 +56,11 @@ class MonoSchedulingStateAdapterSerdesTest {
     void canSerializeAndDeserializeFromAppropriateStream() throws IOException {
         final var baos = new ByteArrayOutputStream();
         final var actualOut = new SerializableDataOutputStream(baos);
-        subject.write(SOME_SCHEDULING_STATE, actualOut);
+        subject.write(SOME_SCHEDULING_STATE, new DataOutputStream(actualOut));
         actualOut.flush();
 
         final var actualIn = new SerializableDataInputStream(new ByteArrayInputStream(baos.toByteArray()));
-        final var parsed = subject.parse(actualIn);
+        final var parsed = subject.parse(new DataInputStream(actualIn));
         assertEquals(SOME_SCHEDULING_STATE.getHash(), parsed.getHash());
     }
 

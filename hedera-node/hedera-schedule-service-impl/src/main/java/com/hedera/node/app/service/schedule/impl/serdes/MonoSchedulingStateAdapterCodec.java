@@ -17,14 +17,26 @@
 package com.hedera.node.app.service.schedule.impl.serdes;
 
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactionsState;
+import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.io.DataInput;
+import com.hedera.pbj.runtime.io.DataOutput;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.DataInput;
-import java.io.DataOutput;
 import java.io.IOException;
 
 public class MonoSchedulingStateAdapterCodec implements Codec<MerkleScheduledTransactionsState> {
+    @NonNull
+    @Override
+    public MerkleScheduledTransactionsState parseStrict(@NonNull DataInput dataInput) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int measureRecord(MerkleScheduledTransactionsState merkleScheduledTransactionsState) {
+        throw new UnsupportedOperationException();
+    }
+
     @NonNull
     @Override
     public MerkleScheduledTransactionsState parse(final @NonNull DataInput input) throws IOException {
@@ -49,11 +61,6 @@ public class MonoSchedulingStateAdapterCodec implements Codec<MerkleScheduledTra
 
     @Override
     public int measure(@NonNull DataInput input) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int typicalSize() {
         throw new UnsupportedOperationException();
     }
 

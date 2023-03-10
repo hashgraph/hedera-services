@@ -23,7 +23,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-public class StringSerdes implements Serdes<String> {
+public class StringCodec implements Serdes<String> {
     @NonNull
     @Override
     public String parse(@NonNull DataInput input) throws IOException {

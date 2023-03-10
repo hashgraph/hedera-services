@@ -22,7 +22,7 @@ import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.service.token.impl.serdes.StringSerdes;
+import com.hedera.node.app.service.token.impl.serdes.StringCodec;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
@@ -41,7 +41,7 @@ class StringSerdesTest {
     @Mock
     private DataOutput out;
 
-    final StringSerdes subject = new StringSerdes();
+    final StringCodec subject = new StringCodec();
 
     @Test
     void givesTypicalSize() {
@@ -63,7 +63,7 @@ class StringSerdesTest {
 
     @Test
     void providesFastEqualsWhenExceptionThrown() throws IOException {
-        final var s = mock(StringSerdes.class);
+        final var s = mock(StringCodec.class);
         given(s.parse(in)).willThrow(IOException.class);
         willCallRealMethod().given(s).fastEquals(SOME_STRING, in);
 

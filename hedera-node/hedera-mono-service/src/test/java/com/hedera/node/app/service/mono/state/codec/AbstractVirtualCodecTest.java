@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.mono.state.codec;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.Bytes;
 import com.hedera.pbj.runtime.io.BytesBuffer;
@@ -40,7 +42,12 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.SplittableRandom;
 import java.util.stream.Stream;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.ArgumentsProvider;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * A base class for automatically exercising a {@link Codec} implementation via a
@@ -52,7 +59,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  *
  * @param <T> the type parameter of the {@link Codec} being tested
  */
-abstract class AbstractVirtualCodecTest<T extends Record> {
+abstract class AbstractVirtualCodecTest<T> {
     private static final SplittableRandom RANDOM = new SplittableRandom();
     private static final String RANDOM_INSTANCES = "randomInstances";
     protected final Codec<T> subject;
@@ -88,7 +95,7 @@ abstract class AbstractVirtualCodecTest<T extends Record> {
 
     protected byte[] writeUsingStream(final T instance) {
         final var baos = new ByteArrayOutputStream();
-        final var out = new SerializableDataOutputStream(baos);
+        final var out = new DataOutputStream(baos);
         try {
             subject.write(instance, new DataOutputStream(out));
             out.flush();
@@ -113,7 +120,7 @@ abstract class AbstractVirtualCodecTest<T extends Record> {
     private T parseUsingStream(final byte[] serialized) {
         final T instance;
         final var bais = new ByteArrayInputStream(serialized);
-        final var in = new SerializableDataInputStream(bais);
+        final var in = new DataInputStream(bais);
         byte[] leftover;
         try {
             instance = subject.parse(new DataInputStream(in));
@@ -128,7 +135,7 @@ abstract class AbstractVirtualCodecTest<T extends Record> {
     private T parseUsingBuffer(final byte[] serialized) {
         final T instance;
         final var buffer = ByteBuffer.wrap(serialized);
-        final var bb = BytesBuffer.wrap(Bytes.wrap(serialized));
+        final var bb = DataBuffer.wrap(buffer);
         try {
             instance = subject.parse(bb);
         } catch (IOException e) {

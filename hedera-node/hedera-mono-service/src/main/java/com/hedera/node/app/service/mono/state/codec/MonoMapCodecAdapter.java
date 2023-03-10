@@ -3,6 +3,7 @@ package com.hedera.node.app.service.mono.state.codec;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.DataBuffer;
 import com.hedera.pbj.runtime.io.DataInput;
+import com.hedera.pbj.runtime.io.DataInputStream;
 import com.hedera.pbj.runtime.io.DataOutput;
 import com.hedera.pbj.runtime.io.DataOutputStream;
 import com.swirlds.common.io.SelfSerializable;
@@ -13,6 +14,7 @@ import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.function.Supplier;
 
 /**
@@ -38,10 +40,10 @@ public class MonoMapCodecAdapter {
             @Override
             public T parse(final @NonNull DataInput input) throws IOException {
                 final var item = factory.get();
-                if (input instanceof SerializableDataInputStream in) {
-                    item.deserialize(in, version);
+                if (input instanceof DataInputStream in) {
+                    item.deserialize(new SerializableDataInputStream(in), version);
                 } else {
-                    throw new IllegalArgumentException("Expected a SerializableDataInputStream");
+                    throw new IllegalArgumentException("Expected a DataInputStream, but found: " + input.getClass());
                 }
                 return item;
             }
@@ -54,10 +56,10 @@ public class MonoMapCodecAdapter {
 
             @Override
             public void write(final @NonNull T item, final @NonNull DataOutput output) throws IOException {
-                if (output instanceof SerializableDataOutputStream out) {
-                    item.serialize(out);
+                if (output instanceof DataOutputStream out) {
+                    item.serialize(new SerializableDataOutputStream(out));
                 } else {
-                    throw new IllegalArgumentException("Expected a SerializableDataOutputStream");
+                    throw new IllegalArgumentException("Expected a DataOutputStream, but found: " + output.getClass());
                 }
             }
 

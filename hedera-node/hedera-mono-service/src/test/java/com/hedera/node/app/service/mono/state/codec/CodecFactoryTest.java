@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.codec;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -25,8 +26,6 @@ import static org.mockito.Mockito.verify;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.DataInputStream;
 import com.hedera.pbj.runtime.io.DataOutputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -69,25 +68,11 @@ class CodecFactoryTest {
     }
 
     @Test
-    void failsOnWrongDataOutput() {
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> subject.write("B", new DataOutputStream(new ByteArrayOutputStream())));
-    }
-
-    @Test
     void delegatesParse() throws IOException {
         given(parser.parse(any())).willReturn("C");
 
         final var value = subject.parse(input);
 
         assertEquals("C", value);
-    }
-
-    @Test
-    void failsOnWrongDataInput() {
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> subject.parse(new DataInputStream(new ByteArrayInputStream(new byte[0]))));
     }
 }

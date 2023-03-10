@@ -16,11 +16,13 @@
 
 package com.hedera.node.app.service.mono.state.codec;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import com.hedera.pbj.runtime.io.DataBuffer;
 import java.nio.ByteBuffer;
 import java.util.SplittableRandom;
 import java.util.stream.Stream;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.jupiter.api.Test;
 
 public class VirtualValueSerdesAdapterTest extends AbstractVirtualCodecTest<VirtualBlobValue> {
     private static final int NUM_INSTANCES = 42;
@@ -34,20 +36,15 @@ public class VirtualValueSerdesAdapterTest extends AbstractVirtualCodecTest<Virt
     void doesNotSupportMeasuring() {
         final var bytes = randomBytes();
         final var value = new VirtualBlobValue(bytes);
-        final var bb = new ByteBufferDataInput(ByteBuffer.wrap(writeUsingBuffer(value)));
+        final var bb = DataBuffer.wrap(ByteBuffer.wrap(writeUsingBuffer(value)));
         assertThrows(UnsupportedOperationException.class, () -> subject.measure(bb));
     }
 
     @Test
     void doesNotSupportFastEquals() {
         final var value = new VirtualBlobValue(randomBytes());
-        final var bb = new ByteBufferDataInput(ByteBuffer.wrap(writeUsingBuffer(value)));
+        final var bb = DataBuffer.wrap(ByteBuffer.wrap(writeUsingBuffer(value)));
         assertThrows(UnsupportedOperationException.class, () -> subject.fastEquals(value, bb));
-    }
-
-    @Test
-    void doesNotSupportTypicalSize() {
-        assertThrows(UnsupportedOperationException.class, subject::typicalSize);
     }
 
     /**
