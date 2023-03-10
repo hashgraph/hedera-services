@@ -30,20 +30,13 @@ public class EntityNumCodec implements Codec<EntityNum> {
     @NonNull
     @Override
     public EntityNum parse(final @NonNull DataInput input) throws IOException {
-        if (input instanceof SerializableDataInputStream in) {
-            return new EntityNum(in.readInt());
-        } else {
-            throw new IllegalArgumentException("Expected a SerializableDataInputStream");
-        }
+        return new EntityNum(input.readInt());
+
     }
 
     @Override
     public void write(final @NonNull EntityNum item, final @NonNull DataOutput output) throws IOException {
-        if (output instanceof SerializableDataOutputStream out) {
-            out.writeInt(item.intValue());
-        } else {
-            throw new IllegalArgumentException("Expected a SerializableDataOutputStream");
-        }
+        output.writeInt(item.intValue());
     }
 
     @Override

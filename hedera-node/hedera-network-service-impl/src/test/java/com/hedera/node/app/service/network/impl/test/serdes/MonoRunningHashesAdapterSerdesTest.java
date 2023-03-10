@@ -21,6 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.network.impl.serdes.MonoRunningHashesAdapterCodec;
+import com.hedera.pbj.runtime.io.DataInputStream;
+import com.hedera.pbj.runtime.io.DataOutputStream;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -52,26 +54,21 @@ class MonoRunningHashesAdapterSerdesTest {
     @Test
     void doesntSupportUnnecessary() {
         assertThrows(UnsupportedOperationException.class, () -> subject.measureRecord(SOME_HASHES));
-        assertThrows(UnsupportedOperationException.class, () -> subject.measure(input));
-        assertThrows(UnsupportedOperationException.class, () -> subject.fastEquals(SOME_HASHES, input));
+        assertThrows(UnsupportedOperationException.class, () -> subject.measure(null));
+        assertThrows(UnsupportedOperationException.class, () -> subject.fastEquals(SOME_HASHES, null));
     }
 
     @Test
     void canSerializeAndDeserializeFromAppropriateStream() throws IOException, ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructable(new ClassConstructorPair(Hash.class, Hash::new));
         final var baos = new ByteArrayOutputStream();
-        final var actualOut = new SerializableDataOutputStream(baos);
-        subject.write(SOME_HASHES, output);
+        final var actualOut = new DataOutputStream(baos);
+        subject.write(SOME_HASHES, actualOut);
         actualOut.flush();
 
-        final var actualIn = new SerializableDataInputStream(new ByteArrayInputStream(baos.toByteArray()));
-        final var parsed = subject.parse(input);
+        final var actualIn = new DataInputStream(new ByteArrayInputStream(baos.toByteArray()));
+        final var parsed = subject.parse(actualIn);
         assertEquals(SOME_HASHES.getHash(), parsed.getHash());
     }
 
-    @Test
-    void doesntSupportOtherStreams() {
-        assertThrows(IllegalArgumentException.class, () -> subject.parse(input));
-        assertThrows(IllegalArgumentException.class, () -> subject.write(SOME_HASHES, output));
-    }
 }

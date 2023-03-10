@@ -131,16 +131,17 @@ public class TestFixturesKeyLookup implements AccountAccess {
     private EntityNumVirtualKey accountNumOf(final AccountID id) {
         if (isAlias(PbjConverter.fromPbj(id))) {
             final var alias = id.alias().orElse(null);
-            if (alias != null) {
-                if (alias.getLength() == EVM_ADDRESS_SIZE) {
-                    final var evmAddress = PbjConverter.fromPbj(alias).toByteArray();
-                    if (isMirror(evmAddress)) {
-                        return EntityNumVirtualKey.fromLong(numFromEvmAddress(evmAddress));
-                    }
+            if (alias.getLength() == EVM_ADDRESS_SIZE) {
+                final var evmAddress = PbjConverter.fromPbj(alias).toByteArray();
+                if (isMirror(evmAddress)) {
+                    return EntityNumVirtualKey.fromLong(numFromEvmAddress(evmAddress));
                 }
-                final var value = aliases.get(alias.asUtf8String());
-                return EntityNumVirtualKey.fromLong(value != null? value : 0L);
             }
+            final var value = aliases.get(alias.asUtf8String());
+            if (value == null) {
+                return EntityNumVirtualKey.fromLong(0L);
+            }
+            return EntityNumVirtualKey.fromLong(value);
         }
         return EntityNumVirtualKey.fromLong(id.accountNum().orElse(0L));
     }

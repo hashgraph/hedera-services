@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.pbj;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -27,6 +28,7 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.pbj.runtime.Codec;
@@ -36,6 +38,7 @@ import com.hedera.pbj.runtime.io.DataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 
 public final class PbjConverter {
     public static @NonNull AccountID toPbj(com.hederahashgraph.api.proto.java.AccountID accountID) {
@@ -87,6 +90,47 @@ public final class PbjConverter {
         }
 
         return builder.build();
+    }
+
+    public static @NonNull com.hederahashgraph.api.proto.java.FileID fromPbj(FileID fileID) {
+        final var builder = com.hederahashgraph.api.proto.java.FileID.newBuilder()
+                .setShardNum(fileID.shardNum())
+                .setRealmNum(fileID.realmNum())
+                .setFileNum(fileID.fileNum());
+
+        return builder.build();
+    }
+
+    public static <T extends Record, R extends GeneratedMessageV3> R pbjToProto(
+            final T pbj,
+            final Class<T> pbjClass,
+            final Class<R> protoClass) {
+        try {
+            final var codecField = pbjClass.getDeclaredField("PROTOBUF");
+            final var codec = (Codec<T>) codecField.get(null);
+            final var bytes = asBytes(codec, pbj);
+            final var protocParser = protoClass.getMethod("parseFrom", byte[].class);
+            return (R) protocParser.invoke(null, bytes);
+        } catch (NoSuchFieldException |
+                 IllegalAccessException |
+                 NoSuchMethodException |
+                 InvocationTargetException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T extends GeneratedMessageV3, R extends Record> R protoToPbj(
+            final T proto,
+            final Class<R> pbjClass) {
+        try {
+            final var bytes = proto.toByteArray();
+            final var codecField = pbjClass.getDeclaredField("PROTOBUF");
+            final var codec = (Codec<R>) codecField.get(null);
+            return codec.parse(DataBuffer.wrap(bytes));
+        } catch (NoSuchFieldException | IllegalAccessException | IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static @NonNull com.hederahashgraph.api.proto.java.Transaction fromPbj(Transaction tx) {

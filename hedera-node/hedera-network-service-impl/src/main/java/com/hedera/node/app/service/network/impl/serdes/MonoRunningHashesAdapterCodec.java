@@ -18,33 +18,35 @@ package com.hedera.node.app.service.network.impl.serdes;
 
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.io.DataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import com.hedera.pbj.runtime.io.DataInput;
 import com.hedera.pbj.runtime.io.DataOutput;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 
 public class MonoRunningHashesAdapterCodec implements Codec<RecordsRunningHashLeaf> {
     @NonNull
     @Override
     public RecordsRunningHashLeaf parse(final @NonNull DataInput input) throws IOException {
-        if (input instanceof SerializableDataInputStream in) {
+        if (input instanceof DataInputStream in) {
             final var context = new RecordsRunningHashLeaf();
-            context.deserialize(in, RecordsRunningHashLeaf.RELEASE_0280_VERSION);
+            context.deserialize(new SerializableDataInputStream(in), RecordsRunningHashLeaf.RELEASE_0280_VERSION);
             return context;
         } else {
-            throw new IllegalArgumentException("Expected a SerializableDataInputStream");
+            throw new IllegalArgumentException("Expected a DataInputStream");
         }
     }
 
     @Override
     public void write(final @NonNull RecordsRunningHashLeaf item, final @NonNull DataOutput output) throws IOException {
-        if (output instanceof SerializableDataOutputStream out) {
-            item.serialize(out);
+        if (output instanceof DataOutputStream out) {
+            item.serialize(new SerializableDataOutputStream(out));
         } else {
-            throw new IllegalArgumentException("Expected a SerializableDataOutputStream");
+            throw new IllegalArgumentException("Expected a DataOutputStream");
         }
     }
 
