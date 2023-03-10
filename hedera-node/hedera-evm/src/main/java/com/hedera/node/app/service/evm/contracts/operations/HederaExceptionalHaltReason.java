@@ -54,6 +54,8 @@ public class HederaExceptionalHaltReason {
     public static final ExceptionalHaltReason FAILURE_DURING_LAZY_ACCOUNT_CREATE =
             HederaExceptionalHalt.FAILURE_DURING_LAZY_ACCOUNT_CREATION;
 
+    public static final ExceptionalHaltReason NOT_SUPPORTED = HederaExceptionalHalt.NOT_SUPPORTED;
+
     enum HederaExceptionalHalt implements ExceptionalHaltReason {
         INVALID_SOLIDITY_ADDRESS("Invalid account reference"),
         SELF_DESTRUCT_TO_SELF("Self destruct to the same address"),
@@ -63,7 +65,8 @@ public class HederaExceptionalHaltReason {
                 "Accounts with positive fungible token balances cannot be deleted"),
         CONTRACT_STILL_OWNS_NFTS("Accounts who own nfts cannot be deleted"),
         ERROR_DECODING_PRECOMPILE_INPUT("Error when decoding precompile input."),
-        FAILURE_DURING_LAZY_ACCOUNT_CREATION("Failure during lazy account creation");
+        FAILURE_DURING_LAZY_ACCOUNT_CREATION("Failure during lazy account creation"),
+        NOT_SUPPORTED("Not supported.");
 
         final String description;
 
