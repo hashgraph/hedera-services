@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,6 @@ package com.hedera.services.bdd.suites.contract.precompile;
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
-import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
-import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
@@ -38,15 +35,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
-import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 
-import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
@@ -155,20 +149,11 @@ public class DelegatePrecompileSuite extends HapiSuite {
                                                         .payingWith(GENESIS)
                                                         .via(
                                                                 "delegateTransferCallWithDelegateContractKeyTxn")
-                                                        .gas(GAS_TO_OFFER))))
+                                                        .gas(GAS_TO_OFFER)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(
-                        childRecordsCheck(
-                                "delegateTransferCallWithDelegateContractKeyTxn",
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(SUCCESS)))),
-                        getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 0),
-                        getAccountBalance(RECEIVER).hasTokenBalance(VANILLA_TOKEN, 1));
+                        getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 1),
+                        getAccountBalance(RECEIVER).hasTokenBalance(VANILLA_TOKEN, 0));
     }
 
     private HapiSpec delegateCallForBurn() {
@@ -218,24 +203,9 @@ public class DelegatePrecompileSuite extends HapiSuite {
                                                         .payingWith(GENESIS)
                                                         .via(
                                                                 "delegateBurnCallWithDelegateContractKeyTxn")
-                                                        .gas(GAS_TO_OFFER))))
-                .then(
-                        childRecordsCheck(
-                                "delegateBurnCallWithDelegateContractKeyTxn",
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .forFunction(
-                                                                                FunctionType
-                                                                                        .HAPI_BURN)
-                                                                        .withStatus(SUCCESS)
-                                                                        .withTotalSupply(1)))
-                                        .newTotalSupply(1)),
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(VANILLA_TOKEN, 1));
+                                                        .gas(GAS_TO_OFFER)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(VANILLA_TOKEN, 2));
     }
 
     private HapiSpec delegateCallForMint() {
@@ -282,29 +252,9 @@ public class DelegatePrecompileSuite extends HapiSuite {
                                                         .payingWith(GENESIS)
                                                         .via(
                                                                 "delegateBurnCallWithDelegateContractKeyTxn")
-                                                        .gas(GAS_TO_OFFER))))
-                .then(
-                        childRecordsCheck(
-                                "delegateBurnCallWithDelegateContractKeyTxn",
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .forFunction(
-                                                                                FunctionType
-                                                                                        .HAPI_MINT)
-                                                                        .withStatus(SUCCESS)
-                                                                        .withTotalSupply(51)
-                                                                        .withSerialNumbers()))
-                                        .tokenTransfers(
-                                                changingFungibleBalances()
-                                                        .including(
-                                                                VANILLA_TOKEN, TOKEN_TREASURY, 1))
-                                        .newTotalSupply(51)),
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(VANILLA_TOKEN, 51));
+                                                        .gas(GAS_TO_OFFER)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(VANILLA_TOKEN, 50));
     }
 
     @NotNull

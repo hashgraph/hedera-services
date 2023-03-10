@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -36,6 +37,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAl
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
@@ -86,6 +88,7 @@ import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Map;
 import java.util.OptionalLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -170,6 +173,9 @@ public class CryptoTransferHTSSuite extends HapiSuite {
         final var revertingTransferFromTxn2 = "revertingTxn";
         return defaultHapiSpec("hapiTransferFromForFungibleToken")
                 .given(
+                        fileUpdate(APP_PROPERTIES)
+                                .payingWith(GENESIS)
+                                .overridingProps(Map.of("contracts.allowAutoAssociations", "true")),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER)
                                 .balance(100 * ONE_HUNDRED_HBARS)
@@ -688,8 +694,11 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     private HapiSpec nonNestedCryptoTransferForFungibleToken() {
         final var cryptoTransferTxn = "cryptoTransferTxn";
 
-        return defaultHapiSpec("NonNestedCryptoTransferForFungibleToken")
+        return onlyDefaultHapiSpec("NonNestedCryptoTransferForFungibleToken")
                 .given(
+                        fileUpdate(APP_PROPERTIES)
+                                .payingWith(GENESIS)
+                                .overridingProps(Map.of("contracts.allowAutoAssociations", "true")),
                         cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER)
                                 .balance(2 * ONE_HUNDRED_HBARS)

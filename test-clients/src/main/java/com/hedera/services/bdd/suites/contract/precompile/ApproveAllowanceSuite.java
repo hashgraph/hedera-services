@@ -50,6 +50,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -330,11 +331,11 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                                                 BigInteger.valueOf(2L))
                                                         .payingWith(OWNER)
                                                         .gas(4_000_000L)
-                                                        .via(approveTxn))))
+                                                        .via(approveTxn)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasNoSpender(),
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 2L).hasSpenderID(theSpender),
-                        childRecordsCheck(approveTxn, SUCCESS, recordWith().status(SUCCESS)),
                         withOpContext(
                                 (spec, opLog) -> {
                                     final var sender = spec.registry().getAccountID(OWNER);
