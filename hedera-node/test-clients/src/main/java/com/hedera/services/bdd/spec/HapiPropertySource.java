@@ -45,7 +45,7 @@ import java.util.stream.Stream;
 
 public interface HapiPropertySource {
 
-    String STR_PATTERN = "%d.%d.%d";
+    String ENTITY_STRING = "%d.%d.%d";
 
     String get(String property);
 
@@ -182,7 +182,7 @@ public interface HapiPropertySource {
     }
 
     static String asTokenString(TokenID token) {
-        return String.format(STR_PATTERN, token.getShardNum(), token.getRealmNum(), token.getTokenNum());
+        return String.format(ENTITY_STRING, token.getShardNum(), token.getRealmNum(), token.getTokenNum());
     }
 
     static AccountID asAccount(String v) {
@@ -199,7 +199,7 @@ public interface HapiPropertySource {
     }
 
     static String asAccountString(AccountID account) {
-        return String.format(STR_PATTERN, account.getShardNum(), account.getRealmNum(), account.getAccountNum());
+        return String.format(ENTITY_STRING, account.getShardNum(), account.getRealmNum(), account.getAccountNum());
     }
 
     static String asAliasableAccountString(final AccountID account) {
@@ -207,7 +207,7 @@ public interface HapiPropertySource {
             return asAccountString(account);
         } else {
             final var literalAlias = account.getAlias().toString();
-            return String.format(STR_PATTERN, account.getShardNum(), account.getRealmNum(), literalAlias);
+            return String.format(ENTITY_STRING, account.getShardNum(), account.getRealmNum(), literalAlias);
         }
     }
 
@@ -221,7 +221,7 @@ public interface HapiPropertySource {
     }
 
     static String asTopicString(TopicID topic) {
-        return String.format(STR_PATTERN, topic.getShardNum(), topic.getRealmNum(), topic.getTopicNum());
+        return String.format(ENTITY_STRING, topic.getShardNum(), topic.getRealmNum(), topic.getTopicNum());
     }
 
     static ContractID asContract(String v) {
@@ -234,7 +234,7 @@ public interface HapiPropertySource {
     }
 
     static String asContractString(ContractID contract) {
-        return String.format(STR_PATTERN, contract.getShardNum(), contract.getRealmNum(), contract.getContractNum());
+        return String.format(ENTITY_STRING, contract.getShardNum(), contract.getRealmNum(), contract.getContractNum());
     }
 
     static ScheduleID asSchedule(String v) {
@@ -247,7 +247,7 @@ public interface HapiPropertySource {
     }
 
     static String asScheduleString(ScheduleID schedule) {
-        return String.format(STR_PATTERN, schedule.getShardNum(), schedule.getRealmNum(), schedule.getScheduleNum());
+        return String.format(ENTITY_STRING, schedule.getShardNum(), schedule.getRealmNum(), schedule.getScheduleNum());
     }
 
     static SemanticVersion asSemVer(String v) {
@@ -269,7 +269,7 @@ public interface HapiPropertySource {
     }
 
     static String asFileString(FileID file) {
-        return String.format(STR_PATTERN, file.getShardNum(), file.getRealmNum(), file.getFileNum());
+        return String.format(ENTITY_STRING, file.getShardNum(), file.getRealmNum(), file.getFileNum());
     }
 
     static long[] asDotDelimitedLongArray(String s) {

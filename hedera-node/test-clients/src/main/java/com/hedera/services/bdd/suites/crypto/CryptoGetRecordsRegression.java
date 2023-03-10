@@ -44,7 +44,7 @@ import org.apache.logging.log4j.Logger;
 public class CryptoGetRecordsRegression extends HapiSuite {
     static final Logger log = LogManager.getLogger(CryptoGetRecordsRegression.class);
     private static final String LOW_THRESH_PAYER = "lowThreshPayer";
-    private static final String TO_BE_DELETED = "toBeDeleted";
+    private static final String ACCOUNT_TO_BE_DELETED = "toBeDeleted";
     private static final String ACCOUNT_1 = "account1";
 
     public static void main(String... args) {
@@ -131,11 +131,13 @@ public class CryptoGetRecordsRegression extends HapiSuite {
 
     private HapiSpec failsForDeletedAccount() {
         return defaultHapiSpec("FailsForDeletedAccount")
-                .given(cryptoCreate(TO_BE_DELETED))
-                .when(cryptoDelete(TO_BE_DELETED).transfer(GENESIS))
+                .given(cryptoCreate(ACCOUNT_TO_BE_DELETED))
+                .when(cryptoDelete(ACCOUNT_TO_BE_DELETED).transfer(GENESIS))
                 .then(
-                        getAccountRecords(TO_BE_DELETED).hasCostAnswerPrecheck(ACCOUNT_DELETED),
-                        getAccountRecords(TO_BE_DELETED).nodePayment(123L).hasAnswerOnlyPrecheck(ACCOUNT_DELETED));
+                        getAccountRecords(ACCOUNT_TO_BE_DELETED).hasCostAnswerPrecheck(ACCOUNT_DELETED),
+                        getAccountRecords(ACCOUNT_TO_BE_DELETED)
+                                .nodePayment(123L)
+                                .hasAnswerOnlyPrecheck(ACCOUNT_DELETED));
     }
 
     private HapiSpec getAccountRecords_testForDuplicates() {

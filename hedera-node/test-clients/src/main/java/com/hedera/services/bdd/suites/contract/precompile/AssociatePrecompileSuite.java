@@ -91,7 +91,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
             asAddress(AccountID.newBuilder().build());
     private static final byte[] TOKEN_ADDRESS = asAddress(TokenID.newBuilder().build());
     private static final String INVALID_SINGLE_ABI_CALL_TXN = "Invalid Single Abi Call txn";
-    private static final String TOKEN_ASSOCIATE = "tokenAssociate";
+    private static final String TOKEN_ASSOCIATE_FUNCTION = "tokenAssociate";
     private static final String VANILLA_TOKEN_ASSOCIATE_TXN = "vanillaTokenAssociateTxn";
 
     public static void main(String... args) {
@@ -196,10 +196,10 @@ public class AssociatePrecompileSuite extends HapiSuite {
                                 .via("notSupportedFunctionCallTxn")
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
-                                        THE_CONTRACT,
-                                        TOKEN_ASSOCIATE,
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                THE_CONTRACT,
+                                TOKEN_ASSOCIATE_FUNCTION,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via(VANILLA_TOKEN_ASSOCIATE_TXN)
                                 .gas(GAS_TO_OFFER))))
@@ -237,19 +237,19 @@ public class AssociatePrecompileSuite extends HapiSuite {
                         newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
                         cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
                         contractCall(
-                                        THE_CONTRACT,
-                                        TOKEN_ASSOCIATE,
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(invalidAbiArgument))
+                                THE_CONTRACT,
+                                TOKEN_ASSOCIATE_FUNCTION,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(invalidAbiArgument))
                                 .payingWith(GENESIS)
                                 .via("functionCallWithInvalidArgumentTxn")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
-                                        THE_CONTRACT,
-                                        TOKEN_ASSOCIATE,
-                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                THE_CONTRACT,
+                                TOKEN_ASSOCIATE_FUNCTION,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via(VANILLA_TOKEN_ASSOCIATE_TXN)
                                 .gas(GAS_TO_OFFER)

@@ -54,7 +54,7 @@ public class CongestionPricingSuite extends HapiSuite {
     private static final String FEES_MIN_CONGESTION_PERIOD = "fees.minCongestionPeriod";
     private static final String defaultMinCongestionPeriod =
             HapiSpecSetup.getDefaultNodeProps().get(FEES_MIN_CONGESTION_PERIOD);
-    private static final String CIVILIAN = "civilian";
+    private static final String CIVILIAN_ACCOUNT = "civilian";
 
     public static void main(String... args) {
         new CongestionPricingSuite().runSuiteSync();
@@ -78,11 +78,11 @@ public class CongestionPricingSuite extends HapiSuite {
 
         return defaultHapiSpec("CanUpdateMultipliersDynamically")
                 .given(
-                        cryptoCreate(CIVILIAN).payingWith(GENESIS).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(CIVILIAN_ACCOUNT).payingWith(GENESIS).balance(ONE_MILLION_HBARS),
                         uploadInitCode(contract),
                         contractCreate(contract),
                         contractCall(contract)
-                                .payingWith(CIVILIAN)
+                                .payingWith(CIVILIAN_ACCOUNT)
                                 .fee(ONE_HUNDRED_HBARS)
                                 .sending(ONE_HBAR)
                                 .via("cheapCall"),
@@ -104,20 +104,20 @@ public class CongestionPricingSuite extends HapiSuite {
                                 .contents(artificialLimits.toByteArray()),
                         sleepFor(2_000),
                         blockingOrder(IntStream.range(0, 10)
-                                .mapToObj(i -> new HapiSpecOperation[] {
-                                    usableTxnIdNamed("uncheckedTxn" + i).payerId(CIVILIAN),
-                                    uncheckedSubmit(contractCall(contract)
-                                                    .signedBy(CIVILIAN)
-                                                    .fee(ONE_HUNDRED_HBARS)
-                                                    .sending(ONE_HBAR)
-                                                    .txnId("uncheckedTxn" + i))
-                                            .payingWith(GENESIS),
-                                    sleepFor(125)
+                                .mapToObj(i -> new HapiSpecOperation[]{
+                                        usableTxnIdNamed("uncheckedTxn" + i).payerId(CIVILIAN_ACCOUNT),
+                                        uncheckedSubmit(contractCall(contract)
+                                                .signedBy(CIVILIAN_ACCOUNT)
+                                                .fee(ONE_HUNDRED_HBARS)
+                                                .sending(ONE_HBAR)
+                                                .txnId("uncheckedTxn" + i))
+                                                .payingWith(GENESIS),
+                                        sleepFor(125)
                                 })
                                 .flatMap(Arrays::stream)
                                 .toArray(HapiSpecOperation[]::new)),
                         contractCall(contract)
-                                .payingWith(CIVILIAN)
+                                .payingWith(CIVILIAN_ACCOUNT)
                                 .fee(ONE_HUNDRED_HBARS)
                                 .sending(ONE_HBAR)
                                 .via("pricyCall"))

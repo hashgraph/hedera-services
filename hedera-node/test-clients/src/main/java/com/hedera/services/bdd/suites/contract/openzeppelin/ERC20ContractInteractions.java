@@ -50,7 +50,7 @@ public class ERC20ContractInteractions extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ERC20ContractInteractions.class);
     private static final String TRANSFER = "transfer";
     private static final String TRANSFER_FROM = "transferFrom";
-    private static final String TX_STR = " tx - ";
+    private static final String TX_STR_PREFIX = " tx - ";
     private static final String TRANSFER_ADDRESS_ADDRESS_UINT_256 = "Transfer(address,address,uint256)";
 
     @Override
@@ -92,7 +92,7 @@ public class ERC20ContractInteractions extends HapiSuite {
                                 .hasKnownStatus(SUCCESS)
                                 .via(CREATE_TX)
                                 .scrambleTxnBody(tx -> {
-                                    System.out.println(TX_STR + Bytes.wrap(tx.toByteArray()));
+                                    System.out.println(TX_STR_PREFIX + Bytes.wrap(tx.toByteArray()));
                                     return tx;
                                 }),
                         getAccountBalance(DEFAULT_CONTRACT_SENDER).logged())
@@ -124,7 +124,7 @@ public class ERC20ContractInteractions extends HapiSuite {
                                     .payingWith(DEFAULT_CONTRACT_SENDER)
                                     .via(TRANSFER_TX)
                                     .scrambleTxnBody(tx -> {
-                                        System.out.println(TX_STR + Bytes.wrap(tx.toByteArray()));
+                                        System.out.println(TX_STR_PREFIX + Bytes.wrap(tx.toByteArray()));
                                         return tx;
                                     });
 
@@ -134,7 +134,7 @@ public class ERC20ContractInteractions extends HapiSuite {
                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                     .via(NOT_ENOUGH_BALANCE_TRANSFER_TX)
                                     .scrambleTxnBody(tx -> {
-                                        System.out.println(TX_STR + Bytes.wrap(tx.toByteArray()));
+                                        System.out.println(TX_STR_PREFIX + Bytes.wrap(tx.toByteArray()));
                                         return tx;
                                     });
 
@@ -142,7 +142,7 @@ public class ERC20ContractInteractions extends HapiSuite {
                                     .payingWith(DEFAULT_CONTRACT_SENDER)
                                     .via(APPROVE_TX)
                                     .scrambleTxnBody(tx -> {
-                                        System.out.println(TX_STR + Bytes.wrap(tx.toByteArray()));
+                                        System.out.println(TX_STR_PREFIX + Bytes.wrap(tx.toByteArray()));
                                         return tx;
                                     });
 
@@ -151,7 +151,7 @@ public class ERC20ContractInteractions extends HapiSuite {
                                     .signingWith(SECP_256K1_RECEIVER_SOURCE_KEY)
                                     .via(TRANSFER_FROM_TX)
                                     .scrambleTxnBody(tx -> {
-                                        System.out.println(TX_STR + Bytes.wrap(tx.toByteArray()));
+                                        System.out.println(TX_STR_PREFIX + Bytes.wrap(tx.toByteArray()));
                                         return tx;
                                     });
 
@@ -161,7 +161,7 @@ public class ERC20ContractInteractions extends HapiSuite {
                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                     .via(TRANSFER_MORE_THAN_APPROVED_FROM_TX)
                                     .scrambleTxnBody(tx -> {
-                                        System.out.println(TX_STR + Bytes.wrap(tx.toByteArray()));
+                                        System.out.println(TX_STR_PREFIX + Bytes.wrap(tx.toByteArray()));
                                         return tx;
                                     });
 

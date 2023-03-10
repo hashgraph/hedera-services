@@ -59,8 +59,8 @@ public class CreateOperationSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(CreateOperationSuite.class);
     private static final String CONTRACT = "FactoryContract";
-    private static final String CALL_RECORD = "callRecord";
-    private static final String DEPLOYMENT_SUCCESS = "deploymentSuccess";
+    private static final String CALL_RECORD_TRANSACTION_NAME = "callRecord";
+    private static final String DEPLOYMENT_SUCCESS_FUNCTION = "deploymentSuccess";
     private static final String DEPLOYMENT_SUCCESS_TXN = "deploymentSuccessTxn";
     private static final String CONTRACT_INFO = "contractInfo";
     private static final String PARENT_INFO = "parentInfo";
@@ -105,8 +105,8 @@ public class CreateOperationSuite extends HapiSuite {
                 .given(uploadInitCode(contract), contractCreate(contract))
                 .when(contractCall(contract, "createAndDeleteChild")
                         .gas(4_000_000)
-                        .via(CALL_RECORD))
-                .then(getTxnRecord(CALL_RECORD)
+                        .via(CALL_RECORD_TRANSACTION_NAME))
+                .then(getTxnRecord(CALL_RECORD_TRANSACTION_NAME)
                         .hasPriority(recordWith()
                                 .contractCallResult(resultWith()
                                         .logs(inOrder(
@@ -125,10 +125,10 @@ public class CreateOperationSuite extends HapiSuite {
                         uploadInitCode(contract),
                         contractCreate(contract).logged().via("createRecord"),
                         getContractInfo(contract).logged().saveToRegistry(PARENT_INFO))
-                .when(contractCall(contract, "callCreate").gas(780_000).via(CALL_RECORD))
+                .when(contractCall(contract, "callCreate").gas(780_000).via(CALL_RECORD_TRANSACTION_NAME))
                 .then(
                         getTxnRecord("createRecord").saveCreatedContractListToRegistry("ctorChild"),
-                        getTxnRecord(CALL_RECORD).saveCreatedContractListToRegistry("callChild"),
+                        getTxnRecord(CALL_RECORD_TRANSACTION_NAME).saveCreatedContractListToRegistry("callChild"),
                         contractListWithPropertiesInheritedFrom("callChildCallResult", 2, PARENT_INFO),
                         contractListWithPropertiesInheritedFrom("ctorChildCreateResult", 3, PARENT_INFO));
     }
@@ -136,7 +136,9 @@ public class CreateOperationSuite extends HapiSuite {
     HapiSpec simpleFactoryWorks() {
         return defaultHapiSpec("ContractFactoryWorksHappyPath")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
-                .when(contractCall(CONTRACT, DEPLOYMENT_SUCCESS).gas(780_000).via(DEPLOYMENT_SUCCESS_TXN))
+                .when(contractCall(CONTRACT, DEPLOYMENT_SUCCESS_FUNCTION)
+                        .gas(780_000)
+                        .via(DEPLOYMENT_SUCCESS_TXN))
                 .then(withOpContext((spec, opLog) -> {
                     final var successTxn = getTxnRecord(DEPLOYMENT_SUCCESS_TXN);
                     final var parentContract = getContractInfo(CONTRACT).saveToRegistry(CONTRACT_INFO);
@@ -179,7 +181,9 @@ public class CreateOperationSuite extends HapiSuite {
                                 .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
                                 .gas(780_000)
                                 .via("deploymentFailureTxn"),
-                        contractCall(CONTRACT, DEPLOYMENT_SUCCESS).gas(780_000).via(DEPLOYMENT_SUCCESS_TXN))
+                        contractCall(CONTRACT, DEPLOYMENT_SUCCESS_FUNCTION)
+                                .gas(780_000)
+                                .via(DEPLOYMENT_SUCCESS_TXN))
                 .then(withOpContext((spec, opLog) -> {
                     final var revertTxn = getTxnRecord("deploymentFailureTxn");
                     final var deploymentSuccessTxn = getTxnRecord(DEPLOYMENT_SUCCESS_TXN);
@@ -208,7 +212,9 @@ public class CreateOperationSuite extends HapiSuite {
                                 .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
                                 .gas(780_000)
                                 .via("failureAfterDeploymentTxn"),
-                        contractCall(CONTRACT, DEPLOYMENT_SUCCESS).gas(780_000).via(DEPLOYMENT_SUCCESS_TXN))
+                        contractCall(CONTRACT, DEPLOYMENT_SUCCESS_FUNCTION)
+                                .gas(780_000)
+                                .via(DEPLOYMENT_SUCCESS_TXN))
                 .then(withOpContext((spec, opLog) -> {
                     final var revertTxn = getTxnRecord("failureAfterDeploymentTxn");
                     final var deploymentSuccessTxn = getTxnRecord(DEPLOYMENT_SUCCESS_TXN);
@@ -237,7 +243,9 @@ public class CreateOperationSuite extends HapiSuite {
                                 .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
                                 .gas(780_000)
                                 .via("stackedDeploymentFailureTxn"),
-                        contractCall(CONTRACT, DEPLOYMENT_SUCCESS).gas(780_000).via(DEPLOYMENT_SUCCESS_TXN))
+                        contractCall(CONTRACT, DEPLOYMENT_SUCCESS_FUNCTION)
+                                .gas(780_000)
+                                .via(DEPLOYMENT_SUCCESS_TXN))
                 .then(withOpContext((spec, opLog) -> {
                     final var revertTxn = getTxnRecord("stackedDeploymentFailureTxn");
                     final var deploymentSuccessTxn = getTxnRecord(DEPLOYMENT_SUCCESS_TXN);

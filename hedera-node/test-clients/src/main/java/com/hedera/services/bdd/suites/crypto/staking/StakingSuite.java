@@ -78,7 +78,7 @@ public class StakingSuite extends HapiSuite {
     public static final String FIRST_TRANSFER = "firstTransfer";
     public static final String FIRST_TXN = "firstTxn";
     public static final String STANDARD_STAKING_RATE = "273972602739726";
-    private static final String NO_REWARD_TRANSFER = "noRewardTransfer";
+    private static final String TRX_TYPE = "noRewardTransfer";
     private static final String SECOND_TRANSFER = "secondTransfer";
 
     public static void main(String... args) {
@@ -560,8 +560,8 @@ public class StakingSuite extends HapiSuite {
                         cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
                         sleepFor(INTER_PERIOD_SLEEP_MS))
                 .then(
-                        cryptoTransfer(tinyBarsFromTo(BOB, ALICE, ONE_HBAR)).via(NO_REWARD_TRANSFER),
-                        getTxnRecord(NO_REWARD_TRANSFER)
+                        cryptoTransfer(tinyBarsFromTo(BOB, ALICE, ONE_HBAR)).via(TRX_TYPE),
+                        getTxnRecord(TRX_TYPE)
                                 .stakingFeeExempted()
                                 .andAllChildRecords()
                                 .hasNonStakingChildRecordCount(0) // only end of staking period record generated
@@ -614,8 +614,8 @@ public class StakingSuite extends HapiSuite {
                         sleepFor(INTER_PERIOD_SLEEP_MS))
                 .then(
                         /* --- staking not active, so no child record for end of staking period are generated --- */
-                        cryptoTransfer(tinyBarsFromTo(BOB, ALICE, ONE_HBAR)).via(NO_REWARD_TRANSFER),
-                        getTxnRecord(NO_REWARD_TRANSFER)
+                        cryptoTransfer(tinyBarsFromTo(BOB, ALICE, ONE_HBAR)).via(TRX_TYPE),
+                        getTxnRecord(TRX_TYPE)
                                 .stakingFeeExempted()
                                 .andAllChildRecords()
                                 .hasChildRecords(recordWith().memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO)),

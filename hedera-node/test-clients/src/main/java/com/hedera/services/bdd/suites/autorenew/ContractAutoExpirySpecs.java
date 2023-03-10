@@ -75,14 +75,14 @@ public class ContractAutoExpirySpecs extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ContractAutoExpirySpecs.class);
     private static final String INIT_CODE = "initcode";
     private static final String AUTO_RENEW_ACCOUNT = "autoRenewAccount";
-    private static final String CREATION = "creation";
+    private static final String TRANSACTION_TYPE_CREATION = "creation";
     private static final String CONTRACT_TO_RENEW = "InstantStorageHog";
     private static final String SUPPLY_KEY = "multi";
     private static final String UPDATE_TXN = "updateTxn";
     private static final String LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION = "ledger.autoRenewPeriod.minDuration";
     private static final String EXPECTING_POST_RENEWAL_EXPIRY_OF = "Expecting post-renewal expiry of {}";
-    private static final String TIME_MOVED_YET_SEEMED_TO_STOP = "Time moved, yet seemed to stop";
-    private static final String AS_TWERE_A_SPINNING_TOP = "As 'twere a spinning-top";
+    private static final String MINT_TOKEN_METADATA_TIME_MOVED_YET_SEEMED_TO_STOP = "Time moved, yet seemed to stop";
+    private static final String MINT_TOKEN_METADATA_AS_TWERE_A_SPINNING_TOP = "As 'twere a spinning-top";
 
     public static void main(String... args) {
         new ContractAutoExpirySpecs().runSuiteSync();
@@ -139,8 +139,8 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         mintToken(
                                 nonFungibleToken,
                                 List.of(
-                                        ByteString.copyFromUtf8(TIME_MOVED_YET_SEEMED_TO_STOP),
-                                        ByteString.copyFromUtf8(AS_TWERE_A_SPINNING_TOP))),
+                                        ByteString.copyFromUtf8(MINT_TOKEN_METADATA_TIME_MOVED_YET_SEEMED_TO_STOP),
+                                        ByteString.copyFromUtf8(MINT_TOKEN_METADATA_AS_TWERE_A_SPINNING_TOP))),
                         createLargeFile(GENESIS, INIT_CODE, literalInitcodeFor(CONTRACT_TO_RENEW)),
                         enableContractAutoRenewWith(minimalLifetime, 0),
                         contractCreate(CONTRACT_TO_RENEW, new BigInteger("63"))
@@ -354,7 +354,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                 .autoRenewSecs(minimalLifetime)
                                 .autoRenewAccountId(AUTO_RENEW_ACCOUNT)
                                 .balance(0L)
-                                .via(CREATION),
+                                .via(TRANSACTION_TYPE_CREATION),
                         sleepFor(minimalLifetime * 1_000L + 500L))
                 .when(cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)))
                 .then(
@@ -404,9 +404,9 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                 .autoRenewSecs(minimalLifetime)
                                 .autoRenewAccountId(AUTO_RENEW_ACCOUNT)
                                 .balance(0L)
-                                .via(CREATION),
+                                .via(TRANSACTION_TYPE_CREATION),
                         withOpContext((spec, opLog) -> {
-                            final var lookup = getTxnRecord(CREATION);
+                            final var lookup = getTxnRecord(TRANSACTION_TYPE_CREATION);
                             allRunFor(spec, lookup);
 
                             final var responseRecord = lookup.getResponseRecord();
@@ -467,9 +467,9 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                 .bytecode(INIT_CODE)
                                 .autoRenewSecs(minimalLifetime)
                                 .balance(initBalance)
-                                .via(CREATION),
+                                .via(TRANSACTION_TYPE_CREATION),
                         withOpContext((spec, opLog) -> {
-                            final var lookup = getTxnRecord(CREATION);
+                            final var lookup = getTxnRecord(TRANSACTION_TYPE_CREATION);
                             allRunFor(spec, lookup);
                             final var responseRecord = lookup.getResponseRecord();
                             final var birth =
@@ -539,9 +539,9 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                 .autoRenewSecs(minimalLifetime)
                                 .autoRenewAccountId(AUTO_RENEW_ACCOUNT)
                                 .balance(initBalance)
-                                .via(CREATION),
+                                .via(TRANSACTION_TYPE_CREATION),
                         withOpContext((spec, opLog) -> {
-                            final var lookup = getTxnRecord(CREATION);
+                            final var lookup = getTxnRecord(TRANSACTION_TYPE_CREATION);
                             allRunFor(spec, lookup);
                             final var responseRecord = lookup.getResponseRecord();
                             final var birth =
@@ -606,9 +606,9 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                 .autoRenewSecs(minimalLifetime)
                                 .autoRenewAccountId(AUTO_RENEW_ACCOUNT)
                                 .balance(initBalance)
-                                .via(CREATION),
+                                .via(TRANSACTION_TYPE_CREATION),
                         withOpContext((spec, opLog) -> {
-                            final var lookup = getTxnRecord(CREATION);
+                            final var lookup = getTxnRecord(TRANSACTION_TYPE_CREATION);
                             allRunFor(spec, lookup);
                             final var responseRecord = lookup.getResponseRecord();
                             final var birth =
@@ -688,8 +688,8 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         mintToken(
                                 nonFungibleToken,
                                 List.of(
-                                        ByteString.copyFromUtf8(TIME_MOVED_YET_SEEMED_TO_STOP),
-                                        ByteString.copyFromUtf8(AS_TWERE_A_SPINNING_TOP))),
+                                        ByteString.copyFromUtf8(MINT_TOKEN_METADATA_TIME_MOVED_YET_SEEMED_TO_STOP),
+                                        ByteString.copyFromUtf8(MINT_TOKEN_METADATA_AS_TWERE_A_SPINNING_TOP))),
                         createLargeFile(GENESIS, INIT_CODE, literalInitcodeFor(CONTRACT_TO_RENEW)),
                         enableContractAutoRenewWith(minimalLifetime, 0),
                         contractCreate(CONTRACT_TO_RENEW, BigInteger.valueOf(63))
@@ -768,8 +768,8 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         mintToken(
                                 nonFungibleToken,
                                 List.of(
-                                        ByteString.copyFromUtf8(TIME_MOVED_YET_SEEMED_TO_STOP),
-                                        ByteString.copyFromUtf8(AS_TWERE_A_SPINNING_TOP))),
+                                        ByteString.copyFromUtf8(MINT_TOKEN_METADATA_TIME_MOVED_YET_SEEMED_TO_STOP),
+                                        ByteString.copyFromUtf8(MINT_TOKEN_METADATA_AS_TWERE_A_SPINNING_TOP))),
                         createLargeFile(GENESIS, INIT_CODE, literalInitcodeFor(CONTRACT_TO_RENEW)),
                         enableContractAutoRenewWith(minimalLifetime, 0),
                         contractCreate(CONTRACT_TO_RENEW, BigInteger.valueOf(63))
@@ -822,9 +822,9 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                 .bytecode(INIT_CODE)
                                 .autoRenewSecs(minimalLifetime)
                                 .balance(initBalance)
-                                .via(CREATION),
+                                .via(TRANSACTION_TYPE_CREATION),
                         withOpContext((spec, opLog) -> {
-                            final var lookup = getTxnRecord(CREATION);
+                            final var lookup = getTxnRecord(TRANSACTION_TYPE_CREATION);
                             allRunFor(spec, lookup);
                             final var responseRecord = lookup.getResponseRecord();
                             final var birth =

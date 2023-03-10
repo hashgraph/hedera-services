@@ -109,7 +109,7 @@ public class EthereumSuite extends HapiSuite {
     public static final String EMIT_SENDER_ORIGIN_CONTRACT = "EmitSenderOrigin";
 
     private static final String FUNGIBLE_TOKEN = "fungibleToken";
-    private static final String AUTO_ACCOUNT = "autoAccount";
+    private static final String AUTO_ACCOUNT_TRANSACTION_NAME = "autoAccount";
     private static final String TOKEN = "token";
     private static final String MINT_TXN = "mintTxn";
     private static final String PAY_TXN = "payTxn";
@@ -202,7 +202,7 @@ public class EthereumSuite extends HapiSuite {
                         newKeyNamed(spenderAlias).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_MILLION_HBARS))
-                                .via(AUTO_ACCOUNT),
+                                .via(AUTO_ACCOUNT_TRANSACTION_NAME),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, spenderAlias, ONE_HUNDRED_HBARS))
                                 .via("autoAccountSpender"),
                         getAliasedAccountInfo(spenderAlias)
@@ -392,9 +392,9 @@ public class EthereumSuite extends HapiSuite {
                         cryptoCreate(RECEIVER).balance(0L),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via(AUTO_ACCOUNT),
+                                .via(AUTO_ACCOUNT_TRANSACTION_NAME),
                         withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)),
-                        getTxnRecord(AUTO_ACCOUNT).andAllChildRecords())
+                        getTxnRecord(AUTO_ACCOUNT_TRANSACTION_NAME).andAllChildRecords())
                 .when(
                         balanceSnapshot(aliasBalanceSnapshot, SECP_256K1_SOURCE_KEY)
                                 .accountIsAlias(),
@@ -479,8 +479,8 @@ public class EthereumSuite extends HapiSuite {
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via(AUTO_ACCOUNT),
-                        getTxnRecord(AUTO_ACCOUNT).andAllChildRecords(),
+                                .via(AUTO_ACCOUNT_TRANSACTION_NAME),
+                        getTxnRecord(AUTO_ACCOUNT_TRANSACTION_NAME).andAllChildRecords(),
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                         contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
                 .when()
@@ -526,8 +526,8 @@ public class EthereumSuite extends HapiSuite {
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via(AUTO_ACCOUNT),
-                        getTxnRecord(AUTO_ACCOUNT).andAllChildRecords(),
+                                .via(AUTO_ACCOUNT_TRANSACTION_NAME),
+                        getTxnRecord(AUTO_ACCOUNT_TRANSACTION_NAME).andAllChildRecords(),
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT))
                 .when(ethereumContractCreate(PAY_RECEIVABLE_CONTRACT)
                         .type(EthTxData.EthTransactionType.EIP1559)
@@ -555,9 +555,9 @@ public class EthereumSuite extends HapiSuite {
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via(AUTO_ACCOUNT),
+                                .via(AUTO_ACCOUNT_TRANSACTION_NAME),
                         withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)),
-                        getTxnRecord(AUTO_ACCOUNT).andAllChildRecords(),
+                        getTxnRecord(AUTO_ACCOUNT_TRANSACTION_NAME).andAllChildRecords(),
                         cryptoCreate(PROXY))
                 .when(
                         cryptoUpdateAliased(SECP_256K1_SOURCE_KEY)
@@ -602,8 +602,8 @@ public class EthereumSuite extends HapiSuite {
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via(AUTO_ACCOUNT),
-                        getTxnRecord(AUTO_ACCOUNT).andAllChildRecords(),
+                                .via(AUTO_ACCOUNT_TRANSACTION_NAME),
+                        getTxnRecord(AUTO_ACCOUNT_TRANSACTION_NAME).andAllChildRecords(),
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                         contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
                 .when(
@@ -644,9 +644,9 @@ public class EthereumSuite extends HapiSuite {
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via(AUTO_ACCOUNT),
+                                .via(AUTO_ACCOUNT_TRANSACTION_NAME),
                         withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)),
-                        getTxnRecord(AUTO_ACCOUNT).andAllChildRecords(),
+                        getTxnRecord(AUTO_ACCOUNT_TRANSACTION_NAME).andAllChildRecords(),
                         uploadInitCode(HELLO_WORLD_MINT_CONTRACT),
                         tokenCreate(fungibleToken)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
@@ -695,9 +695,9 @@ public class EthereumSuite extends HapiSuite {
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via(AUTO_ACCOUNT),
+                                .via(AUTO_ACCOUNT_TRANSACTION_NAME),
                         withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)),
-                        getTxnRecord(AUTO_ACCOUNT).andAllChildRecords(),
+                        getTxnRecord(AUTO_ACCOUNT_TRANSACTION_NAME).andAllChildRecords(),
                         uploadInitCode(HELLO_WORLD_MINT_CONTRACT),
                         tokenCreate(fungibleToken)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
@@ -747,9 +747,9 @@ public class EthereumSuite extends HapiSuite {
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via(AUTO_ACCOUNT),
+                                .via(AUTO_ACCOUNT_TRANSACTION_NAME),
                         withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)),
-                        getTxnRecord(AUTO_ACCOUNT).andAllChildRecords(),
+                        getTxnRecord(AUTO_ACCOUNT_TRANSACTION_NAME).andAllChildRecords(),
                         uploadInitCode(HELLO_WORLD_MINT_CONTRACT),
                         tokenCreate(fungibleToken)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
@@ -839,9 +839,9 @@ public class EthereumSuite extends HapiSuite {
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via(AUTO_ACCOUNT),
+                                .via(AUTO_ACCOUNT_TRANSACTION_NAME),
                         withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)),
-                        getTxnRecord(AUTO_ACCOUNT).andAllChildRecords(),
+                        getTxnRecord(AUTO_ACCOUNT_TRANSACTION_NAME).andAllChildRecords(),
                         uploadInitCode(EMIT_SENDER_ORIGIN_CONTRACT),
                         contractCreate(EMIT_SENDER_ORIGIN_CONTRACT))
                 .when(ethereumCall(EMIT_SENDER_ORIGIN_CONTRACT, "logNow")
@@ -885,7 +885,7 @@ public class EthereumSuite extends HapiSuite {
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via(AUTO_ACCOUNT),
+                                .via(AUTO_ACCOUNT_TRANSACTION_NAME),
                         uploadInitCode(contract),
                         ethereumContractCreate(contract)
                                 .type(EthTxData.EthTransactionType.EIP1559)
@@ -916,7 +916,7 @@ public class EthereumSuite extends HapiSuite {
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via(AUTO_ACCOUNT),
+                                .via(AUTO_ACCOUNT_TRANSACTION_NAME),
                         cryptoCreate(feeCollectorAndAutoRenew)
                                 .keyShape(SigControl.ED25519_ON)
                                 .balance(ONE_HUNDRED_HBARS),
@@ -978,7 +978,7 @@ public class EthereumSuite extends HapiSuite {
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via(AUTO_ACCOUNT),
+                                .via(AUTO_ACCOUNT_TRANSACTION_NAME),
                         uploadInitCode(contract),
                         ethereumContractCreate(contract)
                                 .type(EthTxData.EthTransactionType.EIP1559)
