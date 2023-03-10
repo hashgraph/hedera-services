@@ -174,8 +174,7 @@ public class LongListDisk extends LongList<Long> {
      *
      * @param index the index to use
      * @param value the long to store
-     * @throws IndexOutOfBoundsException if the index is negative, beyond the max capacity of the
-     *         list or below the min valid index in effect
+     * @throws IndexOutOfBoundsException if the index is negative or beyond the max capacity of the list
      * @throws IllegalArgumentException if the value is zero
      */
     @Override
@@ -203,8 +202,7 @@ public class LongListDisk extends LongList<Long> {
      * @param oldValue the value that must currently obtain at the index
      * @param newValue the new value to store
      * @return whether the newValue was set
-     * @throws IndexOutOfBoundsException if the index is negative, beyond the max capacity of the
-     *     list or below the min valid index in effect
+     * @throws IndexOutOfBoundsException if the index is negative or beyond the max capacity of the list
      * @throws IllegalArgumentException if old value is zero (which could never be true)
      */
     @Override
@@ -279,7 +277,6 @@ public class LongListDisk extends LongList<Long> {
         final long currentMinValidIndex = minValidIndex.get();
         final int firstChunkWithDataIndex = (int) currentMinValidIndex / numLongsPerChunk;
         final ByteBuffer transferBuffer = transferBufferThreadLocal.get();
-        // write data
         for (int i = firstChunkWithDataIndex; i < totalNumOfChunks; i++) {
             final Long chunkOffset;
             if (i == firstChunkWithDataIndex) {
