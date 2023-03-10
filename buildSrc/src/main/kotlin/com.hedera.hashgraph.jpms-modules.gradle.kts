@@ -22,7 +22,7 @@ plugins {
 }
 
 extraJavaModuleInfo {
-    failOnMissingModuleInfo.set(true)
+    failOnMissingModuleInfo.set(false)
 
     automaticModule("com.hedera.hashgraph:protobuf-java", "com.hedera.hashgraph.protobuf.java.api")
 

@@ -373,7 +373,9 @@ class GetAccountDetailsAnswerTest {
         // setup:
         final Query query = validQuery(COST_ANSWER, fee, target);
 
-        given(optionValidator.queryableAccountOrContractStatus(eq(EntityNum.fromAccountId(payerId)), any()))
+        given(
+                        optionValidator.queryableAccountOrContractStatus(
+                                eq(EntityNum.fromAccountId(payerId)), any()))
                 .willReturn(ACCOUNT_DELETED);
 
         // when:
