@@ -22,11 +22,12 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -56,11 +57,11 @@ public class ContractCreateHandler implements TransactionHandler {
     public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
         final var op = context.getTxn().contractCreateInstance().orElseThrow();
-        final var adminKey = asHederaKey(op.adminKey());
+        final var adminKey = op.adminKey() != null ? asHederaKey(op.adminKey()) : Optional.<HederaKey>empty();
         if (adminKey.isPresent() && !((JKey) adminKey.get()).hasContractID()) {
             context.addToReqNonPayerKeys(adminKey.get());
         }
-        if (op.autoRenewAccountId() !=  null) {
+        if (op.autoRenewAccountId() != null) {
             context.addNonPayerKey(op.autoRenewAccountId());
         }
     }

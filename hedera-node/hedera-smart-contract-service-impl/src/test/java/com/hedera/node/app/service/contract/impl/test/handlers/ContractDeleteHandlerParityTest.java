@@ -23,8 +23,6 @@ import static com.hedera.test.factories.scenarios.ContractCreateScenarios.RECEIV
 import static com.hedera.test.factories.scenarios.ContractDeleteScenarios.*;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.utils.KeyUtils.sanityRestored;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -34,6 +32,7 @@ import com.hedera.node.app.service.contract.impl.handlers.ContractDeleteHandler;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -65,9 +64,9 @@ class ContractDeleteHandlerParityTest {
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
+        assertEquals(
                 sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(toPbj(MISC_ADMIN_KT.asKey()), RECEIVER_SIG_KT.asKey()));
+                List.of(MISC_ADMIN_KT.asKey(), RECEIVER_SIG_KT.asKey()));
     }
 
     @Test
@@ -77,8 +76,7 @@ class ContractDeleteHandlerParityTest {
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(
-                toPbj(MISC_ADMIN_KT.asKey())));
+        assertEquals(sanityRestored(context.getRequiredNonPayerKeys()), List.of(MISC_ADMIN_KT.asKey()));
         assertEquals(ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID, context.getStatus());
     }
 
@@ -89,8 +87,7 @@ class ContractDeleteHandlerParityTest {
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(
-                toPbj(MISC_ADMIN_KT.asKey())));
+        assertEquals(sanityRestored(context.getRequiredNonPayerKeys()), List.of(MISC_ADMIN_KT.asKey()));
         assertEquals(ResponseCodeEnum.INVALID_CONTRACT_ID, context.getStatus());
     }
 
@@ -101,9 +98,9 @@ class ContractDeleteHandlerParityTest {
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
+        assertEquals(
                 sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(toPbj(MISC_ADMIN_KT.asKey()), DILIGENT_SIGNING_PAYER_KT.asKey()));
+                List.of(MISC_ADMIN_KT.asKey(), DILIGENT_SIGNING_PAYER_KT.asKey()));
         assertEquals(ResponseCodeEnum.OK, context.getStatus());
     }
 

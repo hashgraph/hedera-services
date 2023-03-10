@@ -89,7 +89,8 @@ public class TestFixturesKeyLookup implements AccountAccess {
     }
 
     private AccountID asAccount(final ContractID idOrAlias) {
-        return null;
+        return new AccountID.Builder().realmNum(idOrAlias.realmNum()).shardNum(
+                idOrAlias.shardNum()).accountNum(idOrAlias.contractNum().orElse(0L)).build();
     }
 
     @Override
