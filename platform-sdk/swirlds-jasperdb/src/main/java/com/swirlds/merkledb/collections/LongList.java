@@ -452,7 +452,7 @@ public abstract class LongList<C> implements CASableLongIndex, Closeable {
      *
      * @param newMinValidIndex new minimal valid index, left boundary of the list
      */
-    protected void shrinkIfNeeded(final long newMinValidIndex) {
+    private void shrinkIfNeeded(final long newMinValidIndex) {
         final int firstValidChunkWithBuffer =
                 (int) Math.max((newMinValidIndex - reservedBufferLength) / numLongsPerChunk, 0);
         final int firstChunkIndexToDelete = firstValidChunkWithBuffer - 1;

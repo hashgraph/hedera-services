@@ -313,12 +313,11 @@ public class LongListDisk extends LongList<Long> {
     @Override
     protected long lookupInChunk(final long chunkIndex, final long subIndex) {
         try {
-            final ByteBuffer buf = tempLongBufferThreadLocal.get();
             final long listIndex = (chunkIndex * numLongsPerChunk) + subIndex;
-
             if (listIndex < minValidIndex.get()) {
                 return IMPERMISSIBLE_VALUE;
             }
+            final ByteBuffer buf = tempLongBufferThreadLocal.get();
             final long offset = createOrGetChunk(listIndex) + calculateOffsetInChunk(listIndex);
             buf.clear();
             MerkleDbFileUtils.completelyRead(currentFileChannel, buf, offset);
