@@ -111,6 +111,7 @@ import com.hedera.services.bdd.spec.utilops.streams.RecordAssertions;
 import com.hedera.services.bdd.spec.utilops.streams.RecordFileChecker;
 import com.hedera.services.bdd.spec.utilops.streams.RecordStreamVerification;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.CryptoCreateAssertion;
+import com.hedera.services.bdd.spec.utilops.streams.assertions.CryptoTransferAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStreamAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.RecordStreamAssertion;
@@ -487,6 +488,14 @@ public class UtilVerbs {
         return spec -> {
             final var assertion = new CryptoCreateAssertion(spec, name);
             config.accept(assertion);
+            return assertion;
+        };
+    }
+
+    public static Function<HapiSpec, RecordStreamAssertion> recordedCryptoTransfer(
+            final String fromAccount, final String toAccount, final long amount) {
+        return spec -> {
+            final var assertion = new CryptoTransferAssertion(spec, fromAccount, toAccount, amount);
             return assertion;
         };
     }
