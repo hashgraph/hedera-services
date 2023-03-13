@@ -57,8 +57,7 @@ public class SigSet implements FastCopyable, Iterable<Long /* signing node ID */
     /**
      * Copy constructor.
      *
-     * @param that
-     * 		the sig set to copy
+     * @param that the sig set to copy
      */
     private SigSet(final SigSet that) {
         this.signatures.putAll(that.signatures);
@@ -67,10 +66,8 @@ public class SigSet implements FastCopyable, Iterable<Long /* signing node ID */
     /**
      * Add a signature to the sigset. Does not validate the signature.
      *
-     * @param nodeId
-     * 		the ID of the node that provided the signature
-     * @param signature
-     * 		the signature to add
+     * @param nodeId    the ID of the node that provided the signature
+     * @param signature the signature to add
      */
     public void addSignature(final long nodeId, final Signature signature) {
         throwArgNull(signature, "signature");
@@ -80,8 +77,7 @@ public class SigSet implements FastCopyable, Iterable<Long /* signing node ID */
     /**
      * Remove a signature from the sigset.
      *
-     * @param nodeId
-     * 		the ID of the signature to remove
+     * @param nodeId the ID of the signature to remove
      */
     public void removeSignature(final long nodeId) {
         signatures.remove(nodeId);
@@ -90,8 +86,7 @@ public class SigSet implements FastCopyable, Iterable<Long /* signing node ID */
     /**
      * Get the signature for the given node ID, or null if there is no signature for the requested node.
      *
-     * @param nodeId
-     * 		the ID of the node
+     * @param nodeId the ID of the node
      * @return a signature for the node, or null if there is no signature for the node
      */
     public Signature getSignature(final long nodeId) {
@@ -101,8 +96,7 @@ public class SigSet implements FastCopyable, Iterable<Long /* signing node ID */
     /**
      * Check if this sigset has a signature for a given node.
      *
-     * @param nodeId
-     * 		the node ID in question
+     * @param nodeId the node ID in question
      * @return true if a signature from this node is present
      */
     public boolean hasSignature(final long nodeId) {
@@ -128,6 +122,15 @@ public class SigSet implements FastCopyable, Iterable<Long /* signing node ID */
                 return iterator.next();
             }
         };
+    }
+
+    /**
+     * Get a list of all signing nodes.
+     *
+     * @return a list of all signing nodes
+     */
+    public List<Long> getSigningNodes() { // TODO test
+        return new ArrayList<>(signatures.keySet());
     }
 
     /**

@@ -45,25 +45,32 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     private static final class ClassVersion {
         public static final int ORIGINAL = 1;
         public static final int EPOCH_HASH = 2;
+        public static final int MINIMUM_GENERATION_NON_ANCIENT = 3;
     }
 
     /**
-     * The round of this state. This state represents the handling of all transactions that have reached consensus
-     * in all previous rounds. All transactions from this round will eventually be applied to this state.
-     * The first state (genesis state) has a round of 0 because the first round is round defined as round 1,
-     * and the genesis state is before any transactions are handled.
+     * If we have parsed a state from before version {@link ClassVersion#MINIMUM_GENERATION_NON_ANCIENT} then this will
+     * be the value of {@link #minimumGenerationNonAncient}.
+     */
+    public static final int UNSET_MINIMUM_GENERATION_NON_ANCIENT = -1;
+
+    /**
+     * The round of this state. This state represents the handling of all transactions that have reached consensus in
+     * all previous rounds. All transactions from this round will eventually be applied to this state. The first state
+     * (genesis state) has a round of 0 because the first round is round defined as round 1, and the genesis state is
+     * before any transactions are handled.
      */
     private long round;
 
     /**
-     * how many consensus events have there been throughout all of history, up through the round received
-     * that this SignedState represents.
+     * how many consensus events have there been throughout all of history, up through the round received that this
+     * SignedState represents.
      */
     private long numEventsCons;
 
     /**
-     * running hash of the hashes of all consensus events have there been throughout all of history, up
-     * through the round received that this SignedState represents.
+     * running hash of the hashes of all consensus events have there been throughout all of history, up through the
+     * round received that this SignedState represents.
      */
     private Hash hashEventsCons;
 
@@ -98,18 +105,22 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     private Hash epochHash;
 
     /**
-     * The next epoch hash, used to update the epoch hash at the next round boundary. This field is not part of the
-     * hash and is not serialized.
+     * The next epoch hash, used to update the epoch hash at the next round boundary. This field is not part of the hash
+     * and is not serialized.
      */
     private Hash nextEpochHash;
+
+    /**
+     * The minimum generation of non-ancient events after this round reached consensus.
+     */
+    private long minimumGenerationNonAncient;
 
     public PlatformData() {}
 
     /**
      * Copy constructor.
      *
-     * @param that
-     * 		the object to copy
+     * @param that the object to copy
      */
     private PlatformData(final PlatformData that) {
         super(that);
@@ -212,6 +223,12 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
         if (version >= ClassVersion.EPOCH_HASH) {
             epochHash = in.readSerializable(false, Hash::new);
         }
+
+        if (version >= ClassVersion.MINIMUM_GENERATION_NON_ANCIENT) {
+            minimumGenerationNonAncient = in.readLong();
+        } else {
+            minimumGenerationNonAncient = UNSET_MINIMUM_GENERATION_NON_ANCIENT;
+        }
     }
 
     /**
@@ -219,7 +236,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      */
     @Override
     public int getVersion() {
-        return ClassVersion.EPOCH_HASH;
+        return ClassVersion.MINIMUM_GENERATION_NON_ANCIENT;
     }
 
     /**
@@ -242,8 +259,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     /**
      * Set the software version of the application that created this state.
      *
-     * @param creationVersion
-     * 		the creation version
+     * @param creationVersion the creation version
      * @return this object
      */
     public PlatformData setCreationSoftwareVersion(final SoftwareVersion creationVersion) {
@@ -263,8 +279,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     /**
      * Set the round when this state was generated.
      *
-     * @param round
-     * 		a round number
+     * @param round a round number
      * @return this object
      */
     public PlatformData setRound(final long round) {
@@ -284,8 +299,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     /**
      * Set the number of consensus events that have been applied to this state since the beginning of time.
      *
-     * @param numEventsCons
-     * 		the number of handled consensus events
+     * @param numEventsCons the number of handled consensus events
      * @return this object
      */
     public PlatformData setNumEventsCons(final long numEventsCons) {
@@ -305,8 +319,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     /**
      * Set the running hash of all events that have been applied to this state since the begining of time.
      *
-     * @param hashEventsCons
-     * 		a running hash of events
+     * @param hashEventsCons a running hash of events
      * @return this object
      */
     public PlatformData setHashEventsCons(final Hash hashEventsCons) {
@@ -326,8 +339,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     /**
      * Set the events stored in this state.
      *
-     * @param events
-     * 		an array of events
+     * @param events an array of events
      * @return this object
      */
     public PlatformData setEvents(final EventImpl[] events) {
@@ -339,8 +351,8 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     }
 
     /**
-     * Get the consensus timestamp for this state, defined as the timestamp of the first transaction that was
-     * applied in the round that created the state.
+     * Get the consensus timestamp for this state, defined as the timestamp of the first transaction that was applied in
+     * the round that created the state.
      *
      * @return a consensus timestamp
      */
@@ -349,11 +361,10 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     }
 
     /**
-     * Set the consensus timestamp for this state, defined as the timestamp of the first transaction that was
-     * applied in the round that created the state.
+     * Set the consensus timestamp for this state, defined as the timestamp of the first transaction that was applied in
+     * the round that created the state.
      *
-     * @param consensusTimestamp
-     * 		a consensus timestamp
+     * @param consensusTimestamp a consensus timestamp
      * @return this object
      */
     public PlatformData setConsensusTimestamp(final Instant consensusTimestamp) {
@@ -373,8 +384,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     /**
      * Get the minimum event generation for each node within this state.
      *
-     * @param minGenInfo
-     * 		minimum generation info list
+     * @param minGenInfo minimum generation info list
      * @return this object
      */
     public PlatformData setMinGenInfo(final List<MinGenInfo> minGenInfo) {
@@ -394,8 +404,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     /**
      * Set the timestamp of the last transaction that was applied during this round.
      *
-     * @param lastTransactionTimestamp
-     * 		a timestamp
+     * @param lastTransactionTimestamp a timestamp
      * @return this object
      */
     public PlatformData setLastTransactionTimestamp(final Instant lastTransactionTimestamp) {
@@ -406,8 +415,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     /**
      * Sets the epoch hash of this state.
      *
-     * @param epochHash
-     * 		the epoch hash of this state
+     * @param epochHash the epoch hash of this state
      * @return this object
      */
     public PlatformData setEpochHash(final Hash epochHash) {
@@ -427,8 +435,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     /**
      * Sets the next epoch hash of this state.
      *
-     * @param nextEpochHash
-     * 		the next epoch hash of this state
+     * @param nextEpochHash the next epoch hash of this state
      * @return this object
      */
     public PlatformData setNextEpochHash(final Hash nextEpochHash) {
@@ -446,13 +453,32 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     }
 
     /**
-     * Informational method used in reconnect diagnostics.
-     * This method constructs a {@link String} containing the critical attributes of this data object.
-     * The original use is during reconnect to produce useful information sent to diagnostic event output.
+     * Sets the minimum generation of non-ancient events.
      *
-     * @param addressBookHash
-     * 		A {@link Hash} of the current Address Book; helpful to validate that the addresses
-     * 		used to validate signatures match the expected set of valid addresses.
+     * @param minimumGenerationNonAncient the minimum generation of non-ancient events
+     * @return this object
+     */
+    public PlatformData setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
+        this.minimumGenerationNonAncient = minimumGenerationNonAncient;
+        return this;
+    }
+
+    /**
+     * Sets the minimum generation of non-ancient events.
+     *
+     * @return the minimum generation of non-ancient events
+     */
+    public long getMinimumGenerationNonAncient() {
+        return minimumGenerationNonAncient;
+    }
+
+    /**
+     * Informational method used in reconnect diagnostics. This method constructs a {@link String} containing the
+     * critical attributes of this data object. The original use is during reconnect to produce useful information sent
+     * to diagnostic event output.
+     *
+     * @param addressBookHash A {@link Hash} of the current Address Book; helpful to validate that the addresses used to
+     *                        validate signatures match the expected set of valid addresses.
      * @return a {@link String} containing the core data from this object, in human-readable form.
      * @see PlatformState#getInfoString()
      */
