@@ -990,9 +990,12 @@ class HTSPrecompiledContractTest {
         final var result = subject.computePrecompile(input, messageFrame);
 
         verify(messageFrame)
-                .setExceptionalHaltReason(Optional.of(HederaExceptionalHaltReason.NOT_SUPPORTED));
+                .setExceptionalHaltReason(
+                        Optional.of(HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT));
         assertNull(result.getOutput());
-        assertEquals(HederaExceptionalHaltReason.NOT_SUPPORTED, result.getHaltReason().get());
+        assertEquals(
+                HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT,
+                result.getHaltReason().get());
     }
 
     @Test
