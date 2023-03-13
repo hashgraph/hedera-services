@@ -52,6 +52,11 @@ import org.junit.jupiter.api.Test;
 @DisplayName("ObjectStreamIterator Test")
 class ObjectStreamIteratorTest {
 
+    public static void assertEventsAreEqual(final EventImpl expected, final EventImpl actual) {
+        assertEquals(expected.getBaseEvent(), actual.getBaseEvent());
+        assertEquals(expected.getConsensusData(), actual.getConsensusData());
+    }
+
     @Test
     @DisplayName("Simple Stream Test")
     public void simpleStreamTest() throws IOException, NoSuchAlgorithmException, ConstructableRegistryException {
@@ -87,7 +92,7 @@ class ObjectStreamIteratorTest {
                     // Convert to event impl to allow comparison
                     final EventImpl e = new EventImpl(
                             event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
-                    assertEquals(e, events.get(eventIndex), "event should match input event");
+                    assertEventsAreEqual(e, events.get(eventIndex));
                     eventIndex++;
                 } else {
                     fail("Object of type " + object.getClass() + " was not expected");
@@ -159,7 +164,7 @@ class ObjectStreamIteratorTest {
                     // Convert to event impl to allow comparison
                     final EventImpl e = new EventImpl(
                             event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
-                    assertEquals(e, events.get(eventIndex), "event should match input event");
+                    assertEventsAreEqual(e, events.get(eventIndex));
                     eventIndex++;
                 } else {
                     fail("Object of type " + object.getClass() + " was not expected");
@@ -218,7 +223,7 @@ class ObjectStreamIteratorTest {
                     // Convert to event impl to allow comparison
                     final EventImpl e = new EventImpl(
                             event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
-                    assertEquals(e, events.get(eventIndex), "event should match input event");
+                    assertEventsAreEqual(e, events.get(eventIndex));
                     eventIndex++;
                 } else {
                     fail("Object of type " + object.getClass() + " was not expected");
