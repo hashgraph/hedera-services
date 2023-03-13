@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.node.app.service.mono.config.NetworkInfo;
@@ -47,10 +48,8 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.Set;
-import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.account.Account;
-import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,12 +60,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class InvalidDelegateTest {
-    private static final Bytes SOMETHING = Bytes.ofUnsignedInt(1234L);
-
     @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private GasCalculator gasCalculator;
-    @Mock private BlockValues blockValues;
-    @Mock private MessageFrame messageFrame;
     @Mock private MessageFrame parentMessageFrame;
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
@@ -95,6 +90,7 @@ class InvalidDelegateTest {
     @Mock private PrecompilePricingUtils precompilePricingUtils;
 
     @Mock private MessageFrame frame;
+    @Mock private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
     private HTSPrecompiledContract subject;
 
@@ -113,7 +109,8 @@ class InvalidDelegateTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory);
+                        infrastructureFactory,
+                        evmHTSPrecompiledContract);
     }
 
     @Test

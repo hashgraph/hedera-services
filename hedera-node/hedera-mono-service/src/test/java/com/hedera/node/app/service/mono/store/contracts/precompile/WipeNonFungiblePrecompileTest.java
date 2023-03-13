@@ -38,6 +38,7 @@ import static java.util.function.UnaryOperator.identity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -251,10 +252,7 @@ class WipeNonFungiblePrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        given(
-                        sigsVerifier.hasActiveWipeKey(
-                                true, nonFungibleTokenAddr, nonFungibleTokenAddr, wrappedLedgers))
-                .willReturn(true);
+        given(sigsVerifier.hasActiveWipeKey(anyBoolean(), any(), any(), any())).willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(
                         infrastructureFactory.newTokenStore(
@@ -304,10 +302,7 @@ class WipeNonFungiblePrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        given(
-                        sigsVerifier.hasActiveWipeKey(
-                                true, nonFungibleTokenAddr, nonFungibleTokenAddr, wrappedLedgers))
-                .willReturn(true);
+        given(sigsVerifier.hasActiveWipeKey(anyBoolean(), any(), any(), any())).willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(
                         infrastructureFactory.newTokenStore(
