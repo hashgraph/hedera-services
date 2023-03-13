@@ -17,7 +17,6 @@
 package com.swirlds.platform.bls.addressbook;
 
 import com.swirlds.platform.bls.crypto.BlsPublicKey;
-import com.swirlds.platform.bls.crypto.ShareId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -31,7 +30,7 @@ public class BlsNodeData {
     private BlsPublicKey ibePublicKey;
 
     /** List of shareIds that are owned by the node */
-    private List<ShareId> shareIds;
+    private List<Integer> shareIds;
 
     /**
      * Constructor
@@ -65,7 +64,7 @@ public class BlsNodeData {
      *
      * @param shareIds the new shareId list
      */
-    public void setShareIds(final List<ShareId> shareIds) {
+    public void setShareIds(final List<Integer> shareIds) {
         this.shareIds = Collections.unmodifiableList(shareIds);
     }
 
@@ -105,7 +104,7 @@ public class BlsNodeData {
      *
      * @return an unmodifiable view of {@link #shareIds}
      */
-    public List<ShareId> getShareIds() {
+    public List<Integer> getShareIds() {
         return shareIds;
     }
 

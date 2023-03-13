@@ -49,9 +49,9 @@ public class PublicKeyShares {
      * @param shareId the shareId to get the public key of
      * @return the public key of the share
      */
-    public BlsPublicKey getPublicKey(final ShareId shareId) {
+    public BlsPublicKey getPublicKey(final int shareId) {
         // we must subtract 1, since shareId 1 is at index 0
-        return publicKeys.get(shareId.id() - 1);
+        return publicKeys.get(shareId - 1);
     }
 
     /**

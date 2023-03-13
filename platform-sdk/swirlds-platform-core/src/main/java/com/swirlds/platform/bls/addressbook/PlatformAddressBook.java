@@ -19,8 +19,6 @@ package com.swirlds.platform.bls.addressbook;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.bls.crypto.BlsPublicKey;
 import com.swirlds.platform.bls.crypto.PublicKeyShares;
-import com.swirlds.platform.bls.crypto.ShareId;
-import com.swirlds.platform.bls.crypto.ShareIdIterator;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -143,10 +141,10 @@ public class PlatformAddressBook {
             int nodeShareCount = getNodeShareCount(nodeId);
             totalShares = Math.addExact(totalShares, nodeShareCount);
 
-            final List<ShareId> nodeShareIds = new ArrayList<>();
+            final List<Integer> nodeShareIds = new ArrayList<>();
 
             for (int shareCount = 0; shareCount < nodeShareCount; ++shareCount) {
-                nodeShareIds.add(new ShareId(shareId));
+                nodeShareIds.add(shareId);
                 ++shareId;
             }
 
@@ -217,7 +215,7 @@ public class PlatformAddressBook {
      * @param nodeId the id of the node to get share ids for
      * @return a list of share ids that belong to nodeId
      */
-    public List<ShareId> getNodeShareIds(final NodeId nodeId) {
+    public List<Integer> getNodeShareIds(final NodeId nodeId) {
         checkDirty("getNodeShareIds");
 
         if (!containsNode(nodeId)) {
@@ -257,15 +255,6 @@ public class PlatformAddressBook {
      */
     public int getNonDisqualifiedShareCount(final Set<NodeId> maliciousNodes, final Set<NodeId> offlineNodes) {
         return getTotalShares() - getCombinedShares(maliciousNodes) - getCombinedShares(offlineNodes);
-    }
-
-    /**
-     * Gets an iterator for the shareIds of this address book
-     *
-     * @return a {@link ShareIdIterator}
-     */
-    public ShareIdIterator getShareIdIterator() {
-        return new ShareIdIterator(getTotalShares());
     }
 
     /**

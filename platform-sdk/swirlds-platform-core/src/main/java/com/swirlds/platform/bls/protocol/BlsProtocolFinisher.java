@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.bls.protocol;
 
-import com.swirlds.bls.message.ProtocolMessage;
+import com.swirlds.platform.bls.message.ProtocolMessage;
 import java.util.List;
 
 /**
