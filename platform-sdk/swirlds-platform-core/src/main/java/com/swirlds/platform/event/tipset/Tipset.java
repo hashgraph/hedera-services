@@ -73,7 +73,7 @@ public class Tipset {
      *                else this method has undefined behavior
      * @return a new tipset
      */
-    public static Tipset merge(final List<Tipset> tipsets) { // TODO variation that takes a vararg
+    public static Tipset merge(final List<Tipset> tipsets) {
         Objects.requireNonNull(tipsets, "tipsets must not be null");
         if (tipsets.isEmpty()) {
             throw new IllegalArgumentException("Cannot merge an empty list of tipsets");

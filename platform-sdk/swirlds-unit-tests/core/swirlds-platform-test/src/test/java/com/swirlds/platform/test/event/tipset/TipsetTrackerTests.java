@@ -57,7 +57,7 @@ class TipsetTrackerTests {
 		final Map<Long, EventFingerprint> latestEvents = new HashMap<>();
 		final Map<EventFingerprint, Tipset> expectedTipsets = new HashMap<>();
 
-		final TipsetTracker tracker = new TipsetTracker();
+		final TipsetTracker tracker = new TipsetTracker(nodeCount, x -> (int) x, x -> 1);
 
 		for (int eventIndex = 0; eventIndex < 1000; eventIndex++) {
 
@@ -108,7 +108,13 @@ class TipsetTrackerTests {
 				parentTipsets.add(expectedTipsets.get(parentFingerprint));
 			}
 
-			final Tipset expectedTipset = merge(parentTipsets).advance(creator, generation);
+			final Tipset expectedTipset;
+			if (parentTipsets.isEmpty()) {
+				expectedTipset = new Tipset(nodeCount, x -> (int) x, x -> 1).advance(creator, generation);
+			} else {
+				expectedTipset = merge(parentTipsets);
+			}
+
 			expectedTipsets.put(fingerprint, expectedTipset);
 			assertTipsetEquality(expectedTipset, newTipset, nodeCount);
 		}

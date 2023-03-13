@@ -23,6 +23,8 @@ import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.IntToLongFunction;
+import java.util.function.LongToIntFunction;
 
 /**
  * Computes and tracks tipsets for non-ancient events. TODO consider a rename of this class
@@ -31,7 +33,36 @@ public class TipsetTracker {
 
 	private final SequenceMap<EventFingerprint, Tipset> tipsets;
 
-	public TipsetTracker() {
+	/**
+	 * The number of nodes.
+	 */
+	private final int nodeCount;
+
+	/**
+	 * Maps node ID to node index.
+	 */
+	private final LongToIntFunction nodeIdToIndex;
+
+	/**
+	 * Maps node index to consensus weight.
+	 */
+	private final IntToLongFunction indexToWeight;
+
+	/**
+	 * Create a new tipset tracker.
+	 * @param nodeCount     the number of nodes in the address book
+	 * @param nodeIdToIndex maps node ID to node index
+	 * @param indexToWeight maps node index to consensus weight
+	 */
+	public TipsetTracker(final int nodeCount,
+			final LongToIntFunction nodeIdToIndex,
+			final IntToLongFunction indexToWeight) {
+
+		this.nodeCount = nodeCount;
+		this.nodeIdToIndex = nodeIdToIndex;
+		this.indexToWeight = indexToWeight;
+
+
 		tipsets = new StandardSequenceMap<>(
 				0,
 				1024, // TODO meet or exceed maximum generations allowed in memory past ancient
@@ -66,8 +97,13 @@ public class TipsetTracker {
 			}
 		}
 
-		final Tipset eventTipset = merge(parentTipsets)
-				.advance(eventFingerprint.creator(), eventFingerprint.generation());
+		final Tipset eventTipset;
+		if (parents.isEmpty()) {
+			eventTipset = new Tipset(nodeCount, nodeIdToIndex, indexToWeight)
+					.advance(eventFingerprint.creator(), eventFingerprint.generation());
+		} else {
+			eventTipset = merge(parentTipsets).advance(eventFingerprint.creator(), eventFingerprint.generation());
+		}
 
 		tipsets.put(eventFingerprint, eventTipset);
 
