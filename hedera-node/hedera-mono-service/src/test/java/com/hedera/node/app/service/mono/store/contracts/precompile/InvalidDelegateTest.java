@@ -16,8 +16,10 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
@@ -47,9 +49,12 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.Iterator;
+import java.util.Optional;
 import java.util.Set;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.account.Account;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.junit.jupiter.api.BeforeEach;
@@ -111,6 +116,16 @@ class InvalidDelegateTest {
                         precompilePricingUtils,
                         infrastructureFactory,
                         evmHTSPrecompiledContract);
+    }
+
+    @Test
+    void disallowsDelegateCallsIfNotTokenOrAllowListed() {
+        givenFrameWith(Address.ALTBN128_ADD, Address.ALTBN128_MUL);
+        givenRecipientAccount(false, Address.ALTBN128_ADD);
+        assertSame(
+                HTSPrecompiledContract.INVALID_DELEGATE,
+                subject.computePrecompile(Bytes.of(1, 2, 3), frame));
+        verify(frame).setExceptionalHaltReason(Optional.of(ExceptionalHaltReason.PRECOMPILE_ERROR));
     }
 
     @Test

@@ -69,7 +69,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class ApproveAllowanceSuite extends HapiSuite {
+    public static final String CONTRACTS_PERMITTED_DELEGATE_CALLERS =
+            "contracts.permittedDelegateCallers";
     private static final Logger log = LogManager.getLogger(ApproveAllowanceSuite.class);
+    private static final String ATTACK_CALL = "attackCall";
+    private static final String PRETEND_PAIR = "PretendPair";
+    private static final String PRETEND_ATTACKER = "PretendAttacker";
     private static final long GAS_TO_OFFER = 4_000_000L;
     private static final String FUNGIBLE_TOKEN = "fungibleToken";
     private static final String NON_FUNGIBLE_TOKEN = "nonFungibleToken";
@@ -82,6 +87,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
     private static final String ALLOWANCE_TX = "allowanceTxn";
     private static final String APPROVE_SIGNATURE = "Approval(address,address,uint256)";
     private static final String APPROVE_FOR_ALL_SIGNATURE = "ApprovalForAll(address,address,bool)";
+    public static final String CALL_TO = "callTo";
 
     public static void main(String... args) {
         new ApproveAllowanceSuite().runSuiteAsync();
@@ -145,7 +151,6 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                 .payingWith(DEFAULT_PAYER)
                                 .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, theSpender, 2L)
                                 .via("baseApproveTxn")
-                                .logged()
                                 .signedBy(DEFAULT_PAYER, OWNER)
                                 .fee(ONE_HBAR))
                 .when(
@@ -175,7 +180,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                                         .via(allowanceTxn)
                                                         .hasKnownStatus(SUCCESS))))
                 .then(
-                        getTxnRecord(allowanceTxn).andAllChildRecords().logged(),
+                        getTxnRecord(allowanceTxn).andAllChildRecords(),
                         childRecordsCheck(
                                 allowanceTxn,
                                 SUCCESS,
@@ -239,7 +244,6 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                                         .hasKnownStatus(SUCCESS))))
                 .then(
                         childRecordsCheck(approveTxn, SUCCESS, recordWith().status(SUCCESS)),
-                        getTxnRecord(approveTxn).andAllChildRecords().logged(),
                         withOpContext(
                                 (spec, opLog) -> {
                                     final var sender =
@@ -275,8 +279,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                                                                                                                                     .getAccountNum())))
                                                                                                             .longValue(
                                                                                                                     10)))))
-                                                    .andAllChildRecords()
-                                                    .logged();
+                                                    .andAllChildRecords();
                                     allRunFor(spec, txnRecord);
                                 }));
     }
@@ -676,10 +679,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
 
     private HapiSpec testIndirectApprovalWith(
             final String callee, final boolean expectGrantedApproval) {
-        final var PRETEND_PAIR = "PretendPair";
-        final var PRETEND_ATTACKER = "PretendAttacker";
 
-        final var attackCall = "attackCall";
         final AtomicReference<TokenID> tokenID = new AtomicReference<>();
         final AtomicReference<String> attackerMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> calleeMirrorAddr = new AtomicReference<>();
@@ -711,16 +711,16 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                 () ->
                                         contractCall(
                                                         PRETEND_PAIR,
-                                                        "callTo",
+                                                        CALL_TO,
                                                         asHeadlongAddress(calleeMirrorAddr.get()),
                                                         asHeadlongAddress(
                                                                 asSolidityAddress(tokenID.get())),
                                                         asHeadlongAddress(attackerMirrorAddr.get()))
-                                                .via(attackCall)
+                                                .via(ATTACK_CALL)
                                                 .gas(5_000_000L)
                                                 .hasKnownStatus(SUCCESS)))
                 .then(
-                        getTxnRecord(attackCall).andAllChildRecords().logged(),
+                        getTxnRecord(ATTACK_CALL).andAllChildRecords().logged(),
                         // Under no circumstances should the pair ever have an allowance
                         getAccountDetails(PRETEND_PAIR)
                                 .has(accountDetailsWith().tokenAllowancesCount(0))
@@ -737,10 +737,6 @@ public class ApproveAllowanceSuite extends HapiSuite {
     }
 
     private HapiSpec whitelistNegativeCases() {
-        final var PRETEND_PAIR = "PretendPair";
-        final var PRETEND_ATTACKER = "PretendAttacker";
-
-        final var attackCall = "attackCall";
         final AtomicLong unlistedCalleeMirrorNum = new AtomicLong();
         final AtomicLong whitelistedCalleeMirrorNum = new AtomicLong();
         final AtomicReference<TokenID> tokenID = new AtomicReference<>();
@@ -749,7 +745,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
         final AtomicReference<String> whitelistedCalleeMirrorAddr = new AtomicReference<>();
 
         return propertyPreservingHapiSpec("WhitelistNegativeCases")
-                .preserving("contracts.permittedDelegateCallers")
+                .preserving(CONTRACTS_PERMITTED_DELEGATE_CALLERS)
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(PRETEND_ATTACKER)
@@ -787,41 +783,37 @@ public class ApproveAllowanceSuite extends HapiSuite {
                         sourcing(
                                 () ->
                                         overriding(
-                                                "contracts.permittedDelegateCallers",
+                                                CONTRACTS_PERMITTED_DELEGATE_CALLERS,
                                                 "" + whitelistedCalleeMirrorNum.get())),
                         sourcing(
                                 () ->
                                         contractCall(
                                                         PRETEND_PAIR,
-                                                        "callTo",
+                                                        CALL_TO,
                                                         asHeadlongAddress(
                                                                 unListedCalleeMirrorAddr.get()),
                                                         asHeadlongAddress(
                                                                 asSolidityAddress(tokenID.get())),
                                                         asHeadlongAddress(attackerMirrorAddr.get()))
-                                                .via(attackCall)
                                                 .gas(5_000_000L)
                                                 .hasKnownStatus(SUCCESS)),
                         // Because this callee isn't on the whitelist, the pair won't have an
                         // allowance here
                         getAccountDetails(PRETEND_PAIR)
-                                .has(accountDetailsWith().tokenAllowancesCount(0))
-                                .logged(),
+                                .has(accountDetailsWith().tokenAllowancesCount(0)),
                         // Instead nobody gets an allowance
                         getAccountDetails(DELEGATE_PRECOMPILE_CALLEE)
-                                .has(accountDetailsWith().tokenAllowancesCount(0))
-                                .logged(),
+                                .has(accountDetailsWith().tokenAllowancesCount(0)),
                         sourcing(
                                 () ->
                                         contractCall(
                                                         PRETEND_PAIR,
-                                                        "callTo",
+                                                        CALL_TO,
                                                         asHeadlongAddress(
                                                                 whitelistedCalleeMirrorAddr.get()),
                                                         asHeadlongAddress(
                                                                 asSolidityAddress(tokenID.get())),
                                                         asHeadlongAddress(attackerMirrorAddr.get()))
-                                                .via(attackCall)
                                                 .gas(5_000_000L)
                                                 .hasKnownStatus(SUCCESS)))
                 .then(
@@ -829,18 +821,13 @@ public class ApproveAllowanceSuite extends HapiSuite {
                         // is going through a delegatecall "chain" via the ERC-20 call, the pair
                         // still won't have an allowance here
                         getAccountDetails(PRETEND_PAIR)
-                                .has(accountDetailsWith().tokenAllowancesCount(0))
-                                .logged(),
+                                .has(accountDetailsWith().tokenAllowancesCount(0)),
                         // Instead of the callee
                         getAccountDetails(DELEGATE_ERC_CALLEE)
-                                .has(accountDetailsWith().tokenAllowancesCount(0))
-                                .logged());
+                                .has(accountDetailsWith().tokenAllowancesCount(0)));
     }
 
     private HapiSpec whitelistPositiveCase() {
-        final var PRETEND_PAIR = "PretendPair";
-        final var PRETEND_ATTACKER = "PretendAttacker";
-
         final var attackCall = "attackCall";
         final AtomicLong whitelistedCalleeMirrorNum = new AtomicLong();
         final AtomicReference<TokenID> tokenID = new AtomicReference<>();
@@ -848,7 +835,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
         final AtomicReference<String> whitelistedCalleeMirrorAddr = new AtomicReference<>();
 
         return propertyPreservingHapiSpec("WhitelistNegativeCases")
-                .preserving("contracts.permittedDelegateCallers")
+                .preserving(CONTRACTS_PERMITTED_DELEGATE_CALLERS)
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(PRETEND_ATTACKER)
@@ -876,13 +863,13 @@ public class ApproveAllowanceSuite extends HapiSuite {
                         sourcing(
                                 () ->
                                         overriding(
-                                                "contracts.permittedDelegateCallers",
+                                                CONTRACTS_PERMITTED_DELEGATE_CALLERS,
                                                 "" + whitelistedCalleeMirrorNum.get())),
                         sourcing(
                                 () ->
                                         contractCall(
                                                         PRETEND_PAIR,
-                                                        "callTo",
+                                                        CALL_TO,
                                                         asHeadlongAddress(
                                                                 whitelistedCalleeMirrorAddr.get()),
                                                         asHeadlongAddress(
@@ -895,11 +882,9 @@ public class ApproveAllowanceSuite extends HapiSuite {
                         // Because this callee is on the whitelist, the pair WILL have an allowance
                         // here
                         getAccountDetails(PRETEND_PAIR)
-                                .has(accountDetailsWith().tokenAllowancesCount(1))
-                                .logged(),
+                                .has(accountDetailsWith().tokenAllowancesCount(1)),
                         // Instead of the callee
                         getAccountDetails(DELEGATE_PRECOMPILE_CALLEE)
-                                .has(accountDetailsWith().tokenAllowancesCount(0))
-                                .logged());
+                                .has(accountDetailsWith().tokenAllowancesCount(0)));
     }
 }
