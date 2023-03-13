@@ -31,6 +31,7 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
+import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
@@ -116,7 +117,8 @@ public class TestIntake implements ConsensusRoundObserver, StaleEventObserver, L
                 ab,
                 dispatcher,
                 ConsensusUtils.NOOP_INTAKE_CYCLE_STATS,
-                shadowGraph);
+                shadowGraph,
+                mock(PreConsensusEventWriter.class));
     }
 
     /**

@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.test.event.intake;
 
+import static org.mockito.Mockito.mock;
+
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
@@ -26,6 +28,7 @@ import com.swirlds.platform.components.EventIntake;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
+import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
 import com.swirlds.platform.intake.IntakeCycleStats;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
@@ -102,8 +105,9 @@ class OrphanEventsIntakeTest {
                     new EventObserverDispatcher(
                             (EventAddedObserver) e -> linkedEventMap.put(e.getBaseHash(), e),
                             (ConsensusRoundObserver) rnd -> consensusEvents.addAll(rnd.getConsensusEvents())),
-                    Mockito.mock(IntakeCycleStats.class),
-                    Mockito.mock(ShadowGraph.class));
+                    mock(IntakeCycleStats.class),
+                    mock(ShadowGraph.class),
+                    mock(PreConsensusEventWriter.class));
         }
 
         public void generateAndFeed(final int numEvents) {

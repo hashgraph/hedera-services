@@ -336,6 +336,9 @@ public class SignedStateFileManager implements Startable {
      * Purge old states on the disk.
      */
     private synchronized void deleteOldStates() {
+
+        // TODO this needs to send data to the event stream manager somehow
+
         final SavedStateInfo[] savedStates = getSavedStateFiles(mainClassName, selfId, swirldName);
 
         // States are returned newest to oldest. So delete from the end of the list to delete the oldest states.
