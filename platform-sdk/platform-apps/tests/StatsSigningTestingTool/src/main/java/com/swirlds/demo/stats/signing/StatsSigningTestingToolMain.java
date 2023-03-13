@@ -211,7 +211,8 @@ public class StatsSigningTestingToolMain implements SwirldMain {
         // to avoid a huge burst of transactions at the start of the test
         if (lastEventTime == 0) {
             lastEventTime = now;
-            logger.info(STARTUP.getMarker(), "First time calling generateTransactions()");
+            logger.info(STARTUP.getMarker(), "First time calling generateTransactions() Expected TPS per code is {}",
+                    tps);
             return;
         }
 
