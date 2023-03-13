@@ -142,7 +142,6 @@ final class PlatformConstructor {
      * Creates a new instance of {@link SwirldStateManager}.
      *
      * @param selfId                                this node's id
-     * @param platformContext                       the context of the platform
      * @param preConsensusSystemTransactionManager  the manager which handles system transactions pre-consensus
      * @param postConsensusSystemTransactionManager the manager which handles system transactions post-consensus
      * @param metrics                               reference to the metrics-system
@@ -152,7 +151,6 @@ final class PlatformConstructor {
      */
     static SwirldStateManager swirldStateManager(
             final NodeId selfId,
-            final PlatformContext platformContext,
             final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager,
             final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager,
             final Metrics metrics,

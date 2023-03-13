@@ -46,6 +46,7 @@ public class EventCreatorThread implements Clearable {
     /**
      * @param threadManager                  responsible for managing thread lifecycles
      * @param selfId                         the ID of this node
+     * @param platformContext                the platform context
      * @param attemptedChatterEventPerSecond the desired number of events created per second
      * @param addressBook                    the node's address book
      * @param eventCreator                   this method attempts to create an event with a neighbor

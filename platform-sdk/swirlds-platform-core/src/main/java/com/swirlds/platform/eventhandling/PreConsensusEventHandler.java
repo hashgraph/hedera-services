@@ -67,6 +67,7 @@ public class PreConsensusEventHandler implements PreConsensusEventObserver, Clea
     /**
      * @param threadManager      responsible for managing thread lifecycles
      * @param selfId             the ID of this node
+     * @param platformContext    the platform context
      * @param swirldStateManager manages states
      * @param metrics            metrics relating to consensus
      */
