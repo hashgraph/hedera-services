@@ -56,6 +56,7 @@ import org.apache.logging.log4j.Logger;
 public class StatsSigningTestingToolMain implements SwirldMain {
     // the first four come from the parameters in the config.txt file
 
+    private static final Logger logger = LogManager.getLogger(StatsSigningTestingToolMain.class);
     /**
      * the time of the last call to preEvent
      */
@@ -210,6 +211,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
         // to avoid a huge burst of transactions at the start of the test
         if (lastEventTime == 0) {
             lastEventTime = now;
+            logger.info(STARTUP.getMarker(), "First time calling generateTransactions()");
             return;
         }
 
