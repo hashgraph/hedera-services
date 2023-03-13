@@ -59,7 +59,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
     /**
      * the time of the last call to preEvent
      */
-    long lastEventTime = System.nanoTime();
+    long lastEventTime = 0;
     /**
      * number of events needed to be created (the non-integer leftover from last preEvent call
      */
@@ -205,9 +205,18 @@ public class StatsSigningTestingToolMain implements SwirldMain {
                 transPerSecToCreate / (double) platform.getAddressBook().getSize();
         int numCreated = 0;
 
+        // if it's first time calling this, just set lastEventTime and return
+        // so the period from app start to the first time init() is called is ignored
+        // to avoid a huge burst of transactions at the start of the test
+        if (lastEventTime == 0) {
+            lastEventTime = now;
+            return;
+        }
+
         if (transPerSecToCreate > -1) { // if not unlimited (-1 means unlimited)
             toCreate += ((double) now - lastEventTime) * NANOSECONDS_TO_SECONDS * tps;
         }
+
         lastEventTime = now;
         while (true) {
             if (transPerSecToCreate > -1 && toCreate < 1) {
