@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
@@ -85,6 +86,11 @@ class AsyncPreConsensusEventWriterTests {
     @BeforeAll
     static void beforeAll() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("");
+
+        SettingsCommon.maxTransactionBytesPerEvent = Integer.MAX_VALUE;
+        SettingsCommon.maxTransactionCountPerEvent = Integer.MAX_VALUE;
+        SettingsCommon.transactionMaxBytes = Integer.MAX_VALUE;
+        SettingsCommon.maxAddressSizeAllowed = Integer.MAX_VALUE;
     }
 
     @BeforeEach
