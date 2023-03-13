@@ -247,9 +247,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
     private HapiSpec createTokenWithInvalidFeeCollector() {
         return propertyPreservingHapiSpec("createTokenWithInvalidFeeCollector")
-                .preserving(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED)
+                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
                 .given(
-                        overriding(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, FALSE_VALUE),
+                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ECDSA_KEY),
                         uploadInitCode(TOKEN_CREATE_CONTRACT),
@@ -295,9 +295,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final String feeCollector = ACCOUNT_2;
         final String someARAccount = "someARAccount";
         return propertyPreservingHapiSpec("createTokenWithInvalidFixedFeeWithERC721Denomination")
-                .preserving(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED)
+                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
                 .given(
-                        overriding(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, FALSE_VALUE),
+                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ECDSA_KEY),
                         cryptoCreate(feeCollector).keyShape(ED25519_ON).balance(ONE_HUNDRED_HBARS),
@@ -350,9 +350,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
         AtomicReference<String> existingToken = new AtomicReference<>();
         final String treasuryAndFeeCollectorKey = "treasuryAndFeeCollectorKey";
         return propertyPreservingHapiSpec("createTokenWithInvalidRoyaltyFee")
-                .preserving(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED)
+                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
                 .given(
-                        overriding(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, FALSE_VALUE),
+                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(CONTRACT_ADMIN_KEY),
@@ -408,9 +408,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var feeCollector = ACCOUNT_2;
         final var treasuryAndFeeCollectorKey = "treasuryAndFeeCollectorKey";
         return propertyPreservingHapiSpec("nonFungibleTokenCreateWithFeesHappyPath")
-                .preserving(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED)
+                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
                 .given(
-                        overriding(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, FALSE_VALUE),
+                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(treasuryAndFeeCollectorKey),
@@ -494,9 +494,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var arEd25519Key = "arEd25519Key";
         final var initialAutoRenewAccount = "initialAutoRenewAccount";
         return propertyPreservingHapiSpec("fungibleTokenCreateWithFeesHappyPath")
-                .preserving(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED)
+                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
                 .given(
-                        overriding(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, FALSE_VALUE),
+                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
                         newKeyNamed(arEd25519Key).shape(ED25519),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         cryptoCreate(initialAutoRenewAccount).key(arEd25519Key),
@@ -574,7 +574,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final String ACCOUNT = "account";
         return defaultHapiSpec("ETX_026_accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation")
                 .given(
-                        overriding(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, FALSE_VALUE),
+                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(ACCOUNT).key(SECP_256K1_SOURCE_KEY).balance(ONE_HUNDRED_HBARS))
                 .when(ethereumContractCreate(PAY_RECEIVABLE_CONTRACT)
@@ -585,7 +585,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         .nonce(0)
                         .gasLimit(GAS_LIMIT)
                         .hasKnownStatus(INVALID_ACCOUNT_ID))
-                .then(overriding(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, "true"));
+                .then(overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, "true"));
     }
 
     private HapiSpec transferToCaller() {
