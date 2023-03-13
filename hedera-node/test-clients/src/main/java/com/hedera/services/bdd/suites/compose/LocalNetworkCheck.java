@@ -33,6 +33,8 @@ import org.apache.logging.log4j.Logger;
 
 public class LocalNetworkCheck extends HapiSuite {
     private static final Logger log = LogManager.getLogger(LocalNetworkCheck.class);
+    private static final String SPONSOR = "sponsor";
+    private static final String BENEFICIARY = "beneficiary";
 
     public static void main(String... args) {
         new LocalNetworkCheck().runSuiteSync();
@@ -49,17 +51,17 @@ public class LocalNetworkCheck extends HapiSuite {
         return customHapiSpec("BalancesChangeOnTransfer")
                 .withProperties(Map.of("nodes", "127.0.0.1:50213:0.0.3,127.0.0.1:50214:0.0.4,127.0.0.1:50215:0.0.5"))
                 .given(
-                        cryptoCreate("sponsor").setNode("0.0.3"),
-                        cryptoCreate("beneficiary").setNode("0.0.4"),
-                        balanceSnapshot("sponsorBefore", "sponsor"),
-                        balanceSnapshot("beneficiaryBefore", "beneficiary"))
-                .when(cryptoTransfer(tinyBarsFromTo("sponsor", "beneficiary", 1L))
+                        cryptoCreate(SPONSOR).setNode("0.0.3"),
+                        cryptoCreate(BENEFICIARY).setNode("0.0.4"),
+                        balanceSnapshot("sponsorBefore", SPONSOR),
+                        balanceSnapshot("beneficiaryBefore", BENEFICIARY))
+                .when(cryptoTransfer(tinyBarsFromTo(SPONSOR, BENEFICIARY, 1L))
                         .payingWith(GENESIS)
                         .memo("Hello World!")
                         .setNode("0.0.5"))
                 .then(
-                        getAccountBalance("sponsor").hasTinyBars(changeFromSnapshot("sponsorBefore", -1L)),
-                        getAccountBalance("beneficiary").hasTinyBars(changeFromSnapshot("beneficiaryBefore", +1L)));
+                        getAccountBalance(SPONSOR).hasTinyBars(changeFromSnapshot("sponsorBefore", -1L)),
+                        getAccountBalance(BENEFICIARY).hasTinyBars(changeFromSnapshot("beneficiaryBefore", +1L)));
     }
 
     @Override
