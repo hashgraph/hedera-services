@@ -277,7 +277,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
             frames.next();
             if (!frames.hasNext()) {
                 // Impossible to get here w/o a catastrophic EVM bug
-                log.error("Delegate call frame had no parent");
+                log.error("Possibly CATASTROPHIC failure - delegatecall frame had no parent");
                 return false;
             }
             // If the token redirect contract was called via delegate, then it's a delegate

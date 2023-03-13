@@ -7271,7 +7271,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                                                                                     .array())))
                                                                     .setError(
                                                                             ByteString.copyFrom(
-                                                                                    "ERROR_DECODING_PRECOMPILE_INPUT"
+                                                                                    "PRECOMPILE_ERROR"
                                                                                             .getBytes()))
                                                                     .setCallDepth(2)
                                                                     .build())));
