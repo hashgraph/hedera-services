@@ -47,6 +47,9 @@ public class TransactionSubmitter {
     private static final int FREEZE_SUBMIT_ATTEMPT_SLEEP = 250;
     private static final int FREEZE_SUBMIT_MAX_ATTEMPTS = 10;
 
+    private static final long TPS_MEASURE_PERIOD_IN_MILLISECONDS = 100 ;
+    private long lastTPSMeasureTime = 0;
+
     public static final long USE_DEFAULT_TPS = 0;
 
     private volatile long customizedTPS = 0;
@@ -322,6 +325,18 @@ public class TransactionSubmitter {
         boolean result = false;
         long now = System.currentTimeMillis();
         final Metrics metrics = platform.getContext().getMetrics();
+
+        if (lastTPSMeasureTime == 0) {
+            lastTPSMeasureTime = now;
+            return true;
+        }
+
+        // reset values for each window
+        if ((now - lastTPSMeasureTime) > TPS_MEASURE_PERIOD_IN_MILLISECONDS) {
+            cycleStartMS = now;
+            accumulatedTrans = 0;
+            lastTPSMeasureTime = now;
+        }
 
         if (getForcePauseCanSubmitMore().get()) {
             // suppress transaction generation
