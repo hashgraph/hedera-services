@@ -42,6 +42,8 @@ import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
@@ -62,8 +64,6 @@ import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
-import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Optional;
@@ -77,12 +77,12 @@ public class StaticEntityAccess implements EntityAccess {
     private final StateView view;
     private final ContractAliases aliases;
     private final OptionValidator validator;
-    private final MerkleMap<EntityNum, MerkleToken> tokens;
+    private final MerkleMapLike<EntityNum, MerkleToken> tokens;
     private final AccountStorageAdapter accounts;
     private final UniqueTokenMapAdapter nfts;
     private final TokenRelStorageAdapter tokenAssociations;
-    private final VirtualMap<ContractKey, IterableContractValue> storage;
-    private final VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode;
+    private final VirtualMapLike<ContractKey, IterableContractValue> storage;
+    private final VirtualMapLike<VirtualBlobKey, VirtualBlobValue> bytecode;
 
     public StaticEntityAccess(final StateView view, final ContractAliases aliases, final OptionValidator validator) {
         this.view = view;
@@ -176,13 +176,14 @@ public class StaticEntityAccess implements EntityAccess {
     }
 
     @Nullable
-    static Bytes explicitCodeFetch(final VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode, final AccountID id) {
+    static Bytes explicitCodeFetch(
+            final VirtualMapLike<VirtualBlobKey, VirtualBlobValue> bytecode, final AccountID id) {
         return explicitCodeFetch(bytecode, id.getAccountNum());
     }
 
     @Nullable
     public static Bytes explicitCodeFetch(
-            final VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode, final long contractNum) {
+            final VirtualMapLike<VirtualBlobKey, VirtualBlobValue> bytecode, final long contractNum) {
         final var key = new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, codeFromNum(contractNum));
         final var value = bytecode.get(key);
         return (value != null) ? Bytes.of(value.getData()) : null;

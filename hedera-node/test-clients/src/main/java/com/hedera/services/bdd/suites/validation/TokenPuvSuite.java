@@ -116,7 +116,9 @@ public class TokenPuvSuite extends HapiSuite {
                 .withProperties(targetInfo.toCustomProperties(miscConfig))
                 .given()
                 .when()
-                .then(ensureDissociated(Names.CAT_BENEFICIARY, List.of(Names.CAT_TOKEN, Names.TACO_TOKEN)));
+                .then(
+                        ensureDissociated(Names.CAT_BENEFICIARY, List.of(Names.CAT_TOKEN, Names.TACO_TOKEN)),
+                        ensureDissociated(Names.TACO_BENEFICIARY, List.of(Names.CAT_TOKEN, Names.TACO_TOKEN)));
     }
 
     public void initEntitiesIfNeeded() {

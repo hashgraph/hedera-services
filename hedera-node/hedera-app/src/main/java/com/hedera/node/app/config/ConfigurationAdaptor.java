@@ -20,6 +20,8 @@ import static com.hedera.node.app.spi.config.PropertyNames.DEV_DEFAULT_LISTENING
 import static com.hedera.node.app.spi.config.PropertyNames.DEV_ONLY_DEFAULT_NODE_LISTENS;
 import static com.hedera.node.app.spi.config.PropertyNames.GRPC_PORT;
 import static com.hedera.node.app.spi.config.PropertyNames.GRPC_TLS_PORT;
+import static com.hedera.node.app.spi.config.PropertyNames.GRPC_WORKFLOWS_PORT;
+import static com.hedera.node.app.spi.config.PropertyNames.GRPC_WORKFLOWS_TLS_PORT;
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_ACCOUNTS_EXPORT_PATH;
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_EXPORT_ACCOUNTS_ON_STARTUP;
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_PREFETCH_CODE_CACHE_TTL_SECS;
@@ -107,7 +109,7 @@ public class ConfigurationAdaptor implements Configuration {
         if (exists(name)) {
             return propertySource.getRawValue(name);
         }
-        throw new NoSuchElementException("Config property with name '" + name + "' does not exist!");
+        throw new NoSuchElementException(exceptionMessagePropertyDoesNotExist(name));
     }
 
     @Override
@@ -124,7 +126,7 @@ public class ConfigurationAdaptor implements Configuration {
         if (exists(name)) {
             return propertySource.getTypedProperty(type, name);
         }
-        throw new NoSuchElementException("Config property with name '" + name + "' does not exist!");
+        throw new NoSuchElementException(exceptionMessagePropertyDoesNotExist(name));
     }
 
     @Override
@@ -141,7 +143,7 @@ public class ConfigurationAdaptor implements Configuration {
         if (exists(name)) {
             return propertySource.getTypedProperty(List.class, name);
         }
-        throw new NoSuchElementException("Config property with name '" + name + "' does not exist!");
+        throw new NoSuchElementException(exceptionMessagePropertyDoesNotExist(name));
     }
 
     @Override
@@ -158,7 +160,7 @@ public class ConfigurationAdaptor implements Configuration {
         if (exists(name)) {
             return propertySource.getTypedProperty(List.class, name);
         }
-        throw new NoSuchElementException("Config property with name '" + name + "' does not exist!");
+        throw new NoSuchElementException(exceptionMessagePropertyDoesNotExist(name));
     }
 
     @Override
@@ -241,16 +243,21 @@ public class ConfigurationAdaptor implements Configuration {
                 propertySource.getTypedProperty(Integer.class, HEDERA_PREFETCH_CODE_CACHE_TTL_SECS),
                 propertySource.getTypedProperty(List.class, STATS_CONS_THROTTLES_TO_SAMPLE),
                 propertySource.getTypedProperty(List.class, STATS_HAPI_THROTTLES_TO_SAMPLE),
-                propertySource.getTypedProperty(String.class, HEDERA_RECORD_STREAM_SIDE_CAR_DIR));
+                propertySource.getTypedProperty(String.class, HEDERA_RECORD_STREAM_SIDE_CAR_DIR),
+                propertySource.getTypedProperty(Integer.class, GRPC_WORKFLOWS_PORT),
+                propertySource.getTypedProperty(Integer.class, GRPC_WORKFLOWS_TLS_PORT));
     }
 
     /**
-     * Since we do not depend on the real config implementation we need to create the config data *
-     * records "by hand".
+     * Since we do not depend on the real config implementation we need to create the config data * records "by hand".
      *
      * @return a new GlobalConfig instance
      */
     private GlobalConfig createGlobalConfig() {
-        return new GlobalConfig(propertySource.getTypedProperty(Boolean.class, WORKFLOWS_ENABLED));
+        return new GlobalConfig(propertySource.getTypedProperty(Set.class, WORKFLOWS_ENABLED));
+    }
+
+    private String exceptionMessagePropertyDoesNotExist(final String name) {
+        return "Config property with name '" + name + "' does not exist!";
     }
 }

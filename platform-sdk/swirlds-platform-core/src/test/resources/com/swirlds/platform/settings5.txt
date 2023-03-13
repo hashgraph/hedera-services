@@ -1,0 +1,14 @@
+state.savedStateDirectory, badData/badSaved
+state.cleanSavedStateDirectory, true
+state.stateSavingQueueSize, 30
+state.saveStatePeriod, 1
+state.signedStateDisk, 4
+state.roundsExpired, 1000
+state.roundsNonAncient, 30
+state.dumpStateOnISS, true
+state.dumpStateOnFatal, false
+state.secondsBetweenISSDumps, 6000
+state.backgroundHashChecking, true
+state.debugHashDepth, 10
+state.stateDeletionErrorLogFrequencySeconds, 120
+state.enableHashStreamLogging, false

@@ -38,8 +38,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all checks related to instances of {@link
- * com.hederahashgraph.api.proto.java.Query}
+ * This class contains all checks related to instances of {@link com.hederahashgraph.api.proto.java.Query}
  */
 @Singleton
 public class QueryChecker {
@@ -54,12 +53,11 @@ public class QueryChecker {
      * Constructor of {@code QueryChecker}
      *
      * @param onset the {@link WorkflowOnset} that (eventually) pre-processes the CryptoTransfer
-     * @param accountNumbers the {@link HederaAccountNumbers} that contains a list of special
-     *     accounts
+     * @param accountNumbers the {@link HederaAccountNumbers} that contains a list of special accounts
      * @param queryFeeCheck the {@link QueryFeeCheck} that checks if fees can be paid
      * @param authorizer the {@link Authorizer} that checks, if the caller is authorized
      * @param cryptoTransferHandler the {@link CryptoTransferHandler} that validates a contained
-     *     {@link com.hederahashgraph.api.proto.java.CryptoTransfer}
+     * {@link com.hederahashgraph.api.proto.java.CryptoTransfer}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject
@@ -77,8 +75,7 @@ public class QueryChecker {
     }
 
     /**
-     * Validates the {@link com.hederahashgraph.api.proto.java.CryptoTransfer} that is contained in
-     * a query
+     * Validates the {@link com.hederahashgraph.api.proto.java.CryptoTransfer} that is contained in a query
      *
      * @param session the {@link SessionContext} with all parsers
      * @param txn the {@link Transaction} that needs to be checked
@@ -103,8 +100,7 @@ public class QueryChecker {
      * Validates the account balances needed in a query
      *
      * @param payer the {@link AccountID} of the query's payer
-     * @param txBody the {@link TransactionBody} of the {@link
-     *     com.hederahashgraph.api.proto.java.CryptoTransfer}
+     * @param txBody the {@link TransactionBody} of the {@link com.hederahashgraph.api.proto.java.CryptoTransfer}
      * @param fee the fee that needs to be paid
      * @throws InsufficientBalanceException if validation fails
      * @throws NullPointerException if one of the arguments is {@code null}

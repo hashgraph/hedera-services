@@ -92,7 +92,8 @@ class SerializationTest extends MerkleTestBase {
         // Given a merkle tree with some fruit and animals and country
         final var v1 = version(1, 0, 0);
         final var dir = TemporaryFileBuilder.buildTemporaryDirectory();
-        final var originalTree = new MerkleHederaState(tree -> {}, evt -> {}, (round, dual) -> {});
+        final var originalTree =
+                new MerkleHederaState(tree -> {}, (evt, meta, provider) -> {}, (round, state, dual, metadata) -> {});
         final var originalRegistry = new MerkleSchemaRegistry(registry, dir, FIRST_SERVICE);
         final var schemaV1 = createV1Schema();
         originalRegistry.register(schemaV1);
@@ -107,8 +108,10 @@ class SerializationTest extends MerkleTestBase {
 
         // Register the MerkleHederaState so, when found in serialized bytes, it will register with
         // our migration callback, etc. (normally done by the Hedera main method)
-        final Supplier<RuntimeConstructable> constructor = () ->
-                new MerkleHederaState(tree -> newRegistry.migrate(tree, v1, v1), event -> {}, (round, dualState) -> {});
+        final Supplier<RuntimeConstructable> constructor = () -> new MerkleHederaState(
+                tree -> newRegistry.migrate(tree, v1, v1),
+                (event, meta, provider) -> {},
+                (round, state, dualState, metadata) -> {});
         final var pair = new ClassConstructorPair(MerkleHederaState.class, constructor);
         registry.registerConstructable(pair);
 

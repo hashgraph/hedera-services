@@ -41,7 +41,7 @@ import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
-import com.hedera.node.app.workflows.dispatcher.StoreFactory;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -61,13 +61,13 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.function.Function;
 import javax.inject.Inject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** Implementation of {@link QueryWorkflow} */
 public final class QueryWorkflowImpl implements QueryWorkflow {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(QueryWorkflowImpl.class);
+    private static final Logger LOGGER = LogManager.getLogger(QueryWorkflowImpl.class);
 
     private static final EnumSet<ResponseType> UNSUPPORTED_RESPONSE_TYPES =
             EnumSet.of(ANSWER_STATE_PROOF, COST_ANSWER_STATE_PROOF);
@@ -90,8 +90,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
      *
      * @param nodeInfo the {@link NodeInfo} of the current node
      * @param currentPlatformStatus the {@link CurrentPlatformStatus}
-     * @param stateAccessor a {@link Function} that returns the latest immutable or latest signed
-     *     state depending on the {@link ResponseType}
+     * @param stateAccessor a {@link Function} that returns the latest immutable or latest signed state depending on the
+     * {@link ResponseType}
      * @param throttleAccumulator the {@link ThrottleAccumulator} for throttling
      * @param submissionManager the {@link SubmissionManager} to submit transactions to the platform
      * @param checker the {@link QueryChecker} with specific checks of an ingest-workflow
@@ -140,10 +140,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
         }
 
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Received query: {}", query);
-        }
-
         final var function = MiscUtils.functionalityOfQuery(query)
                 .orElseThrow(() -> new StatusRuntimeException(Status.INVALID_ARGUMENT));
         opCounters.countReceived(function);
@@ -154,6 +150,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
         }
         final ResponseType responseType = queryHeader.getResponseType();
+        LOGGER.info("Started answering a {} query of type {}", function, responseType);
 
         Response response;
         long fee = 0L;
@@ -176,6 +173,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
 
             final var state = wrappedState.get();
+            final var storeFactory = new ReadableStoreFactory(state);
             final var paymentRequired = handler.requiresNodePayment(responseType);
             Transaction allegedPayment = null;
             TransactionBody txBody = null;
@@ -189,7 +187,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 checker.checkPermissions(payer, function);
 
                 // 3.iii Calculate costs
-                final var feeData = feeAccumulator.computePayment(function, query, asTimestamp(Instant.now()));
+                final var feeData =
+                        feeAccumulator.computePayment(storeFactory, function, query, asTimestamp(Instant.now()));
                 fee = totalFee(feeData);
 
                 // 3.iv Check account balances
@@ -201,7 +200,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
 
             // 4. Check validity
-            final var storeFactory = new StoreFactory(state);
             final var validity = dispatcher.validate(storeFactory, query);
 
             // 5. Submit payment to platform
@@ -211,7 +209,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
 
             if (handler.needsAnswerOnlyCost(responseType)) {
                 // 6.i Estimate costs
-                final var feeData = feeAccumulator.computePayment(function, query, asTimestamp(Instant.now()));
+                final var feeData =
+                        feeAccumulator.computePayment(storeFactory, function, query, asTimestamp(Instant.now()));
                 fee = totalFee(feeData);
 
                 final var header = createResponseHeader(responseType, validity, fee);
@@ -233,6 +232,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         }
 
         responseBuffer.put(response.toByteArray());
+        LOGGER.info("Finished answering a {} query of type {}", function, responseType);
     }
 
     private long totalFee(final FeeObject costs) {

@@ -73,8 +73,7 @@ public class PropertyNames {
     public static final String ACCOUNTS_MAX_NUM = "accounts.maxNumber";
     public static final String AUTO_CREATION_ENABLED = "autoCreation.enabled";
     public static final String LAZY_CREATION_ENABLED = "lazyCreation.enabled";
-    public static final String CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED =
-            "cryptoCreateWithAliasAndEvmAddress.enabled";
+    public static final String CRYPTO_CREATE_WITH_ALIAS_ENABLED = "cryptoCreateWithAlias.enabled";
     public static final String BALANCES_EXPORT_DIR_PATH = "balances.exportDir.path";
     public static final String BALANCES_EXPORT_ENABLED = "balances.exportEnabled";
     public static final String BALANCES_EXPORT_PERIOD_SECS = "balances.exportPeriodSecs";
@@ -100,6 +99,7 @@ public class PropertyNames {
     public static final String CONTRACTS_MAX_NUM = "contracts.maxNumber";
     public static final String CONTRACTS_CHAIN_ID = "contracts.chainId";
     public static final String CONTRACTS_SIDECARS = "contracts.sidecars";
+    public static final String CONTRACTS_SIDECAR_VALIDATION_ENABLED = "contracts.sidecarValidationEnabled";
     public static final String CONTRACTS_THROTTLE_THROTTLE_BY_GAS = "contracts.throttle.throttleByGas";
     public static final String CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT = "contracts.maxRefundPercentOfGasLimit";
     public static final String CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT = "contracts.scheduleThrottleMaxGasLimit";
@@ -205,6 +205,8 @@ public class PropertyNames {
     public static final String DEV_DEFAULT_LISTENING_NODE_ACCOUNT = "dev.defaultListeningNodeAccount";
     public static final String GRPC_PORT = "grpc.port";
     public static final String GRPC_TLS_PORT = "grpc.tlsPort";
+    public static final String GRPC_WORKFLOWS_PORT = "grpc.workflowsPort";
+    public static final String GRPC_WORKFLOWS_TLS_PORT = "grpc.workflowsTlsPort";
     public static final String HEDERA_ACCOUNTS_EXPORT_PATH = "hedera.accountsExportPath";
     public static final String HEDERA_EXPORT_ACCOUNTS_ON_STARTUP = "hedera.exportAccountsOnStartup";
     public static final String HEDERA_PREFETCH_QUEUE_CAPACITY = "hedera.prefetch.queueCapacity";

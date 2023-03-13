@@ -16,12 +16,25 @@
 
 package com.hedera.node.app.service.token.impl.test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.verify;
+
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
+import com.hedera.node.app.spi.state.Schema;
+import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.hedera.node.app.spi.state.StateDefinition;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class TokenServiceImplTest {
+    @Mock
+    private SchemaRegistry registry;
 
     @Test
     void testSpi() {
@@ -30,9 +43,32 @@ class TokenServiceImplTest {
 
         // then
         Assertions.assertNotNull(service, "We must always receive an instance");
-        Assertions.assertEquals(
+        assertEquals(
                 TokenServiceImpl.class,
                 service.getClass(),
                 "We must always receive an instance of type " + TokenServiceImpl.class.getName());
+    }
+
+    @Test
+    void registersExpectedSchema() {
+        ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
+
+        final var subject = TokenService.getInstance();
+
+        subject.registerSchemas(registry);
+        verify(registry).register(schemaCaptor.capture());
+
+        final var schema = schemaCaptor.getValue();
+
+        final var statesToCreate = schema.statesToCreate();
+        assertEquals(6, statesToCreate.size());
+        final var iter =
+                statesToCreate.stream().map(StateDefinition::stateKey).sorted().iterator();
+        assertEquals(TokenServiceImpl.ACCOUNTS_KEY, iter.next());
+        assertEquals(TokenServiceImpl.ALIASES_KEY, iter.next());
+        assertEquals(TokenServiceImpl.NFTS_KEY, iter.next());
+        assertEquals(TokenServiceImpl.PAYER_RECORDS_KEY, iter.next());
+        assertEquals(TokenServiceImpl.TOKENS_KEY, iter.next());
+        assertEquals(TokenServiceImpl.TOKEN_RELS_KEY, iter.next());
     }
 }
