@@ -93,7 +93,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECARS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECAR_VALIDATION_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_STORAGE_SLOT_PRICE_TIERS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_THROTTLE_THROTTLE_BY_GAS;
-import static com.hedera.node.app.spi.config.PropertyNames.CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.CRYPTO_CREATE_WITH_ALIAS_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.DEV_DEFAULT_LISTENING_NODE_ACCOUNT;
 import static com.hedera.node.app.spi.config.PropertyNames.DEV_ONLY_DEFAULT_NODE_LISTENS;
 import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_LIMIT_TOKEN_ASSOCIATIONS;
@@ -394,7 +394,7 @@ class BootstrapPropertiesTest {
             entry(LEDGER_TOTAL_TINY_BAR_FLOAT, 5000000000000000000L),
             entry(AUTO_CREATION_ENABLED, true),
             entry(LAZY_CREATION_ENABLED, true),
-            entry(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, false),
+            entry(CRYPTO_CREATE_WITH_ALIAS_ENABLED, false),
             entry(AUTO_RENEW_TARGET_TYPES, Collections.emptySet()),
             entry(AUTO_RENEW_NUM_OF_ENTITIES_TO_SCAN, 100),
             entry(AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE, 2),

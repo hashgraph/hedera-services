@@ -61,6 +61,11 @@ class EventStreamRoundIteratorTest {
         SettingsCommon.maxAddressSizeAllowed = Integer.MAX_VALUE;
     }
 
+    public static void assertEventsAreEqual(final EventImpl expected, final EventImpl actual) {
+        assertEquals(expected.getBaseEvent(), actual.getBaseEvent());
+        assertEquals(expected.getConsensusData(), actual.getConsensusData());
+    }
+
     @Test
     @DisplayName("Read All Events Test")
     void readAllEventsTest() throws ConstructableRegistryException, IOException, NoSuchAlgorithmException {
@@ -97,7 +102,7 @@ class EventStreamRoundIteratorTest {
             assertEquals(events.size(), deserializedEvents.size(), "wrong number of events read");
 
             for (int i = 0; i < events.size(); i++) {
-                assertEquals(events.get(i), deserializedEvents.get(i), "event was deserialized incorrectly");
+                assertEventsAreEqual(events.get(i), deserializedEvents.get(i));
             }
         } finally {
             FileUtils.deleteDirectory(directory);
@@ -152,8 +157,7 @@ class EventStreamRoundIteratorTest {
             assertEquals(eventsToBeReturned.size(), deserializedEvents.size(), "wrong number of events read");
 
             for (int i = 0; i < eventsToBeReturned.size(); i++) {
-                assertEquals(
-                        eventsToBeReturned.get(i), deserializedEvents.get(i), "event was deserialized incorrectly");
+                assertEventsAreEqual(eventsToBeReturned.get(i), deserializedEvents.get(i));
             }
         } finally {
             FileUtils.deleteDirectory(directory);
@@ -299,7 +303,7 @@ class EventStreamRoundIteratorTest {
             assertTrue(events.size() > deserializedEvents.size(), "all original events should not be read");
 
             for (int i = 0; i < deserializedEvents.size(); i++) {
-                assertEquals(events.get(i), deserializedEvents.get(i), "event was deserialized incorrectly");
+                assertEventsAreEqual(events.get(i), deserializedEvents.get(i));
             }
         } finally {
             FileUtils.deleteDirectory(directory);
@@ -347,7 +351,7 @@ class EventStreamRoundIteratorTest {
             assertTrue(events.size() > deserializedEvents.size(), "all original events should not be read");
 
             for (int i = 0; i < deserializedEvents.size(); i++) {
-                assertEquals(events.get(i), deserializedEvents.get(i), "event was deserialized incorrectly");
+                assertEventsAreEqual(events.get(i), deserializedEvents.get(i));
             }
 
             assertTrue(

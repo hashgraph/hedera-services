@@ -231,7 +231,7 @@ public abstract class AbstractAutoCreationLogic {
         change.replaceNonEmptyAliasWith(EntityNum.fromAccountId(newAccountId));
     }
 
-    public long getLazyCreationFinalizationFee() {
+    private long getLazyCreationFinalizationFee() {
         // an AccountID is already accounted for in the
         // fee estimator, so we just need to pass a stub ECDSA key
         // in the synthetic crypto update body
