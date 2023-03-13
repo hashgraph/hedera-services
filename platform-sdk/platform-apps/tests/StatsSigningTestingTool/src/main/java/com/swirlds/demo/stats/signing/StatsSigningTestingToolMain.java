@@ -29,6 +29,7 @@ package com.swirlds.demo.stats.signing;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.utility.Units.NANOSECONDS_TO_MICROSECONDS;
 import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
+import static com.swirlds.common.utility.Units.SECONDS_TO_MILLISECONDS;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.metrics.Metrics;
@@ -111,6 +112,16 @@ public class StatsSigningTestingToolMain implements SwirldMain {
     private double expectedTPS = 0;
 
     private static final long WINDOW_CALCULATION_CONST = 125000;
+
+    /**
+     * The number of seconds to ramp up the TPS to the expected value
+     */
+    private static final int TPS_RAMP_UP_WINDOW_SECONDS = 20;
+
+    /**
+     * TPS value during ramp up period
+     */
+    private double rampUpTPS = 0;
 
     /**
      * This is just for debugging: it allows the app to run in Eclipse. If the config.txt exists and lists a particular
@@ -229,9 +240,14 @@ public class StatsSigningTestingToolMain implements SwirldMain {
         }
 
         if (transPerSecToCreate > -1) { // if not unlimited (-1 means unlimited)
-            // to get stable TPS output, use a large measure window
+            // to get stable TPS output, use a large measure window, and ramp up the TPS to the expected value
+            if ( rampUpTPS < expectedTPS) {
+                rampUpTPS += tps_measure_window_milliseconds / ((double)(TPS_RAMP_UP_WINDOW_SECONDS * SECONDS_TO_MILLISECONDS));
+            } else {
+                rampUpTPS = expectedTPS;
+            }
             if (((double) now - lastTPSMeasureTime) * NANOSECONDS_TO_MICROSECONDS > tps_measure_window_milliseconds) {
-                toCreate += ((double) now - lastTPSMeasureTime) * NANOSECONDS_TO_SECONDS * expectedTPS;
+                toCreate += ((double) now - lastTPSMeasureTime) * NANOSECONDS_TO_SECONDS * rampUpTPS;
                 lastTPSMeasureTime = now;
             }
         }
