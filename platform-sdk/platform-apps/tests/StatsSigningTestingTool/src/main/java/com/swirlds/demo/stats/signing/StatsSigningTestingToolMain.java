@@ -27,6 +27,7 @@ package com.swirlds.demo.stats.signing;
  */
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.utility.Units.NANOSECONDS_TO_MICROSECONDS;
 import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
@@ -58,9 +59,9 @@ public class StatsSigningTestingToolMain implements SwirldMain {
 
     private static final Logger logger = LogManager.getLogger(StatsSigningTestingToolMain.class);
     /**
-     * the time of the last call to preEvent
+     * the time of the last measurement of TPS
      */
-    long lastEventTime = 0;
+    long lastTPSMeasureTime = 0;
     /**
      * number of events needed to be created (the non-integer leftover from last preEvent call
      */
@@ -104,6 +105,8 @@ public class StatsSigningTestingToolMain implements SwirldMain {
             new SpeedometerMetric.Config("Debug.info", "tranSubTPS").withDescription("Transaction submitted TPS");
 
     private SpeedometerMetric transactionSubmitSpeedometer;
+
+    static final int TPS_MEASURE_PERIOD_IN_MILLISECONDS = 200;
 
     /**
      * This is just for debugging: it allows the app to run in Eclipse. If the config.txt exists and lists a particular
@@ -209,18 +212,22 @@ public class StatsSigningTestingToolMain implements SwirldMain {
         // if it's first time calling this, just set lastEventTime and return
         // so the period from app start to the first time init() is called is ignored
         // to avoid a huge burst of transactions at the start of the test
-        if (lastEventTime == 0) {
-            lastEventTime = now;
-            logger.info(STARTUP.getMarker(), "First time calling generateTransactions() Expected TPS per code is {}",
-                    tps);
+        if (lastTPSMeasureTime == 0) {
+            lastTPSMeasureTime = now;
+            logger.info(
+                    STARTUP.getMarker(), "First time calling generateTransactions() Expected TPS per code is {}", tps);
             return;
         }
 
         if (transPerSecToCreate > -1) { // if not unlimited (-1 means unlimited)
-            toCreate += ((double) now - lastEventTime) * NANOSECONDS_TO_SECONDS * tps;
+            // to get stable TPS output, use a large measure window
+            if (((double) now - lastTPSMeasureTime) * NANOSECONDS_TO_MICROSECONDS
+                    > TPS_MEASURE_PERIOD_IN_MILLISECONDS) {
+                toCreate += ((double) now - lastTPSMeasureTime) * NANOSECONDS_TO_SECONDS * tps;
+                lastTPSMeasureTime = now;
+            }
         }
 
-        lastEventTime = now;
         while (true) {
             if (transPerSecToCreate > -1 && toCreate < 1) {
                 break; // don't create too many transactions per second
