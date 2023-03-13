@@ -124,6 +124,14 @@ public class StatsSigningTestingToolMain implements SwirldMain {
     private double rampUpTPS = 0;
 
     /**
+     * The number of seconds to wait before starting the TPS ramp up to avoid the busy time when the app starts
+     * loading resources
+     */
+    private static final int APP_INIT_WINDOW_SECONDS = 10;
+
+    private final long appInitTime = System.currentTimeMillis();
+
+    /**
      * This is just for debugging: it allows the app to run in Eclipse. If the config.txt exists and lists a particular
      * SwirldMain class as the one to run, then it can run in Eclipse (with the green triangle icon).
      *
@@ -196,6 +204,9 @@ public class StatsSigningTestingToolMain implements SwirldMain {
 
     @Override
     public void run() {
+        if ((System.currentTimeMillis() - appInitTime) < APP_INIT_WINDOW_SECONDS * 1000) {
+            return;
+        }
         final Thread shutdownHook = new ThreadConfiguration(getStaticThreadManager())
                 .setDaemon(false)
                 .setNodeId(platform.getSelfId().getId())
@@ -241,8 +252,9 @@ public class StatsSigningTestingToolMain implements SwirldMain {
 
         if (transPerSecToCreate > -1) { // if not unlimited (-1 means unlimited)
             // to get stable TPS output, use a large measure window, and ramp up the TPS to the expected value
-            if ( rampUpTPS < expectedTPS) {
-                rampUpTPS += tps_measure_window_milliseconds / ((double)(TPS_RAMP_UP_WINDOW_SECONDS * SECONDS_TO_MILLISECONDS));
+            if (rampUpTPS < expectedTPS) {
+                rampUpTPS += tps_measure_window_milliseconds
+                        / ((double) (TPS_RAMP_UP_WINDOW_SECONDS * SECONDS_TO_MILLISECONDS));
             } else {
                 rampUpTPS = expectedTPS;
             }
