@@ -30,7 +30,6 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
-import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.system.BasicSoftwareVersion;
@@ -44,14 +43,10 @@ import com.swirlds.common.threading.framework.config.StoppableThreadConfiguratio
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.demo.stats.signing.algorithms.ECSecP256K1Algorithm;
 import com.swirlds.demo.stats.signing.algorithms.X25519SigningAlgorithm;
-import com.swirlds.fcqueue.FCQueueStatistics;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.gui.SwirldsGui;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.util.Timer;
-import java.util.TimerTask;
 
 /**
  * This demo collects statistics on the running of the network and consensus systems. It writes them to the screen, and
@@ -173,7 +168,6 @@ public class StatsSigningTestingToolMain implements SwirldMain {
 
         final Metrics metrics = platform.getContext().getMetrics();
         transactionSubmitSpeedometer = metrics.getOrCreate(TRAN_SUBMIT_TPS_SPEED_CONFIG);
-
     }
 
     @Override
