@@ -106,7 +106,11 @@ public class StatsSigningTestingToolMain implements SwirldMain {
 
     private SpeedometerMetric transactionSubmitSpeedometer;
 
-    static final int TPS_MEASURE_PERIOD_IN_MILLISECONDS = 200;
+    private int tps_measure_window_milliseconds = 200;
+
+    private double expectedTPS = 0;
+
+    private static final long WINDOW_CALCULATION_CONST = 125000;
 
     /**
      * This is just for debugging: it allows the app to run in Eclipse. If the config.txt exists and lists a particular
@@ -146,6 +150,11 @@ public class StatsSigningTestingToolMain implements SwirldMain {
         bytesPerTrans = Integer.parseInt(parameters[3].replaceAll("_", ""));
         transPerEventMax = Integer.parseInt(parameters[4].replaceAll("_", ""));
         transPerSecToCreate = Integer.parseInt(parameters[5].replaceAll("_", ""));
+
+        expectedTPS = transPerSecToCreate / (double) platform.getAddressBook().getSize();
+
+        // the higher the expected TPS, the smaller the window
+        tps_measure_window_milliseconds = (int) (WINDOW_CALCULATION_CONST / expectedTPS);
 
         // If we have a 7th setting, treat it as the signedTransPoolSize
         if (parameters.length > 6) {
@@ -205,8 +214,6 @@ public class StatsSigningTestingToolMain implements SwirldMain {
     private synchronized void generateTransactions() {
         byte[] transaction;
         final long now = System.nanoTime();
-        final double tps =
-                transPerSecToCreate / (double) platform.getAddressBook().getSize();
         int numCreated = 0;
 
         // if it's first time calling this, just set lastEventTime and return
@@ -215,15 +222,16 @@ public class StatsSigningTestingToolMain implements SwirldMain {
         if (lastTPSMeasureTime == 0) {
             lastTPSMeasureTime = now;
             logger.info(
-                    STARTUP.getMarker(), "First time calling generateTransactions() Expected TPS per code is {}", tps);
+                    STARTUP.getMarker(),
+                    "First time calling generateTransactions() Expected TPS per code is {}",
+                    expectedTPS);
             return;
         }
 
         if (transPerSecToCreate > -1) { // if not unlimited (-1 means unlimited)
             // to get stable TPS output, use a large measure window
-            if (((double) now - lastTPSMeasureTime) * NANOSECONDS_TO_MICROSECONDS
-                    > TPS_MEASURE_PERIOD_IN_MILLISECONDS) {
-                toCreate += ((double) now - lastTPSMeasureTime) * NANOSECONDS_TO_SECONDS * tps;
+            if (((double) now - lastTPSMeasureTime) * NANOSECONDS_TO_MICROSECONDS > tps_measure_window_milliseconds) {
+                toCreate += ((double) now - lastTPSMeasureTime) * NANOSECONDS_TO_SECONDS * expectedTPS;
                 lastTPSMeasureTime = now;
             }
         }
