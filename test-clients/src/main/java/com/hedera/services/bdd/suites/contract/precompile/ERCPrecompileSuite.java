@@ -3877,7 +3877,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                 spec,
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
-                                                        "isApprovedForAll",
+                                                                "isApprovedForAll",
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
@@ -3899,7 +3899,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                         .gas(GAS_TO_OFFER),
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
-                                                        "isApprovedForAll",
+                                                                "isApprovedForAll",
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
@@ -4039,7 +4039,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                 spec,
                                                 contractCall(
                                                                 ERC_721_CONTRACT,
-                                                        "getApproved",
+                                                                "getApproved",
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
