@@ -32,7 +32,7 @@ import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.SwirldState2;
+import com.swirlds.common.system.SwirldState;
 
 /**
  * This demo collects statistics on the running of the network and consensus systems. It writes them to the
@@ -41,7 +41,7 @@ import com.swirlds.common.system.SwirldState2;
  * is 100 random bytes. So StatsDemoState.handleTransaction doesn't actually do anything, other than the
  * optional sequence number check.
  */
-public class StatsDemoState extends PartialMerkleLeaf implements SwirldState2, MerkleLeaf {
+public class StatsDemoState extends PartialMerkleLeaf implements SwirldState, MerkleLeaf {
 
     /**
      * The version history of this class.

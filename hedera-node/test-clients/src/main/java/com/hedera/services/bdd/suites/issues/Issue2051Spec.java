@@ -36,6 +36,11 @@ import org.apache.logging.log4j.Logger;
 
 public class Issue2051Spec extends HapiSuite {
     private static final Logger log = LogManager.getLogger(Issue2051Spec.class);
+    private static final String TRANSFER_CONTRACT = "transferContract";
+    private static final String TRANSFER = "transfer";
+    private static final String PAYER = "payer";
+    private static final String SNAPSHOT = "snapshot";
+    private static final String DELETE_TXN = "deleteTxn";
 
     public static void main(String... args) {
         new Issue2051Spec().runSuiteSync();
@@ -52,47 +57,47 @@ public class Issue2051Spec extends HapiSuite {
 
     private HapiSpec tbdCanPayForItsOwnDeletion() {
         return defaultHapiSpec("TbdCanPayForItsOwnDeletion")
-                .given(cryptoCreate("tbd"), cryptoCreate("transfer"))
+                .given(cryptoCreate("tbd"), cryptoCreate(TRANSFER))
                 .when()
                 .then(
                         cryptoDelete("tbd")
                                 .via("selfFinanced")
                                 .payingWith("tbd")
-                                .transfer("transfer"),
+                                .transfer(TRANSFER),
                         getTxnRecord("selfFinanced").logged());
     }
 
     private HapiSpec transferAccountCannotBeDeleted() {
         return defaultHapiSpec("TransferAccountCannotBeDeleted")
-                .given(cryptoCreate("payer"), cryptoCreate("transfer"), cryptoCreate("tbd"))
-                .when(cryptoDelete("transfer"))
+                .given(cryptoCreate(PAYER), cryptoCreate(TRANSFER), cryptoCreate("tbd"))
+                .when(cryptoDelete(TRANSFER))
                 .then(
-                        balanceSnapshot("snapshot", "payer"),
+                        balanceSnapshot(SNAPSHOT, PAYER),
                         cryptoDelete("tbd")
-                                .via("deleteTxn")
-                                .payingWith("payer")
-                                .transfer("transfer")
+                                .via(DELETE_TXN)
+                                .payingWith(PAYER)
+                                .transfer(TRANSFER)
                                 .hasKnownStatus(ACCOUNT_DELETED),
-                        getTxnRecord("deleteTxn").logged(),
-                        getAccountBalance("payer").hasTinyBars(approxChangeFromSnapshot("snapshot", -9295610, 1000)));
+                        getTxnRecord(DELETE_TXN).logged(),
+                        getAccountBalance(PAYER).hasTinyBars(approxChangeFromSnapshot(SNAPSHOT, -9295610, 1000)));
     }
 
     private HapiSpec transferAccountCannotBeDeletedForContractTarget() {
         return defaultHapiSpec("TransferAccountCannotBeDeletedForContractTarget")
-                .given(cryptoCreate("transfer"), contractCreate("tbd"), contractCreate("transferContract"))
-                .when(cryptoDelete("transfer"), contractDelete("transferContract"))
+                .given(cryptoCreate(TRANSFER), contractCreate("tbd"), contractCreate(TRANSFER_CONTRACT))
+                .when(cryptoDelete(TRANSFER), contractDelete(TRANSFER_CONTRACT))
                 .then(
-                        balanceSnapshot("snapshot", GENESIS),
+                        balanceSnapshot(SNAPSHOT, GENESIS),
                         contractDelete("tbd")
-                                .via("deleteTxn")
-                                .transferAccount("transfer")
+                                .via(DELETE_TXN)
+                                .transferAccount(TRANSFER)
                                 .hasKnownStatus(ACCOUNT_DELETED),
                         contractDelete("tbd")
-                                .via("deleteTxn")
-                                .transferContract("transferContract")
+                                .via(DELETE_TXN)
+                                .transferContract(TRANSFER_CONTRACT)
                                 .hasKnownStatus(CONTRACT_DELETED),
-                        getTxnRecord("deleteTxn").logged(),
-                        getAccountBalance(GENESIS).hasTinyBars(approxChangeFromSnapshot("snapshot", -18985232, 1000)));
+                        getTxnRecord(DELETE_TXN).logged(),
+                        getAccountBalance(GENESIS).hasTinyBars(approxChangeFromSnapshot(SNAPSHOT, -18985232, 1000)));
     }
 
     @Override

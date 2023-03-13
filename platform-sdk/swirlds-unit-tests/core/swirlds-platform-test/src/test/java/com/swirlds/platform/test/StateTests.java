@@ -25,7 +25,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.test.io.InputOutputStream;
-import com.swirlds.common.test.state.DummySwirldState2;
+import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.platform.state.DualStateImpl;
 import com.swirlds.platform.state.State;
 import com.swirlds.test.framework.TestComponentTags;
@@ -57,7 +57,7 @@ class StateTests {
 
         state = new State();
         state.setPlatformState(randomPlatformState(false));
-        state.setSwirldState(new DummySwirldState2());
+        state.setSwirldState(new DummySwirldState());
         state.setDualState(new DualStateImpl());
 
         state.invalidateHash();

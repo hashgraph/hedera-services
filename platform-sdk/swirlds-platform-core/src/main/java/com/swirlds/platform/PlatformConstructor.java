@@ -16,7 +16,6 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.logging.LogMarker.ERROR;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.common.context.PlatformContext;
@@ -25,8 +24,6 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.SwirldState1;
-import com.swirlds.common.system.SwirldState2;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
@@ -43,19 +40,15 @@ import com.swirlds.platform.eventhandling.PreConsensusEventHandler;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusHandlingMetrics;
 import com.swirlds.platform.metrics.ConsensusMetrics;
-import com.swirlds.platform.metrics.ConsensusMetricsImpl;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.network.connectivity.SocketFactory;
 import com.swirlds.platform.network.connectivity.TcpFactory;
 import com.swirlds.platform.network.connectivity.TlsFactory;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
-import com.swirlds.platform.state.SwirldStateManagerDouble;
-import com.swirlds.platform.state.SwirldStateManagerSingle;
+import com.swirlds.platform.state.SwirldStateManagerImpl;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.PlatformConstructionException;
-import com.swirlds.platform.system.SystemExitReason;
-import com.swirlds.platform.system.SystemUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.security.InvalidKeyException;
@@ -65,10 +58,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
-import java.time.Instant;
 import java.util.concurrent.BlockingQueue;
 import java.util.function.BooleanSupplier;
-import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -150,55 +141,33 @@ final class PlatformConstructor {
     /**
      * Creates a new instance of {@link SwirldStateManager}.
      *
-     * @param threadManager                         responsible for creating and managing threads
      * @param selfId                                this node's id
+     * @param platformContext                       the context of the platform
      * @param preConsensusSystemTransactionManager  the manager which handles system transactions pre-consensus
      * @param postConsensusSystemTransactionManager the manager which handles system transactions post-consensus
      * @param metrics                               reference to the metrics-system
      * @param settings                              static settings provider
-     * @param consEstimateSupplier                  supplier of an estimated consensus time for transactions
      * @param initialState                          the initial state
      * @return the newly constructed instance of {@link SwirldStateManager}
      */
     static SwirldStateManager swirldStateManager(
-            final ThreadManager threadManager,
             final NodeId selfId,
-            @NonNull final PlatformContext platformContext,
+            final PlatformContext platformContext,
             final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager,
             final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager,
             final Metrics metrics,
             final SettingsProvider settings,
-            final Supplier<Instant> consEstimateSupplier,
             final BooleanSupplier inFreezeChecker,
             final State initialState) {
 
-        if (initialState.getSwirldState() instanceof SwirldState2) {
-            return new SwirldStateManagerDouble(
-                    selfId,
-                    preConsensusSystemTransactionManager,
-                    postConsensusSystemTransactionManager,
-                    new SwirldStateMetrics(metrics),
-                    settings,
-                    inFreezeChecker,
-                    initialState);
-        } else if (initialState.getSwirldState() instanceof SwirldState1) {
-            return new SwirldStateManagerSingle(
-                    threadManager,
-                    selfId,
-                    platformContext,
-                    preConsensusSystemTransactionManager,
-                    postConsensusSystemTransactionManager,
-                    new SwirldStateMetrics(metrics),
-                    new ConsensusMetricsImpl(selfId, metrics),
-                    settings,
-                    consEstimateSupplier,
-                    inFreezeChecker,
-                    initialState);
-        } else {
-            logger.error(ERROR.getMarker(), "Unrecognized SwirldState class: {}", initialState.getClass());
-            SystemUtils.exitSystem(SystemExitReason.FATAL_ERROR);
-            return null;
-        }
+        return new SwirldStateManagerImpl(
+                selfId,
+                preConsensusSystemTransactionManager,
+                postConsensusSystemTransactionManager,
+                new SwirldStateMetrics(metrics),
+                settings,
+                inFreezeChecker,
+                initialState);
     }
 
     /**
@@ -206,7 +175,7 @@ final class PlatformConstructor {
      *
      * @param threadManager      responsible for creating and managing threads
      * @param selfId             this node's id
-     * @param platformContext    the platform context
+     * @param platformContext    the context of the platform
      * @param swirldStateManager the instance of {@link SwirldStateManager}
      * @param consensusMetrics   the class that records stats relating to {@link SwirldStateManager}
      * @return the newly constructed instance of {@link PreConsensusEventHandler}

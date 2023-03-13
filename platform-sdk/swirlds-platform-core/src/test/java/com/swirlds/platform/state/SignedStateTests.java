@@ -33,7 +33,6 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.exceptions.ReferenceCountException;
 import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.SwirldState2;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateGarbageCollector;
@@ -66,7 +65,7 @@ class SignedStateTests {
     private State buildMockState(final Runnable reserveCallback, final Runnable releaseCallback) {
 
         final State state = mock(State.class);
-        final SwirldState swirldState = mock(SwirldState2.class);
+        final SwirldState swirldState = mock(SwirldState.class);
 
         final PlatformData platformData = new PlatformData();
         final PlatformState platformState = new PlatformState();
