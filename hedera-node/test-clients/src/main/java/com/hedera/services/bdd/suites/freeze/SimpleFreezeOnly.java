@@ -51,6 +51,11 @@ public class SimpleFreezeOnly extends HapiSuite {
         return Arrays.asList(simpleFreezeWithTimestamp());
     }
 
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
+    }
+
     private HapiSpec simpleFreezeWithTimestamp() {
         return defaultHapiSpec("SimpleFreezeWithTimeStamp")
                 .given(freezeOnly().payingWith(GENESIS).startingAt(Instant.now().plusSeconds(10)))
