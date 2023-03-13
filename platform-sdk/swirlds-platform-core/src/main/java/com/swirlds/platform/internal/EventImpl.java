@@ -54,8 +54,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * An internal platform event. It holds all the event data relevant to the platform. It implements the Event interface
@@ -306,6 +308,31 @@ public class EventImpl extends AbstractSerializableHashable
             throw new IllegalArgumentException("Event does not have a transaction with index:" + transactionIndex);
         }
         return getConsensusTimestamp().plusNanos(transactionIndex * MIN_TRANS_TIMESTAMP_INCR_NANOS);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) return true;
+
+        if (o == null || getClass() != o.getClass()) return false;
+
+        final EventImpl event = (EventImpl) o;
+
+        return Objects.equals(baseEvent, event.baseEvent) && Objects.equals(consensusData, event.consensusData);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder(17, 37)
+                .append(baseEvent)
+                .append(consensusData)
+                .toHashCode();
     }
 
     /**

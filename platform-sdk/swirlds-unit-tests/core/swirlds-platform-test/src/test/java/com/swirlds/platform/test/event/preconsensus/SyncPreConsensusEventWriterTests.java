@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.time.OSTime;
@@ -66,6 +67,11 @@ class SyncPreConsensusEventWriterTests {
     @BeforeAll
     static void beforeAll() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("");
+
+        SettingsCommon.maxTransactionBytesPerEvent = Integer.MAX_VALUE;
+        SettingsCommon.maxTransactionCountPerEvent = Integer.MAX_VALUE;
+        SettingsCommon.transactionMaxBytes = Integer.MAX_VALUE;
+        SettingsCommon.maxAddressSizeAllowed = Integer.MAX_VALUE;
     }
 
     @BeforeEach
@@ -348,7 +354,11 @@ class SyncPreConsensusEventWriterTests {
         sequencer.assignStreamSequenceNumber(ancientEvent);
         if (minimumGenerationNonAncient > ancientEvent.getGeneration()) {
             // This is probably not possible... but just in case make sure this event is ancient
-            writer.setMinimumGenerationNonAncient(ancientEvent.getGeneration() + 1);
+            try {
+                writer.setMinimumGenerationNonAncient(ancientEvent.getGeneration() + 1);
+            } catch (final IllegalArgumentException e) {
+                // ignore, more likely than not this event is way older than the actual ancient generation
+            }
         }
 
         writer.writeEvent(ancientEvent);
