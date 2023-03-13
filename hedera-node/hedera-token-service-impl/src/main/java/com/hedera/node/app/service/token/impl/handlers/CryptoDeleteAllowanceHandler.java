@@ -17,10 +17,11 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -35,7 +36,9 @@ import javax.inject.Singleton;
 @Singleton
 public class CryptoDeleteAllowanceHandler implements TransactionHandler {
     @Inject
-    public CryptoDeleteAllowanceHandler() {}
+    public CryptoDeleteAllowanceHandler() {
+        // Exists for injection
+    }
 
     /**
      * Pre-handles a {@link HederaFunctionality#CRYPTO_DELETE_ALLOWANCE} transaction, returning the
@@ -47,10 +50,10 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
      */
     public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
-        final var op = context.getTxn().cryptoDeleteAllowance().orElseThrow();
+        final var op = context.getTxn().cryptoDeleteAllowanceOrThrow();
         // Every owner whose allowances are being removed should sign, if the owner is not payer
-        for (final var allowance : op.nftAllowances()) {
-            context.addNonPayerKey(allowance.owner(), INVALID_ALLOWANCE_OWNER_ID);
+        for (final var allowance : op.nftAllowancesOrElse(emptyList())) {
+            context.addNonPayerKey(allowance.ownerOrElse(AccountID.DEFAULT), INVALID_ALLOWANCE_OWNER_ID);
         }
     }
 

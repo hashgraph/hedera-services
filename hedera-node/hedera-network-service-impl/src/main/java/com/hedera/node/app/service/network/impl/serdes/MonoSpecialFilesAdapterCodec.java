@@ -18,39 +18,37 @@ package com.hedera.node.app.service.network.impl.serdes;
 
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
 import com.hedera.pbj.runtime.Codec;
-import com.hedera.pbj.runtime.io.DataInputStream;
-import com.hedera.pbj.runtime.io.DataOutputStream;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import com.hedera.pbj.runtime.io.DataInput;
-import com.hedera.pbj.runtime.io.DataOutput;
 import java.io.IOException;
 
 public class MonoSpecialFilesAdapterCodec implements Codec<MerkleSpecialFiles> {
     @NonNull
     @Override
-    public MerkleSpecialFiles parse(final @NonNull DataInput input) throws IOException {
-        if (input instanceof DataInputStream in) {
+    public MerkleSpecialFiles parse(final @NonNull ReadableSequentialData input) throws IOException {
+        if (input instanceof ReadableSequentialData in) {
             final var context = new MerkleSpecialFiles();
-            context.deserialize(new SerializableDataInputStream(in), MerkleSpecialFiles.CURRENT_VERSION);
+            context.deserialize(new ReadableSequentialData(in), MerkleSpecialFiles.CURRENT_VERSION);
             return context;
         } else {
-            throw new IllegalArgumentException("Expected a DataInputStream");
+            throw new IllegalArgumentException("Expected a ReadableSequentialData");
         }
     }
 
     @Override
-    public void write(final @NonNull MerkleSpecialFiles item, final @NonNull DataOutput output) throws IOException {
-        if (output instanceof DataOutputStream out) {
-            item.serialize(new SerializableDataOutputStream(out));
+    public void write(final @NonNull MerkleSpecialFiles item, final @NonNull WritableSequentialData output) throws IOException {
+        if (output instanceof WritableSequentialData out) {
+            item.serialize(new WritableSequentialData(out));
         } else {
-            throw new IllegalArgumentException("Expected a DataOutputStream");
+            throw new IllegalArgumentException("Expected a WritableSequentialData");
         }
     }
 
     @Override
-    public int measure(@NonNull DataInput input) {
+    public int measure(@NonNull ReadableSequentialData input) {
         throw new UnsupportedOperationException();
     }
 
@@ -60,13 +58,13 @@ public class MonoSpecialFilesAdapterCodec implements Codec<MerkleSpecialFiles> {
     }
 
     @Override
-    public boolean fastEquals(@NonNull MerkleSpecialFiles item, @NonNull DataInput input) {
+    public boolean fastEquals(@NonNull MerkleSpecialFiles item, @NonNull ReadableSequentialData input) {
         throw new UnsupportedOperationException();
     }
 
     @NonNull
     @Override
-    public MerkleSpecialFiles parseStrict(@NonNull DataInput dataInput) throws IOException {
+    public MerkleSpecialFiles parseStrict(@NonNull ReadableSequentialData dataInput) throws IOException {
         return parse(dataInput);
     }
 }

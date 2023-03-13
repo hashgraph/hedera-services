@@ -32,18 +32,19 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#TRANSACTION_GET_RECORD}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#TRANSACTION_GET_RECORD}.
  */
 @Singleton
 public class NetworkTransactionGetRecordHandler extends PaidQueryHandler {
     @Inject
-    public NetworkTransactionGetRecordHandler() {}
+    public NetworkTransactionGetRecordHandler() {
+        // Exists for injection
+    }
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
-        return query.transactionGetRecord().orElseThrow().header();
+        return query.transactionGetRecordOrThrow().header();
     }
 
     @Override

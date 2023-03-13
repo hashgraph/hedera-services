@@ -20,7 +20,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -35,7 +34,9 @@ import javax.inject.Singleton;
 @Singleton
 public class TokenMintHandler implements TransactionHandler {
     @Inject
-    public TokenMintHandler() {}
+    public TokenMintHandler() {
+        // Exists for injection
+    }
 
     /**
      * Pre-handles a {@link HederaFunctionality#TOKEN_MINT} transaction, returning the metadata
@@ -51,7 +52,7 @@ public class TokenMintHandler implements TransactionHandler {
      */
     public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore) {
         requireNonNull(context);
-        final var op = context.getTxn().tokenMint().orElseThrow();
+        final var op = context.getTxn().tokenMintOrThrow();
 
         final var tokenMeta = tokenStore.getTokenMeta(op.token());
 

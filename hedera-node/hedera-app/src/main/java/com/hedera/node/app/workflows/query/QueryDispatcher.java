@@ -93,7 +93,8 @@ public class QueryDispatcher {
             case TOKEN_GET_NFT_INFO -> handlers.tokenGetNftInfoHandler();
             case TOKEN_GET_NFT_INFOS -> handlers.tokenGetNftInfosHandler();
 
-            case TRANSACTION_GET_FAST_RECORD -> throw new UnsupportedOperationException(GET_FAST_RECORD_IS_NOT_SUPPORTED);
+            case TRANSACTION_GET_FAST_RECORD -> throw new UnsupportedOperationException(
+                    GET_FAST_RECORD_IS_NOT_SUPPORTED);
             case UNSET -> throw new UnsupportedOperationException(QUERY_NOT_SET);
         };
     }
@@ -151,7 +152,8 @@ public class QueryDispatcher {
             case TOKEN_GET_NFT_INFO -> handlers.tokenGetNftInfoHandler().validate(query);
             case TOKEN_GET_NFT_INFOS -> handlers.tokenGetNftInfosHandler().validate(query);
 
-            case TRANSACTION_GET_FAST_RECORD -> throw new UnsupportedOperationException(GET_FAST_RECORD_IS_NOT_SUPPORTED);
+            case TRANSACTION_GET_FAST_RECORD -> throw new UnsupportedOperationException(
+                    GET_FAST_RECORD_IS_NOT_SUPPORTED);
             case UNSET -> throw new UnsupportedOperationException(QUERY_NOT_SET);
         };
     }
@@ -215,7 +217,8 @@ public class QueryDispatcher {
             case TOKEN_GET_NFT_INFO -> handlers.tokenGetNftInfoHandler().findResponse(query, header);
             case TOKEN_GET_NFT_INFOS -> handlers.tokenGetNftInfosHandler().findResponse(query, header);
 
-            case TRANSACTION_GET_FAST_RECORD -> throw new UnsupportedOperationException(GET_FAST_RECORD_IS_NOT_SUPPORTED);
+            case TRANSACTION_GET_FAST_RECORD -> throw new UnsupportedOperationException(
+                    GET_FAST_RECORD_IS_NOT_SUPPORTED);
             case UNSET -> throw new UnsupportedOperationException(QUERY_NOT_SET);
         };
     }

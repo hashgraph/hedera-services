@@ -21,7 +21,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -36,7 +35,9 @@ import javax.inject.Singleton;
 @Singleton
 public class TokenUnfreezeAccountHandler implements TransactionHandler {
     @Inject
-    public TokenUnfreezeAccountHandler() {}
+    public TokenUnfreezeAccountHandler() {
+        // Exists for injection
+    }
 
     /**
      * This method is called during the pre-handle workflow.
@@ -55,7 +56,7 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
      */
     public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore) {
         requireNonNull(context);
-        final var op = context.getTxn().tokenUnfreeze().orElseThrow();
+        final var op = context.getTxn().tokenUnfreezeOrThrow();
         final var tokenMeta = tokenStore.getTokenMeta(op.token());
 
         if (!tokenMeta.failed()) {

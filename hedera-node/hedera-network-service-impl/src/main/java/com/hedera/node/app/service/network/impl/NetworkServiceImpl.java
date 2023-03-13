@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.network.impl;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.node.app.service.mono.state.codec.MonoMapCodecAdapter;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.network.NetworkService;
@@ -27,7 +28,6 @@ import com.hedera.node.app.service.network.impl.serdes.MonoSpecialFilesAdapterCo
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.app.service.mono.state.codec.MonoMapCodecAdapter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
@@ -63,8 +63,8 @@ public final class NetworkServiceImpl implements NetworkService {
 
     private StateDefinition<EntityNum, MerkleStakingInfo> stakingDef() {
         final var keySerdes = new EntityNumCodec();
-        final var valueSerdes = MonoMapCodecAdapter.codecForSelfSerializable(
-                MerkleStakingInfo.CURRENT_VERSION, MerkleStakingInfo::new);
+        final var valueSerdes =
+                MonoMapCodecAdapter.codecForSelfSerializable(MerkleStakingInfo.CURRENT_VERSION, MerkleStakingInfo::new);
         return StateDefinition.inMemory(STAKING_KEY, keySerdes, valueSerdes);
     }
 }

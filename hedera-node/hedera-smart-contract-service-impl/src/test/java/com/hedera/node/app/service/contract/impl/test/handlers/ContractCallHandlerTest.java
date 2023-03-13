@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -25,8 +28,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static org.assertj.core.api.FactoryBasedNavigableListAssert.assertThat;
 
 @ExtendWith(MockitoExtension.class)
 class ContractCallHandlerTest extends ContractHandlerTestBase {
@@ -43,8 +44,7 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
     }
 
     private TransactionBody contractCallTransaction() {
-        final var transactionID =
-                TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
+        final var transactionID = TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
         return TransactionBody.newBuilder()
                 .transactionID(transactionID)
                 .contractCall(ContractCallTransactionBody.newBuilder()

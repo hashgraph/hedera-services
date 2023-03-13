@@ -20,21 +20,22 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#UNCHECKED_SUBMIT}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#UNCHECKED_SUBMIT}.
  */
 @Singleton
 public class NetworkUncheckedSubmitHandler implements TransactionHandler {
     @Inject
-    public NetworkUncheckedSubmitHandler() {}
+    public NetworkUncheckedSubmitHandler() {
+        // Exists for injection
+    }
 
     /**
      * This method is called during the pre-handle workflow.

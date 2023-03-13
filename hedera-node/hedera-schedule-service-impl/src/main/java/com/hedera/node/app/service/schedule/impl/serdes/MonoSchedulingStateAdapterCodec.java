@@ -27,7 +27,7 @@ import java.io.IOException;
 public class MonoSchedulingStateAdapterCodec implements Codec<MerkleScheduledTransactionsState> {
     @NonNull
     @Override
-    public MerkleScheduledTransactionsState parse(final @NonNull DataInput input) throws IOException {
+    public MerkleScheduledTransactionsState parse(final @NonNull ReadableSequentialData input) throws IOException {
         if (input instanceof SerializableDataInputStream in) {
             final var context = new MerkleScheduledTransactionsState();
             context.deserialize(in, MerkleScheduledTransactionsState.CURRENT_VERSION);
@@ -38,7 +38,7 @@ public class MonoSchedulingStateAdapterCodec implements Codec<MerkleScheduledTra
     }
 
     @Override
-    public void write(final @NonNull MerkleScheduledTransactionsState item, final @NonNull DataOutput output)
+    public void write(final @NonNull MerkleScheduledTransactionsState item, final @NonNull WritableSequentialData output)
             throws IOException {
         if (output instanceof SerializableDataOutputStream out) {
             item.serialize(out);
@@ -48,7 +48,7 @@ public class MonoSchedulingStateAdapterCodec implements Codec<MerkleScheduledTra
     }
 
     @Override
-    public int measure(@NonNull DataInput input) {
+    public int measure(@NonNull ReadableSequentialData input) {
         throw new UnsupportedOperationException();
     }
 
@@ -58,7 +58,7 @@ public class MonoSchedulingStateAdapterCodec implements Codec<MerkleScheduledTra
     }
 
     @Override
-    public boolean fastEquals(@NonNull MerkleScheduledTransactionsState item, @NonNull DataInput input) {
+    public boolean fastEquals(@NonNull MerkleScheduledTransactionsState item, @NonNull ReadableSequentialData input) {
         throw new UnsupportedOperationException();
     }
 }

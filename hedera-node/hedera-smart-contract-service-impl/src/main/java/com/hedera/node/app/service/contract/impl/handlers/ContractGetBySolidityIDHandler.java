@@ -18,9 +18,9 @@ package com.hedera.node.app.service.contract.impl.handlers;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.contract.GetBySolidityIDResponse;
 import com.hedera.hapi.node.transaction.Query;
@@ -32,18 +32,19 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#GET_BY_SOLIDITY_ID}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#GET_BY_SOLIDITY_ID}.
  */
 @Singleton
 public class ContractGetBySolidityIDHandler extends PaidQueryHandler {
     @Inject
-    public ContractGetBySolidityIDHandler() {}
+    public ContractGetBySolidityIDHandler() {
+        // Exists for injection
+    }
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
-        return query.getBySolidityID().orElseThrow().header();
+        return query.getBySolidityIDOrThrow().header();
     }
 
     @Override

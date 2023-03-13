@@ -17,8 +17,8 @@
 package com.hedera.node.app.state.merkle.memory;
 
 import com.hedera.node.app.state.merkle.StateMetadata;
-import com.hedera.pbj.runtime.io.DataInputStream;
-import com.hedera.pbj.runtime.io.DataOutputStream;
+import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
+import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -138,9 +138,9 @@ public final class InMemoryValue<K extends Comparable<? super K>, V> extends Par
     public void deserialize(SerializableDataInputStream serializableDataInputStream, int ignored) throws IOException {
         final var keySerdes = md.stateDefinition().keyCodec();
         final var valueSerdes = md.stateDefinition().valueCodec();
-        final var k = keySerdes.parse(new DataInputStream(serializableDataInputStream));
+        final var k = keySerdes.parse(new ReadableStreamingData(serializableDataInputStream));
         this.key = new InMemoryKey<>(k);
-        this.val = valueSerdes.parse(new DataInputStream(serializableDataInputStream));
+        this.val = valueSerdes.parse(new ReadableStreamingData(serializableDataInputStream));
     }
 
     /** {@inheritDoc} */
@@ -148,7 +148,7 @@ public final class InMemoryValue<K extends Comparable<? super K>, V> extends Par
     public void serialize(SerializableDataOutputStream serializableDataOutputStream) throws IOException {
         final var keySerdes = md.stateDefinition().keyCodec();
         final var valueSerdes = md.stateDefinition().valueCodec();
-        keySerdes.write(key.key(), new DataOutputStream(serializableDataOutputStream));
-        valueSerdes.write(val, new DataOutputStream(serializableDataOutputStream));
+        keySerdes.write(key.key(), new WritableStreamingData(serializableDataOutputStream));
+        valueSerdes.write(val, new WritableStreamingData(serializableDataOutputStream));
     }
 }

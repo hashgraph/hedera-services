@@ -18,7 +18,7 @@ package com.hedera.node.app.grpc;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.hedera.pbj.runtime.io.DataBuffer;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -57,10 +57,10 @@ class DataBufferMarshallerTest {
     @DisplayName("ByteBuffer contents are streamed")
     void byteBufferContentsAreStreamed(int capacity, int position) throws IOException {
         final var arr = TestUtils.randomBytes(capacity);
-        final var buf = DataBuffer.wrap(arr);
+        final var buf = BufferedData.wrap(arr);
         buf.skip(position);
         try (final var stream = marshaller.stream(buf)) {
-            final var numBytesToRead = buf.getRemaining();
+            final var numBytesToRead = buf.remaining();
             for (int i = 0; i < numBytesToRead; i++) {
                 assertEquals(Byte.toUnsignedInt(arr[i + position]), stream.read());
                 assertEquals(numBytesToRead - i - 1, stream.available());
@@ -74,7 +74,7 @@ class DataBufferMarshallerTest {
     @Disabled("I don't believe this test is valid")
     void callingStreamTwiceReturnsDifferentStreamsOnTheSameUnderlyingBuffer() throws IOException {
         final var arr = TestUtils.randomBytes(100);
-        final var buf = DataBuffer.wrap(arr);
+        final var buf = BufferedData.wrap(arr);
         buf.skip(50);
 
         try (final var stream1 = marshaller.stream(buf);
@@ -95,7 +95,7 @@ class DataBufferMarshallerTest {
         final var stream = new ByteArrayInputStream(arr);
         final var buf = marshaller.parse(stream);
 
-        assertEquals(arr.length, buf.getRemaining());
+        assertEquals(arr.length, buf.remaining());
         for (byte b : arr) {
             assertEquals(b, buf.readByte());
         }
@@ -149,7 +149,7 @@ class DataBufferMarshallerTest {
                     .thenReturn(-1);
 
             final var buf = marshaller.parse(stream);
-            assertEquals(arr.length, buf.getRemaining());
+            assertEquals(arr.length, buf.remaining());
             for (byte b : arr) {
                 assertEquals(b, buf.readByte());
             }

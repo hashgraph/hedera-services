@@ -16,13 +16,14 @@
 
 package com.hedera.node.app.service.consensus.impl.handlers;
 
-import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
-import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TopicID;
+import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
@@ -34,16 +35,16 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import static java.util.Objects.requireNonNull;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#CONSENSUS_DELETE_TOPIC}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONSENSUS_DELETE_TOPIC}.
  */
 @Singleton
 public class ConsensusDeleteTopicHandler implements TransactionHandler {
     @Inject
-    public ConsensusDeleteTopicHandler() {}
+    public ConsensusDeleteTopicHandler() {
+        // Exists for injection
+    }
 
     /**
      * This method is called during the pre-handle workflow.
@@ -59,8 +60,8 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
         requireNonNull(context);
         requireNonNull(topicStore);
 
-        final var op = context.getTxn().consensusDeleteTopic().orElseThrow();
-        final var topicMeta = topicStore.getTopicMetadata(op.topicID());
+        final var op = context.getTxn().consensusDeleteTopicOrThrow();
+        final var topicMeta = topicStore.getTopicMetadata(op.topicIDOrElse(TopicID.DEFAULT));
         if (topicMeta.failed()) {
             context.status(ResponseCodeEnum.INVALID_TOPIC_ID);
             return;
@@ -84,7 +85,7 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
      */
     public void handle(
             @NonNull final ConsensusDeleteTopicTransactionBody op, @NonNull final WritableTopicStore topicStore) {
-        var topicId = op.topicID();
+        var topicId = op.topicIDOrElse(TopicID.DEFAULT);
 
         var optionalTopic = topicStore.get(topicId.topicNum());
 

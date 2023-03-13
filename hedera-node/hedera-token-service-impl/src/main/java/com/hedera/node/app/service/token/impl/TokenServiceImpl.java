@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.token.impl;
 
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.node.app.service.mono.state.codec.MonoMapCodecAdapter;
 import com.hedera.node.app.service.mono.state.merkle.MerklePayerRecords;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
@@ -29,12 +31,10 @@ import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.serdes.EntityNumCodec;
-import com.hedera.node.app.service.token.impl.serdes.StringSerdes;
+import com.hedera.node.app.service.token.impl.serdes.StringCodec;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.app.spi.state.serdes.MonoMapCodecAdapter;
-import com.hederahashgraph.api.proto.java.SemanticVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
@@ -44,7 +44,7 @@ public class TokenServiceImpl implements TokenService {
     private static final int MAX_TOKEN_RELS = 1042;
     private static final int MAX_MINTABLE_NFTS = 4096;
     private static final SemanticVersion CURRENT_VERSION =
-            SemanticVersion.newBuilder().setMinor(34).build();
+            SemanticVersion.newBuilder().minor(34).build();
 
     public static final String NFTS_KEY = "NFTS";
     public static final String TOKENS_KEY = "TOKENS";
@@ -84,9 +84,9 @@ public class TokenServiceImpl implements TokenService {
     }
 
     private StateDefinition<String, EntityNumValue> onDiskAliasesDef() {
-        final var keySerdes = new StringSerdes();
+        final var keySerdes = new StringCodec();
         final var valueSerdes =
-                MonoMapSerdesAdapter.serdesForVirtualValue(EntityNumValue.CURRENT_VERSION, EntityNumValue::new);
+                MonoMapCodecAdapter.codecForVirtualValue(EntityNumValue.CURRENT_VERSION, EntityNumValue::new);
         return StateDefinition.onDisk(ALIASES_KEY, keySerdes, valueSerdes, MAX_ACCOUNTS);
     }
 

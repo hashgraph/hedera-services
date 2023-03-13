@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
@@ -41,7 +44,7 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
         final var context = new PreHandleContext(keyLookup, txn);
         subject.preHandle(context);
 
-        basicMetaAssertions(context, 1, false, ResponseCodeEnum.OK);
+        basicMetaAssertions(context, 1, false, OK);
         assertThat(context.getPayerKey()).isEqualTo(payerKey);
         //        FUTURE: uncomment this after JKey removal
         //        assertIterableEquals(List.of(adminHederaKey), meta.requiredNonPayerKeys());
@@ -51,11 +54,11 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
     @DisplayName("Fails for invalid payer account")
     void invalidPayer() {
         final var txn = contractCreateTransaction(adminKey, null);
-        given(keyLookup.getKey(payer)).willReturn(KeyOrLookupFailureReason.withFailureReason(ResponseCodeEnum.INVALID_ACCOUNT_ID));
+        given(keyLookup.getKey(payer)).willReturn(KeyOrLookupFailureReason.withFailureReason(INVALID_ACCOUNT_ID));
         final var context = new PreHandleContext(keyLookup, txn);
         subject.preHandle(context);
 
-        basicMetaAssertions(context, 0, true, ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID);
+        basicMetaAssertions(context, 0, true, INVALID_PAYER_ACCOUNT_ID);
         assertThat(context.getPayerKey()).isNull();
     }
 
@@ -66,7 +69,7 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
         final var context = new PreHandleContext(keyLookup, txn);
         subject.preHandle(context);
 
-        basicMetaAssertions(context, 0, false, ResponseCodeEnum.OK);
+        basicMetaAssertions(context, 0, false, OK);
         assertThat(context.getPayerKey()).isEqualTo(payerKey);
     }
 
@@ -77,7 +80,7 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
         final var context = new PreHandleContext(keyLookup, txn);
         subject.preHandle(context);
 
-        basicMetaAssertions(context, 1, false, ResponseCodeEnum.OK);
+        basicMetaAssertions(context, 1, false, OK);
         assertThat(context.getPayerKey()).isEqualTo(payerKey);
         assertThat(context.getRequiredNonPayerKeys()).containsExactly(autoRenewHederaKey);
     }
@@ -89,7 +92,7 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
         final var context = new PreHandleContext(keyLookup, txn);
         subject.preHandle(context);
 
-        basicMetaAssertions(context, 0, false, ResponseCodeEnum.OK);
+        basicMetaAssertions(context, 0, false, OK);
         assertThat(context.getPayerKey()).isEqualTo(payerKey);
         assertThat(context.getRequiredNonPayerKeys()).isEmpty();
     }
@@ -101,7 +104,7 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
         final var context = new PreHandleContext(keyLookup, txn);
         subject.preHandle(context);
 
-        basicMetaAssertions(context, 2, false, ResponseCodeEnum.OK);
+        basicMetaAssertions(context, 2, false, OK);
         assertThat(context.getPayerKey()).isEqualTo(payerKey);
         //        FUTURE: uncomment this after JKey removal
         //        assertEquals(List.of(adminHederaKey, autoRenewHederaKey),
@@ -110,8 +113,8 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
 
     private TransactionBody contractCreateTransaction(final Key adminKey, final AccountID autoRenewId) {
         final var transactionID =
-                new TransactionID.Builder().accountID(payer).transactionValidStart(consensusTimestamp);
-        final var createTxnBody = new ContractCreateTransactionBody.Builder().memo("Create Contract");
+                TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
+        final var createTxnBody = ContractCreateTransactionBody.newBuilder().memo("Create Contract");
         if (adminKey != null) {
             createTxnBody.adminKey(adminKey);
         }
@@ -123,7 +126,7 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
             createTxnBody.autoRenewAccountId(autoRenewId);
         }
 
-        return new TransactionBody.Builder()
+        return TransactionBody.newBuilder()
                 .transactionID(transactionID)
                 .contractCreateInstance(createTxnBody)
                 .build();

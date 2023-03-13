@@ -26,7 +26,6 @@ import com.hedera.hapi.node.transaction.TransactionResponse;
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.NodeInfo;
-import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
@@ -34,8 +33,8 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
-import com.hedera.pbj.runtime.io.DataBuffer;
-import com.hedera.pbj.runtime.io.RandomAccessDataInput;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.hedera.pbj.runtime.io.buffer.RandomAccessData;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.utility.AutoCloseableWrapper;
@@ -102,16 +101,16 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
     @Override
     public void submitTransaction(
             @NonNull final SessionContext ctx,
-            @NonNull final RandomAccessDataInput requestBuffer,
-            @NonNull final DataBuffer responseBuffer) {
+            @NonNull final RandomAccessData requestBuffer,
+            @NonNull final BufferedData responseBuffer) {
         submitTransaction(ctx, requestBuffer, responseBuffer, ReadableAccountStore::new);
     }
 
     // Package-private for testing
     void submitTransaction(
             @NonNull final SessionContext ctx,
-            @NonNull final RandomAccessDataInput requestBuffer,
-            @NonNull final DataBuffer responseBuffer,
+            @NonNull final RandomAccessData requestBuffer,
+            @NonNull final BufferedData responseBuffer,
             @NonNull final Function<ReadableStates, ReadableAccountStore> storeSupplier) {
         requireNonNull(ctx);
         requireNonNull(requestBuffer);
@@ -167,7 +166,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
 
                 // 7. Submit to platform
                 requestBuffer.resetPosition();
-                final byte[] byteArray = new byte[(int) requestBuffer.getLimit()];
+                final byte[] byteArray = new byte[(int) requestBuffer.limit()];
                 requestBuffer.readBytes(byteArray);
                 submissionManager.submit(txBody, byteArray);
                 counters.get(functionality).increment();

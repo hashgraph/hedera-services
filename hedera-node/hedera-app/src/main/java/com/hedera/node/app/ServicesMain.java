@@ -16,6 +16,8 @@
 
 package com.hedera.node.app;
 
+import static com.hedera.node.app.spi.config.PropertyNames.WORKFLOWS_ENABLED;
+
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.system.NodeId;
@@ -25,7 +27,6 @@ import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState2;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import static com.hedera.node.app.spi.config.PropertyNames.WORKFLOWS_ENABLED;
 
 /**
  * Main entry point.

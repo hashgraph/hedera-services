@@ -32,18 +32,19 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#CONTRACT_CALL_LOCAL}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONTRACT_CALL_LOCAL}.
  */
 @Singleton
 public class ContractCallLocalHandler extends PaidQueryHandler {
     @Inject
-    public ContractCallLocalHandler() {}
+    public ContractCallLocalHandler() {
+        // Exists for injection
+    }
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
-        return query.contractCallLocal().orElseThrow().header();
+        return query.contractCallLocalOrThrow().header();
     }
 
     @Override

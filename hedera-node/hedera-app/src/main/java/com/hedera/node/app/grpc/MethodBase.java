@@ -17,8 +17,8 @@
 package com.hedera.node.app.grpc;
 
 import com.hedera.node.app.SessionContext;
-import com.hedera.pbj.runtime.io.DataBuffer;
-import com.hedera.pbj.runtime.io.RandomAccessDataInput;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.hedera.pbj.runtime.io.buffer.RandomAccessData;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
@@ -31,7 +31,7 @@ import java.util.Objects;
  * An instance of either {@link TransactionMethod} or {@link QueryMethod} is created per transaction
  * type and query type.
  */
-abstract class MethodBase implements ServerCalls.UnaryMethod<DataBuffer, DataBuffer> {
+abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData, BufferedData> {
     // To be set by configuration. See Issue #4294
     private static final int MAX_MESSAGE_SIZE = 1024 * 6; // 6k
 
@@ -59,8 +59,8 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<DataBuffer, DataBuf
      * Per-thread shared ByteBuffer for responses. We store these in a thread local, because we do
      * not have control over the thread pool used by the underlying gRPC server.
      */
-    private static final ThreadLocal<DataBuffer> BUFFER_THREAD_LOCAL =
-            ThreadLocal.withInitial(() -> DataBuffer.allocate(MAX_MESSAGE_SIZE, false));
+    private static final ThreadLocal<BufferedData> BUFFER_THREAD_LOCAL =
+            ThreadLocal.withInitial(() -> BufferedData.allocate(MAX_MESSAGE_SIZE));
 
     /** The name of the service associated with this method. */
     protected final String serviceName;
@@ -104,7 +104,7 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<DataBuffer, DataBuf
 
     @Override
     public void invoke(
-            @NonNull final DataBuffer requestBuffer, @NonNull final StreamObserver<DataBuffer> responseObserver) {
+            @NonNull final BufferedData requestBuffer, @NonNull final StreamObserver<BufferedData> responseObserver) {
         try {
             // Track the number of times this method has been called
             callsReceivedCounter.increment();
@@ -138,13 +138,13 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<DataBuffer, DataBuf
      * if a gRPC <b>ERROR</b> is to be returned.
      *
      * @param session The {@link SessionContext} for this call
-     * @param requestBuffer The {@link RandomAccessDataInput} containing the protobuf bytes for the request
-     * @param responseBuffer A {@link DataBuffer} into which the response protobuf bytes may be written
+     * @param requestBuffer The {@link RandomAccessData} containing the protobuf bytes for the request
+     * @param responseBuffer A {@link BufferedData} into which the response protobuf bytes may be written
      */
     protected abstract void handle(
             @NonNull final SessionContext session,
-            @NonNull final RandomAccessDataInput requestBuffer,
-            @NonNull final DataBuffer responseBuffer);
+            @NonNull final RandomAccessData requestBuffer,
+            @NonNull final BufferedData responseBuffer);
 
     /**
      * Helper method for creating a {@link Counter} metric.

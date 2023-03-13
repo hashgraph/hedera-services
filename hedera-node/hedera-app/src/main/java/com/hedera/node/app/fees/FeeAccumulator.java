@@ -20,8 +20,8 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Interface for fee calculation. Currently, it is only used to compute payments for Queries. It
@@ -41,8 +41,8 @@ public interface FeeAccumulator {
      */
     @NonNull
     FeeObject computePayment(
-            @NonNull ReadableStoreFactory readableStoreFactory, 
-            @NonNull HederaFunctionality functionality, 
-            @NonNull Query query, 
+            @NonNull ReadableStoreFactory readableStoreFactory,
+            @NonNull HederaFunctionality functionality,
+            @NonNull Query query,
             @NonNull Timestamp now);
 }

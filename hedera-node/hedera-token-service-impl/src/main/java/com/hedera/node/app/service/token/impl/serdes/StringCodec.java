@@ -16,46 +16,52 @@
 
 package com.hedera.node.app.service.token.impl.serdes;
 
-import com.hedera.node.app.spi.state.Serdes;
+import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.DataInput;
-import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-public class StringSerdes implements Serdes<String> {
+public class StringCodec implements Codec<String> {
     @NonNull
     @Override
-    public String parse(@NonNull DataInput input) throws IOException {
+    public String parse(@NonNull ReadableSequentialData input) throws IOException {
         final var len = input.readInt();
         final var bytes = new byte[len];
-        input.readFully(bytes);
+        input.readBytes(bytes);
         return len == 0 ? "" : new String(bytes, StandardCharsets.UTF_8);
     }
 
     @Override
-    public void write(@NonNull String value, @NonNull DataOutput output) throws IOException {
+    public void write(@NonNull String value, @NonNull WritableSequentialData output) throws IOException {
         final var bytes = value.getBytes(StandardCharsets.UTF_8);
         output.writeInt(bytes.length);
-        output.write(bytes);
+        output.writeBytes(bytes);
     }
 
     @Override
-    public int measure(@NonNull DataInput input) throws IOException {
+    public int measure(@NonNull ReadableSequentialData input) {
         return input.readInt();
     }
 
     @Override
-    public int typicalSize() {
-        return 255;
-    }
-
-    @Override
-    public boolean fastEquals(@NonNull String value, @NonNull DataInput input) {
+    public boolean fastEquals(@NonNull String value, @NonNull ReadableSequentialData input) {
         try {
             return value.equals(parse(input));
         } catch (final IOException ignore) {
             return false;
         }
+    }
+
+    @NonNull
+    @Override
+    public String parseStrict(@NonNull ReadableSequentialData dataInput) throws IOException {
+        return parse(dataInput);
+    }
+
+    @Override
+    public int measureRecord(String s) {
+        throw new UnsupportedOperationException("Not used");
     }
 }

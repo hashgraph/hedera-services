@@ -37,14 +37,13 @@ class OnsetResultTest {
         final var function = HederaFunctionality.NONE;
 
         // then
-        assertThatThrownBy(() -> new OnsetResult(
-                txn, null, OK, sigMap, function)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new OnsetResult(
-                txn, txBody, null, sigMap, function))
+        assertThatThrownBy(() -> new OnsetResult(txn, null, OK, sigMap, function))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new OnsetResult(
-                txn, txBody, OK, null, function)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new OnsetResult(
-                txn, txBody, OK, sigMap, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new OnsetResult(txn, txBody, null, sigMap, function))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new OnsetResult(txn, txBody, OK, null, function))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new OnsetResult(txn, txBody, OK, sigMap, null))
+                .isInstanceOf(NullPointerException.class);
     }
 }

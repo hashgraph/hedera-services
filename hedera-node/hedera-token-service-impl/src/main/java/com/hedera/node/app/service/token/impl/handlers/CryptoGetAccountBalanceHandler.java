@@ -38,12 +38,14 @@ import javax.inject.Singleton;
 @Singleton
 public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
     @Inject
-    public CryptoGetAccountBalanceHandler() {}
+    public CryptoGetAccountBalanceHandler() {
+        // Exists for injection
+    }
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
-        return query.cryptogetAccountBalance().orElseThrow().header();
+        return query.cryptogetAccountBalanceOrThrow().header();
     }
 
     @Override

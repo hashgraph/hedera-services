@@ -20,7 +20,6 @@ import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -35,7 +34,9 @@ import javax.inject.Singleton;
 @Singleton
 public class CryptoCreateHandler implements TransactionHandler {
     @Inject
-    public CryptoCreateHandler() {}
+    public CryptoCreateHandler() {
+        // Exists for injection
+    }
 
     /**
      * Pre-handles a {@link HederaFunctionality#CRYPTO_CREATE} transaction, returning the metadata
@@ -47,7 +48,7 @@ public class CryptoCreateHandler implements TransactionHandler {
      */
     public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
-        final var op = context.getTxn().cryptoCreateAccount().orElseThrow();
+        final var op = context.getTxn().cryptoCreateAccountOrThrow();
         final var key = asHederaKey(op.key());
         final var receiverSigReq = op.receiverSigRequired();
         if (receiverSigReq && key.isPresent()) {

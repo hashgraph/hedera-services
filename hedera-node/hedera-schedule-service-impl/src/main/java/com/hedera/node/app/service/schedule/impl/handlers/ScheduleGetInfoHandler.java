@@ -32,18 +32,19 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#SCHEDULE_GET_INFO}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#SCHEDULE_GET_INFO}.
  */
 @Singleton
 public class ScheduleGetInfoHandler extends PaidQueryHandler {
     @Inject
-    public ScheduleGetInfoHandler() {}
+    public ScheduleGetInfoHandler() {
+        // Exists for injection
+    }
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
-        return query.scheduleGetInfo().orElseThrow().header();
+        return query.scheduleGetInfoOrThrow().header();
     }
 
     @Override

@@ -20,13 +20,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.TopicStore.TopicMetadata;
 import com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusHandlerTestBase;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import java.util.Optional;
 import java.util.OptionalLong;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,7 +70,7 @@ class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
                 Optional.of(adminKey),
                 100L,
                 OptionalLong.of(autoRenewId.getAccountNum()),
-                Timestamp.newBuilder().setSeconds(100L).build(),
+                Timestamp.newBuilder().seconds(100L).build(),
                 1L,
                 new byte[48],
                 topicEntityNum.longValue(),
@@ -91,7 +91,7 @@ class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
                 Optional.of(adminKey),
                 100L,
                 OptionalLong.of(autoRenewId.getAccountNum()),
-                Timestamp.newBuilder().setSeconds(100L).build(),
+                Timestamp.newBuilder().seconds(100L).build(),
                 1L,
                 new byte[48],
                 topicEntityNum.longValue(),

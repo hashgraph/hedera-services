@@ -20,13 +20,13 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOU
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -42,7 +42,9 @@ import javax.inject.Singleton;
 @Singleton
 public class TokenCreateHandler implements TransactionHandler {
     @Inject
-    public TokenCreateHandler() {}
+    public TokenCreateHandler() {
+        // Exists for injection
+    }
 
     /**
      * This method is called during the pre-handle workflow.
@@ -60,20 +62,20 @@ public class TokenCreateHandler implements TransactionHandler {
      */
     public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
-        final var tokenCreateTxnBody = context.getTxn().tokenCreation().orElseThrow();
-        if (tokenCreateTxnBody.treasury() != null) {
-            final var treasuryId = tokenCreateTxnBody.treasury();
+        final var tokenCreateTxnBody = context.getTxn().tokenCreationOrThrow();
+        if (tokenCreateTxnBody.hasTreasury()) {
+            final var treasuryId = tokenCreateTxnBody.treasuryOrThrow();
             context.addNonPayerKey(treasuryId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
         }
-        if (tokenCreateTxnBody.autoRenewAccount() != null) {
-            final var autoRenewalAccountId = tokenCreateTxnBody.autoRenewAccount();
+        if (tokenCreateTxnBody.hasAutoRenewAccount()) {
+            final var autoRenewalAccountId = tokenCreateTxnBody.autoRenewAccountOrThrow();
             context.addNonPayerKey(autoRenewalAccountId, INVALID_AUTORENEW_ACCOUNT);
         }
-        if (tokenCreateTxnBody.adminKey() != null) {
-            final var adminKey = asHederaKey(tokenCreateTxnBody.adminKey());
+        if (tokenCreateTxnBody.hasAdminKey()) {
+            final var adminKey = asHederaKey(tokenCreateTxnBody.adminKeyOrThrow());
             adminKey.ifPresent(context::addToReqNonPayerKeys);
         }
-        final var customFees = tokenCreateTxnBody.customFees();
+        final var customFees = tokenCreateTxnBody.customFeesOrElse(emptyList());
         addCustomFeeCollectorKeys(context, customFees);
     }
 
@@ -103,26 +105,26 @@ public class TokenCreateHandler implements TransactionHandler {
             @NonNull final PreHandleContext context, @NonNull final List<CustomFee> customFeesList) {
 
         for (final var customFee : customFeesList) {
-            final var collector = customFee.feeCollectorAccountId();
+            final var collector = customFee.feeCollectorAccountIdOrElse(AccountID.DEFAULT);
 
             /* A fractional fee collector and a collector for a fixed fee denominated
             in the units of the newly created token both must always sign a TokenCreate,
             since these are automatically associated to the newly created token. */
-            final var fixedFeeOpt = customFee.fixedFee();
-            if (fixedFeeOpt.isPresent()) {
-                final var fixedFee = fixedFeeOpt.get();
-                final var alwaysAdd = fixedFee.denominatingTokenId() != null
-                        && fixedFee.denominatingTokenId().tokenNum() == 0L;
+            if (customFee.hasFixedFee()) {
+                final var fixedFee = customFee.fixedFeeOrThrow();
+                final var alwaysAdd = fixedFee.hasDenominatingTokenId()
+                        && fixedFee.denominatingTokenIdOrThrow().tokenNum() == 0L;
                 addAccount(context, collector, alwaysAdd);
-            } else if (customFee.fractionalFee().isPresent()) {
+            } else if (customFee.hasFractionalFee()) {
                 context.addNonPayerKey(collector, INVALID_CUSTOM_FEE_COLLECTOR);
             } else {
-                final var royaltyFee = customFee.royaltyFee().orElseThrow();
+                // TODO: Need to validate if this is actually needed
+                final var royaltyFee = customFee.royaltyFeeOrThrow();
                 var alwaysAdd = false;
-                if (royaltyFee.fallbackFee() != null) {
-                    final var fFee = royaltyFee.fallbackFee();
-                    alwaysAdd = fFee.denominatingTokenId() != null
-                            && fFee.denominatingTokenId().tokenNum() == 0;
+                if (royaltyFee.hasFallbackFee()) {
+                    final var fFee = royaltyFee.fallbackFeeOrThrow();
+                    alwaysAdd = fFee.hasDenominatingTokenId()
+                            && fFee.denominatingTokenIdOrThrow().tokenNum() == 0;
                 }
                 addAccount(context, collector, alwaysAdd);
             }

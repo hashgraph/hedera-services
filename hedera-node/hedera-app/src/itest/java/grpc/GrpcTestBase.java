@@ -20,7 +20,7 @@ import com.hedera.node.app.grpc.GrpcServiceBuilder;
 import com.hedera.node.app.spi.fixtures.TestBase;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
-import com.hedera.pbj.runtime.io.DataBuffer;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
@@ -197,9 +197,9 @@ abstract class GrpcTestBase extends TestBase {
     protected String send(String service, String function, String payload) {
         final var client = clients.get(service);
         assert client != null;
-        final var bb = DataBuffer.wrap(payload.getBytes(StandardCharsets.UTF_8));
-        final DataBuffer res = client.blockingUnary(function, bb);
-        final var rb = new byte[(int) res.getRemaining()];
+        final var bb = BufferedData.wrap(payload.getBytes(StandardCharsets.UTF_8));
+        final BufferedData res = client.blockingUnary(function, bb);
+        final var rb = new byte[(int) res.remaining()];
         res.readBytes(rb);
         return new String(rb, StandardCharsets.UTF_8);
     }

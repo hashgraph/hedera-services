@@ -16,11 +16,14 @@
 
 package com.hedera.node.app.workflows.query;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -54,10 +57,9 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
-import com.hedera.pbj.runtime.io.DataBuffer;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.system.PlatformStatus;
 import com.swirlds.common.utility.AutoCloseableWrapper;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
@@ -190,7 +192,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         submissionManager,
                         checker,
                         dispatcher,
-                         metrics,
+                        metrics,
                         feeAccumulator,
                         queryContext))
                 .isInstanceOf(NullPointerException.class);
@@ -599,7 +601,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     //        // then
     //        final var response = parseResponse(responseBuffer);
     //        assertThat(response.fileGetInfo()).isNotNull();
-    //        final var header = response.fileGetInfo().orElseThrow().header();
+    //        final var header = response.fileGetInfoOrThrow().header();
     //        assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(OK);
     //        assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
     //        // TODO: Expected costs need to be updated once fee calculation was integrated
@@ -688,7 +690,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     //        // then
     //        final var response = parseResponse(responseBuffer);
     //        assertThat(response.fileGetInfo()).isNotNull();
-    //        final var header = response.fileGetInfo().orElseThrow().header();
+    //        final var header = response.fileGetInfoOrThrow().header();
     //        assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(INVALID_NODE_ACCOUNT);
     //        assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
     //        assertThat(header.cost()).isZero();
@@ -719,7 +721,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     //        // then
     //        final var response = parseResponse(responseBuffer);
     //        assertThat(response.fileGetInfo()).isNotNull();
-    //        final var header = response.fileGetInfo().orElseThrow().header();
+    //        final var header = response.fileGetInfoOrThrow().header();
     //        assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(PLATFORM_NOT_ACTIVE);
     //        assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
     //        assertThat(header.cost()).isZero();
@@ -748,7 +750,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     //        // then
     //        final var response = parseResponse(responseBuffer);
     //        assertThat(response.fileGetInfo()).isNotNull();
-    //        final var header = response.fileGetInfo().orElseThrow().header();
+    //        final var header = response.fileGetInfoOrThrow().header();
     //        assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(NOT_SUPPORTED);
     //        assertThat(header.responseType()).isEqualTo(ANSWER_STATE_PROOF);
     //        assertThat(header.cost()).isZero();
@@ -768,7 +770,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     //        // then
     //        final var response = parseResponse(responseBuffer);
     //        assertThat(response.fileGetInfo()).isNotNull();
-    //        final var header = response.fileGetInfo().orElseThrow().header();
+    //        final var header = response.fileGetInfoOrThrow().header();
     //        assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(BUSY);
     //        assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
     //        assertThat(header.cost()).isZero();
@@ -791,7 +793,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     //        // then
     //        final var response = parseResponse(responseBuffer);
     //        assertThat(response.fileGetInfo()).isNotNull();
-    //        final var header = response.fileGetInfo().orElseThrow().header();
+    //        final var header = response.fileGetInfoOrThrow().header();
     //        assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(INSUFFICIENT_TX_FEE);
     //        assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
     //        assertThat(header.cost()).isZero();
@@ -824,7 +826,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     //        // then
     //        final var response = parseResponse(responseBuffer);
     //        assertThat(response.fileGetInfo()).isNotNull();
-    //        final var header = response.fileGetInfo().orElseThrow().header();
+    //        final var header = response.fileGetInfoOrThrow().header();
     //        assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(INSUFFICIENT_TX_FEE);
     //        assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
     //        assertThat(header.cost()).isZero();
@@ -848,7 +850,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     //        // then
     //        final var response = parseResponse(responseBuffer);
     //        assertThat(response.fileGetInfo()).isNotNull();
-    //        final var header = response.fileGetInfo().orElseThrow().header();
+    //        final var header = response.fileGetInfoOrThrow().header();
     //        assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(NOT_SUPPORTED);
     //        assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
     //        assertThat(header.cost()).isZero();
@@ -878,7 +880,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     //        // then
     //        final var response = parseResponse(responseBuffer);
     //        assertThat(response.fileGetInfo()).isNotNull();
-    //        final var header = response.fileGetInfo().orElseThrow().header();
+    //        final var header = response.fileGetInfoOrThrow().header();
     //        assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(NOT_SUPPORTED);
     //        assertThat(header.responseType()).isEqualTo(COST_ANSWER);
     //        assertThat(header.cost()).isZero();
@@ -901,7 +903,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     //        // then
     //        final var response = parseResponse(responseBuffer);
     //        assertThat(response.fileGetInfo()).isNotNull();
-    //        final var header = response.fileGetInfo().orElseThrow().header();
+    //        final var header = response.fileGetInfoOrThrow().header();
     //        assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(ACCOUNT_FROZEN_FOR_TOKEN);
     //        assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
     //        assertThat(header.cost()).isZero();
@@ -925,7 +927,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     //        // then
     //        final var response = parseResponse(responseBuffer);
     //        assertThat(response.fileGetInfo()).isNotNull();
-    //        final var header = response.fileGetInfo().orElseThrow().header();
+    //        final var header = response.fileGetInfoOrThrow().header();
     //        assertThat(header.nodeTransactionPrecheckCode())
     //                .isEqualTo(PLATFORM_TRANSACTION_NOT_CREATED);
     //        assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
@@ -933,20 +935,6 @@ class QueryWorkflowImplTest extends AppTestBase {
     //        verify(opCounters).countReceived(FileGetInfo);
     //        verify(opCounters, never()).countAnswered(FileGetInfo);
     //    }
-
-        // when
-        workflow.handleQuery(ctx, localRequestBuffer, responseBuffer);
-
-        // then
-        final var response = parseResponse(responseBuffer);
-        assertThat(response.getFileGetInfo()).isNotNull();
-        final var header = response.getFileGetInfo().getHeader();
-        assertThat(header.getNodeTransactionPrecheckCode()).isEqualTo(NOT_SUPPORTED);
-        assertThat(header.getResponseType()).isEqualTo(ANSWER_STATE_PROOF);
-        assertThat(header.getCost()).isZero();
-        verify(opCounters).countReceived(FileGetInfo);
-        verify(opCounters, never()).countAnswered(FileGetInfo);
-    }
 
     @Test
     void testThrottleFails() throws InvalidProtocolBufferException {
@@ -1122,6 +1110,6 @@ class QueryWorkflowImplTest extends AppTestBase {
     private static Response parseResponse(ByteBuffer responseBuffer) throws InvalidProtocolBufferException {
         final byte[] bytes = new byte[responseBuffer.position()];
         responseBuffer.get(0, bytes);
-        return Response.PROTOBUF.parse(DataBuffer.wrap(bytes));
+        return Response.PROTOBUF.parse(BufferedData.wrap(bytes));
     }
 }

@@ -16,17 +16,16 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
-import static java.util.Objects.requireNonNull;
-
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
+import static java.util.Objects.requireNonNull;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -35,7 +34,9 @@ import javax.inject.Singleton;
 @Singleton
 public class CryptoDeleteHandler implements TransactionHandler {
     @Inject
-    public CryptoDeleteHandler() {}
+    public CryptoDeleteHandler() {
+        // Exists for injection
+    }
 
     /**
      * Pre-handles a {@link HederaFunctionality#CRYPTO_DELETE} transaction, returning the metadata
@@ -47,9 +48,9 @@ public class CryptoDeleteHandler implements TransactionHandler {
      */
     public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
-        final var op = context.getTxn().cryptoDelete().orElseThrow();
-        final var deleteAccountId = op.deleteAccountID();
-        final var transferAccountId = op.transferAccountID();
+        final var op = context.getTxn().cryptoDeleteOrThrow();
+        final var deleteAccountId = op.deleteAccountIDOrElse(AccountID.DEFAULT);
+        final var transferAccountId = op.transferAccountIDOrElse(AccountID.DEFAULT);
         context.addNonPayerKey(deleteAccountId)
                 .addNonPayerKeyIfReceiverSigRequired(transferAccountId, INVALID_TRANSFER_ACCOUNT_ID);
     }

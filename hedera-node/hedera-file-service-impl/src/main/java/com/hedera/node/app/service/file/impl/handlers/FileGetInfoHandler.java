@@ -32,18 +32,19 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#FILE_GET_INFO}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#FILE_GET_INFO}.
  */
 @Singleton
 public class FileGetInfoHandler extends PaidQueryHandler {
     @Inject
-    public FileGetInfoHandler() {}
+    public FileGetInfoHandler() {
+        // Exists for injection
+    }
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
-        return query.fileGetInfo().orElseThrow().header();
+        return query.fileGetInfoOrThrow().header();
     }
 
     @Override
