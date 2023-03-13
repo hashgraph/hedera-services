@@ -16,6 +16,12 @@
 
 package com.hedera.node.app.service.schedule.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
+import static com.hedera.node.app.service.schedule.impl.test.ScheduledTxnFactory.scheduleCreateTxnWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
@@ -24,11 +30,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleCreateHandler;
-import com.hedera.node.app.service.schedule.impl.test.ScheduledTxnFactory;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import java.util.List;
@@ -47,12 +51,12 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
         final var context = new PreHandleContext(keyLookup, txn, scheduler);
         subject.preHandle(context, dispatcher);
 
-        basicContextAssertions(context, 1, false, ResponseCodeEnum.OK);
+        basicContextAssertions(context, 1, false, OK);
         assertEquals(schedulerKey, context.getPayerKey());
         assertEquals(List.of(adminKey), context.getRequiredNonPayerKeys());
 
         final var innerContext = context.getInnerContext();
-        basicContextAssertions(innerContext, 0, false, ResponseCodeEnum.OK);
+        basicContextAssertions(innerContext, 0, false, OK);
         assertEquals(payer, innerContext.getPayer());
         assertEquals(payerKey, innerContext.getPayerKey());
 
@@ -62,7 +66,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
     @Test
     void preHandleScheduleCreateVanillaNoAdmin() {
         final var subject = new ScheduleCreateHandler();
-        final var txn = ScheduledTxnFactory.scheduleCreateTxnWith(
+        final var txn = scheduleCreateTxnWith(
                 null, "", payer, scheduler, Timestamp.newBuilder().seconds(1L).build());
 
         given(keyLookup.getKey(scheduler)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
@@ -71,12 +75,12 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
         final var context = new PreHandleContext(keyLookup, txn, scheduler);
         subject.preHandle(context, dispatcher);
 
-        basicContextAssertions(context, 0, false, ResponseCodeEnum.OK);
+        basicContextAssertions(context, 0, false, OK);
         assertEquals(schedulerKey, context.getPayerKey());
         assertEquals(List.of(), context.getRequiredNonPayerKeys());
 
         final var innerContext = context.getInnerContext();
-        basicContextAssertions(innerContext, 0, false, ResponseCodeEnum.OK);
+        basicContextAssertions(innerContext, 0, false, OK);
         assertEquals(payer, innerContext.getPayer());
         assertEquals(payerKey, innerContext.getPayerKey());
 
@@ -89,16 +93,16 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
         final var txn = scheduleCreateTransaction(payer);
 
         given(keyLookup.getKey(scheduler))
-                .willReturn(KeyOrLookupFailureReason.withFailureReason(ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID));
+                .willReturn(KeyOrLookupFailureReason.withFailureReason(INVALID_PAYER_ACCOUNT_ID));
         given(keyLookup.getKey(payer)).willReturn(KeyOrLookupFailureReason.withKey(payerKey));
 
         final var context = new PreHandleContext(keyLookup, txn, scheduler);
         subject.preHandle(context, dispatcher);
 
-        basicContextAssertions(context, 0, true, ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID);
+        basicContextAssertions(context, 0, true, INVALID_PAYER_ACCOUNT_ID);
 
         final var innerContext = context.getInnerContext();
-        basicContextAssertions(innerContext, 0, false, ResponseCodeEnum.OK);
+        basicContextAssertions(innerContext, 0, false, OK);
         assertEquals(payer, innerContext.getPayer());
         assertEquals(payerKey, innerContext.getPayerKey());
 
@@ -114,12 +118,12 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
         final var context = new PreHandleContext(keyLookup, txn, scheduler);
         subject.preHandle(context, dispatcher);
 
-        basicContextAssertions(context, 1, false, ResponseCodeEnum.OK);
+        basicContextAssertions(context, 1, false, OK);
         assertEquals(schedulerKey, context.getPayerKey());
         assertEquals(List.of(adminKey), context.getRequiredNonPayerKeys());
 
         final var innerContext = context.getInnerContext();
-        basicContextAssertions(innerContext, 0, false, ResponseCodeEnum.OK);
+        basicContextAssertions(innerContext, 0, false, OK);
         assertEquals(scheduler, innerContext.getPayer());
         assertEquals(schedulerKey, innerContext.getPayerKey());
 
@@ -136,12 +140,12 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
         final var context = new PreHandleContext(keyLookup, txn, scheduler);
         subject.preHandle(context, dispatcher);
 
-        basicContextAssertions(context, 0, false, ResponseCodeEnum.OK);
+        basicContextAssertions(context, 0, false, OK);
         assertEquals(schedulerKey, context.getPayerKey());
         assertEquals(List.of(), context.getRequiredNonPayerKeys());
 
         final var innerContext = context.getInnerContext();
-        basicContextAssertions(innerContext, 0, true, ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+        basicContextAssertions(innerContext, 0, true, SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
         assertEquals(scheduler, innerContext.getPayer());
         assertEquals(schedulerKey, innerContext.getPayerKey());
 
@@ -154,18 +158,17 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
         final var txn = scheduleCreateTransaction(payer);
 
         given(keyLookup.getKey(scheduler)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
-        given(keyLookup.getKey(payer))
-                .willReturn(KeyOrLookupFailureReason.withFailureReason(ResponseCodeEnum.INVALID_ACCOUNT_ID));
+        given(keyLookup.getKey(payer)).willReturn(KeyOrLookupFailureReason.withFailureReason(INVALID_ACCOUNT_ID));
 
         final var context = new PreHandleContext(keyLookup, txn, scheduler);
         subject.preHandle(context, dispatcher);
 
-        basicContextAssertions(context, 1, false, ResponseCodeEnum.OK);
+        basicContextAssertions(context, 1, false, OK);
         assertEquals(schedulerKey, context.getPayerKey());
         assertEquals(List.of(adminKey), context.getRequiredNonPayerKeys());
 
         final var innerContext = context.getInnerContext();
-        basicContextAssertions(innerContext, 0, true, ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS);
+        basicContextAssertions(innerContext, 0, true, UNRESOLVABLE_REQUIRED_SIGNERS);
         assertEquals(payer, innerContext.getPayer());
         assertNull(innerContext.getPayerKey());
 
@@ -173,7 +176,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
     }
 
     private TransactionBody scheduleCreateTransaction(final AccountID payer) {
-        return ScheduledTxnFactory.scheduleCreateTxnWith(
+        return scheduleCreateTxnWith(
                 key,
                 "test",
                 payer,

@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -30,13 +31,14 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#SCHEDULE_DELETE}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#SCHEDULE_DELETE}.
  */
 @Singleton
 public class ScheduleDeleteHandler implements TransactionHandler {
     @Inject
-    public ScheduleDeleteHandler() {}
+    public ScheduleDeleteHandler() {
+        // Exists for injection
+    }
 
     /**
      * This method is called during the pre-handle workflow.
@@ -54,8 +56,8 @@ public class ScheduleDeleteHandler implements TransactionHandler {
      */
     public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableScheduleStore scheduleStore) {
         requireNonNull(context);
-        final var op = context.getTxn().scheduleDelete().orElseThrow();
-        final var id = op.scheduleID();
+        final var op = context.getTxn().scheduleDeleteOrThrow();
+        final var id = op.scheduleIDOrElse(ScheduleID.DEFAULT);
 
         // check for a missing schedule. A schedule with this id could have never existed,
         // or it could have already been executed or deleted

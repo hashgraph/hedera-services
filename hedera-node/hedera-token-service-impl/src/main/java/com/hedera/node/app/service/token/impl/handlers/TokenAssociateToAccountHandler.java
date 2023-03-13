@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -34,11 +35,12 @@ import javax.inject.Singleton;
 @Singleton
 public class TokenAssociateToAccountHandler implements TransactionHandler {
     @Inject
-    public TokenAssociateToAccountHandler() {}
+    public TokenAssociateToAccountHandler() {
+        // Exists for injection
+    }
 
     /**
-     * Pre-handles a {@link
-     * com.hedera.hapi.node.base.HederaFunctionality#TokenAssociateToAccount} transaction,
+     * Pre-handles a {@link HederaFunctionality#TOKEN_ASSOCIATE_TO_ACCOUNT} transaction,
      * returning the metadata required to, at minimum, validate the signatures of all required
      * signing keys.
      *
@@ -49,8 +51,8 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
     public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
 
-        final var op = context.getTxn().tokenAssociate().orElseThrow();
-        final var target = op.account();
+        final var op = context.getTxn().tokenAssociateOrThrow();
+        final var target = op.accountOrElse(AccountID.DEFAULT);
 
         context.addNonPayerKey(target, INVALID_ACCOUNT_ID);
     }

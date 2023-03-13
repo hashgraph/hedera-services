@@ -34,15 +34,15 @@ import javax.inject.Singleton;
 @Singleton
 public class TokenBurnHandler implements TransactionHandler {
     @Inject
-    public TokenBurnHandler() {}
+    public TokenBurnHandler() {
+        // Exists for injection
+    }
 
     /**
-     * Pre-handles a {@link com.hedera.hapi.node.base.HederaFunctionality#TokenBurn}
-     * transaction, returning the metadata required to, at minimum, validate the signatures of all
-     * required signing keys.
+     * Pre-handles a {@link HederaFunctionality#TOKEN_BURN} transaction, returning the metadata required to, at minimum,
+     * validate the signatures of all required signing keys.
      *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
+     * <p>Please note: the method signature is just a placeholder which is most likely going to change.
      *
      * @param context the {@link PreHandleContext} which collects all information that will be
      *     passed to {@link #handle(TransactionMetadata)}
@@ -51,7 +51,7 @@ public class TokenBurnHandler implements TransactionHandler {
      */
     public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore) {
         requireNonNull(context);
-        final var op = context.getTxn().tokenBurn().orElseThrow();
+        final var op = context.getTxn().tokenBurnOrThrow();
         final var tokenId = op.token();
         final var tokenMeta = tokenStore.getTokenMeta(tokenId);
         if (tokenMeta.failed()) {

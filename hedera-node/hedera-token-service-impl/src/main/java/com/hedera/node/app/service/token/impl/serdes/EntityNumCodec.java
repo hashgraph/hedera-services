@@ -20,34 +20,34 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.pbj.runtime.Codec;
-import com.hedera.pbj.runtime.io.DataInput;
-import com.hedera.pbj.runtime.io.DataOutput;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 
 public class EntityNumCodec implements Codec<EntityNum> {
     @NonNull
     @Override
-    public EntityNum parse(final @NonNull DataInput input) throws IOException {
+    public EntityNum parse(final @NonNull ReadableSequentialData input) throws IOException {
         requireNonNull(input);
         return new EntityNum(input.readInt());
     }
 
     @NonNull
     @Override
-    public EntityNum parseStrict(@NonNull DataInput dataInput) throws IOException {
+    public EntityNum parseStrict(@NonNull ReadableSequentialData dataInput) throws IOException {
         return parse(requireNonNull(dataInput));
     }
 
     @Override
-    public void write(final @NonNull EntityNum item, final @NonNull DataOutput output) throws IOException {
+    public void write(final @NonNull EntityNum item, final @NonNull WritableSequentialData output) throws IOException {
         requireNonNull(item);
         requireNonNull(output);
         output.writeInt(item.intValue());
     }
 
     @Override
-    public int measure(final @NonNull DataInput input) {
+    public int measure(final @NonNull ReadableSequentialData input) {
         throw new UnsupportedOperationException();
     }
 
@@ -57,7 +57,7 @@ public class EntityNumCodec implements Codec<EntityNum> {
     }
 
     @Override
-    public boolean fastEquals(final @NonNull EntityNum item, final @NonNull DataInput input) {
+    public boolean fastEquals(final @NonNull EntityNum item, final @NonNull ReadableSequentialData input) {
         throw new UnsupportedOperationException();
     }
 }

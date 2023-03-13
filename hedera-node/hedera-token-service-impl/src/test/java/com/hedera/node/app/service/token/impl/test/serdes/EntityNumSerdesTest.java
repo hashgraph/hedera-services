@@ -16,30 +16,29 @@
 
 package com.hedera.node.app.service.token.impl.test.serdes;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
-
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.impl.serdes.EntityNumCodec;
-import com.hedera.pbj.runtime.io.DataInput;
-import com.hedera.pbj.runtime.io.DataOutput;
-import java.io.IOException;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import java.io.IOException;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class EntityNumSerdesTest {
     private static final EntityNum SOME_NUM = EntityNum.fromLong(666L);
 
     @Mock
-    private DataInput input;
+    private ReadableSequentialData input;
 
     @Mock
-    private DataOutput output;
+    private WritableSequentialData output;
 
     final EntityNumCodec subject = new EntityNumCodec();
 

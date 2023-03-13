@@ -34,10 +34,12 @@ import javax.inject.Singleton;
 @Singleton
 public class TokenFreezeAccountHandler implements TransactionHandler {
     @Inject
-    public TokenFreezeAccountHandler() {}
+    public TokenFreezeAccountHandler() {
+        // Exists for injection
+    }
 
     /**
-     * Pre-handles a {@link com.hedera.hapi.node.base.HederaFunctionality#TokenFreezeAccount}
+     * Pre-handles a {@link HederaFunctionality#TOKEN_FREEZE_ACCOUNT}
      * transaction, returning the metadata required to, at minimum, validate the signatures of all
      * required signing keys.
      *
@@ -48,7 +50,7 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
      */
     public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore) {
         requireNonNull(context);
-        final var op = context.getTxn().tokenFreeze().orElseThrow();
+        final var op = context.getTxn().tokenFreezeOrThrow();
 
         final var tokenMeta = tokenStore.getTokenMeta(op.token());
 

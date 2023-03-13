@@ -19,7 +19,10 @@ package com.hedera.node.app.service.schedule.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.ScheduleID;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -30,13 +33,14 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#SCHEDULE_SIGN}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#SCHEDULE_SIGN}.
  */
 @Singleton
 public class ScheduleSignHandler extends AbstractScheduleHandler implements TransactionHandler {
     @Inject
-    public ScheduleSignHandler() {}
+    public ScheduleSignHandler() {
+        // Exists for injection
+    }
 
     /**
      * Pre-handles a {@link HederaFunctionality#SCHEDULE_SIGN} transaction, returning the metadata
@@ -57,8 +61,8 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
         requireNonNull(scheduleStore);
         requireNonNull(dispatcher);
         final var txn = context.getTxn();
-        final var op = txn.scheduleSign().orElseThrow();
-        final var id = op.scheduleID();
+        final var op = txn.scheduleSignOrThrow();
+        final var id = op.scheduleIDOrElse(ScheduleID.DEFAULT);
 
         final var scheduleLookupResult = scheduleStore.get(id);
         if (scheduleLookupResult.isEmpty()) {
@@ -69,7 +73,8 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
         final var scheduledTxn = scheduleLookupResult.get().scheduledTxn();
         final var optionalPayer = scheduleLookupResult.get().designatedPayer();
         final var payerForNested =
-                optionalPayer.orElse(scheduledTxn.transactionID().accountID());
+                optionalPayer.orElse(scheduledTxn.transactionIDOrElse(TransactionID.DEFAULT)
+                        .accountIDOrElse(AccountID.DEFAULT));
 
         preHandleScheduledTxn(context, scheduledTxn, payerForNested, dispatcher);
     }

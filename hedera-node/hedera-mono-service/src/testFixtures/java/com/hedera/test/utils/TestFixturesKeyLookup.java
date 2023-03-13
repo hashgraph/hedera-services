@@ -92,7 +92,7 @@ public class TestFixturesKeyLookup implements AccountAccess {
         return new AccountID.Builder()
                 .realmNum(idOrAlias.realmNum())
                 .shardNum(idOrAlias.shardNum())
-                .accountNum(idOrAlias.contractNum().orElse(0L))
+                .accountNum(idOrAlias.contractNumOrElse(0L))
                 .build();
     }
 
@@ -134,9 +134,9 @@ public class TestFixturesKeyLookup implements AccountAccess {
 
     private EntityNumVirtualKey accountNumOf(final AccountID id) {
         if (isAlias(PbjConverter.fromPbj(id))) {
-            final var alias = id.alias().orElse(null);
+            final var alias = id.alias();
             if (alias != null) {
-                if (alias.getLength() == EVM_ADDRESS_SIZE) {
+                if (alias.length() == EVM_ADDRESS_SIZE) {
                     final var evmAddress = PbjConverter.fromPbj(alias).toByteArray();
                     if (isMirror(evmAddress)) {
                         return EntityNumVirtualKey.fromLong(numFromEvmAddress(evmAddress));
@@ -146,6 +146,6 @@ public class TestFixturesKeyLookup implements AccountAccess {
                 return EntityNumVirtualKey.fromLong(value != null ? value : 0L);
             }
         }
-        return EntityNumVirtualKey.fromLong(id.accountNum().orElse(0L));
+        return EntityNumVirtualKey.fromLong(id.accountNumOrElse(0L));
     }
 }

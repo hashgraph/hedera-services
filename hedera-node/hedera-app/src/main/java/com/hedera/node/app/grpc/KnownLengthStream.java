@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.grpc;
 
-import com.hedera.pbj.runtime.io.DataBuffer;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.KnownLength;
 import java.io.InputStream;
@@ -25,12 +25,12 @@ import java.util.Objects;
 /**
  * An {@link InputStream} that implements {@link KnownLength} which allows the gRPC server to do
  * some smarter things when returning responses to clients. This stream is backed by a {@link
- * DataBuffer}, with optimal implementations for the InputStream methods.
+ * BufferedData}, with optimal implementations for the InputStream methods.
  */
 final class KnownLengthStream extends InputStream implements KnownLength {
-    private final DataBuffer buf;
+    private final BufferedData buf;
 
-    public KnownLengthStream(final DataBuffer buf) {
+    public KnownLengthStream(final BufferedData buf) {
         this.buf = Objects.requireNonNull(buf);
     }
 
@@ -85,6 +85,6 @@ final class KnownLengthStream extends InputStream implements KnownLength {
 
     @Override
     public int available() {
-        return (int) buf.getRemaining();
+        return (int) buf.remaining();
     }
 }

@@ -38,12 +38,14 @@ import javax.inject.Singleton;
 @Singleton
 public class CryptoGetAccountRecordsHandler extends PaidQueryHandler {
     @Inject
-    public CryptoGetAccountRecordsHandler() {}
+    public CryptoGetAccountRecordsHandler() {
+        // Exists for injection
+    }
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
-        return query.cryptoGetAccountRecords().orElseThrow().header();
+        return query.cryptoGetAccountRecordsOrThrow().header();
     }
 
     @Override

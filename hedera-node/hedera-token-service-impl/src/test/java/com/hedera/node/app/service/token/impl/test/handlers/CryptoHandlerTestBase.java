@@ -51,7 +51,7 @@ public class CryptoHandlerTestBase {
     protected final Timestamp consensusTimestamp =
             Timestamp.newBuilder().seconds(1_234_567L).build();
     protected final HederaKey payerKey = asHederaKey(A_COMPLEX_KEY).get();
-    protected final Long payerNum = payer.accountNum().get();
+    protected final Long payerNum = payer.accountNum();
 
     @Mock
     protected ReadableKVState<String, EntityNumValue> aliases;

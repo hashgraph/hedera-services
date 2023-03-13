@@ -71,14 +71,14 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
             .spender(spender)
             .owner(owner)
             .tokenId(nft)
-            .approvedForAll(Optional.of(Boolean.valueOf(true)))
+            .approvedForAll(Boolean.TRUE)
             .serialNumbers(List.of(1L, 2L))
             .build();
     private final NftAllowance nftAllowanceWithDelegatingSpender = NftAllowance.newBuilder()
             .spender(spender)
             .owner(owner)
             .tokenId(nft)
-            .approvedForAll(Optional.of(Boolean.valueOf(false)))
+            .approvedForAll(Boolean.FALSE)
             .serialNumbers(List.of(1L, 2L))
             .delegatingSpender(delegatingSpender)
             .build();
@@ -87,7 +87,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoApproveAllowanceVanilla() {
-        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum().get())))
+        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum())))
                 .willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
@@ -101,7 +101,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoApproveAllowanceFailsWithInvalidOwner() {
-        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum().get())))
+        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum())))
                 .willReturn(null);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, false);
@@ -114,7 +114,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoApproveAllowanceDoesntAddIfOwnerSameAsPayer() {
-        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum().get())))
+        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum())))
                 .willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
@@ -128,11 +128,11 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoApproveAllowanceAddsDelegatingSpender() {
-        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum().get())))
+        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum())))
                 .willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
         given(accounts.get(EntityNumVirtualKey.fromLong(
-                        delegatingSpender.accountNum().get())))
+                        delegatingSpender.accountNum())))
                 .willReturn(payerAccount);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, true);
@@ -145,11 +145,11 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoApproveAllowanceFailsIfDelegatingSpenderMissing() {
-        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum().get())))
+        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum())))
                 .willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
         given(accounts.get(EntityNumVirtualKey.fromLong(
-                        delegatingSpender.accountNum().get())))
+                        delegatingSpender.accountNum())))
                 .willReturn(null);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, true);

@@ -34,7 +34,9 @@ import javax.inject.Singleton;
 @Singleton
 public class EtherumTransactionHandler implements TransactionHandler {
     @Inject
-    public EtherumTransactionHandler() {}
+    public EtherumTransactionHandler() {
+        // Exists for injection
+    }
 
     /**
      * This method is called during the pre-handle workflow.

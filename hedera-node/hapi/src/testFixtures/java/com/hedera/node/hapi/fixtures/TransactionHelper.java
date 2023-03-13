@@ -35,8 +35,8 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody.Builder;
 import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
 import com.hedera.pbj.runtime.Codec;
-import com.hedera.pbj.runtime.io.Bytes;
-import com.hedera.pbj.runtime.io.DataOutputStream;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -136,7 +136,7 @@ public interface TransactionHelper {
     }
 
     default UncheckedSubmitBody.Builder uncheckedSubmitBuilder() {
-        return UncheckedSubmitBody.newBuilder().transactionBytes(Bytes.EMPTY_BYTES);
+        return UncheckedSubmitBody.newBuilder().transactionBytes(Bytes.EMPTY);
     }
 
     default Transaction consensusSubmitMessageTransaction(
@@ -152,7 +152,7 @@ public interface TransactionHelper {
     }
 
     default Transaction uncheckedSubmitTransaction(@NonNull final AccountID payer, final long time) {
-        final var data = UncheckedSubmitBody.newBuilder().transactionBytes(Bytes.EMPTY_BYTES);
+        final var data = UncheckedSubmitBody.newBuilder().transactionBytes(Bytes.EMPTY);
         return transaction(payer, time, b -> b.uncheckedSubmit(data));
     }
 
@@ -207,7 +207,7 @@ public interface TransactionHelper {
         return new ByteArrayDataOutput(out);
     }
 
-    final class ByteArrayDataOutput extends DataOutputStream {
+    final class ByteArrayDataOutput extends WritableStreamingData {
         private final ByteArrayOutputStream out;
 
         public ByteArrayDataOutput(ByteArrayOutputStream out) {

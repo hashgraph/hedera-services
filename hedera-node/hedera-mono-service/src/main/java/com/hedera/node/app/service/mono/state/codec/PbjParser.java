@@ -16,12 +16,12 @@
 
 package com.hedera.node.app.service.mono.state.codec;
 
-import com.hedera.pbj.runtime.io.DataInput;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 
 /**
- * Defines a parser from a PBJ {@link DataInput}; helpful for building {@link com.hedera.pbj.runtime.Codec}
+ * Defines a parser from a PBJ {@link ReadableSequentialData}; helpful for building {@link com.hedera.pbj.runtime.Codec}
  * implementations from a method reference to a PBJ-generated {@code ProtoParser}
  * implementation.
  *
@@ -30,5 +30,5 @@ import java.io.IOException;
 @FunctionalInterface
 public interface PbjParser<T> {
     @NonNull
-    T parse(@NonNull DataInput input) throws IOException;
+    T parse(@NonNull ReadableSequentialData input) throws IOException;
 }

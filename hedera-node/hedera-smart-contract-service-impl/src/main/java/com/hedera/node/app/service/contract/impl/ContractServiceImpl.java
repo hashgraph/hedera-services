@@ -34,7 +34,7 @@ import java.util.Set;
 public final class ContractServiceImpl implements ContractService {
     private static final int MAX_STORAGE_ENTRIES = 4096;
     private static final SemanticVersion CURRENT_VERSION =
-            new SemanticVersion.Builder().minor(34).build();
+            SemanticVersion.newBuilder().minor(34).build();
     public static final String STORAGE_KEY = "STORAGE";
 
     @Override

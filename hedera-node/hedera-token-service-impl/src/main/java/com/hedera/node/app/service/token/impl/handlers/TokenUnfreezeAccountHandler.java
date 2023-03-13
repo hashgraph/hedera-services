@@ -35,7 +35,9 @@ import javax.inject.Singleton;
 @Singleton
 public class TokenUnfreezeAccountHandler implements TransactionHandler {
     @Inject
-    public TokenUnfreezeAccountHandler() {}
+    public TokenUnfreezeAccountHandler() {
+        // Exists for injection
+    }
 
     /**
      * This method is called during the pre-handle workflow.
@@ -54,7 +56,7 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
      */
     public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore) {
         requireNonNull(context);
-        final var op = context.getTxn().tokenUnfreeze().orElseThrow();
+        final var op = context.getTxn().tokenUnfreezeOrThrow();
         final var tokenMeta = tokenStore.getTokenMeta(op.token());
 
         if (!tokenMeta.failed()) {

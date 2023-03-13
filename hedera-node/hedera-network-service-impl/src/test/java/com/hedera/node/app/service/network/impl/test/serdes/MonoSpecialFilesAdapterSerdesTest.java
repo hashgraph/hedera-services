@@ -16,40 +16,40 @@
 
 package com.hedera.node.app.service.network.impl.test.serdes;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
 import com.hedera.node.app.service.mono.state.merkle.internals.BytesElement;
 import com.hedera.node.app.service.network.impl.serdes.MonoSpecialFilesAdapterCodec;
-import com.hedera.pbj.runtime.io.DataInput;
-import com.hedera.pbj.runtime.io.DataOutput;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.fcqueue.FCQueue;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class MonoSpecialFilesAdapterSerdesTest {
     private static final FileID SOME_FILE_ID = FileID.newBuilder().fileNum(666).build();
     private static final MerkleSpecialFiles SOME_SPECIAL_FILES = new MerkleSpecialFiles();
 
     static {
-        SOME_SPECIAL_FILES.append(SOME_FILE_ID, "abcdef".getBytes());
+        SOME_SPECIAL_FILES.append(PbjConverter.fromPbj(SOME_FILE_ID), "abcdef".getBytes());
     }
 
     @Mock
-    private DataInput input;
+    private ReadableSequentialData input;
 
     @Mock
-    private DataOutput output;
+    private WritableSequentialData output;
 
     final MonoSpecialFilesAdapterCodec subject = new MonoSpecialFilesAdapterCodec();
 

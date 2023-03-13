@@ -32,18 +32,19 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#CONTRACT_GET_BYTECODE}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONTRACT_GET_BYTECODE}.
  */
 @Singleton
 public class ContractGetBytecodeHandler extends PaidQueryHandler {
     @Inject
-    public ContractGetBytecodeHandler() {}
+    public ContractGetBytecodeHandler() {
+        // Exists for injection
+    }
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
-        return query.contractGetBytecode().orElseThrow().header();
+        return query.contractGetBytecodeOrThrow().header();
     }
 
     @Override

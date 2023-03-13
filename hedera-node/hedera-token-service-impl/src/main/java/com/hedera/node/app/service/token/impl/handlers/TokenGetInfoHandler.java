@@ -38,12 +38,14 @@ import javax.inject.Singleton;
 @Singleton
 public class TokenGetInfoHandler extends PaidQueryHandler {
     @Inject
-    public TokenGetInfoHandler() {}
+    public TokenGetInfoHandler() {
+        // Exists for injection
+    }
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
-        return query.tokenGetInfo().orElseThrow().header();
+        return query.tokenGetInfoOrThrow().header();
     }
 
     @Override

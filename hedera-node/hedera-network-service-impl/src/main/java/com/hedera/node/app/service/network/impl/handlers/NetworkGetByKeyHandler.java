@@ -32,18 +32,19 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#GET_BY_KEY}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#GET_BY_KEY}.
  */
 @Singleton
 public class NetworkGetByKeyHandler extends PaidQueryHandler {
     @Inject
-    public NetworkGetByKeyHandler() {}
+    public NetworkGetByKeyHandler() {
+        // Exists for injection
+    }
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
-        return query.getByKey().orElseThrow().header();
+        return query.getByKeyOrThrow().header();
     }
 
     @Override

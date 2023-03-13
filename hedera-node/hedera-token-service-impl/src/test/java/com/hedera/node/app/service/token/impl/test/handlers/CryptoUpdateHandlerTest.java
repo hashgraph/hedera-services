@@ -52,7 +52,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     void cryptoUpdateVanilla() {
         final var txn = cryptoUpdateTransaction(payer, updateAccountId);
         given(accounts.get(EntityNumVirtualKey.fromLong(
-                        updateAccountId.accountNum().get())))
+                        updateAccountId.accountNum())))
                 .willReturn(updateAccount);
         given(updateAccount.getAccountKey()).willReturn((JKey) updateAccountKey);
         given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(false);
@@ -69,7 +69,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     void cryptoUpdateNewSignatureKeyWaivedVanilla() {
         final var txn = cryptoUpdateTransaction(payer, updateAccountId);
         given(accounts.get(EntityNumVirtualKey.fromLong(
-                        updateAccountId.accountNum().get())))
+                        updateAccountId.accountNum())))
                 .willReturn(updateAccount);
         given(updateAccount.getAccountKey()).willReturn((JKey) updateAccountKey);
         given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(true);
@@ -99,7 +99,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     void cryptoUpdatePayerMissingFails() {
         final var txn = cryptoUpdateTransaction(updateAccountId, updateAccountId);
         given(accounts.get(EntityNumVirtualKey.fromLong(
-                        updateAccountId.accountNum().get())))
+                        updateAccountId.accountNum())))
                 .willReturn(null);
 
         given(waivers.isNewKeySignatureWaived(txn, updateAccountId)).willReturn(false);
@@ -115,7 +115,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     void cryptoUpdatePayerMissingFailsWhenNoOtherSigsRequired() {
         final var txn = cryptoUpdateTransaction(updateAccountId, updateAccountId);
         given(accounts.get(EntityNumVirtualKey.fromLong(
-                        updateAccountId.accountNum().get())))
+                        updateAccountId.accountNum())))
                 .willReturn(null);
 
         given(waivers.isNewKeySignatureWaived(txn, updateAccountId)).willReturn(true);
@@ -131,7 +131,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     void cryptoUpdateUpdateAccountMissingFails() {
         final var txn = cryptoUpdateTransaction(payer, updateAccountId);
         given(accounts.get(EntityNumVirtualKey.fromLong(
-                        updateAccountId.accountNum().get())))
+                        updateAccountId.accountNum())))
                 .willReturn(null);
 
         given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(true);

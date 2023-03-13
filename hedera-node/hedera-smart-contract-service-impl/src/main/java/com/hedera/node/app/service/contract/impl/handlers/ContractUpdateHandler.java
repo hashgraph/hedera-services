@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.contract.ContractUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -32,13 +33,14 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#CONTRACT_UPDATE}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONTRACT_UPDATE}.
  */
 @Singleton
 public class ContractUpdateHandler implements TransactionHandler {
     @Inject
-    public ContractUpdateHandler() {}
+    public ContractUpdateHandler() {
+        // Exists for injection
+    }
 
     /**
      * This method is called during the pre-handle workflow.
@@ -56,33 +58,32 @@ public class ContractUpdateHandler implements TransactionHandler {
      */
     public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
-        final var op = context.getTxn().contractUpdateInstance().orElseThrow();
+        final var op = context.getTxn().contractUpdateInstanceOrThrow();
 
         if (isAdminSigRequired(op)) {
-            context.addNonPayerKey(op.contractID());
+            context.addNonPayerKey(op.contractIDOrElse(ContractID.DEFAULT));
         }
         if (hasCryptoAdminKey(op)) {
-            final var key = asHederaKey(op.adminKey());
+            final var key = asHederaKey(op.adminKeyOrThrow());
             key.ifPresent(context::addToReqNonPayerKeys);
         }
-        if (op.autoRenewAccountId() != null
-                && !op.autoRenewAccountId().equals(AccountID.newBuilder().build())) {
+        // TODO This code isn't right, autoRenewAccountId may be null
+        if (op.hasAutoRenewAccountId() && !op.autoRenewAccountId().equals(AccountID.DEFAULT)) {
             context.addNonPayerKey(op.autoRenewAccountId(), INVALID_AUTORENEW_ACCOUNT);
         }
     }
 
     private boolean isAdminSigRequired(final ContractUpdateTransactionBody op) {
-        return op.expirationTime() == null
+        return !op.hasExpirationTime()
                 || hasCryptoAdminKey(op)
-                || (op.proxyAccountID() != null)
-                || (op.autoRenewPeriod() != null)
-                || (op.fileID() != null)
-                || op.memo().isPresent() && op.memo().get().length() > 0;
+                || op.hasProxyAccountID()
+                || op.hasAutoRenewPeriod()
+                || op.hasFileID()
+                || op.memoOrElse("").length() > 0;
     }
 
     private boolean hasCryptoAdminKey(final ContractUpdateTransactionBody op) {
-        final var adminKey = op.adminKey();
-        return adminKey != null && adminKey.contractID().isEmpty();
+        return op.hasAdminKey() && !op.adminKeyOrThrow().hasContractID();
     }
 
     /**

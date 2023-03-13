@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.spi.meta;
 
-import com.hedera.pbj.runtime.io.Bytes;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 
 /**
  * Provides context for query processing.

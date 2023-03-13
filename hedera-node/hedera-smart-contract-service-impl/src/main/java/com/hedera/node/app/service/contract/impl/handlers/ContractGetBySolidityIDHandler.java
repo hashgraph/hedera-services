@@ -32,18 +32,19 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#GET_BY_SOLIDITY_ID}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#GET_BY_SOLIDITY_ID}.
  */
 @Singleton
 public class ContractGetBySolidityIDHandler extends PaidQueryHandler {
     @Inject
-    public ContractGetBySolidityIDHandler() {}
+    public ContractGetBySolidityIDHandler() {
+        // Exists for injection
+    }
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
-        return query.getBySolidityID().orElseThrow().header();
+        return query.getBySolidityIDOrThrow().header();
     }
 
     @Override

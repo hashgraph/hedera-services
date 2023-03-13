@@ -20,25 +20,25 @@ import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#CONTRACT_CREATE}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONTRACT_CREATE}.
  */
 @Singleton
 public class ContractCreateHandler implements TransactionHandler {
     @Inject
-    public ContractCreateHandler() {}
+    public ContractCreateHandler() {
+        // Exists for injection
+    }
 
     /**
      * This method is called during the pre-handle workflow.
@@ -56,13 +56,13 @@ public class ContractCreateHandler implements TransactionHandler {
      */
     public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
-        final var op = context.getTxn().contractCreateInstance().orElseThrow();
-        final var adminKey = op.adminKey() != null ? asHederaKey(op.adminKey()) : Optional.<HederaKey>empty();
+        final var op = context.getTxn().contractCreateInstanceOrThrow();
+        final var adminKey = asHederaKey(op.adminKeyOrElse(Key.DEFAULT));
         if (adminKey.isPresent() && !((JKey) adminKey.get()).hasContractID()) {
             context.addToReqNonPayerKeys(adminKey.get());
         }
-        if (op.autoRenewAccountId() != null) {
-            context.addNonPayerKey(op.autoRenewAccountId());
+        if (op.hasAutoRenewAccountId()) {
+            context.addNonPayerKey(op.autoRenewAccountIdOrThrow());
         }
     }
 

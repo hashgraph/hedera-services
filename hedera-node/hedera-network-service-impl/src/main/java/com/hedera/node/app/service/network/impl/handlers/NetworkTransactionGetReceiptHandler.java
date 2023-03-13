@@ -32,18 +32,19 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#TRANSACTION_GET_RECEIPT}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#TRANSACTION_GET_RECEIPT}.
  */
 @Singleton
 public class NetworkTransactionGetReceiptHandler extends FreeQueryHandler {
     @Inject
-    public NetworkTransactionGetReceiptHandler() {}
+    public NetworkTransactionGetReceiptHandler() {
+        // Exists for injection
+    }
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
-        return query.transactionGetReceipt().orElseThrow().header();
+        return query.transactionGetReceiptOrThrow().header();
     }
 
     @Override

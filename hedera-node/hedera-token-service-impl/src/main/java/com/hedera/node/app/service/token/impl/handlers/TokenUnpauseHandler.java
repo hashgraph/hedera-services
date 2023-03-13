@@ -34,7 +34,9 @@ import javax.inject.Singleton;
 @Singleton
 public class TokenUnpauseHandler implements TransactionHandler {
     @Inject
-    public TokenUnpauseHandler() {}
+    public TokenUnpauseHandler() {
+        // Exists for injection
+    }
 
     /**
      * This method is called during the pre-handle workflow.

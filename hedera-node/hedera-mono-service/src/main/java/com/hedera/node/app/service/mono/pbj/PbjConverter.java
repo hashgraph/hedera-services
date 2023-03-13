@@ -23,6 +23,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -34,9 +35,9 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.pbj.runtime.Codec;
-import com.hedera.pbj.runtime.io.Bytes;
-import com.hedera.pbj.runtime.io.DataBuffer;
-import com.hedera.pbj.runtime.io.DataOutputStream;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -65,7 +66,7 @@ public final class PbjConverter {
         requireNonNull(txBody);
         try {
             final var bytes = txBody.toByteArray();
-            final var ret = TransactionBody.PROTOBUF.parse(DataBuffer.wrap(bytes));
+            final var ret = TransactionBody.PROTOBUF.parse(BufferedData.wrap(bytes));
             return ret;
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -76,7 +77,7 @@ public final class PbjConverter {
         requireNonNull(keyValue);
         try {
             final var bytes = keyValue.toByteArray();
-            return Key.PROTOBUF.parse(DataBuffer.wrap(bytes));
+            return Key.PROTOBUF.parse(BufferedData.wrap(bytes));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -140,7 +141,7 @@ public final class PbjConverter {
 
     public static @NonNull ByteString fromPbj(@NonNull Bytes bytes) {
         requireNonNull(bytes);
-        final byte[] data = new byte[bytes.getLength()];
+        final byte[] data = new byte[Math.toIntExact(bytes.length())];
         bytes.getBytes(0, data);
         return ByteString.copyFrom(data);
     }
@@ -660,7 +661,7 @@ public final class PbjConverter {
         requireNonNull(tx);
         try {
             final var bytes = new ByteArrayOutputStream();
-            codec.write(tx, new DataOutputStream(bytes));
+            codec.write(tx, new WritableStreamingData(bytes));
             return bytes.toByteArray();
         } catch (IOException e) {
             throw new RuntimeException("Unable to convert from PBJ to bytes", e);
@@ -1176,7 +1177,7 @@ public final class PbjConverter {
     }
 
     public static byte[] asBytes(Bytes b) {
-        final var buf = new byte[b.getLength()];
+        final var buf = new byte[Math.toIntExact(b.length())];
         b.getBytes(0, buf);
         return buf;
     }
@@ -1185,9 +1186,17 @@ public final class PbjConverter {
         return com.hederahashgraph.api.proto.java.ContractID.newBuilder()
                 .setRealmNum(contractID.realmNum())
                 .setShardNum(contractID.shardNum())
-                .setContractNum(contractID.contractNum().orElse(0L))
+                .setContractNum(contractID.contractNumOrElse(0L))
                 .setEvmAddress(
-                        ByteString.copyFrom(asBytes(contractID.evmAddress().orElse(Bytes.EMPTY_BYTES))))
+                        ByteString.copyFrom(asBytes(contractID.evmAddressOrElse(Bytes.EMPTY))))
+                .build();
+    }
+
+    public static com.hederahashgraph.api.proto.java.FileID fromPbj(FileID someFileId) {
+        return com.hederahashgraph.api.proto.java.FileID.newBuilder()
+                .setRealmNum(someFileId.realmNum())
+                .setShardNum(someFileId.shardNum())
+                .setFileNum(someFileId.fileNum())
                 .build();
     }
 }

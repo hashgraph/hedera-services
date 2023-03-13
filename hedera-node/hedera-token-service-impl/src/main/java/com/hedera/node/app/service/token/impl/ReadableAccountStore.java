@@ -47,7 +47,7 @@ import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.pbj.runtime.io.Bytes;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -91,7 +91,9 @@ public class ReadableAccountStore implements AccountAccess {
     public KeyOrLookupFailureReason getKey(@NonNull final AccountID id) {
         Objects.requireNonNull(id);
         final var account = getAccountLeaf(id);
-        return account == null ? withFailureReason(INVALID_ACCOUNT_ID) : validateKey(account.getAccountKey(), false);
+        return account == null
+                ? withFailureReason(INVALID_ACCOUNT_ID)
+                : validateKey(account.getAccountKey(), false);
     }
 
     /** {@inheritDoc} */
@@ -173,7 +175,7 @@ public class ReadableAccountStore implements AccountAccess {
                     case ACCOUNT_NUM -> accountOneOf.as();
                     case ALIAS -> {
                         final Bytes alias = accountOneOf.as();
-                        if (alias.getLength() == EVM_ADDRESS_LEN && isMirror(alias)) {
+                        if (alias.length() == EVM_ADDRESS_LEN && isMirror(alias)) {
                             yield fromMirror(alias);
                         } else {
                             yield aliases.get(alias.asUtf8String()).num();
@@ -213,7 +215,7 @@ public class ReadableAccountStore implements AccountAccess {
                         // If we didn't find an alias, we will want to auto-create this account. But
                         // we don't want to auto-create an account if there is already another
                         // account in the system with the same EVM address that we would have auto-created.
-                        if (evmAddress.getLength() > EVM_ADDRESS_LEN && entityNum == null) {
+                        if (evmAddress.length() > EVM_ADDRESS_LEN && entityNum == null) {
                             // if we don't find entity num for key alias we can try to derive EVM
                             // address from it and look it up
                             var evmKeyAliasAddress = keyAliasToEVMAddress(evmAddress);
@@ -273,7 +275,7 @@ public class ReadableAccountStore implements AccountAccess {
         // JKey. The old JKey class needs a Google protobuf Key, so for now we
         // delegate to AliasManager. But this should be changed, so we don't
         // need AliasManager anymore.
-        final var buf = new byte[alias.getLength()];
+        final var buf = new byte[Math.toIntExact(alias.length())];
         alias.getBytes(0, buf);
         return AliasManager.keyAliasToEVMAddress(ByteString.copyFrom(buf));
     }
@@ -299,7 +301,7 @@ public class ReadableAccountStore implements AccountAccess {
                 .declineReward(account.isDeclinedReward())
                 .stakeAtStartOfLastRewardedPeriod(account.getStakePeriodStart())
                 .autoRenewSecs(account.getAutoRenewSecs())
-                .accountNumber(idOrAlias.accountNum().get())
+                .accountNumber(idOrAlias.accountNum())
                 .isSmartContract(account.isSmartContract());
         if (account.getAutoRenewAccount() != null) {
             builder.autoRenewAccountNumber(account.getAutoRenewAccount().num());

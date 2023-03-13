@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token.impl.handlers;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
@@ -29,13 +30,14 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#CRYPTO_UPDATE}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CRYPTO_UPDATE}.
  */
 @Singleton
 public class CryptoUpdateHandler implements TransactionHandler {
     @Inject
-    public CryptoUpdateHandler() {}
+    public CryptoUpdateHandler() {
+        // Exists for injection
+    }
 
     /**
      * Pre-handles a {@link HederaFunctionality#CRYPTO_UPDATE} transaction, returning the metadata
@@ -50,8 +52,8 @@ public class CryptoUpdateHandler implements TransactionHandler {
         requireNonNull(waivers);
         final var txn = context.getTxn();
         final var payer = context.getPayer();
-        final var op = txn.cryptoUpdateAccount().orElseThrow();
-        final var updateAccountId = op.accountIDToUpdate();
+        final var op = txn.cryptoUpdateAccountOrThrow();
+        final var updateAccountId = op.accountIDToUpdateOrElse(AccountID.DEFAULT);
 
         final var newAccountKeyMustSign = !waivers.isNewKeySignatureWaived(txn, payer);
         final var targetAccountKeyMustSign = !waivers.isTargetAccountSignatureWaived(txn, payer);

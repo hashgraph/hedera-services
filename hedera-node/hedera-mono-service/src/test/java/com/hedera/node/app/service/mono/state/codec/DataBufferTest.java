@@ -19,7 +19,7 @@ package com.hedera.node.app.service.mono.state.codec;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.pbj.runtime.io.DataBuffer;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import java.nio.ByteBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -35,11 +35,11 @@ class DataBufferTest {
     @Mock
     private ByteBuffer buffer;
 
-    private DataBuffer subject;
+    private BufferedData subject;
 
     @BeforeEach
     void setUp() {
-        subject = DataBuffer.wrap(buffer);
+        subject = BufferedData.wrap(buffer);
     }
 
     @Test
@@ -65,7 +65,7 @@ class DataBufferTest {
             1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
             1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
         });
-        subject = DataBuffer.wrap(buffer);
+        subject = BufferedData.wrap(buffer);
 
         //        assertTrue(subject.readBoolean());
         subject.readByte();
@@ -85,7 +85,7 @@ class DataBufferTest {
     @Disabled("Enable once reading boolean is supported")
     void canReadFalse() {
         buffer = ByteBuffer.wrap(new byte[] {0});
-        subject = DataBuffer.wrap(buffer);
+        subject = BufferedData.wrap(buffer);
 
         //        assertFalse(subject.readBoolean());
     }

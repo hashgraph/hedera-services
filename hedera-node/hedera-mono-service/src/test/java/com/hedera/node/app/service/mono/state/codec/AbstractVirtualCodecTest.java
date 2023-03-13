@@ -19,9 +19,9 @@ package com.hedera.node.app.service.mono.state.codec;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.pbj.runtime.Codec;
-import com.hedera.pbj.runtime.io.DataBuffer;
-import com.hedera.pbj.runtime.io.DataInputStream;
-import com.hedera.pbj.runtime.io.DataOutputStream;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
+import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -85,7 +85,7 @@ abstract class AbstractVirtualCodecTest<T> {
 
     protected byte[] writeUsingStream(final T instance) {
         final var baos = new ByteArrayOutputStream();
-        final var out = new DataOutputStream(baos);
+        final var out = new WritableStreamingData(baos);
         try {
             subject.write(instance, out);
             out.flush();
@@ -97,7 +97,7 @@ abstract class AbstractVirtualCodecTest<T> {
 
     protected byte[] writeUsingBuffer(final T instance) {
         final var buffer = ByteBuffer.allocate(MAX_SUPPORTED_SERIALIZED_SIZE);
-        final var bb = DataBuffer.wrap(buffer);
+        final var bb = BufferedData.wrap(buffer);
         try {
             subject.write(instance, bb);
         } catch (IOException e) {
@@ -110,7 +110,7 @@ abstract class AbstractVirtualCodecTest<T> {
     private T parseUsingStream(final byte[] serialized) {
         final T instance;
         final var bais = new ByteArrayInputStream(serialized);
-        final var in = new DataInputStream(bais);
+        final var in = new ReadableStreamingData(bais);
         byte[] leftover;
         try {
             in.reset();
@@ -126,7 +126,7 @@ abstract class AbstractVirtualCodecTest<T> {
     private T parseUsingBuffer(final byte[] serialized) {
         final T instance;
         final var buffer = ByteBuffer.wrap(serialized);
-        final var bb = DataBuffer.wrap(buffer);
+        final var bb = BufferedData.wrap(buffer);
         try {
             instance = subject.parse(bb);
         } catch (IOException e) {

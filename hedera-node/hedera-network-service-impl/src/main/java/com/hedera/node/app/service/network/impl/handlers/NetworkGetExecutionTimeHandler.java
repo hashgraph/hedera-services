@@ -32,18 +32,19 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#NETWORK_GET_EXECUTION_TIME}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#NETWORK_GET_EXECUTION_TIME}.
  */
 @Singleton
 public class NetworkGetExecutionTimeHandler extends PaidQueryHandler {
     @Inject
-    public NetworkGetExecutionTimeHandler() {}
+    public NetworkGetExecutionTimeHandler() {
+        // Exists for injection
+    }
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
-        return query.networkGetExecutionTime().orElseThrow().header();
+        return query.networkGetExecutionTimeOrThrow().header();
     }
 
     @Override

@@ -26,7 +26,8 @@ import com.hedera.node.app.spi.config.Profile;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.RecordCache;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
-import com.hedera.pbj.runtime.io.BytesBuffer;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.pbj.runtime.io.buffer.BytesBuffer;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.system.Platform;
@@ -100,9 +101,9 @@ public class SubmissionManager {
             }
             final var uncheckedSubmit = optUncheckedSubmit.get();
             final var uncheckedTxBytes = uncheckedSubmit.transactionBytes();
-            final var uncheckedTxBuffer = BytesBuffer.wrap(uncheckedTxBytes);
+            final var uncheckedTxBuffer = Bytes.wrap(uncheckedTxBytes);
             WorkflowOnset.parse(uncheckedTxBuffer, Transaction.PROTOBUF, PLATFORM_TRANSACTION_NOT_CREATED);
-            payload = new byte[uncheckedTxBytes.getLength()];
+            payload = new byte[uncheckedTxBytes.length()];
             uncheckedTxBytes.getBytes(0, payload);
         }
 

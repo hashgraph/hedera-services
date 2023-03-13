@@ -33,7 +33,7 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.pbj.runtime.io.Bytes;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hederahashgraph.api.proto.java.Key;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -269,7 +269,7 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
     public static byte[] keyAliasToEVMAddress(@NonNull final Bytes alias) {
         requireNonNull(alias);
         try {
-            final var ret = new byte[alias.getLength()];
+            final var ret = new byte[Math.toIntExact(alias.length())];
             alias.getBytes(0, ret);
             final Key key = Key.parseFrom(ret);
             final JKey jKey = JKey.mapKey(key);

@@ -18,7 +18,7 @@ package com.hedera.node.app.workflows.query;
 
 import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.spi.meta.QueryContext;
-import com.hedera.pbj.runtime.io.Bytes;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import javax.inject.Inject;
 
 /**

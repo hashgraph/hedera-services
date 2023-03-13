@@ -34,11 +34,12 @@ import javax.inject.Singleton;
 @Singleton
 public class TokenGrantKycToAccountHandler implements TransactionHandler {
     @Inject
-    public TokenGrantKycToAccountHandler() {}
+    public TokenGrantKycToAccountHandler() {
+        // Exists for injection
+    }
 
     /**
-     * Pre-handles a {@link
-     * com.hederahashgraph.api.proto.java.HederaFunctionality#TokenGrantKycToAccount} transaction,
+     * Pre-handles a {@link HederaFunctionality#TOKEN_GRANT_KYC_TO_ACCOUNT} transaction,
      * returning the metadata required to, at minimum, validate the signatures of all required
      * signing keys.
      *
@@ -49,7 +50,7 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
      */
     public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore) {
         requireNonNull(context);
-        final var op = context.getTxn().tokenGrantKyc().orElseThrow();
+        final var op = context.getTxn().tokenGrantKycOrThrow();
 
         final var tokenMeta = tokenStore.getTokenMeta(op.token());
 

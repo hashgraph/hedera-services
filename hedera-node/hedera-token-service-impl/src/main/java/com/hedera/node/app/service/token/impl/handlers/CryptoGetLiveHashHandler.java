@@ -38,12 +38,14 @@ import javax.inject.Singleton;
 @Singleton
 public class CryptoGetLiveHashHandler extends FreeQueryHandler {
     @Inject
-    public CryptoGetLiveHashHandler() {}
+    public CryptoGetLiveHashHandler() {
+        // Exists for injection
+    }
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
-        return query.cryptoGetLiveHash().orElseThrow().header();
+        return query.cryptoGetLiveHashOrThrow().header();
     }
 
     @Override

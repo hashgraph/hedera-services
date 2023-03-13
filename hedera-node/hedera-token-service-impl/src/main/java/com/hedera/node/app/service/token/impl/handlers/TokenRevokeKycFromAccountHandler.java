@@ -35,7 +35,9 @@ import javax.inject.Singleton;
 @Singleton
 public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
     @Inject
-    public TokenRevokeKycFromAccountHandler() {}
+    public TokenRevokeKycFromAccountHandler() {
+        // Exists for injection
+    }
 
     /**
      * This method is called during the pre-handle workflow.
@@ -54,7 +56,7 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
      */
     public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore) {
         requireNonNull(context);
-        final var op = context.getTxn().tokenRevokeKyc().orElseThrow();
+        final var op = context.getTxn().tokenRevokeKycOrThrow();
         final var tokenMeta = tokenStore.getTokenMeta(op.token());
 
         if (!tokenMeta.failed()) {

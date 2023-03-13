@@ -17,8 +17,8 @@
 package com.hedera.node.app.service.token.impl.serdes;
 
 import com.hedera.pbj.runtime.Codec;
-import com.hedera.pbj.runtime.io.DataInput;
-import com.hedera.pbj.runtime.io.DataOutput;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -26,7 +26,7 @@ import java.nio.charset.StandardCharsets;
 public class StringCodec implements Codec<String> {
     @NonNull
     @Override
-    public String parse(@NonNull DataInput input) throws IOException {
+    public String parse(@NonNull ReadableSequentialData input) throws IOException {
         final var len = input.readInt();
         final var bytes = new byte[len];
         input.readBytes(bytes);
@@ -34,19 +34,19 @@ public class StringCodec implements Codec<String> {
     }
 
     @Override
-    public void write(@NonNull String value, @NonNull DataOutput output) throws IOException {
+    public void write(@NonNull String value, @NonNull WritableSequentialData output) throws IOException {
         final var bytes = value.getBytes(StandardCharsets.UTF_8);
         output.writeInt(bytes.length);
         output.writeBytes(bytes);
     }
 
     @Override
-    public int measure(@NonNull DataInput input) throws IOException {
+    public int measure(@NonNull ReadableSequentialData input) {
         return input.readInt();
     }
 
     @Override
-    public boolean fastEquals(@NonNull String value, @NonNull DataInput input) {
+    public boolean fastEquals(@NonNull String value, @NonNull ReadableSequentialData input) {
         try {
             return value.equals(parse(input));
         } catch (final IOException ignore) {
@@ -56,7 +56,7 @@ public class StringCodec implements Codec<String> {
 
     @NonNull
     @Override
-    public String parseStrict(@NonNull com.hedera.pbj.runtime.io.DataInput dataInput) throws IOException {
+    public String parseStrict(@NonNull ReadableSequentialData dataInput) throws IOException {
         return parse(dataInput);
     }
 

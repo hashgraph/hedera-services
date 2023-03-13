@@ -28,13 +28,14 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#CONTRACT_CALL}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONTRACT_CALL}.
  */
 @Singleton
 public class ContractCallHandler implements TransactionHandler {
     @Inject
-    public ContractCallHandler() {}
+    public ContractCallHandler() {
+        // Exists for injection
+    }
 
     /**
      * This method is called during the pre-handle workflow.

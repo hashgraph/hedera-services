@@ -18,9 +18,9 @@ package com.hedera.node.app.state.merkle.disk;
 
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.pbj.runtime.Codec;
-import com.hedera.pbj.runtime.io.DataBuffer;
-import com.hedera.pbj.runtime.io.DataInputStream;
-import com.hedera.pbj.runtime.io.DataOutputStream;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
+import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
@@ -90,23 +90,23 @@ public final class OnDiskKey<K extends Comparable<? super K>> implements Virtual
     /** Writes the "real" key to the given stream. {@inheritDoc} */
     @Override
     public void serialize(@NonNull final SerializableDataOutputStream serializableDataOutputStream) throws IOException {
-        codec.write(key, new DataOutputStream(serializableDataOutputStream));
+        codec.write(key, new WritableStreamingData(serializableDataOutputStream));
     }
 
     @Override
     public void serialize(@NonNull final ByteBuffer byteBuffer) throws IOException {
-        codec.write(key, DataBuffer.wrap(byteBuffer));
+        codec.write(key, BufferedData.wrap(byteBuffer));
     }
 
     @Override
     public void deserialize(@NonNull final ByteBuffer byteBuffer, int ignored) throws IOException {
-        key = codec.parse(DataBuffer.wrap(byteBuffer));
+        key = codec.parse(BufferedData.wrap(byteBuffer));
     }
 
     @Override
     public void deserialize(@NonNull final SerializableDataInputStream serializableDataInputStream, int ignored)
             throws IOException {
-        key = codec.parse(new DataInputStream(serializableDataInputStream));
+        key = codec.parse(new ReadableStreamingData(serializableDataInputStream));
     }
 
     @Override

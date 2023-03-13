@@ -44,7 +44,7 @@ import com.hedera.node.app.spi.accounts.Account;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.pbj.runtime.io.Bytes;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.test.utils.KeyUtils;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.Optional;
@@ -98,7 +98,7 @@ class ReadableAccountStoreTest {
 
     @Test
     void getsKeyIfAlias() {
-        given(aliases.get(payerAlias.alias().get().asUtf8String())).willReturn(new EntityNumValue(payerNum));
+        given(aliases.get(payerAlias.alias().asUtf8String())).willReturn(new EntityNumValue(payerNum));
         given(accounts.get(EntityNumVirtualKey.fromLong(payerNum))).willReturn(account);
         given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
 
@@ -111,9 +111,9 @@ class ReadableAccountStoreTest {
 
     @Test
     void getsKeyIfEvmAddress() {
-        given(aliases.get(contractAlias.evmAddress().get().asUtf8String()))
-                .willReturn(new EntityNumValue(contract.contractNum().get()));
-        given(accounts.get(EntityNumVirtualKey.fromLong(contract.contractNum().get())))
+        given(aliases.get(contractAlias.evmAddress().asUtf8String()))
+                .willReturn(new EntityNumValue(contract.contractNum()));
+        given(accounts.get(EntityNumVirtualKey.fromLong(contract.contractNum())))
                 .willReturn(account);
         given(account.getAccountKey()).willReturn((JKey) contractHederaKey);
         given(account.isSmartContract()).willReturn(true);
@@ -127,8 +127,8 @@ class ReadableAccountStoreTest {
 
     @Test
     void getsNullKeyIfMissingEvmAddress() {
-        given(aliases.get(contractAlias.evmAddress().get().asUtf8String()))
-                .willReturn(new EntityNumValue(contract.contractNum().get()));
+        given(aliases.get(contractAlias.evmAddress().asUtf8String()))
+                .willReturn(new EntityNumValue(contract.contractNum()));
 
         var result = subject.getKey(contractAlias);
 
@@ -145,7 +145,7 @@ class ReadableAccountStoreTest {
 
     @Test
     void getsNullKeyIfMissingContract() {
-        given(accounts.get(EntityNumVirtualKey.fromLong(contract.contractNum().get())))
+        given(accounts.get(EntityNumVirtualKey.fromLong(contract.contractNum())))
                 .willReturn(account);
 
         var result = subject.getKey(contract);
@@ -163,9 +163,9 @@ class ReadableAccountStoreTest {
 
     @Test
     void failsIfNotSmartContract() {
-        given(aliases.get(contractAlias.evmAddress().get().asUtf8String()))
-                .willReturn(new EntityNumValue(contract.contractNum().get()));
-        given(accounts.get(EntityNumVirtualKey.fromLong(contract.contractNum().get())))
+        given(aliases.get(contractAlias.evmAddress().asUtf8String()))
+                .willReturn(new EntityNumValue(contract.contractNum()));
+        given(accounts.get(EntityNumVirtualKey.fromLong(contract.contractNum())))
                 .willReturn(account);
 
         var result = subject.getKey(contractAlias);
@@ -181,9 +181,9 @@ class ReadableAccountStoreTest {
 
     @Test
     void failsIfContractDeleted() {
-        given(aliases.get(contractAlias.evmAddress().get().asUtf8String()))
-                .willReturn(new EntityNumValue(contract.contractNum().get()));
-        given(accounts.get(EntityNumVirtualKey.fromLong(contract.contractNum().get())))
+        given(aliases.get(contractAlias.evmAddress().asUtf8String()))
+                .willReturn(new EntityNumValue(contract.contractNum()));
+        given(accounts.get(EntityNumVirtualKey.fromLong(contract.contractNum())))
                 .willReturn(account);
         given(account.isDeleted()).willReturn(true);
 
@@ -212,7 +212,7 @@ class ReadableAccountStoreTest {
 
     @Test
     void getsNullKeyIfMissingAlias() {
-        given(aliases.get(payerAlias.alias().get().asUtf8String())).willReturn(new EntityNumValue());
+        given(aliases.get(payerAlias.alias().asUtf8String())).willReturn(new EntityNumValue());
 
         final var result = subject.getKey(payerAlias);
 
@@ -269,13 +269,13 @@ class ReadableAccountStoreTest {
 
     @Test
     void getsMirrorAddressNumForContract() {
-        final var num = EntityNum.fromLong(contract.contractNum().get());
+        final var num = EntityNum.fromLong(contract.contractNum());
         final Address mirrorAddress = num.toEvmAddress();
         final var mirrorAccount = ContractID.newBuilder()
                 .evmAddress(Bytes.wrap(mirrorAddress.toArrayUnsafe()))
                 .build();
 
-        given(accounts.get(EntityNumVirtualKey.fromLong(contract.contractNum().get())))
+        given(accounts.get(EntityNumVirtualKey.fromLong(contract.contractNum())))
                 .willReturn(account);
         given(account.getAccountKey()).willReturn((JKey) contractHederaKey);
         given(account.isSmartContract()).willReturn(true);
@@ -297,9 +297,9 @@ class ReadableAccountStoreTest {
 
         given(aliases.get(ecdsaAlias.asUtf8String())).willReturn(null);
         given(aliases.get(evmAddressString.asUtf8String()))
-                .willReturn(new EntityNumValue(contract.contractNum().get()));
+                .willReturn(new EntityNumValue(contract.contractNum()));
 
-        given(accounts.get(EntityNumVirtualKey.fromLong(contract.contractNum().get())))
+        given(accounts.get(EntityNumVirtualKey.fromLong(contract.contractNum())))
                 .willReturn(account);
         given(account.getAccountKey()).willReturn((JKey) contractHederaKey);
         given(account.isSmartContract()).willReturn(true);
@@ -313,7 +313,7 @@ class ReadableAccountStoreTest {
 
     @Test
     void getsKeyIfPayerAliasAndReceiverSigRequired() {
-        given(aliases.get(payerAlias.alias().get().asUtf8String())).willReturn(new EntityNumValue(payerNum));
+        given(aliases.get(payerAlias.alias().asUtf8String())).willReturn(new EntityNumValue(payerNum));
         given(accounts.get(EntityNumVirtualKey.fromLong(payerNum))).willReturn(account);
         given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
         given(account.isReceiverSigRequired()).willReturn(true);
@@ -340,7 +340,7 @@ class ReadableAccountStoreTest {
 
     @Test
     void getsNullKeyFromReceiverSigRequiredIfMissingAlias() {
-        given(aliases.get(payerAlias.alias().get().asUtf8String())).willReturn(new EntityNumValue());
+        given(aliases.get(payerAlias.alias().asUtf8String())).willReturn(new EntityNumValue());
 
         final var result = subject.getKeyIfReceiverSigRequired(payerAlias);
 
@@ -362,7 +362,7 @@ class ReadableAccountStoreTest {
 
     @Test
     void getsNullKeyIfAndReceiverSigNotRequired() {
-        given(aliases.get(payerAlias.alias().get().asUtf8String())).willReturn(new EntityNumValue(payerNum));
+        given(aliases.get(payerAlias.alias().asUtf8String())).willReturn(new EntityNumValue(payerNum));
         given(accounts.get(EntityNumVirtualKey.fromLong(payerNum))).willReturn(account);
         given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
         given(account.isReceiverSigRequired()).willReturn(false);
@@ -389,9 +389,9 @@ class ReadableAccountStoreTest {
 
     @Test
     void getsNullKeyFromContractIfReceiverKeyNotRequired() {
-        given(aliases.get(contractAlias.evmAddress().get().asUtf8String()))
-                .willReturn(new EntityNumValue(contract.contractNum().get()));
-        given(accounts.get(EntityNumVirtualKey.fromLong(contract.contractNum().get())))
+        given(aliases.get(contractAlias.evmAddress().asUtf8String()))
+                .willReturn(new EntityNumValue(contract.contractNum()));
+        given(accounts.get(EntityNumVirtualKey.fromLong(contract.contractNum())))
                 .willReturn(account);
         given(account.getAccountKey()).willReturn((JKey) contractHederaKey);
         given(account.isSmartContract()).willReturn(true);
@@ -408,9 +408,9 @@ class ReadableAccountStoreTest {
     void failsIfKeyIsJContractIDKey() {
         final var mockKey = mock(JContractIDKey.class);
 
-        given(aliases.get(contractAlias.evmAddress().get().asUtf8String()))
-                .willReturn(new EntityNumValue(contract.contractNum().get()));
-        given(accounts.get(EntityNumVirtualKey.fromLong(contract.contractNum().get())))
+        given(aliases.get(contractAlias.evmAddress().asUtf8String()))
+                .willReturn(new EntityNumValue(contract.contractNum()));
+        given(accounts.get(EntityNumVirtualKey.fromLong(contract.contractNum())))
                 .willReturn(account);
         given(account.getAccountKey()).willReturn(mockKey);
         given(account.isSmartContract()).willReturn(true);
@@ -431,9 +431,9 @@ class ReadableAccountStoreTest {
     @Test
     void failsIfKeyIsEmpty() {
         final var key = new JEd25519Key(new byte[0]);
-        given(aliases.get(contractAlias.evmAddress().get().asUtf8String()))
-                .willReturn(new EntityNumValue(contract.contractNum().get()));
-        given(accounts.get(EntityNumVirtualKey.fromLong(contract.contractNum().get())))
+        given(aliases.get(contractAlias.evmAddress().asUtf8String()))
+                .willReturn(new EntityNumValue(contract.contractNum()));
+        given(accounts.get(EntityNumVirtualKey.fromLong(contract.contractNum())))
                 .willReturn(account);
         given(account.getAccountKey()).willReturn(key);
         given(account.isSmartContract()).willReturn(true);
@@ -453,9 +453,9 @@ class ReadableAccountStoreTest {
 
     @Test
     void failsIfKeyIsNull() {
-        given(aliases.get(contractAlias.evmAddress().get().asUtf8String()))
-                .willReturn(new EntityNumValue(contract.contractNum().get()));
-        given(accounts.get(EntityNumVirtualKey.fromLong(contract.contractNum().get())))
+        given(aliases.get(contractAlias.evmAddress().asUtf8String()))
+                .willReturn(new EntityNumValue(contract.contractNum()));
+        given(accounts.get(EntityNumVirtualKey.fromLong(contract.contractNum())))
                 .willReturn(account);
         given(account.getAccountKey()).willReturn(null);
         given(account.isSmartContract()).willReturn(true);
@@ -560,7 +560,7 @@ class ReadableAccountStoreTest {
         assertThat(mappedAccount.stakeAtStartOfLastRewardedPeriod()).isEqualTo(37L);
         assertThat(mappedAccount.autoRenewAccountNumber()).isEqualTo(53L);
         assertThat(mappedAccount.autoRenewSecs()).isEqualTo(59L);
-        assertThat(mappedAccount.accountNumber()).isEqualTo(payer.accountNum().get());
+        assertThat(mappedAccount.accountNumber()).isEqualTo(payer.accountNum());
         assertThat(mappedAccount.alias()).hasValue(new byte[] {1, 2, 3});
         assertThat(mappedAccount.isSmartContract()).isTrue();
     }
@@ -599,7 +599,7 @@ class ReadableAccountStoreTest {
         assertThat(mappedAccount.stakeAtStartOfLastRewardedPeriod()).isZero();
         assertThat(mappedAccount.autoRenewAccountNumber()).isZero();
         assertThat(mappedAccount.autoRenewSecs()).isZero();
-        assertThat(mappedAccount.accountNumber()).isEqualTo(payer.accountNum().get());
+        assertThat(mappedAccount.accountNumber()).isEqualTo(payer.accountNum());
         assertThat(mappedAccount.alias()).isEmpty();
         assertThat(mappedAccount.isSmartContract()).isFalse();
     }

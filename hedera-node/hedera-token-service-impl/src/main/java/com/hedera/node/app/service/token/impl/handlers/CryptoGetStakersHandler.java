@@ -38,12 +38,14 @@ import javax.inject.Singleton;
 @Singleton
 public class CryptoGetStakersHandler extends FreeQueryHandler {
     @Inject
-    public CryptoGetStakersHandler() {}
+    public CryptoGetStakersHandler() {
+        // Exists for injection
+    }
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
-        return query.cryptoGetProxyStakers().orElseThrow().header();
+        return query.cryptoGetProxyStakersOrThrow().header();
     }
 
     @Override

@@ -74,6 +74,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
     void scheduleSignVanillaNoExplicitPayer() {
         final var txn = scheduleSignTransaction();
         givenSetupForScheduleSign(txn);
+
         final var context = new PreHandleContext(keyLookup, txn, scheduler);
         subject.preHandle(context, scheduleStore, dispatcher);
         assertEquals(scheduler, context.getPayer());
@@ -104,6 +105,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
     void scheduleSignVanillaWithOptionalPayerSet() {
         final var txn = scheduleSignTransaction();
         givenSetupForScheduleSign(txn);
+
         given(schedule.hasExplicitPayer()).willReturn(true);
         // @migration this use of PbjConverter is temporary until services complete PBJ migration
         given(schedule.payer()).willReturn(EntityId.fromGrpcAccountId(PbjConverter.fromPbj(payer)));

@@ -18,8 +18,8 @@ package com.hedera.node.app.service.network.impl.serdes;
 
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.pbj.runtime.Codec;
-import com.hedera.pbj.runtime.io.DataInput;
-import com.hedera.pbj.runtime.io.DataOutput;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -28,7 +28,7 @@ import java.io.IOException;
 public class MonoContextAdapterCodec implements Codec<MerkleNetworkContext> {
     @NonNull
     @Override
-    public MerkleNetworkContext parse(final @NonNull DataInput input) throws IOException {
+    public MerkleNetworkContext parse(final @NonNull ReadableSequentialData input) throws IOException {
         if (input instanceof SerializableDataInputStream in) {
             final var context = new MerkleNetworkContext();
             context.deserialize(in, MerkleNetworkContext.CURRENT_VERSION);
@@ -39,7 +39,7 @@ public class MonoContextAdapterCodec implements Codec<MerkleNetworkContext> {
     }
 
     @Override
-    public void write(final @NonNull MerkleNetworkContext item, final @NonNull DataOutput output) throws IOException {
+    public void write(final @NonNull MerkleNetworkContext item, final @NonNull WritableSequentialData output) throws IOException {
         if (output instanceof SerializableDataOutputStream out) {
             item.serialize(out);
         } else {
@@ -48,7 +48,7 @@ public class MonoContextAdapterCodec implements Codec<MerkleNetworkContext> {
     }
 
     @Override
-    public int measure(@NonNull DataInput input) {
+    public int measure(@NonNull ReadableSequentialData input) {
         throw new UnsupportedOperationException();
     }
 
@@ -58,13 +58,13 @@ public class MonoContextAdapterCodec implements Codec<MerkleNetworkContext> {
     }
 
     @Override
-    public boolean fastEquals(@NonNull MerkleNetworkContext item, @NonNull DataInput input) {
+    public boolean fastEquals(@NonNull MerkleNetworkContext item, @NonNull ReadableSequentialData input) {
         throw new UnsupportedOperationException();
     }
 
     @NonNull
     @Override
-    public MerkleNetworkContext parseStrict(@NonNull DataInput dataInput) throws IOException {
+    public MerkleNetworkContext parseStrict(@NonNull ReadableSequentialData dataInput) throws IOException {
         return parse(dataInput);
     }
 }

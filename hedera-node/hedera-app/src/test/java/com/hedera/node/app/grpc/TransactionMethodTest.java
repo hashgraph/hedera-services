@@ -19,9 +19,10 @@ package com.hedera.node.app.grpc;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
-import com.hedera.pbj.runtime.io.DataBuffer;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.metrics.Metrics;
 import io.grpc.stub.StreamObserver;
+import java.awt.image.DataBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -66,7 +67,7 @@ class TransactionMethodTest {
 
     @Test
     void handleDelegatesToWorkflow(@Mock final StreamObserver<DataBuffer> streamObserver) {
-        final var requestBuffer = DataBuffer.allocate(100, false);
+        final var requestBuffer = BufferedData.allocate(100);
         final AtomicBoolean called = new AtomicBoolean(false);
         final IngestWorkflow w = (s, r1, r2) -> {
             assertEquals(requestBuffer, r1);
@@ -80,7 +81,7 @@ class TransactionMethodTest {
 
     @Test
     void unexpectedExceptionFromHandler(@Mock final StreamObserver<DataBuffer> streamObserver) {
-        final var requestBuffer = DataBuffer.allocate(100, false);
+        final var requestBuffer = BufferedData.allocate(100);
         final IngestWorkflow w = (s, r1, r2) -> {
             throw new RuntimeException("Unexpected!");
         };

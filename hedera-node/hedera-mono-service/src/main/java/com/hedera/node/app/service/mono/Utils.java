@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.mono.legacy.core.jproto.JKey.mapKey;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.Key;
 import java.util.Optional;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.commons.codec.DecoderException;
 
 // This class should not exist. Right now we have code that needs to map from a JKey to a
@@ -47,7 +48,7 @@ public class Utils {
         }
     }
 
-    public static Optional<HederaKey> asHederaKey(final com.hedera.hapi.node.base.Key key) {
+    public static Optional<HederaKey> asHederaKey(@NonNull final com.hedera.hapi.node.base.Key key) {
         try {
             // Need to move JKey after refactoring, adding equals & hashcode into this package
             final var fcKey = mapKey(key);

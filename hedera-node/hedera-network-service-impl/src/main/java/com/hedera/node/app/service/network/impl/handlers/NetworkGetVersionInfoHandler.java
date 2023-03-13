@@ -32,18 +32,19 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#GET_VERSION_INFO}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#GET_VERSION_INFO}.
  */
 @Singleton
 public class NetworkGetVersionInfoHandler extends PaidQueryHandler {
     @Inject
-    public NetworkGetVersionInfoHandler() {}
+    public NetworkGetVersionInfoHandler() {
+        // Exists for injection
+    }
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
-        return query.networkGetVersionInfo().orElseThrow().header();
+        return query.networkGetVersionInfoOrThrow().header();
     }
 
     @Override
