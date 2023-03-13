@@ -16,8 +16,6 @@
 
 package com.swirlds.base;
 
-import java.util.Objects;
-
 /**
  * Class that contains common checks like null checks as static methods.
  */

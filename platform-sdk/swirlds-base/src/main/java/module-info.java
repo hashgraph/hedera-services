@@ -1,1 +1,3 @@
-module com.swirlds.base {}
+module com.swirlds.base {
+    exports com.swirlds.base;
+}
