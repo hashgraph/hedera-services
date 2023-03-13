@@ -236,13 +236,15 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                     NOT_SUPPORTED.equals(e.getResponseCode())
                             ? HederaExceptionalHaltReason.NOT_SUPPORTED
                             : HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
+            frame.setExceptionalHaltReason(Optional.of(haltReason));
             return PrecompileContractResult.halt(null, Optional.of(haltReason));
         }
 
         gasRequirement = defaultGas();
         if (this.precompile == null || this.transactionBody == null) {
-            frame.setExceptionalHaltReason(Optional.of(ERROR_DECODING_PRECOMPILE_INPUT));
-            return NO_RESULT;
+            final var haltReason = Optional.of(ERROR_DECODING_PRECOMPILE_INPUT);
+            frame.setExceptionalHaltReason(haltReason);
+            return PrecompileContractResult.halt(null, haltReason);
         }
 
         final var now = frame.getBlockValues().getTimestamp();
