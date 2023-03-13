@@ -22,9 +22,9 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.network.impl.serdes.EntityNumCodec;
-import java.io.IOException;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
+import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -64,5 +64,4 @@ class EntityNumSerdesTest {
 
         verify(output).writeInt(SOME_NUM.intValue());
     }
-
 }

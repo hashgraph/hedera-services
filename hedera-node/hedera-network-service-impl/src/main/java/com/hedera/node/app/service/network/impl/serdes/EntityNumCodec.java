@@ -20,8 +20,6 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 
@@ -29,8 +27,8 @@ public class EntityNumCodec implements Codec<EntityNum> {
     @NonNull
     @Override
     public EntityNum parse(final @NonNull ReadableSequentialData input) throws IOException {
-            return new EntityNum(input.readInt());
-          }
+        return new EntityNum(input.readInt());
+    }
 
     @Override
     public void write(final @NonNull EntityNum item, final @NonNull WritableSequentialData output) throws IOException {

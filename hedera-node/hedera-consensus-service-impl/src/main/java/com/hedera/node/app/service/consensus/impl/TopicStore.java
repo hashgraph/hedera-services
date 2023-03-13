@@ -16,18 +16,17 @@
 
 package com.hedera.node.app.service.consensus.impl;
 
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.key.HederaKey;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
 
 /**
  * Base class for {@link ReadableTopicStore} and {@link WritableTopicStore}.

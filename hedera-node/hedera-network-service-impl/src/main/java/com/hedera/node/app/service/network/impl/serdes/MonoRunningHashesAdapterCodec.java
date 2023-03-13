@@ -23,28 +23,31 @@ import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
+import java.io.ByteArrayInputStream;import java.io.ByteArrayOutputStream;import java.io.IOException;
 
 public class MonoRunningHashesAdapterCodec implements Codec<RecordsRunningHashLeaf> {
     @NonNull
     @Override
     public RecordsRunningHashLeaf parse(final @NonNull ReadableSequentialData input) throws IOException {
-        if (input instanceof ReadableSequentialData in) {
-            final var context = new RecordsRunningHashLeaf();
-            context.deserialize(new ReadableSequentialData(in), RecordsRunningHashLeaf.RELEASE_0280_VERSION);
-            return context;
-        } else {
-            throw new IllegalArgumentException("Expected a ReadableSequentialData");
-        }
+        final var length = input.readInt();
+        final var javaIn = new byte[length];
+        input.readBytes(javaIn);
+        final var bais = new ByteArrayInputStream(javaIn);
+        final var context = new RecordsRunningHashLeaf();
+        final var hashLeafIn = new SerializableDataInputStream(bais);
+        context.deserialize(hashLeafIn, RecordsRunningHashLeaf.RELEASE_0280_VERSION);
+        return context;
     }
 
     @Override
     public void write(final @NonNull RecordsRunningHashLeaf item, final @NonNull WritableSequentialData output) throws IOException {
-        if (output instanceof WritableSequentialData out) {
-            item.serialize(out);
-        } else {
-            throw new IllegalArgumentException("Expected a WritableSequentialData");
-        }
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        SerializableDataOutputStream sdo = new SerializableDataOutputStream(baos);
+        item.serialize(sdo);
+        sdo.flush();
+        baos.flush();
+        output.writeInt(baos.toByteArray().length);
+        output.writeBytes(baos.toByteArray());
     }
 
     @Override

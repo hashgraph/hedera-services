@@ -124,9 +124,8 @@ public class CryptoTransferHandler implements TransactionHandler {
                 }
             } else {
                 final var isCredit = accountAmount.amount() > 0L;
-                final var isMissingAcc = isCredit
-                        && keyOrFailure.failureReason().equals(INVALID_ACCOUNT_ID)
-                        && isAlias(accountID);
+                final var isMissingAcc =
+                        isCredit && keyOrFailure.failureReason().equals(INVALID_ACCOUNT_ID) && isAlias(accountID);
                 if (!isMissingAcc) {
                     meta.status(keyOrFailure.failureReason());
                 }
@@ -150,7 +149,8 @@ public class CryptoTransferHandler implements TransactionHandler {
                 meta.status(senderKeyOrFailure.failureReason());
             }
 
-            final var receiverKeyOrFailure = accountStore.getKeyIfReceiverSigRequired(nftTransfer.receiverAccountIDOrElse(AccountID.DEFAULT));
+            final var receiverKeyOrFailure =
+                    accountStore.getKeyIfReceiverSigRequired(nftTransfer.receiverAccountIDOrElse(AccountID.DEFAULT));
             if (!receiverKeyOrFailure.failed()) {
                 if (!receiverKeyOrFailure.equals(KeyOrLookupFailureReason.PRESENT_BUT_NOT_REQUIRED)) {
                     meta.addNonPayerKeyIfReceiverSigRequired(
@@ -186,7 +186,8 @@ public class CryptoTransferHandler implements TransactionHandler {
                 if (isUnapprovedDebit) {
                     meta.addNonPayerKey(accountAmount.accountIDOrElse(AccountID.DEFAULT));
                 } else {
-                    meta.addNonPayerKeyIfReceiverSigRequired(accountAmount.accountIDOrElse(AccountID.DEFAULT), INVALID_TRANSFER_ACCOUNT_ID);
+                    meta.addNonPayerKeyIfReceiverSigRequired(
+                            accountAmount.accountIDOrElse(AccountID.DEFAULT), INVALID_TRANSFER_ACCOUNT_ID);
                 }
             } else {
                 final var isCredit = accountAmount.amount() > 0L;

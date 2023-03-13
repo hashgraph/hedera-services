@@ -65,7 +65,11 @@ public class PreHandleContext {
             @NonNull final AccountAccess accountAccess,
             @NonNull final TransactionBody txn,
             @NonNull final ResponseCodeEnum status) {
-        this(accountAccess, txn, txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT), status);
+        this(
+                accountAccess,
+                txn,
+                txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT),
+                status);
     }
 
     public PreHandleContext(
@@ -309,10 +313,7 @@ public class PreHandleContext {
      * @return true if the given accountID is
      */
     private boolean designatesAccountRemoval(@NonNull final AccountID id) {
-        return id.shardNum() == 0
-                && id.realmNum() == 0
-                && id.accountNumOrElse(0L) == 0
-                && !id.hasAlias();
+        return id.shardNum() == 0 && id.realmNum() == 0 && id.accountNumOrElse(0L) == 0 && !id.hasAlias();
     }
 
     /**
@@ -322,10 +323,7 @@ public class PreHandleContext {
      * @return true if the given contractId is
      */
     private boolean designatesContractRemoval(@NonNull final ContractID id) {
-        return id.shardNum() == 0
-                && id.realmNum() == 0
-                && id.contractNumOrElse(0L) == 0
-                && !id.hasEvmAddress();
+        return id.shardNum() == 0 && id.realmNum() == 0 && id.contractNumOrElse(0L) == 0 && !id.hasEvmAddress();
     }
 
     /**

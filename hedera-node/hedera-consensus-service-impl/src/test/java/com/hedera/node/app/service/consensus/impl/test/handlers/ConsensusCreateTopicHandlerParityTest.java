@@ -16,14 +16,6 @@
 
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
-import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
-import com.hedera.node.app.spi.accounts.AccountAccess;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertCustomPayer;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertDefaultPayer;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertOkResponse;
@@ -41,6 +33,15 @@ import static com.hedera.test.factories.txns.ConsensusCreateTopicFactory.SIMPLE_
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.utils.KeyUtils.sanityRestored;
+
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
+import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class ConsensusCreateTopicHandlerParityTest {
     private final ConsensusCreateTopicHandler subject = new ConsensusCreateTopicHandler();

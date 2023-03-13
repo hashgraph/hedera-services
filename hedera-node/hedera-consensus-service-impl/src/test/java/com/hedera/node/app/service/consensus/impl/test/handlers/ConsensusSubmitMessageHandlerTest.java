@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
 import static com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler.noThrowSha384HashOf;
-import static com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter.unwrapPbj;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusCreateTopicHandlerTest.ACCOUNT_ID_3;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.ACCOUNT_ID_4;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.A_NONNULL_KEY;

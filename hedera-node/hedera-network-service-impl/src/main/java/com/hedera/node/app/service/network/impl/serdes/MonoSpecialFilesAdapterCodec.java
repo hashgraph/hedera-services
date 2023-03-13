@@ -23,28 +23,34 @@ import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 public class MonoSpecialFilesAdapterCodec implements Codec<MerkleSpecialFiles> {
     @NonNull
     @Override
     public MerkleSpecialFiles parse(final @NonNull ReadableSequentialData input) throws IOException {
-        if (input instanceof ReadableSequentialData in) {
-            final var context = new MerkleSpecialFiles();
-            context.deserialize(new ReadableSequentialData(in), MerkleSpecialFiles.CURRENT_VERSION);
-            return context;
-        } else {
-            throw new IllegalArgumentException("Expected a ReadableSequentialData");
-        }
+        final var length = input.readInt();
+        final var javaIn = new byte[length];
+        input.readBytes(javaIn);
+        final var bais = new ByteArrayInputStream(javaIn);
+        final var context = new MerkleSpecialFiles();
+        final var merkleIn = new SerializableDataInputStream(bais);
+        context.deserialize(merkleIn, MerkleSpecialFiles.CURRENT_VERSION);
+        return context;
     }
 
     @Override
-    public void write(final @NonNull MerkleSpecialFiles item, final @NonNull WritableSequentialData output) throws IOException {
-        if (output instanceof WritableSequentialData out) {
-            item.serialize(new WritableSequentialData(out));
-        } else {
-            throw new IllegalArgumentException("Expected a WritableSequentialData");
-        }
+    public void write(final @NonNull MerkleSpecialFiles item, final @NonNull WritableSequentialData output)
+            throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        SerializableDataOutputStream sdo = new SerializableDataOutputStream(baos);
+        item.serialize(sdo);
+        sdo.flush();
+        baos.flush();
+        output.writeInt(baos.toByteArray().length);
+        output.writeBytes(baos.toByteArray());
     }
 
     @Override

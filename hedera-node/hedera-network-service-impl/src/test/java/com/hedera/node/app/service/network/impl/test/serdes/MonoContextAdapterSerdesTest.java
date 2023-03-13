@@ -20,12 +20,9 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.submerkle.ExchangeRates;
 import com.hedera.node.app.service.mono.state.submerkle.SequenceNumber;
 import com.hedera.node.app.service.network.impl.serdes.MonoContextAdapterCodec;
-import com.hedera.pbj.runtime.io.ReadableSequentialData;
-import com.hedera.pbj.runtime.io.WritableSequentialData;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;import com.hedera.pbj.runtime.io.stream.WritableStreamingData;import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -40,11 +37,6 @@ class MonoContextAdapterSerdesTest {
             777L,
             new ExchangeRates(1, 2, 3L, 4, 5, 6L));
 
-    @Mock
-    private ReadableSequentialData input;
-
-    @Mock
-    private WritableSequentialData output;
 
     final MonoContextAdapterCodec subject = new MonoContextAdapterCodec();
 
@@ -58,13 +50,12 @@ class MonoContextAdapterSerdesTest {
     @Test
     void canSerializeAndDeserializeFromAppropriateStream() throws IOException {
         final var baos = new ByteArrayOutputStream();
-        final var actualOut = new WritableSequentialData(baos);
-        subject.write(SOME_CONTEXT, output);
+        final var actualOut = new SerializableDataOutputStream(baos);
+        subject.write(SOME_CONTEXT, new WritableStreamingData(actualOut));
         actualOut.flush();
-        //System.out.println(Arrays.toString(baos.toByteArray()));
 
-        final var actualIn = new ReadableSequentialData(new ByteArrayInputStream(baos.toByteArray()));
-        final var parsed = subject.parse(actualIn);
+        final var actualIn = new SerializableDataInputStream(new ByteArrayInputStream(baos.toByteArray()));
+        final var parsed = subject.parse(new ReadableStreamingData(actualIn));
         assertSomeFields(SOME_CONTEXT, parsed);
     }
 

@@ -91,9 +91,7 @@ public class ReadableAccountStore implements AccountAccess {
     public KeyOrLookupFailureReason getKey(@NonNull final AccountID id) {
         Objects.requireNonNull(id);
         final var account = getAccountLeaf(id);
-        return account == null
-                ? withFailureReason(INVALID_ACCOUNT_ID)
-                : validateKey(account.getAccountKey(), false);
+        return account == null ? withFailureReason(INVALID_ACCOUNT_ID) : validateKey(account.getAccountKey(), false);
     }
 
     /** {@inheritDoc} */

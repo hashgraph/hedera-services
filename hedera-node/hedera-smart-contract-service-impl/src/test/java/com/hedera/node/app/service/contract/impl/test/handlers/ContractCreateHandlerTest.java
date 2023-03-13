@@ -24,7 +24,6 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -112,8 +111,7 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
     }
 
     private TransactionBody contractCreateTransaction(final Key adminKey, final AccountID autoRenewId) {
-        final var transactionID =
-                TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
+        final var transactionID = TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
         final var createTxnBody = ContractCreateTransactionBody.newBuilder().memo("Create Contract");
         if (adminKey != null) {
             createTxnBody.adminKey(adminKey);

@@ -16,6 +16,16 @@
 
 package com.hedera.node.app.service.consensus.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_MESSAGE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
+import static com.hedera.node.app.service.mono.state.merkle.MerkleTopic.RUNNING_HASH_VERSION;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -45,15 +55,6 @@ import java.time.Instant;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_MESSAGE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
-import static com.hedera.node.app.service.mono.state.merkle.MerkleTopic.RUNNING_HASH_VERSION;
-import static java.util.Objects.requireNonNull;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONSENSUS_SUBMIT_MESSAGE}.
@@ -112,7 +113,8 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         requireNonNull(topicStore);
 
         final var op = txn.consensusSubmitMessageOrThrow();
-        final var topic = topicStore.getForModify(op.topicIDOrElse(TopicID.DEFAULT).topicNum());
+        final var topic =
+                topicStore.getForModify(op.topicIDOrElse(TopicID.DEFAULT).topicNum());
         /* Validate all needed fields in the transaction */
         validateTransaction(txn, config, topic);
 
@@ -181,12 +183,18 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             }
 
             /* Validate the initial chunk transaction payer is the same payer for the current transaction*/
-            if (!chunkInfo.initialTransactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT).equals(payer)) {
+            if (!chunkInfo
+                    .initialTransactionIDOrElse(TransactionID.DEFAULT)
+                    .accountIDOrElse(AccountID.DEFAULT)
+                    .equals(payer)) {
                 throw new HandleStatusException(INVALID_CHUNK_TRANSACTION_ID);
             }
 
             /* Validate if the transaction is submitting initial chunk,payer in initial transaction Id should be same as payer of the transaction */
-            if (1 == chunkInfo.number() && !chunkInfo.initialTransactionIDOrElse(TransactionID.DEFAULT).equals(txnId)) {
+            if (1 == chunkInfo.number()
+                    && !chunkInfo
+                            .initialTransactionIDOrElse(TransactionID.DEFAULT)
+                            .equals(txnId)) {
                 throw new HandleStatusException(INVALID_CHUNK_TRANSACTION_ID);
             }
         }
@@ -200,7 +208,8 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
      * @return the updated topic
      * @throws IOException if there is an error while updating the running hash
      */
-    public Topic updateRunningHashAndSequenceNumber(@NonNull final TransactionBody txn, @NonNull final Topic topic, @Nullable Instant consensusNow)
+    public Topic updateRunningHashAndSequenceNumber(
+            @NonNull final TransactionBody txn, @NonNull final Topic topic, @Nullable Instant consensusNow)
             throws IOException {
         final var payer = txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT);
         final var topicId = txn.consensusSubmitMessageOrThrow().topicIDOrElse(TopicID.DEFAULT);

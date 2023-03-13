@@ -35,8 +35,8 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.pbj.runtime.Codec;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
@@ -1187,8 +1187,7 @@ public final class PbjConverter {
                 .setRealmNum(contractID.realmNum())
                 .setShardNum(contractID.shardNum())
                 .setContractNum(contractID.contractNumOrElse(0L))
-                .setEvmAddress(
-                        ByteString.copyFrom(asBytes(contractID.evmAddressOrElse(Bytes.EMPTY))))
+                .setEvmAddress(ByteString.copyFrom(asBytes(contractID.evmAddressOrElse(Bytes.EMPTY))))
                 .build();
     }
 

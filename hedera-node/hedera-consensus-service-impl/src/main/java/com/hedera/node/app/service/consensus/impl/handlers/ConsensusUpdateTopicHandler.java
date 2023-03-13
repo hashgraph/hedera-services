@@ -16,6 +16,15 @@
 
 package com.hedera.node.app.service.consensus.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.node.app.spi.exceptions.HandleStatusException.validateFalse;
+import static com.hedera.node.app.spi.exceptions.HandleStatusException.validateTrue;
+import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TopicID;
@@ -36,14 +45,6 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.node.app.spi.exceptions.HandleStatusException.validateFalse;
-import static com.hedera.node.app.spi.exceptions.HandleStatusException.validateTrue;
-import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
-import static java.util.Objects.requireNonNull;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONSENSUS_UPDATE_TOPIC}.
@@ -117,15 +118,14 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             @NonNull final HandleContext handleContext,
             @NonNull final ConsensusUpdateTopicTransactionBody topicUpdate,
             @NonNull final WritableTopicStore topicStore) {
-        final var maybeTopic =
-                requireNonNull(topicStore).get(topicUpdate.topicIDOrElse(TopicID.DEFAULT).topicNum());
+        final var maybeTopic = requireNonNull(topicStore)
+                .get(topicUpdate.topicIDOrElse(TopicID.DEFAULT).topicNum());
         validateTrue(maybeTopic.isPresent(), INVALID_TOPIC_ID);
         final var topic = maybeTopic.get();
         validateFalse(topic.deleted(), INVALID_TOPIC_ID);
 
         // First validate this topic is mutable; and the pending mutations are allowed
-        validateFalse(
-                topic.adminKey() == null && wantsToMutateNonExpiryField(topicUpdate), UNAUTHORIZED);
+        validateFalse(topic.adminKey() == null && wantsToMutateNonExpiryField(topicUpdate), UNAUTHORIZED);
         validateMaybeNewAttributes(handleContext, topicUpdate, topic);
 
         // Now we apply the mutations to a builder
