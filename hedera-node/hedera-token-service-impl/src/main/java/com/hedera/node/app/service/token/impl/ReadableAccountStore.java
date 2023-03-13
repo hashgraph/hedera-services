@@ -23,6 +23,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MODIFYING_IMMUTABLE_CON
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.PRESENT_BUT_NOT_REQUIRED;
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withFailureReason;
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
+import static java.util.Objects.requireNonNull;
 
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
@@ -50,7 +51,6 @@ import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -89,18 +89,16 @@ public class ReadableAccountStore implements AccountAccess {
     @NonNull
     @Override
     public KeyOrLookupFailureReason getKey(@NonNull final AccountID id) {
-        Objects.requireNonNull(id);
+        requireNonNull(id);
         final var account = getAccountLeaf(id);
-        return account == null
-                ? withFailureReason(INVALID_ACCOUNT_ID)
-                : validateKey(account.getAccountKey(), false);
+        return account == null ? withFailureReason(INVALID_ACCOUNT_ID) : validateKey(account.getAccountKey(), false);
     }
 
     /** {@inheritDoc} */
     @NonNull
     @Override
     public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(@NonNull final AccountID id) {
-        Objects.requireNonNull(id);
+        requireNonNull(id);
         final var account = getAccountLeaf(id);
         if (account == null) {
             return withFailureReason(INVALID_ACCOUNT_ID);
@@ -116,7 +114,7 @@ public class ReadableAccountStore implements AccountAccess {
     @NonNull
     @Override
     public KeyOrLookupFailureReason getKey(@NonNull final ContractID id) {
-        Objects.requireNonNull(id);
+        requireNonNull(id);
         final var contract = getContractLeaf(id);
         if (contract == null || contract.isDeleted() || !contract.isSmartContract()) {
             return withFailureReason(INVALID_CONTRACT_ID);
@@ -129,7 +127,7 @@ public class ReadableAccountStore implements AccountAccess {
     @NonNull
     @Override
     public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(@NonNull final ContractID id) {
-        Objects.requireNonNull(id);
+        requireNonNull(id);
         final var contract = getContractLeaf(id);
         if (contract == null || contract.isDeleted() || !contract.isSmartContract()) {
             return withFailureReason(INVALID_CONTRACT_ID);
@@ -152,6 +150,7 @@ public class ReadableAccountStore implements AccountAccess {
     @Override
     @NonNull
     public Optional<Account> getAccountById(@NonNull final AccountID id) {
+        requireNonNull(id);
         // TODO Make sure we have tests for getAccount for all valid account IDs.
         final var account = getAccountLeaf(id);
         return Optional.ofNullable(account).map(accountLeaf -> mapAccount(id, accountLeaf));
@@ -314,6 +313,7 @@ public class ReadableAccountStore implements AccountAccess {
 
     @NonNull
     public Optional<HederaKey> asHederaKey(@NonNull final Key key) {
+        requireNonNull(key);
         return Utils.asHederaKey(key);
     }
 }

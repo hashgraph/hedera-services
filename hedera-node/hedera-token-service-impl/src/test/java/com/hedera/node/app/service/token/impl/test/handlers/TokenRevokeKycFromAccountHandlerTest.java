@@ -70,7 +70,7 @@ class TokenRevokeKycFromAccountHandlerTest {
         final var txn = txnFrom(REVOKE_WITH_MISSING_TXN_BODY);
 
         final var context = new PreHandleContext(accountStore, txn);
-        assertThrows(java.util.NoSuchElementException.class, () -> subject.preHandle(context, tokenStore));
+        assertThrows(NullPointerException.class, () -> subject.preHandle(context, tokenStore));
     }
 
     @Test

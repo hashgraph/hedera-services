@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -66,7 +67,7 @@ public class TokenUpdateHandler implements TransactionHandler {
     public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore) {
         requireNonNull(context);
         final var op = context.getTxn().tokenUpdateOrThrow();
-        final var tokenId = op.token();
+        final var tokenId = op.tokenOrElse(TokenID.DEFAULT);
 
         final var tokenMeta = tokenStore.getTokenMeta(tokenId);
         if (tokenMeta.failed()) {

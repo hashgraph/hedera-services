@@ -16,19 +16,20 @@
 
 package com.hedera.node.app.service.token.impl.test.serdes;
 
-import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.token.impl.serdes.EntityNumCodec;
-import com.hedera.pbj.runtime.io.ReadableSequentialData;
-import com.hedera.pbj.runtime.io.WritableSequentialData;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import java.io.IOException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+
+import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.token.impl.serdes.EntityNumCodec;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import java.io.IOException;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class EntityNumSerdesTest {

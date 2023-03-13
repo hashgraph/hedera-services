@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.token.impl;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
@@ -25,6 +27,7 @@ import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
 
 /**
@@ -57,7 +60,8 @@ public class ReadableTokenStore {
             boolean hasRoyaltyWithFallback,
             EntityId treasury) {}
 
-    public record TokenMetaOrLookupFailureReason(TokenMetadata metadata, ResponseCodeEnum failureReason) {
+    public record TokenMetaOrLookupFailureReason(
+            @Nullable TokenMetadata metadata, @Nullable ResponseCodeEnum failureReason) {
         public boolean failed() {
             return failureReason != null;
         }
@@ -70,7 +74,8 @@ public class ReadableTokenStore {
      * @param id token id being looked up
      * @return token's metadata
      */
-    public TokenMetaOrLookupFailureReason getTokenMeta(final TokenID id) {
+    public TokenMetaOrLookupFailureReason getTokenMeta(@NonNull final TokenID id) {
+        requireNonNull(id);
         final var token = getTokenLeaf(id);
 
         if (token.isEmpty()) {

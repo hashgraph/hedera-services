@@ -296,8 +296,7 @@ class ReadableAccountStoreTest {
         final var evmAddressString = Bytes.wrap(evmAddress);
 
         given(aliases.get(ecdsaAlias.asUtf8String())).willReturn(null);
-        given(aliases.get(evmAddressString.asUtf8String()))
-                .willReturn(new EntityNumValue(contract.contractNum()));
+        given(aliases.get(evmAddressString.asUtf8String())).willReturn(new EntityNumValue(contract.contractNum()));
 
         given(accounts.get(EntityNumVirtualKey.fromLong(contract.contractNum())))
                 .willReturn(account);
