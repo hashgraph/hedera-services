@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.network.impl.serdes.MonoRunningHashesAdapterCodec;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -33,18 +34,22 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 
 class MonoRunningHashesAdapterSerdesTest {
     private static final RecordsRunningHashLeaf SOME_HASHES = new RecordsRunningHashLeaf(
             new RunningHash(new Hash("abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef".getBytes())));
+
+    @Mock
+    private ReadableSequentialData input;
 
     final MonoRunningHashesAdapterCodec subject = new MonoRunningHashesAdapterCodec();
 
     @Test
     void doesntSupportUnnecessary() {
         assertThrows(UnsupportedOperationException.class, () -> subject.measureRecord(SOME_HASHES));
-        assertThrows(UnsupportedOperationException.class, () -> subject.measure(null));
-        assertThrows(UnsupportedOperationException.class, () -> subject.fastEquals(SOME_HASHES, null));
+        assertThrows(UnsupportedOperationException.class, () -> subject.measure(input));
+        assertThrows(UnsupportedOperationException.class, () -> subject.fastEquals(SOME_HASHES, input));
     }
 
     @Test

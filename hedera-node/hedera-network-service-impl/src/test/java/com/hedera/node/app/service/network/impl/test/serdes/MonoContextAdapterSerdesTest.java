@@ -16,19 +16,24 @@
 
 package com.hedera.node.app.service.network.impl.test.serdes;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.submerkle.ExchangeRates;
 import com.hedera.node.app.service.mono.state.submerkle.SequenceNumber;
 import com.hedera.node.app.service.network.impl.serdes.MonoContextAdapterCodec;
-import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;import com.hedera.pbj.runtime.io.stream.WritableStreamingData;import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
+import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import org.junit.jupiter.api.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Instant;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 
 class MonoContextAdapterSerdesTest {
     private static final MerkleNetworkContext SOME_CONTEXT = new MerkleNetworkContext(
@@ -37,14 +42,16 @@ class MonoContextAdapterSerdesTest {
             777L,
             new ExchangeRates(1, 2, 3L, 4, 5, 6L));
 
+    @Mock
+    private ReadableSequentialData input;
 
     final MonoContextAdapterCodec subject = new MonoContextAdapterCodec();
 
     @Test
     void doesntSupportUnnecessary() {
         assertThrows(UnsupportedOperationException.class, () -> subject.measureRecord(SOME_CONTEXT));
-        assertThrows(UnsupportedOperationException.class, () -> subject.measure(null));
-        assertThrows(UnsupportedOperationException.class, () -> subject.fastEquals(SOME_CONTEXT, null));
+        assertThrows(UnsupportedOperationException.class, () -> subject.measure(input));
+        assertThrows(UnsupportedOperationException.class, () -> subject.fastEquals(SOME_CONTEXT, input));
     }
 
     @Test
@@ -58,7 +65,6 @@ class MonoContextAdapterSerdesTest {
         final var parsed = subject.parse(new ReadableStreamingData(actualIn));
         assertSomeFields(SOME_CONTEXT, parsed);
     }
-
 
     private void assertSomeFields(final MerkleNetworkContext a, final MerkleNetworkContext b) {
         assertEquals(a.seqNo().current(), b.seqNo().current());

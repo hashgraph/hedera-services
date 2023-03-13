@@ -23,7 +23,9 @@ import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.ByteArrayInputStream;import java.io.ByteArrayOutputStream;import java.io.IOException;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 
 public class MonoContextAdapterCodec implements Codec<MerkleNetworkContext> {
     @NonNull
@@ -40,14 +42,14 @@ public class MonoContextAdapterCodec implements Codec<MerkleNetworkContext> {
     }
 
     @Override
-    public void write(final @NonNull MerkleNetworkContext item, final @NonNull WritableSequentialData output) throws IOException {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            SerializableDataOutputStream sdo = new SerializableDataOutputStream(baos);
-            item.serialize(sdo);
-            sdo.flush();
-            baos.flush();
-            output.writeInt(baos.toByteArray().length);
-            output.writeBytes(baos.toByteArray());
+    public void write(final @NonNull MerkleNetworkContext item, final @NonNull WritableSequentialData output)
+            throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        SerializableDataOutputStream sdo = new SerializableDataOutputStream(baos);
+        item.serialize(sdo);
+        sdo.flush();
+        output.writeInt(baos.toByteArray().length);
+        output.writeBytes(baos.toByteArray());
     }
 
     @Override

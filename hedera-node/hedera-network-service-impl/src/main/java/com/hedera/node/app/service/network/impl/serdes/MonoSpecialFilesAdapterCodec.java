@@ -48,7 +48,6 @@ public class MonoSpecialFilesAdapterCodec implements Codec<MerkleSpecialFiles> {
         SerializableDataOutputStream sdo = new SerializableDataOutputStream(baos);
         item.serialize(sdo);
         sdo.flush();
-        baos.flush();
         output.writeInt(baos.toByteArray().length);
         output.writeBytes(baos.toByteArray());
     }

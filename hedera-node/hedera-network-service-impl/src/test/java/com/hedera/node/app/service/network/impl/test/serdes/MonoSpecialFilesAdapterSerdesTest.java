@@ -24,6 +24,7 @@ import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
 import com.hedera.node.app.service.mono.state.merkle.internals.BytesElement;
 import com.hedera.node.app.service.network.impl.serdes.MonoSpecialFilesAdapterCodec;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -36,6 +37,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 
 class MonoSpecialFilesAdapterSerdesTest {
     private static final FileID SOME_FILE_ID = FileID.newBuilder().fileNum(666).build();
@@ -45,13 +47,16 @@ class MonoSpecialFilesAdapterSerdesTest {
         SOME_SPECIAL_FILES.append(PbjConverter.fromPbj(SOME_FILE_ID), "abcdef".getBytes());
     }
 
+    @Mock
+    private ReadableSequentialData input;
+
     final MonoSpecialFilesAdapterCodec subject = new MonoSpecialFilesAdapterCodec();
 
     @Test
     void doesntSupportUnnecessary() {
         assertThrows(UnsupportedOperationException.class, () -> subject.measureRecord(SOME_SPECIAL_FILES));
-        assertThrows(UnsupportedOperationException.class, () -> subject.measure(null));
-        assertThrows(UnsupportedOperationException.class, () -> subject.fastEquals(SOME_SPECIAL_FILES, null));
+        assertThrows(UnsupportedOperationException.class, () -> subject.measure(input));
+        assertThrows(UnsupportedOperationException.class, () -> subject.fastEquals(SOME_SPECIAL_FILES, input));
     }
 
     @Test
