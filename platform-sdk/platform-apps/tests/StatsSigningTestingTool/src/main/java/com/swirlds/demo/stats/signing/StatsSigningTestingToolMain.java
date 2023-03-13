@@ -123,6 +123,8 @@ public class StatsSigningTestingToolMain implements SwirldMain {
      */
     private double rampUpTPS = 0;
 
+    private long rampUpStartTimeMilliSeconds = 0;
+
     /**
      * The number of seconds to wait before starting the TPS ramp up to avoid the busy time when the app starts
      * loading resources
@@ -243,6 +245,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
         // to avoid a huge burst of transactions at the start of the test
         if (lastTPSMeasureTime == 0) {
             lastTPSMeasureTime = now;
+            rampUpStartTimeMilliSeconds = now;
             logger.info(
                     STARTUP.getMarker(),
                     "First time calling generateTransactions() Expected TPS per code is {}",
@@ -252,12 +255,14 @@ public class StatsSigningTestingToolMain implements SwirldMain {
 
         if (transPerSecToCreate > -1) { // if not unlimited (-1 means unlimited)
             // to get stable TPS output, use a large measure window, and ramp up the TPS to the expected value
-            if (rampUpTPS < expectedTPS) {
-                rampUpTPS += tps_measure_window_milliseconds
+            if ((now - rampUpStartTimeMilliSeconds) < TPS_RAMP_UP_WINDOW_SECONDS * SECONDS_TO_MILLISECONDS) {
+                rampUpTPS = expectedTPS
+                        * (now - rampUpStartTimeMilliSeconds)
                         / ((double) (TPS_RAMP_UP_WINDOW_SECONDS * SECONDS_TO_MILLISECONDS));
             } else {
                 rampUpTPS = expectedTPS;
             }
+
             if (((double) now - lastTPSMeasureTime) * NANOSECONDS_TO_MICROSECONDS > tps_measure_window_milliseconds) {
                 toCreate += ((double) now - lastTPSMeasureTime) * NANOSECONDS_TO_SECONDS * rampUpTPS;
                 lastTPSMeasureTime = now;
