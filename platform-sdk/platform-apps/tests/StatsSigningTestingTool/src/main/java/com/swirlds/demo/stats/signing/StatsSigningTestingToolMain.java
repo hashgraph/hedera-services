@@ -206,9 +206,9 @@ public class StatsSigningTestingToolMain implements SwirldMain {
 
     @Override
     public void run() {
-        if ((System.currentTimeMillis() - appInitTime) < APP_INIT_WINDOW_SECONDS * 1000) {
-            return;
-        }
+//        if ((System.currentTimeMillis() - appInitTime) < APP_INIT_WINDOW_SECONDS * 1000) {
+//            return;
+//        }
         final Thread shutdownHook = new ThreadConfiguration(getStaticThreadManager())
                 .setDaemon(false)
                 .setNodeId(platform.getSelfId().getId())
@@ -266,6 +266,8 @@ public class StatsSigningTestingToolMain implements SwirldMain {
             if (((double) now - lastTPSMeasureTime) * NANOSECONDS_TO_MICROSECONDS > tps_measure_window_milliseconds) {
                 toCreate += ((double) now - lastTPSMeasureTime) * NANOSECONDS_TO_SECONDS * rampUpTPS;
                 lastTPSMeasureTime = now;
+                logger.info(
+                        STARTUP.getMarker(), "rampUpTPS {}", rampUpTPS);
             }
         }
 
