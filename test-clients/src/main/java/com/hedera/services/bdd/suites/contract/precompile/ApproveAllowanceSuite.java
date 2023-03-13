@@ -828,7 +828,6 @@ public class ApproveAllowanceSuite extends HapiSuite {
     }
 
     private HapiSpec whitelistPositiveCase() {
-        final var attackCall = "attackCall";
         final AtomicLong whitelistedCalleeMirrorNum = new AtomicLong();
         final AtomicReference<TokenID> tokenID = new AtomicReference<>();
         final AtomicReference<String> attackerMirrorAddr = new AtomicReference<>();
@@ -875,7 +874,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                                         asHeadlongAddress(
                                                                 asSolidityAddress(tokenID.get())),
                                                         asHeadlongAddress(attackerMirrorAddr.get()))
-                                                .via(attackCall)
+                                                .via(ATTACK_CALL)
                                                 .gas(5_000_000L)
                                                 .hasKnownStatus(SUCCESS)))
                 .then(
