@@ -30,6 +30,9 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
+import com.swirlds.common.metrics.Counter;
+import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
@@ -41,10 +44,14 @@ import com.swirlds.common.threading.framework.config.StoppableThreadConfiguratio
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.demo.stats.signing.algorithms.ECSecP256K1Algorithm;
 import com.swirlds.demo.stats.signing.algorithms.X25519SigningAlgorithm;
+import com.swirlds.fcqueue.FCQueueStatistics;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.gui.SwirldsGui;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * This demo collects statistics on the running of the network and consensus systems. It writes them to the screen, and
@@ -96,6 +103,11 @@ public class StatsSigningTestingToolMain implements SwirldMain {
     private static final BasicSoftwareVersion softwareVersion = new BasicSoftwareVersion(1);
 
     private final StoppableThread transactionGenerator;
+
+    private static final SpeedometerMetric.Config TRAN_SUBMIT_TPS_SPEED_CONFIG =
+            new SpeedometerMetric.Config("Debug.info", "tranSubTPS").withDescription("Transaction submitted TPS");
+
+    private SpeedometerMetric transactionSubmitSpeedometer;
 
     /**
      * This is just for debugging: it allows the app to run in Eclipse. If the config.txt exists and lists a particular
@@ -158,6 +170,10 @@ public class StatsSigningTestingToolMain implements SwirldMain {
                 true,
                 new ECSecP256K1Algorithm(),
                 new X25519SigningAlgorithm());
+
+        final Metrics metrics = platform.getContext().getMetrics();
+        transactionSubmitSpeedometer = metrics.getOrCreate(TRAN_SUBMIT_TPS_SPEED_CONFIG);
+
     }
 
     @Override
@@ -217,6 +233,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
             numCreated++;
             toCreate--;
         }
+        transactionSubmitSpeedometer.update(numCreated);
         // toCreate will now represent any leftover transactions that we
         // failed to create this time, and will create next time
     }
