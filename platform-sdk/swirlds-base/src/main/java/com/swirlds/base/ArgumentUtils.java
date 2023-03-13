@@ -34,7 +34,7 @@ public class ArgumentUtils {
      */
     public static <T> T throwArgNull(final T argument, final String argumentName) {
         if (argument == null) {
-            throw new NullPointerException(String.format("The supplied argument '%s' cannot be null!", argumentName));
+            throw new NullPointerException("The supplied argument '%s' cannot be null!".formatted(argumentName));
         }
         return argument;
     }
