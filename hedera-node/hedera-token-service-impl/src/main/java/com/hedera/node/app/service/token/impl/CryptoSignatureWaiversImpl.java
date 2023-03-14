@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.token.impl;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
@@ -29,7 +31,10 @@ import org.apache.commons.lang3.NotImplementedException;
  * NOTE: FUTURE - These will be implemented in the coming PR and this class should be a singleton.
  */
 public class CryptoSignatureWaiversImpl implements CryptoSignatureWaivers {
-    public CryptoSignatureWaiversImpl(@NonNull final HederaAccountNumbers accountNumbers) {}
+    public CryptoSignatureWaiversImpl(@NonNull final HederaAccountNumbers accountNumbers) {
+        // Exists for injection
+        requireNonNull(accountNumbers);
+    }
 
     @Override
     public boolean isTargetAccountSignatureWaived(final TransactionBody cryptoUpdateTxn, final AccountID payer) {
