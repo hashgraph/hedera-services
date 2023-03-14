@@ -25,8 +25,10 @@ import static com.swirlds.platform.state.signed.SignedStateFileUtils.HASH_INFO_F
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.SIGNED_STATE_FILE_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.VERSIONED_FILE_BYTE;
 
+import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.payloads.StateSavedToDiskPayload;
 import com.swirlds.platform.Settings;
 import com.swirlds.platform.state.EmergencyRecoveryFile;
@@ -36,6 +38,7 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Instant;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -57,6 +60,9 @@ public final class SignedStateFileWriter {
      * @param directory the directory where the state is being written
      */
     public static void writeHashInfoFile(final Path directory, final State state) throws IOException {
+
+        // TODO while we are at it, let's use the proper config here
+
         final String platformInfo = state.getPlatformState().getInfoString();
         final String hashInfo = new MerkleTreeVisualizer(state)
                 .setDepth(StateSettings.getDebugHashDepth())
@@ -67,11 +73,28 @@ public final class SignedStateFileWriter {
         final Path hashInfoFile = directory.resolve(HASH_INFO_FILE_NAME);
 
         try (final BufferedWriter writer = new BufferedWriter(new FileWriter(hashInfoFile.toFile()))) {
-            writer.write(platformInfo);
-            writer.newLine();
             writer.write(hashInfo);
-            writer.flush();
         }
+    }
+
+    /**
+     * Write the signed state metadata file
+     *
+     * @param configuration the configuration
+     * @param selfId        the id of the platform
+     * @param directory     the directory to write to
+     * @param signedState   the signed state being written
+     */
+    public static void writeMetadataFile(
+            final Configuration configuration, final long selfId, final Path directory, final SignedState signedState)
+            throws IOException {
+
+        final Path metadataFile = directory.resolve(SignedStateMetadata.FILE_NAME);
+
+        final ConsensusConfig consensusConfig = configuration.getConfigData(ConsensusConfig.class);
+
+        SignedStateMetadata.create(signedState, consensusConfig, selfId, Instant.now())
+                .write(metadataFile);
     }
 
     /**
@@ -105,14 +128,18 @@ public final class SignedStateFileWriter {
     /**
      * Write all files that belong in the signed state directory into a directory.
      *
-     * @param directory   the directory where all files should be placed
-     * @param signedState the signed state being written to disk
+     * @param configuration configuration for the platform
+     * @param selfId        the id of the platform
+     * @param directory     the directory where all files should be placed
+     * @param signedState   the signed state being written to disk
      */
-    public static void writeSignedStateFilesToDirectory(final Path directory, final SignedState signedState)
+    public static void writeSignedStateFilesToDirectory(
+            final Configuration configuration, final long selfId, final Path directory, final SignedState signedState)
             throws IOException {
 
         writeStateFile(directory, signedState);
         writeHashInfoFile(directory, signedState.getState());
+        writeMetadataFile(configuration, selfId, directory, signedState);
         writeEmergencyRecoveryFile(directory, signedState);
         Settings.getInstance().writeSettingsUsed(directory);
     }
@@ -121,12 +148,18 @@ public final class SignedStateFileWriter {
      * Writes a SignedState to a file. Also writes auxiliary files such as "settingsUsed.txt". This is the top level
      * method called by the platform when it is ready to write a state.
      *
+     * @param configuration       configuration for the platform
+     * @param selfId              the id of the platform
      * @param savedStateDirectory the directory where the state will be stored
      * @param signedState         the object to be written
      * @param taskDescription     a description of the task
      */
     public static void writeSignedStateToDisk(
-            final Path savedStateDirectory, final SignedState signedState, final String taskDescription)
+            final Configuration configuration,
+            final long selfId,
+            final Path savedStateDirectory, // TODO can we get this from configuration?
+            final SignedState signedState,
+            final String taskDescription)
             throws IOException {
 
         try {
@@ -137,7 +170,8 @@ public final class SignedStateFileWriter {
                     taskDescription);
 
             executeAndRename(
-                    savedStateDirectory, directory -> writeSignedStateFilesToDirectory(directory, signedState));
+                    savedStateDirectory,
+                    directory -> writeSignedStateFilesToDirectory(configuration, selfId, directory, signedState));
 
             logger.info(
                     STATE_TO_DISK.getMarker(),

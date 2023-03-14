@@ -50,6 +50,7 @@ import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.AssertionUtils;
 import com.swirlds.common.test.fixtures.FakeTime;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.StateSettings;
@@ -155,7 +156,9 @@ class SignedStateFileReadWriteTest {
 
         throwIfFileExists(stateFile, hashInfoFile, settingsUsedFile, directory);
 
-        writeSignedStateToDisk(directory, signedState, "test");
+        final Configuration configuration = mock(Configuration.class); // TODO
+
+        writeSignedStateToDisk(configuration, 0, directory, signedState, "test");
 
         assertTrue(exists(stateFile), "state file should exist");
         assertTrue(exists(hashInfoFile), "hash info file should exist");

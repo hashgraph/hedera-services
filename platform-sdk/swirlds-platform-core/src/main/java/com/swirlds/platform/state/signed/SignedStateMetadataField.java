@@ -17,7 +17,7 @@
 package com.swirlds.platform.state.signed;
 
 /**
- * Fields written to the signed state metadata file.
+ * Fields written to the signed state metadata file. TODO add rounds non ancient maybe
  */
 public enum SignedStateMetadataField {
     /**

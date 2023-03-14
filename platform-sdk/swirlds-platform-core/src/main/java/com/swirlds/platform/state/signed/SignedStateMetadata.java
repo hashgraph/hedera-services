@@ -17,6 +17,8 @@
 package com.swirlds.platform.state.signed;
 
 import static com.swirlds.common.formatting.StringFormattingUtils.formattedList;
+import static com.swirlds.common.utility.CommonUtils.unhex;
+import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.consensus.RoundCalculationUtils.getMinGenNonAncient;
 import static com.swirlds.platform.state.signed.SignedStateMetadataField.CONSENSUS_TIMESTAMP;
 import static com.swirlds.platform.state.signed.SignedStateMetadataField.MINIMUM_GENERATION_NON_ANCIENT;
@@ -35,6 +37,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -47,6 +50,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Metadata about a signed state.
@@ -76,7 +81,7 @@ import java.util.Map;
  * @param totalStake                  the total stake of all nodes in the network, corresponds to
  *                                    {@link SignedStateMetadataField#TOTAL_STAKE}
  */
-public record SignedStateMetadata(
+public record SignedStateMetadata( // TODO test this
         Long round,
         Long numberOfConsensusEvents,
         Instant consensusTimestamp,
@@ -93,6 +98,8 @@ public record SignedStateMetadata(
      * The standard file name for the signed state metadata file.
      */
     public static final String FILE_NAME = "stateMetadata.txt";
+
+    private static final Logger logger = LogManager.getLogger(SignedStateMetadata.class);
 
     /**
      * Parse the signed state metadata from the given file.
@@ -177,7 +184,7 @@ public record SignedStateMetadata(
         if (!Files.exists(metadataFile)) {
             // We must elegantly handle the case where the metadata file does not exist
             // until we have fully migrated all state snapshots in production environments.
-            // TODO log warning
+            logger.warn(STARTUP.getMarker(), "Signed state does not have a metadata file at {}", metadataFile);
             return new HashMap<>();
         }
 
@@ -187,27 +194,51 @@ public record SignedStateMetadata(
             try (final BufferedReader reader = new BufferedReader(new FileReader(metadataFile.toFile()))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    final String[] parts = line.split(": ");
+                    final String[] parts = line.split(":");
                     if (parts.length != 2) {
-                        throw new IOException("Invalid line in metadata file: " + line);
+                        logger.warn(STARTUP.getMarker(), "Invalid line in metadata file: {}", line);
+                        continue;
                     }
-                    final SignedStateMetadataField key =
-                            SignedStateMetadataField.valueOf(parts[0]); // TODO catch exception
-                    final String value = parts[1];
-                    map.put(key, value); // TODO catch duplicates
+                    try {
+                        final SignedStateMetadataField key = SignedStateMetadataField.valueOf(parts[0].strip());
+                        final String value = parts[1].strip();
+                        map.put(key, value);
+                    } catch (final IllegalArgumentException e) {
+                        logger.warn(STARTUP.getMarker(), "Invalid key in metadata file: {}", parts[0].strip());
+                    }
                 }
             }
 
             if (map.size() != SignedStateMetadataField.values().length) {
-                // Future work: if we change the contents of this file we need to introduce more elegant migration logic
                 throw new IOException("Invalid number of lines in metadata file: " + map.size());
             }
 
             return map;
         } catch (final IOException e) {
-            // TODO log
+            logger.warn(STARTUP.getMarker(), "Failed to parse signed state metadata file: {}", metadataFile, e);
             return new HashMap<>();
         }
+    }
+
+    /**
+     * Write a log message for a missing field.
+     *
+     * @param field the missing field
+     */
+    private static void logMissingField(final SignedStateMetadataField field) {
+        logger.warn(STARTUP.getMarker(), "Signed state metadata file is missing field: {}", field);
+    }
+
+    /**
+     * Write a log message for an invalid field.
+     *
+     * @param field the invalid field
+     * @param value the invalid value
+     * @param e     the exception
+     */
+    private static void logInvalidField(final SignedStateMetadataField field, final String value, final Exception e) {
+        logger.warn(
+                STARTUP.getMarker(), "Signed state metadata file has invalid value for field {}: {}", field, value, e);
     }
 
     /**
@@ -221,7 +252,7 @@ public record SignedStateMetadata(
             final Map<SignedStateMetadataField, String> data, final SignedStateMetadataField field) {
 
         if (!data.containsKey(field)) {
-            // TODO log
+            logMissingField(field);
             return null;
         }
 
@@ -229,27 +260,42 @@ public record SignedStateMetadata(
         try {
             return Long.parseLong(value);
         } catch (final NumberFormatException e) {
-            // TODO log
+            logInvalidField(field, value, e);
             return null;
         }
     }
 
+    /**
+     * Attempt to parse a string from the data map.
+     *
+     * @param data  the data map
+     * @param field the field to parse
+     * @return the parsed string, or null if the field is not present or the value is not a valid hash
+     */
+    @SuppressWarnings("SameParameterValue")
     private static String parseString(
             final Map<SignedStateMetadataField, String> data, final SignedStateMetadataField field) {
 
         if (!data.containsKey(field)) {
-            // TODO log
+            logMissingField(field);
             return null;
         }
 
         return data.get(field);
     }
 
+    /**
+     * Attempt to parse an instant from the data map.
+     *
+     * @param data  the data map
+     * @param field the field to parse
+     * @return the parsed instant, or null if the field is not present or the value is not a valid instant
+     */
     private static Instant parseInstant(
             final Map<SignedStateMetadataField, String> data, final SignedStateMetadataField field) {
 
         if (!data.containsKey(field)) {
-            // TODO log
+            logMissingField(field);
             return null;
         }
 
@@ -257,16 +303,24 @@ public record SignedStateMetadata(
         try {
             return Instant.parse(value);
         } catch (final DateTimeParseException e) {
-            // TODO log
+            logInvalidField(field, value, e);
             return null;
         }
     }
 
+    /**
+     * Attempt to parse a list of longs from the data map.
+     *
+     * @param data  the data map
+     * @param field the field to parse
+     * @return the parsed list of longs, or null if the field is not present or the value is not a valid list of longs
+     */
+    @SuppressWarnings("SameParameterValue")
     private static List<Long> parseLongList(
             final Map<SignedStateMetadataField, String> data, final SignedStateMetadataField field) {
 
         if (!data.containsKey(field)) {
-            // TODO log
+            logMissingField(field);
             return null;
         }
 
@@ -277,26 +331,34 @@ public record SignedStateMetadata(
             try {
                 list.add(Long.parseLong(part));
             } catch (final NumberFormatException e) {
-                // TODO log
+                logInvalidField(field, value, e);
                 return null;
             }
         }
         return list;
     }
 
+    /**
+     * Attempt to parse a hash from the data map.
+     *
+     * @param data  the data map
+     * @param field the field to parse
+     * @return the parsed hash, or null if the field is not present or the value is not a valid hash
+     */
+    @SuppressWarnings("SameParameterValue")
     private static Hash parseHash(
             final Map<SignedStateMetadataField, String> data, final SignedStateMetadataField field) {
 
         if (!data.containsKey(field)) {
-            // TODO log
+            logMissingField(field);
             return null;
         }
 
         final String value = data.get(field);
         try {
-            return null; // TODO parse
+            return new Hash(unhex(value));
         } catch (final IllegalArgumentException e) {
-            // TODO log
+            logInvalidField(field, value, e);
             return null;
         }
     }
@@ -334,7 +396,7 @@ public record SignedStateMetadata(
         final List<SignedStateMetadataField> keys = new ArrayList<>(map.keySet());
         Collections.sort(keys);
 
-        try (final FileWriter writer = new FileWriter(metadataFile.toFile())) {
+        try (final BufferedWriter writer = new BufferedWriter(new FileWriter(metadataFile.toFile()))) {
             for (final SignedStateMetadataField key : keys) {
                 final String value = map.get(key);
 

@@ -29,6 +29,7 @@ import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomUtils;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.dispatch.triggers.control.ShutdownRequestedTrigger;
 import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.reconnect.emergency.EmergencySignedStateValidator;
@@ -398,9 +399,11 @@ public class SavedStateLoaderTests {
             states.addFirst(generator.setRound(i * 5L).build());
         }
 
+        final Configuration configuration = mock(Configuration.class); // TODO
+
         states.forEach(ss -> {
             try {
-                SignedStateFileWriter.writeSignedStateToDisk(getStateDir(ss.getRound()), ss, "test");
+                SignedStateFileWriter.writeSignedStateToDisk(configuration, 0, getStateDir(ss.getRound()), ss, "test");
             } catch (final IOException e) {
                 throw new RuntimeException(e);
             }
