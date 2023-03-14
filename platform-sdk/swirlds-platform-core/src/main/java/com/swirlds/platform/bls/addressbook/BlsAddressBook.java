@@ -32,7 +32,7 @@ import java.util.TreeSet;
  * Class representing an address book. Will be conceptually merged into the existing platform
  * address book
  */
-public class PlatformAddressBook {
+public class BlsAddressBook {
 
     /** Mapping from nodeId to a data object describing the node */
     private final Map<NodeId, BlsNodeData> nodeDataMap;
@@ -50,7 +50,7 @@ public class PlatformAddressBook {
     private boolean dirty;
 
     /** Constructor */
-    public PlatformAddressBook() {
+    public BlsAddressBook() {
         this.nodeDataMap = new HashMap<>();
         this.totalShares = 0;
         this.sortedNodeIds = new TreeSet<>();
@@ -63,7 +63,7 @@ public class PlatformAddressBook {
      *
      * @param otherAddressBook the address book being copied
      */
-    public PlatformAddressBook(final PlatformAddressBook otherAddressBook) {
+    public BlsAddressBook(final BlsAddressBook otherAddressBook) {
         final Map<NodeId, BlsNodeData> copiedNodeDataMap = new HashMap<>();
 
         for (final Map.Entry<NodeId, BlsNodeData> nodeDataEntry : otherAddressBook.nodeDataMap.entrySet()) {

@@ -21,7 +21,7 @@ import static com.swirlds.platform.Utilities.isSuperMajority;
 import com.hedera.platform.bls.api.BilinearMap;
 import com.hedera.platform.bls.api.GroupElement;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.bls.addressbook.PlatformAddressBook;
+import com.swirlds.platform.bls.addressbook.BlsAddressBook;
 import com.swirlds.platform.bls.message.CommitmentMessage;
 import com.swirlds.platform.bls.message.OpeningMessage;
 import com.swirlds.platform.bls.message.ProtocolMessage;
@@ -65,7 +65,7 @@ public class CrsProtocol implements BlsProtocol<Crs> {
     /**
      * The address book of nodes performing this protocol
      */
-    protected final PlatformAddressBook addressBook;
+    protected final BlsAddressBook addressBook;
 
     /**
      * The id of this node, where the protocol is running
@@ -91,7 +91,7 @@ public class CrsProtocol implements BlsProtocol<Crs> {
      * @param bilinearMap     the bilinear map
      */
     public CrsProtocol(
-            final PlatformAddressBook addressBook,
+            final BlsAddressBook addressBook,
             final NodeId nodeId,
             final BlsProtocolManager<Crs> protocolManager,
             final BilinearMap bilinearMap) {
