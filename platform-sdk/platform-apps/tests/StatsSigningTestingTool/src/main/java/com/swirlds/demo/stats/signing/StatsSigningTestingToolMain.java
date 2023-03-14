@@ -235,7 +235,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
         int numCreated = 0;
 
         // if it's first time calling this, just set lastEventTime and return
-        // so the period from app start to the first time init() is called is ignored
+        // so the period from app start to the first time run() is called is ignored
         // to avoid a huge burst of transactions at the start of the test
         if (lastTPSMeasureTime == 0) {
             lastTPSMeasureTime = now;
