@@ -9,6 +9,7 @@ module com.hedera.node.app.service.network.impl.test {
     requires com.swirlds.common;
     requires com.swirlds.fcqueue;
     requires com.hedera.pbj.runtime;
+    requires com.hedera.node.app.spi.fixtures;
 
     opens com.hedera.node.app.service.network.impl.test to
             org.junit.platform.commons;

@@ -20,8 +20,6 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 
@@ -29,20 +27,12 @@ public class EntityNumCodec implements Codec<EntityNum> {
     @NonNull
     @Override
     public EntityNum parse(final @NonNull ReadableSequentialData input) throws IOException {
-        if (input instanceof SerializableDataInputStream in) {
-            return new EntityNum(in.readInt());
-        } else {
-            throw new IllegalArgumentException("Expected a SerializableDataInputStream");
-        }
+        return new EntityNum(input.readInt());
     }
 
     @Override
     public void write(final @NonNull EntityNum item, final @NonNull WritableSequentialData output) throws IOException {
-        if (output instanceof SerializableDataOutputStream out) {
-            out.writeInt(item.intValue());
-        } else {
-            throw new IllegalArgumentException("Expected a SerializableDataOutputStream");
-        }
+        output.writeInt(item.intValue());
     }
 
     @Override

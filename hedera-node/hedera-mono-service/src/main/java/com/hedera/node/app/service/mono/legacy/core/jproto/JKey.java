@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.mono.legacy.core.jproto;
 
+import static java.util.Collections.emptyList;
+
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.spi.key.HederaKey;
@@ -24,14 +26,13 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.commons.codec.DecoderException;
-import static java.util.Collections.emptyList;
 
 /** Maps to proto Key. */
 public abstract class JKey implements HederaKey {
@@ -112,7 +113,8 @@ public abstract class JKey implements HederaKey {
      * @return the converted JKey instance
      * @throws DecoderException on an inconvertible given key
      */
-    public static JKey convertKey(@NonNull final com.hedera.hapi.node.base.Key key, final int depth) throws DecoderException {
+    public static JKey convertKey(@NonNull final com.hedera.hapi.node.base.Key key, final int depth)
+            throws DecoderException {
         if (depth > MAX_KEY_DEPTH) {
             throw new DecoderException("Exceeding max expansion depth of " + MAX_KEY_DEPTH);
         }

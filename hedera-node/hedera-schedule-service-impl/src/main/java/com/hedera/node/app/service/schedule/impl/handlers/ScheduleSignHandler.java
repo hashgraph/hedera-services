@@ -72,9 +72,8 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
 
         final var scheduledTxn = scheduleLookupResult.get().scheduledTxn();
         final var optionalPayer = scheduleLookupResult.get().designatedPayer();
-        final var payerForNested =
-                optionalPayer.orElse(scheduledTxn.transactionIDOrElse(TransactionID.DEFAULT)
-                        .accountIDOrElse(AccountID.DEFAULT));
+        final var payerForNested = optionalPayer.orElse(
+                scheduledTxn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT));
 
         preHandleScheduledTxn(context, scheduledTxn, payerForNested, dispatcher);
     }

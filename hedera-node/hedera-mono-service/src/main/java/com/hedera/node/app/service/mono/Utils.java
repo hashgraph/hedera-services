@@ -21,8 +21,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.Key;
-import java.util.Optional;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Optional;
 import org.apache.commons.codec.DecoderException;
 
 // This class should not exist. Right now we have code that needs to map from a JKey to a

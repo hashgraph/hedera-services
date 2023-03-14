@@ -20,7 +20,6 @@ import com.hedera.node.app.Hedera;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.MethodDescriptor;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Objects;
 
