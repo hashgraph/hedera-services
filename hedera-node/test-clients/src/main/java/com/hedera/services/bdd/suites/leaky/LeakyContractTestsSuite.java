@@ -188,6 +188,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE =
             KeyShape.threshOf(1, KeyShape.SIMPLE, DELEGATE_CONTRACT);
     private static final String CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY = "contracts.allowAutoAssociations";
+    public static final String FALSE = "false";
 
     public static void main(String... args) {
         new LeakyContractTestsSuite().runSuiteSync();
@@ -1038,7 +1039,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .preserving(ALLOW_AUTO_ASSOCIATIONS_PROPERTY, LAZY_CREATION_ENABLED)
                 .given(
                         overriding(ALLOW_AUTO_ASSOCIATIONS_PROPERTY, "true"),
-                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, "false"),
+                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, FALSE),
                         cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(FUNGIBLE_TOKEN)
@@ -1208,7 +1209,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     private HapiSpec rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled() {
         return propertyPreservingHapiSpec("rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled")
                 .preserving(CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY)
-                .given(overriding(CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY, "false"))
+                .given(overriding(CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY, FALSE))
                 .when(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .then(
                         contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
@@ -1224,7 +1225,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     private HapiSpec erc20TransferFromDoesNotWorkIfFlagIsDisabled() {
         return defaultHapiSpec("erc20TransferFromDoesNotWorkIfFlagIsDisabled")
                 .given(
-                        overriding("hedera.allowances.isEnabled", "false"),
+                        overriding("hedera.allowances.isEnabled", FALSE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
                         cryptoCreate(RECIPIENT),

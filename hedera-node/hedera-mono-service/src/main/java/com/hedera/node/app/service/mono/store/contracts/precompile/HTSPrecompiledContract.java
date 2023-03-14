@@ -133,9 +133,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
     public static final EntityId HTS_PRECOMPILE_MIRROR_ENTITY_ID =
             EntityId.fromGrpcContractId(HTS_PRECOMPILE_MIRROR_ID);
 
-    private static final PrecompileContractResult NO_RESULT =
-            new PrecompileContractResult(null, true, MessageFrame.State.COMPLETED_FAILED, Optional.empty());
-
     public static final PrecompileContractResult INVALID_DELEGATE = new PrecompileContractResult(
             null, true, MessageFrame.State.COMPLETED_FAILED, Optional.of(ExceptionalHaltReason.PRECOMPILE_ERROR));
 

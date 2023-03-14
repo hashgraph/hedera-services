@@ -126,8 +126,6 @@ public class ContractKeysHTSSuite extends HapiSuite {
     private static final String DISTRIBUTE_TX = "distributeTx";
     private static final String TOKEN_ASSOCIATE = "tokenAssociate";
     private static final String TOKEN_DISSOCIATE = "tokenDissociate";
-    private static final String BURN_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_DELEGATE_CALL =
-            "burnCallAfterNestedMintCallWithPrecompileDelegateCall";
     private static final String BURN_WITH_CONTRACT_KEY = "burn with contract key";
     private static final String VANILLA_TOKEN_ASSOCIATE_TXN = "vanillaTokenAssociateTxn";
     private static final String TOKEN_USAGE = "Token";
@@ -137,20 +135,6 @@ public class ContractKeysHTSSuite extends HapiSuite {
     private static final String DELEGATE_BURN_CALL_WITH_CONTRACT_KEY_TXN = "delegateBurnCallWithContractKeyTxn";
     private static final String NESTED_ASSOCIATE_DISSOCIATE = "NestedAssociateDissociate";
     private static final String STATIC_CONTRACT = "StaticContract";
-    private static final String BURN_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_CALL =
-            "burnCallAfterNestedMintCallWithPrecompileCall";
-    private static final String BURN_DELEGATE_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_DELEGATE_CALL =
-            "burnDelegateCallAfterNestedMintCallWithPrecompileDelegateCall";
-    private static final String BURN_DELEGATE_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_DELEGATE_CALL =
-            "burnDelegateCallAfterNestedMintDelegateCallWithPrecompileDelegateCall";
-    private static final String BURN_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_DELEGATE_CALL =
-            "burnCallAfterNestedMintDelegateCallWithPrecompileDelegateCall";
-    private static final String BURN_DELEGATE_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_CALL =
-            "burnDelegateCallAfterNestedMintCallWithPrecompileCall";
-    private static final String BURN_DELEGATE_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_CALL =
-            "burnDelegateCallAfterNestedMintDelegateCallWithPrecompileCall";
-    private static final String BURN_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_CALL =
-            "burnCallAfterNestedMintDelegateCallWithPrecompileCall";
     private static final String FIRST_STRING_FOR_MINT = "First!";
     private static final String ACCOUNT_NAME = "anybody";
     private static final String TYPE_OF_TOKEN = "fungibleToken";
