@@ -58,7 +58,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
         hederaMerkle = new MerkleHederaState(
                 tree -> onMigrateCalled.set(true),
                 (evt, meta, provider) -> onPreHandleCalled.set(true),
-                (round, dual, metadata) -> onHandleCalled.set(true));
+                (round, state, dual, metadata) -> onHandleCalled.set(true));
     }
 
     /** Looks for a merkle node with the given label */
@@ -644,7 +644,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
             final var state = new MerkleHederaState(
                     tree -> onMigrateCalled.set(true),
                     (evt, meta, provider) -> onPreHandleCalled.set(true),
-                    (r, d, m) -> {
+                    (r, s, d, m) -> {
                         assertThat(round).isSameAs(r);
                         assertThat(dualState).isSameAs(d);
                         onHandleCalled.set(true);

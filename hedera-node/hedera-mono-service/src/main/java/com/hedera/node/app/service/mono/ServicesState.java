@@ -699,6 +699,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         final int copyTargetMapEveryPuts = 10_000;
         final AtomicInteger count = new AtomicInteger(copyTargetMapEveryPuts);
         final AtomicReference<VirtualMap<K, V>> targetMapRef = new AtomicReference<>(target);
+        final AtomicReference<VirtualRootNode<K, V>> previousRoot = new AtomicReference<>();
         MiscUtils.withLoggedDuration(
                 () -> {
                     try {
@@ -715,6 +716,16 @@ public class ServicesState extends PartialNaryMerkleInternal
                                         targetMapRef.set(curCopy.copy());
                                         curCopy.release();
                                         count.set(copyTargetMapEveryPuts);
+                                        // Apply backpressure, so virtual map flushing to disk can
+                                        // keep up with data migration
+                                        final VirtualRootNode<K, V> root = curCopy.getRight();
+                                        if (root.shouldBeFlushed()) {
+                                            final VirtualRootNode<K, V> previous = previousRoot.get();
+                                            if (previous != null) {
+                                                previous.waitUntilFlushed();
+                                            }
+                                            previousRoot.set(root);
+                                        }
                                     }
                                 },
                                 4);

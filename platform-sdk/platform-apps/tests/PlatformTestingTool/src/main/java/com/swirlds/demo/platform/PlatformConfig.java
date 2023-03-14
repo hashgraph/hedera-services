@@ -19,12 +19,6 @@ package com.swirlds.demo.platform;
 public class PlatformConfig {
     /** should this run with no windows? */
     boolean headless = true;
-    /** number of milliseconds between writes to the log file */
-    int writePeriod = 3000;
-    /** milliseconds of sleep after each sync */
-    long syncDelay = 0;
-    /** if false SwirldState1 will be used, if true SwirldState2 will be used */
-    boolean useSwirldState2 = true;
 
     private PlatformConfig() {}
 

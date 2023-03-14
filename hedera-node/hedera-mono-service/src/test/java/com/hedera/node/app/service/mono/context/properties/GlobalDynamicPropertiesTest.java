@@ -60,7 +60,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SCHEDULE_TH
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECARS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_STORAGE_SLOT_PRICE_TIERS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_THROTTLE_THROTTLE_BY_GAS;
-import static com.hedera.node.app.spi.config.PropertyNames.CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.CRYPTO_CREATE_WITH_ALIAS_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_LIMIT_TOKEN_ASSOCIATIONS;
 import static com.hedera.node.app.spi.config.PropertyNames.FEES_MIN_CONGESTION_PERIOD;
 import static com.hedera.node.app.spi.config.PropertyNames.FEES_PERCENT_CONGESTION_MULTIPLIERS;
@@ -221,7 +221,7 @@ class GlobalDynamicPropertiesTest {
         assertFalse(subject.shouldCompressAccountBalanceFilesOnCreation());
         assertTrue(subject.shouldDoTraceabilityExport());
         assertTrue(subject.isLazyCreationEnabled());
-        assertFalse(subject.isCryptoCreateWithAliasAndEvmAddressEnabled());
+        assertFalse(subject.isCryptoCreateWithAliasEnabled());
         assertFalse(subject.isAtomicCryptoTransferEnabled());
         assertFalse(subject.isImplicitCreationEnabled());
     }
@@ -380,7 +380,7 @@ class GlobalDynamicPropertiesTest {
         assertTrue(subject.dynamicEvmVersion());
         assertTrue(subject.shouldCompressAccountBalanceFilesOnCreation());
         assertFalse(subject.isLazyCreationEnabled());
-        assertTrue(subject.isCryptoCreateWithAliasAndEvmAddressEnabled());
+        assertTrue(subject.isCryptoCreateWithAliasEnabled());
         assertFalse(subject.shouldEnforceAccountCreationThrottleForContracts());
         assertFalse(subject.isImplicitCreationEnabled());
     }
@@ -635,8 +635,7 @@ class GlobalDynamicPropertiesTest {
         given(properties.getLegacyActivationsProperty(CONTRACTS_KEYS_LEGACY_ACTIVATIONS))
                 .willReturn(contractIdActivations);
         given(properties.getBooleanProperty(LAZY_CREATION_ENABLED)).willReturn((i + 89) % 2 == 0);
-        given(properties.getBooleanProperty(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED))
-                .willReturn((i + 90) % 2 == 0);
+        given(properties.getBooleanProperty(CRYPTO_CREATE_WITH_ALIAS_ENABLED)).willReturn((i + 90) % 2 == 0);
         given(properties.getEntityScaleFactorsProperty(FEES_PERCENT_UTILIZATION_SCALE_FACTORS))
                 .willReturn(entityScaleFactors);
         given(properties.getBooleanProperty(CONTRACTS_ENFORCE_CREATION_THROTTLE))

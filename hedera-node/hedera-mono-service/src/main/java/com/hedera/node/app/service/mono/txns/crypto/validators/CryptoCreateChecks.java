@@ -166,7 +166,7 @@ public class CryptoCreateChecks {
     }
 
     private ResponseCodeEnum validateKeyAndAliasProvidedCase(final CryptoCreateTransactionBody op) {
-        if (!dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()) {
+        if (!dynamicProperties.isCryptoCreateWithAliasEnabled()) {
             return NOT_SUPPORTED;
         }
         final var keyValidity = validateKey(op);
@@ -182,15 +182,12 @@ public class CryptoCreateChecks {
     }
 
     private ResponseCodeEnum validateOnlyAliasProvidedCase(final CryptoCreateTransactionBody op) {
-        if (!dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()) {
+        if (!dynamicProperties.isCryptoCreateWithAliasEnabled()) {
             return NOT_SUPPORTED;
         }
         final var alias = op.getAlias();
         if (alias.size() == EVM_ADDRESS_SIZE) {
-            if (!dynamicProperties.isLazyCreationEnabled()) {
-                return NOT_SUPPORTED;
-            }
-            return validateEvmAddressAlias(alias);
+            return INVALID_ALIAS_KEY;
         } else {
             return validatePublicKeyAlias(alias);
         }

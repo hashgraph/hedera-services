@@ -32,11 +32,12 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import com.swirlds.common.utility.Units;
 import com.swirlds.merkledb.KeyRange;
-import com.swirlds.merkledb.collections.CASable;
+import com.swirlds.merkledb.collections.CASableLongIndex;
 import com.swirlds.merkledb.collections.ImmutableIndexedObjectListUsingArray;
 import com.swirlds.merkledb.collections.IndexedObject;
 import com.swirlds.merkledb.collections.LongListHeap;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.Files;
@@ -48,7 +49,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -67,9 +67,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class DataFileCollectionTest {
 
-    /**
-     * Temporary directory provided by JUnit
-     */
+    /** Temporary directory provided by JUnit */
     @SuppressWarnings("unused")
     @TempDir
     static Path tempFileDir;
@@ -86,16 +84,14 @@ class DataFileCollectionTest {
     // Helper Methods
 
     /**
-     * For tests, we want to have all different data sizes, so we use this function to choose how many times to repeat
-     * the data value long
+     * For tests, we want to have all different data sizes, so we use this function to choose how
+     * many times to repeat the data value long
      */
     private static int getRepeatCountForKey(final long key) {
         return (int) (key % 20L);
     }
 
-    /**
-     * Create an example variable sized data item with lengths of data from 1 to 20.
-     */
+    /** Create an example variable sized data item with lengths of data from 1 to 20. */
     private static long[] getVariableSizeDataForI(final int i, final int valueAddition) {
         final int repeatCount = getRepeatCountForKey(i);
         final long[] dataValue = new long[1 + repeatCount];
@@ -159,11 +155,11 @@ class DataFileCollectionTest {
 
         assertSame(
                 Collections.emptyList(),
-                fileCollection.getAllFullyWrittenFiles(),
+                fileCollection.getAllCompletedFiles(),
                 "Initially there are no fully written files");
         assertSame(
                 Collections.emptyList(),
-                fileCollection.getAllFullyWrittenFiles(1),
+                fileCollection.getAllCompletedFiles(1),
                 "Initially there are no fully written files");
         assertThrows(
                 IOException.class,
@@ -207,7 +203,7 @@ class DataFileCollectionTest {
                 // store in file
                 storedOffsets.put(i, fileCollection.storeDataItem(dataValue));
             }
-            fileCollection.endWriting(0, count + 100);
+            fileCollection.endWriting(0, count + 100).setFileCompleted();
             assertEquals(new KeyRange(0, count + 100), fileCollection.getValidKeyRange(), "Range should be this");
             count += 100;
         }
@@ -248,7 +244,6 @@ class DataFileCollectionTest {
         for (int f = 0; f < 10; f++) {
             final DataFileReader<long[]> dataFileReader = fileCollection.getDataFile(f);
             final DataFileMetadata metadata = dataFileReader.getMetadata();
-            assertFalse(metadata.isMergeFile(), "Data files are not merge files");
             assertEquals(f, metadata.getIndex(), "Data file metadata should know self-index");
             assertTrue(metadata.getCreationDate().isAfter(TEST_START), "Creation dates should go forward in time");
             assertTrue(metadata.getCreationDate().isBefore(Instant.now()), "Creation dates may not be in the future");
@@ -269,7 +264,8 @@ class DataFileCollectionTest {
         final DataFileCollection<long[]> fileCollection = new DataFileCollection<>(
                 tempFileDir.resolve(testType.name()), "test", testType.dataItemSerializer, loadedDataCallbackImpl);
         fileCollectionMap.put(testType, fileCollection);
-        // check that the 10 files were created previously (in the very first unit test) still are readable
+        // check that the 10 files were created previously (in the very first unit test) still are
+        // readable
         assertEquals(
                 10,
                 Files.list(tempFileDir.resolve(testType.name()))
@@ -280,7 +276,7 @@ class DataFileCollectionTest {
         assertEquals(
                 1000,
                 loadedDataCallbackImpl.dataLocationMap.size(),
-                "Size of data location map in collection loaded from store should reflect known size");
+                "Size of data location map in collection loaded from store should reflect known" + " size");
         assertEquals(
                 1000,
                 loadedDataCallbackImpl.dataValueMap.size(),
@@ -339,8 +335,9 @@ class DataFileCollectionTest {
     }
 
     /**
-     * Special slow wrapper on ImmutableIndexedObjectListUsingArray that slows down gets, this causing threading bugs
-     * during merging where deletion and reading race each other, to be always reproducible.
+     * Special slow wrapper on ImmutableIndexedObjectListUsingArray that slows down gets, this
+     * causing threading bugs during merging where deletion and reading race each other, to be
+     * always reproducible.
      */
     private static class SlowImmutableIndexedObjectListUsingArray<T extends IndexedObject>
             extends ImmutableIndexedObjectListUsingArray<T> {
@@ -359,9 +356,7 @@ class DataFileCollectionTest {
         }
     }
 
-    /**
-     * Reopen database using SlowImmutableIndexedObjectListUsingArray ready for merging test
-     */
+    /** Reopen database using SlowImmutableIndexedObjectListUsingArray ready for merging test */
     @Order(99)
     @ParameterizedTest
     @EnumSource(FilesTestType.class)
@@ -398,7 +393,8 @@ class DataFileCollectionTest {
         final int NUM_OF_KEYS = 1000;
         final int NUM_OF_THREADS = 5;
         IntStream.range(0, NUM_OF_THREADS).parallel().forEach(thread -> {
-            if (thread == 0) { // checking thread, keep reading and checking data all the time while we are merging
+            if (thread == 0) { // checking thread, keep reading and checking data all
+                // the time while we are merging
                 while (!mergeComplete.get()) {
                     try {
                         for (int i = 0; i < NUM_OF_KEYS; i++) {
@@ -409,7 +405,8 @@ class DataFileCollectionTest {
                         e.printStackTrace();
                     }
                 }
-            } else if (thread < (NUM_OF_THREADS - 1)) { // check reading item at index 100 as fast as possible to try
+            } else if (thread < (NUM_OF_THREADS - 1)) { // check reading item at index 100 as fast as
+                // possible to try
                 // and slip though cracks
                 System.out.println("START READING");
                 while (!mergeComplete.get()) {
@@ -425,15 +422,14 @@ class DataFileCollectionTest {
                 }
             } else if (thread == (NUM_OF_THREADS - 1)) { // move thread
                 System.out.println("DataFileCollectionTest.merge");
-                List<Path> mergeResults = null;
+                List<Path> mergedFiles = null;
                 try {
-                    List<DataFileReader<long[]>> filesToMerge =
-                            fileCollection.getAllFullyWrittenFiles(MAX_TEST_FILE_MB);
+                    List<DataFileReader<long[]>> filesToMerge = fileCollection.getAllCompletedFiles(MAX_TEST_FILE_MB);
                     System.out.println("filesToMerge = " + filesToMerge.size());
                     AtomicInteger numMoves = new AtomicInteger(0);
                     Set<Integer> allKeysExpectedToBeThere =
                             IntStream.range(0, NUM_OF_KEYS).boxed().collect(Collectors.toSet());
-                    CASable indexUpdater = new CASable() {
+                    CASableLongIndex indexUpdater = new CASableLongIndex() {
                         public long get(long key) {
                             return storedOffsets.get(key);
                         }
@@ -452,9 +448,14 @@ class DataFileCollectionTest {
                                     "check each key was in list of expected keys");
                             return storedOffsets.putIfEqual(key, oldValue, newValue);
                         }
+
+                        public <T extends Throwable> void forEach(final LongAction<T> action)
+                                throws InterruptedException, T {
+                            storedOffsets.forEach(action);
+                        }
                     };
 
-                    mergeResults = fileCollection.mergeFiles(indexUpdater, filesToMerge, new Semaphore(1));
+                    mergedFiles = fileCollection.compactFiles(indexUpdater, filesToMerge);
                     assertTrue(allKeysExpectedToBeThere.isEmpty(), "check there were no missed keys");
                     System.out.println(
                             "============= MERGE [" + numMoves.get() + "] MOVES DONE ===========================");
@@ -466,7 +467,7 @@ class DataFileCollectionTest {
                             .forEach(location -> assertEquals(
                                     10,
                                     DataFileCommon.fileIndexFromDataLocation(location),
-                                    "Expect all data to be correct"));
+                                    "Expect all data to be" + " correct"));
                     System.out.println("============= CHECK DONE ===========================");
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -476,7 +477,8 @@ class DataFileCollectionTest {
                 assertEquals(new KeyRange(0, NUM_OF_KEYS), validKeyRange, "Should still have values");
                 mergeComplete.set(true);
                 // all files should have been merged into 1.
-                assertEquals(1, mergeResults == null ? -1 : mergeResults.size(), "unexpected # of post-merge files");
+                assertNotNull(mergedFiles, "null merged files list");
+                assertEquals(1, mergedFiles.size(), "unexpected # of post-merge files");
             }
         });
         // check we only have 1 file left
@@ -486,14 +488,16 @@ class DataFileCollectionTest {
                         .filter(f -> f.toString().endsWith(".jdb"))
                         .count(),
                 "unexpected # of files #1");
-        // After merge is complete, there should be only 1 "fully written" file, and that it is empty.
-        List<DataFileReader<long[]>> filesLeft = fileCollection.getAllFullyWrittenFiles(Integer.MAX_VALUE);
+        // After merge is complete, there should be only 1 "fully written" file, and that it is
+        // empty.
+        List<DataFileReader<long[]>> filesLeft = fileCollection.getAllCompletedFiles(Integer.MAX_VALUE);
         assertEquals(1, filesLeft.size(), "unexpected # of files #2");
-        filesLeft = fileCollection.getAllFullyWrittenFiles(1); // files with size less than 1 are empty
+        filesLeft = fileCollection.getAllCompletedFiles(1); // files with size less than 1 are empty
         assertEquals(1, filesLeft.size(), "unexpected # of files #3");
 
         // and trying to merge just one file is a no-op
-        List<Path> secondMergeResults = fileCollection.mergeFiles(null, filesLeft, new Semaphore(1));
+        List<Path> secondMergeResults = fileCollection.compactFiles(null, filesLeft);
+        assertNotNull(secondMergeResults, "null merged files list");
         assertEquals(0, secondMergeResults.size(), "unexpected results from second merge");
     }
 
@@ -526,7 +530,7 @@ class DataFileCollectionTest {
             // store in file
             storedOffsets.put(i, fileCollection.storeDataItem(dataValue));
         }
-        fileCollection.endWriting(0, 1000);
+        fileCollection.endWriting(0, 1000).setFileCompleted();
         // check we now have 2 files
         assertEquals(
                 2,
@@ -551,11 +555,12 @@ class DataFileCollectionTest {
         final DataFileCollection<long[]> fileCollection = fileCollectionMap.get(testType);
         final LongListHeap storedOffsets = storedOffsetsMap.get(testType);
         final AtomicBoolean mergeComplete = new AtomicBoolean(false);
-        // start merging paused so that we can test pausing
-        final Semaphore mergePaused = new Semaphore(0);
+        // start compaction paused so that we can test pausing
+        fileCollection.pauseCompaction();
 
         IntStream.range(0, 3).parallel().forEach(thread -> {
-            if (thread == 0) { // checking thread, keep reading and checking data all the time while we are merging
+            if (thread == 0) { // checking thread, keep reading and checking data all
+                // the time while we are merging
                 while (!mergeComplete.get()) {
                     try {
                         checkData(testType, 0, 50, 100_000);
@@ -567,10 +572,10 @@ class DataFileCollectionTest {
             } else if (thread == 1) { // move thread
                 // merge 2 files
                 try {
-                    List<DataFileReader<long[]>> allFiles = fileCollection.getAllFullyWrittenFiles();
+                    List<DataFileReader<long[]>> allFiles = fileCollection.getAllCompletedFiles();
                     Set<Integer> allKeysExpectedToBeThere =
                             IntStream.range(0, 1000).boxed().collect(Collectors.toSet());
-                    final CASable indexUpdater = new CASable() {
+                    final CASableLongIndex indexUpdater = new CASableLongIndex() {
                         public long get(long key) {
                             return storedOffsets.get(key);
                         }
@@ -585,11 +590,16 @@ class DataFileCollectionTest {
                                     "check we are moving to a new file 10");
                             assertTrue(
                                     allKeysExpectedToBeThere.remove((int) key),
-                                    "check each key was in list of expected keys");
+                                    "check each key was in list of expected" + " keys");
                             return storedOffsets.putIfEqual(key, oldValue, newValue);
                         }
+
+                        public <T extends Throwable> void forEach(final LongAction<T> action)
+                                throws InterruptedException, T {
+                            storedOffsets.forEach(action);
+                        }
                     };
-                    fileCollection.mergeFiles(indexUpdater, allFiles, mergePaused);
+                    fileCollection.compactFiles(indexUpdater, allFiles);
                     assertTrue(allKeysExpectedToBeThere.isEmpty(), "check there were no missed keys");
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -604,8 +614,13 @@ class DataFileCollectionTest {
                     throw new RuntimeException(e);
                 }
                 System.out.println("Un-pausing merging");
-                // now let merging continue
-                mergePaused.release();
+                try {
+                    // now let merging continue
+                    fileCollection.resumeCompaction();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    throw new UncheckedIOException(e);
+                }
             }
         });
         // check we 7 files left, as we merged 5 out of 11
@@ -640,7 +655,7 @@ class DataFileCollectionTest {
         final String storeName = "mergeWorksAfterOpen";
         final DataFileCollection<long[]> fileCollection =
                 new DataFileCollection<>(dbDir, storeName, testType.dataItemSerializer, null);
-        assertSame(0, fileCollection.getAllFullyWrittenFiles().size(), "Should be no files");
+        assertSame(0, fileCollection.getAllCompletedFiles().size(), "Should be no files");
         fileCollectionMap.put(testType, fileCollection);
         // create stored offsets list
         final LongListHeap storedOffsets = new LongListHeap(5000);
@@ -664,7 +679,7 @@ class DataFileCollectionTest {
                 // store in file
                 storedOffsets.put(i, fileCollection.storeDataItem(dataValue));
             }
-            fileCollection.endWriting(0, count + 100).setFileAvailableForMerging(true);
+            fileCollection.endWriting(0, count + 100).setFileCompleted();
             count += 100;
         }
         // check 10 files were created and data is correct
@@ -674,11 +689,10 @@ class DataFileCollectionTest {
                         .filter(file -> file.getFileName().toString().startsWith(storeName))
                         .count(),
                 "expected 10 db files");
-        assertSame(10, fileCollection.getAllFullyWrittenFiles().size(), "Should be 10 files");
+        assertSame(10, fileCollection.getAllCompletedFiles().size(), "Should be 10 files");
         checkData(testType, 0, 1000, 10_000);
         // check all files are available for merge
-        assertSame(
-                10, fileCollection.getAllFilesAvailableForMerge().size(), "Should be 10 files available for merging");
+        assertSame(10, fileCollection.getAllCompletedFiles().size(), "Should be 10 files available for merging");
         // close
         fileCollection.close();
         // reopen
@@ -686,29 +700,30 @@ class DataFileCollectionTest {
                 new DataFileCollection<>(dbDir, storeName, testType.dataItemSerializer, null);
         fileCollectionMap.put(testType, fileCollection2);
         // check 10 files were opened and data is correct
-        assertSame(10, fileCollection2.getAllFullyWrittenFiles().size(), "Should be 10 files");
+        assertSame(10, fileCollection2.getAllCompletedFiles().size(), "Should be 10 files");
         checkData(testType, 0, 1000, 10_000);
         // check all files are available for merge
-        assertSame(
-                10, fileCollection2.getAllFilesAvailableForMerge().size(), "Should be 10 files available for merging");
+        assertSame(10, fileCollection2.getAllCompletedFiles().size(), "Should be 10 files available for merging");
         // merge
-        fileCollection2.mergeFiles(storedOffsets, fileCollection2.getAllFilesAvailableForMerge(), new Semaphore(1));
+        fileCollection2.compactFiles(storedOffsets, fileCollection2.getAllCompletedFiles());
         // check 1 files were opened and data is correct
-        assertSame(1, fileCollection2.getAllFullyWrittenFiles().size(), "Should be 1 files");
+        assertSame(1, fileCollection2.getAllCompletedFiles().size(), "Should be 1 files");
         assertEquals(
                 1,
                 Files.list(dbDir)
                         .filter(file -> file.getFileName().toString().matches(storeName + ".*jdb"))
                         .count(),
                 "expected 1 db files but had ["
-                        + Arrays.toString(Files.list(dbDir).toArray()) + "]");
+                        + Arrays.toString(Files.list(dbDir).toArray())
+                        + "]");
         checkData(testType, 0, 1000, 10_000);
         // close db
         fileCollection2.close();
     }
 
     /**
-     * Keep track of initial direct memory used already, so we can check if we leek over and above what we started with
+     * Keep track of initial direct memory used already, so we can check if we leek over and above
+     * what we started with
      */
     private long directMemoryUsedAtStart;
 
@@ -723,7 +738,8 @@ class DataFileCollectionTest {
         assertTrue(
                 checkDirectMemoryIsCleanedUpToLessThanBaseUsage(directMemoryUsedAtStart),
                 "Direct Memory used is more than base usage even after 20 gc() calls. At start was "
-                        + (directMemoryUsedAtStart * Units.BYTES_TO_MEBIBYTES) + "MB and is now "
+                        + (directMemoryUsedAtStart * Units.BYTES_TO_MEBIBYTES)
+                        + "MB and is now "
                         + (getDirectMemoryUsedBytes() * Units.BYTES_TO_MEBIBYTES)
                         + "MB");
     }
