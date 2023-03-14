@@ -28,9 +28,7 @@ import static java.util.Objects.requireNonNull;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.AccountID.AccountOneOfType;
 import com.hedera.hapi.node.base.ContractID;
-import com.hedera.hapi.node.base.ContractID.ContractOneOfType;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.node.app.service.evm.contracts.execution.StaticProperties;
 import com.hedera.node.app.service.mono.Utils;
@@ -45,6 +43,7 @@ import com.hedera.node.app.service.token.impl.entity.AccountBuilderImpl;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.accounts.Account;
 import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.spi.exceptions.InvalidOneOfKindException;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -177,10 +176,11 @@ public class ReadableAccountStore implements AccountAccess {
                         if (alias.length() == EVM_ADDRESS_LEN && isMirror(alias)) {
                             yield fromMirror(alias);
                         } else {
-                            yield aliases.get(alias.asUtf8String()).num();
+                            final var entityNum = aliases.get(alias.asUtf8String());
+                            yield entityNum == null ? new EntityNumValue().num() : entityNum.num();
                         }
                     }
-                    case UNSET -> throw new RuntimeException("Account number not set in protobuf!!");
+                    case UNSET -> throw new InvalidOneOfKindException("Account number not set in protobuf!!");
                 };
 
         return accountNum == null ? null : accountState.get(EntityNumVirtualKey.fromLong(accountNum));
@@ -223,9 +223,9 @@ public class ReadableAccountStore implements AccountAccess {
                                         ByteString.copyFrom(evmKeyAliasAddress).toStringUtf8());
                             }
                         }
-                        yield entityNum.num();
+                        yield entityNum == null ? new EntityNumValue().num() : entityNum.num();
                     }
-                    case UNSET -> throw new RuntimeException("Contract number not set in protobuf!!");
+                    case UNSET -> throw new InvalidOneOfKindException("Contract number not set in protobuf!!");
                 };
 
         return contractNum == null ? null : accountState.get(EntityNumVirtualKey.fromLong(contractNum));
@@ -242,14 +242,6 @@ public class ReadableAccountStore implements AccountAccess {
         } else {
             return withKey(key);
         }
-    }
-
-    public boolean isAlias(final AccountID id) {
-        return id.account().kind() == AccountOneOfType.ALIAS;
-    }
-
-    public boolean isAlias(final ContractID id) {
-        return id.contract().kind() == ContractOneOfType.EVM_ADDRESS;
     }
 
     private static boolean isMirror(final Bytes bytes) {
