@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.evm.contracts.operations;
 
-import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
 import javax.inject.Inject;
 import org.hyperledger.besu.datatypes.Address;
@@ -26,10 +25,8 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 public class HederaEvmCreateOperation extends AbstractEvmRecordingCreateOperation {
     @Inject
     public HederaEvmCreateOperation(
-            final GasCalculator gasCalculator,
-            final EvmProperties evmProperties,
-            final CreateOperationExternalizer createOperationExternalizer) {
-        super(0xF0, "ħCREATE", 3, 1, 1, gasCalculator, evmProperties, createOperationExternalizer);
+            final GasCalculator gasCalculator, final CreateOperationExternalizer createOperationExternalizer) {
+        super(0xF0, "ħCREATE", 3, 1, 1, gasCalculator, createOperationExternalizer);
     }
 
     @Override

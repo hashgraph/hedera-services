@@ -19,7 +19,6 @@ package com.hedera.node.app.service.evm.contracts.operations;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -46,9 +45,6 @@ class HederaEvmCreateOperationTest {
     @Mock
     private HederaEvmWorldUpdater hederaWorldUpdater;
 
-    @Mock
-    private EvmProperties evmProperties;
-
     private HederaEvmCreateOperation subject;
 
     @Mock
@@ -56,7 +52,7 @@ class HederaEvmCreateOperationTest {
 
     @BeforeEach
     void setup() {
-        subject = new HederaEvmCreateOperation(gasCalculator, evmProperties, externalizer);
+        subject = new HederaEvmCreateOperation(gasCalculator, externalizer);
     }
 
     @Test

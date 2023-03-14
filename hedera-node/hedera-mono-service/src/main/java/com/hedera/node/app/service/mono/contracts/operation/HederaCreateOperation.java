@@ -44,7 +44,6 @@ public class HederaCreateOperation extends HederaEvmCreateOperation {
             final GlobalDynamicProperties dynamicProperties) {
         super(
                 gasCalculator,
-                dynamicProperties,
                 new HederaCreateOperationExternalizer(
                         creator, syntheticTxnFactory, recordsHistorian, dynamicProperties));
     }

@@ -22,25 +22,30 @@ import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
+import java.util.Deque;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
+import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -65,11 +70,16 @@ class AbstractEvmRecordingCreateOperationTest {
     private HederaEvmWorldUpdater updater;
 
     @Mock
-    private EvmProperties evmProperties;
+    private BlockValues blockValues;
+
+    @Mock
+    private Deque<MessageFrame> stack;
 
     @Mock
     private CreateOperationExternalizer externalizer;
 
+    private static final long childStipend = 1_000_000L;
+    private static final Wei gasPrice = Wei.of(1000L);
     private static final long value = 123_456L;
     private static final Address recipient = Address.BLAKE2B_F_COMPRESSION;
     private static final Operation.OperationResult EMPTY_HALT_RESULT =
@@ -78,7 +88,7 @@ class AbstractEvmRecordingCreateOperationTest {
 
     @BeforeEach
     void setUp() {
-        subject = new Subject(0xF0, "ħCREATE", 3, 1, 1, gasCalculator, evmProperties, externalizer);
+        subject = new Subject(0xF0, "ħCREATE", 3, 1, 1, gasCalculator, externalizer);
     }
 
     @Test
@@ -141,6 +151,40 @@ class AbstractEvmRecordingCreateOperationTest {
     }
 
     @Test
+    void hasExpectedChildCompletionOnSuccessWithSidecarEnabled() {
+        final var frameCaptor = ArgumentCaptor.forClass(MessageFrame.class);
+        givenSpawnPrereqs();
+        givenBuilderPrereqs();
+        final var initCode = "initCode".getBytes();
+        given(frame.readMemory(anyLong(), anyLong())).willReturn(Bytes.wrap(initCode));
+        assertSameResult(EMPTY_HALT_RESULT, subject.execute(frame, evm));
+
+        verify(stack).addFirst(frameCaptor.capture());
+        final var childFrame = frameCaptor.getValue();
+        // when:
+        childFrame.setState(MessageFrame.State.COMPLETED_SUCCESS);
+        childFrame.notifyCompletion();
+        // then:
+        verify(frame).pushStackItem(Words.fromAddress(Subject.PRETEND_CONTRACT_ADDRESS));
+    }
+
+    @Test
+    void hasExpectedChildCompletionOnFailure() {
+        final var captor = ArgumentCaptor.forClass(MessageFrame.class);
+        givenSpawnPrereqs();
+        givenBuilderPrereqs();
+
+        assertSameResult(EMPTY_HALT_RESULT, subject.execute(frame, evm));
+
+        verify(stack).addFirst(captor.capture());
+        final var childFrame = captor.getValue();
+        // when:
+        childFrame.setState(MessageFrame.State.COMPLETED_FAILED);
+        childFrame.notifyCompletion();
+        verify(frame).pushStackItem(UInt256.ZERO);
+    }
+
+    @Test
     void failsWhenMatchingHollowAccountExistsAndLazyCreationDisabled() {
         given(frame.stackSize()).willReturn(3);
         given(frame.getRemainingGas()).willReturn(Subject.PRETEND_GAS_COST);
@@ -159,6 +203,17 @@ class AbstractEvmRecordingCreateOperationTest {
         verify(frame).readMutableMemory(1L, 1L);
         verify(frame).popStackItems(3);
         verify(frame).pushStackItem(UInt256.ZERO);
+    }
+
+    private void givenBuilderPrereqs() {
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(updater.updater()).willReturn(updater);
+        given(gasCalculator.gasAvailableForChildCreate(anyLong())).willReturn(childStipend);
+        given(frame.getOriginatorAddress()).willReturn(recipient);
+        given(frame.getGasPrice()).willReturn(gasPrice);
+        given(frame.getBlockValues()).willReturn(blockValues);
+        given(frame.getMiningBeneficiary()).willReturn(recipient);
+        given(frame.getBlockHashLookup()).willReturn(l -> Hash.ZERO);
     }
 
     private void givenSpawnPrereqs() {
@@ -193,17 +248,8 @@ class AbstractEvmRecordingCreateOperationTest {
                 final int stackItemsProduced,
                 final int opSize,
                 final GasCalculator gasCalculator,
-                final EvmProperties dynamicProperties,
                 final CreateOperationExternalizer externalizer) {
-            super(
-                    opcode,
-                    name,
-                    stackItemsConsumed,
-                    stackItemsProduced,
-                    opSize,
-                    gasCalculator,
-                    dynamicProperties,
-                    externalizer);
+            super(opcode, name, stackItemsConsumed, stackItemsProduced, opSize, gasCalculator, externalizer);
         }
 
         @Override

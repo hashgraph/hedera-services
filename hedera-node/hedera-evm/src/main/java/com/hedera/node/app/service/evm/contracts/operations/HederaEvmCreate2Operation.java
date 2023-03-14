@@ -30,6 +30,8 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 public class HederaEvmCreate2Operation extends AbstractEvmRecordingCreateOperation {
+    protected final EvmProperties evmProperties;
+
     private static final Bytes PREFIX = Bytes.fromHexString("0xFF");
 
     @Inject
@@ -37,21 +39,22 @@ public class HederaEvmCreate2Operation extends AbstractEvmRecordingCreateOperati
             final GasCalculator gasCalculator,
             final EvmProperties evmProperties,
             final CreateOperationExternalizer createOperationExternalizer) {
-        super(0xF5, "ħCREATE2", 4, 1, 1, gasCalculator, evmProperties, createOperationExternalizer);
+        super(0xF5, "ħCREATE2", 4, 1, 1, gasCalculator, createOperationExternalizer);
+        this.evmProperties = evmProperties;
     }
 
     @Override
-    protected boolean isEnabled() {
+    public boolean isEnabled() {
         return evmProperties.isCreate2Enabled();
     }
 
     @Override
-    protected long cost(final MessageFrame frame) {
+    public long cost(final MessageFrame frame) {
         return gasCalculator().create2OperationGasCost(frame);
     }
 
     @Override
-    protected Address targetContractAddress(final MessageFrame frame) {
+    public Address targetContractAddress(final MessageFrame frame) {
         final var sourceAddressOrAlias = frame.getRecipientAddress();
         final var offset = clampedToLong(frame.getStackItem(1));
         final var length = clampedToLong(frame.getStackItem(2));
