@@ -29,7 +29,6 @@ package com.swirlds.demo.stats.signing;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.utility.Units.MILLISECONDS_TO_NANOSECONDS;
 import static com.swirlds.common.utility.Units.NANOSECONDS_TO_MICROSECONDS;
-import static com.swirlds.common.utility.Units.NANOSECONDS_TO_MILLISECONDS;
 import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
@@ -246,7 +245,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
         // to avoid a huge burst of transactions at the start of the test
         if (lastTPSMeasureTime == 0) {
             lastTPSMeasureTime = now;
-            rampUpStartTimeMilliSeconds = (long) (now / NANOSECONDS_TO_MILLISECONDS);
+            rampUpStartTimeMilliSeconds = (long) (now / MILLISECONDS_TO_NANOSECONDS);
             logger.info(
                     STARTUP.getMarker(),
                     "First time calling generateTransactions() Expected TPS per code is {}",
