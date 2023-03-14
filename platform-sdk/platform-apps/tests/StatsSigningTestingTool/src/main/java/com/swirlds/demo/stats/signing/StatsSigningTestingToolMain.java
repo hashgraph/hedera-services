@@ -264,7 +264,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
 
             // for every measure window, re-calculate the toCreate counter
             if (((double) now - lastTPSMeasureTime) * NANOSECONDS_TO_MICROSECONDS > tps_measure_window_milliseconds) {
-                toCreate += ((double) now - lastTPSMeasureTime) * NANOSECONDS_TO_SECONDS * rampUpTPS;
+                toCreate = ((double) now - lastTPSMeasureTime) * NANOSECONDS_TO_SECONDS * rampUpTPS;
                 lastTPSMeasureTime = now;
                 logger.info(STARTUP.getMarker(), "rampUpTPS {}", rampUpTPS);
             }
