@@ -279,6 +279,9 @@ public record SignedStateMetadata(
      * @throws IOException if an error occurs while writing
      */
     public void write(final Path metadataFile) throws IOException {
+
+        // TODO convert to a map of string -> string and then write it using a utility method
+
         try (final FileWriter writer = new FileWriter(metadataFile.toFile())) {
             writer.write(SignedStateMetadataField.ROUND + ": " +
                     round + "\n");
