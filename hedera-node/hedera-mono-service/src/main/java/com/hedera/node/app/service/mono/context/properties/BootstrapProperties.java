@@ -84,9 +84,10 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_REDIRECT_TO
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_REFERENCE_SLOT_LIFETIME;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECARS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECAR_VALIDATION_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_STORAGE_SLOT_PRICE_TIERS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_THROTTLE_THROTTLE_BY_GAS;
-import static com.hedera.node.app.spi.config.PropertyNames.CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.CRYPTO_CREATE_WITH_ALIAS_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.DEV_DEFAULT_LISTENING_NODE_ACCOUNT;
 import static com.hedera.node.app.spi.config.PropertyNames.DEV_ONLY_DEFAULT_NODE_LISTENS;
 import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_LIMIT_TOKEN_ASSOCIATIONS;
@@ -261,6 +262,7 @@ public final class BootstrapProperties implements PropertySource {
         }
         return in;
     };
+
     private static ThrowingStreamProvider fileStreamProvider = loc -> Files.newInputStream(Paths.get(loc));
 
     private final boolean logEnabled;
@@ -422,7 +424,7 @@ public final class BootstrapProperties implements PropertySource {
             ACCOUNTS_MAX_NUM,
             AUTO_CREATION_ENABLED,
             LAZY_CREATION_ENABLED,
-            CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED,
+            CRYPTO_CREATE_WITH_ALIAS_ENABLED,
             BALANCES_EXPORT_DIR_PATH,
             BALANCES_EXPORT_ENABLED,
             BALANCES_EXPORT_PERIOD_SECS,
@@ -443,6 +445,7 @@ public final class BootstrapProperties implements PropertySource {
             CONTRACTS_MAX_NUM,
             CONTRACTS_CHAIN_ID,
             CONTRACTS_SIDECARS,
+            CONTRACTS_SIDECAR_VALIDATION_ENABLED,
             CONTRACTS_STORAGE_SLOT_PRICE_TIERS,
             CONTRACTS_REFERENCE_SLOT_LIFETIME,
             CONTRACTS_ITEMIZE_STORAGE_FEES,
@@ -654,7 +657,7 @@ public final class BootstrapProperties implements PropertySource {
             entry(HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS, AS_INT),
             entry(AUTO_CREATION_ENABLED, AS_BOOLEAN),
             entry(LAZY_CREATION_ENABLED, AS_BOOLEAN),
-            entry(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, AS_BOOLEAN),
+            entry(CRYPTO_CREATE_WITH_ALIAS_ENABLED, AS_BOOLEAN),
             entry(AUTO_RENEW_TARGET_TYPES, AS_ENTITY_TYPES),
             entry(AUTO_RENEW_NUM_OF_ENTITIES_TO_SCAN, AS_INT),
             entry(AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE, AS_INT),
@@ -740,6 +743,7 @@ public final class BootstrapProperties implements PropertySource {
             entry(CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL, AS_INT),
             entry(CONTRACTS_CHAIN_ID, AS_INT),
             entry(CONTRACTS_SIDECARS, AS_SIDECARS),
+            entry(CONTRACTS_SIDECAR_VALIDATION_ENABLED, AS_BOOLEAN),
             entry(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, AS_INT),
             entry(CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT, AS_LONG),
             entry(CONTRACTS_REDIRECT_TOKEN_CALLS, AS_BOOLEAN),
