@@ -963,6 +963,8 @@ class HTSPrecompiledContractTest {
     void computeReturnsNotSupportedWhenFlagDisabled() {
         givenFrameContext();
         given(dynamicProperties.areAllowancesEnabled()).willReturn(false);
+        given(messageFrame.getContractAddress()).willReturn(Address.ALTBN128_ADD);
+        given(messageFrame.getRecipientAddress()).willReturn(Address.ALTBN128_ADD);
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_FROM));
         ercTransferPrecompile
                 .when(
@@ -986,6 +988,8 @@ class HTSPrecompiledContractTest {
     void computeReturnsErrorDecoding() {
         givenFrameContext();
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
+        given(messageFrame.getContractAddress()).willReturn(Address.ALTBN128_ADD);
+        given(messageFrame.getRecipientAddress()).willReturn(Address.ALTBN128_ADD);
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_FROM));
         ercTransferPrecompile
                 .when(
@@ -1205,6 +1209,8 @@ class HTSPrecompiledContractTest {
     void computeThrowsWhenTryingToCallFungibleHapiTransferFromWhenNotEnabled() {
         // given
         givenFrameContext();
+        given(messageFrame.getContractAddress()).willReturn(Address.ALTBN128_ADD);
+        given(messageFrame.getRecipientAddress()).willReturn(Address.ALTBN128_ADD);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(false);
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_FROM));
         ercTransferPrecompile
@@ -1280,6 +1286,8 @@ class HTSPrecompiledContractTest {
         givenFrameContext();
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFTS));
         given(messageFrame.getValue()).willReturn(Wei.of(1));
+        given(messageFrame.getContractAddress()).willReturn(Address.ALTBN128_ADD);
+        given(messageFrame.getRecipientAddress()).willReturn(Address.ALTBN128_ADD);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
