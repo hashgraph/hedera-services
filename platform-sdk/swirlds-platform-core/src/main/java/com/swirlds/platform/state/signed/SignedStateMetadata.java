@@ -16,18 +16,33 @@
 
 package com.swirlds.platform.state.signed;
 
+import static com.swirlds.common.formatting.StringFormattingUtils.formattedList;
 import static com.swirlds.platform.consensus.RoundCalculationUtils.getMinGenNonAncient;
+import static com.swirlds.platform.state.signed.SignedStateMetadataField.CONSENSUS_TIMESTAMP;
+import static com.swirlds.platform.state.signed.SignedStateMetadataField.MINIMUM_GENERATION_NON_ANCIENT;
+import static com.swirlds.platform.state.signed.SignedStateMetadataField.NODE_ID;
+import static com.swirlds.platform.state.signed.SignedStateMetadataField.NUMBER_OF_CONSENSUS_EVENTS;
+import static com.swirlds.platform.state.signed.SignedStateMetadataField.ROUND;
+import static com.swirlds.platform.state.signed.SignedStateMetadataField.RUNNING_EVENT_HASH;
+import static com.swirlds.platform.state.signed.SignedStateMetadataField.SIGNING_NODES;
+import static com.swirlds.platform.state.signed.SignedStateMetadataField.SIGNING_STAKE_SUM;
+import static com.swirlds.platform.state.signed.SignedStateMetadataField.SOFTWARE_VERSION;
+import static com.swirlds.platform.state.signed.SignedStateMetadataField.TOTAL_STAKE;
+import static com.swirlds.platform.state.signed.SignedStateMetadataField.WALL_CLOCK_TIME;
 
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.formatting.StringFormattingUtils;
 import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -62,17 +77,17 @@ import java.util.Map;
  *                                    {@link SignedStateMetadataField#TOTAL_STAKE}
  */
 public record SignedStateMetadata(
-        long round,
-        long numberOfConsensusEvents,
+        Long round,
+        Long numberOfConsensusEvents,
         Instant consensusTimestamp,
         Hash runningEventHash,
-        long minimumGenerationNonAncient,
+        Long minimumGenerationNonAncient,
         String softwareVersion,
         Instant wallClockTime,
-        long nodeId,
+        Long nodeId,
         List<Long> signingNodes,
-        long signingStakeSum,
-        long totalStake) {
+        Long signingStakeSum,
+        Long totalStake) {
 
     /**
      * The standard file name for the signed state metadata file.
@@ -86,137 +101,19 @@ public record SignedStateMetadata(
      * @return the signed state metadata
      */
     public static SignedStateMetadata parse(final Path metadataFile) {
-        if (!Files.exists(metadataFile)) {
-            // We must elegantly handle the case where the metadata file does not exist
-            // until we have fully migrated all state snapshots in production environments.
-            // TODO log warning
-            return null;
-        }
-
-        final String fileString;
-        try {
-            fileString = Files.readString(metadataFile);
-        } catch (final IOException e) {
-            // TODO log error
-            return null;
-        }
-
-        final Map<SignedStateMetadataField, String> keyValuePairs = new HashMap<>();
-        final String[] lines = fileString.split("\n");
-        for (final String line : lines) {
-            if (line.isBlank()) {
-                continue;
-            }
-            final String[] keyValue = line.split(":");
-            if (keyValue.length != 2) {
-                // TODO log error
-                return null;
-            }
-
-            final SignedStateMetadataField field;
-            try {
-                 field = SignedStateMetadataField.valueOf(keyValue[0].strip());
-            } catch (final IllegalArgumentException e) {
-                // TODO log warning
-                continue;
-            }
-
-            keyValuePairs.put(field, keyValue[1].strip());
-        }
-
-        final long round;
-        if (keyValuePairs.containsKey(SignedStateMetadataField.ROUND)) {
-            round = Long.parseLong(keyValuePairs.get(SignedStateMetadataField.ROUND));
-        } else {
-            // TODO log error
-            return null;
-        }
-
-        final long numberOfConsensusEvents;
-        if (keyValuePairs.containsKey(SignedStateMetadataField.NUMBER_OF_CONSENSUS_EVENTS)) {
-            numberOfConsensusEvents = Long.parseLong(
-                    keyValuePairs.get(SignedStateMetadataField.NUMBER_OF_CONSENSUS_EVENTS));
-        } else {
-            // TODO log error
-            return null;
-        }
-
-        final Instant consensusTimestamp;
-        if (keyValuePairs.containsKey(SignedStateMetadataField.CONSENSUS_TIMESTAMP)) {
-            consensusTimestamp = Instant.parse(keyValuePairs.get(SignedStateMetadataField.CONSENSUS_TIMESTAMP));
-        } else {
-            // TODO log error
-            return null;
-        }
-
-        final Hash runningEventHash;
-        if (keyValuePairs.containsKey(SignedStateMetadataField.RUNNING_EVENT_HASH)) {
-            runningEventHash = null; // TODO logic to parse a hash
-        } else {
-            // TODO log error
-            return null;
-        }
-
-        final long minimumGenerationNonAncient;
-        if (keyValuePairs.containsKey(SignedStateMetadataField.MINIMUM_GENERATION_NON_ANCIENT)) {
-            minimumGenerationNonAncient = Long.parseLong(
-                    keyValuePairs.get(SignedStateMetadataField.MINIMUM_GENERATION_NON_ANCIENT));
-        } else {
-            // TODO log error
-            return null;
-        }
-
-        final String softwareVersion;
-        if (keyValuePairs.containsKey(SignedStateMetadataField.SOFTWARE_VERSION)) {
-            softwareVersion = keyValuePairs.get(SignedStateMetadataField.SOFTWARE_VERSION);
-        } else {
-            // TODO log error
-            return null;
-        }
-
-        final Instant wallClockTime;
-        if (keyValuePairs.containsKey(SignedStateMetadataField.WALL_CLOCK_TIME)) {
-            wallClockTime = Instant.parse(keyValuePairs.get(SignedStateMetadataField.WALL_CLOCK_TIME));
-        } else {
-            // TODO log error
-            return null;
-        }
-
-        final long nodeId;
-        if (keyValuePairs.containsKey(SignedStateMetadataField.NODE_ID)) {
-            nodeId = Long.parseLong(keyValuePairs.get(SignedStateMetadataField.NODE_ID));
-        } else {
-            // TODO log error
-            return null;
-        }
-
-        final List<Long> signingNodes;
-        if (keyValuePairs.containsKey(SignedStateMetadataField.SIGNING_NODES)) {
-            signingNodes = null; // TODO logic to parse a list of longs
-        } else {
-            // TODO log error
-            return null;
-        }
-
-        final long signingStakeSum;
-        if (keyValuePairs.containsKey(SignedStateMetadataField.SIGNING_STAKE_SUM)) {
-            signingStakeSum = Long.parseLong(keyValuePairs.get(SignedStateMetadataField.SIGNING_STAKE_SUM));
-        } else {
-            // TODO log error
-            return null;
-        }
-
-        final long totalStake;
-        if (keyValuePairs.containsKey(SignedStateMetadataField.TOTAL_STAKE)) {
-            totalStake = Long.parseLong(keyValuePairs.get(SignedStateMetadataField.TOTAL_STAKE));
-        } else {
-            // TODO log error
-            return null;
-        }
-
-        // TODO catch parsing errors
-
-        return null;
+        final Map<SignedStateMetadataField, String> data = parseStringMap(metadataFile);
+        return new SignedStateMetadata(
+                parseLong(data, ROUND),
+                parseLong(data, NUMBER_OF_CONSENSUS_EVENTS),
+                parseInstant(data, CONSENSUS_TIMESTAMP),
+                parseHash(data, RUNNING_EVENT_HASH),
+                parseLong(data, MINIMUM_GENERATION_NON_ANCIENT),
+                parseString(data, SOFTWARE_VERSION),
+                parseInstant(data, WALL_CLOCK_TIME),
+                parseLong(data, NODE_ID),
+                parseLongList(data, SIGNING_NODES),
+                parseLong(data, SIGNING_STAKE_SUM),
+                parseLong(data, TOTAL_STAKE));
     }
 
     /**
@@ -273,6 +170,159 @@ public record SignedStateMetadata(
     }
 
     /**
+     * Parse the key/value pairs written to disk. The inverse of {@link #buildStringMap()}.
+     */
+    private static Map<SignedStateMetadataField, String> parseStringMap(final Path metadataFile) {
+
+        if (!Files.exists(metadataFile)) {
+            // We must elegantly handle the case where the metadata file does not exist
+            // until we have fully migrated all state snapshots in production environments.
+            // TODO log warning
+            return new HashMap<>();
+        }
+
+        try {
+            final Map<SignedStateMetadataField, String> map = new HashMap<>();
+
+            try (final BufferedReader reader = new BufferedReader(new FileReader(metadataFile.toFile()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    final String[] parts = line.split(": ");
+                    if (parts.length != 2) {
+                        throw new IOException("Invalid line in metadata file: " + line);
+                    }
+                    final SignedStateMetadataField key =
+                            SignedStateMetadataField.valueOf(parts[0]); // TODO catch exception
+                    final String value = parts[1];
+                    map.put(key, value); // TODO catch duplicates
+                }
+            }
+
+            if (map.size() != SignedStateMetadataField.values().length) {
+                // Future work: if we change the contents of this file we need to introduce more elegant migration logic
+                throw new IOException("Invalid number of lines in metadata file: " + map.size());
+            }
+
+            return map;
+        } catch (final IOException e) {
+            // TODO log
+            return new HashMap<>();
+        }
+    }
+
+    /**
+     * Attempt to parse a long from the data map.
+     *
+     * @param data  the data map
+     * @param field the field to parse
+     * @return the parsed long, or null if the field is not present or the value is not a valid long
+     */
+    private static Long parseLong(
+            final Map<SignedStateMetadataField, String> data, final SignedStateMetadataField field) {
+
+        if (!data.containsKey(field)) {
+            // TODO log
+            return null;
+        }
+
+        final String value = data.get(field);
+        try {
+            return Long.parseLong(value);
+        } catch (final NumberFormatException e) {
+            // TODO log
+            return null;
+        }
+    }
+
+    private static String parseString(
+            final Map<SignedStateMetadataField, String> data, final SignedStateMetadataField field) {
+
+        if (!data.containsKey(field)) {
+            // TODO log
+            return null;
+        }
+
+        return data.get(field);
+    }
+
+    private static Instant parseInstant(
+            final Map<SignedStateMetadataField, String> data, final SignedStateMetadataField field) {
+
+        if (!data.containsKey(field)) {
+            // TODO log
+            return null;
+        }
+
+        final String value = data.get(field);
+        try {
+            return Instant.parse(value);
+        } catch (final DateTimeParseException e) {
+            // TODO log
+            return null;
+        }
+    }
+
+    private static List<Long> parseLongList(
+            final Map<SignedStateMetadataField, String> data, final SignedStateMetadataField field) {
+
+        if (!data.containsKey(field)) {
+            // TODO log
+            return null;
+        }
+
+        final String value = data.get(field);
+        final String[] parts = value.split(",");
+        final List<Long> list = new ArrayList<>();
+        for (final String part : parts) {
+            try {
+                list.add(Long.parseLong(part));
+            } catch (final NumberFormatException e) {
+                // TODO log
+                return null;
+            }
+        }
+        return list;
+    }
+
+    private static Hash parseHash(
+            final Map<SignedStateMetadataField, String> data, final SignedStateMetadataField field) {
+
+        if (!data.containsKey(field)) {
+            // TODO log
+            return null;
+        }
+
+        final String value = data.get(field);
+        try {
+            return null; // TODO parse
+        } catch (final IllegalArgumentException e) {
+            // TODO log
+            return null;
+        }
+    }
+
+    /**
+     * Build a map of key/value pairs to be written to disk.
+     */
+    private Map<SignedStateMetadataField, String> buildStringMap() {
+        final Map<SignedStateMetadataField, String> map = new HashMap<>();
+
+        map.put(ROUND, Long.toString(round));
+        map.put(NUMBER_OF_CONSENSUS_EVENTS, Long.toString(numberOfConsensusEvents));
+        map.put(CONSENSUS_TIMESTAMP, consensusTimestamp.toString());
+        map.put(RUNNING_EVENT_HASH, runningEventHash.toString());
+        map.put(MINIMUM_GENERATION_NON_ANCIENT, Long.toString(minimumGenerationNonAncient));
+        map.put(SOFTWARE_VERSION, softwareVersion);
+        map.put(WALL_CLOCK_TIME, wallClockTime.toString());
+        map.put(NODE_ID, Long.toString(nodeId));
+        map.put(SIGNING_NODES, formattedList(signingNodes.iterator()));
+        map.put(SIGNING_STAKE_SUM, Long.toString(signingStakeSum));
+        map.put(TOTAL_STAKE, Long.toString(totalStake));
+
+        return map;
+    }
+
+    /**
      * Write the signed state metadata to the given file.
      *
      * @param metadataFile the file to write to
@@ -280,31 +330,16 @@ public record SignedStateMetadata(
      */
     public void write(final Path metadataFile) throws IOException {
 
-        // TODO convert to a map of string -> string and then write it using a utility method
+        final Map<SignedStateMetadataField, String> map = buildStringMap();
+        final List<SignedStateMetadataField> keys = new ArrayList<>(map.keySet());
+        Collections.sort(keys);
 
         try (final FileWriter writer = new FileWriter(metadataFile.toFile())) {
-            writer.write(SignedStateMetadataField.ROUND + ": " +
-                    round + "\n");
-            writer.write(SignedStateMetadataField.NUMBER_OF_CONSENSUS_EVENTS + ": " +
-                    numberOfConsensusEvents + "\n");
-            writer.write(SignedStateMetadataField.CONSENSUS_TIMESTAMP + ": " +
-                    consensusTimestamp + "\n");
-            writer.write(SignedStateMetadataField.RUNNING_EVENT_HASH + ": " +
-                    runningEventHash + "\n");
-            writer.write(SignedStateMetadataField.MINIMUM_GENERATION_NON_ANCIENT + ": " +
-                    minimumGenerationNonAncient + "\n");
-            writer.write(SignedStateMetadataField.SOFTWARE_VERSION + ": " +
-                    convertToString(softwareVersion) + "\n");
-            writer.write(SignedStateMetadataField.WALL_CLOCK_TIME + ": " +
-                    wallClockTime + "\n");
-            writer.write(SignedStateMetadataField.NODE_ID + ": " +
-                    nodeId + "\n");
-            writer.write(SignedStateMetadataField.SIGNING_NODES + ": " +
-                    StringFormattingUtils.formattedList(signingNodes.iterator()) + "\n");
-            writer.write(SignedStateMetadataField.SIGNING_STAKE_SUM + ": " +
-                    signingStakeSum + "\n");
-            writer.write(SignedStateMetadataField.TOTAL_STAKE + ": " +
-                    totalStake + "\n");
+            for (final SignedStateMetadataField key : keys) {
+                final String value = map.get(key);
+
+                writer.write(key + ": " + value + "\n");
+            }
         }
     }
 }
