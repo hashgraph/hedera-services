@@ -248,6 +248,7 @@ public class PreHandleContext {
         return this;
     }
 
+    @SuppressWarnings("UnusedReturnValue")
     @NonNull
     public PreHandleContext addNonPayerKeyIfReceiverSigRequired(@NonNull final ContractID id) {
         if (isNotNeeded(requireNonNull(id))) {
