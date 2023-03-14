@@ -373,6 +373,21 @@ class CryptoCreateTransitionLogicTest {
     }
 
     @Test
+    void rejectsEvmAddressAliasWhenEvmAddressNotUnique() {
+        final var opBuilder = CryptoCreateTransactionBody.newBuilder()
+                .setAlias(ByteStringUtils.wrapUnsafely(EVM_ADDRESS_BYTES))
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(CUSTOM_AUTO_RENEW_PERIOD));
+        cryptoCreateTxn =
+                TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(aliasManager.lookupIdBy(ByteString.copyFrom(EVM_ADDRESS_BYTES)))
+                .willReturn(EntityNum.fromAccountId(PROXY));
+        given(dynamicProperties.isCryptoCreateWithAliasEnabled()).willReturn(true);
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
+
+        assertEquals(INVALID_ALIAS_KEY, subject.semanticCheck().apply(cryptoCreateTxn));
+    }
+
+    @Test
     void rejectsNoKeyNoAlias() {
         final var opBuilder = CryptoCreateTransactionBody.newBuilder()
                 .setAutoRenewPeriod(Duration.newBuilder().setSeconds(CUSTOM_AUTO_RENEW_PERIOD));
@@ -537,6 +552,17 @@ class CryptoCreateTransitionLogicTest {
         given(aliasManager.lookupIdBy(any())).willReturn(EntityNum.fromAccountId(PROXY));
 
         assertEquals(ALIAS_ALREADY_ASSIGNED, subject.semanticCheck().apply(cryptoCreateTxn));
+    }
+
+    @Test
+    void rejectsEVMAddressAliasWhenCreateWithAliasIsDisabled() {
+        final var opBuilder = CryptoCreateTransactionBody.newBuilder().setAlias(ByteString.copyFrom(EVM_ADDRESS_BYTES));
+        cryptoCreateTxn =
+                TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(dynamicProperties.isCryptoCreateWithAliasEnabled()).willReturn(false);
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
+
+        assertEquals(NOT_SUPPORTED, subject.semanticCheck().apply(cryptoCreateTxn));
     }
 
     @Test
