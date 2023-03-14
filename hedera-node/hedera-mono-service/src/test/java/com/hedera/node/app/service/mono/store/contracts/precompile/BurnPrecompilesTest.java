@@ -17,6 +17,8 @@ package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_BURN_TOKEN;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.recipientAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.BurnPrecompile.decodeBurn;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.BurnPrecompile.decodeBurnV2;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -84,13 +86,16 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -144,6 +149,9 @@ class BurnPrecompilesTest {
     @Mock private HbarCentExchange exchange;
     @Mock private ExchangeRate exchangeRate;
     @Mock private AccessorFactory accessorFactory;
+    @Mock private Account acc;
+    @Mock private Deque<MessageFrame> stack;
+    @Mock private Iterator<MessageFrame> dequeIterator;
     @Mock private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
     private static final long TEST_SERVICE_FEE = 5_000_000;
@@ -450,9 +458,11 @@ class BurnPrecompilesTest {
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.contractAddress);
+        given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(frame.getContractAddress()).willReturn(contractAddress);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+        givenIfDelegateCall();
         doCallRealMethod().when(frame).setExceptionalHaltReason(any());
         burnPrecompile
                 .when(() -> decodeBurn(pretendArguments))
@@ -630,7 +640,7 @@ class BurnPrecompilesTest {
         given(worldUpdater.aliases()).willReturn(aliases);
         given(aliases.resolveForEvm(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.contractAddress);
+        given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getContractAddress()).willReturn(HTSTestsUtil.contractAddr);
         given(frame.getRecipientAddress()).willReturn(HTSTestsUtil.recipientAddr);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
@@ -655,8 +665,17 @@ class BurnPrecompilesTest {
     }
 
     private void givenMinFrameContext() {
-        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.contractAddress);
+        given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+    }
+
+    private void givenIfDelegateCall() {
+        given(frame.getContractAddress()).willReturn(contractAddress);
+        given(frame.getRecipientAddress()).willReturn(recipientAddress);
+        given(worldUpdater.get(recipientAddress)).willReturn(acc);
+        given(acc.getNonce()).willReturn(-1L);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(frame.getMessageFrameStack().iterator()).willReturn(dequeIterator);
     }
 }

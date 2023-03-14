@@ -15,7 +15,10 @@
  */
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -33,33 +36,45 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class ApproveAllowanceSuite extends HapiSuite {
+    public static final String CONTRACTS_PERMITTED_DELEGATE_CALLERS =
+            "contracts.permittedDelegateCallers";
     private static final Logger log = LogManager.getLogger(ApproveAllowanceSuite.class);
+    private static final String ATTACK_CALL = "attackCall";
+    private static final String PRETEND_PAIR = "PretendPair";
+    private static final String PRETEND_ATTACKER = "PretendAttacker";
     private static final long GAS_TO_OFFER = 4_000_000L;
     private static final String FUNGIBLE_TOKEN = "fungibleToken";
     private static final String NON_FUNGIBLE_TOKEN = "nonFungibleToken";
@@ -72,9 +87,10 @@ public class ApproveAllowanceSuite extends HapiSuite {
     private static final String ALLOWANCE_TX = "allowanceTxn";
     private static final String APPROVE_SIGNATURE = "Approval(address,address,uint256)";
     private static final String APPROVE_FOR_ALL_SIGNATURE = "ApprovalForAll(address,address,bool)";
+    public static final String CALL_TO = "callTo";
 
     public static void main(String... args) {
-        new ApproveAllowanceSuite().runSuiteSync();
+        new ApproveAllowanceSuite().runSuiteAsync();
     }
 
     @Override
@@ -87,11 +103,21 @@ public class ApproveAllowanceSuite extends HapiSuite {
         return List.of(
                 tokenAllowance(),
                 tokenApprove(),
-                nftApprove(),
                 nftIsApprovedForAll(),
                 nftGetApproved(),
-                nftSetApprovalForAll());
+                nftSetApprovalForAll(),
+                whitelistPositiveCase(),
+                whitelistNegativeCases(),
+                testIndirectApprovalWith(DELEGATE_PRECOMPILE_CALLEE, false),
+                testIndirectApprovalWith(DIRECT_PRECOMPILE_CALLEE, true),
+                testIndirectApprovalWith(DELEGATE_ERC_CALLEE, false),
+                testIndirectApprovalWith(DIRECT_ERC_CALLEE, true));
     }
+
+    private static final String DELEGATE_PRECOMPILE_CALLEE = "PretendCallee";
+    private static final String DIRECT_PRECOMPILE_CALLEE = "DirectPrecompileCallee";
+    private static final String DELEGATE_ERC_CALLEE = "ERC20DelegateCallee";
+    private static final String DIRECT_ERC_CALLEE = "NonDelegateCallee";
 
     @Override
     public boolean canRunConcurrent() {
@@ -124,7 +150,6 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                 .payingWith(DEFAULT_PAYER)
                                 .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, theSpender, 2L)
                                 .via("baseApproveTxn")
-                                .logged()
                                 .signedBy(DEFAULT_PAYER, OWNER)
                                 .fee(ONE_HBAR))
                 .when(
@@ -135,17 +160,17 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                                 contractCall(
                                                                 HTS_APPROVE_ALLOWANCE_CONTRACT,
                                                                 "htsAllowance",
-                                                                HapiParserUtil.asHeadlongAddress(
+                                                                asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 FUNGIBLE_TOKEN))),
-                                                                HapiParserUtil.asHeadlongAddress(
+                                                                asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
                                                                                                 OWNER))),
-                                                                HapiParserUtil.asHeadlongAddress(
+                                                                asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -154,7 +179,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                                         .via(allowanceTxn)
                                                         .hasKnownStatus(SUCCESS))))
                 .then(
-                        getTxnRecord(allowanceTxn).andAllChildRecords().logged(),
+                        getTxnRecord(allowanceTxn).andAllChildRecords(),
                         childRecordsCheck(
                                 allowanceTxn,
                                 SUCCESS,
@@ -201,12 +226,12 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                                 contractCall(
                                                                 HTS_APPROVE_ALLOWANCE_CONTRACT,
                                                                 "htsApprove",
-                                                                HapiParserUtil.asHeadlongAddress(
+                                                                asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 FUNGIBLE_TOKEN))),
-                                                                HapiParserUtil.asHeadlongAddress(
+                                                                asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -218,7 +243,6 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                                         .hasKnownStatus(SUCCESS))))
                 .then(
                         childRecordsCheck(approveTxn, SUCCESS, recordWith().status(SUCCESS)),
-                        getTxnRecord(approveTxn).andAllChildRecords().logged(),
                         withOpContext(
                                 (spec, opLog) -> {
                                     final var sender =
@@ -254,101 +278,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                                                                                                                                     .getAccountNum())))
                                                                                                             .longValue(
                                                                                                                     10)))))
-                                                    .andAllChildRecords()
-                                                    .logged();
-                                    allRunFor(spec, txnRecord);
-                                }));
-    }
-
-    private HapiSpec nftApprove() {
-        final var approveTxn = "approveTxn";
-        final var theSpender = SPENDER;
-
-        return defaultHapiSpec("HTS_NFT_APPROVE")
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
-                        cryptoCreate(theSpender),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0)
-                                .treasury(TOKEN_TREASURY)
-                                .adminKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY),
-                        mintToken(
-                                NON_FUNGIBLE_TOKEN,
-                                List.of(
-                                        ByteString.copyFromUtf8("A"),
-                                        ByteString.copyFromUtf8("B"))),
-                        uploadInitCode(HTS_APPROVE_ALLOWANCE_CONTRACT),
-                        contractCreate(HTS_APPROVE_ALLOWANCE_CONTRACT),
-                        tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
-                        tokenAssociate(HTS_APPROVE_ALLOWANCE_CONTRACT, NON_FUNGIBLE_TOKEN),
-                        cryptoTransfer(
-                                movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L)
-                                        .between(TOKEN_TREASURY, OWNER)))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                                HTS_APPROVE_ALLOWANCE_CONTRACT,
-                                                                "htsApproveNFT",
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                NON_FUNGIBLE_TOKEN))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                theSpender))),
-                                                                BigInteger.valueOf(2L))
-                                                        .payingWith(OWNER)
-                                                        .gas(4_000_000L)
-                                                        .via(approveTxn))))
-                .then(
-                        getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasNoSpender(),
-                        getTokenNftInfo(NON_FUNGIBLE_TOKEN, 2L).hasSpenderID(theSpender),
-                        childRecordsCheck(approveTxn, SUCCESS, recordWith().status(SUCCESS)),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var sender = spec.registry().getAccountID(OWNER);
-                                    final var receiver = spec.registry().getAccountID(theSpender);
-                                    final var idOfToken =
-                                            "0.0."
-                                                    + (spec.registry()
-                                                            .getTokenID(NON_FUNGIBLE_TOKEN)
-                                                            .getTokenNum());
-                                    var txnRecord =
-                                            getTxnRecord(approveTxn)
-                                                    .hasPriority(
-                                                            recordWith()
-                                                                    .contractCallResult(
-                                                                            resultWith()
-                                                                                    .logs(
-                                                                                            inOrder(
-                                                                                                    logWith()
-                                                                                                            .contract(
-                                                                                                                    idOfToken)
-                                                                                                            .withTopicsInOrder(
-                                                                                                                    List
-                                                                                                                            .of(
-                                                                                                                                    eventSignatureOf(
-                                                                                                                                            APPROVE_SIGNATURE),
-                                                                                                                                    parsedToByteString(
-                                                                                                                                            sender
-                                                                                                                                                    .getAccountNum()),
-                                                                                                                                    parsedToByteString(
-                                                                                                                                            receiver
-                                                                                                                                                    .getAccountNum()),
-                                                                                                                                    parsedToByteString(
-                                                                                                                                            2L)))))))
-                                                    .andAllChildRecords()
-                                                    .logged();
+                                                    .andAllChildRecords();
                                     allRunFor(spec, txnRecord);
                                 }));
     }
@@ -406,17 +336,17 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                                 contractCall(
                                                                 HTS_APPROVE_ALLOWANCE_CONTRACT,
                                                                 "htsIsApprovedForAll",
-                                                                HapiParserUtil.asHeadlongAddress(
+                                                                asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 NON_FUNGIBLE_TOKEN))),
-                                                                HapiParserUtil.asHeadlongAddress(
+                                                                asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
                                                                                                 OWNER))),
-                                                                HapiParserUtil.asHeadlongAddress(
+                                                                asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -428,17 +358,17 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                                 contractCall(
                                                                 HTS_APPROVE_ALLOWANCE_CONTRACT,
                                                                 "htsIsApprovedForAll",
-                                                                HapiParserUtil.asHeadlongAddress(
+                                                                asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 NON_FUNGIBLE_TOKEN))),
-                                                                HapiParserUtil.asHeadlongAddress(
+                                                                asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
                                                                                                 OWNER))),
-                                                                HapiParserUtil.asHeadlongAddress(
+                                                                asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -522,7 +452,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                                 contractCall(
                                                                 HTS_APPROVE_ALLOWANCE_CONTRACT,
                                                                 "htsGetApproved",
-                                                                HapiParserUtil.asHeadlongAddress(
+                                                                asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
@@ -595,12 +525,12 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                                 contractCall(
                                                                 HTS_APPROVE_ALLOWANCE_CONTRACT,
                                                                 "htsSetApprovalForAll",
-                                                                HapiParserUtil.asHeadlongAddress(
+                                                                asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 NON_FUNGIBLE_TOKEN))),
-                                                                HapiParserUtil.asHeadlongAddress(
+                                                                asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -651,5 +581,215 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                                     .logged();
                                     allRunFor(spec, txnRecord);
                                 }));
+    }
+
+    private HapiSpec testIndirectApprovalWith(
+            final String callee, final boolean expectGrantedApproval) {
+
+        final AtomicReference<TokenID> tokenID = new AtomicReference<>();
+        final AtomicReference<String> attackerMirrorAddr = new AtomicReference<>();
+        final AtomicReference<String> calleeMirrorAddr = new AtomicReference<>();
+
+        return defaultHapiSpec("TestIndirectApprovalWith" + callee)
+                .given(
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(PRETEND_ATTACKER)
+                                .exposingCreatedIdTo(
+                                        id -> attackerMirrorAddr.set(asHexedSolidityAddress(id))),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .initialSupply(Long.MAX_VALUE)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .exposingCreatedIdTo(id -> tokenID.set(asToken(id))),
+                        uploadInitCode(PRETEND_PAIR),
+                        contractCreate(PRETEND_PAIR).adminKey(DEFAULT_PAYER),
+                        uploadInitCode(callee),
+                        contractCreate(callee)
+                                .adminKey(DEFAULT_PAYER)
+                                .exposingNumTo(
+                                        num ->
+                                                calleeMirrorAddr.set(
+                                                        asHexedSolidityAddress(0, 0, num))),
+                        tokenAssociate(PRETEND_PAIR, FUNGIBLE_TOKEN),
+                        tokenAssociate(callee, FUNGIBLE_TOKEN))
+                .when(
+                        sourcing(
+                                () ->
+                                        contractCall(
+                                                        PRETEND_PAIR,
+                                                        CALL_TO,
+                                                        asHeadlongAddress(calleeMirrorAddr.get()),
+                                                        asHeadlongAddress(
+                                                                asSolidityAddress(tokenID.get())),
+                                                        asHeadlongAddress(attackerMirrorAddr.get()))
+                                                .via(ATTACK_CALL)
+                                                .gas(5_000_000L)
+                                                .hasKnownStatus(SUCCESS)))
+                .then(
+                        getTxnRecord(ATTACK_CALL).andAllChildRecords().logged(),
+                        // Under no circumstances should the pair ever have an allowance
+                        getAccountDetails(PRETEND_PAIR)
+                                .has(accountDetailsWith().tokenAllowancesCount(0))
+                                .logged(),
+                        // Unless the callee tried to do a delegatecall to the redirect,
+                        // we _should_ see the allowance on the callee
+                        expectGrantedApproval
+                                ? getAccountDetails(callee)
+                                        .has(accountDetailsWith().tokenAllowancesCount(1))
+                                        .logged()
+                                : getAccountDetails(callee)
+                                        .has(accountDetailsWith().tokenAllowancesCount(0))
+                                        .logged());
+    }
+
+    private HapiSpec whitelistNegativeCases() {
+        final AtomicLong unlistedCalleeMirrorNum = new AtomicLong();
+        final AtomicLong whitelistedCalleeMirrorNum = new AtomicLong();
+        final AtomicReference<TokenID> tokenID = new AtomicReference<>();
+        final AtomicReference<String> attackerMirrorAddr = new AtomicReference<>();
+        final AtomicReference<String> unListedCalleeMirrorAddr = new AtomicReference<>();
+        final AtomicReference<String> whitelistedCalleeMirrorAddr = new AtomicReference<>();
+
+        return propertyPreservingHapiSpec("WhitelistNegativeCases")
+                .preserving(CONTRACTS_PERMITTED_DELEGATE_CALLERS)
+                .given(
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(PRETEND_ATTACKER)
+                                .exposingCreatedIdTo(
+                                        id -> attackerMirrorAddr.set(asHexedSolidityAddress(id))),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .initialSupply(Long.MAX_VALUE)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .exposingCreatedIdTo(id -> tokenID.set(asToken(id))),
+                        uploadInitCode(PRETEND_PAIR),
+                        contractCreate(PRETEND_PAIR).adminKey(DEFAULT_PAYER),
+                        uploadInitCode(DELEGATE_ERC_CALLEE),
+                        contractCreate(DELEGATE_ERC_CALLEE)
+                                .adminKey(DEFAULT_PAYER)
+                                .exposingNumTo(
+                                        num -> {
+                                            whitelistedCalleeMirrorNum.set(num);
+                                            whitelistedCalleeMirrorAddr.set(
+                                                    asHexedSolidityAddress(0, 0, num));
+                                        }),
+                        uploadInitCode(DELEGATE_PRECOMPILE_CALLEE),
+                        contractCreate(DELEGATE_PRECOMPILE_CALLEE)
+                                .adminKey(DEFAULT_PAYER)
+                                .exposingNumTo(
+                                        num -> {
+                                            unlistedCalleeMirrorNum.set(num);
+                                            unListedCalleeMirrorAddr.set(
+                                                    asHexedSolidityAddress(0, 0, num));
+                                        }),
+                        tokenAssociate(PRETEND_PAIR, FUNGIBLE_TOKEN),
+                        tokenAssociate(DELEGATE_ERC_CALLEE, FUNGIBLE_TOKEN),
+                        tokenAssociate(DELEGATE_PRECOMPILE_CALLEE, FUNGIBLE_TOKEN))
+                .when(
+                        sourcing(
+                                () ->
+                                        overriding(
+                                                CONTRACTS_PERMITTED_DELEGATE_CALLERS,
+                                                "" + whitelistedCalleeMirrorNum.get())),
+                        sourcing(
+                                () ->
+                                        contractCall(
+                                                        PRETEND_PAIR,
+                                                        CALL_TO,
+                                                        asHeadlongAddress(
+                                                                unListedCalleeMirrorAddr.get()),
+                                                        asHeadlongAddress(
+                                                                asSolidityAddress(tokenID.get())),
+                                                        asHeadlongAddress(attackerMirrorAddr.get()))
+                                                .gas(5_000_000L)
+                                                .hasKnownStatus(SUCCESS)),
+                        // Because this callee isn't on the whitelist, the pair won't have an
+                        // allowance here
+                        getAccountDetails(PRETEND_PAIR)
+                                .has(accountDetailsWith().tokenAllowancesCount(0)),
+                        // Instead nobody gets an allowance
+                        getAccountDetails(DELEGATE_PRECOMPILE_CALLEE)
+                                .has(accountDetailsWith().tokenAllowancesCount(0)),
+                        sourcing(
+                                () ->
+                                        contractCall(
+                                                        PRETEND_PAIR,
+                                                        CALL_TO,
+                                                        asHeadlongAddress(
+                                                                whitelistedCalleeMirrorAddr.get()),
+                                                        asHeadlongAddress(
+                                                                asSolidityAddress(tokenID.get())),
+                                                        asHeadlongAddress(attackerMirrorAddr.get()))
+                                                .gas(5_000_000L)
+                                                .hasKnownStatus(SUCCESS)))
+                .then(
+                        // Even though this is on the whitelist, b/c the whitelisted contract
+                        // is going through a delegatecall "chain" via the ERC-20 call, the pair
+                        // still won't have an allowance here
+                        getAccountDetails(PRETEND_PAIR)
+                                .has(accountDetailsWith().tokenAllowancesCount(0)),
+                        // Instead of the callee
+                        getAccountDetails(DELEGATE_ERC_CALLEE)
+                                .has(accountDetailsWith().tokenAllowancesCount(0)));
+    }
+
+    private HapiSpec whitelistPositiveCase() {
+        final AtomicLong whitelistedCalleeMirrorNum = new AtomicLong();
+        final AtomicReference<TokenID> tokenID = new AtomicReference<>();
+        final AtomicReference<String> attackerMirrorAddr = new AtomicReference<>();
+        final AtomicReference<String> whitelistedCalleeMirrorAddr = new AtomicReference<>();
+
+        return propertyPreservingHapiSpec("WhitelistNegativeCases")
+                .preserving(CONTRACTS_PERMITTED_DELEGATE_CALLERS)
+                .given(
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(PRETEND_ATTACKER)
+                                .exposingCreatedIdTo(
+                                        id -> attackerMirrorAddr.set(asHexedSolidityAddress(id))),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .initialSupply(Long.MAX_VALUE)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .exposingCreatedIdTo(id -> tokenID.set(asToken(id))),
+                        uploadInitCode(PRETEND_PAIR),
+                        contractCreate(PRETEND_PAIR).adminKey(DEFAULT_PAYER),
+                        uploadInitCode(DELEGATE_PRECOMPILE_CALLEE),
+                        contractCreate(DELEGATE_PRECOMPILE_CALLEE)
+                                .adminKey(DEFAULT_PAYER)
+                                .exposingNumTo(
+                                        num -> {
+                                            whitelistedCalleeMirrorNum.set(num);
+                                            whitelistedCalleeMirrorAddr.set(
+                                                    asHexedSolidityAddress(0, 0, num));
+                                        }),
+                        tokenAssociate(PRETEND_PAIR, FUNGIBLE_TOKEN),
+                        tokenAssociate(DELEGATE_PRECOMPILE_CALLEE, FUNGIBLE_TOKEN))
+                .when(
+                        sourcing(
+                                () ->
+                                        overriding(
+                                                CONTRACTS_PERMITTED_DELEGATE_CALLERS,
+                                                "" + whitelistedCalleeMirrorNum.get())),
+                        sourcing(
+                                () ->
+                                        contractCall(
+                                                        PRETEND_PAIR,
+                                                        CALL_TO,
+                                                        asHeadlongAddress(
+                                                                whitelistedCalleeMirrorAddr.get()),
+                                                        asHeadlongAddress(
+                                                                asSolidityAddress(tokenID.get())),
+                                                        asHeadlongAddress(attackerMirrorAddr.get()))
+                                                .via(ATTACK_CALL)
+                                                .gas(5_000_000L)
+                                                .hasKnownStatus(SUCCESS)))
+                .then(
+                        // Because this callee is on the whitelist, the pair WILL have an allowance
+                        // here
+                        getAccountDetails(PRETEND_PAIR)
+                                .has(accountDetailsWith().tokenAllowancesCount(1)),
+                        // Instead of the callee
+                        getAccountDetails(DELEGATE_PRECOMPILE_CALLEE)
+                                .has(accountDetailsWith().tokenAllowancesCount(0)));
     }
 }

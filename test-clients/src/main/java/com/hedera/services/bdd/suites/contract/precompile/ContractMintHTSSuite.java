@@ -175,6 +175,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                                         BigInteger.valueOf(amount))
                                 .via(FIRST_MINT_TXN)
                                 .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER)
                                 .alsoSigningWithFullPrefix(MULTI_KEY),
                         getTxnRecord(FIRST_MINT_TXN).andAllChildRecords().logged())
                 .then(
@@ -361,6 +362,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                                         "mintFungibleTokenWithEvent",
                                         BigInteger.valueOf(10))
                                 .via(FIRST_MINT_TXN)
+                                .gas(GAS_TO_OFFER)
                                 .payingWith(ACCOUNT)
                                 .alsoSigningWithFullPrefix(MULTI_KEY),
                         getTxnRecord(FIRST_MINT_TXN).andAllChildRecords().logged(),
@@ -589,7 +591,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                                                                                                     1L)
                                                                                             .withSerialNumbers(
                                                                                                     1L))
-                                                                            .gas(3_838_738L)
+                                                                            .gas(3_837_920L)
                                                                             .amount(0L)
                                                                             .functionParameters(
                                                                                     functionParameters()
@@ -685,6 +687,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                                                                                                 RECIPIENT))),
                                                                 20L)
                                                         .payingWith(GENESIS)
+                                                        .gas(GAS_TO_OFFER)
                                                         .via(failedMintTxn)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 getTxnRecord(failedMintTxn)

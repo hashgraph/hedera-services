@@ -95,6 +95,11 @@ public interface OptionValidator {
         return queryableAccountStatus(EntityNum.fromAccountId(id), accounts);
     }
 
+    default ResponseCodeEnum queryableAccountOrContractStatus(
+            EntityNum entityNum, AccountStorageAdapter accounts) {
+        return PureValidation.queryableAccountOrContractStatus(entityNum, accounts);
+    }
+
     default ResponseCodeEnum queryableAccountStatus(
             EntityNum entityNum, AccountStorageAdapter accounts) {
         return PureValidation.queryableAccountStatus(entityNum, accounts);

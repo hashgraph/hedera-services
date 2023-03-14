@@ -76,6 +76,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTes
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.nonFungiblePause;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.nonFungibleUnpause;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.nonFungibleWipe;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.recipientAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.tokenUpdateExpiryInfoWrapper;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile.decodeFungibleCreateV2;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile.decodeFungibleCreateV3;
@@ -164,10 +165,13 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Deque;
+import java.util.Iterator;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -211,6 +215,9 @@ class HTSPrecompiledContractTest {
     @Mock private TokenInfoWrapper<byte[]> tokenInfoWrapper;
     @Mock private AccessorFactory accessorFactory;
     @Mock private NetworkInfo networkInfo;
+    @Mock private Account acc;
+    @Mock private Deque<MessageFrame> stack;
+    @Mock private Iterator<MessageFrame> dequeIterator;
 
     private HTSPrecompiledContract subject;
     private PrecompilePricingUtils precompilePricingUtils;
@@ -902,6 +909,7 @@ class HTSPrecompiledContractTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
+        givenIfDelegateCall();
         // when
         subject.prepareFields(messageFrame);
         subject.prepareComputation(input, a -> a);
@@ -922,6 +930,7 @@ class HTSPrecompiledContractTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
+        givenIfDelegateCall();
         // when
         subject.prepareFields(messageFrame);
         subject.prepareComputation(input, a -> a);
@@ -940,6 +949,7 @@ class HTSPrecompiledContractTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
+        givenIfDelegateCall();
         // when
         subject.prepareFields(messageFrame);
         subject.prepareComputation(input, a -> a);
@@ -953,6 +963,8 @@ class HTSPrecompiledContractTest {
     void computeReturnsNotSupportedWhenFlagDisabled() {
         givenFrameContext();
         given(dynamicProperties.areAllowancesEnabled()).willReturn(false);
+        given(messageFrame.getContractAddress()).willReturn(Address.ALTBN128_ADD);
+        given(messageFrame.getRecipientAddress()).willReturn(Address.ALTBN128_ADD);
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_FROM));
         ercTransferPrecompile
                 .when(
@@ -976,6 +988,8 @@ class HTSPrecompiledContractTest {
     void computeReturnsErrorDecoding() {
         givenFrameContext();
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
+        given(messageFrame.getContractAddress()).willReturn(Address.ALTBN128_ADD);
+        given(messageFrame.getRecipientAddress()).willReturn(Address.ALTBN128_ADD);
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_FROM));
         ercTransferPrecompile
                 .when(
@@ -1008,6 +1022,7 @@ class HTSPrecompiledContractTest {
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN));
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        givenIfDelegateCall();
 
         // when
         subject.prepareFields(messageFrame);
@@ -1194,6 +1209,8 @@ class HTSPrecompiledContractTest {
     void computeThrowsWhenTryingToCallFungibleHapiTransferFromWhenNotEnabled() {
         // given
         givenFrameContext();
+        given(messageFrame.getContractAddress()).willReturn(Address.ALTBN128_ADD);
+        given(messageFrame.getRecipientAddress()).willReturn(Address.ALTBN128_ADD);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(false);
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_FROM));
         ercTransferPrecompile
@@ -1269,6 +1286,8 @@ class HTSPrecompiledContractTest {
         givenFrameContext();
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFTS));
         given(messageFrame.getValue()).willReturn(Wei.of(1));
+        given(messageFrame.getContractAddress()).willReturn(Address.ALTBN128_ADD);
+        given(messageFrame.getRecipientAddress()).willReturn(Address.ALTBN128_ADD);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -1440,5 +1459,14 @@ class HTSPrecompiledContractTest {
         given(exchange.rate(any())).willReturn(exchangeRate);
         given(exchangeRate.getCentEquiv()).willReturn(CENTS_RATE);
         given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
+    }
+
+    private void givenIfDelegateCall() {
+        given(messageFrame.getContractAddress()).willReturn(contractAddress);
+        given(messageFrame.getRecipientAddress()).willReturn(recipientAddress);
+        given(worldUpdater.get(recipientAddress)).willReturn(acc);
+        given(acc.getNonce()).willReturn(-1L);
+        given(messageFrame.getMessageFrameStack()).willReturn(stack);
+        given(messageFrame.getMessageFrameStack().iterator()).willReturn(dequeIterator);
     }
 }
