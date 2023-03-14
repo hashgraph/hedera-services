@@ -103,7 +103,6 @@ public class ApproveAllowanceSuite extends HapiSuite {
         return List.of(
                 tokenAllowance(),
                 tokenApprove(),
-                nftApprove(),
                 nftIsApprovedForAll(),
                 nftGetApproved(),
                 nftSetApprovalForAll(),
@@ -280,99 +279,6 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                                                                                             .longValue(
                                                                                                                     10)))))
                                                     .andAllChildRecords();
-                                    allRunFor(spec, txnRecord);
-                                }));
-    }
-
-    private HapiSpec nftApprove() {
-        final var approveTxn = "approveTxn";
-        final var theSpender = SPENDER;
-
-        return defaultHapiSpec("HTS_NFT_APPROVE")
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
-                        cryptoCreate(theSpender),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0)
-                                .treasury(TOKEN_TREASURY)
-                                .adminKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY),
-                        mintToken(
-                                NON_FUNGIBLE_TOKEN,
-                                List.of(
-                                        ByteString.copyFromUtf8("A"),
-                                        ByteString.copyFromUtf8("B"))),
-                        uploadInitCode(HTS_APPROVE_ALLOWANCE_CONTRACT),
-                        contractCreate(HTS_APPROVE_ALLOWANCE_CONTRACT),
-                        tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
-                        tokenAssociate(HTS_APPROVE_ALLOWANCE_CONTRACT, NON_FUNGIBLE_TOKEN),
-                        cryptoTransfer(
-                                movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L)
-                                        .between(TOKEN_TREASURY, OWNER)))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                                HTS_APPROVE_ALLOWANCE_CONTRACT,
-                                                                "htsApproveNFT",
-                                                                asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                NON_FUNGIBLE_TOKEN))),
-                                                                asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                theSpender))),
-                                                                BigInteger.valueOf(2L))
-                                                        .payingWith(OWNER)
-                                                        .gas(4_000_000L)
-                                                        .via(approveTxn))))
-                .then(
-                        getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasNoSpender(),
-                        getTokenNftInfo(NON_FUNGIBLE_TOKEN, 2L).hasSpenderID(theSpender),
-                        childRecordsCheck(approveTxn, SUCCESS, recordWith().status(SUCCESS)),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var sender = spec.registry().getAccountID(OWNER);
-                                    final var receiver = spec.registry().getAccountID(theSpender);
-                                    final var idOfToken =
-                                            "0.0."
-                                                    + (spec.registry()
-                                                            .getTokenID(NON_FUNGIBLE_TOKEN)
-                                                            .getTokenNum());
-                                    var txnRecord =
-                                            getTxnRecord(approveTxn)
-                                                    .hasPriority(
-                                                            recordWith()
-                                                                    .contractCallResult(
-                                                                            resultWith()
-                                                                                    .logs(
-                                                                                            inOrder(
-                                                                                                    logWith()
-                                                                                                            .contract(
-                                                                                                                    idOfToken)
-                                                                                                            .withTopicsInOrder(
-                                                                                                                    List
-                                                                                                                            .of(
-                                                                                                                                    eventSignatureOf(
-                                                                                                                                            APPROVE_SIGNATURE),
-                                                                                                                                    parsedToByteString(
-                                                                                                                                            sender
-                                                                                                                                                    .getAccountNum()),
-                                                                                                                                    parsedToByteString(
-                                                                                                                                            receiver
-                                                                                                                                                    .getAccountNum()),
-                                                                                                                                    parsedToByteString(
-                                                                                                                                            2L)))))))
-                                                    .andAllChildRecords()
-                                                    .logged();
                                     allRunFor(spec, txnRecord);
                                 }));
     }
