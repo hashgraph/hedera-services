@@ -64,6 +64,11 @@ on:
         description: ""
         required: false
         type: string
+      hedera-tests-enabled:
+        description: "Hedera Tests Enabled"
+        required: false
+        type: boolean
+        default: false
       enhanced-runtime-engine:
         description: ""
         required: false
@@ -216,64 +221,6 @@ jobs:
         with:
           node-version: 18
 
-      - name: Install JSON Tools
-        run: |
-          echo "::group::Setup JSON5 Command"
-          sudo npm install -g json5
-          echo "::endgroup::"
-
-          if ! command -v jq >/dev/null 2>&1; then
-            echo "::group::Setup JQ Command"
-            sudo apt update
-            sudo apt install -y jq
-            echo "::endgroup::"
-          fi
-
-          JQ_VERSION="$(jq --version)"
-          if [[ "${JQ_VERSION}" != "jq-1.6" ]]; then
-            echo "::group::Updating JQ Version"
-            sudo apt update
-            sudo apt upgrade -y jq
-            echo "::endgroup::"
-          fi
-
-          if ! command -v tee >/dev/null 2>&1; then
-            echo "::group::Setup Tee Command"
-            sudo apt update
-            sudo apt install -y coreutils
-            echo "::endgroup::"
-          fi
-
-          echo "::group::Show JSON5 Version"
-          json5 --version
-          echo "::endgroup::"
-
-          echo "::group::Show JQ Version"
-          jq --version
-          echo "::endgroup::"
-
-      - name: Update Slack API Token
-        env:
-          SLACK_API_TOKEN: ${{ secrets.slack-api-token }}
-        working-directory: ${{ github.workspace }}/platform-sdk/${{ inputs.regression-path }}
-        run: |
-          [[ -f "configs/JRS-Default.json" ]] || exit 67
-          [[ -f "configs/services/default/JRS-Default-Services.json" ]] || exit 68
-
-          echo "::group::Updating JRS-Default.json"
-          cat configs/JRS-Default.json \
-            | json5 \
-            | jq --arg token "${SLACK_API_TOKEN}" '.slack.token = $token | .slack.botToken = $token' \
-            | tee configs/JRS-Default.json >/dev/null
-          echo "::endgroup::"
-
-          echo "::group::Updating JRS-Default-Services.json"
-          cat configs/services/default/JRS-Default-Services.json \
-            | json5 \
-            | jq --arg token "${SLACK_API_TOKEN}" '.slack.token = $token | .slack.botToken = $token' \
-            | tee configs/services/default/JRS-Default-Services.json >/dev/null
-          echo "::endgroup::"
-
       - name: Setup Java
         uses: actions/setup-java@v3
         with:
@@ -364,6 +311,14 @@ jobs:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: assemble --scan
 
+      - name: Hedera Node Gradle Assemble
+        id: hedera-gradle-build
+        uses: gradle/gradle-build-action@v2
+        if: ${{ inputs.hedera-tests-enabled }}
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: assemble --scan
+
       - name: Regression Gradle Assemble
         id: regression-gradle-build
         uses: gradle/gradle-build-action@v2
@@ -389,6 +344,7 @@ jobs:
 
       - name: Execute JRS Regression (${{ steps.jrs-config.outputs.file }})
         env:
+          HEDERA_TESTS_ENABLED: ${{ inputs.hedera-tests-enabled }}
           REGRESSION_PATH: ${{ inputs.regression-path }}
           CONFIG_PATH: ${{ steps.jrs-config.outputs.file }}
           USE_ENHANCED_RUNTIME: ${{ inputs.use-enhanced-runtime }}
@@ -402,6 +358,8 @@ jobs:
           JRS_SSH_USER_NAME: ${{ secrets.jrs-ssh-user-name }}
           JRS_WEB_HOSTNAME: ${{ inputs.jrs-web-hostname }}
           JRS_WEB_PORT: ${{ inputs.jrs-web-port }}
+          ACTIONS_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SLACK_API_TOKEN: ${{ secrets.slack-api-token }}
         working-directory: ${{ github.workspace }}/platform-sdk/${{ inputs.regression-path }}
         run: |
           set -x
@@ -424,6 +382,7 @@ jobs:
           JRS_ARGUMENTS="${JRS_ARGUMENTS} -wh ${JRS_WEB_HOSTNAME}"
           JRS_ARGUMENTS="${JRS_ARGUMENTS} -wp ${JRS_WEB_PORT}"
           JRS_ARGUMENTS="${JRS_ARGUMENTS} -fr"
+          JRS_ARGUMENTS="${JRS_ARGUMENTS} --slack-api-token=${SLACK_API_TOKEN}"
 
           if [[ -n "${GENERATE_SLACK_CHANNEL}" && "${GENERATE_SLACK_CHANNEL}" = true ]]; then
             SLACK_BRANCH="${JRS_BRANCH}"
@@ -433,31 +392,41 @@ jobs:
               fi
             fi
 
-            SLACK_SUMMARY="platform-gcp-${SLACK_BRANCH}-summary"
-            SLACK_RESULTS="platform-gcp-${SLACK_BRANCH}-regression"
+            if [[ -n "${HEDERA_TESTS_ENABLED}" && "${HEDERA_TESTS_ENABLED}" = true ]]; then
+              SLACK_SUMMARY="hedera-gcp-${SLACK_BRANCH}-summary"
+              SLACK_RESULTS="hedera-gcp-${SLACK_BRANCH}-regression"
+            else
+              SLACK_SUMMARY="platform-gcp-${SLACK_BRANCH}-summary"
+              SLACK_RESULTS="platform-gcp-${SLACK_BRANCH}-regression"
+            fi
 
             echo "${SLACK_SUMMARY}"
             echo "${SLACK_RESULTS}"
           fi
 
           if [[ -n "${SLACK_SUMMARY}" ]]; then
-            JRS_ARGUMENTS=$"${JRS_ARGUMENTS} -sc ${SLACK_SUMMARY}"
+            JRS_ARGUMENTS="${JRS_ARGUMENTS} -sc ${SLACK_SUMMARY}"
           fi
 
           if [[ -n "${SLACK_RESULTS}" ]]; then
-            JRS_ARGUMENTS=$"${JRS_ARGUMENTS} -rc ${SLACK_RESULTS}"
+            JRS_ARGUMENTS="${JRS_ARGUMENTS} -rc ${SLACK_RESULTS}"
           fi
 
           if [[ -n "${JAVA_VERSION}" ]]; then
-            JRS_ARGUMENTS=$"${JRS_ARGUMENTS} -jv ${JAVA_VERSION}"
+            JRS_ARGUMENTS="${JRS_ARGUMENTS} -jv ${JAVA_VERSION}"
           fi
 
           if [[ -n "${PLATFORM_REPO_PATH}" ]]; then
-            JRS_ARGUMENTS=$"${JRS_ARGUMENTS} -pr ${PLATFORM_REPO_PATH}"
+            JRS_ARGUMENTS="${JRS_ARGUMENTS} -pr ${PLATFORM_REPO_PATH}"
           fi
 
           if [[ -n "${ENHANCED_RUNTIME_ENGINE}" ]]; then
-            JRS_ARGUMENTS=$"${JRS_ARGUMENTS} -w ${ENHANCED_RUNTIME_ENGINE}"
+            JRS_ARGUMENTS="${JRS_ARGUMENTS} -w ${ENHANCED_RUNTIME_ENGINE}"
+          fi
+          
+          if [[ -n "${HEDERA_TESTS_ENABLED}" && "${HEDERA_TESTS_ENABLED}" = true ]]; then
+            JRS_ARGUMENTS="${JRS_ARGUMENTS} -r ${{ github.workspace }}"
+            JRS_ARGUMENTS="${JRS_ARGUMENTS} -ci ${JRS_USER}_${ACTIONS_RUN_URL}"
           fi
 
           if [[ ! -f "${CONFIG_PATH}" ]]; then
@@ -468,7 +437,7 @@ jobs:
           fi
 
           if [[ -z "${JAVA_OPTS}" ]]; then
-            JAVA_OPTS="-Xmx4g"
+            JAVA_OPTS="-Xmx8g"
           fi
 
           java ${JAVA_OPTS} \
