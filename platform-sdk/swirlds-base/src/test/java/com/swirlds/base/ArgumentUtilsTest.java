@@ -26,7 +26,7 @@ class ArgumentUtilsTest {
 
     @Test
     @DisplayName("Check null argument")
-    public void checkNullArgument() {
+    void checkNullArgument() {
         // given
         final Object argument = null;
         final String argumentName = "argument";
