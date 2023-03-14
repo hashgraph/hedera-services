@@ -502,6 +502,7 @@ public abstract class LongList<C> implements CASableLongIndex, Closeable {
         if (value == IMPERMISSIBLE_VALUE) {
             throw new IllegalArgumentException("Cannot put " + IMPERMISSIBLE_VALUE + " into a LongList");
         }
+        assert index >= minValidIndex.get();
     }
 
     /**

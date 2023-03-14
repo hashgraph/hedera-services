@@ -72,7 +72,7 @@ public final class LongListOffHeap extends LongList<ByteBuffer> {
      * @param maxLongs the maximum number of longs permissible for this LongList
      * @param reservedBufferLength the number of indices before the minimal index to keep reserved
      */
-    public LongListOffHeap(final int numLongsPerChunk, final long maxLongs, final long reservedBufferLength) {
+    LongListOffHeap(final int numLongsPerChunk, final long maxLongs, final long reservedBufferLength) {
         super(numLongsPerChunk, maxLongs, reservedBufferLength);
     }
 
@@ -90,10 +90,6 @@ public final class LongListOffHeap extends LongList<ByteBuffer> {
      */
     public LongListOffHeap(final Path file) throws IOException {
         super(file, DEFAULT_RESERVED_BUFFER_LENGTH);
-    }
-
-    public LongListOffHeap(final Path file, final long reservedBufferLength) throws IOException {
-        super(file, reservedBufferLength);
     }
 
     @Override

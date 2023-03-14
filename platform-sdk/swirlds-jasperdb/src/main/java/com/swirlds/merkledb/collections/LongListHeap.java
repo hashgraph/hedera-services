@@ -58,7 +58,7 @@ public final class LongListHeap extends LongList<AtomicLongArray> {
      * longs to store.
      */
     public LongListHeap(final int numLongsPerChunk) {
-        super(numLongsPerChunk, Math.min(DEFAULT_MAX_LONGS_TO_STORE, (long) numLongsPerChunk * MAX_NUM_CHUNKS), 0);
+        this(numLongsPerChunk, Math.min(DEFAULT_MAX_LONGS_TO_STORE, (long) numLongsPerChunk * MAX_NUM_CHUNKS), 0);
     }
 
     /**
@@ -68,7 +68,7 @@ public final class LongListHeap extends LongList<AtomicLongArray> {
      * @param numLongsPerChunk number of longs to store in each chunk of memory allocated
      * @param maxLongs the maximum number of longs permissible for this LongList
      */
-    public LongListHeap(final int numLongsPerChunk, final long maxLongs, final long reservedBufferLength) {
+    LongListHeap(final int numLongsPerChunk, final long maxLongs, final long reservedBufferLength) {
         super(numLongsPerChunk, maxLongs, reservedBufferLength);
     }
 
@@ -164,7 +164,11 @@ public final class LongListHeap extends LongList<AtomicLongArray> {
      */
     @Override
     protected long lookupInChunk(final long chunkIndex, final long subIndex) {
-        return chunkList.get((int) chunkIndex).get((int) subIndex);
+        AtomicLongArray array = chunkList.get((int) chunkIndex);
+        if (array == null) {
+            return IMPERMISSIBLE_VALUE;
+        }
+        return array.get((int) subIndex);
     }
 
     @Override

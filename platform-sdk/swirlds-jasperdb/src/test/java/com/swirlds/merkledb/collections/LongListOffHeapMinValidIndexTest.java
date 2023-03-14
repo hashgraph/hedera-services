@@ -19,7 +19,6 @@ package com.swirlds.merkledb.collections;
 import static com.swirlds.merkledb.collections.LongList.IMPERMISSIBLE_VALUE;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
 
@@ -189,6 +188,7 @@ class LongListOffHeapMinValidIndexTest {
         list.updateMinValidIndex(8);
         assertMemoryChunksNumber(1);
 
+        list.updateMinValidIndex(0);
         list.put(0, 1);
         // it allows non-contiguous list, therefore chunk at index 1 is absent
         assertMemoryChunksNumber(2);
@@ -294,7 +294,7 @@ class LongListOffHeapMinValidIndexTest {
         // one chunk has data, another chunk is kept for the offset
         assertMemoryChunksNumber(1);
 
-        assertFalse(list.putIfEqual(1L, 2L, 42L));
+        assertThrows(AssertionError.class, () -> list.putIfEqual(1L, 2L, 42L));
 
         // putIfEqual doesn't result in memory block creation of indices that are lesser than
         // minValidIndex
@@ -379,6 +379,7 @@ class LongListOffHeapMinValidIndexTest {
         // memory consumption reduced to size of a single chunk
         assertEquals(24, list.getOffHeapConsumption());
 
+        list.updateMinValidIndex(0);
         // creating a "hole" in the list - only the first and the last chunks have data
         fill(0);
         // memory consumption reduced to size of a single chunk
