@@ -46,6 +46,7 @@ import static com.hedera.node.app.service.mono.utils.EntityIdUtils.contractIdFro
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount;
+import com.hedera.node.app.service.evm.store.contracts.HederaStackedEvmWorldUpdater;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer;
@@ -61,7 +62,7 @@ import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
 
 public class HederaStackedWorldStateUpdater extends AbstractStackedLedgerUpdater<HederaMutableWorldState, Account>
-        implements HederaWorldUpdater {
+        implements HederaWorldUpdater, HederaStackedEvmWorldUpdater {
 
     // Returned when a client tries to un-alias a mirror address that has an EIP-1014 address
     private static final byte[] NON_CANONICAL_REFERENCE = new byte[20];

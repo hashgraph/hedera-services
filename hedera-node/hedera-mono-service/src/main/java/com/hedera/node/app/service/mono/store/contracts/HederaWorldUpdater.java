@@ -48,15 +48,6 @@ import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
 public interface HederaWorldUpdater extends HederaEvmWorldUpdater {
 
     /**
-     * Tracks how much Gas should be refunded to the sender account for the TX. SBH price is
-     * refunded for the first allocation of new contract storage in order to prevent double charging
-     * the client.
-     *
-     * @return the amount of Gas to refund;
-     */
-    long getSbhRefund();
-
-    /**
      * Used to keep track of SBH gas refunds between all instances of HederaWorldUpdater. Lower
      * level updaters should add the value of Gas to refund to their respective parent Updater on
      * commit.

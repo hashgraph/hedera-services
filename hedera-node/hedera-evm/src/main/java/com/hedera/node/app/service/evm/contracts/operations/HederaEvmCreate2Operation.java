@@ -19,7 +19,7 @@ package com.hedera.node.app.service.evm.contracts.operations;
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
-import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
+import com.hedera.node.app.service.evm.store.contracts.HederaStackedEvmWorldUpdater;
 import javax.inject.Inject;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -59,7 +59,7 @@ public class HederaEvmCreate2Operation extends AbstractEvmRecordingCreateOperati
         final var offset = clampedToLong(frame.getStackItem(1));
         final var length = clampedToLong(frame.getStackItem(2));
 
-        final var updater = (HederaEvmWorldUpdater) frame.getWorldUpdater();
+        final var updater = (HederaStackedEvmWorldUpdater) frame.getWorldUpdater();
         final var source = updater.priorityAddress(sourceAddressOrAlias);
 
         final Bytes32 salt = UInt256.fromBytes(frame.getStackItem(3));

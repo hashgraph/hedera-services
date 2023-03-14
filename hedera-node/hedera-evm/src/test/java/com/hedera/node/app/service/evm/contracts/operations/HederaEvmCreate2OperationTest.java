@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
-import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
+import com.hedera.node.app.service.evm.store.contracts.HederaStackedEvmWorldUpdater;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -54,7 +54,7 @@ class HederaEvmCreate2OperationTest {
     private GasCalculator gasCalculator;
 
     @Mock
-    private HederaEvmWorldUpdater stackedUpdater;
+    private HederaStackedEvmWorldUpdater stackedUpdater;
 
     private HederaEvmCreate2Operation subject;
 
