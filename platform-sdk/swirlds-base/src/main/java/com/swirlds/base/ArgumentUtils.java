@@ -19,7 +19,7 @@ package com.swirlds.base;
 /**
  * Class that contains common checks like null checks as static methods.
  */
-public class ArgumentUtils {
+public final class ArgumentUtils {
 
     /**
      * Private constructor to prevent instantiation.
