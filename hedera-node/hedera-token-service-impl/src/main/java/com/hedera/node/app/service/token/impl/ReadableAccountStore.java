@@ -43,7 +43,7 @@ import com.hedera.node.app.service.token.impl.entity.AccountBuilderImpl;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.accounts.Account;
 import com.hedera.node.app.spi.accounts.AccountAccess;
-import com.hedera.node.app.spi.exceptions.InvalidOneOfKindException;
+import com.hedera.node.app.spi.exceptions.UnsetFieldException;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -177,10 +177,10 @@ public class ReadableAccountStore implements AccountAccess {
                             yield fromMirror(alias);
                         } else {
                             final var entityNum = aliases.get(alias.asUtf8String());
-                            yield entityNum == null ? new EntityNumValue().num() : entityNum.num();
+                            yield entityNum == null ? EntityNumValue.DEFAULT.num() : entityNum.num();
                         }
                     }
-                    case UNSET -> throw new InvalidOneOfKindException("Account number not set in protobuf!!");
+                    case UNSET -> throw new UnsetFieldException("Account number not set in protobuf!!");
                 };
 
         return accountNum == null ? null : accountState.get(EntityNumVirtualKey.fromLong(accountNum));
@@ -223,9 +223,9 @@ public class ReadableAccountStore implements AccountAccess {
                                         ByteString.copyFrom(evmKeyAliasAddress).toStringUtf8());
                             }
                         }
-                        yield entityNum == null ? new EntityNumValue().num() : entityNum.num();
+                        yield entityNum == null ? EntityNumValue.DEFAULT.num() : entityNum.num();
                     }
-                    case UNSET -> throw new InvalidOneOfKindException("Contract number not set in protobuf!!");
+                    case UNSET -> throw new UnsetFieldException("Contract number not set in protobuf!!");
                 };
 
         return contractNum == null ? null : accountState.get(EntityNumVirtualKey.fromLong(contractNum));
