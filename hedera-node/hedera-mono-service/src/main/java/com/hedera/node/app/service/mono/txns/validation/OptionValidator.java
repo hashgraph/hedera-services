@@ -108,6 +108,10 @@ public interface OptionValidator {
         return PureValidation.queryableContractStatus(cid, contracts);
     }
 
+    default ResponseCodeEnum queryableAccountOrContractStatus(EntityNum entityNum, AccountStorageAdapter accounts) {
+        return PureValidation.queryableAccountOrContractStatus(entityNum, accounts);
+    }
+
     default ResponseCodeEnum queryableFileStatus(FileID fid, StateView view) {
         return PureValidation.queryableFileStatus(fid, view);
     }
