@@ -107,10 +107,17 @@ public class StatsSigningTestingToolMain implements SwirldMain {
 
     private SpeedometerMetric transactionSubmitSpeedometer;
 
+    /**
+     * The number of milliseconds of the window period to measure TPS over
+     */
     private int tps_measure_window_milliseconds = 200;
 
+    /**
+     * The expected TPS for the network
+     */
     private double expectedTPS = 0;
 
+    /** The constant used to calculate the window size, the higher the expected TPS, the smaller the window */
     private static final long WINDOW_CALCULATION_CONST = 125000;
 
     /**
@@ -119,19 +126,9 @@ public class StatsSigningTestingToolMain implements SwirldMain {
     private static final int TPS_RAMP_UP_WINDOW_MILLISECONDS = 20_000;
 
     /**
-     * TPS value during ramp up period
+     * The timestamp when the ramp up started
      */
-    private double rampUpTPS = 0;
-
     private long rampUpStartTimeMilliSeconds = 0;
-
-    /**
-     * The number of seconds to wait before starting the TPS ramp up to avoid the busy time when the app starts
-     * loading resources
-     */
-    private static final int APP_INIT_WINDOW_SECONDS = 10;
-
-    private final long appInitTime = System.currentTimeMillis();
 
     /**
      * This is just for debugging: it allows the app to run in Eclipse. If the config.txt exists and lists a particular
@@ -206,9 +203,6 @@ public class StatsSigningTestingToolMain implements SwirldMain {
 
     @Override
     public void run() {
-        //        if ((System.currentTimeMillis() - appInitTime) < APP_INIT_WINDOW_SECONDS * 1000) {
-        //            return;
-        //        }
         final Thread shutdownHook = new ThreadConfiguration(getStaticThreadManager())
                 .setDaemon(false)
                 .setNodeId(platform.getSelfId().getId())
@@ -256,6 +250,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
         if (transPerSecToCreate > -1) { // if not unlimited (-1 means unlimited)
             // ramp up the TPS to the expected value
             long elapsedTime = now / MILLISECONDS_TO_NANOSECONDS - rampUpStartTimeMilliSeconds;
+            double rampUpTPS = 0;
             if (elapsedTime < TPS_RAMP_UP_WINDOW_MILLISECONDS) {
                 rampUpTPS = expectedTPS * elapsedTime / ((double) (TPS_RAMP_UP_WINDOW_MILLISECONDS));
             } else {
