@@ -19,7 +19,7 @@ package com.hedera.services.bdd.junit;
 import com.hedera.services.bdd.junit.utils.TransactionBodyClassifier;
 import com.hedera.services.bdd.suites.records.TransactionBodyValidation;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
@@ -30,7 +30,7 @@ import java.util.Map;
  * <p>It uses the {@link TransactionBodyValidation} suite to perform the queries.
  */
 public class TransactionBodyValidator implements RecordStreamValidator {
-    private final Map<HederaFunctionality, Long> expectedTxnBodies = new HashMap<>();
+    private final Map<HederaFunctionality, Long> expectedTxnBodies = new EnumMap<>(HederaFunctionality.class);
     private final TransactionBodyClassifier transactionBodyClassifier = new TransactionBodyClassifier();
 
     @Override
