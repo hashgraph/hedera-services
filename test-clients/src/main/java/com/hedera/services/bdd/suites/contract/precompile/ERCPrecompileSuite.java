@@ -113,7 +113,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     private static final String ERC_20_CONTRACT_NAME = "erc20Contract";
     private static final String OWNER = "owner";
     private static final String ACCOUNT = "anybody";
-    private static final String RECIPIENT = "recipient";
+    public static final String RECIPIENT = "recipient";
     private static final String FIRST = "FIRST";
     private static final String TOKEN_NAME = "TokenA";
     private static final ByteString FIRST_META =
@@ -121,7 +121,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     private static final ByteString SECOND_META =
             ByteString.copyFrom(FIRST.getBytes(StandardCharsets.UTF_8));
     private static final String TRANSFER_SIG_NAME = "transferSig";
-    private static final String ERC_20_CONTRACT = "ERC20Contract";
+    public static final String ERC_20_CONTRACT = "ERC20Contract";
     private static final String ERC_721_CONTRACT = "ERC721Contract";
     private static final String NAME_TXN = "nameTxn";
     private static final String SYMBOL_TXN = "symbolTxn";
@@ -129,7 +129,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     private static final String BALANCE_OF_TXN = "balanceOfTxn";
     private static final String ALLOWANCE_TXN = "allowanceTxn";
     private static final String TRANSFER_TXN = "transferTxn";
-    private static final String TRANSFER_FROM_ACCOUNT_TXN = "transferFromAccountTxn";
+    public static final String TRANSFER_FROM_ACCOUNT_TXN = "transferFromAccountTxn";
     private static final String BASE_APPROVE_TXN = "baseApproveTxn";
     private static final String IS_APPROVED_FOR_ALL = "outerIsApprovedForAll";
     private static final String GET_ALLOWANCE = "getAllowance";
@@ -145,7 +145,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     private static final String TOKEN = "token";
     private static final String SPENDER = "spender";
     private static final String NF_TOKEN = "nfToken";
-    private static final String TRANSFER_FROM = "transferFrom";
+    public static final String TRANSFER_FROM = "transferFrom";
     private static final String ERC_20_ABI = "ERC20ABI";
     private static final String ERC_721_ABI = "ERC721ABI";
     private static final String MULTI_KEY_NAME = "multiKey";
@@ -231,8 +231,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                 someERC721OwnerOfScenariosPass(),
                 someERC721IsApprovedForAllScenariosPass(),
                 getErc721IsApprovedForAll(),
-                someERC721SetApprovedForAllScenariosPass(),
-                erc20TransferFromDoesNotWorkIfFlagIsDisabled());
+                someERC721SetApprovedForAllScenariosPass());
     }
 
     private HapiSpec getErc20TokenName() {
@@ -4470,62 +4469,6 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                 getAccountDetails(RECIPIENT).logged(),
                                                 getAccountDetails(OWNER).logged())))
                 .then();
-    }
-
-    private HapiSpec erc20TransferFromDoesNotWorkIfFlagIsDisabled() {
-        return defaultHapiSpec("erc20TransferFromDoesNotWorkIfFlagIsDisabled")
-                .given(
-                        overriding("hedera.allowances.isEnabled", "false"),
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
-                        cryptoCreate(RECIPIENT),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .initialSupply(10L)
-                                .maxSupply(1000L)
-                                .treasury(TOKEN_TREASURY)
-                                .adminKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY),
-                        uploadInitCode(ERC_20_CONTRACT),
-                        contractCreate(ERC_20_CONTRACT),
-                        tokenAssociate(OWNER, FUNGIBLE_TOKEN),
-                        tokenAssociate(RECIPIENT, FUNGIBLE_TOKEN),
-                        tokenAssociate(ERC_20_CONTRACT, FUNGIBLE_TOKEN),
-                        cryptoTransfer(moving(10, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, OWNER)))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                                ERC_20_CONTRACT,
-                                                                TRANSFER_FROM,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                FUNGIBLE_TOKEN))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                OWNER))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                RECIPIENT))),
-                                                                BigInteger.TWO)
-                                                        .gas(500_000L)
-                                                        .via(TRANSFER_FROM_ACCOUNT_TXN)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
-                .then(
-                        getTxnRecord(TRANSFER_FROM_ACCOUNT_TXN)
-                                .logged(), // has gasUsed little less than supplied 500K in
-                        // contractCall result
-                        overriding("hedera.allowances.isEnabled", "true"));
     }
 
     @Override
