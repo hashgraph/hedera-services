@@ -23,7 +23,7 @@ import java.util.*;
  * Object which keeps track of the behavior and status of counterparties during BLS protocol
  * execution
  */
-public class CounterpartyManager {
+public class BlsCounterpartyManager {
     /** Set of counterparties who behaved in a verifiably incorrect way, assumed to be malicious */
     private final Set<NodeId> maliciousNodes;
 
@@ -34,7 +34,7 @@ public class CounterpartyManager {
     private final List<IncidentReport> incidentReports;
 
     /** Constructor */
-    public CounterpartyManager() {
+    public BlsCounterpartyManager() {
         this.maliciousNodes = new HashSet<>();
         this.offlineNodes = new HashSet<>();
 
