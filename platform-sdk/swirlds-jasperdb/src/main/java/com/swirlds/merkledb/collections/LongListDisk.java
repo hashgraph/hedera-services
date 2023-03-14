@@ -103,7 +103,7 @@ public class LongListDisk extends LongList<Long> {
         Path tempFile = createTempFile(sourceFileName);
         // create temporary file for writing
         @SuppressWarnings("resource")
-        RandomAccessFile rf = new RandomAccessFile(tempFile.toFile(), "rw");
+        final RandomAccessFile rf = new RandomAccessFile(tempFile.toFile(), "rw");
         // ensure that the amount of disk space is enough
         // two additional chunks are required to accommodate "compressed" first and last chunks in the original file
         rf.setLength(fileChannel.size() + (long) 2 * memoryChunkSize);
@@ -114,8 +114,7 @@ public class LongListDisk extends LongList<Long> {
         final int minValidIndexInChunk = (int) (minValidIndex.get() % numLongsPerChunk);
 
         // copy the first chunk
-        // can't use tempLongBufferThreadLocal here because it's not initialized yet
-        ByteBuffer transferBuffer = initOrGetTransferBuffer();
+        final ByteBuffer transferBuffer = initOrGetTransferBuffer();
         transferBuffer.position(minValidIndexInChunk * Long.BYTES);
         MerkleDbFileUtils.completelyRead(fileChannel, transferBuffer);
         transferBuffer.flip();
@@ -159,6 +158,10 @@ public class LongListDisk extends LongList<Long> {
         return TemporaryFileBuilder.buildTemporaryDirectory(STORE_POSTFIX).resolve(sourceFileName);
     }
 
+    /**
+     * Initializes the file channel to a temporary file.
+     * @param path the path to the source file
+     */
     @Override
     protected void onEmptyOrAbsentSourceFile(Path path) throws IOException {
         Path tempFile = createTempFile(path.toFile().getName());
@@ -274,6 +277,7 @@ public class LongListDisk extends LongList<Long> {
         final int firstChunkWithDataIndex = (int) currentMinValidIndex / numLongsPerChunk;
         for (int i = firstChunkWithDataIndex; i < totalNumOfChunks; i++) {
             Long currentChunkStartOffset = chunkList.get(i);
+            // if the chunk is null, we write zeroes to the file. If not, we write the data from the chunk
             if (currentChunkStartOffset != null) {
                 final long chunkOffset;
                 if (i == firstChunkWithDataIndex) {
@@ -282,11 +286,12 @@ public class LongListDisk extends LongList<Long> {
                     transferBuffer.position(firstValidIndexInChunk * Long.BYTES);
                     chunkOffset = currentChunkStartOffset + calculateOffsetInChunk(currentMinValidIndex);
                 } else {
+                    // writing the whole chunk
                     transferBuffer.position(0);
                     chunkOffset = currentChunkStartOffset;
                 }
                 if (i == (totalNumOfChunks - 1)) {
-                    // last array, so set limit to only the data needed
+                    // the last array, so set limit to only the data needed
                     final long bytesWrittenSoFar = (long) memoryChunkSize * (long) i;
                     final long remainingBytes = (size() * Long.BYTES) - bytesWrittenSoFar;
                     transferBuffer.limit((int) remainingBytes);
@@ -317,7 +322,7 @@ public class LongListDisk extends LongList<Long> {
             // if there is nothing to read the buffer will have the default value
             buf.putLong(0, IMPERMISSIBLE_VALUE);
             buf.clear();
-            final long offset = createOrGetChunk(listIndex) + calculateOffsetInChunk(listIndex);
+            final long offset = createOrGetChunk(listIndex) + subIndex * Long.BYTES;
             MerkleDbFileUtils.completelyRead(currentFileChannel, buf, offset);
             return buf.getLong(0);
         } catch (final IOException e) {

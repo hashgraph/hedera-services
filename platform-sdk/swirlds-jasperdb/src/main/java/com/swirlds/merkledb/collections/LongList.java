@@ -241,9 +241,21 @@ public abstract class LongList<C> implements CASableLongIndex, Closeable {
         }
     }
 
+    /**
+     * Initializes the list from the given file channel. At the moment of the call all the class metadata
+     * is already initialized from the file header.
+     * @param sourceFileName the name of the file from which the list is initialized
+     * @param fileChannel the file channel to read the list body from
+     * @throws IOException if there was a problem reading the file
+     */
     protected abstract void readBodyFromFileChannelOnInit(String sourceFileName, FileChannel fileChannel)
             throws IOException;
 
+    /**
+     * Called when the list is initialized from an empty or absent source file.
+     * @param path the path to the source file
+     * @throws IOException if there was a problem reading the file
+     */
     protected void onEmptyOrAbsentSourceFile(Path path) throws IOException {
         // do nothing
     }
@@ -294,7 +306,7 @@ public abstract class LongList<C> implements CASableLongIndex, Closeable {
      * Stores a long at the given index, on the condition that the current long therein has a given
      * value.
      *
-     * @param index    the index to use
+     * @param index the index to use
      * @param oldValue the value that must currently obtain at the index
      * @param newValue the new value to store
      * @return whether the newValue was set
@@ -412,12 +424,12 @@ public abstract class LongList<C> implements CASableLongIndex, Closeable {
             logger.warn("New min valid index cannot exceed current list size, returning.");
             return;
         }
+        minValidIndex.set(newMinValidIndex);
 
         // This is an optimization: we know that a chunk for this index must exist,
         // so let's make sure that it's there
         createOrGetChunk(newMinValidIndex);
         shrinkIfNeeded(newMinValidIndex);
-        minValidIndex.set(newMinValidIndex);
     }
 
     /**
