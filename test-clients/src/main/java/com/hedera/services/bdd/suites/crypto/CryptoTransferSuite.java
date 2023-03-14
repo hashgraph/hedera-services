@@ -21,7 +21,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTopicString;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairsInAnyOrder;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungibleMovement;
@@ -239,7 +238,7 @@ public class CryptoTransferSuite extends HapiSuite {
 
     private HapiSpec okToRepeatSerialNumbersInWipeList() {
         final var ownerWith4AutoAssoc = "ownerWith4AutoAssoc";
-        return onlyDefaultHapiSpec("OkToRepeatSerialNumbersInWipeList")
+        return defaultHapiSpec("OkToRepeatSerialNumbersInWipeList")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         newKeyNamed(WIPE_KEY),
