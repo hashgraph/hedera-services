@@ -22,6 +22,8 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This validator checks all the transactions submitted have {@link com.hederahashgraph.api.proto.java.TransactionBody}
@@ -30,14 +32,15 @@ import java.util.Map;
  * <p>It uses the {@link TransactionBodyValidation} suite to perform the queries.
  */
 public class TransactionBodyValidator implements RecordStreamValidator {
+    private static final Logger log = LogManager.getLogger(TransactionBodyValidator.class);
+
     private final Map<HederaFunctionality, Long> expectedTxnBodies = new EnumMap<>(HederaFunctionality.class);
     private final TransactionBodyClassifier transactionBodyClassifier = new TransactionBodyClassifier();
 
     @Override
-    @SuppressWarnings("java:S106")
     public void validateRecordsAndSidecars(final List<RecordWithSidecars> recordsWithSidecars) {
         validateTransactionBody(recordsWithSidecars);
-        System.out.println("Expected transaction body functions: " + expectedTxnBodies);
+        log.info("Expected transaction body functions: {}", expectedTxnBodies);
     }
 
     private void validateTransactionBody(final List<RecordWithSidecars> recordsWithSidecars) {
