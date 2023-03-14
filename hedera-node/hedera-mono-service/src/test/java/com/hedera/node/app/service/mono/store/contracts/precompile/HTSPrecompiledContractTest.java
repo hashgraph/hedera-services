@@ -104,6 +104,7 @@ import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
@@ -959,6 +960,55 @@ class HTSPrecompiledContractTest {
     }
 
     @Test
+    void computeReturnsNotSupportedWhenFlagDisabled() {
+        givenFrameContext();
+        given(dynamicProperties.areAllowancesEnabled()).willReturn(false);
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_FROM));
+        ercTransferPrecompile
+                .when(
+                        () ->
+                                ERCTransferPrecompile.decodeERCTransferFrom(
+                                        any(), any(), anyBoolean(), any(), any(), any(), any()))
+                .thenReturn(CRYPTO_TRANSFER_TOKEN_FROM_WRAPPER);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        subject.prepareFields(messageFrame);
+        final var result = subject.computePrecompile(input, messageFrame);
+
+        verify(messageFrame)
+                .setExceptionalHaltReason(Optional.of(HederaExceptionalHaltReason.NOT_SUPPORTED));
+        assertNull(result.getOutput());
+        assertEquals(HederaExceptionalHaltReason.NOT_SUPPORTED, result.getHaltReason().get());
+    }
+
+    @Test
+    void computeReturnsErrorDecoding() {
+        givenFrameContext();
+        given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_FROM));
+        ercTransferPrecompile
+                .when(
+                        () ->
+                                ERCTransferPrecompile.decodeERCTransferFrom(
+                                        any(), any(), anyBoolean(), any(), any(), any(), any()))
+                .thenReturn(CRYPTO_TRANSFER_TOKEN_FROM_WRAPPER);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        subject.prepareFields(messageFrame);
+        final var result = subject.computePrecompile(input, messageFrame);
+
+        verify(messageFrame)
+                .setExceptionalHaltReason(
+                        Optional.of(HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT));
+        assertNull(result.getOutput());
+        assertEquals(
+                HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT,
+                result.getHaltReason().get());
+    }
+
+    @Test
     void computeReturnsNullForTokenCreateWhenNotEnabled() {
         // given
         givenFrameContext();
@@ -1172,6 +1222,10 @@ class HTSPrecompiledContractTest {
         // then
         assertThrows(
                 InvalidTransactionException.class, () -> subject.prepareComputation(input, a -> a));
+
+        final var result = subject.computePrecompile(input, messageFrame);
+        assertNull(result.getOutput());
+        assertEquals(HederaExceptionalHaltReason.NOT_SUPPORTED, result.getHaltReason().get());
     }
 
     @Test
@@ -1240,6 +1294,12 @@ class HTSPrecompiledContractTest {
 
         verify(messageFrame).setRevertReason(INVALID_TRANSFER);
         verify(messageFrame).setState(REVERT);
+
+        final var result = subject.computePrecompile(input, messageFrame);
+        assertNull(result.getOutput());
+        assertEquals(
+                HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT,
+                result.getHaltReason().get());
     }
 
     @Test

@@ -52,6 +52,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.reduceFeeFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -72,7 +73,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER;
@@ -231,12 +231,14 @@ public class ERCPrecompileSuite extends HapiSuite {
                 someERC721OwnerOfScenariosPass(),
                 someERC721IsApprovedForAllScenariosPass(),
                 getErc721IsApprovedForAll(),
-                someERC721SetApprovedForAllScenariosPass());
+                someERC721SetApprovedForAllScenariosPass(),
+                erc20TransferFromDoesNotWorkIfFlagIsDisabled());
     }
 
     private HapiSpec getErc20TokenName() {
         return defaultHapiSpec("ERC_20_NAME")
                 .given(
+                        overriding("hedera.allowances.isEnabled", "true"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY),
@@ -353,6 +355,7 @@ public class ERCPrecompileSuite extends HapiSuite {
 
         return defaultHapiSpec("ERC_20_DECIMALS")
                 .given(
+                        overriding("hedera.allowances.isEnabled", "true"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY),
@@ -1111,6 +1114,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     private HapiSpec erc20Allowance() {
         return defaultHapiSpec("ERC_20_ALLOWANCE")
                 .given(
+                        overriding("hedera.allowances.isEnabled", "true"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
                         cryptoCreate(SPENDER),
@@ -1182,6 +1186,7 @@ public class ERCPrecompileSuite extends HapiSuite {
 
         return defaultHapiSpec("ERC_20_APPROVE")
                 .given(
+                        overriding("hedera.allowances.isEnabled", "true"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
                         cryptoCreate(SPENDER),
@@ -1231,6 +1236,7 @@ public class ERCPrecompileSuite extends HapiSuite {
 
         return defaultHapiSpec("ERC_20_DECIMALS_FROM_ERC_721_TOKEN")
                 .given(
+                        overriding("hedera.allowances.isEnabled", "true"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY),
@@ -1259,7 +1265,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                                                                 NON_FUNGIBLE_TOKEN))))
                                                         .payingWith(ACCOUNT)
                                                         .via(invalidDecimalsTxn)
-                                                        .hasKnownStatus(INVALID_TOKEN_ID)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                                         .gas(GAS_TO_OFFER))))
                 .then(getTxnRecord(invalidDecimalsTxn).andAllChildRecords().logged());
     }
@@ -1267,6 +1273,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     private HapiSpec transferErc20TokenFromErc721TokenFails() {
         return defaultHapiSpec("ERC_20_TRANSFER_FROM_ERC_721_TOKEN")
                 .given(
+                        overriding("hedera.allowances.isEnabled", "true"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_MILLION_HBARS),
                         cryptoCreate(RECIPIENT),
@@ -1309,7 +1316,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                         .alsoSigningWithFullPrefix(MULTI_KEY)
                                                         .via(TRANSFER_TXN)
                                                         .gas(GAS_TO_OFFER)
-                                                        .hasKnownStatus(INVALID_TOKEN_ID))))
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged());
     }
 
@@ -1812,7 +1819,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                                 BigInteger.ONE)
                                                         .payingWith(ACCOUNT)
                                                         .via(invalidTokenURITxn)
-                                                        .hasKnownStatus(INVALID_TOKEN_ID)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                                         .gas(GAS_TO_OFFER))))
                 .then(getTxnRecord(invalidTokenURITxn).andAllChildRecords().logged());
     }
@@ -1851,7 +1858,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                                 BigInteger.ONE)
                                                         .payingWith(OWNER)
                                                         .via(invalidOwnerOfTxn)
-                                                        .hasKnownStatus(INVALID_TOKEN_ID)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                                         .gas(GAS_TO_OFFER))))
                 .then(getTxnRecord(invalidOwnerOfTxn).andAllChildRecords().logged());
     }
@@ -2460,6 +2467,7 @@ public class ERCPrecompileSuite extends HapiSuite {
 
         return defaultHapiSpec("someERC20ApproveAllowanceScenariosPass")
                 .given(
+                        overriding("hedera.allowances.isEnabled", "true"),
                         newKeyNamed(MULTI_KEY_NAME),
                         cryptoCreate(A_CIVILIAN)
                                 .exposingCreatedIdTo(
@@ -2656,6 +2664,7 @@ public class ERCPrecompileSuite extends HapiSuite {
 
         return defaultHapiSpec("someERC20NegativeTransferFromScenariosPass")
                 .given(
+                        overriding("hedera.allowances.isEnabled", "true"),
                         newKeyNamed(MULTI_KEY_NAME),
                         cryptoCreate(A_CIVILIAN)
                                 .exposingCreatedIdTo(
@@ -2822,6 +2831,7 @@ public class ERCPrecompileSuite extends HapiSuite {
 
         return defaultHapiSpec("someERC20ApproveAllowanceScenarioInOneCall")
                 .given(
+                        overriding("hedera.allowances.isEnabled", "true"),
                         newKeyNamed(MULTI_KEY_NAME),
                         cryptoCreate(A_CIVILIAN)
                                 .exposingCreatedIdTo(
@@ -4079,6 +4089,7 @@ public class ERCPrecompileSuite extends HapiSuite {
 
         return defaultHapiSpec("ERC_20_ALLOWANCE")
                 .given(
+                        overriding("hedera.allowances.isEnabled", "true"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
                         cryptoCreate(RECIPIENT),
@@ -4215,6 +4226,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     private HapiSpec erc20TransferFromSelf() {
         return defaultHapiSpec("Erc20TransferFromSelf")
                 .given(
+                        overriding("hedera.allowances.isEnabled", "true"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(RECIPIENT),
                         cryptoCreate(TOKEN_TREASURY),
@@ -4458,6 +4470,62 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                 getAccountDetails(RECIPIENT).logged(),
                                                 getAccountDetails(OWNER).logged())))
                 .then();
+    }
+
+    private HapiSpec erc20TransferFromDoesNotWorkIfFlagIsDisabled() {
+        return defaultHapiSpec("erc20TransferFromDoesNotWorkIfFlagIsDisabled")
+                .given(
+                        overriding("hedera.allowances.isEnabled", "false"),
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(RECIPIENT),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .initialSupply(10L)
+                                .maxSupply(1000L)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY),
+                        uploadInitCode(ERC_20_CONTRACT),
+                        contractCreate(ERC_20_CONTRACT),
+                        tokenAssociate(OWNER, FUNGIBLE_TOKEN),
+                        tokenAssociate(RECIPIENT, FUNGIBLE_TOKEN),
+                        tokenAssociate(ERC_20_CONTRACT, FUNGIBLE_TOKEN),
+                        cryptoTransfer(moving(10, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, OWNER)))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCall(
+                                                                ERC_20_CONTRACT,
+                                                                TRANSFER_FROM,
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                OWNER))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECIPIENT))),
+                                                                BigInteger.TWO)
+                                                        .gas(500_000L)
+                                                        .via(TRANSFER_FROM_ACCOUNT_TXN)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .then(
+                        getTxnRecord(TRANSFER_FROM_ACCOUNT_TXN)
+                                .logged(), // has gasUsed little less than supplied 500K in
+                        // contractCall result
+                        overriding("hedera.allowances.isEnabled", "true"));
     }
 
     @Override
