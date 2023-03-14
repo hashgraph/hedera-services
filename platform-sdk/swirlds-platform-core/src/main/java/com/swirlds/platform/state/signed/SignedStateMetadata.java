@@ -54,7 +54,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Metadata about a signed state.
+ * Metadata about a signed state. Fields in this record may be null if they are not present in the metadata file.
+ * All fields in this record will be null if the metadata file is missing.
  *
  * @param round                       the round of the signed state, corresponds to
  *                                    {@link SignedStateMetadataField#ROUND}
