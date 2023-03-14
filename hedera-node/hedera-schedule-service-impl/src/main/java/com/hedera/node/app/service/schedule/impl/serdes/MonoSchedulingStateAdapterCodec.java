@@ -20,8 +20,6 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.DataInput;
-import java.io.DataOutput;
 import java.io.IOException;
 
 public class MonoSchedulingStateAdapterCodec implements Codec<MerkleScheduledTransactionsState> {
@@ -38,7 +36,8 @@ public class MonoSchedulingStateAdapterCodec implements Codec<MerkleScheduledTra
     }
 
     @Override
-    public void write(final @NonNull MerkleScheduledTransactionsState item, final @NonNull WritableSequentialData output)
+    public void write(
+            final @NonNull MerkleScheduledTransactionsState item, final @NonNull WritableSequentialData output)
             throws IOException {
         if (output instanceof SerializableDataOutputStream out) {
             item.serialize(out);

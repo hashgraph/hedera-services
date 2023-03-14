@@ -59,7 +59,8 @@ public class MonoMapCodecAdapter {
                 if (input instanceof ReadableStreamingData in) {
                     item.deserialize(new SerializableDataInputStream(in), version);
                 } else {
-                    throw new IllegalArgumentException("Expected a ReadableStreamingData, but found: " + input.getClass());
+                    throw new IllegalArgumentException(
+                            "Expected a ReadableStreamingData, but found: " + input.getClass());
                 }
                 return item;
             }
@@ -75,7 +76,8 @@ public class MonoMapCodecAdapter {
                 if (output instanceof WritableStreamingData out) {
                     item.serialize(new SerializableDataOutputStream(out));
                 } else {
-                    throw new IllegalArgumentException("Expected a WritableStreamingData, but found: " + output.getClass());
+                    throw new IllegalArgumentException(
+                            "Expected a WritableStreamingData, but found: " + output.getClass());
                 }
             }
 
