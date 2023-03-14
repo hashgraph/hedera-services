@@ -65,10 +65,10 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
             // If a spender who is granted approveForAll from owner and is granting
             // allowance for a serial to another spender, need signature from the approveForAll
             // spender
-            var operatorId = allowance.hasDelegatingSpender() ? allowance.delegatingSpender() : ownerId;
+            var operatorId = allowance.delegatingSpenderOrElse(ownerId);
             // If approveForAll is set to true, need signature from owner
             // since only the owner can grant approveForAll
-            if (allowance.hasApprovedForAll() && allowance.approvedForAll().booleanValue()) {
+            if (allowance.hasApprovedForAll() && allowance.approvedForAllOrThrow()) {
                 operatorId = ownerId;
             }
             if (operatorId != ownerId) {

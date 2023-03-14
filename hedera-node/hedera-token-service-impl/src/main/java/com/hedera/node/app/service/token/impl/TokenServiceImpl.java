@@ -54,7 +54,7 @@ public class TokenServiceImpl implements TokenService {
     public static final String PAYER_RECORDS_KEY = "PAYER_RECORDS";
 
     @Override
-    public void registerSchemas(@NonNull SchemaRegistry registry) {
+    public void registerSchemas(final @NonNull SchemaRegistry registry) {
         registry.register(tokenSchema());
     }
 

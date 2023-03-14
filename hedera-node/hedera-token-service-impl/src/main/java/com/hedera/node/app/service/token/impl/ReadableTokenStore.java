@@ -27,7 +27,6 @@ import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
 
 /**
@@ -60,8 +59,7 @@ public class ReadableTokenStore {
             boolean hasRoyaltyWithFallback,
             EntityId treasury) {}
 
-    public record TokenMetaOrLookupFailureReason(
-            @Nullable TokenMetadata metadata, @Nullable ResponseCodeEnum failureReason) {
+    public record TokenMetaOrLookupFailureReason(TokenMetadata metadata, ResponseCodeEnum failureReason) {
         public boolean failed() {
             return failureReason != null;
         }
@@ -77,11 +75,8 @@ public class ReadableTokenStore {
     public TokenMetaOrLookupFailureReason getTokenMeta(@NonNull final TokenID id) {
         requireNonNull(id);
         final var token = getTokenLeaf(id);
-
-        if (token.isEmpty()) {
-            return new TokenMetaOrLookupFailureReason(null, ResponseCodeEnum.INVALID_TOKEN_ID);
-        }
-        return new TokenMetaOrLookupFailureReason(tokenMetaFrom(token.get()), null);
+        return token.map(merkleToken -> new TokenMetaOrLookupFailureReason(tokenMetaFrom(merkleToken), null))
+                .orElseGet(() -> new TokenMetaOrLookupFailureReason(null, ResponseCodeEnum.INVALID_TOKEN_ID));
     }
 
     private TokenMetadata tokenMetaFrom(final MerkleToken token) {

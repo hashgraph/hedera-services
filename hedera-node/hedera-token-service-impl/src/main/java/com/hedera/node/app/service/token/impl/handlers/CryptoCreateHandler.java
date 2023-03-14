@@ -50,7 +50,7 @@ public class CryptoCreateHandler implements TransactionHandler {
         requireNonNull(context);
         final var op = context.getTxn().cryptoCreateAccountOrThrow();
         if (op.hasKey()) {
-            final var key = asHederaKey(op.key());
+            final var key = asHederaKey(op.keyOrThrow());
             final var receiverSigReq = op.receiverSigRequired();
             if (receiverSigReq && key.isPresent()) {
                 context.addToReqNonPayerKeys(key.get());

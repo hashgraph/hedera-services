@@ -217,7 +217,7 @@ public class ReadableAccountStore implements AccountAccess {
                         if (evmAddress.length() > EVM_ADDRESS_LEN && entityNum == null) {
                             // if we don't find entity num for key alias we can try to derive EVM
                             // address from it and look it up
-                            var evmKeyAliasAddress = keyAliasToEVMAddress(evmAddress);
+                            final var evmKeyAliasAddress = keyAliasToEVMAddress(evmAddress);
                             if (evmKeyAliasAddress != null) {
                                 entityNum = aliases.get(
                                         ByteString.copyFrom(evmKeyAliasAddress).toStringUtf8());
@@ -244,11 +244,11 @@ public class ReadableAccountStore implements AccountAccess {
         }
     }
 
-    public boolean isAlias(AccountID id) {
+    public boolean isAlias(final AccountID id) {
         return id.account().kind() == AccountOneOfType.ALIAS;
     }
 
-    public boolean isAlias(ContractID id) {
+    public boolean isAlias(final ContractID id) {
         return id.contract().kind() == ContractOneOfType.EVM_ADDRESS;
     }
 
@@ -281,6 +281,7 @@ public class ReadableAccountStore implements AccountAccess {
 
     // Converts a HederaAccount into an Account
     private Account mapAccount(final AccountID idOrAlias, final HederaAccount account) {
+        final var accountNum = idOrAlias.accountNumOrElse(0L);
         final var builder = new AccountBuilderImpl()
                 .key(account.getAccountKey())
                 .expiry(account.getExpiry())
@@ -300,7 +301,7 @@ public class ReadableAccountStore implements AccountAccess {
                 .declineReward(account.isDeclinedReward())
                 .stakeAtStartOfLastRewardedPeriod(account.getStakePeriodStart())
                 .autoRenewSecs(account.getAutoRenewSecs())
-                .accountNumber(idOrAlias.accountNum())
+                .accountNumber(accountNum)
                 .isSmartContract(account.isSmartContract());
         if (account.getAutoRenewAccount() != null) {
             builder.autoRenewAccountNumber(account.getAutoRenewAccount().num());

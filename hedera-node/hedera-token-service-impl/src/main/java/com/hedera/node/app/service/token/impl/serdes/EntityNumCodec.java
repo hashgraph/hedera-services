@@ -35,7 +35,7 @@ public class EntityNumCodec implements Codec<EntityNum> {
 
     @NonNull
     @Override
-    public EntityNum parseStrict(@NonNull ReadableSequentialData dataInput) throws IOException {
+    public EntityNum parseStrict(final @NonNull ReadableSequentialData dataInput) throws IOException {
         return parse(requireNonNull(dataInput));
     }
 
@@ -52,7 +52,7 @@ public class EntityNumCodec implements Codec<EntityNum> {
     }
 
     @Override
-    public int measureRecord(EntityNum entityNum) {
+    public int measureRecord(final EntityNum entityNum) {
         throw new UnsupportedOperationException();
     }
 

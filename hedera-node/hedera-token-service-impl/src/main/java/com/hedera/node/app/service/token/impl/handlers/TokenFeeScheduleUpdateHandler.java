@@ -22,6 +22,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
@@ -60,7 +61,7 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
     public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore) {
         requireNonNull(context);
         final var op = context.getTxn().tokenFeeScheduleUpdateOrThrow();
-        final var tokenId = op.tokenId();
+        final var tokenId = op.tokenIdOrElse(TokenID.DEFAULT);
         final var tokenMeta = tokenStore.getTokenMeta(tokenId);
         if (tokenMeta.failed()) {
             context.status(tokenMeta.failureReason());

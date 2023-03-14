@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ALIAS_IS_IMMUTABLE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -63,7 +64,7 @@ public class CryptoTransferHandler implements TransactionHandler {
      */
     public void validate(@NonNull final TransactionBody txn) throws PreCheckException {
         // FUTURE: Migrate validation from CryptoTransferTransistionLogic.validateSemantics()
-        //        throw new UnsupportedOperationException("Not implemented");
+        throw new UnsupportedOperationException("Not implemented for transaction {}" + txn);
     }
 
     /**
@@ -107,13 +108,13 @@ public class CryptoTransferHandler implements TransactionHandler {
      */
     public void handle(@NonNull final TransactionMetadata metadata) {
         // TODO : Need to implement this method when we are ready to validate payments for query
-        //        requireNonNull(metadata);
-        //        throw new UnsupportedOperationException("Not implemented");
+        requireNonNull(metadata);
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     private void handleTokenTransfers(
             final List<AccountAmount> transfers, final PreHandleContext meta, final ReadableAccountStore accountStore) {
-        for (AccountAmount accountAmount : transfers) {
+        for (final AccountAmount accountAmount : transfers) {
             final var accountID = accountAmount.accountIDOrElse(AccountID.DEFAULT);
             final var keyOrFailure = accountStore.getKey(accountID);
             if (!keyOrFailure.failed()) {
@@ -124,11 +125,13 @@ public class CryptoTransferHandler implements TransactionHandler {
                     meta.addNonPayerKeyIfReceiverSigRequired(accountID, INVALID_TRANSFER_ACCOUNT_ID);
                 }
             } else {
+                final var failureReason = keyOrFailure.failureReason();
                 final var isCredit = accountAmount.amount() > 0L;
-                final var isMissingAcc =
-                        isCredit && keyOrFailure.failureReason().equals(INVALID_ACCOUNT_ID) && isAlias(accountID);
-                if (!isMissingAcc) {
-                    meta.status(keyOrFailure.failureReason());
+                final var isMissingAcc = isCredit && INVALID_ACCOUNT_ID.equals(failureReason) && isAlias(accountID);
+                if (!isMissingAcc && failureReason != null) {
+                    // failureReason should not be null as we have already checked for keyOrFailure.failed()
+                    // Only added this check to avoid the warning
+                    meta.status(failureReason);
                 }
             }
         }
@@ -147,7 +150,9 @@ public class CryptoTransferHandler implements TransactionHandler {
                 if (!nftTransfer.isApproval()) {
                     meta.addNonPayerKey(senderId);
                 }
-            } else {
+            } else if (senderKeyOrFailure.failureReason() != null) {
+                // failureReason should not be null as we have already checked for senderKeyOrFailure.failed()
+                // Only added this check to avoid the warning
                 meta.status(senderKeyOrFailure.failureReason());
             }
 
@@ -162,16 +167,19 @@ public class CryptoTransferHandler implements TransactionHandler {
                     // Fallback situation; but we still need to check if the treasury is
                     // the sender or receiver, since in neither case will the fallback
                     // fee actually be charged
-                    final var treasury = tokenMeta.metadata().treasury().toGrpcAccountId();
+                    final var treasury = toPbj(tokenMeta.metadata().treasury().toGrpcAccountId());
                     if (!treasury.equals(senderId) && !treasury.equals(receiverId)) {
                         meta.addNonPayerKey(receiverId);
                     }
                 }
             } else {
-                final var isMissingAcc = INVALID_ACCOUNT_ID.equals(receiverKeyOrFailure.failureReason())
+                final var failureReason = receiverKeyOrFailure.failureReason();
+                final var isMissingAcc = INVALID_ACCOUNT_ID.equals(failureReason)
                         && isAlias(nftTransfer.receiverAccountIDOrElse(AccountID.DEFAULT));
-                if (!isMissingAcc) {
-                    meta.status(receiverKeyOrFailure.failureReason());
+                if (!isMissingAcc && failureReason != null) {
+                    // failureReason should not be null as we have already checked for receiverKeyOrFailure.failed()
+                    // Only added this check to avoid the warning
+                    meta.status(failureReason);
                 }
             }
         }
@@ -179,7 +187,7 @@ public class CryptoTransferHandler implements TransactionHandler {
 
     private void handleHbarTransfers(
             final CryptoTransferTransactionBody op, final PreHandleContext meta, final AccountAccess keyLookup) {
-        for (AccountAmount accountAmount : op.transfers().accountAmountsOrElse(emptyList())) {
+        for (final var accountAmount : op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList())) {
             final var accountId = accountAmount.accountIDOrElse(AccountID.DEFAULT);
             final var keyOrFailure = keyLookup.getKey(accountId);
 
@@ -191,13 +199,14 @@ public class CryptoTransferHandler implements TransactionHandler {
                     meta.addNonPayerKeyIfReceiverSigRequired(accountId, INVALID_TRANSFER_ACCOUNT_ID);
                 }
             } else {
+                final var failureReason = keyOrFailure.failureReason();
                 final var isCredit = accountAmount.amount() > 0L;
-                final var isImmutableAcc =
-                        isCredit && keyOrFailure.failureReason().equals(ALIAS_IS_IMMUTABLE);
-                final var isMissingAcc =
-                        isCredit && keyOrFailure.failureReason().equals(INVALID_ACCOUNT_ID) && isAlias(accountId);
-                if (!isImmutableAcc && !isMissingAcc) {
-                    meta.status(keyOrFailure.failureReason());
+                final var isImmutableAcc = isCredit && ALIAS_IS_IMMUTABLE.equals(failureReason);
+                final var isMissingAcc = isCredit && INVALID_ACCOUNT_ID.equals(failureReason) && isAlias(accountId);
+                if (!isImmutableAcc && !isMissingAcc && failureReason != null) {
+                    // failureReason should not be null as we have already checked for keyOrFailure.failed()
+                    // Only added this check to avoid the warning
+                    meta.status(failureReason);
                 }
             }
         }
@@ -205,7 +214,7 @@ public class CryptoTransferHandler implements TransactionHandler {
 
     private boolean receivesFungibleValue(
             final AccountID target, final CryptoTransferTransactionBody op, final ReadableAccountStore accountStore) {
-        for (var adjust : op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList())) {
+        for (final var adjust : op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList())) {
             final var unaliasedAccount = accountStore.getAccountById(adjust.accountIDOrElse(AccountID.DEFAULT));
             final var unaliasedTarget = accountStore.getAccountById(target);
             if (unaliasedAccount.isPresent()
@@ -215,8 +224,8 @@ public class CryptoTransferHandler implements TransactionHandler {
                 return true;
             }
         }
-        for (var transfers : op.tokenTransfersOrElse(emptyList())) {
-            for (var adjust : transfers.transfersOrElse(emptyList())) {
+        for (final var transfers : op.tokenTransfersOrElse(emptyList())) {
+            for (final var adjust : transfers.transfersOrElse(emptyList())) {
                 final var unaliasedAccount = accountStore.getAccountById(adjust.accountIDOrElse(AccountID.DEFAULT));
                 final var unaliasedTarget = accountStore.getAccountById(target);
                 if (unaliasedAccount.isPresent()
