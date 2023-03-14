@@ -20,8 +20,8 @@ import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
 import com.swirlds.common.system.NodeId;
 
-/** A class representing a protocol message in the abstract */
-public abstract class AbstractMessage implements ProtocolMessage {
+/** A class representing a BLS protocol message in the abstract */
+public abstract class AbstractBlsProtocolMessage implements BlsProtocolMessage {
 
     /** The id of the message sender */
     private final NodeId senderId;
@@ -31,7 +31,7 @@ public abstract class AbstractMessage implements ProtocolMessage {
      *
      * @param senderId the id of the sender
      */
-    protected AbstractMessage(final NodeId senderId) {
+    protected AbstractBlsProtocolMessage(final NodeId senderId) {
         this.senderId = throwArgNull(senderId, "senderId");
     }
 

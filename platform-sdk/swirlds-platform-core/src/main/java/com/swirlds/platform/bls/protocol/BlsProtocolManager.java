@@ -17,7 +17,7 @@
 package com.swirlds.platform.bls.protocol;
 
 import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.bls.message.ProtocolMessage;
+import com.swirlds.platform.bls.message.BlsProtocolMessage;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
@@ -36,7 +36,7 @@ public interface BlsProtocolManager<T extends ProtocolOutput> {
      * @return the message generated from the protocol round
      * @throws IllegalStateException if no more rounds exist to be called
      */
-    ProtocolMessage executeNextRound(List<ProtocolMessage> inputMessages);
+    BlsProtocolMessage executeNextRound(List<BlsProtocolMessage> inputMessages);
 
     /**
      * Finishes the protocol
@@ -44,7 +44,7 @@ public interface BlsProtocolManager<T extends ProtocolOutput> {
      * @param inputMessages the input messages needed to finish
      * @return the protocol output object
      */
-    T finish(List<ProtocolMessage> inputMessages);
+    T finish(List<BlsProtocolMessage> inputMessages);
 
     /**
      * Accepts a list of messages, filters them, and returns a list containing messages which match a certain subtype,
@@ -60,8 +60,8 @@ public interface BlsProtocolManager<T extends ProtocolOutput> {
      * @param <U>                  the type of messages that should be returned
      * @return a list of messages of type U
      */
-    <U extends ProtocolMessage> List<U> filterCast(
-            List<ProtocolMessage> inputMessages,
+    <U extends BlsProtocolMessage> List<U> filterCast(
+            List<BlsProtocolMessage> inputMessages,
             Collection<NodeId> acceptableSenders,
             Class<U> subtype,
             boolean disqualifyNonSenders);
@@ -97,7 +97,7 @@ public interface BlsProtocolManager<T extends ProtocolOutput> {
      * @param reason  a string describing why the party was declared malicious
      * @param trigger the message which caused the counterparty to be declared malicious
      */
-    void declareMaliciousCounterparty(NodeId nodeId, String reason, ProtocolMessage trigger);
+    void declareMaliciousCounterparty(NodeId nodeId, String reason, BlsProtocolMessage trigger);
 
     /**
      * Gets a set of nodes that have been declared offline

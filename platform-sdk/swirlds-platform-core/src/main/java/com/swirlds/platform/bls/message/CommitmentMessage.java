@@ -26,7 +26,7 @@ import com.swirlds.platform.bls.protocol.CrsProtocol;
  *
  * <p>Contains a commitment from the sender
  */
-public class CommitmentMessage extends AbstractMessage {
+public class CommitmentMessage extends AbstractBlsProtocolMessage {
     public static final int SHA256_DIGEST_SIZE = 32;
 
     /** A byte array representing a commitment */

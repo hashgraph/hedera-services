@@ -26,7 +26,7 @@ import com.swirlds.platform.bls.protocol.RandomGroupElements;
  * The type of message sent in the second round of {@link CrsProtocol}, which opens elements
  * previously committed to
  */
-public class OpeningMessage extends AbstractMessage {
+public class OpeningMessage extends AbstractBlsProtocolMessage {
     /** The random group elements being opened */
     private final RandomGroupElements randomGroupElements;
 

@@ -18,8 +18,8 @@ package com.swirlds.platform.bls.message;
 
 import com.swirlds.common.system.NodeId;
 
-/** An interface representing a ProtocolMessage */
-public interface ProtocolMessage {
+/** An interface representing a BlsProtocolMessage */
+public interface BlsProtocolMessage {
     /**
      * Gets the message senderId
      *

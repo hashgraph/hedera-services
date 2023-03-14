@@ -22,9 +22,9 @@ import com.hedera.platform.bls.api.BilinearMap;
 import com.hedera.platform.bls.api.GroupElement;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.bls.addressbook.BlsAddressBook;
+import com.swirlds.platform.bls.message.BlsProtocolMessage;
 import com.swirlds.platform.bls.message.CommitmentMessage;
 import com.swirlds.platform.bls.message.OpeningMessage;
-import com.swirlds.platform.bls.message.ProtocolMessage;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -119,7 +119,7 @@ public class CrsProtocol implements BlsProtocol<Crs> {
      *
      * @return the {@link CommitmentMessage}
      */
-    private ProtocolMessage broadcastCommitment(final List<ProtocolMessage> inputMessages) {
+    private BlsProtocolMessage broadcastCommitment(final List<BlsProtocolMessage> inputMessages) {
         try {
             return new CommitmentMessage(nodeId, randomGroupElements.commit());
         } catch (final NoSuchAlgorithmException e) {
@@ -134,10 +134,10 @@ public class CrsProtocol implements BlsProtocol<Crs> {
      * Verifies that an honest majority of parties broadcast a {@link CommitmentMessage} in round 1. If this is
      * determined to be true, openly reveal random group elements
      *
-     * @param inputMessages a list of {@link ProtocolMessage}s received in round 1
+     * @param inputMessages a list of {@link BlsProtocolMessage}s received in round 1
      * @return an {@link OpeningMessage}
      */
-    private ProtocolMessage verifyAndOpen(final List<ProtocolMessage> inputMessages) {
+    private BlsProtocolMessage verifyAndOpen(final List<BlsProtocolMessage> inputMessages) {
         final List<CommitmentMessage> commitmentMessages = protocolManager.filterCast(
                 inputMessages, addressBook.getSortedNodeIds(), CommitmentMessage.class, true);
 
@@ -151,7 +151,7 @@ public class CrsProtocol implements BlsProtocol<Crs> {
     /**
      * <p>Throws an error if not enough commitments were received in the last round</p>
      */
-    private Crs performFinish(final List<ProtocolMessage> inputMessages) {
+    private Crs performFinish(final List<BlsProtocolMessage> inputMessages) {
         // Cast messages to correct type
         final List<OpeningMessage> openingMessages =
                 protocolManager.filterCast(inputMessages, addressBook.getSortedNodeIds(), OpeningMessage.class, true);

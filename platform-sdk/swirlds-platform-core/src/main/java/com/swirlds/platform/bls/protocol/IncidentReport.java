@@ -17,7 +17,7 @@
 package com.swirlds.platform.bls.protocol;
 
 import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.bls.message.ProtocolMessage;
+import com.swirlds.platform.bls.message.BlsProtocolMessage;
 
 /**
  * Record of an incident, where a counterparty was disqualified
@@ -28,4 +28,4 @@ import com.swirlds.platform.bls.message.ProtocolMessage;
  *     from the subject, a complaint from a different party revealing the malice of the subject, or
  *     null if a message was simply missing from the subject
  */
-public record IncidentReport(NodeId subject, String description, ProtocolMessage message) {}
+public record IncidentReport(NodeId subject, String description, BlsProtocolMessage message) {}
