@@ -61,7 +61,7 @@ public record Crs(BilinearMap bilinearMap, GroupElement thresholdGenerator, Grou
             return false;
         }
 
-        if (o instanceof Crs otherCrs) {
+        if (o instanceof final Crs otherCrs) {
             return bilinearMap.equals(otherCrs.bilinearMap)
                     && thresholdGenerator.equals(otherCrs.thresholdGenerator)
                     && ibeGenerator.equals(otherCrs.ibeGenerator);

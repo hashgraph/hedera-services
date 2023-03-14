@@ -73,7 +73,7 @@ public class PublicKeyShares {
             return false;
         }
 
-        if (o instanceof PublicKeyShares otherKeyShares) {
+        if (o instanceof final PublicKeyShares otherKeyShares) {
             return publicKeys.equals(otherKeyShares.publicKeys);
         }
 
