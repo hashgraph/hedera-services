@@ -66,7 +66,7 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
      * Index mapping, it uses our key as the index within the list and the value is the dataLocation
      * in fileCollection where the key/value pair is stored.
      */
-    private final LongList<?> index;
+    private final LongList index;
     /** On disk set of DataFiles that contain our key/value pairs */
     private final DataFileCollection<D> fileCollection;
     /**
@@ -100,7 +100,7 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
             final String legacyStoreName,
             final DataItemSerializer<D> dataItemSerializer,
             final LoadedDataCallback loadedDataCallback,
-            final LongList<?> keyToDiskLocationIndex)
+            final LongList keyToDiskLocationIndex)
             throws IOException {
         this.storeName = storeName;
         index = keyToDiskLocationIndex;
@@ -229,7 +229,11 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
      *
      * @throws IOException If there was a problem opening a writing session
      */
-    public void startWriting() throws IOException {
+    public void startWriting(final long minimumValidKey) throws IOException {
+        // By calling `updateMinValidIndex` we compact the index if it's applicable.
+        // We need to do this before we start putting values into the index, otherwise we could put a value by
+        // index that is not yet valid.
+        index.updateMinValidIndex(minimumValidKey);
         fileCollection.startWriting();
     }
 
@@ -256,10 +260,6 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
      */
     public void endWriting(final long minimumValidKey, final long maximumValidKey) throws IOException {
         final DataFileReader<D> dataFileReader = fileCollection.endWriting(minimumValidKey, maximumValidKey);
-        // At this point we know exactly what list indices are in use and, therefore,
-        // it's a good time to free memory reserved for the unused data.
-        // By calling `updateMinValidIndex` we compact the index if it's applicable.
-        index.updateMinValidIndex(minimumValidKey);
 
         // we have updated all indexes so the data file can now be included in merges
         dataFileReader.setFileCompleted();

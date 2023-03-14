@@ -38,7 +38,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  *  Unlike the "snapshot" file, the temporary files doesn't contain the header, only the body.
  *
  */
-public class LongListDisk extends LongList<Long> {
+public class LongListDisk extends AbstractLongList<Long> {
 
     private static final String STORE_POSTFIX = "longListDisk";
     private static final String DEFAULT_FILE_NAME = "LongListDisk.ll";
@@ -275,6 +275,11 @@ public class LongListDisk extends LongList<Long> {
         final int totalNumOfChunks = calculateNumberOfChunks(size());
         final long currentMinValidIndex = minValidIndex.get();
         final int firstChunkWithDataIndex = (int) currentMinValidIndex / numLongsPerChunk;
+
+        // The following logic sequentially processes chunks. This kind of processing allows to get rid of
+        // non-contiguous memory allocation and gaps that may be present in the current file.
+        // MerkleDbFileUtils.completelyTransferFrom would work faster, it wouldn't allow
+        // the required rearrangement of data.
         for (int i = firstChunkWithDataIndex; i < totalNumOfChunks; i++) {
             Long currentChunkStartOffset = chunkList.get(i);
             // if the chunk is null, we write zeroes to the file. If not, we write the data from the chunk
@@ -347,7 +352,7 @@ public class LongListDisk extends LongList<Long> {
     }
 
     @Override
-    protected void fullChunkCleanup(Long chunk) {
+    protected void releaseChunk(Long chunk) {
         // if it's the last chunk, don't do any cleanup as it may be claimed by another threads
         if (chunk / numLongsPerChunk == getCurrentMax() / numLongsPerChunk) {
             return;
@@ -366,7 +371,6 @@ public class LongListDisk extends LongList<Long> {
     @Override
     protected void partialChunkCleanup(int chunkIndex, long entriesToCleanUp) {
         final ByteBuffer transferBuffer = initOrGetTransferBuffer();
-        transferBuffer.clear();
         transferBuffer.limit((int) (entriesToCleanUp * Long.BYTES));
         try {
             currentFileChannel.write(transferBuffer, chunkList.get(chunkIndex));

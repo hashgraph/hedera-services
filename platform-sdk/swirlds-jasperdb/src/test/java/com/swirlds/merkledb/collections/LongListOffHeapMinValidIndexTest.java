@@ -17,6 +17,7 @@
 package com.swirlds.merkledb.collections;
 
 import static com.swirlds.merkledb.collections.LongList.IMPERMISSIBLE_VALUE;
+import static org.apache.commons.lang3.RandomUtils.nextLong;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -60,16 +61,19 @@ class LongListOffHeapMinValidIndexTest {
     @Test
     @DisplayName("Min valid index exceeds the list size")
     public void testUpdateMinValidIndexOnEmptyList() {
-        // updateMinValidIndex is no op. It has no effect in this case, new memory chunks are not created
+        // it's allowed to update min valid index to the index that exceeds the list size
+        assertDoesNotThrow(() -> list.updateMinValidIndex(1));
+        // no chunks are created
+        assertMemoryChunksNumber(0);
+        // an attempt to put a value to the index that is lower than min valid index should fail
+        assertThrows(AssertionError.class, () -> list.put(0, nextLong()));
 
         assertDoesNotThrow(() -> list.updateMinValidIndex(0));
-        assertMemoryChunksNumber(0);
-        assertDoesNotThrow(() -> list.updateMinValidIndex(1));
-        assertMemoryChunksNumber(0);
-
         fill(2);
         assertMemoryChunksNumber(1);
+
         assertDoesNotThrow(() -> list.updateMinValidIndex(3));
+        // no additional chunks created
         assertMemoryChunksNumber(1);
     }
 
@@ -169,8 +173,8 @@ class LongListOffHeapMinValidIndexTest {
         assertMemoryChunksNumber(1);
 
         list.updateMinValidIndex(2);
-        // expands
-        assertMemoryChunksNumber(2);
+        // no additional chunks created
+        assertMemoryChunksNumber(1);
 
         assertEmptyUpToIndex(4);
         assertHasValuesInRange(5, 5);

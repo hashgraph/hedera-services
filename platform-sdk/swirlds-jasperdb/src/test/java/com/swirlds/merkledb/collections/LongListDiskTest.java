@@ -79,7 +79,7 @@ class LongListDiskTest {
 
     @ParameterizedTest
     @MethodSource("inMemoryLongListProvider")
-    void createHalfEmptyLongListInMemoryReadBack(LongList<?> longList, int chunkOffset) throws IOException {
+    void createHalfEmptyLongListInMemoryReadBack(LongList longList, int chunkOffset) throws IOException {
         populateList(longList);
         checkData(longList);
 
@@ -107,7 +107,7 @@ class LongListDiskTest {
     }
 
     @Test
-    public void updateMinToTheLowerEnd() throws IOException {
+    void updateMinToTheLowerEnd() throws IOException {
         final LongListDisk longList = populateList(new LongListDisk(NUM_LONGS_PER_CHUNK, SAMPLE_SIZE, 0));
         checkData(longList);
         int newMinValidIndex = HALF_SAMPLE_SIZE;
@@ -187,7 +187,7 @@ class LongListDiskTest {
     }
 
     @Test
-    public void testBackwardCompatibility_halfEmpty() throws URISyntaxException, IOException {
+    void testBackwardCompatibility_halfEmpty() throws URISyntaxException, IOException {
         final Path pathToList = ResourceLoader.getFile("test_data/LongListOffHeapHalfEmpty_10k_10pc_v1.ll");
         try (final LongListDisk longListDisk = new LongListDisk(pathToList, 0)) {
             // half-empty
@@ -200,7 +200,7 @@ class LongListDiskTest {
     }
 
     @Test
-    public void testShrinkList() throws IOException {
+    void testShrinkList() throws IOException {
         final LongListDisk list = new LongListDisk(10, SAMPLE_SIZE * 2, 0);
         populateList(list);
         checkData(list, 0, SAMPLE_SIZE);
@@ -227,7 +227,7 @@ class LongListDiskTest {
     }
 
     @Test
-    public void testReuseOfChunks() throws IOException {
+    void testReuseOfChunks() throws IOException {
         final LongListDisk list = new LongListDisk(100, SAMPLE_SIZE * 2, 0);
         populateList(list);
         checkData(list, 0, SAMPLE_SIZE);
@@ -249,24 +249,24 @@ class LongListDiskTest {
         checkData(list, HALF_SAMPLE_SIZE, SAMPLE_SIZE + HALF_SAMPLE_SIZE);
     }
 
-    private static void checkData(final LongList<?> longList) {
+    private static void checkData(final LongList longList) {
         checkData(longList, 0, LongListDiskTest.SAMPLE_SIZE);
     }
 
-    private static void checkData(final LongList<?> longList, final int startIndex, final int endIndex) {
+    private static void checkData(final LongList longList, final int startIndex, final int endIndex) {
         for (int i = startIndex; i < endIndex; i++) {
             assertEquals(i + 100, longList.get(i, -1), "Unexpected value from longList.get(" + i + ")");
         }
     }
 
-    private static <T extends LongList<?>> T populateList(T longList) {
+    private static <T extends LongList> T populateList(T longList) {
         for (int i = 0; i < SAMPLE_SIZE; i++) {
             longList.put(i, i + 100);
         }
         return longList;
     }
 
-    private static void checkEmptyUpToIndex(LongList<?> longList, int index) {
+    private static void checkEmptyUpToIndex(LongList longList, int index) {
         for (int i = 0; i < index; i++) {
             assertEquals(0, longList.get(i), "Unexpected value for index " + i);
         }

@@ -46,7 +46,7 @@ import java.util.concurrent.atomic.AtomicLongArray;
  * here for example</a>).
  */
 @SuppressWarnings("unused")
-public final class LongListHeap extends LongList<AtomicLongArray> {
+public final class LongListHeap extends AbstractLongList<AtomicLongArray> {
 
     /** Construct a new LongListHeap with the default number of longs per chunk. */
     public LongListHeap() {
@@ -172,7 +172,7 @@ public final class LongListHeap extends LongList<AtomicLongArray> {
     }
 
     @Override
-    protected void fullChunkCleanup(AtomicLongArray chunk) {
+    protected void releaseChunk(AtomicLongArray chunk) {
         // no action needed, the array will be collected by GC
     }
 

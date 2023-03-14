@@ -17,8 +17,8 @@
 package com.swirlds.merkledb.collections;
 
 import static com.swirlds.common.utility.Units.MEBIBYTES_TO_BYTES;
-import static com.swirlds.merkledb.collections.LongList.DEFAULT_MAX_LONGS_TO_STORE;
-import static com.swirlds.merkledb.collections.LongList.DEFAULT_NUM_LONGS_PER_CHUNK;
+import static com.swirlds.merkledb.collections.AbstractLongList.DEFAULT_MAX_LONGS_TO_STORE;
+import static com.swirlds.merkledb.collections.AbstractLongList.DEFAULT_NUM_LONGS_PER_CHUNK;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -93,7 +93,7 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
     }
 
     @Test
-    public void testInsertAtTheEndOfTheList() {
+    void testInsertAtTheEndOfTheList() {
         final LongListOffHeap list = createLongList();
         assertDoesNotThrow(() -> list.put(DEFAULT_MAX_LONGS_TO_STORE - 1, 1));
     }
@@ -107,7 +107,7 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
 
     @ParameterizedTest
     @ValueSource(ints = {0, 1, 5000, 9999, 10000}) // chunk size is 10K longs
-    public void testPersistListWithNonZeroMinValidIndex(final int chunkOffset) throws IOException {
+    void testPersistListWithNonZeroMinValidIndex(final int chunkOffset) throws IOException {
         try (final LongListOffHeap list = createFullyParameterizedLongListWith(
                 getSampleSize() / 100, // 100 chunks
                 getSampleSize())) {
@@ -131,7 +131,7 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
 
     @ParameterizedTest
     @ValueSource(ints = {2, 3, 4, 5, 10, 50})
-    public void minValidIndexRespectedInForEachTest(final int countDivider) throws InterruptedException {
+    void minValidIndexRespectedInForEachTest(final int countDivider) throws InterruptedException {
         final int sampleSize = getSampleSize();
         try (final LongListOffHeap list = createFullyParameterizedLongListWith(
                 sampleSize / 100, // 100 chunks, 100 longs each
@@ -154,7 +154,7 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
     }
 
     @Test
-    public void testFileFormatBackwardCompatibility_halfEmpty() throws URISyntaxException, IOException {
+    void testFileFormatBackwardCompatibility_halfEmpty() throws URISyntaxException, IOException {
         final Path pathToList = ResourceLoader.getFile("test_data/LongListOffHeapHalfEmpty_10k_10pc_v1.ll");
         try (final LongListOffHeap longListFromFile = createLongListFromFile(pathToList)) {
             // half-empty
@@ -169,7 +169,7 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
     }
 
     @Test
-    public void testUnsupportedVersion() throws URISyntaxException {
+    void testUnsupportedVersion() throws URISyntaxException {
         final Path pathToList = ResourceLoader.getFile("test_data/LongListOffHeap_unsupported_version.ll");
         assertThrows(IOException.class, () -> {
             //noinspection EmptyTryBlock

@@ -88,7 +88,7 @@ class LongListTest {
 
     @ParameterizedTest
     @MethodSource("provideLongLists")
-    void test4089(final LongList<?> list) {
+    void test4089(final AbstractLongList<?> list) {
         // Issue #4089: ArrayIndexOutOfBoundsException from VirtualMap.put()
         final long maxLongs = list.maxLongs;
         final int defaultValue = -1;
@@ -108,7 +108,7 @@ class LongListTest {
         });
     }
 
-    static Stream<LongList<?>> provideLongLists() {
+    static Stream<LongList> provideLongLists() {
         final int numLongsPerChunk = 32;
         final int maxLongs = numLongsPerChunk * 4096;
         return Stream.of(

@@ -36,8 +36,8 @@ import org.apache.logging.log4j.Logger;
  * value for any given index is easily found using modular arithmetic. Note that <br>
  * to reduce memory consumption one can use {@link LongListOffHeap#updateMinValidIndex(long)}.
  * A call to this method discards memory chunks reserved for the indices that are before the index
- * passed as an argument subtracted by {@link LongList#reservedBufferLength}. The idea is to
- * keep the amount of memory defined by {@link LongList#reservedBufferLength} reserved even
+ * passed as an argument subtracted by {@link AbstractLongList#reservedBufferLength}. The idea is to
+ * keep the amount of memory defined by {@link AbstractLongList#reservedBufferLength} reserved even
  * though it serves indices that are before the minimal index. It may be a good idea because there
  * is a good chance that the indices in this range may be used (e.g. in case of mass deletion from
  * an instance of {@link com.swirlds.merkledb.files.MemoryIndexDiskKeyValueStore})
@@ -45,7 +45,7 @@ import org.apache.logging.log4j.Logger;
  * <p>Per the {@link LongList} contract, this class is thread-safe for both concurrent reads and
  * writes.
  */
-public final class LongListOffHeap extends LongList<ByteBuffer> {
+public final class LongListOffHeap extends AbstractLongList<ByteBuffer> {
     /** Offset of the {@code java.nio.Buffer#address} field. */
     private static final long BYTE_BUFFER_ADDRESS_FIELD_OFFSET;
 
@@ -255,7 +255,7 @@ public final class LongListOffHeap extends LongList<ByteBuffer> {
         return directBuffer;
     }
 
-    protected void fullChunkCleanup(ByteBuffer newChunk) {
+    protected void releaseChunk(ByteBuffer newChunk) {
         UNSAFE.invokeCleaner(newChunk);
     }
 
