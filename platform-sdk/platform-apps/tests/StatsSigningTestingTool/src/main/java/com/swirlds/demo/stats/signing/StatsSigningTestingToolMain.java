@@ -27,10 +27,10 @@ package com.swirlds.demo.stats.signing;
  */
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.utility.Units.MILLISECONDS_TO_NANOSECONDS;
 import static com.swirlds.common.utility.Units.NANOSECONDS_TO_MICROSECONDS;
 import static com.swirlds.common.utility.Units.NANOSECONDS_TO_MILLISECONDS;
 import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
-import static com.swirlds.common.utility.Units.SECONDS_TO_MILLISECONDS;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.metrics.Metrics;
@@ -117,7 +117,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
     /**
      * The number of seconds to ramp up the TPS to the expected value
      */
-    private static final int TPS_RAMP_UP_WINDOW_SECONDS = 20;
+    private static final int TPS_RAMP_UP_WINDOW_MILLISECONDS = 20_000;
 
     /**
      * TPS value during ramp up period
@@ -207,9 +207,9 @@ public class StatsSigningTestingToolMain implements SwirldMain {
 
     @Override
     public void run() {
-//        if ((System.currentTimeMillis() - appInitTime) < APP_INIT_WINDOW_SECONDS * 1000) {
-//            return;
-//        }
+        //        if ((System.currentTimeMillis() - appInitTime) < APP_INIT_WINDOW_SECONDS * 1000) {
+        //            return;
+        //        }
         final Thread shutdownHook = new ThreadConfiguration(getStaticThreadManager())
                 .setDaemon(false)
                 .setNodeId(platform.getSelfId().getId())
@@ -255,20 +255,19 @@ public class StatsSigningTestingToolMain implements SwirldMain {
         }
 
         if (transPerSecToCreate > -1) { // if not unlimited (-1 means unlimited)
-            // to get stable TPS output, use a large measure window, and ramp up the TPS to the expected value
-            if ((now - rampUpStartTimeMilliSeconds) < TPS_RAMP_UP_WINDOW_SECONDS * SECONDS_TO_MILLISECONDS) {
-                rampUpTPS = expectedTPS
-                        * (now - rampUpStartTimeMilliSeconds)
-                        / ((double) (TPS_RAMP_UP_WINDOW_SECONDS * SECONDS_TO_MILLISECONDS));
+            // ramp up the TPS to the expected value
+            long elapsedTime = now / MILLISECONDS_TO_NANOSECONDS - rampUpStartTimeMilliSeconds;
+            if (elapsedTime < TPS_RAMP_UP_WINDOW_MILLISECONDS) {
+                rampUpTPS = expectedTPS * elapsedTime / ((double) (TPS_RAMP_UP_WINDOW_MILLISECONDS));
             } else {
                 rampUpTPS = expectedTPS;
             }
 
+            // for every measure window, re-calculate the toCreate counter
             if (((double) now - lastTPSMeasureTime) * NANOSECONDS_TO_MICROSECONDS > tps_measure_window_milliseconds) {
                 toCreate += ((double) now - lastTPSMeasureTime) * NANOSECONDS_TO_SECONDS * rampUpTPS;
                 lastTPSMeasureTime = now;
-                logger.info(
-                        STARTUP.getMarker(), "rampUpTPS {}", rampUpTPS);
+                logger.info(STARTUP.getMarker(), "rampUpTPS {}", rampUpTPS);
             }
         }
 
