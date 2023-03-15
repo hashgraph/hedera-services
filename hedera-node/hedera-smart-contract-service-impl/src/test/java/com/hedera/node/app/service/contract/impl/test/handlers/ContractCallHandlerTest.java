@@ -31,7 +31,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ContractCallHandlerTest extends ContractHandlerTestBase {
-    private ContractCallHandler subject = new ContractCallHandler();
+    private final ContractCallHandler subject = new ContractCallHandler();
 
     @Test
     @DisplayName("Succeeds for valid payer account")
