@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token.impl.handlers;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -52,7 +53,7 @@ public class TokenAccountWipeHandler implements TransactionHandler {
         requireNonNull(context);
         final var op = context.getTxn().tokenWipeOrThrow();
 
-        final var tokenMeta = tokenStore.getTokenMeta(op.token());
+        final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
 
         if (tokenMeta.failed()) {
             context.status(tokenMeta.failureReason());

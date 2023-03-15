@@ -68,7 +68,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
             var operatorId = allowance.delegatingSpenderOrElse(ownerId);
             // If approveForAll is set to true, need signature from owner
             // since only the owner can grant approveForAll
-            if (allowance.hasApprovedForAll()) {
+            if (allowance.hasApprovedForAll() && allowance.approvedForAllOrThrow()) {
                 operatorId = ownerId;
             }
             if (operatorId != ownerId) {

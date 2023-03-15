@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token.impl.handlers;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -52,7 +53,7 @@ public class TokenDeleteHandler implements TransactionHandler {
     public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore) {
         requireNonNull(context);
         final var op = context.getTxn().tokenDeletionOrThrow();
-        final var tokenId = op.token();
+        final var tokenId = op.tokenOrElse(TokenID.DEFAULT);
         final var tokenMeta = tokenStore.getTokenMeta(tokenId);
         if (tokenMeta.failed()) {
             context.status(tokenMeta.failureReason());

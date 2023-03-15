@@ -60,8 +60,8 @@ public class CryptoUpdateHandler implements TransactionHandler {
         if (targetAccountKeyMustSign) {
             context.addNonPayerKey(updateAccountId);
         }
-        if (newAccountKeyMustSign && op.key() != null) {
-            final var candidate = asHederaKey(op.key());
+        if (newAccountKeyMustSign && op.hasKey()) {
+            final var candidate = asHederaKey(op.keyOrThrow());
             candidate.ifPresent(context::addToReqNonPayerKeys);
         }
     }

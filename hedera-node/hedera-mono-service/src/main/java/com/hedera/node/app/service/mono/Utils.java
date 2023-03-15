@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono;
 
 import static com.hedera.node.app.service.mono.legacy.core.jproto.JKey.mapKey;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.Key;
@@ -49,6 +50,7 @@ public class Utils {
     }
 
     public static Optional<HederaKey> asHederaKey(@NonNull final com.hedera.hapi.node.base.Key key) {
+        requireNonNull(key);
         try {
             // Need to move JKey after refactoring, adding equals & hashcode into this package
             final var fcKey = mapKey(key);
