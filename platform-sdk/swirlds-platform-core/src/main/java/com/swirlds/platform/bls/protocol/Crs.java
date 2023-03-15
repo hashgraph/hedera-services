@@ -47,16 +47,4 @@ public record Crs(BilinearMap bilinearMap, GroupElement thresholdGenerator, Grou
         assertPublicKeyGroupMembership(bilinearMap, thresholdGenerator, "thresholdGenerator");
         assertPublicKeyGroupMembership(bilinearMap, ibeGenerator, "ibeGenerator");
     }
-
-    @Override
-    public String toString() {
-        return "Crs{"
-                + "bilinearMap="
-                + bilinearMap
-                + ", thresholdGenerator="
-                + thresholdGenerator
-                + ", ibeGenerator="
-                + ibeGenerator
-                + '}';
-    }
 }
