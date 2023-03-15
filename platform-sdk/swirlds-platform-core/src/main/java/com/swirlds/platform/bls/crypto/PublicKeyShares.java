@@ -50,6 +50,10 @@ public class PublicKeyShares {
      * @return the public key of the share
      */
     public BlsPublicKey getPublicKey(final int shareId) {
+        if (shareId <= 0) {
+            throw new IllegalArgumentException("Invalid share id: " + shareId);
+        }
+
         // we must subtract 1, since shareId 1 is at index 0
         return publicKeys.get(shareId - 1);
     }
