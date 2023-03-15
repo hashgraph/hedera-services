@@ -741,22 +741,13 @@ public class SigRequirements {
         final var key = op.getKey();
         final var alias = op.getAlias();
         if (!alias.isEmpty()) {
-            // add alias key to req keys only if it differs from admin key
-            if (alias.size() == EVM_ADDRESS_SIZE) {
-                final var isAliasDerivedFromDiffKey = !key.hasECDSASecp256K1()
-                        || !Arrays.equals(
-                                recoverAddressFromPubKey(key.getECDSASecp256K1().toByteArray()), alias.toByteArray());
-                if (isAliasDerivedFromDiffKey) {
-                    required.add(new JWildcardECDSAKey(alias.toByteArray(), false));
-                }
-            } else {
-                // semantic checks have already verified
-                // that the alias is a valid Key protobuf serialization
-                final var keyFromAlias = asPrimitiveKeyUnchecked(alias);
-                if (!keyFromAlias.equals(key)) {
-                    final var jKey = asUsableFcKey(keyFromAlias);
-                    jKey.ifPresent(required::add);
-                }
+            // semantic checks should have already verified alias is a valid evm address
+            // add evm address key to req keys only if it is derived from a key, diff than the admin key
+            final var isAliasDerivedFromDiffKey = !key.hasECDSASecp256K1()
+                    || !Arrays.equals(
+                            recoverAddressFromPubKey(key.getECDSASecp256K1().toByteArray()), alias.toByteArray());
+            if (isAliasDerivedFromDiffKey) {
+                required.add(new JWildcardECDSAKey(alias.toByteArray(), false));
             }
         }
         if (op.getReceiverSigRequired()) {

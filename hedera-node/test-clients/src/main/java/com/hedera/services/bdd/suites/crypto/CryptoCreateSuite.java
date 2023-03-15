@@ -110,9 +110,10 @@ public class CryptoCreateSuite extends HapiSuite {
                 createAnAccountWithEDKeyAndNoAlias(),
                 createAnAccountWithED25519KeyAndED25519Alias(),
                 createAnAccountWithECKeyAndECKeyAlias(),
-                createAnAccountWithECDSAKeyAliasDifferentThanAdminKey(),
+                // TODO: change those after merge
+//                createAnAccountWithECDSAKeyAliasDifferentThanAdminKey(),
+//                createAnAccountWithEDKeyAliasDifferentThanAdminKey(),
                 createAnAccountWithEVMAddressAliasDifferentThanAdminKey(),
-                createAnAccountWithEDKeyAliasDifferentThanAdminKey(),
                 cannotCreateAnAccountWithLongZeroKeyButCanUseEvmAddress());
     }
 

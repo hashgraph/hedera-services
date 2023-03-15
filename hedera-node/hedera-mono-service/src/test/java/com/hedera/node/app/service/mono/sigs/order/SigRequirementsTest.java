@@ -16,6 +16,48 @@
 
 package com.hedera.node.app.service.mono.sigs.order;
 
+import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.mono.config.EntityNumbers;
+import com.hedera.node.app.service.mono.config.MockEntityNumbers;
+import com.hedera.node.app.service.mono.files.HederaFs;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.sigs.metadata.AccountSigningMetadata;
+import com.hedera.node.app.service.mono.sigs.metadata.ContractSigningMetadata;
+import com.hedera.node.app.service.mono.sigs.metadata.DelegatingSigMetadataLookup;
+import com.hedera.node.app.service.mono.sigs.metadata.SafeLookupResult;
+import com.hedera.node.app.service.mono.sigs.metadata.SigMetadataLookup;
+import com.hedera.node.app.service.mono.sigs.metadata.TopicSigningMetadata;
+import com.hedera.node.app.service.mono.sigs.metadata.lookups.AccountSigMetaLookup;
+import com.hedera.node.app.service.mono.sigs.metadata.lookups.ContractSigMetaLookup;
+import com.hedera.node.app.service.mono.sigs.metadata.lookups.FileSigMetaLookup;
+import com.hedera.node.app.service.mono.sigs.metadata.lookups.HfsSigMetaLookup;
+import com.hedera.node.app.service.mono.sigs.metadata.lookups.TopicSigMetaLookup;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
+import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
+import com.hedera.node.app.service.mono.store.tokens.TokenStore;
+import com.hedera.node.app.service.mono.txns.auth.SystemOpPolicies;
+import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.numbers.HederaFileNumbers;
+import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hedera.test.mocks.MockFileNumbers;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TopicID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.swirlds.merkle.map.MerkleMap;
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
+
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.node.app.service.mono.sigs.metadata.DelegatingSigMetadataLookup.PRETEND_SIGNING_TIME;
 import static com.hedera.node.app.service.mono.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
@@ -92,15 +134,12 @@ import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPT
 import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_DELETE_ALLOWANCE_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_DELETE_ALLOWANCE_SELF_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_DELETE_NFT_ALLOWANCE_MISSING_OWNER_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_NO_RECEIVER_SIG_ECDSA_ADMIN_KEY_ECDSA_PUBLIC_KEY_ALIAS_FROM_SAME_KEY_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_NO_RECEIVER_SIG_ED_ADMIN_KEY_ECDSA_PUBLIC_KEY_ALIAS_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_NO_RECEIVER_SIG_ECDSA_ADMIN_KEY_DIFFERENT_EVM_ADDRESS_ALIAS_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_NO_RECEIVER_SIG_ECDSA_ADMIN_KEY_EVM_ADDRESS_ALIAS_FROM_SAME_KEY_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_NO_RECEIVER_SIG_ED_ADMIN_KEY_EVM_ADDRESS_ALIAS_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_NO_RECEIVER_SIG_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_RECEIVER_SIG_ECDSA_ADMIN_KEY_DIFFERENT_EVM_ADDRESS_ALIAS_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_RECEIVER_SIG_ECDSA_ADMIN_KEY_ECDSA_PUBLIC_KEY_ALIAS_FROM_SAME_KEY_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_RECEIVER_SIG_ECDSA_ADMIN_KEY_ED_PUBLIC_KEY_ALIAS_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_RECEIVER_SIG_ECDSA_ADMIN_KEY_EVM_ADDRESS_ALIAS_FROM_SAME_KEY_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_RECEIVER_SIG_ED_ADMIN_KEY_ECDSA_PUBLIC_KEY_ALIAS_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_RECEIVER_SIG_ED_ADMIN_KEY_EVM_ADDRESS_ALIAS_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_RECEIVER_SIG_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoDeleteScenarios.CRYPTO_DELETE_MISSING_RECEIVER_SIG_SCENARIO;
@@ -323,47 +362,6 @@ import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import com.google.protobuf.ByteString;
-import com.hedera.node.app.service.mono.config.EntityNumbers;
-import com.hedera.node.app.service.mono.config.MockEntityNumbers;
-import com.hedera.node.app.service.mono.files.HederaFs;
-import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.sigs.metadata.AccountSigningMetadata;
-import com.hedera.node.app.service.mono.sigs.metadata.ContractSigningMetadata;
-import com.hedera.node.app.service.mono.sigs.metadata.DelegatingSigMetadataLookup;
-import com.hedera.node.app.service.mono.sigs.metadata.SafeLookupResult;
-import com.hedera.node.app.service.mono.sigs.metadata.SigMetadataLookup;
-import com.hedera.node.app.service.mono.sigs.metadata.TopicSigningMetadata;
-import com.hedera.node.app.service.mono.sigs.metadata.lookups.AccountSigMetaLookup;
-import com.hedera.node.app.service.mono.sigs.metadata.lookups.ContractSigMetaLookup;
-import com.hedera.node.app.service.mono.sigs.metadata.lookups.FileSigMetaLookup;
-import com.hedera.node.app.service.mono.sigs.metadata.lookups.HfsSigMetaLookup;
-import com.hedera.node.app.service.mono.sigs.metadata.lookups.TopicSigMetaLookup;
-import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
-import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
-import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
-import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
-import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
-import com.hedera.node.app.service.mono.store.tokens.TokenStore;
-import com.hedera.node.app.service.mono.txns.auth.SystemOpPolicies;
-import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.numbers.HederaFileNumbers;
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hedera.test.mocks.MockFileNumbers;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TopicID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.merkle.map.MerkleMap;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Function;
-import org.junit.jupiter.api.Test;
-
 public class SigRequirementsTest {
     private static class TopicAdapter {
         public static TopicSigMetaLookup throwingUoe() {
@@ -544,45 +542,6 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void getsCryptoCreateReceiverSigEDAdminECDSAAlias() throws Throwable {
-        // given:
-        setupFor(CRYPTO_CREATE_RECEIVER_SIG_ED_ADMIN_KEY_ECDSA_PUBLIC_KEY_ALIAS_SCENARIO);
-
-        // when:
-        final var summary = subject.keysForOtherParties(txn, summaryFactory);
-
-        // then:
-        assertThat(summary.getOrderedKeys(), iterableWithSize(2));
-        assertThat(sanityRestored(summary.getOrderedKeys()), contains(ECDSA_KT.asKey(), DEFAULT_ACCOUNT_KT.asKey()));
-    }
-
-    @Test
-    void getsCryptoCreateNoReceiverSigEDAdminECDSAAlias() throws Throwable {
-        // given:
-        setupFor(CRYPTO_CREATE_NO_RECEIVER_SIG_ED_ADMIN_KEY_ECDSA_PUBLIC_KEY_ALIAS_SCENARIO);
-
-        // when:
-        final var summary = subject.keysForOtherParties(txn, summaryFactory);
-
-        // then:
-        assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(sanityRestored(summary.getOrderedKeys()), contains(ECDSA_KT.asKey()));
-    }
-
-    @Test
-    void getsCryptoCreateReceiverSigECDSAAdminEDAlias() throws Throwable {
-        // given:
-        setupFor(CRYPTO_CREATE_RECEIVER_SIG_ECDSA_ADMIN_KEY_ED_PUBLIC_KEY_ALIAS_SCENARIO);
-
-        // when:
-        final var summary = subject.keysForOtherParties(txn, summaryFactory);
-
-        // then:
-        assertThat(summary.getOrderedKeys(), iterableWithSize(2));
-        assertThat(sanityRestored(summary.getOrderedKeys()), contains(DEFAULT_ACCOUNT_KT.asKey(), ECDSA_KT.asKey()));
-    }
-
-    @Test
     void getsCryptoCreateReceiverSigEDAdminEvmAddressAlias() throws Throwable {
         // given:
         setupFor(CRYPTO_CREATE_RECEIVER_SIG_ED_ADMIN_KEY_EVM_ADDRESS_ALIAS_SCENARIO);
@@ -613,6 +572,22 @@ public class SigRequirementsTest {
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
         assertArrayEquals(
                 recoverAddressFromPubKey(ECDSA_KT.asKey().getECDSASecp256K1().toByteArray()),
+                summary.getOrderedKeys().get(0).getWildcardECDSAKey().getEvmAddress());
+        assertFalse(summary.getOrderedKeys().get(0).getWildcardECDSAKey().isForHollowAccount());
+    }
+
+    @Test
+    void getsCryptoCreateNoReceiverSigECDSAdminEvmAddressAlias() throws Throwable {
+        // given:
+        setupFor(CRYPTO_CREATE_NO_RECEIVER_SIG_ECDSA_ADMIN_KEY_DIFFERENT_EVM_ADDRESS_ALIAS_SCENARIO);
+
+        // when:
+        final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+        // then:
+        assertThat(summary.getOrderedKeys(), iterableWithSize(1));
+        assertArrayEquals(
+                recoverAddressFromPubKey(ECDSA_KT_2.asKey().getECDSASecp256K1().toByteArray()),
                 summary.getOrderedKeys().get(0).getWildcardECDSAKey().getEvmAddress());
         assertFalse(summary.getOrderedKeys().get(0).getWildcardECDSAKey().isForHollowAccount());
     }
@@ -650,22 +625,9 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void getsCryptoCreateReceiverSigECDSAAdminECDSAPublicKeyAliasFromSameKey() throws Throwable {
+    void getsCryptoCreateNoReceiverSigECDSAAdminEvmAddressAliasFromSameKey() throws Throwable {
         // given:
-        setupFor(CRYPTO_CREATE_RECEIVER_SIG_ECDSA_ADMIN_KEY_ECDSA_PUBLIC_KEY_ALIAS_FROM_SAME_KEY_SCENARIO);
-
-        // when:
-        final var summary = subject.keysForOtherParties(txn, summaryFactory);
-
-        // then:
-        assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(sanityRestored(summary.getOrderedKeys()), contains(ECDSA_KT.asKey()));
-    }
-
-    @Test
-    void getsCryptoCreateNoReceiverSigECDSAAdminECDSAPublicKeyAliasFromSameKey() throws Throwable {
-        // given:
-        setupFor(CRYPTO_CREATE_NO_RECEIVER_SIG_ECDSA_ADMIN_KEY_ECDSA_PUBLIC_KEY_ALIAS_FROM_SAME_KEY_SCENARIO);
+        setupFor(CRYPTO_CREATE_NO_RECEIVER_SIG_ECDSA_ADMIN_KEY_EVM_ADDRESS_ALIAS_FROM_SAME_KEY_SCENARIO);
 
         // when:
         final var summary = subject.keysForOtherParties(txn, summaryFactory);

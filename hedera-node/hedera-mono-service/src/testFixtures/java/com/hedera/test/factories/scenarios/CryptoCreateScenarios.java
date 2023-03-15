@@ -40,33 +40,6 @@ public enum CryptoCreateScenarios implements TxnHandlingScenario {
                     .get());
         }
     },
-    CRYPTO_CREATE_RECEIVER_SIG_ED_ADMIN_KEY_ECDSA_PUBLIC_KEY_ALIAS_SCENARIO {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedCryptoCreate()
-                    .receiverSigRequired(true)
-                    .alias(ECDSA_KT.asKey().toByteString())
-                    .nonPayerKts(DEFAULT_ACCOUNT_KT)
-                    .get());
-        }
-    },
-    CRYPTO_CREATE_NO_RECEIVER_SIG_ED_ADMIN_KEY_ECDSA_PUBLIC_KEY_ALIAS_SCENARIO {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedCryptoCreate()
-                    .receiverSigRequired(false)
-                    .alias(ECDSA_KT.asKey().toByteString())
-                    .nonPayerKts(DEFAULT_ACCOUNT_KT)
-                    .get());
-        }
-    },
-    CRYPTO_CREATE_RECEIVER_SIG_ECDSA_ADMIN_KEY_ED_PUBLIC_KEY_ALIAS_SCENARIO {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedCryptoCreate()
-                    .receiverSigRequired(true)
-                    .accountKt(ECDSA_KT)
-                    .alias(DEFAULT_ACCOUNT_KT.asKey().toByteString())
-                    .get());
-        }
-    },
     CRYPTO_CREATE_RECEIVER_SIG_ED_ADMIN_KEY_EVM_ADDRESS_ALIAS_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(newSignedCryptoCreate()
@@ -98,6 +71,17 @@ public enum CryptoCreateScenarios implements TxnHandlingScenario {
                     .get());
         }
     },
+    CRYPTO_CREATE_NO_RECEIVER_SIG_ECDSA_ADMIN_KEY_DIFFERENT_EVM_ADDRESS_ALIAS_SCENARIO {
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return PlatformTxnAccessor.from(newSignedCryptoCreate()
+                    .receiverSigRequired(false)
+                    .accountKt(ECDSA_KT)
+                    .alias(ByteStringUtils.wrapUnsafely(recoverAddressFromPubKey(
+                            ECDSA_KT_2.asKey().getECDSASecp256K1().toByteArray())))
+                    .nonPayerKts(DEFAULT_ACCOUNT_KT)
+                    .get());
+        }
+    },
     CRYPTO_CREATE_RECEIVER_SIG_ECDSA_ADMIN_KEY_EVM_ADDRESS_ALIAS_FROM_SAME_KEY_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(newSignedCryptoCreate()
@@ -109,22 +93,13 @@ public enum CryptoCreateScenarios implements TxnHandlingScenario {
                     .get());
         }
     },
-    CRYPTO_CREATE_RECEIVER_SIG_ECDSA_ADMIN_KEY_ECDSA_PUBLIC_KEY_ALIAS_FROM_SAME_KEY_SCENARIO {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedCryptoCreate()
-                    .receiverSigRequired(true)
-                    .accountKt(ECDSA_KT)
-                    .alias(ECDSA_KT.asKey().toByteString())
-                    .nonPayerKts(DEFAULT_ACCOUNT_KT)
-                    .get());
-        }
-    },
-    CRYPTO_CREATE_NO_RECEIVER_SIG_ECDSA_ADMIN_KEY_ECDSA_PUBLIC_KEY_ALIAS_FROM_SAME_KEY_SCENARIO {
+    CRYPTO_CREATE_NO_RECEIVER_SIG_ECDSA_ADMIN_KEY_EVM_ADDRESS_ALIAS_FROM_SAME_KEY_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(newSignedCryptoCreate()
                     .receiverSigRequired(false)
                     .accountKt(ECDSA_KT)
-                    .alias(ECDSA_KT.asKey().toByteString())
+                    .alias(ByteStringUtils.wrapUnsafely(recoverAddressFromPubKey(
+                            ECDSA_KT.asKey().getECDSASecp256K1().toByteArray())))
                     .nonPayerKts(DEFAULT_ACCOUNT_KT)
                     .get());
         }
