@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.state.virtual.schedule;
 
 import static com.google.protobuf.ByteString.copyFrom;
+import static com.hedera.node.app.hapi.utils.CommonUtils.functionOf;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asTimestamp;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.describe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
@@ -27,7 +28,7 @@ import com.google.common.hash.HashCode;
 import com.google.common.hash.Hashing;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.node.app.service.mono.exceptions.UnknownHederaFunctionality;
+import com.hedera.node.app.hapi.utils.exception.UnknownHederaFunctionality;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSchedule;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
@@ -533,7 +534,7 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
 
     public HederaFunctionality scheduledFunction() {
         try {
-            return MiscUtils.functionOf(ordinaryScheduledTxn);
+            return functionOf(ordinaryScheduledTxn);
         } catch (final UnknownHederaFunctionality ignore) {
             return NONE;
         }

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.utils;
 
+import static com.hedera.node.app.hapi.utils.CommonUtils.functionOf;
 import static com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.node.app.service.mono.throttling.MapAccessType.ACCOUNTS_GET;
 import static com.hedera.node.app.service.mono.throttling.MapAccessType.STORAGE_REMOVE;
@@ -47,7 +48,6 @@ import static com.hedera.node.app.service.mono.utils.MiscUtils.baseStatNameOf;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.canonicalDiffRepr;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.canonicalRepr;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.describe;
-import static com.hedera.node.app.service.mono.utils.MiscUtils.functionOf;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.functionalityOfQuery;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.getTxnStat;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.isGasThrottled;
@@ -144,7 +144,7 @@ import com.google.protobuf.GeneratedMessageV3;
 import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
-import com.hedera.node.app.service.mono.exceptions.UnknownHederaFunctionality;
+import com.hedera.node.app.hapi.utils.exception.UnknownHederaFunctionality;
 import com.hedera.node.app.service.mono.grpc.controllers.ConsensusController;
 import com.hedera.node.app.service.mono.grpc.controllers.ContractController;
 import com.hedera.node.app.service.mono.grpc.controllers.CryptoController;
@@ -948,7 +948,7 @@ class MiscUtilsTest {
         final var txn =
                 TransactionBody.newBuilder().setContractCreateInstance(op).build();
 
-        assertEquals(123456789L, MiscUtils.getGasLimitForContractTx(txn, MiscUtils.functionOf(txn), null));
+        assertEquals(123456789L, MiscUtils.getGasLimitForContractTx(txn, functionOf(txn), null));
     }
 
     @Test
@@ -957,7 +957,7 @@ class MiscUtilsTest {
                 ContractCallTransactionBody.newBuilder().setGas(123456789L).build();
         final var txn = TransactionBody.newBuilder().setContractCall(op).build();
 
-        assertEquals(123456789L, MiscUtils.getGasLimitForContractTx(txn, MiscUtils.functionOf(txn), null));
+        assertEquals(123456789L, MiscUtils.getGasLimitForContractTx(txn, functionOf(txn), null));
     }
 
     @Test
@@ -986,9 +986,9 @@ class MiscUtilsTest {
                 .build();
         final var txn = TransactionBody.newBuilder().setEthereumTransaction(op).build();
 
-        assertEquals(gasLimit, MiscUtils.getGasLimitForContractTx(txn, MiscUtils.functionOf(txn), null));
+        assertEquals(gasLimit, MiscUtils.getGasLimitForContractTx(txn, functionOf(txn), null));
 
-        assertEquals(gasLimit, MiscUtils.getGasLimitForContractTx(txn, MiscUtils.functionOf(txn), () -> ethTxData));
+        assertEquals(gasLimit, MiscUtils.getGasLimitForContractTx(txn, functionOf(txn), () -> ethTxData));
     }
 
     @Test
@@ -996,7 +996,7 @@ class MiscUtilsTest {
         final var op = TokenCreateTransactionBody.getDefaultInstance();
         final var txn = TransactionBody.newBuilder().setTokenCreation(op).build();
 
-        assertEquals(0L, MiscUtils.getGasLimitForContractTx(txn, MiscUtils.functionOf(txn), null));
+        assertEquals(0L, MiscUtils.getGasLimitForContractTx(txn, functionOf(txn), null));
     }
 
     @Test
