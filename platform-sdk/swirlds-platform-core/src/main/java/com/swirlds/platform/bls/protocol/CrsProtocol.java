@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 /**
  * <p>
@@ -89,12 +90,14 @@ public class CrsProtocol implements BlsProtocol<Crs> {
      * @param nodeId          the id of this node
      * @param protocolManager the manager for the protocol
      * @param bilinearMap     the bilinear map
+     * @param random          a source of randomness
      */
     public CrsProtocol(
             final BlsAddressBook addressBook,
             final NodeId nodeId,
             final BlsProtocolManager<Crs> protocolManager,
-            final BilinearMap bilinearMap) {
+            final BilinearMap bilinearMap,
+            final Random random) {
 
         this.addressBook = addressBook;
         this.nodeId = nodeId;
@@ -109,7 +112,7 @@ public class CrsProtocol implements BlsProtocol<Crs> {
         this.commitments = new HashMap<>();
         this.bilinearMap = bilinearMap;
 
-        this.randomGroupElements = new RandomGroupElements(bilinearMap, protocolManager.getRandom());
+        this.randomGroupElements = new RandomGroupElements(bilinearMap, random);
     }
 
     /**

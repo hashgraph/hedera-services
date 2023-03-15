@@ -74,13 +74,6 @@ public interface BlsProtocolManager<T extends BlsProtocolOutput> {
     void addRound(BlsProtocolRound round);
 
     /**
-     * Gets the source of randomness for the protocol
-     *
-     * @return the source of randomness
-     */
-    Random getRandom();
-
-    /**
      * Declares a counterparty to be offline. Does necessary cleanup, and evaluates whether the protocol still has
      * enough honest parties to proceed
      *
