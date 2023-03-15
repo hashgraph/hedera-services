@@ -22,7 +22,7 @@ import com.hedera.platform.bls.api.BilinearMap;
 import com.hedera.platform.bls.api.GroupElement;
 
 /**
- * The output object of {@link CrsProtocol}
+ * The "Common Reference String" output object of {@link CrsProtocol}
  *
  * <p>Contains 2 generator points, which are used for threshold signatures and IBE encryption,
  * respectively. While it would be mathematically feasible to use a single generator to perform both

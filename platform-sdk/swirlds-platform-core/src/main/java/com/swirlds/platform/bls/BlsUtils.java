@@ -19,7 +19,9 @@ package com.swirlds.platform.bls;
 import com.hedera.platform.bls.api.BilinearMap;
 import com.hedera.platform.bls.api.GroupElement;
 
-/** Class containing utility helper functions */
+/**
+ * Class containing utility helper functions to support the BLS protocols
+ */
 public class BlsUtils {
 
     /** Hidden constructor */
@@ -28,9 +30,9 @@ public class BlsUtils {
     /**
      * Asserts that a given group element is a member of the signature group (G1)
      *
-     * @param bilinearMap the bilinear map the group is part of
+     * @param bilinearMap  the bilinear map the group is part of
      * @param groupElement the group element to assert membership of
-     * @param elementName the name of the element, to record errors
+     * @param elementName  the name of the element, to record errors
      */
     public static void assertSignatureGroupMembership(
             final BilinearMap bilinearMap, final GroupElement groupElement, final String elementName) {
@@ -47,9 +49,9 @@ public class BlsUtils {
     /**
      * Asserts that a given group element is a member of the public key group (G2)
      *
-     * @param bilinearMap the bilinear map the group is part of
+     * @param bilinearMap  the bilinear map the group is part of
      * @param groupElement the group element to assert membership of
-     * @param elementName the name of the element, to record errors
+     * @param elementName  the name of the element, to record errors
      */
     public static void assertPublicKeyGroupMembership(
             final BilinearMap bilinearMap, final GroupElement groupElement, final String elementName) {

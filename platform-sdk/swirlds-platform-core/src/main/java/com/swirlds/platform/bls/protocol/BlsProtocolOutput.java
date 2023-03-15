@@ -16,7 +16,11 @@
 
 package com.swirlds.platform.bls.protocol;
 
-/** An interface representing the output object of a {@link BlsProtocol} */
+/**
+ * An interface representing the output object of a {@link BlsProtocol}
+ * <p>
+ * The "output" of a protocol contains the cryptographic elements that were generated during the protocol execution.
+ */
 public interface BlsProtocolOutput {
     /**
      * Compares this output object to another object. This comparison is more tolerant than a strict

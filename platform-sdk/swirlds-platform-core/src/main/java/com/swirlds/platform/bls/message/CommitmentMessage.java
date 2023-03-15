@@ -39,7 +39,6 @@ public class CommitmentMessage extends AbstractBlsProtocolMessage {
      * @param commitment a byte array representing the commitment the message will contain
      */
     public CommitmentMessage(final NodeId senderId, final byte[] commitment) {
-
         super(senderId);
 
         throwArgNull(commitment, "commitment");
