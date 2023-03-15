@@ -175,5 +175,5 @@ public interface BlsProtocolManager<T extends BlsProtocolOutput> {
      *
      * @param viabilityChecker the method to check whether the protocol is still viable
      */
-    void setViabilityChecker(ProtocolViabilityChecker viabilityChecker);
+    void setViabilityChecker(BlsProtocolViabilityChecker viabilityChecker);
 }

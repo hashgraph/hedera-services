@@ -225,7 +225,7 @@ public class CrsProtocol implements BlsProtocol<Crs> {
     }
 
     /**
-     * Method satisfying the {@link ProtocolViabilityChecker} interface
+     * Method satisfying the {@link BlsProtocolViabilityChecker} interface
      *
      * @return true if the protocol is still viable, false otherwise
      */

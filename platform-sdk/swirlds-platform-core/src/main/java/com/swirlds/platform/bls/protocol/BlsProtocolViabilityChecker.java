@@ -20,7 +20,7 @@ package com.swirlds.platform.bls.protocol;
  * Interface representing a function which checks the viability of a protocol
  */
 @FunctionalInterface
-public interface ProtocolViabilityChecker {
+public interface BlsProtocolViabilityChecker {
     /**
      * Checks the viability of a protocol
      *
