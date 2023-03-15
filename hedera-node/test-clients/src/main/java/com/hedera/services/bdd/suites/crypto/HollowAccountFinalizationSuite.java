@@ -100,7 +100,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 hollowAccountCompletionWithContractCall(),
                 hollowAccountCompletionWithTokenAssociation(),
                 hollowAccountCompletionWithTokenTransfer(),
-                hollowAccountCompletionViaSignatureInSigMapIsNotAllowed(),
+                hollowAccountCompletionViaNonReqSigIsNotAllowed(),
                 hollowAccountCompletionWhenHollowAccountSigRequiredInOtherReqSigs(),
                 tooManyHollowAccountFinalizationsShouldFail(),
                 completedHollowAccountsTransfer(),
@@ -549,9 +549,9 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 }));
     }
 
-    private HapiSpec hollowAccountCompletionViaSignatureInSigMapIsNotAllowed() {
+    private HapiSpec hollowAccountCompletionViaNonReqSigIsNotAllowed() {
         final long DEPOSIT_AMOUNT = 1000;
-        return defaultHapiSpec("hollowAccountCompletionViaSignatureInSigMapIsNotAllowed")
+        return defaultHapiSpec("hollowAccountCompletionViaNonReqSigIsNotAllowed")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
