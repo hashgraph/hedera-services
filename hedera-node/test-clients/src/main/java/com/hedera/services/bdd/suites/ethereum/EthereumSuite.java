@@ -1039,7 +1039,7 @@ public class EthereumSuite extends HapiSuite {
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoTransfer(moving(tokenTransferAmount, FUNGIBLE_TOKEN)
                                         .between(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY))
-                                .via("autoAccount"))
+                                .via(AUTO_ACCOUNT_TRANSACTION_NAME))
                 .when(withOpContext((spec, ignore) -> allRunFor(
                         spec,
                         ethereumCallWithFunctionAbi(
@@ -1094,7 +1094,7 @@ public class EthereumSuite extends HapiSuite {
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L)
                                         .between(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY))
-                                .via("autoAccount"))
+                                .via(AUTO_ACCOUNT_TRANSACTION_NAME))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         ethereumCall(
@@ -1164,7 +1164,7 @@ public class EthereumSuite extends HapiSuite {
                         contractCreate(ERC20_CONTRACT),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoTransfer(moving(2, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY))
-                                .via("autoAccount"))
+                                .via(AUTO_ACCOUNT_TRANSACTION_NAME))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         ethereumCall(
