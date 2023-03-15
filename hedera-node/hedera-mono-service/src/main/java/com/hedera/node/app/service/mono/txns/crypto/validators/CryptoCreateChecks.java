@@ -196,7 +196,7 @@ public class CryptoCreateChecks {
 
     private ResponseCodeEnum validateKeyAndAliasProvidedCase(final CryptoCreateTransactionBody op) {
         if (op.getAlias().size() == EVM_ADDRESS_SIZE) {
-            if (!dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()) {
+            if (!dynamicProperties.isCryptoCreateWithAliasEnabled()) {
                 return NOT_SUPPORTED;
             }
 
@@ -218,7 +218,7 @@ public class CryptoCreateChecks {
                     op.getKey().getECDSASecp256K1(), op.getAlias().toByteArray());
         }
 
-        if (!dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()) {
+        if (!dynamicProperties.isCryptoCreateWithAliasEnabled()) {
             return NOT_SUPPORTED;
         }
         final var keyValidity = validateKey(op);
@@ -253,20 +253,9 @@ public class CryptoCreateChecks {
 
     private ResponseCodeEnum validateOnlyAliasProvidedCase(final CryptoCreateTransactionBody op) {
         if (op.getAlias().size() == EVM_ADDRESS_SIZE) {
-            if (!dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()) {
-                return NOT_SUPPORTED;
-            }
-            if (!dynamicProperties.isLazyCreationEnabled()) {
-                return NOT_SUPPORTED;
-            }
-
-            if (HederaEvmContractAliases.isMirror(op.getAlias().toByteArray())) {
-                return INVALID_ALIAS_KEY;
-            }
-
-            return isUsedAsAliasCheck(op.getAlias());
+            return INVALID_ALIAS_KEY;
         }
-        if (!dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()) {
+        if (!dynamicProperties.isCryptoCreateWithAliasEnabled()) {
             return NOT_SUPPORTED;
         }
         if (!isSerializedProtoKey(op.getAlias())) {

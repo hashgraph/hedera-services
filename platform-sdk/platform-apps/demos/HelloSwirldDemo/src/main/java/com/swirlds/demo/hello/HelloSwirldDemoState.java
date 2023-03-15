@@ -32,7 +32,7 @@ import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.SwirldState2;
+import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.transaction.Transaction;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -44,7 +44,7 @@ import java.util.List;
  * a string, and the state is just a list of the strings in all the transactions handled so far, in the
  * order that they were handled.
  */
-public class HelloSwirldDemoState extends PartialMerkleLeaf implements SwirldState2, MerkleLeaf {
+public class HelloSwirldDemoState extends PartialMerkleLeaf implements SwirldState, MerkleLeaf {
 
     /**
      * The version history of this class.

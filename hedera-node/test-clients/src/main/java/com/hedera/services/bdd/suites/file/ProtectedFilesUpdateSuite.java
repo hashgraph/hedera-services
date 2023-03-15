@@ -50,6 +50,10 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
 public class ProtectedFilesUpdateSuite extends HapiSuite {
+    private static final String IGNORE = "ignore";
+    private static final String TARGET_MEMO = "0.0.5";
+    private static final String REPLACE_MEMO = "0.0.6";
+    private static final String NEW_CONTENTS = "newContents";
     private final ObjectMapper mapper = new ObjectMapper();
     private static final Logger log = LogManager.getLogger(ProtectedFilesUpdateSuite.class);
 
@@ -149,7 +153,7 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
                 specialAccount,
                 specialFile,
                 isFree,
-                contents -> target.equals("ignore")
+                contents -> target.equals(IGNORE)
                         ? contents
                         : (new String(contents).replace(target, replacement)).getBytes());
     }
@@ -216,7 +220,7 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
     }
 
     private HapiSpec unauthorizedAccountCannotUpdateApplicationProperties() {
-        return unauthorizedAccountCannotUpdateSpecialFile(APP_PROPERTIES, "newContents");
+        return unauthorizedAccountCannotUpdateSpecialFile(APP_PROPERTIES, NEW_CONTENTS);
     }
 
     private HapiSpec account2CanUpdateApiPermissions() {
@@ -228,73 +232,73 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
     }
 
     private HapiSpec unauthorizedAccountCannotUpdateApiPermissions() {
-        return unauthorizedAccountCannotUpdateSpecialFile(API_PERMISSIONS, "newContents");
+        return unauthorizedAccountCannotUpdateSpecialFile(API_PERMISSIONS, NEW_CONTENTS);
     }
 
     private HapiSpec account2CanUpdateAddressBook() {
         return specialAccountCanUpdateSpecialFile(
-                GENESIS, ADDRESS_BOOK, true, contents -> extendedBioAddressBook(contents, "0.0.5", "0.0.6"));
+                GENESIS, ADDRESS_BOOK, true, contents -> extendedBioAddressBook(contents, TARGET_MEMO, REPLACE_MEMO));
     }
 
     private HapiSpec account50CanUpdateAddressBook() {
-        return specialAccountCanUpdateSpecialFile(SYSTEM_ADMIN, ADDRESS_BOOK, "0.0.5", "0.0.6");
+        return specialAccountCanUpdateSpecialFile(SYSTEM_ADMIN, ADDRESS_BOOK, TARGET_MEMO, REPLACE_MEMO);
     }
 
     private HapiSpec account55CanUpdateAddressBook() {
-        return specialAccountCanUpdateSpecialFile(ADDRESS_BOOK_CONTROL, ADDRESS_BOOK, "0.0.5", "0.0.6", false);
+        return specialAccountCanUpdateSpecialFile(ADDRESS_BOOK_CONTROL, ADDRESS_BOOK, TARGET_MEMO, REPLACE_MEMO, false);
     }
 
     private HapiSpec unauthorizedAccountCannotUpdateAddressBook() {
-        return unauthorizedAccountCannotUpdateSpecialFile(ADDRESS_BOOK, "newContents");
+        return unauthorizedAccountCannotUpdateSpecialFile(ADDRESS_BOOK, NEW_CONTENTS);
     }
 
     private HapiSpec account2CanUpdateNodeDetails() {
         return specialAccountCanUpdateSpecialFile(
-                GENESIS, NODE_DETAILS, true, contents -> extendedBioNodeDetails(contents, "0.0.5", "0.0.6"));
+                GENESIS, NODE_DETAILS, true, contents -> extendedBioNodeDetails(contents, TARGET_MEMO, REPLACE_MEMO));
     }
 
     private HapiSpec account50CanUpdateNodeDetails() {
-        return specialAccountCanUpdateSpecialFile(SYSTEM_ADMIN, NODE_DETAILS, "0.0.5", "0.0.6");
+        return specialAccountCanUpdateSpecialFile(SYSTEM_ADMIN, NODE_DETAILS, TARGET_MEMO, REPLACE_MEMO);
     }
 
     private HapiSpec account55CanUpdateNodeDetails() {
-        return specialAccountCanUpdateSpecialFile(ADDRESS_BOOK_CONTROL, NODE_DETAILS, "0.0.5", "0.0.6", false);
+        return specialAccountCanUpdateSpecialFile(ADDRESS_BOOK_CONTROL, NODE_DETAILS, TARGET_MEMO, REPLACE_MEMO, false);
     }
 
     private HapiSpec unauthorizedAccountCannotUpdateNodeDetails() {
-        return unauthorizedAccountCannotUpdateSpecialFile(NODE_DETAILS, "newContents");
+        return unauthorizedAccountCannotUpdateSpecialFile(NODE_DETAILS, NEW_CONTENTS);
     }
 
     private HapiSpec account2CanUpdateFeeSchedule() {
-        return specialAccountCanUpdateSpecialFile(GENESIS, FEE_SCHEDULE, "ignore", "ignore");
+        return specialAccountCanUpdateSpecialFile(GENESIS, FEE_SCHEDULE, IGNORE, IGNORE);
     }
 
     private HapiSpec account50CanUpdateFeeSchedule() {
-        return specialAccountCanUpdateSpecialFile(SYSTEM_ADMIN, FEE_SCHEDULE, "ignore", "ignore");
+        return specialAccountCanUpdateSpecialFile(SYSTEM_ADMIN, FEE_SCHEDULE, IGNORE, IGNORE);
     }
 
     private HapiSpec account56CanUpdateFeeSchedule() {
-        return specialAccountCanUpdateSpecialFile(FEE_SCHEDULE_CONTROL, FEE_SCHEDULE, "ignore", "ignore");
+        return specialAccountCanUpdateSpecialFile(FEE_SCHEDULE_CONTROL, FEE_SCHEDULE, IGNORE, IGNORE);
     }
 
     private HapiSpec unauthorizedAccountCannotUpdateFeeSchedule() {
-        return unauthorizedAccountCannotUpdateSpecialFile(FEE_SCHEDULE, "newContents");
+        return unauthorizedAccountCannotUpdateSpecialFile(FEE_SCHEDULE, NEW_CONTENTS);
     }
 
     private HapiSpec account2CanUpdateExchangeRates() {
-        return specialAccountCanUpdateSpecialFile(GENESIS, EXCHANGE_RATES, "ignore", "ignore");
+        return specialAccountCanUpdateSpecialFile(GENESIS, EXCHANGE_RATES, IGNORE, IGNORE);
     }
 
     private HapiSpec account50CanUpdateExchangeRates() {
-        return specialAccountCanUpdateSpecialFile(SYSTEM_ADMIN, EXCHANGE_RATES, "ignore", "ignore");
+        return specialAccountCanUpdateSpecialFile(SYSTEM_ADMIN, EXCHANGE_RATES, IGNORE, IGNORE);
     }
 
     private HapiSpec account57CanUpdateExchangeRates() {
-        return specialAccountCanUpdateSpecialFile(EXCHANGE_RATE_CONTROL, EXCHANGE_RATES, "ignore", "ignore");
+        return specialAccountCanUpdateSpecialFile(EXCHANGE_RATE_CONTROL, EXCHANGE_RATES, IGNORE, IGNORE);
     }
 
     private HapiSpec unauthorizedAccountCannotUpdateExchangeRates() {
-        return unauthorizedAccountCannotUpdateSpecialFile(EXCHANGE_RATES, "newContents");
+        return unauthorizedAccountCannotUpdateSpecialFile(EXCHANGE_RATES, NEW_CONTENTS);
     }
 
     @Override
