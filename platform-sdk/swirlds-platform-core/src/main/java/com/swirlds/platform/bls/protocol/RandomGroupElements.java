@@ -22,7 +22,6 @@ import static com.swirlds.platform.bls.BlsUtils.assertPublicKeyGroupMembership;
 import com.hedera.platform.bls.api.BilinearMap;
 import com.hedera.platform.bls.api.GroupElement;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -30,8 +29,8 @@ import java.util.Random;
  * Holds random group elements needed by {@link CrsProtocol}
  *
  * <p>The random group elements in this object are in the key group of the bilinear map, since the
- * random group elements from all parties will be aggregated to create the {@link Crs} object
- * generators, that must be in the key group
+ * random group elements from all parties will be aggregated to create the {@link Crs} object generators, that must be
+ * in the key group
  */
 public class RandomGroupElements {
 
@@ -42,8 +41,7 @@ public class RandomGroupElements {
     private final GroupElement randomGroupElement2;
 
     /**
-     * The underlying bilinear map. The random elements are part of the key group of this bilinear
-     * map
+     * The underlying bilinear map. The random elements are part of the key group of this bilinear map
      */
     private final BilinearMap bilinearMap;
 
@@ -51,7 +49,7 @@ public class RandomGroupElements {
      * Constructor that generates new random group elements
      *
      * @param bilinearMap the underlying bilinear map
-     * @param random a source of randomness
+     * @param random      a source of randomness
      */
     public RandomGroupElements(final BilinearMap bilinearMap, final Random random) {
         this.randomGroupElement1 = bilinearMap
@@ -68,10 +66,10 @@ public class RandomGroupElements {
     }
 
     /**
-     * Constructor for when random group elements have already been generated. Both random elements
-     * must be in the public key group of the bilinear map.
+     * Constructor for when random group elements have already been generated. Both random elements must be in the
+     * public key group of the bilinear map.
      *
-     * @param bilinearMap the underlying bilinear map
+     * @param bilinearMap         the underlying bilinear map
      * @param randomGroupElement1 the first random group element
      * @param randomGroupElement2 the second random group element
      */
@@ -119,10 +117,10 @@ public class RandomGroupElements {
     /**
      * Generates a commitment to the random group elements
      *
+     * @param digest the digest to use to generate the commitment
      * @return the generated commitment
      */
-    public byte[] commit() throws NoSuchAlgorithmException {
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+    public byte[] commit(final MessageDigest digest) {
 
         digest.update(randomGroupElement1.toBytes());
         digest.update(randomGroupElement2.toBytes());

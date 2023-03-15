@@ -25,7 +25,7 @@ import com.swirlds.platform.bls.addressbook.BlsAddressBook;
 import com.swirlds.platform.bls.message.BlsProtocolMessage;
 import com.swirlds.platform.bls.message.CommitmentMessage;
 import com.swirlds.platform.bls.message.OpeningMessage;
-import java.security.NoSuchAlgorithmException;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -84,12 +84,18 @@ public class CrsProtocol implements BlsProtocol<Crs> {
     private final BlsProtocolManager<Crs> protocolManager;
 
     /**
+     * The digest used throughout the protocol
+     */
+    private final MessageDigest digest;
+
+    /**
      * Constructor
      *
      * @param addressBook     the address book running this protocol
      * @param nodeId          the id of this node
      * @param protocolManager the manager for the protocol
      * @param bilinearMap     the bilinear map
+     * @param digest          the digest used throughout the protocol
      * @param random          a source of randomness
      */
     public CrsProtocol(
@@ -97,10 +103,12 @@ public class CrsProtocol implements BlsProtocol<Crs> {
             final NodeId nodeId,
             final BlsProtocolManager<Crs> protocolManager,
             final BilinearMap bilinearMap,
+            final MessageDigest digest,
             final Random random) {
 
         this.addressBook = addressBook;
         this.nodeId = nodeId;
+        this.digest = digest;
 
         this.protocolManager = protocolManager;
         this.protocolManager.addRound(this::broadcastCommitment);
@@ -123,12 +131,7 @@ public class CrsProtocol implements BlsProtocol<Crs> {
      * @return the {@link CommitmentMessage}
      */
     private BlsProtocolMessage broadcastCommitment(final List<BlsProtocolMessage> inputMessages) {
-        try {
-            return new CommitmentMessage(nodeId, randomGroupElements.commit());
-        } catch (final NoSuchAlgorithmException e) {
-            protocolManager.errorOccurred();
-            throw new RuntimeException(e);
-        }
+        return new CommitmentMessage(nodeId, randomGroupElements, digest);
     }
 
     /**
@@ -165,14 +168,8 @@ public class CrsProtocol implements BlsProtocol<Crs> {
         for (final OpeningMessage message : openingMessages) {
             final NodeId dealer = message.getSenderId();
 
-            final byte[] commitment;
-            try {
-                // Recompute commitment from the opening
-                commitment = message.getRandomGroupElements().commit();
-            } catch (final NoSuchAlgorithmException e) {
-                protocolManager.errorOccurred();
-                throw new RuntimeException(e);
-            }
+            // Recompute commitment from the opening
+            final byte[] commitment = message.getRandomGroupElements().commit(digest);
 
             // If the recomputed commitment doesn't match what was originally sent, don't count the commitment
             if (!Arrays.equals(commitment, commitments.get(dealer))) {
