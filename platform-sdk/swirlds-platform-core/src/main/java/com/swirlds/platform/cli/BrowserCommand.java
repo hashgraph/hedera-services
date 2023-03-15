@@ -21,9 +21,11 @@ public class BrowserCommand extends AbstractCommand {
     // FUTURE WORK: make this command insensitive to current working directory
     // FUTURE WORK: instead of passing string arguments for the browser to parse, do all of the parsing here
 
+    // TODO add a CWD with sane default
+
     private String[] browserArgs = new String[0];
 
-    @CommandLine.Option(
+    @CommandLine.Option( // TODO test
             names = {"-a", "--browser-arg"},
             description = "Provide an argument that is passed to Browser.main().")
     private void setBrowserArgs(final String[] browserArgs) {
@@ -36,13 +38,15 @@ public class BrowserCommand extends AbstractCommand {
      * @return return code of the program
      */
     @Override
-    public Integer call() throws IOException {
+    public Integer call() throws IOException, InterruptedException {
         try {
             Browser.main(browserArgs);
         } catch (final Exception e) {
             e.printStackTrace();
             return 1;
         }
+
+        Browser.join();
         return 0;
     }
 }

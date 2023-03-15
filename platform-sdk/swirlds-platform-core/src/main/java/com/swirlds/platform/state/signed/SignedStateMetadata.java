@@ -34,6 +34,7 @@ import static com.swirlds.platform.state.signed.SignedStateMetadataField.WALL_CL
 
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.formatting.TextTable;
 import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import java.io.BufferedReader;
@@ -54,8 +55,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Metadata about a signed state. Fields in this record may be null if they are not present in the metadata file.
- * All fields in this record will be null if the metadata file is missing.
+ * Metadata about a signed state. Fields in this record may be null if they are not present in the metadata file. All
+ * fields in this record will be null if the metadata file is missing.
  *
  * @param round                       the round of the signed state, corresponds to
  *                                    {@link SignedStateMetadataField#ROUND}
@@ -83,17 +84,17 @@ import org.apache.logging.log4j.Logger;
  *                                    {@link SignedStateMetadataField#TOTAL_STAKE}
  */
 public record SignedStateMetadata( // TODO test this
-        Long round,
-        Long numberOfConsensusEvents,
-        Instant consensusTimestamp,
-        Hash runningEventHash,
-        Long minimumGenerationNonAncient,
-        String softwareVersion,
-        Instant wallClockTime,
-        Long nodeId,
-        List<Long> signingNodes,
-        Long signingStakeSum,
-        Long totalStake) {
+                                   Long round,
+                                   Long numberOfConsensusEvents,
+                                   Instant consensusTimestamp,
+                                   Hash runningEventHash,
+                                   Long minimumGenerationNonAncient,
+                                   String softwareVersion,
+                                   Instant wallClockTime,
+                                   Long nodeId,
+                                   List<Long> signingNodes,
+                                   Long signingStakeSum,
+                                   Long totalStake) {
 
     /**
      * The standard file name for the signed state metadata file.
@@ -397,12 +398,16 @@ public record SignedStateMetadata( // TODO test this
         final List<SignedStateMetadataField> keys = new ArrayList<>(map.keySet());
         Collections.sort(keys);
 
-        try (final BufferedWriter writer = new BufferedWriter(new FileWriter(metadataFile.toFile()))) {
-            for (final SignedStateMetadataField key : keys) {
-                final String value = map.get(key);
+        final TextTable table = new TextTable().setBordersEnabled(false);
 
-                writer.write(key + ": " + value + "\n");
-            }
+        for (final SignedStateMetadataField key : keys) {
+            final String keyString = key.toString() + ": ";
+            final String valueString = map.get(key);
+            table.addRow(keyString, valueString);
+        }
+
+        try (final BufferedWriter writer = new BufferedWriter(new FileWriter(metadataFile.toFile()))) {
+            writer.write(table.render());
         }
     }
 }
