@@ -17,7 +17,7 @@
 package com.swirlds.platform.bls.protocol;
 
 /** An interface representing the output object of a {@link BlsProtocol} */
-public interface ProtocolOutput {
+public interface BlsProtocolOutput {
     /**
      * Compares this output object to another object. This comparison is more tolerant than a strict
      * equals function, and should only compare object members that are expected to be the same for

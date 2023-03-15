@@ -25,7 +25,7 @@ import java.util.List;
  * @param <T> the type of the output object
  */
 @FunctionalInterface
-public interface BlsProtocolFinisher<T extends ProtocolOutput> {
+public interface BlsProtocolFinisher<T extends BlsProtocolOutput> {
     /**
      * Performs the final step of a protocol
      *

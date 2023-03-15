@@ -28,7 +28,7 @@ import java.util.Set;
  *
  * @param <T> the type of output of the protocol being managed
  */
-public interface BlsProtocolManager<T extends ProtocolOutput> {
+public interface BlsProtocolManager<T extends BlsProtocolOutput> {
     /**
      * Executes the next round of the protocol
      *

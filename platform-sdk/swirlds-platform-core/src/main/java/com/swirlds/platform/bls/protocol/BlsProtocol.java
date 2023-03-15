@@ -23,7 +23,7 @@ import com.hedera.platform.bls.api.BilinearMap;
  *
  * @param <T> The type of the protocol output object
  */
-public interface BlsProtocol<T extends ProtocolOutput> {
+public interface BlsProtocol<T extends BlsProtocolOutput> {
     /**
      * Gets the output object created by the completed protocol. Will only be valid if the protocol completed
      * successfully

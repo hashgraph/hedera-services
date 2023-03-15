@@ -36,7 +36,7 @@ import com.hedera.platform.bls.api.GroupElement;
  *     the bilinear map, since the generator is used to create IBE public keys
  */
 public record Crs(BilinearMap bilinearMap, GroupElement thresholdGenerator, GroupElement ibeGenerator)
-        implements ProtocolOutput {
+        implements BlsProtocolOutput {
 
     /**
      * Constructor asserting correct generator group membership
