@@ -41,7 +41,8 @@ public class CryptoBenchMerkleDb extends CryptoBench {
                 .preferDiskIndices(false);
         MerkleDbDataSourceBuilder<BenchmarkKey, BenchmarkValue> dataSourceBuilder =
                 new MerkleDbDataSourceBuilder<>(tableConfig);
-        final VirtualMap<BenchmarkKey, BenchmarkValue> createdMap = new VirtualMap<>("vm" + System.nanoTime(), dataSourceBuilder);
+        final VirtualMap<BenchmarkKey, BenchmarkValue> createdMap =
+                new VirtualMap<>("vm" + System.nanoTime(), dataSourceBuilder);
         BenchmarkMetrics.register(createdMap::registerMetrics);
         return createdMap;
     }

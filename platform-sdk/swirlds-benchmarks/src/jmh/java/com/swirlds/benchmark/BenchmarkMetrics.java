@@ -113,8 +113,9 @@ public final class BenchmarkMetrics {
                     "AAE",
                     "cpuLoadProc",
                     Double.class,
-                    () -> osBean instanceof com.sun.management.OperatingSystemMXBean sunBean ?
-                            sunBean.getProcessCpuLoad() * Runtime.getRuntime().availableProcessors() : -1.0)
+                    () -> osBean instanceof com.sun.management.OperatingSystemMXBean sunBean
+                            ? sunBean.getProcessCpuLoad() * Runtime.getRuntime().availableProcessors()
+                            : -1.0)
             .withDescription("CPU load of the JVM process")
             .withFormat(FORMAT_FLOAT1);
 
@@ -122,8 +123,9 @@ public final class BenchmarkMetrics {
                     "AAF",
                     "openFileDesc",
                     Long.class,
-                    () -> osBean instanceof com.sun.management.UnixOperatingSystemMXBean unixBean ?
-                            unixBean.getOpenFileDescriptorCount() : -1L)
+                    () -> osBean instanceof com.sun.management.UnixOperatingSystemMXBean unixBean
+                            ? unixBean.getOpenFileDescriptorCount()
+                            : -1L)
             .withDescription("Open file descriptors")
             .withFormat(FORMAT_INTEGER);
 
