@@ -83,7 +83,7 @@ import org.apache.logging.log4j.Logger;
  * @param totalStake                  the total stake of all nodes in the network, corresponds to
  *                                    {@link SignedStateMetadataField#TOTAL_STAKE}
  */
-public record SignedStateMetadata( // TODO test this
+public record SignedStateMetadata(
                                    Long round,
                                    Long numberOfConsensusEvents,
                                    Instant consensusTimestamp,
@@ -196,23 +196,23 @@ public record SignedStateMetadata( // TODO test this
             try (final BufferedReader reader = new BufferedReader(new FileReader(metadataFile.toFile()))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    final String[] parts = line.split(":");
-                    if (parts.length != 2) {
+
+                    final int colonIndex = line.indexOf(":");
+                    if (colonIndex == -1) {
                         logger.warn(STARTUP.getMarker(), "Invalid line in metadata file: {}", line);
                         continue;
                     }
+
+                    final String keyString = line.substring(0, colonIndex).strip();
+                    final String valueString = line.substring(colonIndex + 1).strip();
+
                     try {
-                        final SignedStateMetadataField key = SignedStateMetadataField.valueOf(parts[0].strip());
-                        final String value = parts[1].strip();
-                        map.put(key, value);
+                        final SignedStateMetadataField key = SignedStateMetadataField.valueOf(keyString);
+                        map.put(key, valueString);
                     } catch (final IllegalArgumentException e) {
-                        logger.warn(STARTUP.getMarker(), "Invalid key in metadata file: {}", parts[0].strip());
+                        logger.warn(STARTUP.getMarker(), "Invalid key in metadata file: {}", keyString, e);
                     }
                 }
-            }
-
-            if (map.size() != SignedStateMetadataField.values().length) {
-                throw new IOException("Invalid number of lines in metadata file: " + map.size());
             }
 
             return map;
@@ -330,8 +330,11 @@ public record SignedStateMetadata( // TODO test this
         final String[] parts = value.split(",");
         final List<Long> list = new ArrayList<>();
         for (final String part : parts) {
+            if (part.isBlank()) {
+                continue;
+            }
             try {
-                list.add(Long.parseLong(part));
+                list.add(Long.parseLong(part.strip()));
             } catch (final NumberFormatException e) {
                 logInvalidField(field, value, e);
                 return null;
@@ -366,22 +369,35 @@ public record SignedStateMetadata( // TODO test this
     }
 
     /**
+     * Put a value into the data map if it is not null.
+     */
+    private static void putIfNotNull(
+            final Map<SignedStateMetadataField, String> map,
+            final SignedStateMetadataField field,
+            final Object value) {
+        if (value != null) {
+            map.put(field, value.toString().replace("\n", "//"));
+        }
+    }
+
+    /**
      * Build a map of key/value pairs to be written to disk.
      */
     private Map<SignedStateMetadataField, String> buildStringMap() {
         final Map<SignedStateMetadataField, String> map = new HashMap<>();
 
-        map.put(ROUND, Long.toString(round));
-        map.put(NUMBER_OF_CONSENSUS_EVENTS, Long.toString(numberOfConsensusEvents));
-        map.put(CONSENSUS_TIMESTAMP, consensusTimestamp.toString());
-        map.put(RUNNING_EVENT_HASH, runningEventHash.toString());
-        map.put(MINIMUM_GENERATION_NON_ANCIENT, Long.toString(minimumGenerationNonAncient));
-        map.put(SOFTWARE_VERSION, softwareVersion);
-        map.put(WALL_CLOCK_TIME, wallClockTime.toString());
-        map.put(NODE_ID, Long.toString(nodeId));
-        map.put(SIGNING_NODES, formattedList(signingNodes.iterator()));
-        map.put(SIGNING_STAKE_SUM, Long.toString(signingStakeSum));
-        map.put(TOTAL_STAKE, Long.toString(totalStake));
+        putIfNotNull(map, ROUND, round);
+        putIfNotNull(map, NUMBER_OF_CONSENSUS_EVENTS, numberOfConsensusEvents);
+        putIfNotNull(map, CONSENSUS_TIMESTAMP, consensusTimestamp);
+        putIfNotNull(map, RUNNING_EVENT_HASH, runningEventHash);
+        putIfNotNull(map, MINIMUM_GENERATION_NON_ANCIENT, minimumGenerationNonAncient);
+        putIfNotNull(map, SOFTWARE_VERSION, softwareVersion);
+        putIfNotNull(map, WALL_CLOCK_TIME, wallClockTime);
+        putIfNotNull(map, NODE_ID, nodeId);
+        final String signingNodesString = signingNodes == null ? null : formattedList(signingNodes.iterator());
+        putIfNotNull(map, SIGNING_NODES, signingNodesString);
+        putIfNotNull(map, SIGNING_STAKE_SUM, signingStakeSum);
+        putIfNotNull(map, TOTAL_STAKE, totalStake);
 
         return map;
     }
