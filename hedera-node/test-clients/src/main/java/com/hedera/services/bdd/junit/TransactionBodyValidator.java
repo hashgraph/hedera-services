@@ -34,7 +34,7 @@ import org.apache.logging.log4j.Logger;
 public class TransactionBodyValidator implements RecordStreamValidator {
     private static final Logger log = LogManager.getLogger(TransactionBodyValidator.class);
 
-    private final Map<HederaFunctionality, Long> expectedTxnBodies = new EnumMap<>(HederaFunctionality.class);
+    private final Map<HederaFunctionality, String> expectedTxnBodies = new EnumMap<>(HederaFunctionality.class);
     private final TransactionBodyClassifier transactionBodyClassifier = new TransactionBodyClassifier();
 
     @Override
@@ -48,16 +48,17 @@ public class TransactionBodyValidator implements RecordStreamValidator {
             final var items = recordWithSidecars.recordFile().getRecordStreamItemsList();
             for (final var item : items) {
                 final var txnType = transactionBodyClassifier.incorporate(item);
+                final var recId = item.getRecord().getTransactionID().toString();
                 if (expectedTxnBodies.containsKey(txnType)) {
-                    expectedTxnBodies.put(txnType, expectedTxnBodies.get(txnType) + 1);
+                    expectedTxnBodies.put(txnType, expectedTxnBodies.get(txnType) + ", " + recId);
                 } else {
-                    expectedTxnBodies.put(txnType, 1L);
+                    expectedTxnBodies.put(txnType, recId);
                 }
             }
         }
 
         if (transactionBodyClassifier.isInvalid()) {
-            throw new IllegalStateException("Invalid TransactionBody type HederaFunctionality.NONE with value "
+            throw new IllegalStateException("Invalid TransactionBody type HederaFunctionality.NONE with record ids: "
                     + expectedTxnBodies.get(HederaFunctionality.NONE));
         }
     }
