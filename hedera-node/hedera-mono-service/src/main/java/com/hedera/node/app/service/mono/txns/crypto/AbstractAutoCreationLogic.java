@@ -220,9 +220,7 @@ public abstract class AbstractAutoCreationLogic {
             if (key.hasECDSASecp256K1()) {
                 final JKey jKey = asFcKeyUnchecked(key);
                 final var evmAddress = tryAddressRecovery(jKey, EthSigsUtils::recoverAddressFromPubKey);
-                if (evmAddress != null) {
-                    childRecord.setEvmAddress(evmAddress);
-                }
+                childRecord.setEvmAddress(evmAddress);
             }
         }
 
