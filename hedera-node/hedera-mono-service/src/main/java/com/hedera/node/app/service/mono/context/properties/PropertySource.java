@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.context.properties;
 
 import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
 
 import com.hedera.node.app.hapi.utils.sysfiles.domain.KnownBlockValues;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor;
@@ -27,6 +28,7 @@ import com.hedera.node.app.service.mono.keys.LegacyContractIdActivations;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeStartupHelper;
 import com.hedera.node.app.service.mono.throttling.MapAccessType;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
+import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.node.app.spi.config.Profile;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -43,6 +45,7 @@ import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.hyperledger.besu.datatypes.Address;
 
 /**
  * Defines a source of arbitrary properties keyed by strings. Provides strongly typed accessors for
@@ -73,6 +76,9 @@ public interface PropertySource {
     Function<String, Object> AS_CONGESTION_MULTIPLIERS = CongestionMultipliers::from;
 
     Function<String, Object> AS_LEGACY_ACTIVATIONS = LegacyContractIdActivations::from;
+    Function<String, Object> AS_EVM_ADDRESSES =
+            s -> MiscUtils.csvStream(s, LegacyContractIdActivations::parsedMirrorAddressOf)
+                    .collect(toSet());
     Function<String, Object> AS_ENTITY_SCALE_FACTORS = EntityScaleFactors::from;
     Function<String, Object> AS_KNOWN_BLOCK_VALUES = KnownBlockValues::from;
     Function<String, Object> AS_THROTTLE_SCALE_FACTOR = ScaleFactor::from;
@@ -183,6 +189,10 @@ public interface PropertySource {
 
     default Profile getProfileProperty(final String name) {
         return getTypedProperty(Profile.class, name);
+    }
+
+    default Set<Address> getEvmAddresses(String name) {
+        return getTypedProperty(Set.class, name);
     }
 
     default AccountID getAccountProperty(final String name) {
