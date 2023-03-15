@@ -76,12 +76,13 @@ class MerkleDBFileUtilsTest {
     void readNBytesFromFileChannel() throws IOException {
         final File testFile = createTestFile(EXAMPLE_STRING);
         FileChannel fileChannel = FileChannel.open(testFile.toPath(), StandardOpenOption.READ);
-        ByteBuffer result = MerkleDbFileUtils.readFromFileChannel(fileChannel, 10);
-        assertEquals(10, result.remaining());
-        byte[] bytesFromFile = new byte[10];
+        int bytesToRead = 10;
+        ByteBuffer result = MerkleDbFileUtils.readFromFileChannel(fileChannel, bytesToRead);
+        assertEquals(bytesToRead, result.remaining());
+        byte[] bytesFromFile = new byte[bytesToRead];
         result.get(bytesFromFile);
 
-        assertEquals("1234567890", new String(bytesFromFile));
+        assertEquals(EXAMPLE_STRING.substring(0, bytesToRead), new String(bytesFromFile));
     }
 
     @Test
