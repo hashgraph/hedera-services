@@ -28,4 +28,4 @@ import com.swirlds.platform.bls.message.BlsProtocolMessage;
  *     from the subject, a complaint from a different party revealing the malice of the subject, or
  *     null if a message was simply missing from the subject
  */
-public record IncidentReport(NodeId subject, String description, BlsProtocolMessage message) {}
+public record BlsIncidentReport(NodeId subject, String description, BlsProtocolMessage message) {}

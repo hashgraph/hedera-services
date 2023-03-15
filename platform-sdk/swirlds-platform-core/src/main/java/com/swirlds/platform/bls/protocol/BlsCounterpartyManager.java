@@ -31,7 +31,7 @@ public class BlsCounterpartyManager {
     private final Set<NodeId> offlineNodes;
 
     /** List of reports detailing the disqualification of a counterparty */
-    private final List<IncidentReport> incidentReports;
+    private final List<BlsIncidentReport> incidentReports;
 
     /** Constructor */
     public BlsCounterpartyManager() {
@@ -46,7 +46,7 @@ public class BlsCounterpartyManager {
      *
      * @param nodeId the id of the malicious party
      */
-    public void declareMalicious(final NodeId nodeId, final IncidentReport report) {
+    public void declareMalicious(final NodeId nodeId, final BlsIncidentReport report) {
         // Don't disqualify a party in multiple ways
         if (checkDisqualified(nodeId)) {
             return;
@@ -61,7 +61,7 @@ public class BlsCounterpartyManager {
      *
      * @param nodeId the id of the offline party
      */
-    public void declareOffline(final NodeId nodeId, final IncidentReport report) {
+    public void declareOffline(final NodeId nodeId, final BlsIncidentReport report) {
         // Don't disqualify a party in multiple ways
         if (checkDisqualified(nodeId)) {
             return;
@@ -124,7 +124,7 @@ public class BlsCounterpartyManager {
      *
      * @return the {@link #incidentReports}
      */
-    public List<IncidentReport> getIncidentReports() {
+    public List<BlsIncidentReport> getIncidentReports() {
         return incidentReports;
     }
 }

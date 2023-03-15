@@ -114,11 +114,11 @@ public interface BlsProtocolManager<T extends BlsProtocolOutput> {
     Set<NodeId> getMaliciousNodes();
 
     /**
-     * Gets a list of {@link IncidentReport}s, which each describe when/how a node has been disqualified
+     * Gets a list of {@link BlsIncidentReport}s, which each describe when/how a node has been disqualified
      *
      * @return the incident reports
      */
-    List<IncidentReport> getIncidentReports();
+    List<BlsIncidentReport> getIncidentReports();
 
     /**
      * Checks whether a given node has been disqualified
