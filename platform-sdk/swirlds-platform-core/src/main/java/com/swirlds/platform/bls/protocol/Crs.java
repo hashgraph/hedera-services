@@ -35,9 +35,7 @@ import com.hedera.platform.bls.api.GroupElement;
  * @param ibeGenerator independent generator, used for IBE encryption. exists in the key group of
  *     the bilinear map, since the generator is used to create IBE public keys
  */
-public record Crs(BilinearMap bilinearMap, GroupElement thresholdGenerator, GroupElement ibeGenerator)
-        implements BlsProtocolOutput {
-
+public record Crs(BilinearMap bilinearMap, GroupElement thresholdGenerator, GroupElement ibeGenerator) {
     /**
      * Constructor asserting correct generator group membership
      *
@@ -48,26 +46,6 @@ public record Crs(BilinearMap bilinearMap, GroupElement thresholdGenerator, Grou
     public Crs {
         assertPublicKeyGroupMembership(bilinearMap, thresholdGenerator, "thresholdGenerator");
         assertPublicKeyGroupMembership(bilinearMap, ibeGenerator, "ibeGenerator");
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public boolean compareToOtherOutput(final Object o) {
-        if (this == o) {
-            return true;
-        }
-
-        if (o == null) {
-            return false;
-        }
-
-        if (o instanceof final Crs otherCrs) {
-            return bilinearMap.equals(otherCrs.bilinearMap)
-                    && thresholdGenerator.equals(otherCrs.thresholdGenerator)
-                    && ibeGenerator.equals(otherCrs.ibeGenerator);
-        }
-
-        return false;
     }
 
     @Override

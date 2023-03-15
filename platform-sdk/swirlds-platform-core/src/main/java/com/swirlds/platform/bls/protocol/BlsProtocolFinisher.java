@@ -22,10 +22,10 @@ import java.util.List;
 /**
  * A functional interface for performing the final step of a protocol
  *
- * @param <T> the type of the output object
+ * @param <T> the type of object returned by the protocol finisher
  */
 @FunctionalInterface
-public interface BlsProtocolFinisher<T extends BlsProtocolOutput> {
+public interface BlsProtocolFinisher<T> {
     /**
      * Performs the final step of a protocol
      *

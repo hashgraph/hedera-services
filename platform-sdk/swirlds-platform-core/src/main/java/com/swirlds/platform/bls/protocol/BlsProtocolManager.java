@@ -20,7 +20,6 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.bls.message.BlsProtocolMessage;
 import java.util.Collection;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 
 /**
@@ -28,7 +27,7 @@ import java.util.Set;
  *
  * @param <T> the type of output of the protocol being managed
  */
-public interface BlsProtocolManager<T extends BlsProtocolOutput> {
+public interface BlsProtocolManager<T> {
     /**
      * Executes the next round of the protocol
      *

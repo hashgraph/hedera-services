@@ -74,11 +74,6 @@ public class CrsProtocol implements BlsProtocol<Crs> {
     private final NodeId nodeId;
 
     /**
-     * The {@link Crs} output object created by the protocol. Only valid if the protocol has completed successfully
-     */
-    private Crs crsOutput;
-
-    /**
      * The manager for this protocol
      */
     private final BlsProtocolManager<Crs> protocolManager;
@@ -183,20 +178,10 @@ public class CrsProtocol implements BlsProtocol<Crs> {
             generator2Elements.add(message.getRandomGroupElements().getRandomGroupElement2());
         }
 
-        crsOutput = new Crs(
+        return new Crs(
                 bilinearMap,
                 bilinearMap.keyGroup().batchMultiply(generator1Elements),
                 bilinearMap.keyGroup().batchMultiply(generator2Elements));
-
-        return crsOutput;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Crs getOutput() {
-        return crsOutput;
     }
 
     /**
