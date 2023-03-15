@@ -487,7 +487,8 @@ public abstract class AbstractLongList<C> implements LongList {
         if (value == IMPERMISSIBLE_VALUE) {
             throw new IllegalArgumentException("Cannot put " + IMPERMISSIBLE_VALUE + " into a LongList");
         }
-        assert index >= minValidIndex.get();
+        assert index >= minValidIndex.get() :
+                String.format("Index %d is less than min valid index %d", index, minValidIndex.get());
     }
 
     /**
