@@ -338,7 +338,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                     // create with EVM address alias and no key
                     final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                     final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(tmp));
-                    final var op2 = cryptoCreate(ACCOUNT).alias(evmAddress).hasPrecheck(INVALID_ALIAS_KEY);
+                    final var op2 = cryptoCreate(ACCOUNT).alias(evmAddress).hasPrecheck(NOT_SUPPORTED);
                     // create with ED alias and no key
                     final var ed25519Key = spec.registry().getKey(ED_25519_KEY);
                     final var op3 = cryptoCreate(ACCOUNT)
@@ -519,7 +519,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                             .balance(100 * ONE_HBAR);
                     final var op3 = cryptoCreate(ACCOUNT)
                             .alias(evmAddressBytes)
-                            .hasPrecheck(ALIAS_ALREADY_ASSIGNED)
+                            .hasPrecheck(INVALID_ALIAS_KEY)
                             .balance(100 * ONE_HBAR);
                     final var op4 = cryptoCreate(ANOTHER_ACCOUNT)
                             .key(SECP_256K1_SOURCE_KEY)

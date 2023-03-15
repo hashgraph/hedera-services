@@ -563,7 +563,7 @@ public class CryptoCreateSuite extends HapiSuite {
 
                     final var createWithEVMAddressAlias = cryptoCreate(ANOTHER_ACCOUNT)
                             .alias(evmAddressBytes)
-                            .hasPrecheck(ALIAS_ALREADY_ASSIGNED)
+                            .hasPrecheck(INVALID_ALIAS_KEY)
                             .balance(100 * ONE_HBAR);
 
                     allRunFor(
@@ -634,7 +634,7 @@ public class CryptoCreateSuite extends HapiSuite {
                             .balance(100 * ONE_HBAR);
                     final var op4 = cryptoCreate(ACCOUNT)
                             .alias(evmAddressBytes)
-                            .hasPrecheck(ALIAS_ALREADY_ASSIGNED)
+                            .hasPrecheck(INVALID_ALIAS_KEY)
                             .balance(100 * ONE_HBAR);
 
                     allRunFor(spec, op, op2, op3, op4);
