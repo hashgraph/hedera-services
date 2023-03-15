@@ -106,43 +106,49 @@ public class LongListDisk extends AbstractLongList<Long> {
         // create temporary file for writing
         // the warning is suppressed because the file is not supposed to be closed
         // as this implementation uses a file channel from it.
-        @SuppressWarnings("resource")
-        final RandomAccessFile rf = new RandomAccessFile(tempFile.toFile(), "rw");
-        // ensure that the amount of disk space is enough
-        // two additional chunks are required to accommodate "compressed" first and last chunks in the original file
-        rf.setLength(fileChannel.size() + (long) 2 * memoryChunkSize);
-        currentFileChannel = rf.getChannel();
+        try (final RandomAccessFile rf = new RandomAccessFile(tempFile.toFile(), "rw")) {
+            // ensure that the amount of disk space is enough
+            // two additional chunks are required to accommodate "compressed" first and last chunks in the original file
+            rf.setLength(fileChannel.size() + 2L * memoryChunkSize);
+            currentFileChannel = rf.getChannel();
 
-        final int totalNumberOfChunks = calculateNumberOfChunks(size());
-        final int firstChunkWithDataIndex = (int) (minValidIndex.get() / numLongsPerChunk);
-        final int minValidIndexInChunk = (int) (minValidIndex.get() % numLongsPerChunk);
+            final int totalNumberOfChunks = calculateNumberOfChunks(size());
+            final int firstChunkWithDataIndex = (int) (minValidIndex.get() / numLongsPerChunk);
+            final int minValidIndexInChunk = (int) (minValidIndex.get() % numLongsPerChunk);
 
-        // copy the first chunk
-        final ByteBuffer transferBuffer = initOrGetTransferBuffer();
-        // we need to make sure that the chunk is written in full.
-        // If a value is absent, the list element will have IMPERMISSIBLE_VALUE
-        fillBufferWithZeroes(transferBuffer);
-        transferBuffer.position(minValidIndexInChunk * Long.BYTES);
-        MerkleDbFileUtils.completelyRead(fileChannel, transferBuffer);
-        transferBuffer.flip();
-        // writing the full chunk, all values before minValidIndexInChunk are zeroes
-        MerkleDbFileUtils.completelyWrite(currentFileChannel, transferBuffer, 0);
-        chunkList.set(firstChunkWithDataIndex, 0L);
+            // copy the first chunk
+            final ByteBuffer transferBuffer = initOrGetTransferBuffer();
+            // we need to make sure that the chunk is written in full.
+            // If a value is absent, the list element will have IMPERMISSIBLE_VALUE
+            fillBufferWithZeroes(transferBuffer);
+            transferBuffer.position(minValidIndexInChunk * Long.BYTES);
+            MerkleDbFileUtils.completelyRead(fileChannel, transferBuffer);
+            transferBuffer.flip();
+            // writing the full chunk, all values before minValidIndexInChunk are zeroes
+            MerkleDbFileUtils.completelyWrite(currentFileChannel, transferBuffer, 0);
+            chunkList.set(firstChunkWithDataIndex, 0L);
 
-        // copy everything except for the first chunk and the last chunk
-        MerkleDbFileUtils.completelyTransferFrom(
-                currentFileChannel, fileChannel, memoryChunkSize, (long) (totalNumberOfChunks - 2) * memoryChunkSize);
+            // copy everything except for the first chunk and the last chunk
+            MerkleDbFileUtils.completelyTransferFrom(
+                    currentFileChannel,
+                    fileChannel,
+                    memoryChunkSize,
+                    (long) (totalNumberOfChunks - 2) * memoryChunkSize);
 
-        // copy the last chunk
-        transferBuffer.clear();
-        MerkleDbFileUtils.completelyRead(fileChannel, transferBuffer);
-        transferBuffer.flip();
-        MerkleDbFileUtils.completelyWrite(
-                currentFileChannel, transferBuffer, (long) (totalNumberOfChunks - 1) * memoryChunkSize);
+            // copy the last chunk
+            transferBuffer.clear();
+            MerkleDbFileUtils.completelyRead(fileChannel, transferBuffer);
+            transferBuffer.flip();
+            MerkleDbFileUtils.completelyWrite(
+                    currentFileChannel, transferBuffer, (long) (totalNumberOfChunks - 1) * memoryChunkSize);
 
-        for (int i = firstChunkWithDataIndex + 1; i < totalNumberOfChunks; i++) {
-            chunkList.set(i, (long) (i - firstChunkWithDataIndex) * memoryChunkSize);
+            for (int i = firstChunkWithDataIndex + 1; i < totalNumberOfChunks; i++) {
+                chunkList.set(i, (long) (i - firstChunkWithDataIndex) * memoryChunkSize);
+            }
         }
+        // now, once the file is copied, we can create another channel to access it
+        currentFileChannel = FileChannel.open(
+                tempFile, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
     }
 
     private static void fillBufferWithZeroes(ByteBuffer transferBuffer) {

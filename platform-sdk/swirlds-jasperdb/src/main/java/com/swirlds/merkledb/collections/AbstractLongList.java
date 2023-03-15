@@ -47,6 +47,10 @@ public abstract class AbstractLongList<C> implements LongList {
     /** Access to sun.misc.Unsafe required for operations on direct bytebuffers*/
     protected static final Unsafe UNSAFE;
 
+    public static final String MAX_CHUNKS_EXCEEDED_MSG = "The maximum number of memory chunks should not exceed %s. "
+            + "Either increase numLongsPerChunk or decrease maxLongs";
+    public static final String CHUNK_SIZE_EXCEEDED_MSG = "Cannot store %d per chunk (max is %d)";
+
     static {
         try {
             final Field f = Unsafe.class.getDeclaredField("theUnsafe");
@@ -143,16 +147,13 @@ public abstract class AbstractLongList<C> implements LongList {
         }
         if (numLongsPerChunk > MAX_NUM_LONGS_PER_CHUNK) {
             throw new IllegalArgumentException(
-                    "Cannot store " + numLongsPerChunk + " per chunk (max is " + MAX_NUM_LONGS_PER_CHUNK + ")");
+                    String.format(CHUNK_SIZE_EXCEEDED_MSG, numLongsPerChunk, MAX_NUM_LONGS_PER_CHUNK));
         }
         this.maxLongs = maxLongs;
         this.numLongsPerChunk = numLongsPerChunk;
         final int chunkNum = calculateNumberOfChunks(maxLongs);
         if (chunkNum > MAX_NUM_CHUNKS) {
-            throw new IllegalArgumentException(String.format(
-                    "The maximum number of memory chunks should not exceed %s. "
-                            + "Either increase numLongsPerChunk or decrease maxLongs",
-                    MAX_NUM_CHUNKS));
+            throw new IllegalArgumentException(String.format(MAX_CHUNKS_EXCEEDED_MSG, MAX_NUM_CHUNKS));
         }
         currentFileHeaderSize = FILE_HEADER_SIZE_V2;
         chunkList = new AtomicReferenceArray<>(chunkNum);
