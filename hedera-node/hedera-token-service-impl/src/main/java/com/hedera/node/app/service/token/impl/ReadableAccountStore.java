@@ -180,7 +180,7 @@ public class ReadableAccountStore implements AccountAccess {
                             yield entityNum == null ? EntityNumValue.DEFAULT.num() : entityNum.num();
                         }
                     }
-                    case UNSET -> throw new UnsetFieldException("Account number not set in protobuf!!");
+                    case UNSET -> throw new UnsetFieldException("AccountID", "Account number or Alias");
                 };
 
         return accountNum == null ? null : accountState.get(EntityNumVirtualKey.fromLong(accountNum));
@@ -225,7 +225,7 @@ public class ReadableAccountStore implements AccountAccess {
                         }
                         yield entityNum == null ? EntityNumValue.DEFAULT.num() : entityNum.num();
                     }
-                    case UNSET -> throw new UnsetFieldException("Contract number not set in protobuf!!");
+                    case UNSET -> throw new UnsetFieldException("ContractID", "Contract number or Evm Address");
                 };
 
         return contractNum == null ? null : accountState.get(EntityNumVirtualKey.fromLong(contractNum));

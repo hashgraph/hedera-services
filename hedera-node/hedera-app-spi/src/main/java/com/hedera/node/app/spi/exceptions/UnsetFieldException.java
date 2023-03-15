@@ -6,7 +6,7 @@ package com.hedera.node.app.spi.exceptions;
  * or alias set. If both are not set then this exception is thrown.
  */
 public class UnsetFieldException extends IllegalStateException {
-    public UnsetFieldException(final String message) {
-        super(message);
+    public UnsetFieldException(final String objectName, final String fieldName) {
+        super(objectName + " must have " + fieldName + " set in protobuf!");
     }
 }
