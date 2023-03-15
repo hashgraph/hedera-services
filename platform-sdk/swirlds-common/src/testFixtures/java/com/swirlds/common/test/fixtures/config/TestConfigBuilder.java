@@ -16,6 +16,8 @@
 
 package com.swirlds.common.test.fixtures.config;
 
+import static com.swirlds.common.utility.CommonUtils.throwArgNull;
+
 import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.config.sources.SimpleConfigSource;
@@ -112,6 +114,20 @@ public class TestConfigBuilder {
      */
     public TestConfigBuilder withValue(final String propertyName, final boolean value) {
         return withSource(new SimpleConfigSource(propertyName, value));
+    }
+
+    /**
+     * Sets the value for the config.
+     *
+     * @param propertyName
+     * 		name of the property
+     * @param value
+     * 		the value
+     * @return the {@link TestConfigBuilder} instance (for fluent API)
+     */
+    public TestConfigBuilder withValue(final String propertyName, final Object value) {
+        throwArgNull(value, "value");
+        return withSource(new SimpleConfigSource(propertyName, value.toString()));
     }
 
     /**
