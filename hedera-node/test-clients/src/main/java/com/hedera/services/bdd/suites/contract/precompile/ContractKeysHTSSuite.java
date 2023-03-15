@@ -127,16 +127,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return allOf(
-                hscsKey1(),
-                hscsKey2(),
-                hscsKey3(),
-                hscsKey4(),
-                hscsKey5(),
-                hscsKey6(),
-                hscsKey7(),
-                hscsKey8(),
-                hscsKey10());
+        return allOf(hscsKey1(), hscsKey2(), hscsKey3(), hscsKey4(), hscsKey5(), hscsKey6(), hscsKey7(), hscsKey8());
     }
 
     List<HapiSpec> hscsKey1() {
@@ -206,10 +197,6 @@ public class ContractKeysHTSSuite extends HapiSuite {
 
     List<HapiSpec> hscsKey8() {
         return List.of(burnTokenWithFullPrefixAndPartialPrefixKeys());
-    }
-
-    List<HapiSpec> hscsKey10() {
-        return List.of(mixedFramesScenarios());
     }
 
     private HapiSpec burnWithKeyAsPartOf1OfXThreshold() {

@@ -75,6 +75,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_KV_PAIR
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_NUM;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PERMITTED_DELEGATE_CALLERS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS;
@@ -433,6 +434,7 @@ public final class BootstrapProperties implements PropertySource {
             BALANCES_COMPRESS_ON_CREATION,
             CACHE_RECORDS_TTL,
             CONTRACTS_DEFAULT_LIFETIME,
+            CONTRACTS_PERMITTED_DELEGATE_CALLERS,
             CONTRACTS_KEYS_LEGACY_ACTIVATIONS,
             CONTRACTS_ENFORCE_CREATION_THROTTLE,
             CONTRACTS_KNOWN_BLOCK_HASH,
@@ -728,6 +730,7 @@ public final class BootstrapProperties implements PropertySource {
             entry(TOKENS_NFTS_USE_VIRTUAL_MERKLE, AS_BOOLEAN),
             entry(TOPICS_MAX_NUM, AS_LONG),
             entry(CONTRACTS_MAX_NUM, AS_LONG),
+            entry(CONTRACTS_PERMITTED_DELEGATE_CALLERS, AS_EVM_ADDRESSES),
             entry(CONTRACTS_KEYS_LEGACY_ACTIVATIONS, AS_LEGACY_ACTIVATIONS),
             entry(CONTRACTS_KNOWN_BLOCK_HASH, AS_KNOWN_BLOCK_VALUES),
             entry(CONTRACTS_LOCAL_CALL_EST_RET_BYTES, AS_INT),
