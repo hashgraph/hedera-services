@@ -51,6 +51,8 @@ public class TransactionSubmitter {
 
     private volatile long customizedTPS = 0;
 
+    private static final double ALLOWED_CATCHUP_DELTA = 1.3;
+
     /**
      * Force canSubmitMore to halt temporarily or allow it to run normally
      *
@@ -370,14 +372,7 @@ public class TransactionSubmitter {
             // many transactions in short window and lead to a burst of transactions. This is not good for
             // platform, so we need to check the current TPS and make sure it is not too high.
             final double tarnSubTSP = (double) metrics.getValue("Debug.info", "tranSubTPS");
-            if (tarnSubTSP > tranPerSecondGoal * 1.3) {
-                //                logger.info(
-                //                        LOGM_SUBMIT_DETAIL,
-                //                        "Submitter cannot submit the transaction because tarnSubTSP {} is too greater
-                // than "
-                //                                + "tranPerSecondGoal {}",
-                //                        tarnSubTSP,
-                //                        tranPerSecondGoal);
+            if (tarnSubTSP > tranPerSecondGoal * ALLOWED_CATCHUP_DELTA) {
                 return false;
             }
 
