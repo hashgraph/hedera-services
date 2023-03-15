@@ -216,7 +216,7 @@ public class CrsProtocol implements BlsProtocol<Crs> {
     }
 
     /**
-     * Method satisfying the {@link DisqualificationCleanup} interface
+     * Method satisfying the {@link BlsDisqualificationCleanup} interface
      *
      * @param nodeId the id of the node that was disqualified
      */

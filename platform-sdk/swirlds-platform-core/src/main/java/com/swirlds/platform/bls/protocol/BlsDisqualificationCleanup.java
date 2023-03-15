@@ -22,7 +22,7 @@ import com.swirlds.common.system.NodeId;
  * A functional interface for cleaning up a protocol after disqualifying a counterparty
  */
 @FunctionalInterface
-public interface DisqualificationCleanup {
+public interface BlsDisqualificationCleanup {
     /**
      * Cleans up a protocol after disqualifying a counterparty
      *

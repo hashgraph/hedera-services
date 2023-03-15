@@ -150,7 +150,7 @@ public interface BlsProtocolManager<T extends BlsProtocolOutput> {
      *
      * @param cleanupMethod the method to use to clean up
      */
-    void setDisqualificationCleanup(DisqualificationCleanup cleanupMethod);
+    void setDisqualificationCleanup(BlsDisqualificationCleanup cleanupMethod);
 
     /**
      * Sets the method that the protocol uses to perform final calculations
