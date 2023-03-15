@@ -84,17 +84,17 @@ import org.apache.logging.log4j.Logger;
  *                                    {@link SignedStateMetadataField#TOTAL_STAKE}
  */
 public record SignedStateMetadata(
-                                   Long round,
-                                   Long numberOfConsensusEvents,
-                                   Instant consensusTimestamp,
-                                   Hash runningEventHash,
-                                   Long minimumGenerationNonAncient,
-                                   String softwareVersion,
-                                   Instant wallClockTime,
-                                   Long nodeId,
-                                   List<Long> signingNodes,
-                                   Long signingStakeSum,
-                                   Long totalStake) {
+        Long round,
+        Long numberOfConsensusEvents,
+        Instant consensusTimestamp,
+        Hash runningEventHash,
+        Long minimumGenerationNonAncient,
+        String softwareVersion,
+        Instant wallClockTime,
+        Long nodeId,
+        List<Long> signingNodes,
+        Long signingStakeSum,
+        Long totalStake) {
 
     /**
      * The standard file name for the signed state metadata file.
@@ -372,9 +372,7 @@ public record SignedStateMetadata(
      * Put a value into the data map if it is not null.
      */
     private static void putIfNotNull(
-            final Map<SignedStateMetadataField, String> map,
-            final SignedStateMetadataField field,
-            final Object value) {
+            final Map<SignedStateMetadataField, String> map, final SignedStateMetadataField field, final Object value) {
         if (value != null) {
             map.put(field, value.toString().replace("\n", "//"));
         }
