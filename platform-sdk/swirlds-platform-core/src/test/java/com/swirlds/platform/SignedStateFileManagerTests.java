@@ -57,7 +57,7 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
 import com.swirlds.platform.state.signed.SignedStateFileUtils;
-import com.swirlds.platform.state.signed.SignedStateMetadata;
+import com.swirlds.platform.state.signed.SavedStateMetadata;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
@@ -517,7 +517,7 @@ class SignedStateFileManagerTests {
                             final SavedStateInfo[] currentStatesOnDisk =
                                     SignedStateFileReader.getSavedStateFiles(MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
 
-                            final SignedStateMetadata oldestMetadata =
+                            final SavedStateMetadata oldestMetadata =
                                     currentStatesOnDisk[currentStatesOnDisk.length - 1].getMetadata();
 
                             // TODO get this properly working

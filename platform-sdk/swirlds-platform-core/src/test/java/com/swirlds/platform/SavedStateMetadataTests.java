@@ -24,8 +24,8 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.test.RandomUtils;
-import com.swirlds.platform.state.signed.SignedStateMetadata;
-import com.swirlds.platform.state.signed.SignedStateMetadataField;
+import com.swirlds.platform.state.signed.SavedStateMetadata;
+import com.swirlds.platform.state.signed.SavedStateMetadataField;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -38,7 +38,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 @DisplayName("SignedStateMetadata Tests")
-class SignedStateMetadataTests {
+class SavedStateMetadataTests {
 
     /**
      * Temporary directory provided by JUnit
@@ -49,10 +49,10 @@ class SignedStateMetadataTests {
     /**
      * Serialize a metadata file then deserialize it and return the result.
      */
-    private SignedStateMetadata serializeDeserialize(final SignedStateMetadata metadata) throws IOException {
+    private SavedStateMetadata serializeDeserialize(final SavedStateMetadata metadata) throws IOException {
         final Path path = testDirectory.resolve("metadata.txt");
         metadata.write(path);
-        final SignedStateMetadata deserialized = SignedStateMetadata.parse(path);
+        final SavedStateMetadata deserialized = SavedStateMetadata.parse(path);
         Files.delete(path);
         return deserialized;
     }
@@ -77,7 +77,7 @@ class SignedStateMetadataTests {
         final long signingStakeSum = random.nextLong();
         final long totalStake = random.nextLong();
 
-        final SignedStateMetadata metadata = new SignedStateMetadata(
+        final SavedStateMetadata metadata = new SavedStateMetadata(
                 round,
                 numberOfConsensusEvents,
                 timestamp,
@@ -90,7 +90,7 @@ class SignedStateMetadataTests {
                 signingStakeSum,
                 totalStake);
 
-        final SignedStateMetadata deserialized = serializeDeserialize(metadata);
+        final SavedStateMetadata deserialized = serializeDeserialize(metadata);
 
         assertEquals(round, deserialized.round());
         assertEquals(numberOfConsensusEvents, deserialized.numberOfConsensusEvents());
@@ -190,7 +190,7 @@ class SignedStateMetadataTests {
             totalStake = null;
         }
 
-        final SignedStateMetadata metadata = new SignedStateMetadata(
+        final SavedStateMetadata metadata = new SavedStateMetadata(
                 round,
                 numberOfConsensusEvents,
                 timestamp,
@@ -203,7 +203,7 @@ class SignedStateMetadataTests {
                 signingStakeSum,
                 totalStake);
 
-        final SignedStateMetadata deserialized = serializeDeserialize(metadata);
+        final SavedStateMetadata deserialized = serializeDeserialize(metadata);
 
         assertEquals(round, deserialized.round());
         assertEquals(numberOfConsensusEvents, deserialized.numberOfConsensusEvents());
@@ -242,7 +242,7 @@ class SignedStateMetadataTests {
         final long signingStakeSum = random.nextLong();
         final long totalStake = random.nextLong();
 
-        final SignedStateMetadata metadata = new SignedStateMetadata(
+        final SavedStateMetadata metadata = new SavedStateMetadata(
                 round,
                 numberOfConsensusEvents,
                 timestamp,
@@ -262,7 +262,7 @@ class SignedStateMetadataTests {
         String fileString = new String(Files.readAllBytes(path));
 
         // Change the name of a field
-        fileString = fileString.replace(SignedStateMetadataField.ROUND.toString(), "NOT_A_REAL_FIELD");
+        fileString = fileString.replace(SavedStateMetadataField.ROUND.toString(), "NOT_A_REAL_FIELD");
 
         // Break the data formatting of a field
         fileString = fileString.replace(wallClockTime.toString(), "NOT_A_REAL_TIME");
@@ -270,7 +270,7 @@ class SignedStateMetadataTests {
         // write the file back
         Files.write(path, fileString.getBytes());
 
-        final SignedStateMetadata deserialized = SignedStateMetadata.parse(path);
+        final SavedStateMetadata deserialized = SavedStateMetadata.parse(path);
         Files.delete(path);
 
         assertNull(deserialized.round());

@@ -83,9 +83,9 @@ public final class SignedStateFileWriter {
     public static void writeMetadataFile(final long selfId, final Path directory, final SignedState signedState)
             throws IOException {
 
-        final Path metadataFile = directory.resolve(SignedStateMetadata.FILE_NAME);
+        final Path metadataFile = directory.resolve(SavedStateMetadata.FILE_NAME);
 
-        SignedStateMetadata.create(signedState, selfId, Instant.now()).write(metadataFile);
+        SavedStateMetadata.create(signedState, selfId, Instant.now()).write(metadataFile);
     }
 
     /**

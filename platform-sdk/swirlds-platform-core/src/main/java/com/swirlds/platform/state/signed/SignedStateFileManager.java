@@ -369,7 +369,7 @@ public class SignedStateFileManager implements Startable {
 
         // Keep the minimum generation non-ancient for the oldest state up to date
         if (index >= 0) {
-            final SignedStateMetadata oldestStateMetadata = savedStates[index].getMetadata();
+            final SavedStateMetadata oldestStateMetadata = savedStates[index].getMetadata();
             final long minimumGeneration = oldestStateMetadata.minimumGenerationNonAncient() == null
                     ? -1L
                     : oldestStateMetadata.minimumGenerationNonAncient();

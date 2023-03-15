@@ -19,17 +19,17 @@ package com.swirlds.platform.state.signed;
 import static com.swirlds.common.formatting.StringFormattingUtils.formattedList;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static com.swirlds.logging.LogMarker.STARTUP;
-import static com.swirlds.platform.state.signed.SignedStateMetadataField.CONSENSUS_TIMESTAMP;
-import static com.swirlds.platform.state.signed.SignedStateMetadataField.MINIMUM_GENERATION_NON_ANCIENT;
-import static com.swirlds.platform.state.signed.SignedStateMetadataField.NODE_ID;
-import static com.swirlds.platform.state.signed.SignedStateMetadataField.NUMBER_OF_CONSENSUS_EVENTS;
-import static com.swirlds.platform.state.signed.SignedStateMetadataField.ROUND;
-import static com.swirlds.platform.state.signed.SignedStateMetadataField.RUNNING_EVENT_HASH;
-import static com.swirlds.platform.state.signed.SignedStateMetadataField.SIGNING_NODES;
-import static com.swirlds.platform.state.signed.SignedStateMetadataField.SIGNING_STAKE_SUM;
-import static com.swirlds.platform.state.signed.SignedStateMetadataField.SOFTWARE_VERSION;
-import static com.swirlds.platform.state.signed.SignedStateMetadataField.TOTAL_STAKE;
-import static com.swirlds.platform.state.signed.SignedStateMetadataField.WALL_CLOCK_TIME;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.CONSENSUS_TIMESTAMP;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.MINIMUM_GENERATION_NON_ANCIENT;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.NODE_ID;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.NUMBER_OF_CONSENSUS_EVENTS;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.ROUND;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.RUNNING_EVENT_HASH;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.SIGNING_NODES;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.SIGNING_STAKE_SUM;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.SOFTWARE_VERSION;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.TOTAL_STAKE;
+import static com.swirlds.platform.state.signed.SavedStateMetadataField.WALL_CLOCK_TIME;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.formatting.TextTable;
@@ -57,31 +57,31 @@ import org.apache.logging.log4j.Logger;
  * fields in this record will be null if the metadata file is missing.
  *
  * @param round                       the round of the signed state, corresponds to
- *                                    {@link SignedStateMetadataField#ROUND}
+ *                                    {@link SavedStateMetadataField#ROUND}
  * @param numberOfConsensusEvents     the number of consensus events, starting from genesis, that have been handled to
  *                                    create this state, corresponds to
- *                                    {@link SignedStateMetadataField#NUMBER_OF_CONSENSUS_EVENTS}
+ *                                    {@link SavedStateMetadataField#NUMBER_OF_CONSENSUS_EVENTS}
  * @param consensusTimestamp          the consensus timestamp of this state, corresponds to
- *                                    {@link SignedStateMetadataField#CONSENSUS_TIMESTAMP}
+ *                                    {@link SavedStateMetadataField#CONSENSUS_TIMESTAMP}
  * @param runningEventHash            the running hash of all events, starting from genesis, that have been handled to
  *                                    create this state, corresponds to
- *                                    {@link SignedStateMetadataField#RUNNING_EVENT_HASH}
+ *                                    {@link SavedStateMetadataField#RUNNING_EVENT_HASH}
  * @param minimumGenerationNonAncient the minimum generation of non-ancient events after this state reached consensus,
- *                                    corresponds to {@link SignedStateMetadataField#MINIMUM_GENERATION_NON_ANCIENT}
+ *                                    corresponds to {@link SavedStateMetadataField#MINIMUM_GENERATION_NON_ANCIENT}
  * @param softwareVersion             the application software version that created this state, corresponds to
- *                                    {@link SignedStateMetadataField#SOFTWARE_VERSION}
+ *                                    {@link SavedStateMetadataField#SOFTWARE_VERSION}
  * @param wallClockTime               the wall clock time when this state was written to disk, corresponds to
- *                                    {@link SignedStateMetadataField#WALL_CLOCK_TIME}
+ *                                    {@link SavedStateMetadataField#WALL_CLOCK_TIME}
  * @param nodeId                      the ID of the node that wrote this state to disk, corresponds to
- *                                    {@link SignedStateMetadataField#NODE_ID}
+ *                                    {@link SavedStateMetadataField#NODE_ID}
  * @param signingNodes                a comma separated list of node IDs that signed this state, corresponds to
- *                                    {@link SignedStateMetadataField#SIGNING_NODES}
+ *                                    {@link SavedStateMetadataField#SIGNING_NODES}
  * @param signingStakeSum             the sum of all signing nodes' stakes, corresponds to
- *                                    {@link SignedStateMetadataField#SIGNING_STAKE_SUM}
+ *                                    {@link SavedStateMetadataField#SIGNING_STAKE_SUM}
  * @param totalStake                  the total stake of all nodes in the network, corresponds to
- *                                    {@link SignedStateMetadataField#TOTAL_STAKE}
+ *                                    {@link SavedStateMetadataField#TOTAL_STAKE}
  */
-public record SignedStateMetadata(
+public record SavedStateMetadata(
         Long round,
         Long numberOfConsensusEvents,
         Instant consensusTimestamp,
@@ -99,7 +99,7 @@ public record SignedStateMetadata(
      */
     public static final String FILE_NAME = "stateMetadata.txt";
 
-    private static final Logger logger = LogManager.getLogger(SignedStateMetadata.class);
+    private static final Logger logger = LogManager.getLogger(SavedStateMetadata.class);
 
     /**
      * Parse the signed state metadata from the given file.
@@ -107,9 +107,9 @@ public record SignedStateMetadata(
      * @param metadataFile the file to parse
      * @return the signed state metadata
      */
-    public static SignedStateMetadata parse(final Path metadataFile) {
-        final Map<SignedStateMetadataField, String> data = parseStringMap(metadataFile);
-        return new SignedStateMetadata(
+    public static SavedStateMetadata parse(final Path metadataFile) {
+        final Map<SavedStateMetadataField, String> data = parseStringMap(metadataFile);
+        return new SavedStateMetadata(
                 parseLong(data, ROUND),
                 parseLong(data, NUMBER_OF_CONSENSUS_EVENTS),
                 parseInstant(data, CONSENSUS_TIMESTAMP),
@@ -131,7 +131,7 @@ public record SignedStateMetadata(
      * @param now         the current time
      * @return the signed state metadata
      */
-    public static SignedStateMetadata create(final SignedState signedState, final long selfId, final Instant now) {
+    public static SavedStateMetadata create(final SignedState signedState, final long selfId, final Instant now) {
 
         final PlatformState platformState = signedState.getState().getPlatformState();
         final PlatformData platformData = platformState.getPlatformData();
@@ -139,7 +139,7 @@ public record SignedStateMetadata(
         final List<Long> signingNodes = signedState.getSigSet().getSigningNodes();
         Collections.sort(signingNodes);
 
-        return new SignedStateMetadata(
+        return new SavedStateMetadata(
                 signedState.getRound(),
                 platformData.getNumEventsCons(),
                 signedState.getConsensusTimestamp(),
@@ -171,7 +171,7 @@ public record SignedStateMetadata(
     /**
      * Parse the key/value pairs written to disk. The inverse of {@link #buildStringMap()}.
      */
-    private static Map<SignedStateMetadataField, String> parseStringMap(final Path metadataFile) {
+    private static Map<SavedStateMetadataField, String> parseStringMap(final Path metadataFile) {
 
         if (!Files.exists(metadataFile)) {
             // We must elegantly handle the case where the metadata file does not exist
@@ -181,7 +181,7 @@ public record SignedStateMetadata(
         }
 
         try {
-            final Map<SignedStateMetadataField, String> map = new HashMap<>();
+            final Map<SavedStateMetadataField, String> map = new HashMap<>();
 
             try (final BufferedReader reader = new BufferedReader(new FileReader(metadataFile.toFile()))) {
                 String line;
@@ -197,7 +197,7 @@ public record SignedStateMetadata(
                     final String valueString = line.substring(colonIndex + 1).strip();
 
                     try {
-                        final SignedStateMetadataField key = SignedStateMetadataField.valueOf(keyString);
+                        final SavedStateMetadataField key = SavedStateMetadataField.valueOf(keyString);
                         map.put(key, valueString);
                     } catch (final IllegalArgumentException e) {
                         logger.warn(STARTUP.getMarker(), "Invalid key in metadata file: {}", keyString, e);
@@ -217,7 +217,7 @@ public record SignedStateMetadata(
      *
      * @param field the missing field
      */
-    private static void logMissingField(final SignedStateMetadataField field) {
+    private static void logMissingField(final SavedStateMetadataField field) {
         logger.warn(STARTUP.getMarker(), "Signed state metadata file is missing field: {}", field);
     }
 
@@ -228,7 +228,7 @@ public record SignedStateMetadata(
      * @param value the invalid value
      * @param e     the exception
      */
-    private static void logInvalidField(final SignedStateMetadataField field, final String value, final Exception e) {
+    private static void logInvalidField(final SavedStateMetadataField field, final String value, final Exception e) {
         logger.warn(
                 STARTUP.getMarker(), "Signed state metadata file has invalid value for field {}: {}", field, value, e);
     }
@@ -241,7 +241,7 @@ public record SignedStateMetadata(
      * @return the parsed long, or null if the field is not present or the value is not a valid long
      */
     private static Long parseLong(
-            final Map<SignedStateMetadataField, String> data, final SignedStateMetadataField field) {
+            final Map<SavedStateMetadataField, String> data, final SavedStateMetadataField field) {
 
         if (!data.containsKey(field)) {
             logMissingField(field);
@@ -266,7 +266,7 @@ public record SignedStateMetadata(
      */
     @SuppressWarnings("SameParameterValue")
     private static String parseString(
-            final Map<SignedStateMetadataField, String> data, final SignedStateMetadataField field) {
+            final Map<SavedStateMetadataField, String> data, final SavedStateMetadataField field) {
 
         if (!data.containsKey(field)) {
             logMissingField(field);
@@ -284,7 +284,7 @@ public record SignedStateMetadata(
      * @return the parsed instant, or null if the field is not present or the value is not a valid instant
      */
     private static Instant parseInstant(
-            final Map<SignedStateMetadataField, String> data, final SignedStateMetadataField field) {
+            final Map<SavedStateMetadataField, String> data, final SavedStateMetadataField field) {
 
         if (!data.containsKey(field)) {
             logMissingField(field);
@@ -309,7 +309,7 @@ public record SignedStateMetadata(
      */
     @SuppressWarnings("SameParameterValue")
     private static List<Long> parseLongList(
-            final Map<SignedStateMetadataField, String> data, final SignedStateMetadataField field) {
+            final Map<SavedStateMetadataField, String> data, final SavedStateMetadataField field) {
 
         if (!data.containsKey(field)) {
             logMissingField(field);
@@ -342,7 +342,7 @@ public record SignedStateMetadata(
      */
     @SuppressWarnings("SameParameterValue")
     private static Hash parseHash(
-            final Map<SignedStateMetadataField, String> data, final SignedStateMetadataField field) {
+            final Map<SavedStateMetadataField, String> data, final SavedStateMetadataField field) {
 
         if (!data.containsKey(field)) {
             logMissingField(field);
@@ -362,7 +362,7 @@ public record SignedStateMetadata(
      * Put a value into the data map if it is not null.
      */
     private static void putIfNotNull(
-            final Map<SignedStateMetadataField, String> map, final SignedStateMetadataField field, final Object value) {
+            final Map<SavedStateMetadataField, String> map, final SavedStateMetadataField field, final Object value) {
         if (value != null) {
             map.put(field, value.toString().replace("\n", "//"));
         }
@@ -371,8 +371,8 @@ public record SignedStateMetadata(
     /**
      * Build a map of key/value pairs to be written to disk.
      */
-    private Map<SignedStateMetadataField, String> buildStringMap() {
-        final Map<SignedStateMetadataField, String> map = new HashMap<>();
+    private Map<SavedStateMetadataField, String> buildStringMap() {
+        final Map<SavedStateMetadataField, String> map = new HashMap<>();
 
         putIfNotNull(map, ROUND, round);
         putIfNotNull(map, NUMBER_OF_CONSENSUS_EVENTS, numberOfConsensusEvents);
@@ -398,13 +398,13 @@ public record SignedStateMetadata(
      */
     public void write(final Path metadataFile) throws IOException {
 
-        final Map<SignedStateMetadataField, String> map = buildStringMap();
-        final List<SignedStateMetadataField> keys = new ArrayList<>(map.keySet());
+        final Map<SavedStateMetadataField, String> map = buildStringMap();
+        final List<SavedStateMetadataField> keys = new ArrayList<>(map.keySet());
         Collections.sort(keys);
 
         final TextTable table = new TextTable().setBordersEnabled(false);
 
-        for (final SignedStateMetadataField key : keys) {
+        for (final SavedStateMetadataField key : keys) {
             final String keyString = key.toString() + ": ";
             final String valueString = map.get(key);
             table.addRow(keyString, valueString);

@@ -19,7 +19,7 @@ package com.swirlds.platform.state.signed;
 /**
  * Fields written to the signed state metadata file.
  */
-public enum SignedStateMetadataField {
+public enum SavedStateMetadataField {
     /**
      * The round of the signed state.
      */
