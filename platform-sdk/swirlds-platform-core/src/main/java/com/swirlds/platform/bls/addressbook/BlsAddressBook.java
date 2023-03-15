@@ -29,8 +29,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 /**
- * Class representing an address book. Will be conceptually merged into the existing platform
- * address book
+ * Class representing an address book. Will be conceptually merged into the existing platform address book
  */
 public class BlsAddressBook {
 
@@ -97,7 +96,8 @@ public class BlsAddressBook {
      */
     public int getNodeShareCount(final NodeId nodeId) {
         if (!containsNode(nodeId)) {
-            throw new IllegalArgumentException("Cannot get share count for node that isn't in the address book");
+            throw new IllegalArgumentException(
+                    String.format("Cannot get share count for node %s that isn't in the address book", nodeId));
         }
 
         return nodeDataMap.get(nodeId).getShareCount();
@@ -158,8 +158,8 @@ public class BlsAddressBook {
     /**
      * Create a new entry in the address book
      *
-     * @param nodeId node id of the new node
-     * @param stake consensus stake belonging to the new node
+     * @param nodeId       node id of the new node
+     * @param stake        consensus stake belonging to the new node
      * @param ibePublicKey IBE public key of the new node
      */
     public void addNode(final NodeId nodeId, final long stake, final BlsPublicKey ibePublicKey) {
@@ -250,7 +250,7 @@ public class BlsAddressBook {
      * Gets the number of shares owned by nodes that haven't been disqualified
      *
      * @param maliciousNodes the set of malicious nodes
-     * @param offlineNodes the set of offline nodes
+     * @param offlineNodes   the set of offline nodes
      * @return the combined share count of nodes in neither malicious nor offline sets
      */
     public int getNonDisqualifiedShareCount(final Set<NodeId> maliciousNodes, final Set<NodeId> offlineNodes) {
@@ -280,10 +280,10 @@ public class BlsAddressBook {
     }
 
     /**
-     * Sets the IBE public key of a node. Serves only to allow genesis nodes to add their public
-     * keys after CRS generation, and before initial key generation
+     * Sets the IBE public key of a node. Serves only to allow genesis nodes to add their public keys after CRS
+     * generation, and before initial key generation
      *
-     * @param nodeId the id of the node to set the public key for
+     * @param nodeId       the id of the node to set the public key for
      * @param ibePublicKey the node's new public key
      */
     public void setIbePublicKey(final NodeId nodeId, final BlsPublicKey ibePublicKey) {
@@ -301,7 +301,7 @@ public class BlsAddressBook {
     /**
      * Sets a new stake value for a node
      *
-     * @param nodeId the id of the node to set the stake of
+     * @param nodeId   the id of the node to set the stake of
      * @param newStake the new consensus stake value for the node
      */
     public void setNodeStake(final NodeId nodeId, final long newStake) {
@@ -315,11 +315,10 @@ public class BlsAddressBook {
     }
 
     /**
-     * Checks if the address book is dirty before performing an operation that requires a clean
-     * address book
+     * Checks if the address book is dirty before performing an operation that requires a clean address book
      *
-     * @param attemptedOperation the operation that is being attempted, for logging's sake in case
-     *     address book is dirty
+     * @param attemptedOperation the operation that is being attempted, for logging's sake in case address book is
+     *                           dirty
      */
     private void checkDirty(final String attemptedOperation) {
         if (!dirty) {
