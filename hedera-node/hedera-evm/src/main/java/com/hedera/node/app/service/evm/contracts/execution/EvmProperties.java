@@ -16,9 +16,12 @@
 
 package com.hedera.node.app.service.evm.contracts.execution;
 
+import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
 
 public interface EvmProperties {
+
+    Bytes32 chainIdBytes32();
 
     String evmVersion();
 
