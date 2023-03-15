@@ -146,14 +146,13 @@ public abstract class AbstractLongList<C> implements LongList {
             throw new IllegalArgumentException("The maximum number of longs must be non-negative, not " + maxLongs);
         }
         if (numLongsPerChunk > MAX_NUM_LONGS_PER_CHUNK) {
-            throw new IllegalArgumentException(
-                    String.format(CHUNK_SIZE_EXCEEDED_MSG, numLongsPerChunk, MAX_NUM_LONGS_PER_CHUNK));
+            throw new IllegalArgumentException(CHUNK_SIZE_EXCEEDED_MSG.formatted(numLongsPerChunk, MAX_NUM_LONGS_PER_CHUNK));
         }
         this.maxLongs = maxLongs;
         this.numLongsPerChunk = numLongsPerChunk;
         final int chunkNum = calculateNumberOfChunks(maxLongs);
         if (chunkNum > MAX_NUM_CHUNKS) {
-            throw new IllegalArgumentException(String.format(MAX_CHUNKS_EXCEEDED_MSG, MAX_NUM_CHUNKS));
+            throw new IllegalArgumentException(MAX_CHUNKS_EXCEEDED_MSG.formatted(MAX_NUM_CHUNKS));
         }
         currentFileHeaderSize = FILE_HEADER_SIZE_V2;
         chunkList = new AtomicReferenceArray<>(chunkNum);
