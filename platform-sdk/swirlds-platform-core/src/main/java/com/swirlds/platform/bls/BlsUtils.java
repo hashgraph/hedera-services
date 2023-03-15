@@ -28,37 +28,40 @@ public class BlsUtils {
     private BlsUtils() {}
 
     /**
-     * Asserts that a given group element is a member of the signature group (G1)
+     * Throws an {@link IllegalArgumentException} if the given group element is not a member of the bilinear map
+     * signature group
      *
      * @param bilinearMap  the bilinear map the group is part of
      * @param groupElement the group element to assert membership of
      * @param elementName  the name of the element, to record errors
      */
-    public static void assertSignatureGroupMembership(
-            final BilinearMap bilinearMap, final GroupElement groupElement, final String elementName) {
+    public static void throwIfNotSignatureGroup(
+            final BilinearMap bilinearMap,
+            final GroupElement groupElement,
+            final String elementName) {
 
-        if (!(groupElement
-                .group()
-                .getClass()
-                .equals(bilinearMap.signatureGroup().getClass()))) {
-            throw new IllegalArgumentException(
-                    String.format("%s must be in the signature group of the bilinear map", elementName));
+        if (!(groupElement.group().getClass().equals(bilinearMap.signatureGroup().getClass()))) {
+            throw new IllegalArgumentException(String.format(
+                    "%s must be in the signature group of the bilinear map", elementName));
         }
     }
 
     /**
-     * Asserts that a given group element is a member of the public key group (G2)
+     * Throws an {@link IllegalArgumentException} if the given group element is not a member of the bilinear map public
+     * key group
      *
      * @param bilinearMap  the bilinear map the group is part of
      * @param groupElement the group element to assert membership of
      * @param elementName  the name of the element, to record errors
      */
-    public static void assertPublicKeyGroupMembership(
-            final BilinearMap bilinearMap, final GroupElement groupElement, final String elementName) {
+    public static void throwIfNotPublicKeyGroup(
+            final BilinearMap bilinearMap,
+            final GroupElement groupElement,
+            final String elementName) {
 
         if (!(groupElement.group().getClass().equals(bilinearMap.keyGroup().getClass()))) {
-            throw new IllegalArgumentException(
-                    String.format("%s must be in the public key group of the bilinear map", elementName));
+            throw new IllegalArgumentException(String.format(
+                    "%s must be in the public key group of the bilinear map", elementName));
         }
     }
 }

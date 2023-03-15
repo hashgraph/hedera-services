@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.bls.protocol;
 
-import static com.swirlds.platform.bls.BlsUtils.assertPublicKeyGroupMembership;
+import static com.swirlds.platform.bls.BlsUtils.throwIfNotPublicKeyGroup;
 
 import com.hedera.platform.bls.api.BilinearMap;
 import com.hedera.platform.bls.api.GroupElement;
@@ -44,7 +44,7 @@ public record Crs(BilinearMap bilinearMap, GroupElement thresholdGenerator, Grou
      * @param ibeGenerator the public key group generator for creating IBE public keys
      */
     public Crs {
-        assertPublicKeyGroupMembership(bilinearMap, thresholdGenerator, "thresholdGenerator");
-        assertPublicKeyGroupMembership(bilinearMap, ibeGenerator, "ibeGenerator");
+        throwIfNotPublicKeyGroup(bilinearMap, thresholdGenerator, "thresholdGenerator");
+        throwIfNotPublicKeyGroup(bilinearMap, ibeGenerator, "ibeGenerator");
     }
 }

@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.bls.crypto;
 
-import static com.swirlds.platform.bls.BlsUtils.assertPublicKeyGroupMembership;
+import static com.swirlds.platform.bls.BlsUtils.throwIfNotPublicKeyGroup;
 
 import com.hedera.platform.bls.api.BilinearMap;
 import com.hedera.platform.bls.api.GroupElement;
@@ -32,7 +32,7 @@ public record BlsPublicKey(BilinearMap bilinearMap, GroupElement keyMaterial) {
 
     /** Constructor, which checks the group membership of the input key material */
     public BlsPublicKey {
-        assertPublicKeyGroupMembership(bilinearMap, keyMaterial, "keyMaterial");
+        throwIfNotPublicKeyGroup(bilinearMap, keyMaterial, "keyMaterial");
     }
 
     /**

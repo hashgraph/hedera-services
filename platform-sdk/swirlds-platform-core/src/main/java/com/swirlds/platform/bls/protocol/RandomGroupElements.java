@@ -17,7 +17,7 @@
 package com.swirlds.platform.bls.protocol;
 
 import static com.swirlds.common.test.RandomUtils.randomByteArray;
-import static com.swirlds.platform.bls.BlsUtils.assertPublicKeyGroupMembership;
+import static com.swirlds.platform.bls.BlsUtils.throwIfNotPublicKeyGroup;
 
 import com.hedera.platform.bls.api.BilinearMap;
 import com.hedera.platform.bls.api.GroupElement;
@@ -78,8 +78,8 @@ public class RandomGroupElements {
             final GroupElement randomGroupElement1,
             final GroupElement randomGroupElement2) {
 
-        assertPublicKeyGroupMembership(bilinearMap, randomGroupElement1, "randomGroupElement1");
-        assertPublicKeyGroupMembership(bilinearMap, randomGroupElement2, "randomGroupElement2");
+        throwIfNotPublicKeyGroup(bilinearMap, randomGroupElement1, "randomGroupElement1");
+        throwIfNotPublicKeyGroup(bilinearMap, randomGroupElement2, "randomGroupElement2");
 
         this.randomGroupElement1 = randomGroupElement1;
         this.randomGroupElement2 = randomGroupElement2;
