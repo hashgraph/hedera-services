@@ -83,7 +83,6 @@ public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
     protected void executeHederaPrecompile(
             final PrecompiledContract contract, final MessageFrame frame, final OperationTracer operationTracer) {
         if (contract instanceof EvmHTSPrecompiledContract htsPrecompile) {
-            // TODO: replace type?
             var updater = (AbstractLedgerEvmWorldUpdater) frame.getWorldUpdater();
             final var costedResult = htsPrecompile.computeCosted(
                     frame.getInputData(),
