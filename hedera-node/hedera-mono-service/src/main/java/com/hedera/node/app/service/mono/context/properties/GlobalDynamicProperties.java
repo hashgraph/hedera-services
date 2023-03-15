@@ -60,9 +60,10 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_REDIRECT_TO
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_REFERENCE_SLOT_LIFETIME;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECARS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECAR_VALIDATION_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_STORAGE_SLOT_PRICE_TIERS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_THROTTLE_THROTTLE_BY_GAS;
-import static com.hedera.node.app.spi.config.PropertyNames.CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.CRYPTO_CREATE_WITH_ALIAS_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_LIMIT_TOKEN_ASSOCIATIONS;
 import static com.hedera.node.app.spi.config.PropertyNames.FEES_MIN_CONGESTION_PERIOD;
 import static com.hedera.node.app.spi.config.PropertyNames.FEES_PERCENT_CONGESTION_MULTIPLIERS;
@@ -261,6 +262,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     private long maxNumSchedules;
     private boolean utilPrngEnabled;
     private Set<SidecarType> enabledSidecars;
+    private boolean sidecarValidationEnabled;
     private boolean requireMinStakeToReward;
     private Map<Long, Long> nodeMaxMinStakeRatios;
     private int sidecarMaxSizeMb;
@@ -273,7 +275,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     private long traceabilityMaxExportsPerConsSec;
     private long traceabilityMinFreeToUsedGasThrottleRatio;
     private boolean lazyCreationEnabled;
-    private boolean cryptoCreateWithAliasAndEvmAddressEnabled;
+    private boolean cryptoCreateWithAliasEnabled;
     private boolean enforceContractCreationThrottle;
     private EntityScaleFactors entityScaleFactors;
     private LegacyContractIdActivations legacyContractIdActivations;
@@ -368,6 +370,7 @@ public class GlobalDynamicProperties implements EvmProperties {
         create2Enabled = properties.getBooleanProperty(CONTRACTS_ALLOW_CREATE2);
         redirectTokenCalls = properties.getBooleanProperty(CONTRACTS_REDIRECT_TOKEN_CALLS);
         enabledSidecars = properties.getSidecarsProperty(CONTRACTS_SIDECARS);
+        sidecarValidationEnabled = properties.getBooleanProperty(CONTRACTS_SIDECAR_VALIDATION_ENABLED);
         enableAllowances = properties.getBooleanProperty(HEDERA_ALLOWANCES_IS_ENABLED);
         final var autoRenewTargetTypes = properties.getTypesProperty(AUTO_RENEW_TARGET_TYPES);
         expireAccounts = autoRenewTargetTypes.contains(ACCOUNT);
@@ -413,8 +416,7 @@ public class GlobalDynamicProperties implements EvmProperties {
         traceabilityMinFreeToUsedGasThrottleRatio =
                 properties.getLongProperty(TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO);
         lazyCreationEnabled = properties.getBooleanProperty(LAZY_CREATION_ENABLED);
-        cryptoCreateWithAliasAndEvmAddressEnabled =
-                properties.getBooleanProperty(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED);
+        cryptoCreateWithAliasEnabled = properties.getBooleanProperty(CRYPTO_CREATE_WITH_ALIAS_ENABLED);
         enforceContractCreationThrottle = properties.getBooleanProperty(CONTRACTS_ENFORCE_CREATION_THROTTLE);
         entityScaleFactors = properties.getEntityScaleFactorsProperty(FEES_PERCENT_UTILIZATION_SCALE_FACTORS);
         legacyContractIdActivations = properties.getLegacyActivationsProperty(CONTRACTS_KEYS_LEGACY_ACTIVATIONS);
@@ -820,6 +822,10 @@ public class GlobalDynamicProperties implements EvmProperties {
         return enabledSidecars;
     }
 
+    public boolean validateSidecarsEnabled() {
+        return sidecarValidationEnabled;
+    }
+
     public boolean requireMinStakeToReward() {
         return requireMinStakeToReward;
     }
@@ -868,8 +874,8 @@ public class GlobalDynamicProperties implements EvmProperties {
         return lazyCreationEnabled;
     }
 
-    public boolean isCryptoCreateWithAliasAndEvmAddressEnabled() {
-        return cryptoCreateWithAliasAndEvmAddressEnabled;
+    public boolean isCryptoCreateWithAliasEnabled() {
+        return cryptoCreateWithAliasEnabled;
     }
 
     public EntityScaleFactors entityScaleFactors() {

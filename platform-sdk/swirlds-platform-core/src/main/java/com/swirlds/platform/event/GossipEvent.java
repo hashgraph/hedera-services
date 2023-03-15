@@ -27,7 +27,6 @@ import com.swirlds.platform.chatter.protocol.messages.ChatterEventDescriptor;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * A class used to hold information about an event transferred through gossip
@@ -162,15 +161,16 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
      */
     @Override
     public boolean equals(final Object o) {
-        if (this == o) return true;
+        if (this == o) {
+            return true;
+        }
 
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         final GossipEvent that = (GossipEvent) o;
-
-        return Objects.equals(hashedData, that.hashedData)
-                && Objects.equals(unhashedData, that.unhashedData)
-                && Objects.equals(descriptor, that.descriptor);
+        return Objects.equals(getHashedData(), that.getHashedData());
     }
 
     /**
@@ -178,11 +178,7 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
      */
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37)
-                .append(hashedData)
-                .append(unhashedData)
-                .append(descriptor)
-                .toHashCode();
+        return hashedData.getHash().hashCode();
     }
 
     private static final class ClassVersion {
