@@ -94,7 +94,6 @@ import static com.swirlds.platform.SettingConstants.TIMEOUT_SERVER_ACCEPT_CONNEC
 import static com.swirlds.platform.SettingConstants.TIMEOUT_SYNC_CLIENT_CONNECT_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.TIMEOUT_SYNC_CLIENT_SOCKET_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.TRANSACTION_MAX_BYTES_DEFAULT_VALUES;
-import static com.swirlds.platform.SettingConstants.TRANS_THROTTLE_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.USE_LOOPBACK_IP_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.USE_TLS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.VERBOSE_STATISTICS_DEFAULT_VALUE;
@@ -337,7 +336,6 @@ class SettingsTest {
                 MAX_TRANSACTION_BYTES_PER_EVENT_DEFAULT_VALUE, settings.getMaxTransactionBytesPerEvent());
         Assertions.assertEquals(
                 MAX_TRANSACTION_COUNT_PER_EVENT_DEFAULT_VALUE, settings.getMaxTransactionCountPerEvent());
-        Assertions.assertEquals(TRANS_THROTTLE_DEFAULT_VALUE, settings.isTransThrottle());
         Assertions.assertEquals(CSV_OUTPUT_FOLDER_DEFAULT_VALUE, settings.getCsvOutputFolder());
         Assertions.assertEquals(CSV_FILE_NAME_DEFAULT_VALUE, settings.getCsvFileName());
         Assertions.assertEquals(CSV_WRITE_FREQUENCY_DEFAULT_VALUE, settings.getCsvWriteFrequency());
@@ -431,7 +429,6 @@ class SettingsTest {
         Assertions.assertFalse(settings.isLoadKeysFromPfxFiles());
         Assertions.assertEquals(300000, settings.getMaxTransactionBytesPerEvent());
         Assertions.assertEquals(300000, settings.getMaxTransactionCountPerEvent());
-        Assertions.assertFalse(settings.isTransThrottle());
         Assertions.assertEquals("csvFolder", settings.getCsvOutputFolder());
         Assertions.assertEquals("csvFile", settings.getCsvFileName());
         Assertions.assertEquals(4000, settings.getCsvWriteFrequency());

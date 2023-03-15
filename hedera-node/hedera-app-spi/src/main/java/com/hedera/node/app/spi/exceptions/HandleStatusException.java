@@ -37,4 +37,14 @@ public class HandleStatusException extends RuntimeException {
     public ResponseCodeEnum getStatus() {
         return status;
     }
+
+    public static void validateTrue(final boolean flag, final ResponseCodeEnum errorStatus) {
+        if (!flag) {
+            throw new HandleStatusException(errorStatus);
+        }
+    }
+
+    public static void validateFalse(final boolean flag, final ResponseCodeEnum errorStatus) {
+        validateTrue(!flag, errorStatus);
+    }
 }

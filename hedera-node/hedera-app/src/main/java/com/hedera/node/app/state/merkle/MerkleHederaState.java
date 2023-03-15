@@ -236,6 +236,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
             final SoftwareVersion deserializedVersion) {
         this.platform = platform;
         if (trigger == GENESIS) {
+            log.info("Init called on Services node {} WITHOUT Merkle saved state", platform.getSelfId());
             // Create the top-level children in the Merkle tree
             onMigrate.accept(this);
             final var bootstrapProps = new BootstrapProperties(false);
@@ -488,7 +489,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     public void handleConsensusRound(@NonNull final Round round, @NonNull final SwirldDualState swirldDualState) {
         throwIfImmutable();
         if (onHandleConsensusRound != null) {
-            onHandleConsensusRound.accept(round, swirldDualState, metadata);
+            onHandleConsensusRound.accept(round, this, swirldDualState, metadata);
         }
     }
 
@@ -816,7 +817,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
 
         @NonNull
         @Override
-        public <K extends Comparable<K>, V> ReadableKVState<K, V> get(@NonNull String stateKey) {
+        public <K extends Comparable<? super K>, V> ReadableKVState<K, V> get(@NonNull String stateKey) {
             final ReadableKVState<K, V> instance = (ReadableKVState<K, V>) kvInstances.get(stateKey);
             if (instance != null) {
                 return instance;
@@ -963,7 +964,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
 
         @NonNull
         @Override
-        public <K extends Comparable<K>, V> WritableKVState<K, V> get(@NonNull String stateKey) {
+        public <K extends Comparable<? super K>, V> WritableKVState<K, V> get(@NonNull String stateKey) {
             return (WritableKVState<K, V>) super.get(stateKey);
         }
 

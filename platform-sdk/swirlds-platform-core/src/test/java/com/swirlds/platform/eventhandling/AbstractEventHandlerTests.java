@@ -21,15 +21,12 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.SwirldState2;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.test.metrics.NoOpMetrics;
-import com.swirlds.common.test.state.DummySwirldState1;
-import com.swirlds.common.test.state.DummySwirldState2;
 import com.swirlds.platform.SettingsProvider;
-import com.swirlds.platform.components.SystemTransactionHandlerImpl;
+import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusHandlingMetrics;
 import com.swirlds.platform.metrics.ConsensusMetrics;
@@ -41,18 +38,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
-import org.junit.jupiter.params.provider.Arguments;
 
 public abstract class AbstractEventHandlerTests {
-
-    protected static Stream<Arguments> swirldStates() {
-        final SwirldState ss1 = new DummySwirldState1();
-
-        final SwirldState2 ss2 = new DummySwirldState2();
-
-        return Stream.of(Arguments.of(ss1), Arguments.of(ss2));
-    }
 
     private static final int NUM_NODES = 10;
 
@@ -61,7 +48,8 @@ public abstract class AbstractEventHandlerTests {
     protected SwirldStateMetrics ssStats;
     protected ConsensusMetrics consensusMetrics;
     protected ConsensusHandlingMetrics consensusHandlingMetrics;
-    protected SystemTransactionHandlerImpl systemTransactionHandler;
+    protected PreConsensusSystemTransactionManager preConsensusSystemTransactionManager;
+    protected PostConsensusSystemTransactionManager postConsensusSystemTransactionManager;
     protected Supplier<Instant> consEstimateSupplier;
     protected SettingsProvider settingsProvider;
     protected Random random;
@@ -73,7 +61,8 @@ public abstract class AbstractEventHandlerTests {
         consensusMetrics = mock(ConsensusMetrics.class);
         consensusHandlingMetrics = mock(ConsensusHandlingMetrics.class);
         when(consensusHandlingMetrics.getConsCycleStat()).thenReturn(mock(CycleTimingStat.class));
-        systemTransactionHandler = mock(SystemTransactionHandlerImpl.class);
+        preConsensusSystemTransactionManager = mock(PreConsensusSystemTransactionManager.class);
+        postConsensusSystemTransactionManager = mock(PostConsensusSystemTransactionManager.class);
         consEstimateSupplier = Instant::now;
         settingsProvider = mock(SettingsProvider.class);
         random = ThreadLocalRandom.current();

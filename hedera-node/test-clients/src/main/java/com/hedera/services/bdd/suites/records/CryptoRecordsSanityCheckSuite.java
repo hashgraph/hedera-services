@@ -49,6 +49,10 @@ import org.apache.logging.log4j.Logger;
 
 public class CryptoRecordsSanityCheckSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CryptoRecordsSanityCheckSuite.class);
+    private static final String PAYER = "payer";
+    private static final String RECEIVER = "receiver";
+    private static final String NEW_KEY = "newKey";
+    private static final String ORIG_KEY = "origKey";
 
     public static void main(String... args) {
         new CryptoRecordsSanityCheckSuite().runSuiteSync();
@@ -139,13 +143,9 @@ public class CryptoRecordsSanityCheckSuite extends HapiSuite {
         return defaultHapiSpec("CryptoUpdateRecordSanityChecks")
                 .given(flattened(
                         cryptoCreate("test"),
-                        newKeyNamed("newKey").type(KeyFactory.KeyType.SIMPLE),
+                        newKeyNamed(NEW_KEY).type(KeyFactory.KeyType.SIMPLE),
                         takeBalanceSnapshots(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER, "test")))
-                .when(cryptoUpdate("test")
-                        .key("newKey")
-                        .via("txn")
-                        .fee(500_000L)
-                        .payingWith("test"))
+                .when(cryptoUpdate("test").key(NEW_KEY).via("txn").fee(500_000L).payingWith("test"))
                 .then(
                         validateTransferListForBalances(
                                 "txn", List.of(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER, "test")),
@@ -156,24 +156,23 @@ public class CryptoRecordsSanityCheckSuite extends HapiSuite {
         final long BALANCE = 500_000_000L;
         return defaultHapiSpec("InsufficientAccountBalanceRecordSanityChecks")
                 .given(flattened(
-                        cryptoCreate("payer").balance(BALANCE),
-                        cryptoCreate("receiver"),
-                        takeBalanceSnapshots(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, "payer", "receiver")))
+                        cryptoCreate(PAYER).balance(BALANCE),
+                        cryptoCreate(RECEIVER),
+                        takeBalanceSnapshots(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, PAYER, RECEIVER)))
                 .when(
-                        cryptoTransfer(tinyBarsFromTo("payer", "receiver", BALANCE / 2))
-                                .payingWith("payer")
+                        cryptoTransfer(tinyBarsFromTo(PAYER, RECEIVER, BALANCE / 2))
+                                .payingWith(PAYER)
                                 .via("txn1")
                                 .fee(ONE_HUNDRED_HBARS)
                                 .deferStatusResolution(),
-                        cryptoTransfer(tinyBarsFromTo("payer", "receiver", BALANCE / 2))
-                                .payingWith("payer")
+                        cryptoTransfer(tinyBarsFromTo(PAYER, RECEIVER, BALANCE / 2))
+                                .payingWith(PAYER)
                                 .via("txn2")
                                 .fee(ONE_HUNDRED_HBARS)
                                 .hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE),
                         sleepFor(1_000L))
                 .then(validateTransferListForBalances(
-                        List.of("txn1", "txn2"),
-                        List.of(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, "payer", "receiver")));
+                        List.of("txn1", "txn2"), List.of(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, PAYER, RECEIVER)));
     }
 
     private HapiSpec invalidPayerSigCryptoTransferRecordSanityChecks() {
@@ -181,20 +180,20 @@ public class CryptoRecordsSanityCheckSuite extends HapiSuite {
 
         return defaultHapiSpec("InvalidPayerSigCryptoTransferSanityChecks")
                 .given(
-                        newKeyNamed("origKey"),
-                        newKeyNamed("newKey"),
-                        cryptoCreate("payer").key("origKey").balance(BALANCE),
-                        cryptoCreate("receiver"))
-                .when(cryptoUpdate("payer")
-                        .key("newKey")
-                        .payingWith("payer")
+                        newKeyNamed(ORIG_KEY),
+                        newKeyNamed(NEW_KEY),
+                        cryptoCreate(PAYER).key(ORIG_KEY).balance(BALANCE),
+                        cryptoCreate(RECEIVER))
+                .when(cryptoUpdate(PAYER)
+                        .key(NEW_KEY)
+                        .payingWith(PAYER)
                         .fee(BALANCE / 2)
                         .via("updateTxn")
                         .deferStatusResolution())
-                .then(cryptoTransfer(tinyBarsFromTo("payer", "receiver", 1_000L))
-                        .payingWith("payer")
+                .then(cryptoTransfer(tinyBarsFromTo(PAYER, RECEIVER, 1_000L))
+                        .payingWith(PAYER)
                         .via("transferTxn")
-                        .signedBy("origKey", "receiver")
+                        .signedBy(ORIG_KEY, RECEIVER)
                         .hasKnownStatus(INVALID_PAYER_SIGNATURE));
     }
 

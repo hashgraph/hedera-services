@@ -40,11 +40,11 @@ import java.util.concurrent.atomic.AtomicLong;
  * A {@link Hash} normally serializes with both the hash bytes and a hash type. When scaled to billions of hashes,
  * this amounts to a lot of wasted space. This implementation assumes a homogenous set of hashes and omits serializing
  * the hash type, only storing the hash bytes themselves.
- * <p>
+ *
  * This class improves upon the memory usage of a simple {@link Hash} array. In this class, each hash is stored as
  * exactly the number of hash bytes (48 for an SHA-384 hash). An array of {@link Hash} objects would include java object
  * overhead, amounting to about a 2x overhead.
- * </p>
+ *
  * <pre>
  * 32 bytes for object header + byte[] pointer + digest type pointer
  * + 16 bytes for byte[] object header + 4 bytes for byte[] length

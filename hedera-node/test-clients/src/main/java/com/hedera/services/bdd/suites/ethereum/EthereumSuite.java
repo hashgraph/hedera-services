@@ -126,6 +126,10 @@ public class EthereumSuite extends HapiSuite {
     public static final String EMIT_SENDER_ORIGIN_CONTRACT = "EmitSenderOrigin";
 
     private static final String FUNGIBLE_TOKEN = "fungibleToken";
+    private static final String AUTO_ACCOUNT_TRANSACTION_NAME = "autoAccount";
+    private static final String TOKEN = "token";
+    private static final String MINT_TXN = "mintTxn";
+    private static final String PAY_TXN = "payTxn";
 
     public static void main(String... args) {
         new EthereumSuite().runSuiteAsync();
@@ -218,7 +222,7 @@ public class EthereumSuite extends HapiSuite {
                         newKeyNamed(spenderAlias).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_MILLION_HBARS))
-                                .via("autoAccount"),
+                                .via(AUTO_ACCOUNT_TRANSACTION_NAME),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, spenderAlias, ONE_HUNDRED_HBARS))
                                 .via("autoAccountSpender"),
                         getAliasedAccountInfo(spenderAlias)
@@ -408,9 +412,9 @@ public class EthereumSuite extends HapiSuite {
                         cryptoCreate(RECEIVER).balance(0L),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via("autoAccount"),
+                                .via(AUTO_ACCOUNT_TRANSACTION_NAME),
                         withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)),
-                        getTxnRecord("autoAccount").andAllChildRecords())
+                        getTxnRecord(AUTO_ACCOUNT_TRANSACTION_NAME).andAllChildRecords())
                 .when(
                         balanceSnapshot(aliasBalanceSnapshot, SECP_256K1_SOURCE_KEY)
                                 .accountIsAlias(),
@@ -422,12 +426,12 @@ public class EthereumSuite extends HapiSuite {
                                 .maxFeePerGas(0L)
                                 .maxGasAllowance(FIVE_HBARS)
                                 .gasLimit(2_000_000L)
-                                .via("payTxn")
+                                .via(PAY_TXN)
                                 .hasKnownStatus(SUCCESS))
                 .then(
                         withOpContext((spec, opLog) -> allRunFor(
                                 spec,
-                                getTxnRecord("payTxn")
+                                getTxnRecord(PAY_TXN)
                                         .logged()
                                         .hasPriority(recordWith()
                                                 .status(SUCCESS)
@@ -495,8 +499,8 @@ public class EthereumSuite extends HapiSuite {
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via("autoAccount"),
-                        getTxnRecord("autoAccount").andAllChildRecords(),
+                                .via(AUTO_ACCOUNT_TRANSACTION_NAME),
+                        getTxnRecord(AUTO_ACCOUNT_TRANSACTION_NAME).andAllChildRecords(),
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                         contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
                 .when()
@@ -511,7 +515,7 @@ public class EthereumSuite extends HapiSuite {
                             .type(EthTxData.EthTransactionType.EIP1559)
                             .signingWith(SECP_256K1_SOURCE_KEY)
                             .payingWith(RELAYER)
-                            .via("payTxn")
+                            .via(PAY_TXN)
                             .nonce(0)
                             .maxGasAllowance(relayerOffered)
                             .maxFeePerGas(senderGasPrice)
@@ -520,7 +524,7 @@ public class EthereumSuite extends HapiSuite {
                             .hasKnownStatus(success ? ResponseCodeEnum.SUCCESS : ResponseCodeEnum.INSUFFICIENT_TX_FEE);
 
                     final HapiGetTxnRecord hapiGetTxnRecord =
-                            getTxnRecord("payTxn").logged();
+                            getTxnRecord(PAY_TXN).logged();
                     allRunFor(spec, subop1, subop2, subop3, hapiGetTxnRecord);
 
                     final long wholeTransactionFee =
@@ -542,8 +546,8 @@ public class EthereumSuite extends HapiSuite {
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via("autoAccount"),
-                        getTxnRecord("autoAccount").andAllChildRecords(),
+                                .via(AUTO_ACCOUNT_TRANSACTION_NAME),
+                        getTxnRecord(AUTO_ACCOUNT_TRANSACTION_NAME).andAllChildRecords(),
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT))
                 .when(ethereumContractCreate(PAY_RECEIVABLE_CONTRACT)
                         .type(EthTxData.EthTransactionType.EIP1559)
@@ -556,7 +560,7 @@ public class EthereumSuite extends HapiSuite {
                         .invalidateEthereumData()
                         .gasLimit(1_000_000L)
                         .hasPrecheck(INVALID_ETHEREUM_TRANSACTION)
-                        .via("payTxn"))
+                        .via(PAY_TXN))
                 .then();
     }
 
@@ -571,9 +575,9 @@ public class EthereumSuite extends HapiSuite {
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via("autoAccount"),
+                                .via(AUTO_ACCOUNT_TRANSACTION_NAME),
                         withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)),
-                        getTxnRecord("autoAccount").andAllChildRecords(),
+                        getTxnRecord(AUTO_ACCOUNT_TRANSACTION_NAME).andAllChildRecords(),
                         cryptoCreate(PROXY))
                 .when(
                         cryptoUpdateAliased(SECP_256K1_SOURCE_KEY)
@@ -618,8 +622,8 @@ public class EthereumSuite extends HapiSuite {
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via("autoAccount"),
-                        getTxnRecord("autoAccount").andAllChildRecords(),
+                                .via(AUTO_ACCOUNT_TRANSACTION_NAME),
+                        getTxnRecord(AUTO_ACCOUNT_TRANSACTION_NAME).andAllChildRecords(),
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                         contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
                 .when(
@@ -630,11 +634,11 @@ public class EthereumSuite extends HapiSuite {
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
                                 .nonce(999L)
-                                .via("payTxn")
+                                .via(PAY_TXN)
                                 .hasKnownStatus(ResponseCodeEnum.WRONG_NONCE))
                 .then(
                         withOpContext((spec, opLog) -> {
-                            final var payTxn = getTxnRecord("payTxn")
+                            final var payTxn = getTxnRecord(PAY_TXN)
                                     .logged()
                                     .hasPriority(recordWith()
                                             .ethereumHash(ByteString.copyFrom(
@@ -653,16 +657,16 @@ public class EthereumSuite extends HapiSuite {
 
     HapiSpec etx012PrecompileCallSucceedsWhenNeededSignatureInEthTxn() {
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
-        final String fungibleToken = "token";
-        final String mintTxn = "mintTxn";
+        final String fungibleToken = TOKEN;
+        final String mintTxn = MINT_TXN;
         return defaultHapiSpec("ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via("autoAccount"),
+                                .via(AUTO_ACCOUNT_TRANSACTION_NAME),
                         withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)),
-                        getTxnRecord("autoAccount").andAllChildRecords(),
+                        getTxnRecord(AUTO_ACCOUNT_TRANSACTION_NAME).andAllChildRecords(),
                         uploadInitCode(HELLO_WORLD_MINT_CONTRACT),
                         tokenCreate(fungibleToken)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
@@ -702,8 +706,8 @@ public class EthereumSuite extends HapiSuite {
 
     HapiSpec etx013PrecompileCallSucceedsWhenNeededSignatureInHederaTxn() {
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
-        final String fungibleToken = "token";
-        final String mintTxn = "mintTxn";
+        final String fungibleToken = TOKEN;
+        final String mintTxn = MINT_TXN;
         final String MULTI_KEY = "MULTI_KEY";
         return defaultHapiSpec("ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn")
                 .given(
@@ -711,9 +715,9 @@ public class EthereumSuite extends HapiSuite {
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via("autoAccount"),
+                                .via(AUTO_ACCOUNT_TRANSACTION_NAME),
                         withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)),
-                        getTxnRecord("autoAccount").andAllChildRecords(),
+                        getTxnRecord(AUTO_ACCOUNT_TRANSACTION_NAME).andAllChildRecords(),
                         uploadInitCode(HELLO_WORLD_MINT_CONTRACT),
                         tokenCreate(fungibleToken)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
@@ -754,8 +758,8 @@ public class EthereumSuite extends HapiSuite {
 
     HapiSpec etx013PrecompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn() {
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
-        final String fungibleToken = "token";
-        final String mintTxn = "mintTxn";
+        final String fungibleToken = TOKEN;
+        final String mintTxn = MINT_TXN;
         final String MULTI_KEY = "MULTI_KEY";
         return defaultHapiSpec("ETX_013_precompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn")
                 .given(
@@ -763,9 +767,9 @@ public class EthereumSuite extends HapiSuite {
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via("autoAccount"),
+                                .via(AUTO_ACCOUNT_TRANSACTION_NAME),
                         withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)),
-                        getTxnRecord("autoAccount").andAllChildRecords(),
+                        getTxnRecord(AUTO_ACCOUNT_TRANSACTION_NAME).andAllChildRecords(),
                         uploadInitCode(HELLO_WORLD_MINT_CONTRACT),
                         tokenCreate(fungibleToken)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
@@ -855,9 +859,9 @@ public class EthereumSuite extends HapiSuite {
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via("autoAccount"),
+                                .via(AUTO_ACCOUNT_TRANSACTION_NAME),
                         withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)),
-                        getTxnRecord("autoAccount").andAllChildRecords(),
+                        getTxnRecord(AUTO_ACCOUNT_TRANSACTION_NAME).andAllChildRecords(),
                         uploadInitCode(EMIT_SENDER_ORIGIN_CONTRACT),
                         contractCreate(EMIT_SENDER_ORIGIN_CONTRACT))
                 .when(ethereumCall(EMIT_SENDER_ORIGIN_CONTRACT, "logNow")
@@ -867,12 +871,12 @@ public class EthereumSuite extends HapiSuite {
                         .nonce(0)
                         .maxFeePerGas(50L)
                         .gasLimit(1_000_000L)
-                        .via("payTxn")
+                        .via(PAY_TXN)
                         .hasKnownStatus(ResponseCodeEnum.SUCCESS))
                 .then(
                         withOpContext((spec, ignore) -> allRunFor(
                                 spec,
-                                getTxnRecord("payTxn")
+                                getTxnRecord(PAY_TXN)
                                         .logged()
                                         .hasPriority(recordWith()
                                                 .contractCallResult(resultWith()
@@ -901,7 +905,7 @@ public class EthereumSuite extends HapiSuite {
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via("autoAccount"),
+                                .via(AUTO_ACCOUNT_TRANSACTION_NAME),
                         uploadInitCode(contract),
                         ethereumContractCreate(contract)
                                 .type(EthTxData.EthTransactionType.EIP1559)
@@ -932,7 +936,7 @@ public class EthereumSuite extends HapiSuite {
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via("autoAccount"),
+                                .via(AUTO_ACCOUNT_TRANSACTION_NAME),
                         cryptoCreate(feeCollectorAndAutoRenew)
                                 .keyShape(SigControl.ED25519_ON)
                                 .balance(ONE_HUNDRED_HBARS),
@@ -994,7 +998,7 @@ public class EthereumSuite extends HapiSuite {
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via("autoAccount"),
+                                .via(AUTO_ACCOUNT_TRANSACTION_NAME),
                         uploadInitCode(contract),
                         ethereumContractCreate(contract)
                                 .type(EthTxData.EthTransactionType.EIP1559)

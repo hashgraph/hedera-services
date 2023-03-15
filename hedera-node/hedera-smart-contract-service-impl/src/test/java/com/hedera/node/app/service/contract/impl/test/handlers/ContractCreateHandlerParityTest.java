@@ -24,7 +24,7 @@ import static com.hedera.test.utils.KeyUtils.sanityRestored;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
-import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -33,7 +33,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class ContractCreateHandlerParityTest {
-    private AccountKeyLookup keyLookup;
+    private AccountAccess keyLookup;
     private final ContractCreateHandler subject = new ContractCreateHandler();
 
     @BeforeEach

@@ -75,6 +75,15 @@ import org.apache.logging.log4j.Logger;
 
 public class TokenCreateSpecs extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TokenCreateSpecs.class);
+    private static final String NON_FUNGIBLE_UNIQUE_FINITE = "non-fungible-unique-finite";
+    private static final String PRIMARY = "primary";
+    private static final String AUTO_RENEW_ACCOUNT = "autoRenewAccount";
+    private static final String ADMIN_KEY = "adminKey";
+    private static final String SUPPLY_KEY = "supplyKey";
+    private static final String AUTO_RENEW = "autoRenew";
+    private static final String NAME = "012345678912";
+    private static final String CREATE_TXN = "createTxn";
+    private static final String PAYER = "payer";
 
     private static String TOKEN_TREASURY = "treasury";
 
@@ -129,7 +138,6 @@ public class TokenCreateSpecs extends HapiSuite {
     }
 
     private HapiSpec validateNewTokenAssociations() {
-        final String aToken = "TokenA";
         final String notToBeToken = "notToBeToken";
         final String hbarCollector = "hbarCollector";
         final String fractionalCollector = "fractionalCollector";
@@ -156,7 +164,7 @@ public class TokenCreateSpecs extends HapiSuite {
                         getAccountInfo(selfDenominatedFixedCollector).savingSnapshot(selfDenominatedFixedCollector),
                         getAccountInfo(otherSelfDenominatedFixedCollector)
                                 .savingSnapshot(otherSelfDenominatedFixedCollector),
-                        tokenCreate(aToken)
+                        tokenCreate(A_TOKEN)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
                                 .initialSupply(Long.MAX_VALUE)
                                 .treasury(treasury)
@@ -180,10 +188,10 @@ public class TokenCreateSpecs extends HapiSuite {
                         getTxnRecord(creationTxn)
                                 .hasPriority(recordWith()
                                         .autoAssociated(accountTokenPairs(List.of(
-                                                Pair.of(treasury, aToken),
-                                                Pair.of(fractionalCollector, aToken),
-                                                Pair.of(selfDenominatedFixedCollector, aToken),
-                                                Pair.of(otherSelfDenominatedFixedCollector, aToken))))),
+                                                Pair.of(treasury, A_TOKEN),
+                                                Pair.of(fractionalCollector, A_TOKEN),
+                                                Pair.of(selfDenominatedFixedCollector, A_TOKEN),
+                                                Pair.of(otherSelfDenominatedFixedCollector, A_TOKEN))))),
                         getTxnRecord(failedCreationTxn)
                                 .hasPriority(recordWith().autoAssociated(accountTokenPairs(List.of()))),
                         /* Validate state */
@@ -193,20 +201,20 @@ public class TokenCreateSpecs extends HapiSuite {
                                 /* TokenCreate auto-associations aren't part of the HIP-23 paradigm */
                                 .hasAlreadyUsedAutomaticAssociations(0)
                                 .has(accountWith()
-                                        .newAssociationsFromSnapshot(treasury, List.of(relationshipWith(aToken)))),
+                                        .newAssociationsFromSnapshot(treasury, List.of(relationshipWith(A_TOKEN)))),
                         getAccountInfo(fractionalCollector)
                                 .has(accountWith()
                                         .newAssociationsFromSnapshot(
-                                                fractionalCollector, List.of(relationshipWith(aToken)))),
+                                                fractionalCollector, List.of(relationshipWith(A_TOKEN)))),
                         getAccountInfo(selfDenominatedFixedCollector)
                                 .has(accountWith()
                                         .newAssociationsFromSnapshot(
-                                                selfDenominatedFixedCollector, List.of(relationshipWith(aToken)))),
+                                                selfDenominatedFixedCollector, List.of(relationshipWith(A_TOKEN)))),
                         getAccountInfo(otherSelfDenominatedFixedCollector)
                                 .has(accountWith()
                                         .newAssociationsFromSnapshot(
                                                 otherSelfDenominatedFixedCollector,
-                                                List.of(relationshipWith(aToken)))));
+                                                List.of(relationshipWith(A_TOKEN)))));
     }
 
     private HapiSpec createsFungibleInfiniteByDefault() {
@@ -241,59 +249,56 @@ public class TokenCreateSpecs extends HapiSuite {
         final var deletingAccount = "deletingAccount";
         return defaultHapiSpec("AutoRenewValidationWorks")
                 .given(
-                        cryptoCreate("autoRenew").balance(0L),
+                        cryptoCreate(AUTO_RENEW).balance(0L),
                         cryptoCreate(deletingAccount).balance(0L))
                 .when(
                         cryptoDelete(deletingAccount),
-                        tokenCreate("primary")
+                        tokenCreate(PRIMARY)
                                 .autoRenewAccount(deletingAccount)
                                 .hasKnownStatus(INVALID_AUTORENEW_ACCOUNT),
-                        tokenCreate("primary")
+                        tokenCreate(PRIMARY)
                                 .signedBy(GENESIS)
                                 .autoRenewAccount("1.2.3")
                                 .hasKnownStatus(INVALID_AUTORENEW_ACCOUNT),
-                        tokenCreate("primary")
-                                .autoRenewAccount("autoRenew")
+                        tokenCreate(PRIMARY)
+                                .autoRenewAccount(AUTO_RENEW)
                                 .autoRenewPeriod(Long.MAX_VALUE)
                                 .hasPrecheck(INVALID_RENEWAL_PERIOD),
-                        tokenCreate("primary")
+                        tokenCreate(PRIMARY)
                                 .signedBy(GENESIS)
-                                .autoRenewAccount("autoRenew")
+                                .autoRenewAccount(AUTO_RENEW)
                                 .hasKnownStatus(INVALID_SIGNATURE),
-                        tokenCreate("primary").autoRenewAccount("autoRenew"))
-                .then(getTokenInfo("primary").logged());
+                        tokenCreate(PRIMARY).autoRenewAccount(AUTO_RENEW))
+                .then(getTokenInfo(PRIMARY).logged());
     }
 
     public HapiSpec creationYieldsExpectedToken() {
         return defaultHapiSpec("CreationYieldsExpectedToken")
                 .given(cryptoCreate(TOKEN_TREASURY).balance(0L), newKeyNamed("freeze"))
-                .when(tokenCreate("primary")
+                .when(tokenCreate(PRIMARY)
                         .initialSupply(123)
                         .decimals(4)
                         .freezeDefault(true)
                         .freezeKey("freeze")
                         .treasury(TOKEN_TREASURY))
-                .then(getTokenInfo("primary").logged().hasRegisteredId("primary"));
+                .then(getTokenInfo(PRIMARY).logged().hasRegisteredId(PRIMARY));
     }
 
     public HapiSpec creationSetsExpectedName() {
-        String saltedName = salted("primary");
+        String saltedName = salted(PRIMARY);
         return defaultHapiSpec("CreationSetsExpectedName")
                 .given(cryptoCreate(TOKEN_TREASURY).balance(0L))
-                .when(tokenCreate("primary").name(saltedName).treasury(TOKEN_TREASURY))
-                .then(getTokenInfo("primary")
-                        .logged()
-                        .hasRegisteredId("primary")
-                        .hasName(saltedName));
+                .when(tokenCreate(PRIMARY).name(saltedName).treasury(TOKEN_TREASURY))
+                .then(getTokenInfo(PRIMARY).logged().hasRegisteredId(PRIMARY).hasName(saltedName));
     }
 
     public HapiSpec creationWithoutKYCSetsCorrectStatus() {
-        String saltedName = salted("primary");
+        String saltedName = salted(PRIMARY);
         return defaultHapiSpec("CreationWithoutKYCSetsCorrectStatus")
                 .given(cryptoCreate(TOKEN_TREASURY).balance(0L))
-                .when(tokenCreate("primary").name(saltedName).treasury(TOKEN_TREASURY))
+                .when(tokenCreate(PRIMARY).name(saltedName).treasury(TOKEN_TREASURY))
                 .then(getAccountInfo(TOKEN_TREASURY)
-                        .hasToken(relationshipWith("primary").kyc(TokenKycStatus.KycNotApplicable)));
+                        .hasToken(relationshipWith(PRIMARY).kyc(TokenKycStatus.KycNotApplicable)));
     }
 
     public HapiSpec baseCreationsHaveExpectedPrices() {
@@ -309,68 +314,65 @@ public class TokenCreateSpecs extends HapiSuite {
         final var uniqueNoFees = "uniqueNoFees";
         final var uniqueWithFees = "uniqueWithFees";
 
-        final var autoRenew = "autoRenewAccount";
-        final var adminKey = "adminKey";
-        final var supplyKey = "supplyKey";
         final var customFeeKey = "customFeeKey";
 
         return defaultHapiSpec("BaseCreationsHaveExpectedPrices")
                 .given(
                         cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        cryptoCreate(autoRenew).balance(0L),
-                        newKeyNamed(adminKey),
-                        newKeyNamed(supplyKey),
+                        cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
+                        newKeyNamed(ADMIN_KEY),
+                        newKeyNamed(SUPPLY_KEY),
                         newKeyNamed(customFeeKey))
                 .when(
                         tokenCreate(commonNoFees)
                                 .blankMemo()
-                                .name("012345678912")
+                                .name(NAME)
                                 .symbol("ABCD")
                                 .payingWith(civilian)
                                 .treasury(TOKEN_TREASURY)
-                                .autoRenewAccount(autoRenew)
+                                .autoRenewAccount(AUTO_RENEW_ACCOUNT)
                                 .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                                .adminKey(adminKey)
+                                .adminKey(ADMIN_KEY)
                                 .via(txnFor(commonNoFees)),
                         tokenCreate(commonWithFees)
                                 .blankMemo()
-                                .name("012345678912")
+                                .name(NAME)
                                 .symbol("ABCD")
                                 .payingWith(civilian)
                                 .treasury(TOKEN_TREASURY)
-                                .autoRenewAccount(autoRenew)
+                                .autoRenewAccount(AUTO_RENEW_ACCOUNT)
                                 .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                                .adminKey(adminKey)
+                                .adminKey(ADMIN_KEY)
                                 .withCustom(fixedHbarFee(ONE_HBAR, TOKEN_TREASURY))
                                 .feeScheduleKey(customFeeKey)
                                 .via(txnFor(commonWithFees)),
                         tokenCreate(uniqueNoFees)
                                 .payingWith(civilian)
                                 .blankMemo()
-                                .name("012345678912")
+                                .name(NAME)
                                 .symbol("ABCD")
                                 .initialSupply(0L)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .treasury(TOKEN_TREASURY)
-                                .autoRenewAccount(autoRenew)
+                                .autoRenewAccount(AUTO_RENEW_ACCOUNT)
                                 .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                                .adminKey(adminKey)
-                                .supplyKey(supplyKey)
+                                .adminKey(ADMIN_KEY)
+                                .supplyKey(SUPPLY_KEY)
                                 .via(txnFor(uniqueNoFees)),
                         tokenCreate(uniqueWithFees)
                                 .payingWith(civilian)
                                 .blankMemo()
-                                .name("012345678912")
+                                .name(NAME)
                                 .symbol("ABCD")
                                 .initialSupply(0L)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .treasury(TOKEN_TREASURY)
-                                .autoRenewAccount(autoRenew)
+                                .autoRenewAccount(AUTO_RENEW_ACCOUNT)
                                 .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                                .adminKey(adminKey)
+                                .adminKey(ADMIN_KEY)
                                 .withCustom(fixedHbarFee(ONE_HBAR, TOKEN_TREASURY))
-                                .supplyKey(supplyKey)
+                                .supplyKey(SUPPLY_KEY)
                                 .feeScheduleKey(customFeeKey)
                                 .via(txnFor(uniqueWithFees)))
                 .then(
@@ -386,40 +388,40 @@ public class TokenCreateSpecs extends HapiSuite {
 
     public HapiSpec creationHappyPath() {
         String memo = "JUMP";
-        String saltedName = salted("primary");
+        String saltedName = salted(PRIMARY);
         final var secondCreation = "secondCreation";
         final var pauseKey = "pauseKey";
         return defaultHapiSpec("CreationHappyPath")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        cryptoCreate("autoRenewAccount").balance(0L),
-                        newKeyNamed("adminKey"),
+                        cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
+                        newKeyNamed(ADMIN_KEY),
                         newKeyNamed("freezeKey"),
                         newKeyNamed("kycKey"),
-                        newKeyNamed("supplyKey"),
+                        newKeyNamed(SUPPLY_KEY),
                         newKeyNamed("wipeKey"),
                         newKeyNamed("feeScheduleKey"),
                         newKeyNamed(pauseKey))
                 .when(
-                        tokenCreate("primary")
+                        tokenCreate(PRIMARY)
                                 .supplyType(TokenSupplyType.FINITE)
                                 .entityMemo(memo)
                                 .name(saltedName)
                                 .treasury(TOKEN_TREASURY)
-                                .autoRenewAccount("autoRenewAccount")
+                                .autoRenewAccount(AUTO_RENEW_ACCOUNT)
                                 .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
                                 .maxSupply(1000)
                                 .initialSupply(500)
                                 .decimals(1)
-                                .adminKey("adminKey")
+                                .adminKey(ADMIN_KEY)
                                 .freezeKey("freezeKey")
                                 .kycKey("kycKey")
-                                .supplyKey("supplyKey")
+                                .supplyKey(SUPPLY_KEY)
                                 .wipeKey("wipeKey")
                                 .feeScheduleKey("feeScheduleKey")
                                 .pauseKey(pauseKey)
-                                .via("createTxn"),
-                        tokenCreate("non-fungible-unique-finite")
+                                .via(CREATE_TXN),
+                        tokenCreate(NON_FUNGIBLE_UNIQUE_FINITE)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .supplyType(TokenSupplyType.FINITE)
                                 .pauseKey(pauseKey)
@@ -432,20 +434,20 @@ public class TokenCreateSpecs extends HapiSuite {
                                 .logged()
                                 .hasPriority(recordWith()
                                         .autoAssociated(accountTokenPairsInAnyOrder(
-                                                List.of(Pair.of(TOKEN_TREASURY, "non-fungible-unique-finite"))))))
+                                                List.of(Pair.of(TOKEN_TREASURY, NON_FUNGIBLE_UNIQUE_FINITE))))))
                 .then(
                         withOpContext((spec, opLog) -> {
-                            var createTxn = getTxnRecord("createTxn");
+                            var createTxn = getTxnRecord(CREATE_TXN);
                             allRunFor(spec, createTxn);
                             var timestamp = createTxn
                                     .getResponseRecord()
                                     .getConsensusTimestamp()
                                     .getSeconds();
-                            spec.registry().saveExpiry("primary", timestamp + THREE_MONTHS_IN_SECONDS);
+                            spec.registry().saveExpiry(PRIMARY, timestamp + THREE_MONTHS_IN_SECONDS);
                         }),
-                        getTokenInfo("primary")
+                        getTokenInfo(PRIMARY)
                                 .logged()
-                                .hasRegisteredId("primary")
+                                .hasRegisteredId(PRIMARY)
                                 .hasTokenType(TokenType.FUNGIBLE_COMMON)
                                 .hasSupplyType(TokenSupplyType.FINITE)
                                 .hasEntityMemo(memo)
@@ -454,32 +456,32 @@ public class TokenCreateSpecs extends HapiSuite {
                                 .hasAutoRenewPeriod(THREE_MONTHS_IN_SECONDS)
                                 .hasValidExpiry()
                                 .hasDecimals(1)
-                                .hasAdminKey("primary")
-                                .hasFreezeKey("primary")
-                                .hasKycKey("primary")
-                                .hasSupplyKey("primary")
-                                .hasWipeKey("primary")
-                                .hasFeeScheduleKey("primary")
-                                .hasPauseKey("primary")
+                                .hasAdminKey(PRIMARY)
+                                .hasFreezeKey(PRIMARY)
+                                .hasKycKey(PRIMARY)
+                                .hasSupplyKey(PRIMARY)
+                                .hasWipeKey(PRIMARY)
+                                .hasFeeScheduleKey(PRIMARY)
+                                .hasPauseKey(PRIMARY)
                                 .hasPauseStatus(TokenPauseStatus.Unpaused)
                                 .hasMaxSupply(1000)
                                 .hasTotalSupply(500)
-                                .hasAutoRenewAccount("autoRenewAccount"),
-                        getTokenInfo("non-fungible-unique-finite")
+                                .hasAutoRenewAccount(AUTO_RENEW_ACCOUNT),
+                        getTokenInfo(NON_FUNGIBLE_UNIQUE_FINITE)
                                 .logged()
-                                .hasRegisteredId("non-fungible-unique-finite")
+                                .hasRegisteredId(NON_FUNGIBLE_UNIQUE_FINITE)
                                 .hasTokenType(NON_FUNGIBLE_UNIQUE)
                                 .hasSupplyType(TokenSupplyType.FINITE)
-                                .hasPauseKey("primary")
+                                .hasPauseKey(PRIMARY)
                                 .hasPauseStatus(TokenPauseStatus.Unpaused)
                                 .hasTotalSupply(0)
                                 .hasMaxSupply(100),
                         getAccountInfo(TOKEN_TREASURY)
-                                .hasToken(relationshipWith("primary")
+                                .hasToken(relationshipWith(PRIMARY)
                                         .balance(500)
                                         .kyc(TokenKycStatus.Granted)
                                         .freeze(TokenFreezeStatus.Unfrozen))
-                                .hasToken(relationshipWith("non-fungible-unique-finite")
+                                .hasToken(relationshipWith(NON_FUNGIBLE_UNIQUE_FINITE)
                                         .balance(0)
                                         .kyc(TokenKycStatus.KycNotApplicable)
                                         .freeze(TokenFreezeStatus.FreezeNotApplicable)));
@@ -489,47 +491,44 @@ public class TokenCreateSpecs extends HapiSuite {
         return defaultHapiSpec("CreationSetsCorrectExpiry")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        cryptoCreate("autoRenew").balance(0L))
-                .when(tokenCreate("primary")
-                        .autoRenewAccount("autoRenew")
+                        cryptoCreate(AUTO_RENEW).balance(0L))
+                .when(tokenCreate(PRIMARY)
+                        .autoRenewAccount(AUTO_RENEW)
                         .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
                         .treasury(TOKEN_TREASURY)
-                        .via("createTxn"))
+                        .via(CREATE_TXN))
                 .then(
                         withOpContext((spec, opLog) -> {
-                            var createTxn = getTxnRecord("createTxn");
+                            var createTxn = getTxnRecord(CREATE_TXN);
                             allRunFor(spec, createTxn);
                             var timestamp = createTxn
                                     .getResponseRecord()
                                     .getConsensusTimestamp()
                                     .getSeconds();
-                            spec.registry().saveExpiry("primary", timestamp + THREE_MONTHS_IN_SECONDS);
+                            spec.registry().saveExpiry(PRIMARY, timestamp + THREE_MONTHS_IN_SECONDS);
                         }),
-                        getTokenInfo("primary")
-                                .logged()
-                                .hasRegisteredId("primary")
-                                .hasValidExpiry());
+                        getTokenInfo(PRIMARY).logged().hasRegisteredId(PRIMARY).hasValidExpiry());
     }
 
     public HapiSpec creationValidatesExpiry() {
         return defaultHapiSpec("CreationValidatesExpiry")
                 .given()
                 .when()
-                .then(tokenCreate("primary").expiry(1000).hasPrecheck(INVALID_EXPIRATION_TIME));
+                .then(tokenCreate(PRIMARY).expiry(1000).hasPrecheck(INVALID_EXPIRATION_TIME));
     }
 
     public HapiSpec creationValidatesFreezeDefaultWithNoFreezeKey() {
         return defaultHapiSpec("CreationValidatesFreezeDefaultWithNoFreezeKey")
                 .given()
                 .when()
-                .then(tokenCreate("primary").freezeDefault(true).hasPrecheck(TOKEN_HAS_NO_FREEZE_KEY));
+                .then(tokenCreate(PRIMARY).freezeDefault(true).hasPrecheck(TOKEN_HAS_NO_FREEZE_KEY));
     }
 
     public HapiSpec creationValidatesMemo() {
         return defaultHapiSpec("CreationValidatesMemo")
                 .given()
                 .when()
-                .then(tokenCreate("primary").entityMemo("N\u0000!!!").hasPrecheck(INVALID_ZERO_BYTE_IN_STRING));
+                .then(tokenCreate(PRIMARY).entityMemo("N\u0000!!!").hasPrecheck(INVALID_ZERO_BYTE_IN_STRING));
     }
 
     public HapiSpec creationValidatesNonFungiblePrechecks() {
@@ -537,17 +536,17 @@ public class TokenCreateSpecs extends HapiSuite {
                 .given()
                 .when()
                 .then(
-                        tokenCreate("primary")
+                        tokenCreate(PRIMARY)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .initialSupply(0)
                                 .decimals(0)
                                 .hasPrecheck(TOKEN_HAS_NO_SUPPLY_KEY),
-                        tokenCreate("primary")
+                        tokenCreate(PRIMARY)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .initialSupply(1)
                                 .decimals(0)
                                 .hasPrecheck(INVALID_TOKEN_INITIAL_SUPPLY),
-                        tokenCreate("primary")
+                        tokenCreate(PRIMARY)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .initialSupply(0)
                                 .decimals(1)
@@ -559,17 +558,17 @@ public class TokenCreateSpecs extends HapiSuite {
                 .given()
                 .when()
                 .then(
-                        tokenCreate("primary").maxSupply(-1).hasPrecheck(INVALID_TOKEN_MAX_SUPPLY),
-                        tokenCreate("primary").maxSupply(1).hasPrecheck(INVALID_TOKEN_MAX_SUPPLY),
-                        tokenCreate("primary")
+                        tokenCreate(PRIMARY).maxSupply(-1).hasPrecheck(INVALID_TOKEN_MAX_SUPPLY),
+                        tokenCreate(PRIMARY).maxSupply(1).hasPrecheck(INVALID_TOKEN_MAX_SUPPLY),
+                        tokenCreate(PRIMARY)
                                 .supplyType(TokenSupplyType.FINITE)
                                 .maxSupply(0)
                                 .hasPrecheck(INVALID_TOKEN_MAX_SUPPLY),
-                        tokenCreate("primary")
+                        tokenCreate(PRIMARY)
                                 .supplyType(TokenSupplyType.FINITE)
                                 .maxSupply(-1)
                                 .hasPrecheck(INVALID_TOKEN_MAX_SUPPLY),
-                        tokenCreate("primary")
+                        tokenCreate(PRIMARY)
                                 .supplyType(TokenSupplyType.FINITE)
                                 .initialSupply(2)
                                 .maxSupply(1)
@@ -817,8 +816,8 @@ public class TokenCreateSpecs extends HapiSuite {
                         recordSystemProperty("tokens.maxTokenNameUtf8Bytes", Integer::parseInt, maxUtf8Bytes::set))
                 .when()
                 .then(
-                        tokenCreate("primary").name("").logged().hasPrecheck(MISSING_TOKEN_NAME),
-                        tokenCreate("primary").name("T\u0000ken").logged().hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
+                        tokenCreate(PRIMARY).name("").logged().hasPrecheck(MISSING_TOKEN_NAME),
+                        tokenCreate(PRIMARY).name("T\u0000ken").logged().hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
                         sourcing(() -> tokenCreate("tooLong")
                                 .name(TxnUtils.nAscii(maxUtf8Bytes.get() + 1))
                                 .hasPrecheck(TOKEN_NAME_TOO_LONG)),
@@ -837,7 +836,7 @@ public class TokenCreateSpecs extends HapiSuite {
                 .when()
                 .then(
                         tokenCreate("missingSymbol").symbol("").hasPrecheck(MISSING_TOKEN_SYMBOL),
-                        tokenCreate("primary").name("T\u0000ken").logged().hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
+                        tokenCreate(PRIMARY).name("T\u0000ken").logged().hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
                         sourcing(() -> tokenCreate("tooLong")
                                 .symbol(TxnUtils.nAscii(maxUtf8Bytes.get() + 1))
                                 .hasPrecheck(TOKEN_SYMBOL_TOO_LONG)),
@@ -853,35 +852,35 @@ public class TokenCreateSpecs extends HapiSuite {
     public HapiSpec creationRequiresAppropriateSigs() {
         return defaultHapiSpec("CreationRequiresAppropriateSigs")
                 .given(
-                        cryptoCreate("payer").balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        newKeyNamed("adminKey"))
+                        newKeyNamed(ADMIN_KEY))
                 .when()
                 .then(
                         tokenCreate("shouldntWork")
                                 .treasury(TOKEN_TREASURY)
-                                .payingWith("payer")
-                                .adminKey("adminKey")
-                                .signedBy("payer")
+                                .payingWith(PAYER)
+                                .adminKey(ADMIN_KEY)
+                                .signedBy(PAYER)
                                 .hasKnownStatus(INVALID_SIGNATURE),
                         /* treasury must sign */
                         tokenCreate("shouldntWorkEither")
                                 .treasury(TOKEN_TREASURY)
-                                .payingWith("payer")
-                                .adminKey("adminKey")
-                                .signedBy("payer", "adminKey")
+                                .payingWith(PAYER)
+                                .adminKey(ADMIN_KEY)
+                                .signedBy(PAYER, ADMIN_KEY)
                                 .hasKnownStatus(INVALID_SIGNATURE));
     }
 
     public HapiSpec creationRequiresAppropriateSigsHappyPath() {
         return defaultHapiSpec("CreationRequiresAppropriateSigsHappyPath")
-                .given(cryptoCreate("payer"), cryptoCreate(TOKEN_TREASURY).balance(0L), newKeyNamed("adminKey"))
+                .given(cryptoCreate(PAYER), cryptoCreate(TOKEN_TREASURY).balance(0L), newKeyNamed(ADMIN_KEY))
                 .when()
                 .then(tokenCreate("shouldWork")
                         .treasury(TOKEN_TREASURY)
-                        .payingWith("payer")
-                        .adminKey("adminKey")
-                        .signedBy(TOKEN_TREASURY, "payer", "adminKey")
+                        .payingWith(PAYER)
+                        .adminKey(ADMIN_KEY)
+                        .signedBy(TOKEN_TREASURY, PAYER, ADMIN_KEY)
                         .hasKnownStatus(SUCCESS));
     }
 
