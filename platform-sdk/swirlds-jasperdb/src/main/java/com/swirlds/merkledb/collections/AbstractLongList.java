@@ -257,11 +257,83 @@ public abstract class AbstractLongList<C> implements LongList {
         if (index >= size.get()) {
             return defaultValue;
         }
-        final long dataIndex = index / numLongsPerChunk;
+        final int chunkIndex = (int) (index / numLongsPerChunk);
         final long subIndex = index % numLongsPerChunk;
-        final long presentValue = lookupInChunk(dataIndex, subIndex);
+        C chunk = chunkList.get(chunkIndex);
+        if (chunk == null) {
+            return defaultValue;
+        }
+        final long presentValue = lookupInChunk(chunk, subIndex);
         return presentValue == IMPERMISSIBLE_VALUE ? defaultValue : presentValue;
     }
+
+    /**
+     * Stores a long in the list at the given index.
+     *
+     * @param index the index to use
+     * @param value the long to store
+     * @throws IndexOutOfBoundsException if the index is negative or beyond the max capacity of the list
+     * @throws IllegalArgumentException if old value is zero (which could never be true)
+     */
+    @Override
+    public final void put(long index, long value) {
+        checkValueAndIndex(index, value);
+        assert index >= minValidIndex.get()
+                : String.format("Index %d is less than min valid index %d", index, minValidIndex.get());
+        final C chunk = createOrGetChunk(index);
+        final int subIndex = (int) (index % numLongsPerChunk);
+        put(chunk, subIndex, value);
+    }
+
+    /**
+     * Stores a long in the list at the given chunk at subIndex.
+     * @param chunk the chunk to use
+     * @param subIndex the subIndex to use
+     * @param value the long to store
+     */
+    protected abstract void put(C chunk, int subIndex, long value);
+
+    /**
+     * Stores a long at the given index, on the condition that the current long therein has a given
+     * value.
+     *
+     * @param index the index to use
+     * @param oldValue the value that must currently obtain at the index
+     * @param newValue the new value to store
+     * @return whether the newValue was set
+     * @throws IndexOutOfBoundsException if the index is negative or beyond the max capacity of the list
+     * @throws IllegalArgumentException if old value is zero (which could never be true)
+     */
+    @Override
+    public final boolean putIfEqual(long index, long oldValue, long newValue) {
+        checkValueAndIndex(index, newValue);
+        final int chunkIndex = (int) (index / numLongsPerChunk);
+        final C chunk = chunkList.get(chunkIndex);
+        if (chunk == null) {
+            // quick optimization: we can quit early without creating new memory blocks
+            // unnecessarily
+            return false;
+        }
+        final int subIndex = (int) (index % numLongsPerChunk);
+        boolean result = putIfEqual(chunk, subIndex, oldValue, newValue);
+        if (result) {
+            // update the size if necessary
+            size.getAndUpdate(oldSize -> index >= oldSize ? (index + 1) : oldSize);
+        }
+        return result;
+    }
+
+    /**
+     * Stores a long in a given chunk at a given sub index, on the condition that the current long therein has a given
+     * value.
+     *
+     * @param chunk offset of the chunk to use
+     * @param subIndex the index within the chunk to use
+     * @param oldValue the value that must currently obtain at the index
+     * @param newValue the new value to store
+     * @return whether the newValue was set
+     */
+    protected abstract boolean putIfEqual(C chunk, int subIndex, long oldValue, long newValue);
 
     /**
      * Implements CASable.get(index)
@@ -330,6 +402,7 @@ public abstract class AbstractLongList<C> implements LongList {
             writeHeader(fc);
             // write data
             writeLongsData(fc);
+            fc.force(true);
         }
     }
 
@@ -363,11 +436,11 @@ public abstract class AbstractLongList<C> implements LongList {
     /**
      * Lookup a long in data
      *
-     * @param chunkIndex the index of the chunk the long is contained in
+     * @param chunk chunk to lookup in
      * @param subIndex   The sub index of the long in that chunk
      * @return The stored long value at given index
      */
-    protected abstract long lookupInChunk(final long chunkIndex, final long subIndex);
+    protected abstract long lookupInChunk(final C chunk, final long subIndex);
 
     /**
      * After invocation of this method, {@link AbstractLongList#get(long)}) calls
@@ -414,18 +487,13 @@ public abstract class AbstractLongList<C> implements LongList {
     }
 
     /**
-     * Deletes values up to {@code newMinValidIndex}, releases memory chunks reserved for these
+     * Deletes values up to {@code newMinValidIndex} or the end of the list, releases memory chunks reserved for these
      * values. Note that it takes {@code reservedBufferOffset} into account to decide if a chunk has
      * to be released.
      *
      * @param newMinValidIndex new minimal valid index, left boundary of the list
      */
     private void shrinkIfNeeded(final long newMinValidIndex) {
-        if (newMinValidIndex >= size()) {
-            // shrinking is certainly not required
-            return;
-        }
-
         final int firstValidChunkWithBuffer =
                 (int) Math.max((newMinValidIndex - reservedBufferLength) / numLongsPerChunk, 0);
         final int firstChunkIndexToDelete = firstValidChunkWithBuffer - 1;
@@ -466,29 +534,28 @@ public abstract class AbstractLongList<C> implements LongList {
     protected abstract C createChunk();
 
     /**
+     * @param totalNumberOfElements total number of elements in the list
      * @return number of memory chunks that this list may have
      */
-    protected int calculateNumberOfChunks(final long rightBoundary) {
-        return (int) ((rightBoundary - 1) / numLongsPerChunk + 1);
+    protected int calculateNumberOfChunks(final long totalNumberOfElements) {
+        return (int) ((totalNumberOfElements - 1) / numLongsPerChunk + 1);
     }
 
     /**
      * Checks if the value may be put into a LongList at a certain index, given a max capacity.
      *
-     * @param value the value to check
      * @param index the index to check
+     * @param value the value to check
      * @throws IllegalArgumentException  if the value is impermissible
      * @throws IndexOutOfBoundsException if the index is out-of-bounds
      */
-    protected final void checkValueAndIndex(final long value, final long index) {
+    protected final void checkValueAndIndex(final long index, final long value) {
         if (index < 0 || index >= maxLongs) {
             throw new IndexOutOfBoundsException("Index " + index + " is out-of-bounds given capacity " + maxLongs);
         }
         if (value == IMPERMISSIBLE_VALUE) {
             throw new IllegalArgumentException("Cannot put " + IMPERMISSIBLE_VALUE + " into a LongList");
         }
-        assert index >= minValidIndex.get() :
-                String.format("Index %d is less than min valid index %d", index, minValidIndex.get());
     }
 
     /**

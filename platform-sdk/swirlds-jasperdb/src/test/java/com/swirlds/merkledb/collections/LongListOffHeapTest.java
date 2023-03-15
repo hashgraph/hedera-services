@@ -99,7 +99,7 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
     }
 
     @Test
-    public void testInsertAtTheEndOfTheListCustomConfigured() {
+    void testInsertAtTheEndOfTheListCustomConfigured() {
         final int maxLongs = 10;
         final LongListOffHeap list = createFullyParameterizedLongListWith(10, maxLongs);
         assertDoesNotThrow(() -> list.put(maxLongs - 1, 1));

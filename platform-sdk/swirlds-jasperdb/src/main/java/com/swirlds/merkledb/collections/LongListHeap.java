@@ -107,18 +107,13 @@ public final class LongListHeap extends AbstractLongList<AtomicLongArray> {
 
     /** {@inheritDoc} */
     @Override
-    public void put(final long index, final long value) {
-        checkValueAndIndex(value, index);
-        final int subIndex = (int) (index % numLongsPerChunk);
-        createOrGetChunk(index).set(subIndex, value);
+    protected void put(AtomicLongArray chunk, int subIndex, long value) {
+        chunk.set(subIndex, value);
     }
 
     /** {@inheritDoc} */
     @Override
-    public boolean putIfEqual(final long index, final long oldValue, final long newValue) {
-        checkValueAndIndex(newValue, index);
-        final int subIndex = (int) (index % numLongsPerChunk);
-        final AtomicLongArray chunk = createOrGetChunk(index);
+    protected boolean putIfEqual(AtomicLongArray chunk, int subIndex, long oldValue, long newValue) {
         return chunk.compareAndSet(subIndex, oldValue, newValue);
     }
 
@@ -158,17 +153,13 @@ public final class LongListHeap extends AbstractLongList<AtomicLongArray> {
     /**
      * Lookup a long in data
      *
-     * @param chunkIndex the index of the chunk the long is contained in
-     * @param subIndex   The sub index of the long in that chunk
+     * @param chunk the chunk the long is contained in
+     * @param subIndex  The sub index of the long in that chunk
      * @return The stored long value at given index
      */
     @Override
-    protected long lookupInChunk(final long chunkIndex, final long subIndex) {
-        AtomicLongArray array = chunkList.get((int) chunkIndex);
-        if (array == null) {
-            return IMPERMISSIBLE_VALUE;
-        }
-        return array.get((int) subIndex);
+    protected long lookupInChunk(final AtomicLongArray chunk, final long subIndex) {
+        return chunk.get((int) subIndex);
     }
 
     @Override
@@ -177,9 +168,14 @@ public final class LongListHeap extends AbstractLongList<AtomicLongArray> {
     }
 
     @Override
-    protected void partialChunkCleanup(int chunkIndex, long entriesToCleanUp) {
+    protected void partialChunkCleanup(final int chunkIndex, final long entriesToCleanUp) {
+        AtomicLongArray atomicLongArray = chunkList.get(chunkIndex);
+        if (atomicLongArray == null) {
+            // nothing to clean up
+            return;
+        }
         for (int i = 0; i < entriesToCleanUp; i++) {
-            chunkList.get(chunkIndex).set(i, IMPERMISSIBLE_VALUE);
+            atomicLongArray.set(i, IMPERMISSIBLE_VALUE);
         }
     }
 

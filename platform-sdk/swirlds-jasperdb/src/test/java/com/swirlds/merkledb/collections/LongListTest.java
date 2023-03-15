@@ -98,7 +98,7 @@ class LongListTest {
             if (thread == 0) {
                 // Getter
                 while (!done.get()) {
-                    assertEquals(list.get(maxLongs - 2, defaultValue), defaultValue, "Value should be whats expected.");
+                    assertEquals(defaultValue, list.get(maxLongs - 2, defaultValue), "Value should be whats expected.");
                 }
             } else {
                 // Putter

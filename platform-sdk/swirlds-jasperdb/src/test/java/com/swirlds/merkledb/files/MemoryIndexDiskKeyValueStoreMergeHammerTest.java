@@ -40,16 +40,12 @@ import org.junit.jupiter.api.function.ThrowingSupplier;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Hammers the {@link MemoryIndexDiskKeyValueStore} with a ton of concurrent changes to validate the
  * index and the data files are in sync and have all the data they should have.
  */
 class MemoryIndexDiskKeyValueStoreMergeHammerTest {
-
-     private static final Logger logger = LoggerFactory.getLogger(MemoryIndexDiskKeyValueStoreMergeHammerTest.class);
 
     /** Temporary directory provided by JUnit */
     @SuppressWarnings("unused")
@@ -188,7 +184,6 @@ class MemoryIndexDiskKeyValueStoreMergeHammerTest {
                 }
                 return null;
             } catch (final Throwable th) {
-                logger.error("Failed to complete work.", th);
                 throw new RuntimeException(th);
             }
         }

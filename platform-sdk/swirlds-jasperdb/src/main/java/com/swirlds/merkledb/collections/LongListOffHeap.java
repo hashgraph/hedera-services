@@ -126,14 +126,11 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> {
 
     /** {@inheritDoc} */
     @Override
-    public void put(final long index, final long value) {
-        checkValueAndIndex(value, index);
-        final ByteBuffer chunk = createOrGetChunk(index);
+    protected void put(ByteBuffer chunk, int subIndex, long value) {
         /* The remaining lines below are equivalent to a chunk.put(subIndex, value) call
         on a heap byte buffer. Since we have instead a direct buffer, we need to, first,
         get its native memory address from the Buffer.address field; and, second, store
         the given long at the appropriate offset from that address. */
-        final int subIndex = (int) (index % numLongsPerChunk);
         final int subIndexOffset = subIndex * Long.BYTES;
         final long chunkPointer = address(chunk);
         UNSAFE.putLongVolatile(null, chunkPointer + subIndexOffset, value);
@@ -141,21 +138,12 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> {
 
     /** {@inheritDoc} */
     @Override
-    public boolean putIfEqual(final long index, final long oldValue, final long newValue) {
-        checkValueAndIndex(newValue, index);
-        final int dataIndex = (int) (index / numLongsPerChunk);
-        final ByteBuffer chunk = chunkList.get(dataIndex);
-        if (chunk == null) {
-            // quick optimization: we can quit early without creating new memory blocks
-            // unnecessarily
-            return false;
-        }
+    protected boolean putIfEqual(ByteBuffer chunk, int subIndex, long oldValue, long newValue) {
         /* Below would be equivalent to a compareAndSet(subIndex, oldValue, newValue)
         call on a heap byte buffer, if such a method existed. Since we have instead a
         direct buffer, we need to, first, get its native memory address from the
         Buffer.address field; and, second, compare-and-swap the given long at the
         appropriate offset from that address. */
-        final int subIndex = (int) (index % numLongsPerChunk);
         final int subIndexBytes = subIndex * Long.BYTES;
         final long chunkPointer = address(chunk);
         return UNSAFE.compareAndSwapLong(null, chunkPointer + subIndexBytes, oldValue, newValue);
@@ -206,30 +194,14 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> {
     }
 
     /**
-     * Lookup a long in a data chunk with the given chunk ID.
+     * Lookup a long in a data chunk.
      *
-     * @param chunkIndex The index of the chunk the long is contained in
+     * @param chunk     The data chunk
      * @param subIndex   The sub index of the long in that chunk
      * @return The stored long value at given index
      */
     @Override
-    protected long lookupInChunk(final long chunkIndex, final long subIndex) {
-        final ByteBuffer chunk = chunkList.get((int) chunkIndex);
-        return lookupInChunk(chunk, subIndex);
-    }
-
-    /**
-     * Lookup a long in a data chunk.
-     *
-     * @param chunk The data chunk
-     * @param subIndex The sub index of the long in that chunk
-     * @return The stored long value at given index
-     */
-    private static long lookupInChunk(final ByteBuffer chunk, final long subIndex) {
-        if (chunk == null) {
-            // a chunk was either removed by the memory optimization or never existed
-            return LongList.IMPERMISSIBLE_VALUE;
-        }
+    protected long lookupInChunk(final ByteBuffer chunk, final long subIndex) {
         try {
             /* Do a volatile memory read from off-heap memory */
             final long chunkPointer = address(chunk);
@@ -245,7 +217,6 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> {
             throw e;
         }
     }
-
     // =================================================================================================================
     // Private helper methods
 
