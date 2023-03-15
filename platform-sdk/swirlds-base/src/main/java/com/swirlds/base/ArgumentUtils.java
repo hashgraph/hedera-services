@@ -24,7 +24,9 @@ public final class ArgumentUtils {
     /**
      * Private constructor to prevent instantiation.
      */
-    private ArgumentUtils() {}
+    private ArgumentUtils() throws IllegalAccessException {
+        throw new IllegalAccessException("Cannot instantiate utility class!");
+    }
 
     /**
      * Throw an {@link NullPointerException} if the supplied argument is {@code null}.
