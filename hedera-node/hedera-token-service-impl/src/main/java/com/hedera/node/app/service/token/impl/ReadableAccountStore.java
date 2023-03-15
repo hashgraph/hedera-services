@@ -43,7 +43,6 @@ import com.hedera.node.app.service.token.impl.entity.AccountBuilderImpl;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.accounts.Account;
 import com.hedera.node.app.spi.accounts.AccountAccess;
-import com.hedera.node.app.spi.exceptions.UnsetFieldException;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -180,7 +179,7 @@ public class ReadableAccountStore implements AccountAccess {
                             yield entityNum == null ? EntityNumValue.DEFAULT.num() : entityNum.num();
                         }
                     }
-                    case UNSET -> throw new UnsetFieldException("AccountID", "Account number or Alias");
+                    case UNSET -> EntityNumValue.DEFAULT.num();
                 };
 
         return accountNum == null ? null : accountState.get(EntityNumVirtualKey.fromLong(accountNum));
@@ -225,7 +224,7 @@ public class ReadableAccountStore implements AccountAccess {
                         }
                         yield entityNum == null ? EntityNumValue.DEFAULT.num() : entityNum.num();
                     }
-                    case UNSET -> throw new UnsetFieldException("ContractID", "Contract number or Evm Address");
+                    case UNSET -> EntityNumValue.DEFAULT.num();
                 };
 
         return contractNum == null ? null : accountState.get(EntityNumVirtualKey.fromLong(contractNum));
