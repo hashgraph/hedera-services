@@ -274,9 +274,8 @@ public class BlsAddressBook {
         }
 
         // cannot overflow, since the value returned by getMinSatisfyingValue will always be <= the
-        // whole value, which,
-        // in this case, is an int
-        return (int) threshold.getMinSatisfyingValue(getTotalShares());
+        // whole value, which in this case is an int
+        return (int) threshold.getMinValueMeetingThreshold(getTotalShares());
     }
 
     /**

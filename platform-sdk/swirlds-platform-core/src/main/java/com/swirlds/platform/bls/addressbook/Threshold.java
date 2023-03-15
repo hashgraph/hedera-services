@@ -16,42 +16,40 @@
 
 package com.swirlds.platform.bls.addressbook;
 
-/** Represents different kinds of thresholds that have to be met */
+import java.util.function.LongUnaryOperator;
+
+/** Represents different thresholds that have to be met */
 public enum Threshold {
     /** >=1/3 */
-    STRONG_MINORITY {
-        @Override
-        long getMinSatisfyingValue(long whole) {
-            return whole / 3 + ((whole % 3 == 0) ? 0 : 1);
-        }
-    },
+    STRONG_MINORITY((final long whole) -> whole / 3 + ((whole % 3 == 0) ? 0 : 1)),
     /** >1/2 */
-    MAJORITY {
-        @Override
-        long getMinSatisfyingValue(long whole) {
-            return whole / 2 + 1;
-        }
-    },
+    MAJORITY((final long whole) -> whole / 2 + 1),
     /** >2/3 */
-    SUPERMAJORITY {
-        @Override
-        long getMinSatisfyingValue(long whole) {
-            return whole / 3 * 2 + (whole % 3) * 2 / 3 + 1;
-        }
-    },
+    SUPERMAJORITY((final long whole) -> whole / 3 * 2 + (whole % 3) * 2 / 3 + 1),
     /** ==1 */
-    UNANIMOUS {
-        @Override
-        long getMinSatisfyingValue(long whole) {
-            return whole;
-        }
-    };
+    UNANIMOUS((final long whole) -> whole);
+
+    /**
+     * The method which calculates the minimum value which meets the threshold
+     */
+    private final LongUnaryOperator minValueMeetingThresholdMethod;
+
+    /**
+     * Constructor
+     *
+     * @param minValueMeetingThresholdMethod the method which calculates the minimum value that meets the threshold
+     */
+    Threshold(final LongUnaryOperator minValueMeetingThresholdMethod) {
+        this.minValueMeetingThresholdMethod = minValueMeetingThresholdMethod;
+    }
 
     /**
      * Gets the minimum value which meets a certain threshold
      *
      * @param whole the total value we are meeting a threshold of
-     * @return the minimum value which satisfies a certain threshold of the whole value
+     * @return the minimum value which satisfies a threshold of the whole value
      */
-    abstract long getMinSatisfyingValue(final long whole);
+    public long getMinValueMeetingThreshold(final long whole) {
+        return minValueMeetingThresholdMethod.applyAsLong(whole);
+    }
 }
