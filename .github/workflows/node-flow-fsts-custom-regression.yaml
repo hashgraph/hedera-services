@@ -14,7 +14,7 @@
 # limitations under the License.
 ##
 
-name: "Platform: JRS Custom Regression"
+name: "Node: FSTS Custom Regression"
 on:
   workflow_dispatch:
     inputs:
@@ -22,7 +22,7 @@ on:
         description: "JRS Panel Config File (Relative):"
         required: false
         type: string
-        default: "configs/suites/GCP-OnDemand-Abbrev-4N.json"
+        default: "configs/services/suites/ci/GCP-Commit-Services-Comp-Basic-4N-1C.json"
       slack-results-channel:
         description: "Slack Test Result Channel:"
         required: false
@@ -54,13 +54,14 @@ defaults:
     shell: bash
 
 concurrency:
-  group: ${{ format('{0}-{1}-{2}-flow-jrs-custom-regression', github.ref_name, github.actor, github.event.inputs.panel-config) }}
+  group: ${{ format('{0}-{1}-{2}-flow-node-fsts-custom-regression', github.ref_name, github.actor, github.event.inputs.panel-config) }}
 
 jobs:
   jrs-panel:
     name: JRS Panel
     uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
+      hedera-tests-enabled: true
       panel-config: ${{ github.event.inputs.panel-config }}
       ref: ${{ github.event.inputs.ref || github.ref }}
       branch-name: ${{ github.ref_name }}
