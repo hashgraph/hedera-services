@@ -371,8 +371,8 @@ public class TransactionSubmitter {
             // it may try to catch up the lost transactions count by submitting
             // many transactions in short window and lead to a burst of transactions. This is not good for
             // platform, so we need to check the current TPS and make sure it is not too high.
-            final double tarnSubTSP = (double) metrics.getValue("Debug.info", "tranSubTPS");
-            if (tarnSubTSP > tranPerSecondGoal * ALLOWED_CATCHUP_DELTA) {
+            final double tranSubTPS = (double) metrics.getValue("Debug.info", "tranSubTPS");
+            if (tranSubTPS > tranPerSecondGoal * ALLOWED_CATCHUP_DELTA) {
                 return false;
             }
 
