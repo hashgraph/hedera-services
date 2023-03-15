@@ -519,8 +519,11 @@ class SignedStateFileManagerTests {
 
                             final SignedStateMetadata oldestMetadata =
                                     currentStatesOnDisk[currentStatesOnDisk.length - 1].getMetadata();
+
+                            // TODO get this properly working
                             System.out.println(">>>>>>>>>> " + oldestMetadata.minimumGenerationNonAncient());
-                            assertEquals(oldestMetadata.minimumGenerationNonAncient(),
+                            assertEquals(
+                                    oldestMetadata.minimumGenerationNonAncient(),
                                     manager.getMinimumGenerationNonAncientForOldestState());
 
                             assertTrue(

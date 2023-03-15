@@ -19,7 +19,6 @@ package com.swirlds.platform.state.signed;
 import static com.swirlds.common.formatting.StringFormattingUtils.formattedList;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static com.swirlds.logging.LogMarker.STARTUP;
-import static com.swirlds.platform.consensus.RoundCalculationUtils.getMinGenNonAncient;
 import static com.swirlds.platform.state.signed.SignedStateMetadataField.CONSENSUS_TIMESTAMP;
 import static com.swirlds.platform.state.signed.SignedStateMetadataField.MINIMUM_GENERATION_NON_ANCIENT;
 import static com.swirlds.platform.state.signed.SignedStateMetadataField.NODE_ID;
@@ -32,7 +31,6 @@ import static com.swirlds.platform.state.signed.SignedStateMetadataField.SOFTWAR
 import static com.swirlds.platform.state.signed.SignedStateMetadataField.TOTAL_STAKE;
 import static com.swirlds.platform.state.signed.SignedStateMetadataField.WALL_CLOCK_TIME;
 
-import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.platform.state.PlatformData;
@@ -128,17 +126,12 @@ public record SignedStateMetadata(
     /**
      * Create a new signed state metadata object from the given signed state.
      *
-     * @param signedState     the signed state
-     * @param consensusConfig the consensus configuration
-     * @param selfId          the ID of the node that created the signed state
-     * @param now             the current time
+     * @param signedState the signed state
+     * @param selfId      the ID of the node that created the signed state
+     * @param now         the current time
      * @return the signed state metadata
      */
-    public static SignedStateMetadata create(
-            final SignedState signedState,
-            final ConsensusConfig consensusConfig,
-            final long selfId,
-            final Instant now) {
+    public static SignedStateMetadata create(final SignedState signedState, final long selfId, final Instant now) {
 
         final PlatformState platformState = signedState.getState().getPlatformState();
         final PlatformData platformData = platformState.getPlatformData();
@@ -146,15 +139,12 @@ public record SignedStateMetadata(
         final List<Long> signingNodes = signedState.getSigSet().getSigningNodes();
         Collections.sort(signingNodes);
 
-        final int roundsNonAncient = consensusConfig.roundsNonAncient();
-        final long minimumGenerationNonAncient = getMinGenNonAncient(roundsNonAncient, signedState);
-
         return new SignedStateMetadata(
                 signedState.getRound(),
                 platformData.getNumEventsCons(),
                 signedState.getConsensusTimestamp(),
                 platformData.getHashEventsCons(),
-                minimumGenerationNonAncient,
+                platformData.getMinimumGenerationNonAncient(),
                 convertToString(platformData.getCreationSoftwareVersion()),
                 now,
                 selfId,

@@ -38,11 +38,13 @@ import com.swirlds.common.utility.Startable;
 import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.components.common.output.RoundAppliedToStateConsumer;
 import com.swirlds.platform.config.ThreadConfig;
+import com.swirlds.platform.consensus.RoundCalculationUtils;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusHandlingMetrics;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.state.MinGenInfo;
+import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
@@ -111,6 +113,8 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
 
     private final RoundAppliedToStateConsumer roundAppliedToStateConsumer;
 
+    private final int roundsNonAncient;
+
     /**
      * Instantiate, but don't start any threads yet. The Platform should first instantiate the
      * {@link ConsensusRoundHandler}. Then the Platform should call start to start the queue thread.
@@ -157,8 +161,12 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
         this.stateHashSignQueue = stateHashSignQueue;
         this.softwareVersion = softwareVersion;
         this.enterFreezePeriod = enterFreezePeriod;
-        eventsAndGenerations = new SignedStateEventsAndGenerations(
-                platformContext.getConfiguration().getConfigData(ConsensusConfig.class));
+
+        final ConsensusConfig consensusConfig =
+                platformContext.getConfiguration().getConfigData(ConsensusConfig.class);
+        this.roundsNonAncient = consensusConfig.roundsNonAncient();
+
+        eventsAndGenerations = new SignedStateEventsAndGenerations(consensusConfig);
         final ConsensusQueue queue = new ConsensusQueue(consensusHandlingMetrics, settings.getMaxEventQueueForCons());
         queueThread = new QueueThreadConfiguration<ConsensusRound>(threadManager)
                 .setNodeId(selfId)
@@ -394,10 +402,10 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
         final EventImpl[] events = eventsAndGenerations.getEventsForSignedState();
         final List<MinGenInfo> minGen = eventsAndGenerations.getMinGenForSignedState();
 
-        swirldStateManager
-                .getConsensusState()
-                .getPlatformState()
-                .getPlatformData()
+        final PlatformData platformData =
+                swirldStateManager.getConsensusState().getPlatformState().getPlatformData();
+
+        platformData
                 .setRound(round.getRoundNum())
                 .setNumEventsCons(numEventsCons.get())
                 .setHashEventsCons(runningHash)
@@ -405,6 +413,11 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
                 .setConsensusTimestamp(round.getLastEvent().getLastTransTime())
                 .setMinGenInfo(minGen)
                 .setCreationSoftwareVersion(softwareVersion);
+
+        final long minimumGenerationNonAncient = RoundCalculationUtils.getMinGenNonAncient(
+                roundsNonAncient, round.getRoundNum(), platformData::getMinGen);
+
+        platformData.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
     }
 
     private void createSignedState() throws InterruptedException {

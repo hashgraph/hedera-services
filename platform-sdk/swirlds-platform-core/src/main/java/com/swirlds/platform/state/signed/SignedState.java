@@ -420,12 +420,7 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
      * @throws NoSuchElementException if the generation information for this round is not contained withing this state
      */
     public long getMinGen(final long round) {
-        for (final MinGenInfo minGenInfo : getMinGenInfo()) {
-            if (minGenInfo.round() == round) {
-                return minGenInfo.minimumGeneration();
-            }
-        }
-        throw new NoSuchElementException("No minimum generation found for round: " + round);
+        return getState().getPlatformState().getPlatformData().getMinGen(round);
     }
 
     /**
@@ -434,10 +429,7 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
      * @return the generation of the oldest round
      */
     public long getMinRoundGeneration() {
-        return getMinGenInfo().stream()
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("No MinGen info found in state"))
-                .minimumGeneration();
+        return getState().getPlatformState().getPlatformData().getMinRoundGeneration();
     }
 
     /**

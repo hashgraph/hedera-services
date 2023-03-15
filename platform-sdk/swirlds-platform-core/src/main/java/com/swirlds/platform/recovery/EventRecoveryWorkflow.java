@@ -141,8 +141,7 @@ public final class EventRecoveryWorkflow {
         logger.info(
                 STARTUP.getMarker(), "Finished reapplying transactions, writing state to {}", resultingStateDirectory);
 
-        SignedStateFileWriter.writeSignedStateFilesToDirectory(
-                configuration, selfId, resultingStateDirectory, resultingState);
+        SignedStateFileWriter.writeSignedStateFilesToDirectory(selfId, resultingStateDirectory, resultingState);
 
         updateEmergencyRecoveryFile(resultingStateDirectory, initialState.getConsensusTimestamp());
 

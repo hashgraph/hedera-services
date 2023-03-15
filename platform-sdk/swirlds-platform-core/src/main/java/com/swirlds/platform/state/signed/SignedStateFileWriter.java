@@ -25,7 +25,6 @@ import static com.swirlds.platform.state.signed.SignedStateFileUtils.HASH_INFO_F
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.SIGNED_STATE_FILE_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.VERSIONED_FILE_BYTE;
 
-import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.config.api.Configuration;
@@ -60,9 +59,6 @@ public final class SignedStateFileWriter {
      * @param directory the directory where the state is being written
      */
     public static void writeHashInfoFile(final Path directory, final State state) throws IOException {
-
-        // TODO while we are at it, let's use the proper config here
-
         final String platformInfo = state.getPlatformState().getInfoString();
         final String hashInfo = new MerkleTreeVisualizer(state)
                 .setDepth(StateSettings.getDebugHashDepth())
@@ -80,21 +76,16 @@ public final class SignedStateFileWriter {
     /**
      * Write the signed state metadata file
      *
-     * @param configuration the configuration
      * @param selfId        the id of the platform
      * @param directory     the directory to write to
      * @param signedState   the signed state being written
      */
-    public static void writeMetadataFile(
-            final Configuration configuration, final long selfId, final Path directory, final SignedState signedState)
+    public static void writeMetadataFile(final long selfId, final Path directory, final SignedState signedState)
             throws IOException {
 
         final Path metadataFile = directory.resolve(SignedStateMetadata.FILE_NAME);
 
-        final ConsensusConfig consensusConfig = configuration.getConfigData(ConsensusConfig.class);
-
-        SignedStateMetadata.create(signedState, consensusConfig, selfId, Instant.now())
-                .write(metadataFile);
+        SignedStateMetadata.create(signedState, selfId, Instant.now()).write(metadataFile);
     }
 
     /**
@@ -128,18 +119,16 @@ public final class SignedStateFileWriter {
     /**
      * Write all files that belong in the signed state directory into a directory.
      *
-     * @param configuration configuration for the platform
      * @param selfId        the id of the platform
      * @param directory     the directory where all files should be placed
      * @param signedState   the signed state being written to disk
      */
     public static void writeSignedStateFilesToDirectory(
-            final Configuration configuration, final long selfId, final Path directory, final SignedState signedState)
-            throws IOException {
+            final long selfId, final Path directory, final SignedState signedState) throws IOException {
 
         writeStateFile(directory, signedState);
         writeHashInfoFile(directory, signedState.getState());
-        writeMetadataFile(configuration, selfId, directory, signedState);
+        writeMetadataFile(selfId, directory, signedState);
         writeEmergencyRecoveryFile(directory, signedState);
         Settings.getInstance().writeSettingsUsed(directory);
     }
@@ -170,8 +159,7 @@ public final class SignedStateFileWriter {
                     taskDescription);
 
             executeAndRename(
-                    savedStateDirectory,
-                    directory -> writeSignedStateFilesToDirectory(configuration, selfId, directory, signedState));
+                    savedStateDirectory, directory -> writeSignedStateFilesToDirectory(selfId, directory, signedState));
 
             logger.info(
                     STATE_TO_DISK.getMarker(),
