@@ -48,6 +48,7 @@ public class EntityNumCodec implements Codec<EntityNum> {
 
     @Override
     public int measure(final @NonNull ReadableSequentialData input) {
+
         throw new UnsupportedOperationException();
     }
 

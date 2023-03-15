@@ -32,7 +32,6 @@ import org.apache.commons.lang3.NotImplementedException;
  */
 public class CryptoSignatureWaiversImpl implements CryptoSignatureWaivers {
     public CryptoSignatureWaiversImpl(@NonNull final HederaAccountNumbers accountNumbers) {
-        // Exists for injection
         requireNonNull(accountNumbers);
     }
 

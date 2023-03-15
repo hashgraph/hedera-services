@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.token.impl;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.service.mono.state.codec.MonoMapCodecAdapter;
 import com.hedera.node.app.service.mono.state.merkle.MerklePayerRecords;
@@ -55,6 +57,7 @@ public class TokenServiceImpl implements TokenService {
 
     @Override
     public void registerSchemas(final @NonNull SchemaRegistry registry) {
+        requireNonNull(registry);
         registry.register(tokenSchema());
     }
 

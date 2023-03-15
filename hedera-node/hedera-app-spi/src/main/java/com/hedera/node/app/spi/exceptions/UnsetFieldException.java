@@ -5,7 +5,7 @@ package com.hedera.node.app.spi.exceptions;
  * For example, an {@link com.hedera.hapi.node.base.AccountID} should have account number
  * or alias set. If both are not set then this exception is thrown.
  */
-public class UnsetFieldException extends RuntimeException {
+public class UnsetFieldException extends IllegalStateException {
     public UnsetFieldException(final String message) {
         super(message);
     }
