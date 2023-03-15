@@ -50,6 +50,7 @@ import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -193,7 +194,7 @@ public class CryptoCreateChecks {
         }
     }
 
-    private ResponseCodeEnum validatePublicKeyAlias(final ByteString alias) {
+    private ResponseCodeEnum validatePublicKeyAlias(@NonNull final ByteString alias) {
         if (!isSerializedProtoKey(alias)) {
             return INVALID_ALIAS_KEY;
         }
@@ -209,18 +210,18 @@ public class CryptoCreateChecks {
         return OK;
     }
 
-    public ResponseCodeEnum validateEvmAddressAlias(final ByteString alias) {
+    public ResponseCodeEnum validateEvmAddressAlias(@NonNull final ByteString alias) {
         if (HederaEvmContractAliases.isMirror(alias.toByteArray())) {
             return INVALID_ALIAS_KEY;
         }
         return isUsedAsAliasCheck(alias);
     }
 
-    private ResponseCodeEnum isUsedAsAliasCheck(final ByteString alias) {
-        return aliasManager.lookupIdBy(alias).equals(MISSING_NUM) ? OK : ALIAS_ALREADY_ASSIGNED;
+    private ResponseCodeEnum isUsedAsAliasCheck(@NonNull final ByteString alias) {
+        return MISSING_NUM.equals(aliasManager.lookupIdBy(alias)) ? OK : ALIAS_ALREADY_ASSIGNED;
     }
 
-    private ResponseCodeEnum tryToRecoverEVMAddressAndCheckValidity(final byte[] key) {
+    private ResponseCodeEnum tryToRecoverEVMAddressAndCheckValidity(@NonNull final byte[] key) {
         final var recoveredEVMAddress = recoverAddressFromPubKey(key);
         return isUsedAsAliasCheck(ByteString.copyFrom(recoveredEVMAddress));
     }

@@ -27,6 +27,7 @@ import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.OptionalLong;
 
 public class CryptoCreateFactory extends SignedTxnFactory<CryptoCreateFactory> {
@@ -89,7 +90,7 @@ public class CryptoCreateFactory extends SignedTxnFactory<CryptoCreateFactory> {
         return this;
     }
 
-    public CryptoCreateFactory alias(ByteString alias) {
+    public CryptoCreateFactory alias(@NonNull ByteString alias) {
         this.alias = alias;
         return this;
     }
