@@ -63,6 +63,7 @@ public class RandomSignedStateGenerator {
     private Map<Long, Signature> signatures;
     private boolean protectionEnabled = false;
     private Hash stateHash = null;
+    private Long minimumGenerationNonAncient = null;
 
     /**
      * Create a new signed state generator with a random seed.
@@ -173,6 +174,13 @@ public class RandomSignedStateGenerator {
             softwareVersionInstance = softwareVersion;
         }
 
+        final long minimumGenerationNonAncientInstance;
+        if (minimumGenerationNonAncient == null) {
+            minimumGenerationNonAncientInstance = Math.abs(random.nextLong());
+        } else {
+            minimumGenerationNonAncientInstance = minimumGenerationNonAncient;
+        }
+
         stateInstance.getPlatformState().setAddressBook(addressBookInstance);
         stateInstance
                 .getPlatformState()
@@ -183,7 +191,8 @@ public class RandomSignedStateGenerator {
                 .setEvents(eventsInstance)
                 .setConsensusTimestamp(consensusTimestampInstance)
                 .setMinGenInfo(minGenInfoInstance)
-                .setCreationSoftwareVersion(softwareVersionInstance);
+                .setCreationSoftwareVersion(softwareVersionInstance)
+                .setMinimumGenerationNonAncient(minimumGenerationNonAncientInstance);
 
         final SignedState signedState = new SignedState(stateInstance, freezeStateInstance);
 
@@ -392,6 +401,16 @@ public class RandomSignedStateGenerator {
      */
     public RandomSignedStateGenerator setProtectionEnabled(final boolean protectionEnabled) {
         this.protectionEnabled = protectionEnabled;
+        return this;
+    }
+
+    /**
+     * Set the minimum generation for non-ancient events.
+     *
+     * @return this object
+     */
+    public RandomSignedStateGenerator setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
+        this.minimumGenerationNonAncient = minimumGenerationNonAncient;
         return this;
     }
 }

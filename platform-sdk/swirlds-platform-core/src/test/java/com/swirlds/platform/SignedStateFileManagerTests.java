@@ -53,11 +53,11 @@ import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.DeserializedSignedState;
 import com.swirlds.platform.state.signed.SavedStateInfo;
+import com.swirlds.platform.state.signed.SavedStateMetadata;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
 import com.swirlds.platform.state.signed.SignedStateFileUtils;
-import com.swirlds.platform.state.signed.SavedStateMetadata;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
@@ -498,6 +498,7 @@ class SignedStateFileManagerTests {
             final SignedState signedState = new RandomSignedStateGenerator(random)
                     .setConsensusTimestamp(timestamp)
                     .setRound(round)
+                    .setMinimumGenerationNonAncient(random.nextLong((round + 1) * 100, (round + 1) * 101))
                     .build();
 
             manager.determineIfStateShouldBeSaved(signedState);
@@ -520,8 +521,6 @@ class SignedStateFileManagerTests {
                             final SavedStateMetadata oldestMetadata =
                                     currentStatesOnDisk[currentStatesOnDisk.length - 1].getMetadata();
 
-                            // TODO get this properly working
-                            System.out.println(">>>>>>>>>> " + oldestMetadata.minimumGenerationNonAncient());
                             assertEquals(
                                     oldestMetadata.minimumGenerationNonAncient(),
                                     manager.getMinimumGenerationNonAncientForOldestState());

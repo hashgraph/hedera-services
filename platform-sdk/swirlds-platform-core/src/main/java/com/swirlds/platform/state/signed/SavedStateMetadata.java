@@ -53,7 +53,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Metadata about a signed state. Fields in this record may be null if they are not present in the metadata file. All
+ * Metadata about a saved state. Fields in this record may be null if they are not present in the metadata file. All
  * fields in this record will be null if the metadata file is missing.
  *
  * @param round                       the round of the signed state, corresponds to
@@ -95,14 +95,14 @@ public record SavedStateMetadata(
         Long totalStake) {
 
     /**
-     * The standard file name for the signed state metadata file.
+     * The standard file name for the saved state metadata file.
      */
     public static final String FILE_NAME = "stateMetadata.txt";
 
     private static final Logger logger = LogManager.getLogger(SavedStateMetadata.class);
 
     /**
-     * Parse the signed state metadata from the given file.
+     * Parse the saved state metadata from the given file.
      *
      * @param metadataFile the file to parse
      * @return the signed state metadata
@@ -124,7 +124,7 @@ public record SavedStateMetadata(
     }
 
     /**
-     * Create a new signed state metadata object from the given signed state.
+     * Create a new saved state metadata object from the given signed state.
      *
      * @param signedState the signed state
      * @param selfId      the ID of the node that created the signed state
@@ -391,7 +391,7 @@ public record SavedStateMetadata(
     }
 
     /**
-     * Write the signed state metadata to the given file.
+     * Write the saved state metadata to the given file.
      *
      * @param metadataFile the file to write to
      * @throws IOException if an error occurs while writing

@@ -684,8 +684,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * @param signedStateFromDisk the initial signed state loaded from disk
      * @param initialState        the initial {@link State} object. This is a fast copy of the state loaded from disk
      */
-    private record LoadedState(SignedState signedStateFromDisk, State initialState) {
-    }
+    private record LoadedState(SignedState signedStateFromDisk, State initialState) {}
 
     /**
      * Update the address book with the current address book read from config.txt. Eventually we will not do this, and
@@ -1128,9 +1127,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         if (loadedState.signedStateFromDisk != null) {
             logger.debug(STARTUP.getMarker(), () -> new SavedStateLoadedPayload(
-                    loadedState.signedStateFromDisk.getRound(),
-                    loadedState.signedStateFromDisk.getConsensusTimestamp(),
-                    startUpEventFrozenManager.getStartUpEventFrozenEndTime())
+                            loadedState.signedStateFromDisk.getRound(),
+                            loadedState.signedStateFromDisk.getConsensusTimestamp(),
+                            startUpEventFrozenManager.getStartUpEventFrozenEndTime())
                     .toString());
 
             buildEventHandlersFromState(loadedState.initialState, stateHashSignQueueThread);
@@ -1236,8 +1235,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 syncManager,
                 shadowgraphExecutor,
                 true,
-                () -> {
-                });
+                () -> {});
 
         final Runnable stopGossip = settings.getChatter().isChatterUsed()
                 ? chatterCore::stopChatter
@@ -1370,8 +1368,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     getAddressBook().getSize(),
                     syncMetrics,
                     consensusRef::get,
-                    sr -> {
-                    },
+                    sr -> {},
                     eventTaskCreator::addEvent,
                     syncManager,
                     shadowgraphExecutor,
@@ -1676,7 +1673,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             if (oldStatus != newStatus) {
                 final PlatformStatus ns = newStatus;
                 logger.info(PLATFORM_STATUS.getMarker(), () -> new PlatformStatusPayload(
-                        "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), ns.name())
+                                "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), ns.name())
                         .toString());
 
                 logger.info(PLATFORM_STATUS.getMarker(), "Platform status changed to: {}", newStatus.toString());
