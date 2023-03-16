@@ -19,7 +19,6 @@ package com.hedera.node.app.service.mono.txns.crypto;
 import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer.hasStakedId;
 import static com.hedera.node.app.service.mono.txns.crypto.validators.CryptoCreateChecks.keyAndAliasProvided;
 import static com.hedera.node.app.service.mono.txns.crypto.validators.CryptoCreateChecks.onlyKeyProvided;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -103,7 +102,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             txnCtx.setStatus(SUCCESS);
 
             final List<ByteString> aliasesToLink = new ArrayList<>();
-            if (!op.getAlias().isEmpty() && op.getAlias().size() == EVM_ADDRESS_SIZE) {
+            if (!op.getAlias().isEmpty()) {
                 aliasesToLink.add(op.getAlias());
             }
 
@@ -136,7 +135,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
         if (onlyKeyProvided(op)) {
             final JKey key = asFcKeyUnchecked(op.getKey());
             customizer.key(key);
-        } else if (keyAndAliasProvided(op) && op.getAlias().size() == EVM_ADDRESS_SIZE) {
+        } else if (keyAndAliasProvided(op)) {
             customizer.key(asFcKeyUnchecked(op.getKey())).alias(op.getAlias());
         }
 
