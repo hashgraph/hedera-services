@@ -25,6 +25,7 @@ dependencies {
   // Individual Dependencies
   api(project(":swirlds-virtualmap"))
   api(project(":swirlds-config-api"))
+  compileOnly(libs.spotbugs.annotations)
 
   // Bundle Dependencies
   implementation(libs.bundles.eclipse)
