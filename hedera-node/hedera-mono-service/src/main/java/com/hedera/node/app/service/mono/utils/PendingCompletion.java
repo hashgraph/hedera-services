@@ -18,4 +18,10 @@ package com.hedera.node.app.service.mono.utils;
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
 
+/**
+ * Denotes a hollow account completion. Given the hollow account num and the key info from this record,
+ * a component can finalize a hollow account.
+ * @param hollowAccountNum the {@link EntityNum} corresponding to the hollow account
+ * @param key the {@link JECDSASecp256k1Key} key to set for the completed account
+ */
 public record PendingCompletion(EntityNum hollowAccountNum, JECDSASecp256k1Key key) {}
