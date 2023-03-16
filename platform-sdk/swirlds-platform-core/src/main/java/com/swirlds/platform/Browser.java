@@ -670,15 +670,6 @@ public class Browser {
         logger.debug(STARTUP.getMarker(), "Done with starting platforms");
     }
 
-    /**
-     * Wait until all platform main threads are stopped.
-     */
-    public static void join() throws InterruptedException {
-        for (final Thread thread : platformRunThreads) {
-            thread.join();
-        }
-    }
-
     public static void main(final String[] args) {
         launch(args);
     }
