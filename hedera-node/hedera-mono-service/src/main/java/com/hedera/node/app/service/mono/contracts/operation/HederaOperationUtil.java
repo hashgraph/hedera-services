@@ -46,6 +46,7 @@ import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.BiPredicate;
+import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.tuple.MutablePair;
@@ -73,13 +74,14 @@ public final class HederaOperationUtil {
      * true, verification of the provided signature is performed. If the signature is not active,
      * the execution is halted with {@link HederaExceptionalHaltReason#INVALID_SIGNATURE}.
      *
-     * @param sigsVerifier The signature
-     * @param frame The current message frame
-     * @param address The target address
-     * @param supplierHaltGasCost Supplier for the gas cost
-     * @param supplierExecution Supplier with the execution
-     * @param addressValidator Address validator predicate
+     * @param sigsVerifier           The signature
+     * @param frame                  The current message frame
+     * @param address                The target address
+     * @param supplierHaltGasCost    Supplier for the gas cost
+     * @param supplierExecution      Supplier with the execution
+     * @param addressValidator       Address validator predicate
      * @param precompiledContractMap Map of addresses to contracts
+     * @param supplierIsChildStatic  Supplier for is child static check
      * @return The operation result of the execution
      */
     public static Operation.OperationResult addressSignatureCheckExecution(
@@ -89,19 +91,24 @@ public final class HederaOperationUtil {
             final LongSupplier supplierHaltGasCost,
             final Supplier<Operation.OperationResult> supplierExecution,
             final BiPredicate<Address, MessageFrame> addressValidator,
-            final Map<String, PrecompiledContract> precompiledContractMap) {
+            final Map<String, PrecompiledContract> precompiledContractMap,
+            final BooleanSupplier supplierIsChildStatic) {
         // The Precompiled contracts verify their signatures themselves
         if (precompiledContractMap.containsKey(address.toShortHexString())) {
+            return supplierExecution.get();
+        }
+        if (Boolean.FALSE.equals(addressValidator.test(address, frame))) {
+            return new Operation.OperationResult(
+                    supplierHaltGasCost.getAsLong(), HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
+        }
+        // static frames are guaranteed to be read-only and cannot change state, so no signature verification is needed
+        if (supplierIsChildStatic.getAsBoolean()) {
             return supplierExecution.get();
         }
 
         final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
         final var account = updater.get(address);
-        if (Boolean.FALSE.equals(addressValidator.test(address, frame))) {
-            return new Operation.OperationResult(
-                    supplierHaltGasCost.getAsLong(), HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
-        }
-        boolean isDelegateCall = !frame.getContractAddress().equals(frame.getRecipientAddress());
+        final var isDelegateCall = !frame.getContractAddress().equals(frame.getRecipientAddress());
         boolean sigReqIsMet;
         // if this is a delegate call activeContract should be the recipient address
         // otherwise it should be the contract address
