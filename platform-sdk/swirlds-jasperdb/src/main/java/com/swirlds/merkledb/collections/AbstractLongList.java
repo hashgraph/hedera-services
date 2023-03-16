@@ -146,7 +146,8 @@ public abstract class AbstractLongList<C> implements LongList {
             throw new IllegalArgumentException("The maximum number of longs must be non-negative, not " + maxLongs);
         }
         if (numLongsPerChunk > MAX_NUM_LONGS_PER_CHUNK) {
-            throw new IllegalArgumentException(CHUNK_SIZE_EXCEEDED_MSG.formatted(numLongsPerChunk, MAX_NUM_LONGS_PER_CHUNK));
+            throw new IllegalArgumentException(
+                    CHUNK_SIZE_EXCEEDED_MSG.formatted(numLongsPerChunk, MAX_NUM_LONGS_PER_CHUNK));
         }
         this.maxLongs = maxLongs;
         this.numLongsPerChunk = numLongsPerChunk;
