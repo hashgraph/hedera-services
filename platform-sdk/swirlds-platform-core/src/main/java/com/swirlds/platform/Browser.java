@@ -116,9 +116,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * The Browser that launches the Platforms that run the apps. The Browser has only one public method, which
- * normally does nothing. See the javadoc on the main method for how it can be useful for an app to call it
- * during app development.
+ * The Browser that launches the Platforms that run the apps. The Browser has only one public method, which normally
+ * does nothing. See the javadoc on the main method for how it can be useful for an app to call it during app
+ * development.
  * <p>
  * All class member variables and methods of this class are static, and it can't be instantiated.
  */
@@ -302,8 +302,7 @@ public class Browser {
     /**
      * Writes all settings and config values to settingsUsed.txt
      *
-     * @param configuration
-     * 		the configuration values to write
+     * @param configuration the configuration values to write
      */
     private void writeSettingsUsed(final Configuration configuration) {
         final StringBuilder settingsUsedBuilder = new StringBuilder();
@@ -331,20 +330,18 @@ public class Browser {
     }
 
     /**
-     * Start the browser running, if it isn't already running. If it's already running, then Browser.main
-     * does nothing. Normally, an app calling Browser.main has no effect, because it was the browser that
-     * launched the app in the first place, so the browser is already running.
+     * Start the browser running, if it isn't already running. If it's already running, then Browser.main does nothing.
+     * Normally, an app calling Browser.main has no effect, because it was the browser that launched the app in the
+     * first place, so the browser is already running.
      * <p>
-     * But during app development, it can be convenient to give the app a main method that calls
-     * Browser.main. If there is a config.txt file that says to run the app that is being developed, then
-     * the developer can run the app within Eclipse. Eclipse will call the app's main() method, which will
-     * call the browser's main() method, which launches the browser. The app's main() then returns, and the
-     * app stops running. Then the browser will load the app (because of the config.txt file) and let it run
-     * normally within the browser. All of this happens within Eclipse, so the Eclipse debugger works, and
-     * Eclipse breakpoints within the app will work.
+     * But during app development, it can be convenient to give the app a main method that calls Browser.main. If there
+     * is a config.txt file that says to run the app that is being developed, then the developer can run the app within
+     * Eclipse. Eclipse will call the app's main() method, which will call the browser's main() method, which launches
+     * the browser. The app's main() then returns, and the app stops running. Then the browser will load the app
+     * (because of the config.txt file) and let it run normally within the browser. All of this happens within Eclipse,
+     * so the Eclipse debugger works, and Eclipse breakpoints within the app will work.
      *
-     * @param args
-     * 		args is ignored, and has no effect
+     * @param args args is ignored, and has no effect
      */
     public static synchronized void launch(final String... args) {
         if (INSTANCE != null) {
@@ -386,10 +383,22 @@ public class Browser {
             }
         }
 
+        launch(localNodesToStart, Settings.getInstance().getLogPath());
+    }
+
+    /**
+     * Launch the browser.
+     *
+     * @param localNodesToStart a set of nodes that should be started in this JVM instance
+     * @param log4jPath         the path to the log4j configuraiton file, if null then log4j is not started
+     */
+    public static synchronized void launch(final Set<Integer> localNodesToStart, final Path log4jPath) {
         // Initialize the log4j2 configuration and logging subsystem if a log4j2.xml file is present in the current
         // working directory
         try {
-            Log4jSetup.startLoggingFramework(Settings.getInstance().getLogPath());
+            if (log4jPath != null) {
+                Log4jSetup.startLoggingFramework(log4jPath);
+            }
             logger = LogManager.getLogger(Browser.class);
         } catch (final Exception e) {
             LogManager.getLogger(Browser.class).fatal("Unable to load log context", e);
@@ -419,8 +428,7 @@ public class Browser {
 
     /**
      * Instantiate and start the JVMPauseDetectorThread, if enabled via the
-     * {@link Settings#getJVMPauseDetectorSleepMs()}
-     * setting.
+     * {@link Settings#getJVMPauseDetectorSleepMs()} setting.
      */
     private void startJVMPauseDetectorThread() {
         if (Settings.getInstance().getJVMPauseDetectorSleepMs() > 0) {
@@ -443,10 +451,8 @@ public class Browser {
     /**
      * Build the app main.
      *
-     * @param appDefinition
-     * 		the app definition
-     * @param appLoader
-     * 		an object capable of loading the app
+     * @param appDefinition the app definition
+     * @param appLoader     an object capable of loading the app
      * @return the new app main
      */
     private static SwirldMain buildAppMain(final ApplicationDefinition appDefinition, final SwirldAppLoader appLoader) {
@@ -548,18 +554,14 @@ public class Browser {
     }
 
     /**
-     * Instantiate and run all the local platforms specified in the given config.txt file. This method reads
-     * in and parses the config.txt file.
+     * Instantiate and run all the local platforms specified in the given config.txt file. This method reads in and
+     * parses the config.txt file.
      *
-     * @throws UnknownHostException
-     * 		problems getting an IP address for another user
-     * @throws SocketException
-     * 		problems getting the IP address for self
-     * @throws AppLoaderException
-     * 		if there are issues loading the user app
-     * @throws ConstructableRegistryException
-     * 		if there are issues registering
-     *        {@link com.swirlds.common.constructable.RuntimeConstructable} classes
+     * @throws UnknownHostException           problems getting an IP address for another user
+     * @throws SocketException                problems getting the IP address for self
+     * @throws AppLoaderException             if there are issues loading the user app
+     * @throws ConstructableRegistryException if there are issues registering
+     *                                        {@link com.swirlds.common.constructable.RuntimeConstructable} classes
      */
     private void startPlatforms(
             final Configuration configuration,
@@ -668,6 +670,15 @@ public class Browser {
         metricsProvider.start();
 
         logger.debug(STARTUP.getMarker(), "Done with starting platforms");
+    }
+
+    /**
+     * Wait until all platform main threads are stopped.
+     */
+    public static void join() throws InterruptedException {
+        for (final Thread thread : platformRunThreads) {
+            thread.join();
+        }
     }
 
     public static void main(final String[] args) {
