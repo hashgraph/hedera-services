@@ -108,7 +108,6 @@ class SignedStateFileReadWriteTest {
         final String hashInfoString = new MerkleTreeVisualizer(state)
                 .setDepth(StateSettings.getDebugHashDepth())
                 .render();
-        final String platformInfoString = state.getPlatformState().getInfoString();
 
         final StringBuilder sb = new StringBuilder();
         try (final BufferedReader br = new BufferedReader(new FileReader(hashInfoFile.toFile()))) {
@@ -117,7 +116,6 @@ class SignedStateFileReadWriteTest {
 
         final String fileString = sb.toString();
         assertTrue(fileString.contains(hashInfoString), "hash info string not found");
-        assertTrue(fileString.contains(platformInfoString), "platform info string not found");
     }
 
     @Test
@@ -154,8 +152,7 @@ class SignedStateFileReadWriteTest {
         final Path settingsUsedFile = directory.resolve("settingsUsed.txt");
 
         throwIfFileExists(stateFile, hashInfoFile, settingsUsedFile, directory);
-
-        writeSignedStateToDisk(directory, signedState, "test");
+        writeSignedStateToDisk(0, directory, signedState, "test");
 
         assertTrue(exists(stateFile), "state file should exist");
         assertTrue(exists(hashInfoFile), "hash info file should exist");

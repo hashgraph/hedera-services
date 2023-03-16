@@ -53,6 +53,7 @@ import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.DeserializedSignedState;
 import com.swirlds.platform.state.signed.SavedStateInfo;
+import com.swirlds.platform.state.signed.SavedStateMetadata;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
@@ -497,6 +498,7 @@ class SignedStateFileManagerTests {
             final SignedState signedState = new RandomSignedStateGenerator(random)
                     .setConsensusTimestamp(timestamp)
                     .setRound(round)
+                    .setMinimumGenerationNonAncient(random.nextLong((round + 1) * 100, (round + 1) * 101))
                     .build();
 
             manager.determineIfStateShouldBeSaved(signedState);
@@ -515,6 +517,13 @@ class SignedStateFileManagerTests {
 
                             final SavedStateInfo[] currentStatesOnDisk =
                                     SignedStateFileReader.getSavedStateFiles(MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME);
+
+                            final SavedStateMetadata oldestMetadata =
+                                    currentStatesOnDisk[currentStatesOnDisk.length - 1].getMetadata();
+
+                            assertEquals(
+                                    oldestMetadata.minimumGenerationNonAncient(),
+                                    manager.getMinimumGenerationNonAncientForOldestState());
 
                             assertTrue(
                                     currentStatesOnDisk.length <= statesOnDisk,

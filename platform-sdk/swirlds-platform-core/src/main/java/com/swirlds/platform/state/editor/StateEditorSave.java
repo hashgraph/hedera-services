@@ -57,7 +57,9 @@ public class StateEditorSave extends StateEditorOperation {
                 Files.createDirectories(directory);
             }
 
-            writeSignedStateFilesToDirectory(directory, getStateEditor().getSignedStateCopy());
+            final long selfId = -1;
+            writeSignedStateFilesToDirectory(selfId, directory, getStateEditor().getSignedStateCopy());
+
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         } catch (final ExecutionException | InterruptedException e) {

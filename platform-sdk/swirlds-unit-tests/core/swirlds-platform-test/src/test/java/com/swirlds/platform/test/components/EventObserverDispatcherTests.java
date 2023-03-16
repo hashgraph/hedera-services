@@ -73,7 +73,9 @@ class EventObserverDispatcherTests {
         dispatchAndCheck(STALE, e1, stale, addedStale);
 
         e2.setLastInRoundReceived(true);
-        dispatchAndCheckConsensus(new ConsensusRound(List.of(e1, e2), mock(EventImpl.class), Generations.GENESIS_GENERATIONS));
+
+        dispatchAndCheckConsensus(
+                new ConsensusRound(List.of(e1, e2), mock(EventImpl.class), Generations.GENESIS_GENERATIONS, -1));
     }
 
     private void dispatchAndCheckConsensus(final ConsensusRound consensusRound, final SimpleEventTracker... yes) {
