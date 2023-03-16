@@ -59,7 +59,7 @@ concurrency:
 jobs:
   jrs-panel:
     name: JRS Panel
-    uses: ./.github/workflows/platform-zxc-jrs-regression.yaml
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       panel-config: ${{ github.event.inputs.panel-config }}
       ref: ${{ github.event.inputs.ref || github.ref }}
