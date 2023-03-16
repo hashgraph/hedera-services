@@ -543,6 +543,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         metrics.addUpdater(wiring::updateMetrics);
         final AppCommunicationComponent appCommunicationComponent =
                 wiring.wireAppCommunicationComponent(notificationEngine);
+
+        preConsensusEventWriter = components.add(buildPreConsensusEventWriter());
+
         stateManagementComponent = wiring.wireStateManagementComponent(
                 PlatformConstructor.platformSigner(crypto.getKeysAndCerts()),
                 this.mainClassName,
@@ -550,7 +553,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 swirldName,
                 this::createPrioritySystemTransaction,
                 this::haltRequested,
-                appCommunicationComponent);
+                appCommunicationComponent,
+                preConsensusEventWriter);
         wiring.registerComponents(components);
 
         final NetworkStatsTransmitter networkStatsTransmitter =
@@ -594,8 +598,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         // FUTURE WORK remove this when there are no more ShutdownRequestedTriggers being dispatched
         components.add(new Shutdown());
-
-        preConsensusEventWriter = components.add(buildPreConsensusEventWriter());
 
         final LoadedState loadedState = loadSavedStateFromDisk();
         init(loadedState, genesisStateBuilder);

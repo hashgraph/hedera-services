@@ -38,6 +38,7 @@ import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.components.state.StateManagementComponentFactory;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
+import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
 import com.swirlds.platform.metrics.WiringMetrics;
 import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.util.PlatformComponents;
@@ -93,8 +94,7 @@ public class ManualWiring {
     /**
      * Creates and wires the {@link AppCommunicationComponent}.
      *
-     * @param notificationEngine
-     * 		passes notifications between the platform and the application
+     * @param notificationEngine passes notifications between the platform and the application
      * @return a fully wired {@link AppCommunicationComponent}
      */
     public AppCommunicationComponent wireAppCommunicationComponent(final NotificationEngine notificationEngine) {
@@ -107,20 +107,14 @@ public class ManualWiring {
     /**
      * Creates and wires the {@link StateManagementComponent}.
      *
-     * @param platformSigner
-     * 		signer capable of signing with this node's private key
-     * @param mainClassName
-     * 		the class that extends {@link com.swirlds.common.system.SwirldMain}
-     * @param selfId
-     * 		this node's id
-     * @param swirldName
-     * 		the name of the swirld this node is in
-     * @param prioritySystemTransactionSubmitter
-     * 		submits priority system transactions
-     * @param haltRequestedConsumer
-     * 		consumer to invoke when a halt is requested
-     * @param appCommunicationComponent
-     * 		the {@link AppCommunicationComponent}
+     * @param platformSigner                     signer capable of signing with this node's private key
+     * @param mainClassName                      the class that extends {@link com.swirlds.common.system.SwirldMain}
+     * @param selfId                             this node's id
+     * @param swirldName                         the name of the swirld this node is in
+     * @param prioritySystemTransactionSubmitter submits priority system transactions
+     * @param haltRequestedConsumer              consumer to invoke when a halt is requested
+     * @param appCommunicationComponent          the {@link AppCommunicationComponent}
+     * @param preConsensusEventWriter            writes preconsensus events to disk
      * @return a fully wired {@link StateManagementComponent}
      */
     public StateManagementComponent wireStateManagementComponent(
@@ -130,7 +124,8 @@ public class ManualWiring {
             final String swirldName,
             final PrioritySystemTransactionSubmitter prioritySystemTransactionSubmitter,
             final HaltRequestedConsumer haltRequestedConsumer,
-            final AppCommunicationComponent appCommunicationComponent) {
+            final AppCommunicationComponent appCommunicationComponent,
+            final PreConsensusEventWriter preConsensusEventWriter) {
 
         final StateManagementComponentFactory stateManagementComponentFactory =
                 new DefaultStateManagementComponentFactory(
@@ -173,6 +168,7 @@ public class ManualWiring {
         // FUTURE WORK: make this asynchronous
         stateManagementComponentFactory.issConsumer(appCommunicationComponent);
         stateManagementComponentFactory.fatalErrorConsumer(this::handleFatalError);
+        stateManagementComponentFactory.setPreConsensusEventWriter(preConsensusEventWriter);
 
         final StateManagementComponent stateManagementComponent = stateManagementComponentFactory.build();
         platformComponentList.add(stateManagementComponent);
@@ -209,8 +205,7 @@ public class ManualWiring {
     /**
      * Registers all components created by this class.
      *
-     * @param platformComponents
-     * 		the class that manages startables and registers dispatch observers.
+     * @param platformComponents the class that manages startables and registers dispatch observers.
      */
     public void registerComponents(final PlatformComponents platformComponents) {
         otherComponents.forEach(platformComponents::add);
