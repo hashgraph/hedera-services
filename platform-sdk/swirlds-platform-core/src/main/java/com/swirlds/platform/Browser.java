@@ -116,11 +116,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * The Browser that launches the Platforms that run the apps. The Browser has only one public method, which normally
- * does nothing. See the javadoc on the main method for how it can be useful for an app to call it during app
- * development.
- * <p>
- * All class member variables and methods of this class are static, and it can't be instantiated.
+ * The Browser that launches the Platforms that run the apps.
  */
 public class Browser {
     // Each member is represented by an AddressBook entry in config.txt. On a given computer, a single java
