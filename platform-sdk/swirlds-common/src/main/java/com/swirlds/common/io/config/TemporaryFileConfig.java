@@ -19,7 +19,6 @@ package com.swirlds.common.io.config;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
-import java.nio.file.Path;
 
 /**
  * Settings for temporary files
@@ -39,6 +38,6 @@ public record TemporaryFileConfig(@ConfigProperty(defaultValue = "swirlds-tmp") 
      * @return the location where temporary files are stored
      */
     public String getTemporaryFilePath(final StateConfig stateConfig) {
-        return Path.of(stateConfig.savedStateDirectory(), temporaryFilePath()).toString();
+        return stateConfig.savedStateDirectory().resolve(temporaryFilePath()).toString();
     }
 }

@@ -28,9 +28,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.context.internal.DefaultPlatformContext;
+import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.utility.FileUtils;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.test.RandomUtils;
@@ -38,13 +42,12 @@ import com.swirlds.common.test.TransactionGenerator;
 import com.swirlds.common.test.io.FileManipulation;
 import com.swirlds.common.test.metrics.NoOpMetrics;
 import com.swirlds.common.time.OSTime;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.preconsensus.AsyncPreConsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventFile;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventFileManager;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventMultiFileIterator;
-import com.swirlds.platform.event.preconsensus.PreConsensusEventStreamConfig;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventMetrics;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
 import com.swirlds.platform.event.preconsensus.SyncPreConsensusEventWriter;
 import com.swirlds.platform.internal.EventImpl;
@@ -104,10 +107,6 @@ class AsyncPreConsensusEventWriterTests {
         FileUtils.deleteDirectory(testDirectory);
     }
 
-    static PreconsensusEventMetrics buildMetrics() {
-        return new PreconsensusEventMetrics(new NoOpMetrics());
-    }
-
     /**
      * Build a transaction generator.
      */
@@ -162,10 +161,10 @@ class AsyncPreConsensusEventWriterTests {
      * Perform verification on a stream written by a {@link SyncPreConsensusEventWriter}.
      *
      * @param events the events that were written to the stream
-     * @param config the configuration of the writer
+     * @param platformContext the platform context
      */
     static void verifyStream(
-            final List<EventImpl> events, final PreConsensusEventStreamConfig config, final int truncatedFileCount)
+            final List<EventImpl> events, final PlatformContext platformContext, final int truncatedFileCount)
             throws IOException {
 
         long lastGeneration = Long.MIN_VALUE;
@@ -174,7 +173,7 @@ class AsyncPreConsensusEventWriterTests {
         }
 
         final PreConsensusEventFileManager reader =
-                new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
+                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
 
         // Verify that the events were written correctly
         final PreConsensusEventMultiFileIterator eventsIterator = reader.getEventIterator(0);
@@ -234,6 +233,17 @@ class AsyncPreConsensusEventWriterTests {
         }
     }
 
+    private PlatformContext buildContext() {
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("event.preconsensus.databaseDirectory", testDirectory)
+                .withValue("event.preconsensus.preferredFileSizeMegabytes", 5)
+                .getOrCreateConfig();
+
+        final Metrics metrics = new NoOpMetrics();
+
+        return new DefaultPlatformContext(configuration, metrics, CryptographyHolder.get());
+    }
+
     /**
      * In this test, keep adding events without increasing the first non-ancient generation. This will force the
      * preferred generations per file to eventually be reached and exceeded.
@@ -255,18 +265,16 @@ class AsyncPreConsensusEventWriterTests {
 
         final int idleWaitPeriodMs = 10;
 
-        final PreConsensusEventStreamConfig config = new TestConfigBuilder()
-                .withValue("event.preconsensus.databaseDirectory", testDirectory)
-                .withValue("event.preconsensus.preferredFileSizeMegabytes", 5)
-                .getOrCreateConfig()
-                .getConfigData(PreConsensusEventStreamConfig.class);
+        final PlatformContext platformContext = buildContext();
 
         final PreConsensusEventFileManager fileManager =
-                new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
+                new PreConsensusEventFileManager(buildContext(), OSTime.getInstance(), 0);
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreConsensusEventWriter writer = new AsyncPreConsensusEventWriter(
-                getStaticThreadManager(), config, new SyncPreConsensusEventWriter(config, fileManager));
+                platformContext,
+                getStaticThreadManager(),
+                new SyncPreConsensusEventWriter(platformContext, fileManager));
 
         writer.start();
 
@@ -284,7 +292,7 @@ class AsyncPreConsensusEventWriterTests {
 
         writer.stop();
 
-        verifyStream(events, config, 0);
+        verifyStream(events, platformContext, 0);
 
         // Without advancing the first non-ancient generation,
         // we should never be able to increase the minimum generation from 0.
@@ -338,20 +346,16 @@ class AsyncPreConsensusEventWriterTests {
 
         final int idleWaitPeriodMs = 10;
 
-        final PreConsensusEventStreamConfig config = new TestConfigBuilder()
-                .withValue("event.preconsensus.databaseDirectory", testDirectory)
-                .withValue("event.preconsensus.preferredFileSizeMegabytes", 5)
-                .withValue("event.preconsensus.idleWaitPeriod", idleWaitPeriodMs + "ms")
-                .withValue("event.preconsensus.minimumRetentionPeriod", idleWaitPeriodMs + "1ns")
-                .getOrCreateConfig()
-                .getConfigData(PreConsensusEventStreamConfig.class);
+        final PlatformContext platformContext = buildContext();
 
         final PreConsensusEventFileManager fileManager =
-                new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
+                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreConsensusEventWriter writer = new AsyncPreConsensusEventWriter(
-                getStaticThreadManager(), config, new SyncPreConsensusEventWriter(config, fileManager));
+                platformContext,
+                getStaticThreadManager(),
+                new SyncPreConsensusEventWriter(platformContext, fileManager));
 
         writer.start();
 
@@ -395,7 +399,7 @@ class AsyncPreConsensusEventWriterTests {
             assertFalse(writer.isEventDurable(event));
         }
 
-        verifyStream(events, config, 0);
+        verifyStream(events, platformContext, 0);
 
         // Prune old files.
         final long minimumGenerationToStore = events.get(events.size() - 1).getGeneration() / 2;
@@ -446,22 +450,16 @@ class AsyncPreConsensusEventWriterTests {
             }
         }
 
-        final int idleWaitPeriodMs = 10;
-
-        final PreConsensusEventStreamConfig config = new TestConfigBuilder()
-                .withValue("event.preconsensus.databaseDirectory", testDirectory)
-                .withValue("event.preconsensus.preferredFileSizeMegabytes", 5)
-                .withValue("event.preconsensus.idleWaitPeriod", idleWaitPeriodMs + "ms")
-                .withValue("event.preconsensus.minimumRetentionPeriod", idleWaitPeriodMs + "1ns")
-                .getOrCreateConfig()
-                .getConfigData(PreConsensusEventStreamConfig.class);
+        final PlatformContext platformContext = buildContext();
 
         final PreConsensusEventFileManager fileManager =
-                new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
+                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
 
         final PreconsensusEventStreamSequencer sequencer1 = new PreconsensusEventStreamSequencer();
         final PreConsensusEventWriter writer1 = new AsyncPreConsensusEventWriter(
-                getStaticThreadManager(), config, new SyncPreConsensusEventWriter(config, fileManager));
+                platformContext,
+                getStaticThreadManager(),
+                new SyncPreConsensusEventWriter(platformContext, fileManager));
 
         writer1.start();
 
@@ -503,7 +501,9 @@ class AsyncPreConsensusEventWriterTests {
 
         final PreconsensusEventStreamSequencer sequencer2 = new PreconsensusEventStreamSequencer();
         final PreConsensusEventWriter writer2 = new AsyncPreConsensusEventWriter(
-                getStaticThreadManager(), config, new SyncPreConsensusEventWriter(config, fileManager));
+                platformContext,
+                getStaticThreadManager(),
+                new SyncPreConsensusEventWriter(platformContext, fileManager));
         writer2.start();
 
         final Set<EventImpl> rejectedEvents2 = new HashSet<>();
@@ -535,6 +535,6 @@ class AsyncPreConsensusEventWriterTests {
         allEvents.addAll(events1);
         allEvents.addAll(events2);
 
-        verifyStream(allEvents, config, truncateLastFile ? 1 : 0);
+        verifyStream(allEvents, platformContext, truncateLastFile ? 1 : 0);
     }
 }

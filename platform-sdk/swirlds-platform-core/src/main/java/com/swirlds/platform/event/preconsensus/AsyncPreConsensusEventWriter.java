@@ -18,6 +18,7 @@ package com.swirlds.platform.event.preconsensus;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.framework.BlockingQueueInserter;
 import com.swirlds.common.threading.framework.MultiQueueThread;
 import com.swirlds.common.threading.framework.config.MultiQueueThreadConfiguration;
@@ -57,16 +58,19 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
     /**
      * Create a new AsyncPreConsensusEventWriter.
      *
+     * @param platformContext the platform context
      * @param threadManager responsible for creating new threads
-     * @param config        preconsensus event stream configuration
      * @param writer        the writer to which events will be written, wrapped by this class
      */
     public AsyncPreConsensusEventWriter(
+            final PlatformContext platformContext,
             final ThreadManager threadManager,
-            final PreConsensusEventStreamConfig config,
             final PreConsensusEventWriter writer) {
 
         this.writer = writer;
+
+        final PreConsensusEventStreamConfig config =
+                platformContext.getConfiguration().getConfigData(PreConsensusEventStreamConfig.class);
 
         handleThread = new MultiQueueThreadConfiguration(threadManager)
                 .setComponent("pre-consensus")

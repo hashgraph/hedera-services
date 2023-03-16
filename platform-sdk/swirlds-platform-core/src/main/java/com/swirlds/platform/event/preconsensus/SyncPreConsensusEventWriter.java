@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.event.preconsensus;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.CountUpLatch;
 import com.swirlds.common.utility.LongRunningAverage;
 import com.swirlds.common.utility.Startable;
@@ -109,11 +110,14 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
     /**
      * Create a new PreConsensusEventWriter.
      *
-     * @param config      configuration for preconsensus event streams
+     * @param platformContext the platform context
      * @param fileManager manages all preconsensus event stream files currently on disk
      */
     public SyncPreConsensusEventWriter(
-            final PreConsensusEventStreamConfig config, final PreConsensusEventFileManager fileManager) {
+            final PlatformContext platformContext, final PreConsensusEventFileManager fileManager) {
+
+        final PreConsensusEventStreamConfig config =
+                platformContext.getConfiguration().getConfigData(PreConsensusEventStreamConfig.class);
 
         preferredFileSizeMegabytes = config.preferredFileSizeMegabytes();
 

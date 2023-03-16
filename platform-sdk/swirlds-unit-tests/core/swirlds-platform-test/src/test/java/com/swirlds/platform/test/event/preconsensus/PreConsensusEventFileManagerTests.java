@@ -23,16 +23,19 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.context.internal.DefaultPlatformContext;
+import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.io.utility.FileUtils;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.common.test.metrics.NoOpMetrics;
 import com.swirlds.common.time.OSTime;
 import com.swirlds.common.utility.CompareTo;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventFile;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventFileManager;
-import com.swirlds.platform.event.preconsensus.PreConsensusEventStreamConfig;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventMetrics;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -71,6 +74,17 @@ class PreConsensusEventFileManagerTests {
         FileUtils.deleteDirectory(testDirectory);
     }
 
+    private PlatformContext buildContext() {
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("event.preconsensus.databaseDirectory", testDirectory)
+                .withValue("event.preconsensus.preferredFileSizeMegabytes", 5)
+                .getOrCreateConfig();
+
+        final Metrics metrics = new NoOpMetrics();
+
+        return new DefaultPlatformContext(configuration, metrics, CryptographyHolder.get());
+    }
+
     /**
      * Create a dummy file.
      *
@@ -88,10 +102,6 @@ class PreConsensusEventFileManagerTests {
         out.close();
     }
 
-    private PreconsensusEventMetrics buildMetrics() {
-        return new PreconsensusEventMetrics(new NoOpMetrics());
-    }
-
     @Test
     @DisplayName("Maximum Less Than Minimum Test")
     void maximumLessThanMinimumTest() throws IOException {
@@ -102,14 +112,11 @@ class PreConsensusEventFileManagerTests {
 
         createDummyFile(PreConsensusEventFile.of(2, 10, 20, Instant.now(), testDirectory));
 
-        final PreConsensusEventStreamConfig config = new TestConfigBuilder()
-                .withValue("event.preconsensus.databaseDirectory", testDirectory)
-                .getOrCreateConfig()
-                .getConfigData(PreConsensusEventStreamConfig.class);
+        final PlatformContext platformContext = buildContext();
 
         assertThrows(
                 IllegalStateException.class,
-                () -> new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics()));
+                () -> new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0));
     }
 
     @Test
@@ -122,14 +129,11 @@ class PreConsensusEventFileManagerTests {
 
         createDummyFile(PreConsensusEventFile.of(2, 10, 20, Instant.now(), testDirectory));
 
-        final PreConsensusEventStreamConfig config = new TestConfigBuilder()
-                .withValue("event.preconsensus.databaseDirectory", testDirectory)
-                .getOrCreateConfig()
-                .getConfigData(PreConsensusEventStreamConfig.class);
+        final PlatformContext platformContext = buildContext();
 
         assertThrows(
                 IllegalStateException.class,
-                () -> new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics()));
+                () -> new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0));
     }
 
     @Test
@@ -142,14 +146,11 @@ class PreConsensusEventFileManagerTests {
 
         createDummyFile(PreConsensusEventFile.of(2, 10, 20, Instant.now(), testDirectory));
 
-        final PreConsensusEventStreamConfig config = new TestConfigBuilder()
-                .withValue("event.preconsensus.databaseDirectory", testDirectory)
-                .getOrCreateConfig()
-                .getConfigData(PreConsensusEventStreamConfig.class);
+        final PlatformContext platformContext = buildContext();
 
         assertThrows(
                 IllegalStateException.class,
-                () -> new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics()));
+                () -> new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0));
     }
 
     @Test
@@ -162,14 +163,11 @@ class PreConsensusEventFileManagerTests {
 
         createDummyFile(PreConsensusEventFile.of(2, 7, 12, Instant.ofEpochMilli(2000), testDirectory));
 
-        final PreConsensusEventStreamConfig config = new TestConfigBuilder()
-                .withValue("event.preconsensus.databaseDirectory", testDirectory)
-                .getOrCreateConfig()
-                .getConfigData(PreConsensusEventStreamConfig.class);
+        final PlatformContext platformContext = buildContext();
 
         assertThrows(
                 IllegalStateException.class,
-                () -> new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics()));
+                () -> new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0));
     }
 
     @Test
@@ -208,13 +206,10 @@ class PreConsensusEventFileManagerTests {
             createDummyFile(file);
         }
 
-        final PreConsensusEventStreamConfig config = new TestConfigBuilder()
-                .withValue("event.preconsensus.databaseDirectory", testDirectory)
-                .getOrCreateConfig()
-                .getConfigData(PreConsensusEventStreamConfig.class);
+        final PlatformContext platformContext = buildContext();
 
         final PreConsensusEventFileManager manager =
-                new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
+                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
 
         assertIteratorEquality(
                 files.iterator(), manager.getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION, false));
@@ -272,16 +267,12 @@ class PreConsensusEventFileManagerTests {
             createDummyFile(file);
         }
 
-        final PreConsensusEventStreamConfig config = new TestConfigBuilder()
-                .withValue("event.preconsensus.databaseDirectory", testDirectory)
-                .withValue("event.preconsensus.permitGaps", permitGaps)
-                .getOrCreateConfig()
-                .getConfigData(PreConsensusEventStreamConfig.class);
+        final PlatformContext platformContext = buildContext();
 
         if (permitGaps) {
             // Gaps are allowed. We should see all files except for the one that was skipped.
             final PreConsensusEventFileManager manager =
-                    new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
+                    new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
 
             assertIteratorEquality(
                     files.iterator(), manager.getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION));
@@ -289,7 +280,7 @@ class PreConsensusEventFileManagerTests {
             // Gaps are not allowed.
             assertThrows(
                     IllegalStateException.class,
-                    () -> new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics()));
+                    () -> new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0));
         }
     }
 
@@ -328,13 +319,10 @@ class PreConsensusEventFileManagerTests {
             createDummyFile(file);
         }
 
-        final PreConsensusEventStreamConfig config = new TestConfigBuilder()
-                .withValue("event.preconsensus.databaseDirectory", testDirectory)
-                .getOrCreateConfig()
-                .getConfigData(PreConsensusEventStreamConfig.class);
+        final PlatformContext platformContext = buildContext();
 
         final PreConsensusEventFileManager manager =
-                new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
+                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
 
         // For this test, we want to iterate over files so that we are guaranteed to observe every event
         // with a generation greater than or equal to the target generation. Choose a generation that falls
@@ -410,13 +398,10 @@ class PreConsensusEventFileManagerTests {
             files.add(file);
             createDummyFile(file);
         }
-        final PreConsensusEventStreamConfig config = new TestConfigBuilder()
-                .withValue("event.preconsensus.databaseDirectory", testDirectory)
-                .getOrCreateConfig()
-                .getConfigData(PreConsensusEventStreamConfig.class);
+        final PlatformContext platformContext = buildContext();
 
         final PreConsensusEventFileManager manager =
-                new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
+                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
 
         // For this test, we want to iterate over files so that we are guaranteed to observe every event
         // with a generation greater than or equal to the target generation. Choose a generation that falls
@@ -485,13 +470,10 @@ class PreConsensusEventFileManagerTests {
             createDummyFile(file);
         }
 
-        final PreConsensusEventStreamConfig config = new TestConfigBuilder()
-                .withValue("event.preconsensus.databaseDirectory", testDirectory)
-                .getOrCreateConfig()
-                .getConfigData(PreConsensusEventStreamConfig.class);
+        final PlatformContext platformContext = buildContext();
 
         final PreConsensusEventFileManager manager =
-                new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
+                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
 
         // Request a generation higher than all files in the data store
         final long targetGeneration = files.get(fileCount - 1).maximumGeneration() + 1;
@@ -510,10 +492,7 @@ class PreConsensusEventFileManagerTests {
 
         final List<PreConsensusEventFile> files = new ArrayList<>();
 
-        final PreConsensusEventStreamConfig config = new TestConfigBuilder()
-                .withValue("event.preconsensus.databaseDirectory", testDirectory)
-                .getOrCreateConfig()
-                .getConfigData(PreConsensusEventStreamConfig.class);
+        final PlatformContext platformContext = buildContext();
 
         final long maxDelta = random.nextLong(10, 20);
         long minimumGeneration = random.nextLong(0, 1000);
@@ -521,7 +500,7 @@ class PreConsensusEventFileManagerTests {
         Instant timestamp = Instant.now();
 
         final PreConsensusEventFileManager generatingManager =
-                new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
+                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
         for (int i = 0; i < fileCount; i++) {
 
             final PreConsensusEventFile file =
@@ -540,7 +519,7 @@ class PreConsensusEventFileManagerTests {
         }
 
         final PreConsensusEventFileManager manager =
-                new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
+                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
 
         assertIteratorEquality(
                 files.iterator(), manager.getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION));
@@ -581,11 +560,7 @@ class PreConsensusEventFileManagerTests {
             createDummyFile(file);
         }
 
-        final PreConsensusEventStreamConfig config = new TestConfigBuilder()
-                .withValue("event.preconsensus.databaseDirectory", testDirectory)
-                .withValue("event.preconsensus.minimumRetentionPeriod", "1h")
-                .getOrCreateConfig()
-                .getConfigData(PreConsensusEventStreamConfig.class);
+        final PlatformContext platformContext = buildContext();
 
         // Choose a file in the middle. The goal is to incrementally purge all files before this file, but not
         // to purge this file or any of the ones after it.
@@ -598,7 +573,7 @@ class PreConsensusEventFileManagerTests {
         // Set the far in the future, we want all files to be GC eligible by temporal reckoning.
         final FakeTime time = new FakeTime(lastFile.timestamp().plus(Duration.ofHours(1)), Duration.ZERO);
 
-        final PreConsensusEventFileManager manager = new PreConsensusEventFileManager(time, config, buildMetrics());
+        final PreConsensusEventFileManager manager = new PreConsensusEventFileManager(platformContext, time, 0);
 
         assertIteratorEquality(
                 files.iterator(), manager.getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION));
@@ -614,7 +589,7 @@ class PreConsensusEventFileManagerTests {
             // Parse files with a new manager to make sure we aren't "cheating" by just
             // removing the in-memory descriptor without also removing the file on disk
             final List<PreConsensusEventFile> parsedFiles = new ArrayList<>();
-            new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics())
+            new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0)
                     .getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION)
                     .forEachRemaining(parsedFiles::add);
 
@@ -654,7 +629,7 @@ class PreConsensusEventFileManagerTests {
         // Parse files with a new manager to make sure we aren't "cheating" by just
         // removing the in-memory descriptor without also removing the file on disk
         final List<PreConsensusEventFile> parsedFiles = new ArrayList<>();
-        new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics())
+        new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0)
                 .getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION)
                 .forEachRemaining(parsedFiles::add);
 
@@ -706,11 +681,7 @@ class PreConsensusEventFileManagerTests {
             createDummyFile(file);
         }
 
-        final PreConsensusEventStreamConfig config = new TestConfigBuilder()
-                .withValue("event.preconsensus.databaseDirectory", testDirectory)
-                .withValue("event.preconsensus.minimumRetentionPeriod", "1h")
-                .getOrCreateConfig()
-                .getConfigData(PreConsensusEventStreamConfig.class);
+        final PlatformContext platformContext = buildContext();
 
         // Choose a file in the middle. The goal is to incrementally purge all files before this file, but not
         // to purge this file or any of the ones after it.
@@ -723,7 +694,7 @@ class PreConsensusEventFileManagerTests {
         // Set the clock before the first file is not garbage collection eligible
         final FakeTime time = new FakeTime(firstFile.timestamp().plus(Duration.ofMinutes(59)), Duration.ZERO);
 
-        final PreConsensusEventFileManager manager = new PreConsensusEventFileManager(time, config, buildMetrics());
+        final PreConsensusEventFileManager manager = new PreConsensusEventFileManager(platformContext, time, 0);
 
         assertIteratorEquality(
                 files.iterator(), manager.getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION));
@@ -738,7 +709,7 @@ class PreConsensusEventFileManagerTests {
             // Parse files with a new manager to make sure we aren't "cheating" by just
             // removing the in-memory descriptor without also removing the file on disk
             final List<PreConsensusEventFile> parsedFiles = new ArrayList<>();
-            new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics())
+            new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0)
                     .getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION)
                     .forEachRemaining(parsedFiles::add);
 
@@ -783,7 +754,7 @@ class PreConsensusEventFileManagerTests {
         // Parse files with a new manager to make sure we aren't "cheating" by just
         // removing the in-memory descriptor without also removing the file on disk
         final List<PreConsensusEventFile> parsedFiles = new ArrayList<>();
-        new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics())
+        new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0)
                 .getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION)
                 .forEachRemaining(parsedFiles::add);
 

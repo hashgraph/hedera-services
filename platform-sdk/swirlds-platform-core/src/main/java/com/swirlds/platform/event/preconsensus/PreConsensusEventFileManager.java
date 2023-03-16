@@ -18,6 +18,8 @@ package com.swirlds.platform.event.preconsensus;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
+import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.BinarySearch;
 import com.swirlds.common.utility.RandomAccessDeque;
@@ -90,19 +92,27 @@ public class PreConsensusEventFileManager {
     /**
      * Instantiate an event file collection. Loads all event files in the specified directory.
      *
+     * @param platformContext the platform context for this node
      * @param time          provides wall clock time
-     * @param configuration configuration for preconsensus events
-     * @param metrics       encapsulates metrics for the preconsensus event stream
+     * @param selfId        the ID of this node
      */
-    public PreConsensusEventFileManager(
-            final Time time, final PreConsensusEventStreamConfig configuration, final PreconsensusEventMetrics metrics)
+    public PreConsensusEventFileManager(final PlatformContext platformContext, final Time time, final long selfId)
             throws IOException {
 
-        this.time = time;
-        this.metrics = metrics;
-        minimumRetentionPeriod = configuration.minimumRetentionPeriod();
+        final PreConsensusEventStreamConfig preConsensusEventStreamConfig =
+                platformContext.getConfiguration().getConfigData(PreConsensusEventStreamConfig.class);
+        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
 
-        this.databaseDirectory = configuration.databaseDirectory();
+        this.time = time;
+        this.metrics = new PreconsensusEventMetrics(platformContext.getMetrics());
+
+        minimumRetentionPeriod = preConsensusEventStreamConfig.minimumRetentionPeriod();
+
+        this.databaseDirectory = stateConfig
+                .savedStateDirectory()
+                .resolve(preConsensusEventStreamConfig.databaseDirectory())
+                .resolve(Long.toString(selfId));
+
         if (!Files.exists(databaseDirectory)) {
             Files.createDirectories(databaseDirectory);
         }
@@ -115,7 +125,7 @@ public class PreConsensusEventFileManager {
                     .map(PreConsensusEventFileManager::parseFile)
                     .filter(Objects::nonNull)
                     .sorted()
-                    .forEachOrdered(buildFileHandler(configuration.permitGaps()));
+                    .forEachOrdered(buildFileHandler(preConsensusEventStreamConfig.permitGaps()));
         }
 
         // Measure the size of each file.
@@ -128,7 +138,7 @@ public class PreConsensusEventFileManager {
                     .set(files.getFirst().minimumGeneration());
             metrics.getPreconsensusEventFileYoungestGeneration()
                     .set(files.getLast().maximumGeneration());
-            final Duration age = Duration.between(time.now(), files.getFirst().timestamp());
+            final Duration age = Duration.between(files.getFirst().timestamp(), time.now());
             metrics.getPreconsensusEventFileOldestSeconds().set(age.toSeconds());
         }
         updateFileSizeMetrics();
@@ -441,7 +451,7 @@ public class PreConsensusEventFileManager {
         if (files.size() > 0) {
             metrics.getPreconsensusEventFileOldestGeneration()
                     .set(files.getFirst().minimumGeneration());
-            final Duration age = Duration.between(time.now(), files.getFirst().timestamp());
+            final Duration age = Duration.between(files.getFirst().timestamp(), time.now());
             metrics.getPreconsensusEventFileOldestSeconds().set(age.toSeconds());
         }
         updateFileSizeMetrics();

@@ -1037,16 +1037,14 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         final PreConsensusEventFileManager fileManager;
         try {
-            fileManager = new PreConsensusEventFileManager(
-                    OSTime.getInstance(), preConsensusEventStreamConfig, preconsensusEventMetrics);
+            fileManager = new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), selfId.getId());
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
 
-        final PreConsensusEventWriter syncWriter =
-                new SyncPreConsensusEventWriter(preConsensusEventStreamConfig, fileManager);
+        final PreConsensusEventWriter syncWriter = new SyncPreConsensusEventWriter(platformContext, fileManager);
 
-        return new AsyncPreConsensusEventWriter(threadManager, preConsensusEventStreamConfig, syncWriter);
+        return new AsyncPreConsensusEventWriter(platformContext, threadManager, syncWriter);
     }
 
     /**
