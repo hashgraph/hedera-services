@@ -559,20 +559,10 @@ public abstract class AbstractLongList<C> implements LongList {
         }
     }
 
-    /**
-     * Current max valid index in the list. By default, it's equal to the size of the list, but some
-     * implementations may provide more fine-grained values.
-     *
-     * @return max valid index
-     */
-    protected long getCurrentMax() {
-        return size();
-    }
-
     /** {@inheritDoc} */
     @Override
     public <T extends Throwable> void forEach(final LongAction<T> action) throws InterruptedException, T {
-        final long max = getCurrentMax();
+        final long max = size();
         for (long i = minValidIndex.get(); i < max; i++) {
             final long value = get(i);
             if (value != IMPERMISSIBLE_VALUE) {

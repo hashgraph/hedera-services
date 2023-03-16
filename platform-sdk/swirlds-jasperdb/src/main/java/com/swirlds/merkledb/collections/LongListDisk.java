@@ -319,7 +319,7 @@ public class LongListDisk extends AbstractLongList<Long> {
     @Override
     protected void releaseChunk(final Long chunk) {
         // if it's the last chunk, don't do any cleanup as it may be claimed by another threads
-        if (chunk / numLongsPerChunk == getCurrentMax() / numLongsPerChunk) {
+        if (chunk / numLongsPerChunk == size() / numLongsPerChunk) {
             return;
         }
 
