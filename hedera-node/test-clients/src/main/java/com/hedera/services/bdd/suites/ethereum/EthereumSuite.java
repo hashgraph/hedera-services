@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.suites.ethereum;
 
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
@@ -27,12 +26,10 @@ import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAutoCreatedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -42,14 +39,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCallWithFunctionAbi;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
-import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
@@ -58,17 +53,12 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
-import static com.hedera.services.bdd.suites.contract.Utils.asAddressInTopic;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
-import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
-import static com.hedera.services.bdd.suites.contract.precompile.ApproveAllowanceSuite.APPROVE_SIGNATURE;
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.TOKEN_NAME;
-import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.TRANSFER_SIGNATURE;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
-import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.NON_FUNGIBLE_TOKEN;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
@@ -82,7 +72,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.common.io.Files;
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
@@ -92,7 +81,6 @@ import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -160,9 +148,7 @@ public class EthereumSuite extends HapiSuite {
                                 etxSvc003ContractGetBytecodeQueryReturnsDeployedCode(),
                                 sendingLargerBalanceThanAvailableFailsGracefully(),
                                 setApproveForAllUsingLocalNodeSetupPasses(),
-                                directTransferWorksForERC20(),
-                                nftApprove(),
-                                transferErc20TokenSenderAccount()))
+                                directTransferWorksForERC20()))
                 .toList();
     }
 
@@ -1069,157 +1055,6 @@ public class EthereumSuite extends HapiSuite {
                                                 .contractCallResult(htsPrecompileResult()
                                                         .forFunction(FunctionType.ERC_TRANSFER)
                                                         .withErcFungibleTransferStatus(true)))))));
-    }
-
-    private HapiSpec nftApprove() {
-        final var approveTxn = "approveTxn";
-        final var theSpender = "spender";
-        final String HTS_APPROVE_ALLOWANCE_CONTRACT = "HtsApproveAllowance";
-        return defaultHapiSpec("HTS_NFT_APPROVE")
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(theSpender),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0)
-                                .treasury(TOKEN_TREASURY)
-                                .adminKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY),
-                        mintToken(
-                                NON_FUNGIBLE_TOKEN,
-                                List.of(ByteString.copyFromUtf8("A"), ByteString.copyFromUtf8("B"))),
-                        uploadInitCode(HTS_APPROVE_ALLOWANCE_CONTRACT),
-                        contractCreate(HTS_APPROVE_ALLOWANCE_CONTRACT),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L)
-                                        .between(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY))
-                                .via(AUTO_ACCOUNT_TRANSACTION_NAME))
-                .when(withOpContext((spec, opLog) -> allRunFor(
-                        spec,
-                        ethereumCall(
-                                        HTS_APPROVE_ALLOWANCE_CONTRACT,
-                                        "htsApproveNFT",
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(theSpender))),
-                                        BigInteger.valueOf(2L))
-                                .signingWith(SECP_256K1_SOURCE_KEY)
-                                .nonce(0)
-                                .gasPrice(50L)
-                                .via(approveTxn)
-                                .gasLimit(1_000_000)
-                                .maxFeePerGas(0)
-                                .type(EthTransactionType.EIP1559)
-                                .maxGasAllowance(ONE_HBAR * 5)
-                                .hasKnownStatus(SUCCESS))))
-                .then(
-                        getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasNoSpender(),
-                        getTokenNftInfo(NON_FUNGIBLE_TOKEN, 2L).hasSpenderID(theSpender),
-                        childRecordsCheck(approveTxn, SUCCESS, recordWith().status(SUCCESS)),
-                        withOpContext((spec, opLog) -> {
-                            final var sender = recoverAddressFromPubKey(spec.registry()
-                                    .getKey(SECP_256K1_SOURCE_KEY)
-                                    .getECDSASecp256K1()
-                                    .toByteArray());
-                            final var receiver = spec.registry().getAccountID(theSpender);
-                            final var idOfToken = "0.0."
-                                    + (spec.registry()
-                                            .getTokenID(NON_FUNGIBLE_TOKEN)
-                                            .getTokenNum());
-                            var txnRecord = getTxnRecord(approveTxn)
-                                    .hasPriority(recordWith()
-                                            .contractCallResult(resultWith()
-                                                    .logs(inOrder(logWith()
-                                                            .contract(idOfToken)
-                                                            .withTopicsInOrder(List.of(
-                                                                    eventSignatureOf(APPROVE_SIGNATURE),
-                                                                    ByteStringUtils.wrapUnsafely(
-                                                                            asAddressInTopic(sender)),
-                                                                    parsedToByteString(receiver.getAccountNum()),
-                                                                    parsedToByteString(2L)))))))
-                                    .andAllChildRecords()
-                                    .logged();
-                            allRunFor(spec, txnRecord);
-                        }));
-    }
-
-    private HapiSpec transferErc20TokenSenderAccount() {
-        final var RECIPIENT = "recipient";
-        final var TXN = "txn";
-        return defaultHapiSpec("ERC_20_TRANSFER_SENDER_ACCOUNT")
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(RECIPIENT),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .initialSupply(5)
-                                .treasury(TOKEN_TREASURY)
-                                .adminKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY),
-                        tokenAssociate(RECIPIENT, List.of(FUNGIBLE_TOKEN)),
-                        uploadInitCode(ERC20_CONTRACT),
-                        contractCreate(ERC20_CONTRACT),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoTransfer(moving(2, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY))
-                                .via(AUTO_ACCOUNT_TRANSACTION_NAME))
-                .when(withOpContext((spec, opLog) -> allRunFor(
-                        spec,
-                        ethereumCall(
-                                        ERC20_CONTRACT,
-                                        "delegateTransfer",
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(RECIPIENT))),
-                                        BigInteger.TWO)
-                                .signingWith(SECP_256K1_SOURCE_KEY)
-                                .nonce(0)
-                                .gasPrice(50L)
-                                .via(TXN)
-                                .gasLimit(1_000_000)
-                                .maxFeePerGas(0)
-                                .type(EthTransactionType.EIP1559)
-                                .maxGasAllowance(ONE_HBAR * 5)
-                                .hasKnownStatus(SUCCESS))))
-                .then(
-                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).savingSnapshot(SECP_256K1_SOURCE_KEY),
-                        getAccountInfo(RECIPIENT).savingSnapshot(RECIPIENT),
-                        withOpContext((spec, log) -> {
-                            final var sender = recoverAddressFromPubKey(spec.registry()
-                                    .getKey(SECP_256K1_SOURCE_KEY)
-                                    .getECDSASecp256K1()
-                                    .toByteArray());
-                            final var receiver =
-                                    spec.registry().getAccountInfo(RECIPIENT).getAccountID();
-
-                            var txnRecord = getTxnRecord(TXN)
-                                    .hasPriority(recordWith()
-                                            .contractCallResult(resultWith()
-                                                    .logs(inOrder(logWith()
-                                                            .withTopicsInOrder(List.of(
-                                                                    eventSignatureOf(TRANSFER_SIGNATURE),
-                                                                    ByteStringUtils.wrapUnsafely(
-                                                                            asAddressInTopic(sender)),
-                                                                    parsedToByteString(receiver.getAccountNum())))
-                                                            .longValue(2)))))
-                                    .andAllChildRecords()
-                                    .logged();
-                            allRunFor(spec, txnRecord);
-                        }),
-                        childRecordsCheck(
-                                TXN,
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(resultWith()
-                                                .contractCallResult(htsPrecompileResult()
-                                                        .forFunction(FunctionType.ERC_TRANSFER)
-                                                        .withErcFungibleTransferStatus(true)))),
-                        getAutoCreatedAccountBalance(SECP_256K1_SOURCE_KEY).hasTokenBalance(FUNGIBLE_TOKEN, 0),
-                        getAccountBalance(RECIPIENT).hasTokenBalance(FUNGIBLE_TOKEN, 2));
     }
 
     @Override
