@@ -8,6 +8,7 @@ module com.swirlds.config.impl {
     requires com.swirlds.config;
     requires com.swirlds.common;
     requires org.apache.logging.log4j;
+    requires static com.github.spotbugs.annotations;
 
     provides ConfigurationBuilderFactory with
             ConfigurationBuilderFactoryImpl;

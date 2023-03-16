@@ -8,4 +8,5 @@ module com.swirlds.test.framework {
     requires com.swirlds.common;
     requires com.swirlds.config;
     requires io.github.classgraph;
+    requires static com.github.spotbugs.annotations;
 }
