@@ -153,7 +153,9 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -178,6 +180,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ERC20PrecompilesTest {
+    @Mock
+    private org.hyperledger.besu.evm.account.Account acc;
+
+    @Mock
+    private Deque<MessageFrame> stack;
+
+    @Mock
+    private Iterator<MessageFrame> dequeIterator;
+
     @Mock
     private GlobalDynamicProperties dynamicProperties;
 
@@ -514,6 +525,7 @@ class ERC20PrecompilesTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
+        givenIfDelegateCall();
         final var result = subject.computePrecompile(pretendArguments, frame);
         assertNull(result.getOutput());
     }
@@ -540,6 +552,7 @@ class ERC20PrecompilesTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        givenIfDelegateCall();
         final var result = subject.compute(pretendArguments, frame);
 
         // then:
@@ -599,6 +612,7 @@ class ERC20PrecompilesTest {
         given(blockValues.getTimestamp()).willReturn(TEST_CONSENSUS_TIME);
         when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
         when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
+        givenIfDelegateCall();
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
@@ -1531,4 +1545,13 @@ class ERC20PrecompilesTest {
 
     public static final ApproveWrapper APPROVE_NFT_WRAPPER =
             new ApproveWrapper(token, receiver, BigInteger.ONE, BigInteger.ZERO, false);
+
+    private void givenIfDelegateCall() {
+        given(frame.getContractAddress()).willReturn(contractAddress);
+        given(frame.getRecipientAddress()).willReturn(recipientAddress);
+        given(worldUpdater.get(recipientAddress)).willReturn(acc);
+        given(acc.getNonce()).willReturn(-1L);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(frame.getMessageFrameStack().iterator()).willReturn(dequeIterator);
+    }
 }
