@@ -28,10 +28,10 @@ This code is maintained by the "Platform Hashgraph" team.
         - Out of order gossip algorithm
     - Hashgraph
     - State management
-    - State snapshots
-    - Hashing
-    - State Signing
-    - ISS Detection
+        - State snapshots
+        - Hashing
+        - State Signing
+        - ISS Detection
     - Reconnect
     - Transaction Handling
     - BLS
