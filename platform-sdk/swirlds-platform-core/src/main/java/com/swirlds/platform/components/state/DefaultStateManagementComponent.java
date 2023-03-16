@@ -187,7 +187,8 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 mainClassName,
                 selfId,
                 swirldName,
-                stateToDiskEventConsumer);
+                stateToDiskEventConsumer,
+                x -> {}); // TODO
 
         final StateHasEnoughSignaturesConsumer combinedStateHasEnoughSignaturesConsumer = ssw -> {
             stateHasEnoughSignatures(ssw.get());

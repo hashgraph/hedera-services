@@ -17,7 +17,6 @@
 package com.swirlds.platform.state.signed;
 
 import static com.swirlds.common.io.utility.FileUtils.deleteDirectoryAndLog;
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
@@ -36,10 +35,12 @@ import com.swirlds.common.threading.interrupt.Uninterruptable;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.Startable;
+import com.swirlds.platform.components.state.output.MinimumGenerationNonAncientConsumer;
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -100,6 +101,11 @@ public class SignedStateFileManager implements Startable {
     private long minimumGenerationNonAncientForOldestState = -1;
 
     /**
+     * This method must be called when the minimum generation non-ancient of the oldest state snapshot on disk changes.
+     */
+    private final MinimumGenerationNonAncientConsumer minimumGenerationNonAncientConsumer;
+
+    /**
      * Creates a new instance.
      *
      * @param threadManager responsible for creating and managing threads
@@ -115,15 +121,17 @@ public class SignedStateFileManager implements Startable {
             final String mainClassName,
             final NodeId selfId,
             final String swirldName,
-            final StateToDiskAttemptConsumer stateToDiskAttemptConsumer) {
+            final StateToDiskAttemptConsumer stateToDiskAttemptConsumer,
+            final MinimumGenerationNonAncientConsumer minimumGenerationNonAncientConsumer) {
 
-        this.metrics = throwArgNull(metrics, "metrics");
+        this.metrics = Objects.requireNonNull(metrics, "metrics");
         this.time = time;
         this.selfId = selfId;
         this.mainClassName = mainClassName;
         this.swirldName = swirldName;
         this.stateToDiskAttemptConsumer = stateToDiskAttemptConsumer;
         this.stateConfig = context.getConfiguration().getConfigData(StateConfig.class);
+        this.minimumGenerationNonAncientConsumer = Objects.requireNonNull(minimumGenerationNonAncientConsumer);
 
         final BasicConfig basicConfig = context.getConfiguration().getConfigData(BasicConfig.class);
 
@@ -350,9 +358,6 @@ public class SignedStateFileManager implements Startable {
      * Purge old states on the disk.
      */
     private synchronized void deleteOldStates() {
-
-        // TODO this needs to send data to the event stream manager somehow
-
         final SavedStateInfo[] savedStates = getSavedStateFiles(mainClassName, selfId, swirldName);
 
         // States are returned newest to oldest. So delete from the end of the list to delete the oldest states.
@@ -370,11 +375,15 @@ public class SignedStateFileManager implements Startable {
         // Keep the minimum generation non-ancient for the oldest state up to date
         if (index >= 0) {
             final SavedStateMetadata oldestStateMetadata = savedStates[index].getMetadata();
-            final long minimumGeneration = oldestStateMetadata.minimumGenerationNonAncient() == null
+
+            final long oldestStateMinimumGeneration = oldestStateMetadata.minimumGenerationNonAncient() == null
                     ? -1L
                     : oldestStateMetadata.minimumGenerationNonAncient();
-            minimumGenerationNonAncientForOldestState =
-                    Math.max(minimumGenerationNonAncientForOldestState, minimumGeneration);
+
+            if (minimumGenerationNonAncientForOldestState < oldestStateMinimumGeneration) {
+                minimumGenerationNonAncientForOldestState = oldestStateMinimumGeneration;
+                minimumGenerationNonAncientConsumer.newMinimumGenerationNonAncient(oldestStateMinimumGeneration);
+            }
         }
     }
 
