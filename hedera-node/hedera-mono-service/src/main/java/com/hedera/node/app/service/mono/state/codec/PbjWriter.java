@@ -16,12 +16,12 @@
 
 package com.hedera.node.app.service.mono.state.codec;
 
-import com.hedera.pbj.runtime.io.DataOutput;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 
 /**
- * Defines a writer to a PBJ {@link DataOutput}; helpful for building {@link com.hedera.pbj.runtime.Codec}
+ * Defines a writer to a PBJ {@link WritableSequentialData}; helpful for building {@link com.hedera.pbj.runtime.Codec}
  * implementations from a method reference to a PBJ-generated {@code Writer}
  * implementation.
  *
@@ -29,5 +29,5 @@ import java.io.IOException;
  */
 @FunctionalInterface
 public interface PbjWriter<T> {
-    void write(@NonNull T item, @NonNull DataOutput output) throws IOException;
+    void write(@NonNull T item, @NonNull WritableSequentialData output) throws IOException;
 }

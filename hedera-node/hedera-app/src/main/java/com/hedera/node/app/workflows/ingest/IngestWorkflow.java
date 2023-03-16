@@ -19,8 +19,8 @@ package com.hedera.node.app.workflows.ingest;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionResponse;
 import com.hedera.node.app.SessionContext;
-import com.hedera.pbj.runtime.io.DataBuffer;
-import com.hedera.pbj.runtime.io.RandomAccessDataInput;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.hedera.pbj.runtime.io.buffer.RandomAccessData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -42,6 +42,6 @@ public interface IngestWorkflow {
      */
     void submitTransaction(
             @NonNull SessionContext session,
-            @NonNull RandomAccessDataInput requestBuffer,
-            @NonNull DataBuffer responseBuffer);
+            @NonNull RandomAccessData requestBuffer,
+            @NonNull BufferedData responseBuffer);
 }

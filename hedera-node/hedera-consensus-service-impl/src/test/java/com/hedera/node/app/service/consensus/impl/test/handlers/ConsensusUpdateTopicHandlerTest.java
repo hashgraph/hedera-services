@@ -60,7 +60,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
             ConsensusUpdateTopicTransactionBody.newBuilder();
 
     private final ExpiryMeta currentExpiryMeta = new ExpiryMeta(
-            expirationTime, autoRenewSecs, autoRenewId.accountNum().get());
+            expirationTime, autoRenewSecs, autoRenewId.accountNum());
 
     @Mock
     private HandleContext handleContext;
@@ -182,7 +182,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         willThrow(new HandleStatusException(ResponseCodeEnum.MEMO_TOO_LONG))
                 .given(attributeValidator)
-                .validateMemo(op.memo().get());
+                .validateMemo(op.memo());
 
         // expect:
         assertFailsWith(ResponseCodeEnum.MEMO_TOO_LONG, () -> subject.handle(handleContext, op, writableStore));
@@ -289,7 +289,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
                 OP_BUILDER.topicID(wellKnownId()).autoRenewAccount(autoRenewId).build();
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
-        final var impliedMeta = new ExpiryMeta(NA, NA, autoRenewId.accountNum().get());
+        final var impliedMeta = new ExpiryMeta(NA, NA, autoRenewId.accountNum());
         willThrow(new HandleStatusException(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT))
                 .given(expiryValidator)
                 .resolveUpdateAttempt(currentExpiryMeta, impliedMeta);

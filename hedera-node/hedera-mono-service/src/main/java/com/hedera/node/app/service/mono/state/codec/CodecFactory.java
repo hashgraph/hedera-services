@@ -17,10 +17,11 @@
 package com.hedera.node.app.service.mono.state.codec;
 
 import com.hedera.pbj.runtime.Codec;
-import com.hedera.pbj.runtime.io.DataInput;
-import com.hedera.pbj.runtime.io.DataInputStream;
-import com.hedera.pbj.runtime.io.DataOutput;
-import com.hedera.pbj.runtime.io.DataOutputStream;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
+import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
+import com.swirlds.common.io.SelfSerializable;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 
@@ -39,8 +40,8 @@ public final class CodecFactory {
         return new Codec<>() {
             @NonNull
             @Override
-            public T parse(final @NonNull DataInput input) throws IOException {
-                if (input instanceof DataInputStream in) {
+            public T parse(final @NonNull ReadableSequentialData input) throws IOException {
+                if (input instanceof ReadableStreamingData in) {
                     return parser.parse(in);
                 } else {
                     throw new IllegalArgumentException("Unsupported input type: " + input.getClass());
@@ -48,8 +49,8 @@ public final class CodecFactory {
             }
 
             @Override
-            public void write(final @NonNull T item, final @NonNull DataOutput output) throws IOException {
-                if (output instanceof DataOutputStream out) {
+            public void write(final @NonNull T item, final @NonNull WritableSequentialData output) throws IOException {
+                if (output instanceof WritableStreamingData out) {
                     writer.write(item, out);
                 } else {
                     throw new IllegalArgumentException("Unsupported output type: " + output.getClass());
@@ -57,13 +58,13 @@ public final class CodecFactory {
             }
 
             @Override
-            public int measure(final @NonNull DataInput input) {
+            public int measure(final @NonNull ReadableSequentialData input) {
                 throw new UnsupportedOperationException();
             }
 
             @NonNull
             @Override
-            public T parseStrict(final @NonNull DataInput dataInput) {
+            public T parseStrict(final @NonNull ReadableSequentialData dataInput) {
                 throw new UnsupportedOperationException();
             }
 
@@ -73,7 +74,7 @@ public final class CodecFactory {
             }
 
             @Override
-            public boolean fastEquals(@NonNull T item, @NonNull DataInput input) {
+            public boolean fastEquals(@NonNull T item, @NonNull ReadableSequentialData input) {
                 throw new UnsupportedOperationException();
             }
         };

@@ -32,18 +32,19 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#GET_ACCOUNT_DETAILS}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#GET_ACCOUNT_DETAILS}.
  */
 @Singleton
 public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
     @Inject
-    public NetworkGetAccountDetailsHandler() {}
+    public NetworkGetAccountDetailsHandler() {
+        // Exists for injection
+    }
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
-        return query.accountDetails().orElseThrow().header();
+        return query.accountDetailsOrThrow().header();
     }
 
     @Override

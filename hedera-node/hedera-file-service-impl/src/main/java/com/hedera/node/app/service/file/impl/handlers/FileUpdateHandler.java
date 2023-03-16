@@ -28,13 +28,14 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#FILE_UPDATE}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#FILE_UPDATE}.
  */
 @Singleton
 public class FileUpdateHandler implements TransactionHandler {
     @Inject
-    public FileUpdateHandler() {}
+    public FileUpdateHandler() {
+        // Exists for injection
+    }
 
     /**
      * This method is called during the pre-handle workflow.

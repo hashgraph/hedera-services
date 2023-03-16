@@ -17,10 +17,11 @@
 package com.hedera.node.app.service.mono.state.codec;
 
 import com.hedera.pbj.runtime.Codec;
-import com.hedera.pbj.runtime.io.DataInput;
-import com.hedera.pbj.runtime.io.DataInputStream;
-import com.hedera.pbj.runtime.io.DataOutput;
-import com.hedera.pbj.runtime.io.DataOutputStream;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
+import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -28,7 +29,11 @@ import com.swirlds.jasperdb.files.hashmap.KeySerializer;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.function.Supplier;
 
 /**
@@ -52,33 +57,34 @@ public class MonoMapCodecAdapter {
         return new Codec<>() {
             @NonNull
             @Override
-            public T parse(final @NonNull DataInput input) throws IOException {
+            public T parse(final @NonNull ReadableSequentialData input) throws IOException {
+                final var buffer = new byte[input.readInt()];
+                input.readBytes(buffer);
+                final var bais = new ByteArrayInputStream(buffer);
                 final var item = factory.get();
-                if (input instanceof DataInputStream in) {
-                    item.deserialize(new SerializableDataInputStream(in), version);
-                } else {
-                    throw new IllegalArgumentException("Expected a DataInputStream, but found: " + input.getClass());
-                }
+                item.deserialize(new SerializableDataInputStream(bais), version);
                 return item;
             }
 
             @NonNull
             @Override
-            public T parseStrict(@NonNull DataInput dataInput) throws IOException {
+            public T parseStrict(@NonNull ReadableSequentialData dataInput) throws IOException {
                 return parse(dataInput);
             }
 
             @Override
-            public void write(final @NonNull T item, final @NonNull DataOutput output) throws IOException {
-                if (output instanceof DataOutputStream out) {
-                    item.serialize(new SerializableDataOutputStream(out));
-                } else {
-                    throw new IllegalArgumentException("Expected a DataOutputStream, but found: " + output.getClass());
+            public void write(final @NonNull T item, final @NonNull WritableSequentialData output) throws IOException {
+                final var baos = new ByteArrayOutputStream();
+                try (final var out = new SerializableDataOutputStream(baos)) {
+                    item.serialize(out);
+                    out.flush();
                 }
+                output.writeInt(baos.toByteArray().length);
+                output.writeBytes(baos.toByteArray());
             }
 
             @Override
-            public int measure(final @NonNull DataInput input) {
+            public int measure(final @NonNull ReadableSequentialData input) {
                 throw new UnsupportedOperationException();
             }
 
@@ -88,7 +94,7 @@ public class MonoMapCodecAdapter {
             }
 
             @Override
-            public boolean fastEquals(@NonNull T item, @NonNull DataInput input) {
+            public boolean fastEquals(@NonNull T item, @NonNull ReadableSequentialData input) {
                 throw new UnsupportedOperationException();
             }
         };
@@ -99,27 +105,49 @@ public class MonoMapCodecAdapter {
         return new Codec<>() {
             @NonNull
             @Override
-            public T parse(final @NonNull DataInput input) throws IOException {
+            public T parse(final @NonNull ReadableSequentialData input) throws IOException {
                 final var item = factory.get();
-                final var in = new SerializableDataInputStream(PbjInputStream.wrapping(input));
-                item.deserialize(in, version);
+                if (input instanceof ReadableStreamingData in) {
+                    item.deserialize(new SerializableDataInputStream(in), version);
+                } else if (input instanceof BufferedData dataBuffer) {
+                    // TODO: Is it possible to get direct access to the underlying ByteBuffer here?
+                    final var byteBuffer = ByteBuffer.allocate(dataBuffer.capacity());
+                    dataBuffer.readBytes(byteBuffer);
+                    // TODO: Remove the following line once this was fixed in BufferedData
+                    dataBuffer.skip(dataBuffer.remaining());
+                    byteBuffer.rewind();
+                    item.deserialize(byteBuffer, version);
+                } else {
+                    throw new IllegalArgumentException(
+                            "Unsupported DataInput type: " + input.getClass().getName());
+                }
                 return item;
             }
 
             @NonNull
             @Override
-            public T parseStrict(@NonNull DataInput dataInput) throws IOException {
+            public T parseStrict(@NonNull ReadableSequentialData dataInput) throws IOException {
                 return parse(dataInput);
             }
 
             @Override
-            public void write(final @NonNull T item, final @NonNull DataOutput output) throws IOException {
-                final var out = new SerializableDataOutputStream(PbjOutputStream.wrapping(output));
-                item.serialize(out);
+            public void write(final @NonNull T item, final @NonNull WritableSequentialData output) throws IOException {
+                if (output instanceof WritableStreamingData out) {
+                    item.serialize(new SerializableDataOutputStream(out));
+                } else if (output instanceof BufferedData dataBuffer) {
+                    // TODO: Is it possible to get direct access to the underlying ByteBuffer here?
+                    final var byteBuffer = ByteBuffer.allocate(dataBuffer.capacity());
+                    item.serialize(byteBuffer);
+                    byteBuffer.rewind();
+                    dataBuffer.writeBytes(byteBuffer);
+                } else {
+                    throw new IllegalArgumentException(
+                            "Unsupported DataOutput type: " + output.getClass().getName());
+                }
             }
 
             @Override
-            public int measure(final @NonNull DataInput input) {
+            public int measure(final @NonNull ReadableSequentialData input) {
                 return keySerializer.getSerializedSize();
             }
 
@@ -129,7 +157,7 @@ public class MonoMapCodecAdapter {
             }
 
             @Override
-            public boolean fastEquals(@NonNull T item, @NonNull DataInput input) {
+            public boolean fastEquals(@NonNull T item, @NonNull ReadableSequentialData input) {
                 throw new UnsupportedOperationException();
             }
         };
@@ -139,27 +167,49 @@ public class MonoMapCodecAdapter {
         return new Codec<>() {
             @NonNull
             @Override
-            public T parse(final @NonNull DataInput input) throws IOException {
+            public T parse(final @NonNull ReadableSequentialData input) throws IOException {
                 final var item = factory.get();
-                final var in = new SerializableDataInputStream(PbjInputStream.wrapping(input));
-                item.deserialize(in, version);
+                if (input instanceof ReadableStreamingData in) {
+                    item.deserialize(new SerializableDataInputStream(in), version);
+                } else if (input instanceof BufferedData dataBuffer) {
+                    // TODO: Is it possible to get direct access to the underlying ByteBuffer here?
+                    final var byteBuffer = ByteBuffer.allocate(dataBuffer.capacity());
+                    dataBuffer.readBytes(byteBuffer);
+                    // TODO: Remove the following line once this was fixed in BufferedData
+                    dataBuffer.skip(dataBuffer.remaining());
+                    byteBuffer.rewind();
+                    item.deserialize(byteBuffer, version);
+                } else {
+                    throw new IllegalArgumentException(
+                            "Unsupported DataInput type: " + input.getClass().getName());
+                }
                 return item;
             }
 
             @NonNull
             @Override
-            public T parseStrict(@NonNull DataInput dataInput) throws IOException {
+            public T parseStrict(@NonNull ReadableSequentialData dataInput) throws IOException {
                 return parse(dataInput);
             }
 
             @Override
-            public void write(final @NonNull T item, final @NonNull DataOutput output) throws IOException {
-                final var out = new SerializableDataOutputStream(PbjOutputStream.wrapping(output));
-                item.serialize(out);
+            public void write(final @NonNull T item, final @NonNull WritableSequentialData output) throws IOException {
+                if (output instanceof WritableStreamingData out) {
+                    item.serialize(new SerializableDataOutputStream(out));
+                } else if (output instanceof BufferedData dataBuffer) {
+                    // TODO: Is it possible to get direct access to the underlying ByteBuffer here?
+                    final var byteBuffer = ByteBuffer.allocate(dataBuffer.capacity());
+                    item.serialize(byteBuffer);
+                    byteBuffer.rewind();
+                    dataBuffer.writeBytes(byteBuffer);
+                } else {
+                    throw new IllegalArgumentException(
+                            "Unsupported DataOutput type: " + output.getClass().getName());
+                }
             }
 
             @Override
-            public int measure(final @NonNull DataInput input) {
+            public int measure(final @NonNull ReadableSequentialData input) {
                 throw new UnsupportedOperationException();
             }
 
@@ -169,7 +219,7 @@ public class MonoMapCodecAdapter {
             }
 
             @Override
-            public boolean fastEquals(final @NonNull T item, final @NonNull DataInput input) {
+            public boolean fastEquals(final @NonNull T item, final @NonNull ReadableSequentialData input) {
                 throw new UnsupportedOperationException();
             }
         };

@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.consensus.impl.ReadableTopicStore.Topi
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.TopicStore.TopicMetadata;
 import com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusHandlerTestBase;
@@ -56,7 +57,7 @@ class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
         assertEquals(adminKey.toString(), meta.submitKey().map(Object::toString).orElse("N/A"));
         assertEquals(topic.sequenceNumber(), meta.sequenceNumber());
         assertEquals(topic.autoRenewPeriod(), meta.autoRenewDurationSeconds());
-        assertEquals(OptionalLong.of(autoRenewId.accountNum().get()), meta.autoRenewAccountId());
+        assertEquals(OptionalLong.of(autoRenewId.accountNum()), meta.autoRenewAccountId());
         assertEquals(Optional.of(memo), meta.memo());
         assertFalse(meta.isDeleted());
         assertArrayEquals(runningHash, meta.runningHash());
@@ -69,15 +70,14 @@ class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
                 Optional.of(adminKey),
                 Optional.of(adminKey),
                 100L,
-                OptionalLong.of(autoRenewId.accountNum().get()),
-                WELL_KNOWN_EXPIRY,
+                OptionalLong.of(autoRenewId.accountNum()),
+                Timestamp.newBuilder().seconds(100L).build(),
                 1L,
                 new byte[48],
                 topicEntityNum.longValue(),
                 false);
 
-        final var expectedString =
-                "TopicMetadata{memo=Optional[test memo], adminKey=Optional[<JThresholdKey: thd=2, keys=<JKeyList: keys=[<JEd25519Key: ed25519 hex=6161616161616161616161616161616161616161616161616161616161616161>, <JEd25519Key: ed25519 hex=6262626262626262626262626262626262626262626262626262626262626262>, <JThresholdKey: thd=2, keys=<JKeyList: keys=[<JEd25519Key: ed25519 hex=6161616161616161616161616161616161616161616161616161616161616161>, <JEd25519Key: ed25519 hex=6262626262626262626262626262626262626262626262626262626262626262>, <JEd25519Key: ed25519 hex=6363636363636363636363636363636363636363636363636363636363636363>]>>]>>], submitKey=Optional[<JThresholdKey: thd=2, keys=<JKeyList: keys=[<JEd25519Key: ed25519 hex=6161616161616161616161616161616161616161616161616161616161616161>, <JEd25519Key: ed25519 hex=6262626262626262626262626262626262626262626262626262626262626262>, <JThresholdKey: thd=2, keys=<JKeyList: keys=[<JEd25519Key: ed25519 hex=6161616161616161616161616161616161616161616161616161616161616161>, <JEd25519Key: ed25519 hex=6262626262626262626262626262626262626262626262626262626262626262>, <JEd25519Key: ed25519 hex=6363636363636363636363636363636363636363636363636363636363636363>]>>]>>], autoRenewDurationSeconds=100, autoRenewAccountId=OptionalLong[4], expirationTimestamp=Timestamp[seconds=1234567, nanos=0], sequenceNumber=1, runningHash=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], key=1, isDeleted=false}";
+        final var expectedString = "TopicMetadata{memo=Optional[test memo], adminKey=Optional[<JThresholdKey: thd=2, keys=<JKeyList: keys=[<JEd25519Key: ed25519 hex=6161616161616161616161616161616161616161616161616161616161616161>, <JEd25519Key: ed25519 hex=6262626262626262626262626262626262626262626262626262626262626262>, <JThresholdKey: thd=2, keys=<JKeyList: keys=[<JEd25519Key: ed25519 hex=6161616161616161616161616161616161616161616161616161616161616161>, <JEd25519Key: ed25519 hex=6262626262626262626262626262626262626262626262626262626262626262>, <JEd25519Key: ed25519 hex=6363636363636363636363636363636363636363636363636363636363636363>]>>]>>], submitKey=Optional[<JThresholdKey: thd=2, keys=<JKeyList: keys=[<JEd25519Key: ed25519 hex=6161616161616161616161616161616161616161616161616161616161616161>, <JEd25519Key: ed25519 hex=6262626262626262626262626262626262626262626262626262626262626262>, <JThresholdKey: thd=2, keys=<JKeyList: keys=[<JEd25519Key: ed25519 hex=6161616161616161616161616161616161616161616161616161616161616161>, <JEd25519Key: ed25519 hex=6262626262626262626262626262626262626262626262626262626262626262>, <JEd25519Key: ed25519 hex=6363636363636363636363636363636363636363636363636363636363636363>]>>]>>], autoRenewDurationSeconds=100, autoRenewAccountId=OptionalLong[4], expirationTimestamp=Timestamp[seconds=100, nanos=0], sequenceNumber=1, runningHash=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], key=1, isDeleted=false}";
         assertEquals(expectedString, meta.toString());
 
         final var metaCopy = meta;
@@ -89,7 +89,7 @@ class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
                 Optional.of(adminKey),
                 Optional.of(adminKey),
                 100L,
-                OptionalLong.of(autoRenewId.accountNum().get()),
+                OptionalLong.of(autoRenewId.accountNum()),
                 WELL_KNOWN_EXPIRY,
                 1L,
                 new byte[48],

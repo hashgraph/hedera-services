@@ -32,18 +32,19 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#FILE_GET_CONTENTS}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#FILE_GET_CONTENTS}.
  */
 @Singleton
 public class FileGetContentsHandler extends PaidQueryHandler {
     @Inject
-    public FileGetContentsHandler() {}
+    public FileGetContentsHandler() {
+        // Exists for injection
+    }
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
-        return query.fileGetContents().orElseThrow().header();
+        return query.fileGetContentsOrThrow().header();
     }
 
     @Override

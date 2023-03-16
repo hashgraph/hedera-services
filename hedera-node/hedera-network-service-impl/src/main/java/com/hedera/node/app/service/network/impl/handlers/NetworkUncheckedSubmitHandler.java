@@ -28,13 +28,14 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#UNCHECKED_SUBMIT}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#UNCHECKED_SUBMIT}.
  */
 @Singleton
 public class NetworkUncheckedSubmitHandler implements TransactionHandler {
     @Inject
-    public NetworkUncheckedSubmitHandler() {}
+    public NetworkUncheckedSubmitHandler() {
+        // Exists for injection
+    }
 
     /**
      * This method is called during the pre-handle workflow.

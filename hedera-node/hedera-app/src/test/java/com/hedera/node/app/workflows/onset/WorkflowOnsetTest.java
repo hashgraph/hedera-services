@@ -44,8 +44,8 @@ import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.pbj.runtime.Codec;
-import com.hedera.pbj.runtime.io.Bytes;
-import com.hedera.pbj.runtime.io.DataBuffer;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -72,7 +72,7 @@ class WorkflowOnsetTest extends AppTestBase {
     private SignatureMap signatureMap;
     private SignedTransaction signedTx;
     private TransactionBody txBody;
-    private DataBuffer inputBuffer;
+    private BufferedData inputBuffer;
     private WorkflowOnset onset;
 
     /**
@@ -105,7 +105,7 @@ class WorkflowOnsetTest extends AppTestBase {
         tx = Transaction.newBuilder()
                 .signedTransactionBytes(signedTransactionBytes)
                 .build();
-        inputBuffer = DataBuffer.wrap(asByteArray(tx));
+        inputBuffer = BufferedData.wrap(asByteArray(tx));
 
         // Create the onset object
         ctx = new SessionContext();
@@ -152,13 +152,13 @@ class WorkflowOnsetTest extends AppTestBase {
     class HappyTest {
         /**
          * This test verifies that, given a valid transaction encoded as bytes in a
-         * {@link DataBuffer}, the {@link WorkflowOnset} will parse it correctly. The
+         * {@link BufferedData}, the {@link WorkflowOnset} will parse it correctly. The
          * transaction in this case is using the "signed transaction bytes" fields.
          *
          * @throws PreCheckException Not throw by this test if all goes well
          */
         @Test
-        @DisplayName("A valid transaction passes parseAndCheck with a DataBuffer")
+        @DisplayName("A valid transaction passes parseAndCheck with a BufferedData")
         void testParseAndCheckSucceeds() throws PreCheckException {
             // Given a valid serialized transaction, when we parse and check
             final var result = onset.parseAndCheck(ctx, inputBuffer);
@@ -172,7 +172,7 @@ class WorkflowOnsetTest extends AppTestBase {
 
         /**
          * This test is the same as {@link #testParseAndCheckSucceeds()} except that it uses a
-         * bte array instead of a {@link DataBuffer}.
+         * bte array instead of a {@link BufferedData}.
          *
          * @throws PreCheckException Not throw by this test if all goes well
          */
@@ -206,7 +206,7 @@ class WorkflowOnsetTest extends AppTestBase {
                     .bodyBytes(signedTx.bodyBytes())
                     .sigMap(signedTx.sigMap())
                     .build();
-            inputBuffer = DataBuffer.wrap(asByteArray(localTx));
+            inputBuffer = BufferedData.wrap(asByteArray(localTx));
 
             // When we parse and check
             final var result = onset.parseAndCheck(ctx, inputBuffer);
@@ -228,10 +228,10 @@ class WorkflowOnsetTest extends AppTestBase {
     class ParseAndCheckArgTest {
         @Test
         @SuppressWarnings("ConstantConditions")
-        @DisplayName("`parseAndCheck` with a DataBuffer rejects null args")
+        @DisplayName("`parseAndCheck` with a BufferedData rejects null args")
         void parseAndCheckDataBufferIllegalArgs() {
             assertThatThrownBy(() -> onset.parseAndCheck(null, inputBuffer)).isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> onset.parseAndCheck(ctx, (DataBuffer) null))
+            assertThatThrownBy(() -> onset.parseAndCheck(ctx, (BufferedData) null))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -262,7 +262,7 @@ class WorkflowOnsetTest extends AppTestBase {
         @DisplayName("0. Fail fast if there are too many transaction bytes")
         void tooManyBytes() {
             // Given an empty set of bytes
-            inputBuffer = DataBuffer.wrap(randomBytes(MAX_TX_SIZE + 1));
+            inputBuffer = BufferedData.wrap(randomBytes(MAX_TX_SIZE + 1));
 
             // When we parse and check, we find that the buffer has too many bytes
             assertThatThrownBy(() -> onset.parseAndCheck(ctx, inputBuffer))
@@ -277,7 +277,7 @@ class WorkflowOnsetTest extends AppTestBase {
             @DisplayName("If the transaction bytes are not valid protobuf, it will fail")
             void badTransactionProtobuf() {
                 // Given an invalid protobuf message
-                inputBuffer = DataBuffer.wrap(invalidProtobuf());
+                inputBuffer = BufferedData.wrap(invalidProtobuf());
 
                 // When we parse and check, then the parsing fails because this is an INVALID_TRANSACTION
                 assertThatThrownBy(() -> onset.parseAndCheck(ctx, inputBuffer))
@@ -289,7 +289,7 @@ class WorkflowOnsetTest extends AppTestBase {
             @DisplayName("If the transaction protobuf has unknown fields, then fail")
             void unknownFieldInTransaction() {
                 // Given a valid protobuf but with an unknown field
-                inputBuffer = DataBuffer.wrap(appendUnknownField(asByteArray(tx)));
+                inputBuffer = BufferedData.wrap(appendUnknownField(asByteArray(tx)));
 
                 // When we parse and check, then the parsing fails because has unknown fields
                 assertThatThrownBy(() -> onset.parseAndCheck(ctx, inputBuffer))
@@ -321,7 +321,7 @@ class WorkflowOnsetTest extends AppTestBase {
                 final var localTx = Transaction.newBuilder()
                         .signedTransactionBytes(Bytes.wrap(invalidProtobuf()))
                         .build();
-                inputBuffer = DataBuffer.wrap(asByteArray(localTx));
+                inputBuffer = BufferedData.wrap(asByteArray(localTx));
 
                 // When we parse and check, then the parsing fails because this is an INVALID_TRANSACTION
                 assertThatThrownBy(() -> onset.parseAndCheck(ctx, inputBuffer))
@@ -337,7 +337,7 @@ class WorkflowOnsetTest extends AppTestBase {
                 tx = Transaction.newBuilder()
                         .signedTransactionBytes(badSignedTxBytes)
                         .build();
-                inputBuffer = DataBuffer.wrap(asByteArray(tx));
+                inputBuffer = BufferedData.wrap(asByteArray(tx));
 
                 // When we parse and check, then the parsing fails because has unknown fields
                 assertThatThrownBy(() -> onset.parseAndCheck(ctx, inputBuffer))
@@ -362,7 +362,7 @@ class WorkflowOnsetTest extends AppTestBase {
                 tx = Transaction.newBuilder()
                         .signedTransactionBytes(signedTransactionBytes)
                         .build();
-                inputBuffer = DataBuffer.wrap(asByteArray(tx));
+                inputBuffer = BufferedData.wrap(asByteArray(tx));
 
                 // When we parse and check, then the parsing fails because has unknown fields
                 assertThatThrownBy(() -> onset.parseAndCheck(ctx, inputBuffer))
@@ -384,7 +384,7 @@ class WorkflowOnsetTest extends AppTestBase {
                 tx = Transaction.newBuilder()
                         .signedTransactionBytes(signedTransactionBytes)
                         .build();
-                inputBuffer = DataBuffer.wrap(asByteArray(tx));
+                inputBuffer = BufferedData.wrap(asByteArray(tx));
 
                 // When we parse and check, then the parsing fails because this is an TRANSACTION_HAS_UNKNOWN_FIELDS
                 assertThatThrownBy(() -> onset.parseAndCheck(ctx, inputBuffer))

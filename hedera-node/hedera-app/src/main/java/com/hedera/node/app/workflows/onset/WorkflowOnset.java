@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_OVERSIZE;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -30,18 +31,18 @@ import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.annotations.MaxSignedTxnSize;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.MalformedProtobufException;
 import com.hedera.pbj.runtime.UnknownFieldException;
-import com.hedera.pbj.runtime.io.Bytes;
-import com.hedera.pbj.runtime.io.BytesBuffer;
-import com.hedera.pbj.runtime.io.DataBuffer;
-import com.hedera.pbj.runtime.io.DataInput;
-import com.hedera.pbj.runtime.io.DataOutputStream;
-import com.hedera.pbj.runtime.io.RandomAccessDataInput;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.pbj.runtime.io.buffer.RandomAccessData;
+import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -51,7 +52,7 @@ import javax.inject.Singleton;
 
 /**
  * This class does some pre-processing before each workflow. It parses the provided {@link
- * RandomAccessDataInput} and checks it.
+ * RandomAccessData} and checks it.
  *
  * <p>This is used in every workflow that deals with transactions, i.e. in all workflows except the
  * query workflow. And even in the query workflow, it is used when dealing with the contained
@@ -93,7 +94,7 @@ public class WorkflowOnset {
      * @throws PreCheckException if the data is not valid
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public OnsetResult parseAndCheck(@NonNull final SessionContext ctx, @NonNull final RandomAccessDataInput buffer)
+    public OnsetResult parseAndCheck(@NonNull final SessionContext ctx, @NonNull final RandomAccessData buffer)
             throws PreCheckException {
         requireNonNull(ctx);
         requireNonNull(buffer);
@@ -119,7 +120,7 @@ public class WorkflowOnset {
         requireNonNull(ctx);
         requireNonNull(buffer);
 
-        return doParseAndCheck(ctx, DataBuffer.wrap(buffer));
+        return doParseAndCheck(ctx, BufferedData.wrap(buffer));
     }
 
     /**
@@ -143,20 +144,20 @@ public class WorkflowOnset {
         final var byteStream = new ByteArrayOutputStream();
 
         try {
-            Transaction.PROTOBUF.write(transaction, new DataOutputStream(byteStream));
+            Transaction.PROTOBUF.write(transaction, new WritableStreamingData(byteStream));
         } catch (IOException ignored) {
             throw new PreCheckException(INVALID_TRANSACTION);
         }
 
-        return doParseAndCheck(ctx, DataBuffer.wrap(byteStream.toByteArray()));
+        return doParseAndCheck(ctx, BufferedData.wrap(byteStream.toByteArray()));
     }
 
     @SuppressWarnings("deprecation")
-    private OnsetResult doParseAndCheck(@NonNull final SessionContext ctx, @NonNull final RandomAccessDataInput txData)
+    private OnsetResult doParseAndCheck(@NonNull final SessionContext ctx, @NonNull final RandomAccessData txData)
             throws PreCheckException {
 
         // 0. Fail fast if there are too many transaction bytes
-        if (txData.getRemaining() > maxSignedTxnSize) {
+        if (txData.remaining() > maxSignedTxnSize) {
             throw new PreCheckException(TRANSACTION_OVERSIZE);
         }
 
@@ -167,9 +168,11 @@ public class WorkflowOnset {
         // 2. Parse and validate the signed transaction (if available)
         final Bytes bodyBytes;
         final SignatureMap signatureMap;
-        if (tx.signedTransactionBytes().getLength() > 0) {
+        if (tx.signedTransactionBytes().length() > 0) {
             final SignedTransaction signedTransaction = parse(
-                    BytesBuffer.wrap(tx.signedTransactionBytes()), SignedTransaction.PROTOBUF, INVALID_TRANSACTION);
+                    BufferedData.wrap(
+                            asBytes(tx.signedTransactionBytes())),
+                    SignedTransaction.PROTOBUF, INVALID_TRANSACTION);
             bodyBytes = signedTransaction.bodyBytes();
             signatureMap = signedTransaction.sigMap();
         } else {
@@ -181,7 +184,7 @@ public class WorkflowOnset {
         //    the transaction, if it was a deprecated transaction, or the body of the
         //    signedTransaction, if it was not.
         final TransactionBody txBody =
-                parse(BytesBuffer.wrap(bodyBytes), TransactionBody.PROTOBUF, INVALID_TRANSACTION_BODY);
+                parse(bodyBytes.toReadableSequentialData(), TransactionBody.PROTOBUF, INVALID_TRANSACTION_BODY);
         var errorCode = checker.checkTransactionBody(txBody);
 
         // 4. return TransactionBody
@@ -193,8 +196,10 @@ public class WorkflowOnset {
         }
     }
 
-    public static <T extends Record> T parse(DataInput data, Codec<T> codec, ResponseCodeEnum parseErrorCode)
-            throws PreCheckException {
+    public static <T extends Record> T parse(
+            ReadableSequentialData data,
+            Codec<T> codec,
+            ResponseCodeEnum parseErrorCode) throws PreCheckException {
         try {
             return codec.parseStrict(data);
         } catch (MalformedProtobufException e) {

@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.token.impl;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
@@ -70,13 +72,11 @@ public class ReadableTokenStore {
      * @param id token id being looked up
      * @return token's metadata
      */
-    public TokenMetaOrLookupFailureReason getTokenMeta(final TokenID id) {
+    public TokenMetaOrLookupFailureReason getTokenMeta(@NonNull final TokenID id) {
+        requireNonNull(id);
         final var token = getTokenLeaf(id);
-
-        if (token.isEmpty()) {
-            return new TokenMetaOrLookupFailureReason(null, ResponseCodeEnum.INVALID_TOKEN_ID);
-        }
-        return new TokenMetaOrLookupFailureReason(tokenMetaFrom(token.get()), null);
+        return token.map(merkleToken -> new TokenMetaOrLookupFailureReason(tokenMetaFrom(merkleToken), null))
+                .orElseGet(() -> new TokenMetaOrLookupFailureReason(null, ResponseCodeEnum.INVALID_TOKEN_ID));
     }
 
     private TokenMetadata tokenMetaFrom(final MerkleToken token) {

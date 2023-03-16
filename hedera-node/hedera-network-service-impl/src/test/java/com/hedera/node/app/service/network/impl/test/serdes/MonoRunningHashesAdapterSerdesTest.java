@@ -21,15 +21,15 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.network.impl.serdes.MonoRunningHashesAdapterCodec;
-import com.hedera.pbj.runtime.io.DataInput;
-import com.hedera.pbj.runtime.io.DataOutput;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
+import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -41,10 +41,7 @@ class MonoRunningHashesAdapterSerdesTest {
             new RunningHash(new Hash("abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef".getBytes())));
 
     @Mock
-    private DataInput input;
-
-    @Mock
-    private DataOutput output;
+    private ReadableSequentialData input;
 
     final MonoRunningHashesAdapterCodec subject = new MonoRunningHashesAdapterCodec();
 
@@ -59,18 +56,12 @@ class MonoRunningHashesAdapterSerdesTest {
     void canSerializeAndDeserializeFromAppropriateStream() throws IOException, ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructable(new ClassConstructorPair(Hash.class, Hash::new));
         final var baos = new ByteArrayOutputStream();
-        final var actualOut = new SerializableDataOutputStream(baos);
-        subject.write(SOME_HASHES, output);
+        final var actualOut = new WritableStreamingData(baos) {};
+        subject.write(SOME_HASHES, actualOut);
         actualOut.flush();
 
         final var actualIn = new SerializableDataInputStream(new ByteArrayInputStream(baos.toByteArray()));
-        final var parsed = subject.parse(input);
+        final var parsed = subject.parse(new ReadableStreamingData(actualIn));
         assertEquals(SOME_HASHES.getHash(), parsed.getHash());
-    }
-
-    @Test
-    void doesntSupportOtherStreams() {
-        assertThrows(IllegalArgumentException.class, () -> subject.parse(input));
-        assertThrows(IllegalArgumentException.class, () -> subject.write(SOME_HASHES, output));
     }
 }

@@ -50,10 +50,10 @@ import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
-import com.hedera.pbj.runtime.io.Bytes;
-import com.hedera.pbj.runtime.io.DataBuffer;
-import com.hedera.pbj.runtime.io.DataOutputStream;
-import com.hedera.pbj.runtime.io.RandomAccessDataInput;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.pbj.runtime.io.buffer.RandomAccessData;
+import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.utility.AutoCloseableWrapper;
@@ -149,8 +149,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     @Override
     public void handleQuery(
             @NonNull final SessionContext session,
-            @NonNull final RandomAccessDataInput requestBuffer,
-            @NonNull final DataBuffer responseBuffer) {
+            @NonNull final RandomAccessData requestBuffer,
+            @NonNull final BufferedData responseBuffer) {
         requireNonNull(session);
         requireNonNull(requestBuffer);
         requireNonNull(responseBuffer);
@@ -295,7 +295,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         }
     }
 
-    final class ByteArrayDataOutput extends DataOutputStream {
+    final class ByteArrayDataOutput extends WritableStreamingData {
         private final ByteArrayOutputStream out;
 
         public ByteArrayDataOutput(ByteArrayOutputStream out) {

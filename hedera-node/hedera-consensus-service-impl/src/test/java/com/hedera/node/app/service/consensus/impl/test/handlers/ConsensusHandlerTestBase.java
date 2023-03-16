@@ -38,7 +38,7 @@ import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.QueryContext;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
-import com.hedera.pbj.runtime.io.Bytes;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
@@ -143,7 +143,7 @@ public class ConsensusHandlerTestBase {
     }
 
     protected void givenValidTopic() {
-        givenValidTopic(autoRenewId.accountNum().get());
+        givenValidTopic(autoRenewId.accountNum());
     }
 
     protected void givenValidTopic(long autoRenewAccountNumber) {
@@ -179,7 +179,7 @@ public class ConsensusHandlerTestBase {
                 .adminKey(key)
                 .submitKey(key)
                 .autoRenewPeriod(autoRenewSecs)
-                .autoRenewAccountNumber(autoRenewId.accountNum().get())
+                .autoRenewAccountNumber(autoRenewId.accountNum())
                 .expiry(expirationTime)
                 .sequenceNumber(sequenceNumber)
                 .memo(memo)

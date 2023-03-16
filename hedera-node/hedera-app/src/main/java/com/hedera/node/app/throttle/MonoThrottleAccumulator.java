@@ -25,8 +25,8 @@ import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
 import com.hedera.node.app.service.mono.throttling.annotations.HapiThrottle;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
-import com.hedera.pbj.runtime.io.Bytes;
-import com.hedera.pbj.runtime.io.DataOutputStream;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
 import javax.inject.Inject;
@@ -52,7 +52,7 @@ public class MonoThrottleAccumulator implements ThrottleAccumulator {
             // creating temporary objects like this and doing so much protobuf serialization
             // for no good reason!
             var out = new ByteArrayOutputStream();
-            TransactionBody.PROTOBUF.write(txn, new DataOutputStream(out));
+            TransactionBody.PROTOBUF.write(txn, new WritableStreamingData(out));
             final var txnBytes = out.toByteArray();
 
             final var signedTx = SignedTransaction.newBuilder()
@@ -60,7 +60,7 @@ public class MonoThrottleAccumulator implements ThrottleAccumulator {
                     .build();
 
             out = new ByteArrayOutputStream();
-            SignedTransaction.PROTOBUF.write(signedTx, new DataOutputStream(out));
+            SignedTransaction.PROTOBUF.write(signedTx, new WritableStreamingData(out));
 
             final var adapter = SignedTxnAccessor.uncheckedFrom(Transaction.newBuilder()
                     .signedTransactionBytes(Bytes.wrap(out.toByteArray()))

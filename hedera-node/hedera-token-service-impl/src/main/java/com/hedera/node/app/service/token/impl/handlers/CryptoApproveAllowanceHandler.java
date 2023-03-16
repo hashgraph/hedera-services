@@ -18,8 +18,10 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
+import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -35,7 +37,9 @@ import javax.inject.Singleton;
 @Singleton
 public class CryptoApproveAllowanceHandler implements TransactionHandler {
     @Inject
-    public CryptoApproveAllowanceHandler() {}
+    public CryptoApproveAllowanceHandler() {
+        // Exists for injection
+    }
 
     /**
      * Pre-handles a {@link HederaFunctionality#CRYPTO_APPROVE_ALLOWANCE} transaction, returning the
@@ -47,24 +51,24 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
      */
     public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
-        final var op = context.getTxn().cryptoApproveAllowance().orElseThrow();
+        final var op = context.getTxn().cryptoApproveAllowanceOrThrow();
         var failureStatus = INVALID_ALLOWANCE_OWNER_ID;
 
-        for (final var allowance : op.cryptoAllowances()) {
-            context.addNonPayerKey(allowance.owner(), failureStatus);
+        for (final var allowance : op.cryptoAllowancesOrElse(emptyList())) {
+            context.addNonPayerKey(allowance.ownerOrElse(AccountID.DEFAULT), failureStatus);
         }
-        for (final var allowance : op.tokenAllowances()) {
-            context.addNonPayerKey(allowance.owner(), failureStatus);
+        for (final var allowance : op.tokenAllowancesOrElse(emptyList())) {
+            context.addNonPayerKey(allowance.ownerOrElse(AccountID.DEFAULT), failureStatus);
         }
-        for (final var allowance : op.nftAllowances()) {
-            final var ownerId = allowance.owner();
+        for (final var allowance : op.nftAllowancesOrElse(emptyList())) {
+            final var ownerId = allowance.ownerOrElse(AccountID.DEFAULT);
             // If a spender who is granted approveForAll from owner and is granting
             // allowance for a serial to another spender, need signature from the approveForAll
             // spender
-            var operatorId = allowance.delegatingSpender() != null ? allowance.delegatingSpender() : ownerId;
+            var operatorId = allowance.delegatingSpenderOrElse(ownerId);
             // If approveForAll is set to true, need signature from owner
             // since only the owner can grant approveForAll
-            if (allowance.approvedForAll().orElse(false)) {
+            if (allowance.hasApprovedForAll() && allowance.approvedForAllOrThrow()) {
                 operatorId = ownerId;
             }
             if (operatorId != ownerId) {

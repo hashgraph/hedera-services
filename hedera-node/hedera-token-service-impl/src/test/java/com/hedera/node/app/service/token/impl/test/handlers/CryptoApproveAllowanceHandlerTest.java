@@ -39,7 +39,6 @@ import com.hedera.node.app.service.token.impl.handlers.CryptoApproveAllowanceHan
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
@@ -71,14 +70,14 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
             .spender(spender)
             .owner(owner)
             .tokenId(nft)
-            .approvedForAll(Optional.of(Boolean.valueOf(true)))
+            .approvedForAll(Boolean.TRUE)
             .serialNumbers(List.of(1L, 2L))
             .build();
     private final NftAllowance nftAllowanceWithDelegatingSpender = NftAllowance.newBuilder()
             .spender(spender)
             .owner(owner)
             .tokenId(nft)
-            .approvedForAll(Optional.of(Boolean.valueOf(false)))
+            .approvedForAll(Boolean.FALSE)
             .serialNumbers(List.of(1L, 2L))
             .delegatingSpender(delegatingSpender)
             .build();
@@ -87,8 +86,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoApproveAllowanceVanilla() {
-        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum().get())))
-                .willReturn(ownerAccount);
+        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum()))).willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, false);
@@ -101,8 +99,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoApproveAllowanceFailsWithInvalidOwner() {
-        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum().get())))
-                .willReturn(null);
+        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum()))).willReturn(null);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, false);
         final var context = new PreHandleContext(store, txn, payer);
@@ -114,8 +111,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoApproveAllowanceDoesntAddIfOwnerSameAsPayer() {
-        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum().get())))
-                .willReturn(ownerAccount);
+        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum()))).willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
         final var txn = cryptoApproveAllowanceTransaction(owner, false);
@@ -128,11 +124,9 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoApproveAllowanceAddsDelegatingSpender() {
-        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum().get())))
-                .willReturn(ownerAccount);
+        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum()))).willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
-        given(accounts.get(EntityNumVirtualKey.fromLong(
-                        delegatingSpender.accountNum().get())))
+        given(accounts.get(EntityNumVirtualKey.fromLong(delegatingSpender.accountNum())))
                 .willReturn(payerAccount);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, true);
@@ -145,11 +139,9 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoApproveAllowanceFailsIfDelegatingSpenderMissing() {
-        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum().get())))
-                .willReturn(ownerAccount);
+        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum()))).willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
-        given(accounts.get(EntityNumVirtualKey.fromLong(
-                        delegatingSpender.accountNum().get())))
+        given(accounts.get(EntityNumVirtualKey.fromLong(delegatingSpender.accountNum())))
                 .willReturn(null);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, true);

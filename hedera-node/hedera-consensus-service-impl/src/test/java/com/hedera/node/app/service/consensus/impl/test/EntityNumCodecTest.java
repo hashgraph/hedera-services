@@ -18,50 +18,53 @@ package com.hedera.node.app.service.consensus.impl.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.consensus.impl.codecs.EntityNumCodec;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.pbj.runtime.io.DataInput;
-import com.hedera.pbj.runtime.io.DataOutput;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+
+import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
+import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class EntityNumCodecTest {
     private static final EntityNum SOME_NUM = EntityNum.fromLong(666L);
 
-    @Mock
-    private DataInput input;
-
-    @Mock
-    private DataOutput output;
-
     final EntityNumCodec subject = new EntityNumCodec();
 
     @Test
     void doesntSupportUnnecessary() {
-        assertThrows(UnsupportedOperationException.class, () -> subject.measure(input));
-        assertThrows(UnsupportedOperationException.class, () -> subject.fastEquals(SOME_NUM, input));
+        assertThrows(UnsupportedOperationException.class, () -> subject.measure(null));
+        assertThrows(UnsupportedOperationException.class, () -> subject.fastEquals(SOME_NUM, null));
     }
 
     @Test
-    void canDeserializeFromAppropriateStream() throws IOException {
-        given(input.readInt()).willReturn(SOME_NUM.intValue());
+    void codecWorks() throws IOException {
+        final var subject = new EntityNumCodec();
 
-        final var parsed = subject.parse(input);
+        final var baos = new ByteArrayOutputStream();
+        final var out = new WritableStreamingData(new SerializableDataOutputStream(baos));
+        final var item = EntityNum.fromLong(666L);
 
-        assertEquals(SOME_NUM, parsed);
-    }
+        subject.write(item, out);
 
-    @Test
-    void canSerializeToAppropriateStream() throws IOException {
-        subject.write(SOME_NUM, output);
+        out.flush();
+        out.close();
 
-        verify(output).writeInt(SOME_NUM.intValue());
+        final var bais = new ByteArrayInputStream(baos.toByteArray());
+        final var in = new ReadableStreamingData(bais);
+
+        final var parsedItem = subject.parse(in);
+        assertEquals(item, parsedItem);
+
+        assertThrows(UnsupportedOperationException.class, () -> subject.measure(in));
+        assertThrows(UnsupportedOperationException.class, () -> subject.fastEquals(item, in));
     }
 }

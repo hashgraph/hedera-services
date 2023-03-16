@@ -104,11 +104,9 @@ public class TransactionDispatcher {
         final var topicStore = writableStoreFactory.createTopicStore();
         switch (function) {
             case CONSENSUS_CREATE_TOPIC -> dispatchConsensusCreateTopic(
-                    txn.consensusCreateTopic().orElseThrow(), topicStore, usageLimits);
-            case CONSENSUS_UPDATE_TOPIC -> dispatchConsensusUpdateTopic(
-                    txn.consensusUpdateTopic().orElseThrow(), topicStore);
-            case CONSENSUS_DELETE_TOPIC -> dispatchConsensusDeleteTopic(
-                    txn.consensusDeleteTopic().orElseThrow(), topicStore);
+                    txn.consensusCreateTopicOrThrow(), topicStore, usageLimits);
+            case CONSENSUS_UPDATE_TOPIC -> dispatchConsensusUpdateTopic(txn.consensusUpdateTopicOrThrow(), topicStore);
+            case CONSENSUS_DELETE_TOPIC -> dispatchConsensusDeleteTopic(txn.consensusDeleteTopicOrThrow(), topicStore);
             case CONSENSUS_SUBMIT_MESSAGE -> dispatchConsensusSubmitMessage(txn, topicStore);
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
         }

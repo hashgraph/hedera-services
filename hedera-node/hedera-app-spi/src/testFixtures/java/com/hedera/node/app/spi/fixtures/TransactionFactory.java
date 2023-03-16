@@ -25,8 +25,8 @@ import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.pbj.runtime.Codec;
-import com.hedera.pbj.runtime.io.Bytes;
-import com.hedera.pbj.runtime.io.DataOutputStream;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -62,7 +62,7 @@ public interface TransactionFactory {
     default <R extends Record> byte[] asByteArray(@NonNull final Codec<R> codec, @NonNull final R r) {
         try {
             final var byteStream = new ByteArrayOutputStream();
-            codec.write(r, new DataOutputStream(byteStream));
+            codec.write(r, new WritableStreamingData(byteStream));
             return byteStream.toByteArray();
         } catch (IOException ex) {
             throw new AssertionError(ex);

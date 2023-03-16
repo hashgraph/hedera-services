@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.accounts.AccountAccess;
@@ -38,9 +39,6 @@ import java.util.List;
  * {@link com.hedera.node.app.spi.workflows.TransactionHandler}.
  */
 public class PreHandleContext {
-    private static final AccountID DEFAULT_ACCOUNT_ID = AccountID.newBuilder().build();
-    private static final ContractID DEFAULT_CONTRACT_ID =
-            ContractID.newBuilder().build();
 
     private final AccountAccess accountAccess;
 
@@ -53,7 +51,7 @@ public class PreHandleContext {
     private PreHandleContext innerContext;
 
     public PreHandleContext(@NonNull final AccountAccess accountAccess, @NonNull final TransactionBody txn) {
-        this(accountAccess, txn, txn.transactionID().accountID(), OK);
+        this(accountAccess, txn, txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT), OK);
     }
 
     public PreHandleContext(
@@ -67,7 +65,11 @@ public class PreHandleContext {
             @NonNull final AccountAccess accountAccess,
             @NonNull final TransactionBody txn,
             @NonNull final ResponseCodeEnum status) {
-        this(accountAccess, txn, txn.transactionID().accountID(), status);
+        this(
+                accountAccess,
+                txn,
+                txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT),
+                status);
     }
 
     public PreHandleContext(
@@ -246,6 +248,7 @@ public class PreHandleContext {
         return this;
     }
 
+    @SuppressWarnings("UnusedReturnValue")
     @NonNull
     public PreHandleContext addNonPayerKeyIfReceiverSigRequired(@NonNull final ContractID id) {
         if (isNotNeeded(requireNonNull(id))) {
@@ -287,7 +290,7 @@ public class PreHandleContext {
      */
     private boolean isNotNeeded(@NonNull final AccountID id) {
         return id.equals(payer)
-                || id.equals(DEFAULT_ACCOUNT_ID)
+                || id.equals(AccountID.DEFAULT)
                 || designatesAccountRemoval(id)
                 || status != OK
                 || payerKey == null;
@@ -301,7 +304,7 @@ public class PreHandleContext {
      * @return true if the lookup is not needed, false otherwise
      */
     private boolean isNotNeeded(@NonNull final ContractID id) {
-        return id.equals(DEFAULT_CONTRACT_ID) || designatesContractRemoval(id) || status != OK || payerKey == null;
+        return id.equals(ContractID.DEFAULT) || designatesContractRemoval(id) || status != OK || payerKey == null;
     }
 
     /**
@@ -311,10 +314,7 @@ public class PreHandleContext {
      * @return true if the given accountID is
      */
     private boolean designatesAccountRemoval(@NonNull final AccountID id) {
-        return id.shardNum() == 0
-                && id.realmNum() == 0
-                && id.accountNum().orElse(0L) == 0
-                && id.alias().isEmpty();
+        return id.shardNum() == 0 && id.realmNum() == 0 && id.accountNumOrElse(0L) == 0 && !id.hasAlias();
     }
 
     /**
@@ -324,10 +324,7 @@ public class PreHandleContext {
      * @return true if the given contractId is
      */
     private boolean designatesContractRemoval(@NonNull final ContractID id) {
-        return id.shardNum() == 0
-                && id.realmNum() == 0
-                && id.contractNum().orElse(0L) == 0
-                && id.evmAddress().isEmpty();
+        return id.shardNum() == 0 && id.realmNum() == 0 && id.contractNumOrElse(0L) == 0 && !id.hasEvmAddress();
     }
 
     /**

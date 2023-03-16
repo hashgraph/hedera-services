@@ -56,7 +56,7 @@ import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.pbj.runtime.io.Bytes;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -180,7 +180,7 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
     @Test
     @DisplayName("Fails handle if topic doesn't exist")
     void topicDoesntExist() {
-        final var txn = newDeleteTxn().consensusDeleteTopic().get();
+        final var txn = newDeleteTxn().consensusDeleteTopicOrThrow();
 
         writableTopicState = emptyWritableTopicState();
         given(writableStates.<EntityNum, Topic>get(TOPICS)).willReturn(writableTopicState);
@@ -193,7 +193,7 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
     @Test
     @DisplayName("Fails handle if admin key doesn't exist on topic to be deleted")
     void adminKeyDoesntExist() {
-        final var txn = newDeleteTxn().consensusDeleteTopic().get();
+        final var txn = newDeleteTxn().consensusDeleteTopicOrThrow();
 
         topic = new Topic(
                 topicId.topicNum(),
@@ -219,7 +219,7 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
     @Test
     @DisplayName("Handle works as expected")
     void handleWorksAsExpected() {
-        final var txn = newDeleteTxn().consensusDeleteTopic().get();
+        final var txn = newDeleteTxn().consensusDeleteTopicOrThrow();
 
         final var existingTopic = writableStore.get(topicEntityNum.longValue());
         assertTrue(existingTopic.isPresent());

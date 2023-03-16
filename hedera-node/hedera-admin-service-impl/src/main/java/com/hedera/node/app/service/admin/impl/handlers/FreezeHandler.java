@@ -28,8 +28,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#FREEZE}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#FREEZE}.
  */
 @Singleton
 public class FreezeHandler implements TransactionHandler {

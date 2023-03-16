@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token.impl.handlers;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
@@ -35,7 +36,9 @@ import javax.inject.Singleton;
 @Singleton
 public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
     @Inject
-    public TokenRevokeKycFromAccountHandler() {}
+    public TokenRevokeKycFromAccountHandler() {
+        // Exists for injection
+    }
 
     /**
      * This method is called during the pre-handle workflow.
@@ -54,8 +57,8 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
      */
     public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore) {
         requireNonNull(context);
-        final var op = context.getTxn().tokenRevokeKyc().orElseThrow();
-        final var tokenMeta = tokenStore.getTokenMeta(op.token());
+        final var op = context.getTxn().tokenRevokeKycOrThrow();
+        final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
 
         if (!tokenMeta.failed()) {
             tokenMeta.metadata().kycKey().ifPresent(context::addToReqNonPayerKeys);

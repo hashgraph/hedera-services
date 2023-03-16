@@ -55,8 +55,7 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoDeleteAllowanceVanilla() {
-        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum().get())))
-                .willReturn(ownerAccount);
+        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum()))).willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
         final var txn = cryptoDeleteAllowanceTransaction(payer);
@@ -69,8 +68,7 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoDeleteAllowanceDoesntAddIfOwnerSameAsPayer() {
-        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum().get())))
-                .willReturn(ownerAccount);
+        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum()))).willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
         final var txn = cryptoDeleteAllowanceTransaction(owner);
@@ -84,8 +82,7 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoHandlerTestBase {
     @Test
     void cryptoDeleteAllowanceFailsIfPayerOrOwnerNotExist() {
         var txn = cryptoDeleteAllowanceTransaction(owner);
-        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum().get())))
-                .willReturn(null);
+        given(accounts.get(EntityNumVirtualKey.fromLong(owner.accountNum()))).willReturn(null);
 
         final var context1 = new PreHandleContext(store, txn, owner);
         subject.preHandle(context1);

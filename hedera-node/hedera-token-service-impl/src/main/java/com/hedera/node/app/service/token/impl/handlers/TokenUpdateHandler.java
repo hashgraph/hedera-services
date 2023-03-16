@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -46,10 +47,12 @@ import javax.inject.Singleton;
 @Singleton
 public class TokenUpdateHandler implements TransactionHandler {
     @Inject
-    public TokenUpdateHandler() {}
+    public TokenUpdateHandler() {
+        // Exists for injection
+    }
 
     /**
-     * Pre-handles a {@link com.hedera.hapi.node.base.HederaFunctionality#TokenUpdate}
+     * Pre-handles a {@link HederaFunctionality#TOKEN_UPDATE}
      * transaction, returning the metadata required to, at minimum, validate the signatures of all
      * required signing keys.
      *
@@ -63,8 +66,8 @@ public class TokenUpdateHandler implements TransactionHandler {
      */
     public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore) {
         requireNonNull(context);
-        final var op = context.getTxn().tokenUpdate().orElseThrow();
-        final var tokenId = op.token();
+        final var op = context.getTxn().tokenUpdateOrThrow();
+        final var tokenId = op.tokenOrElse(TokenID.DEFAULT);
 
         final var tokenMeta = tokenStore.getTokenMeta(tokenId);
         if (tokenMeta.failed()) {
@@ -74,14 +77,14 @@ public class TokenUpdateHandler implements TransactionHandler {
         final var tokenMetadata = tokenMeta.metadata();
         final var adminKey = tokenMetadata.adminKey();
         adminKey.ifPresent(context::addToReqNonPayerKeys);
-        if (op.autoRenewAccount() != null) {
-            context.addNonPayerKey(op.autoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
+        if (op.hasAutoRenewAccount()) {
+            context.addNonPayerKey(op.autoRenewAccountOrThrow(), INVALID_AUTORENEW_ACCOUNT);
         }
-        if (op.treasury() != null) {
-            context.addNonPayerKey(op.treasury());
+        if (op.hasTreasury()) {
+            context.addNonPayerKey(op.treasuryOrThrow());
         }
-        if (op.adminKey() != null) {
-            final var newAdminKey = asHederaKey(op.adminKey());
+        if (op.hasAdminKey()) {
+            final var newAdminKey = asHederaKey(op.adminKeyOrThrow());
             newAdminKey.ifPresent(context::addToReqNonPayerKeys);
         }
     }

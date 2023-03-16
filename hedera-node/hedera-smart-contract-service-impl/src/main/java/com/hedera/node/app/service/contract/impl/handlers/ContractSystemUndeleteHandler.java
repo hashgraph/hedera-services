@@ -28,13 +28,14 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#SYSTEM_UNDELETE}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#SYSTEM_UNDELETE}.
  */
 @Singleton
 public class ContractSystemUndeleteHandler implements TransactionHandler {
     @Inject
-    public ContractSystemUndeleteHandler() {}
+    public ContractSystemUndeleteHandler() {
+        // Exists for injection
+    }
 
     /**
      * This method is called during the pre-handle workflow.

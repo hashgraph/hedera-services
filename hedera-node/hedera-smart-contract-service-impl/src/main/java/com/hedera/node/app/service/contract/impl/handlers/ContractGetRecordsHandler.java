@@ -32,18 +32,19 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#CONTRACT_GET_RECORDS}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONTRACT_GET_RECORDS}.
  */
 @Singleton
 public class ContractGetRecordsHandler extends PaidQueryHandler {
     @Inject
-    public ContractGetRecordsHandler() {}
+    public ContractGetRecordsHandler() {
+        // Exists for injection
+    }
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
-        return query.contractGetRecords().orElseThrow().header();
+        return query.contractGetRecordsOrThrow().header();
     }
 
     @Override

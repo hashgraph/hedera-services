@@ -33,10 +33,11 @@ import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.pbj.runtime.io.Bytes;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.OptionalLong;
+
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.assertj.core.api.Assertions;
 
 public final class ConsensusTestUtils {

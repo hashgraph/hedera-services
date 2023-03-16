@@ -41,8 +41,8 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
             AccountID.newBuilder().accountNum(3213).build();
     private final AccountID transferAccountId =
             AccountID.newBuilder().accountNum(32134).build();
-    private final Long deleteAccountNum = deleteAccountId.accountNum().get();
-    private final Long transferAccountNum = transferAccountId.accountNum().get();
+    private final Long deleteAccountNum = deleteAccountId.accountNum();
+    private final Long transferAccountNum = transferAccountId.accountNum();
 
     @Mock
     private MerkleAccount deleteAccount;
@@ -194,7 +194,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         given(accounts.get(EntityNumVirtualKey.fromLong(deleteAccountNum))).willReturn(deleteAccount);
         given(deleteAccount.getAccountKey()).willReturn(keyUsed);
 
-        final var txn = deleteAccountTransaction(deleteAccountId, AccountID.DEFAULT_INSTANCE);
+        final var txn = deleteAccountTransaction(deleteAccountId, AccountID.DEFAULT);
 
         final var context = new PreHandleContext(store, txn, payer);
         subject.preHandle(context);

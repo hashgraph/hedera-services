@@ -23,8 +23,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.token.impl.serdes.StringCodec;
-import com.hedera.pbj.runtime.io.DataInput;
-import com.hedera.pbj.runtime.io.DataOutput;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,10 +36,10 @@ class StringSerdesTest {
     private static final String SOME_STRING = "TestString";
 
     @Mock
-    private DataInput in;
+    private ReadableSequentialData in;
 
     @Mock
-    private DataOutput out;
+    private WritableSequentialData out;
 
     final StringCodec subject = new StringCodec();
 

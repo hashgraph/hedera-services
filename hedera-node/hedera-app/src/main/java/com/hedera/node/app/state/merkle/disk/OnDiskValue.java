@@ -18,9 +18,9 @@ package com.hedera.node.app.state.merkle.disk;
 
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.pbj.runtime.Codec;
-import com.hedera.pbj.runtime.io.DataBuffer;
-import com.hedera.pbj.runtime.io.DataInputStream;
-import com.hedera.pbj.runtime.io.DataOutputStream;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
+import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
@@ -96,20 +96,20 @@ public class OnDiskValue<V> implements VirtualValue {
     /** {@inheritDoc} */
     @Override
     public void serialize(@NonNull final ByteBuffer byteBuffer) throws IOException {
-        final var output = DataBuffer.wrap(byteBuffer);
+        final var output = BufferedData.wrap(byteBuffer);
         codec.write(value, output);
     }
 
     /** {@inheritDoc} */
     @Override
     public void serialize(@NonNull final SerializableDataOutputStream serializableDataOutputStream) throws IOException {
-        codec.write(value, new DataOutputStream(serializableDataOutputStream));
+        codec.write(value, new WritableStreamingData(serializableDataOutputStream));
     }
 
     /** {@inheritDoc} */
     @Override
     public void deserialize(@NonNull final ByteBuffer byteBuffer, int ignored) throws IOException {
-        final var input = DataBuffer.wrap(byteBuffer);
+        final var input = BufferedData.wrap(byteBuffer);
         value = codec.parse(input);
     }
 
@@ -117,7 +117,7 @@ public class OnDiskValue<V> implements VirtualValue {
     @Override
     public void deserialize(@NonNull final SerializableDataInputStream serializableDataInputStream, int ignored)
             throws IOException {
-        value = codec.parse(new DataInputStream(serializableDataInputStream));
+        value = codec.parse(new ReadableStreamingData(serializableDataInputStream));
     }
 
     /** {@inheritDoc} */

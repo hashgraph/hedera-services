@@ -23,8 +23,8 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.impl.serdes.EntityNumCodec;
-import com.hedera.pbj.runtime.io.DataInput;
-import com.hedera.pbj.runtime.io.DataOutput;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,10 +36,10 @@ class EntityNumSerdesTest {
     private static final EntityNum SOME_NUM = EntityNum.fromLong(666L);
 
     @Mock
-    private DataInput input;
+    private ReadableSequentialData input;
 
     @Mock
-    private DataOutput output;
+    private WritableSequentialData output;
 
     final EntityNumCodec subject = new EntityNumCodec();
 

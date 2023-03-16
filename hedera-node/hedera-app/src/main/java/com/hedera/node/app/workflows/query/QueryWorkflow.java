@@ -18,8 +18,8 @@ package com.hedera.node.app.workflows.query;
 
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.SessionContext;
-import com.hedera.pbj.runtime.io.DataBuffer;
-import com.hedera.pbj.runtime.io.RandomAccessDataInput;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.hedera.pbj.runtime.io.buffer.RandomAccessData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /** A workflow for processing queries. */
@@ -34,6 +34,6 @@ public interface QueryWorkflow {
      */
     void handleQuery(
             @NonNull SessionContext session,
-            @NonNull RandomAccessDataInput requestBuffer,
-            @NonNull DataBuffer responseBuffer);
+            @NonNull RandomAccessData requestBuffer,
+            @NonNull BufferedData responseBuffer);
 }

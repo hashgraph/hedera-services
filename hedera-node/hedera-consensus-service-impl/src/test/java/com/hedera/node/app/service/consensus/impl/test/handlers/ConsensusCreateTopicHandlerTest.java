@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.consensus.impl.test.handlers.Consensus
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_B;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertOkResponse;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -273,7 +274,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var adminKey = SIMPLE_KEY_A;
         final var submitKey = SIMPLE_KEY_B;
         final var op =
-                newCreateTxn(adminKey, submitKey, true).consensusCreateTopic().get();
+                newCreateTxn(adminKey, submitKey, true).consensusCreateTopicOrThrow();
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(handleContext.attributeValidator()).willReturn(validator);
@@ -282,7 +283,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
                 .willReturn(new ExpiryMeta(
                         1_234_567L + op.autoRenewPeriod().seconds(),
                         op.autoRenewPeriod().seconds(),
-                        op.autoRenewAccount().accountNum().get()));
+                        op.autoRenewAccount().accountNum()));
         given(handleContext.newEntityNumSupplier()).willReturn(() -> 1_234L);
 
         subject.handle(handleContext, op, config, recordBuilder, topicStore);
@@ -295,9 +296,9 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         assertEquals("memo", actualTopic.memo());
         assertEquals(adminKey, actualTopic.adminKey());
         assertEquals(submitKey, actualTopic.submitKey());
-        assertEquals(1_234_567L + op.autoRenewPeriod().seconds(), actualTopic.expiry());
+        assertEquals(1234667, actualTopic.expiry());
         assertEquals(op.autoRenewPeriod().seconds(), actualTopic.autoRenewPeriod());
-        assertEquals(AUTO_RENEW_ACCOUNT.accountNum().get(), actualTopic.autoRenewAccountNumber());
+        assertEquals(AUTO_RENEW_ACCOUNT.accountNum(), actualTopic.autoRenewAccountNumber());
         assertEquals(1_234L, recordBuilder.getCreatedTopic());
         assertTrue(topicStore.get(1234L).isPresent());
     }
@@ -305,7 +306,8 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
     @Test
     @DisplayName("Handle works as expected without keys")
     void handleDoesntRequireKeys() {
-        final var op = newCreateTxn(null, null, true).consensusCreateTopic().get();
+        final var op = newCreateTxn(null, null, true)
+                .consensusCreateTopicOrThrow();
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(handleContext.attributeValidator()).willReturn(validator);
@@ -314,7 +316,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
                 .willReturn(new ExpiryMeta(
                         1_234_567L + op.autoRenewPeriod().seconds(),
                         op.autoRenewPeriod().seconds(),
-                        op.autoRenewAccount().accountNum().get()));
+                        op.autoRenewAccount().accountNumOrElse(0L)));
         given(handleContext.newEntityNumSupplier()).willReturn(() -> 1_234L);
 
         subject.handle(handleContext, op, config, recordBuilder, topicStore);
@@ -329,7 +331,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         assertNull(actualTopic.submitKey());
         assertEquals(1_234_567L + op.autoRenewPeriod().seconds(), actualTopic.expiry());
         assertEquals(op.autoRenewPeriod().seconds(), actualTopic.autoRenewPeriod());
-        assertEquals(AUTO_RENEW_ACCOUNT.accountNum().get(), actualTopic.autoRenewAccountNumber());
+        assertEquals(AUTO_RENEW_ACCOUNT.accountNum(), actualTopic.autoRenewAccountNumber());
         assertEquals(1_234L, recordBuilder.getCreatedTopic());
         assertTrue(topicStore.get(1234L).isPresent());
     }
@@ -337,7 +339,8 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
     @Test
     @DisplayName("Translates INVALID_EXPIRATION_TIME to AUTO_RENEW_DURATION_NOT_IN_RANGE")
     void translatesInvalidExpiryException() {
-        final var op = newCreateTxn(null, null, true).consensusCreateTopic().get();
+        final var op = newCreateTxn(null, null, true)
+                .consensusCreateTopicOrThrow();
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(handleContext.attributeValidator()).willReturn(validator);
@@ -354,7 +357,8 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
     @Test
     @DisplayName("Doesnt translate INVALID_AUTORENEW_ACCOUNT")
     void doesntTranslateInvalidAutoRenewNum() {
-        final var op = newCreateTxn(null, null, true).consensusCreateTopic().get();
+        final var op = newCreateTxn(null, null, true)
+                .consensusCreateTopicOrThrow();
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(handleContext.attributeValidator()).willReturn(validator);
@@ -374,7 +378,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var adminKey = SIMPLE_KEY_A;
         final var submitKey = SIMPLE_KEY_B;
         final var op =
-                newCreateTxn(adminKey, submitKey, true).consensusCreateTopic().get();
+                newCreateTxn(adminKey, submitKey, true).consensusCreateTopicOrThrow();
 
         given(handleContext.attributeValidator()).willReturn(validator);
 
@@ -394,7 +398,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var adminKey = SIMPLE_KEY_A;
         final var submitKey = SIMPLE_KEY_B;
         final var op =
-                newCreateTxn(adminKey, submitKey, true).consensusCreateTopic().get();
+                newCreateTxn(adminKey, submitKey, true).consensusCreateTopicOrThrow();
 
         given(handleContext.attributeValidator()).willReturn(validator);
 
@@ -413,7 +417,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var adminKey = SIMPLE_KEY_A;
         final var submitKey = SIMPLE_KEY_B;
         final var op =
-                newCreateTxn(adminKey, submitKey, true).consensusCreateTopic().get();
+                newCreateTxn(adminKey, submitKey, true).consensusCreateTopicOrThrow();
         final var writableState = writableTopicStateWithOneKey();
 
         given(writableStates.<EntityNum, Topic>get(TOPICS)).willReturn(writableState);
@@ -436,7 +440,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var adminKey = SIMPLE_KEY_A;
         final var submitKey = SIMPLE_KEY_B;
         final var op =
-                newCreateTxn(adminKey, submitKey, true).consensusCreateTopic().get();
+                newCreateTxn(adminKey, submitKey, true).consensusCreateTopicOrThrow();
         final var writableState = writableTopicStateWithOneKey();
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));

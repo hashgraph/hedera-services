@@ -24,7 +24,9 @@ import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
@@ -39,19 +41,20 @@ import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hedera.pbj.runtime.io.Bytes;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#CONSENSUS_CREATE_TOPIC}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONSENSUS_CREATE_TOPIC}.
  */
 @Singleton
 public class ConsensusCreateTopicHandler implements TransactionHandler {
     @Inject
-    public ConsensusCreateTopicHandler() {}
+    public ConsensusCreateTopicHandler() {
+        // Exists for injection
+    }
 
     /**
      * This method is called during the pre-handle workflow.
@@ -69,8 +72,8 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
      */
     public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
-        final var op = context.getTxn().consensusCreateTopic().orElseThrow();
-        final var adminKey = asHederaKey(op.adminKey());
+        final var op = context.getTxn().consensusCreateTopicOrThrow();
+        final var adminKey = asHederaKey(op.adminKeyOrElse(Key.DEFAULT));
         adminKey.ifPresent(context::addToReqNonPayerKeys);
 
         if (op.autoRenewAccount() != null) {
@@ -116,16 +119,14 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         builder.memo(op.memo());
 
         final var impliedExpiry = handleContext.consensusNow().getEpochSecond()
-                + op.autoRenewPeriod().seconds();
+                + op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds();
         final var entityExpiryMeta = new ExpiryMeta(
                 impliedExpiry,
-                op.autoRenewPeriod().seconds(),
+                op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds(),
                 // Shard and realm will be ignored if num is NA
                 op.autoRenewAccount() != null ? op.autoRenewAccount().shardNum() : NA,
                 op.autoRenewAccount() != null ? op.autoRenewAccount().realmNum() : NA,
-                op.autoRenewAccount() != null
-                        ? op.autoRenewAccount().accountNum().orElse(NA)
-                        : NA);
+                op.autoRenewAccount() != null ? op.autoRenewAccount().accountNumOrElse(NA) : NA);
 
         try {
             final var effectiveExpiryMeta =

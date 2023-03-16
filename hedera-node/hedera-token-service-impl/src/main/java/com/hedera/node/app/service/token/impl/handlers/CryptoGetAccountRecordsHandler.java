@@ -38,12 +38,14 @@ import javax.inject.Singleton;
 @Singleton
 public class CryptoGetAccountRecordsHandler extends PaidQueryHandler {
     @Inject
-    public CryptoGetAccountRecordsHandler() {}
+    public CryptoGetAccountRecordsHandler() {
+        // Exists for injection
+    }
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
-        return query.cryptoGetAccountRecords().orElseThrow().header();
+        return query.cryptoGetAccountRecordsOrThrow().header();
     }
 
     @Override
@@ -64,6 +66,7 @@ public class CryptoGetAccountRecordsHandler extends PaidQueryHandler {
      * @throws PreCheckException if validation fails
      */
     public ResponseCodeEnum validate(@NonNull final Query query) throws PreCheckException {
+        requireNonNull(query);
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -80,6 +83,8 @@ public class CryptoGetAccountRecordsHandler extends PaidQueryHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public Response findResponse(@NonNull final Query query, @NonNull final ResponseHeader header) {
+        requireNonNull(query);
+        requireNonNull(header);
         throw new UnsupportedOperationException("Not implemented");
     }
 }

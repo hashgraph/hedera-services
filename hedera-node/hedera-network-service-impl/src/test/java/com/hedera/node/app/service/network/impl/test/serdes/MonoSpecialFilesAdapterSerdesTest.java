@@ -20,11 +20,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
 import com.hedera.node.app.service.mono.state.merkle.internals.BytesElement;
 import com.hedera.node.app.service.network.impl.serdes.MonoSpecialFilesAdapterCodec;
-import com.hedera.pbj.runtime.io.DataInput;
-import com.hedera.pbj.runtime.io.DataOutput;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
+import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -42,14 +44,11 @@ class MonoSpecialFilesAdapterSerdesTest {
     private static final MerkleSpecialFiles SOME_SPECIAL_FILES = new MerkleSpecialFiles();
 
     static {
-        SOME_SPECIAL_FILES.append(SOME_FILE_ID, "abcdef".getBytes());
+        SOME_SPECIAL_FILES.append(PbjConverter.fromPbj(SOME_FILE_ID), "abcdef".getBytes());
     }
 
     @Mock
-    private DataInput input;
-
-    @Mock
-    private DataOutput output;
+    private ReadableSequentialData input;
 
     final MonoSpecialFilesAdapterCodec subject = new MonoSpecialFilesAdapterCodec();
 
@@ -68,17 +67,11 @@ class MonoSpecialFilesAdapterSerdesTest {
                 .registerConstructable(new ClassConstructorPair(BytesElement.class, BytesElement::new));
         final var baos = new ByteArrayOutputStream();
         final var actualOut = new SerializableDataOutputStream(baos);
-        subject.write(SOME_SPECIAL_FILES, output);
+        subject.write(SOME_SPECIAL_FILES, new WritableStreamingData(actualOut));
         actualOut.flush();
 
         final var actualIn = new SerializableDataInputStream(new ByteArrayInputStream(baos.toByteArray()));
-        final var parsed = subject.parse(input);
+        final var parsed = subject.parse(new ReadableStreamingData(actualIn));
         assertEquals(SOME_SPECIAL_FILES.getHash(), parsed.getHash());
-    }
-
-    @Test
-    void doesntSupportOtherStreams() {
-        assertThrows(IllegalArgumentException.class, () -> subject.parse(input));
-        assertThrows(IllegalArgumentException.class, () -> subject.write(SOME_SPECIAL_FILES, output));
     }
 }

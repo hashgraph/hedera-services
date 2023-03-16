@@ -125,7 +125,7 @@ public class QueryChecker {
             return;
         }
 
-        final var xfers = txBody.cryptoTransfer().orElseThrow().transfers().accountAmounts();
+        final var xfers = txBody.cryptoTransferOrThrow().transfers().accountAmounts();
         final var feeStatus = queryFeeCheck.nodePaymentValidity2(xfers, fee, txBody.nodeAccountID());
         if (feeStatus != OK) {
             throw new InsufficientBalanceException(feeStatus, fee);

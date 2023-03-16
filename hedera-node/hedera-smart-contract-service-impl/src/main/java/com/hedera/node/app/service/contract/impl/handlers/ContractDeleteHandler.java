@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
@@ -29,13 +30,14 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#CONTRACT_DELETE}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONTRACT_DELETE}.
  */
 @Singleton
 public class ContractDeleteHandler implements TransactionHandler {
     @Inject
-    public ContractDeleteHandler() {}
+    public ContractDeleteHandler() {
+        // Exists for injection
+    }
 
     /**
      * This method is called during the pre-handle workflow.
@@ -53,15 +55,15 @@ public class ContractDeleteHandler implements TransactionHandler {
      */
     public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
-        final var op = context.getTxn().contractDeleteInstance().orElseThrow();
+        final var op = context.getTxn().contractDeleteInstanceOrThrow();
 
-        context.addNonPayerKey(op.contractID());
+        context.addNonPayerKey(op.contractIDOrElse(ContractID.DEFAULT));
 
-        op.transferAccountID()
-                .ifPresentOrElse(
-                        transferAccountId -> context.addNonPayerKeyIfReceiverSigRequired(
-                                transferAccountId, INVALID_TRANSFER_ACCOUNT_ID),
-                        () -> op.transferContractID().ifPresent(context::addNonPayerKeyIfReceiverSigRequired));
+        if (op.hasTransferAccountID()) {
+            context.addNonPayerKeyIfReceiverSigRequired(op.transferAccountIDOrThrow(), INVALID_TRANSFER_ACCOUNT_ID);
+        } else if (op.hasTransferContractID()) {
+            context.addNonPayerKeyIfReceiverSigRequired(op.transferContractIDOrThrow());
+        }
     }
 
     /**

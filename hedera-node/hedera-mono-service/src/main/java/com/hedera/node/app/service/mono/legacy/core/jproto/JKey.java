@@ -16,14 +16,17 @@
 
 package com.hedera.node.app.service.mono.legacy.core.jproto;
 
+import static java.util.Collections.emptyList;
+
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.pbj.runtime.io.Bytes;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -60,7 +63,7 @@ public abstract class JKey implements HederaKey {
      * @return the generated JKey instance
      * @throws DecoderException on an inconvertible given key
      */
-    public static JKey mapKey(final com.hedera.hapi.node.base.Key key) throws DecoderException {
+    public static JKey mapKey(@NonNull final com.hedera.hapi.node.base.Key key) throws DecoderException {
         return convertKey(key, 1);
     }
 
@@ -110,19 +113,19 @@ public abstract class JKey implements HederaKey {
      * @return the converted JKey instance
      * @throws DecoderException on an inconvertible given key
      */
-    public static JKey convertKey(final com.hedera.hapi.node.base.Key key, int depth) throws DecoderException {
+    public static JKey convertKey(@NonNull final com.hedera.hapi.node.base.Key key, final int depth)
+            throws DecoderException {
         if (depth > MAX_KEY_DEPTH) {
             throw new DecoderException("Exceeding max expansion depth of " + MAX_KEY_DEPTH);
         }
 
-        if (!(key.thresholdKey().isPresent() || key.keyList().isPresent())) {
+        if (!(key.hasThresholdKey() || key.hasKeyList())) {
             return convertBasic(key);
         }
 
-        final var thresholdKeyOpt = key.thresholdKey();
-        if (thresholdKeyOpt.isPresent()) {
-            final var thresholdKey = thresholdKeyOpt.get();
-            List<com.hedera.hapi.node.base.Key> tKeys = thresholdKey.keys().keys();
+        if (key.hasThresholdKey()) {
+            final var thresholdKey = key.thresholdKeyOrThrow();
+            List<com.hedera.hapi.node.base.Key> tKeys = thresholdKey.keys().keysOrElse(emptyList());
             List<JKey> jkeys = new ArrayList<>();
             for (var aKey : tKeys) {
                 JKey res = convertKey(aKey, depth + 1);
@@ -133,19 +136,14 @@ public abstract class JKey implements HederaKey {
             return new JThresholdKey(keys, thd);
         }
 
-        final var keyListOpt = key.keyList();
-        if (keyListOpt.isPresent()) {
-            final var keyList = keyListOpt.get();
-            List<com.hedera.hapi.node.base.Key> tKeys = keyList.keys();
-            List<JKey> jkeys = new ArrayList<>();
-            for (var aKey : tKeys) {
-                JKey res = convertKey(aKey, depth + 1);
-                jkeys.add(res);
-            }
-            return new JKeyList(jkeys);
+        final var keyList = key.keyListOrThrow();
+        List<com.hedera.hapi.node.base.Key> tKeys = keyList.keys();
+        List<JKey> jkeys = new ArrayList<>();
+        for (var aKey : tKeys) {
+            JKey res = convertKey(aKey, depth + 1);
+            jkeys.add(res);
         }
-
-        throw new RuntimeException("The key was not basic, threshold, or a key list!!");
+        return new JKeyList(jkeys);
     }
 
     /**
@@ -212,15 +210,13 @@ public abstract class JKey implements HederaKey {
             }
             case CONTRACT_ID -> {
                 final ContractID id = oneOf.as();
-                final var contractNumOp = id.contractNum();
-                final var contractEvmOp = id.evmAddress();
-                if (contractNumOp.isPresent()) {
-                    yield new JContractIDKey(id.shardNum(), id.realmNum(), contractNumOp.get());
-                } else if (contractEvmOp.isPresent()) {
+                if (id.hasContractNum()) {
+                    yield new JContractIDKey(id.shardNum(), id.realmNum(), id.contractNumOrThrow());
+                } else if (id.hasEvmAddress()) {
                     final var proto = com.hederahashgraph.api.proto.java.ContractID.newBuilder()
                             .setShardNum(id.shardNum())
                             .setRealmNum(id.realmNum())
-                            .setEvmAddress(ByteString.copyFrom(asBytes(contractEvmOp.get())))
+                            .setEvmAddress(ByteString.copyFrom(asBytes(id.evmAddressOrThrow())))
                             .build();
                     yield new JContractIDKey(proto);
                 } else {
@@ -229,15 +225,13 @@ public abstract class JKey implements HederaKey {
             }
             case DELEGATABLE_CONTRACT_ID -> {
                 final ContractID id = oneOf.as();
-                final var contractNumOp = id.contractNum();
-                final var contractEvmOp = id.evmAddress();
-                if (contractNumOp.isPresent()) {
-                    yield new JDelegatableContractIDKey(id.shardNum(), id.realmNum(), contractNumOp.get());
-                } else if (contractEvmOp.isPresent()) {
+                if (id.hasContractNum()) {
+                    yield new JDelegatableContractIDKey(id.shardNum(), id.realmNum(), id.contractNumOrThrow());
+                } else if (id.hasEvmAddress()) {
                     final var proto = com.hederahashgraph.api.proto.java.ContractID.newBuilder()
                             .setShardNum(id.shardNum())
                             .setRealmNum(id.realmNum())
-                            .setEvmAddress(ByteString.copyFrom(asBytes(contractEvmOp.get())))
+                            .setEvmAddress(ByteString.copyFrom(asBytes(id.evmAddressOrThrow())))
                             .build();
                     yield new JDelegatableContractIDKey(proto);
                 } else {
@@ -496,7 +490,7 @@ public abstract class JKey implements HederaKey {
     }
 
     private static byte[] asBytes(Bytes b) {
-        final var buf = new byte[b.getLength()];
+        final var buf = new byte[(int) b.length()];
         b.getBytes(0, buf);
         return buf;
     }
