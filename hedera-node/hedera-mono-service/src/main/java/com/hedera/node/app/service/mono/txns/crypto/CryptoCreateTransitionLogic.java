@@ -25,7 +25,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.exceptions.InsufficientFundsException;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
@@ -41,8 +40,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.inject.Inject;
@@ -101,15 +98,10 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             txnCtx.setCreated(created);
             txnCtx.setStatus(SUCCESS);
 
-            final List<ByteString> aliasesToLink = new ArrayList<>();
             if (!op.getAlias().isEmpty()) {
-                aliasesToLink.add(op.getAlias());
+                aliasManager.link(op.getAlias(), EntityNum.fromAccountId(created));
+                sigImpactHistorian.markAliasChanged(op.getAlias());
             }
-
-            aliasesToLink.forEach(alias -> {
-                aliasManager.link(alias, EntityNum.fromAccountId(created));
-                sigImpactHistorian.markAliasChanged(alias);
-            });
         } catch (InsufficientFundsException ife) {
             txnCtx.setStatus(INSUFFICIENT_PAYER_BALANCE);
         } catch (Exception e) {
