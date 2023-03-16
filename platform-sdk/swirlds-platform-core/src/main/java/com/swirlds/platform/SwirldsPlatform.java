@@ -128,6 +128,7 @@ import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
 import com.swirlds.platform.event.preconsensus.AsyncPreConsensusEventWriter;
+import com.swirlds.platform.event.preconsensus.NoOpPreConsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventFileManager;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventStreamConfig;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
@@ -1024,6 +1025,10 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private PreConsensusEventWriter buildPreConsensusEventWriter() {
         final PreConsensusEventStreamConfig preConsensusEventStreamConfig =
                 platformContext.getConfiguration().getConfigData(PreConsensusEventStreamConfig.class);
+
+        if (!preConsensusEventStreamConfig.enableStorage()) {
+            return new NoOpPreConsensusEventWriter();
+        }
 
         final PreconsensusEventMetrics preconsensusEventMetrics =
                 new PreconsensusEventMetrics(platformContext.getMetrics());

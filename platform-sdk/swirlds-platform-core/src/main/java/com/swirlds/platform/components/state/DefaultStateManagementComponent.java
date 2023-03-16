@@ -46,6 +46,7 @@ import com.swirlds.platform.dispatch.Observer;
 import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
 import com.swirlds.platform.dispatch.triggers.control.StateDumpRequestedTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.StateHashedTrigger;
+import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
 import com.swirlds.platform.metrics.IssMetrics;
 import com.swirlds.platform.state.SignatureTransmitter;
 import com.swirlds.platform.state.State;
@@ -162,7 +163,8 @@ public class DefaultStateManagementComponent implements StateManagementComponent
             final StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer,
             final IssConsumer issConsumer,
             final HaltRequestedConsumer haltRequestedConsumer,
-            final FatalErrorConsumer fatalErrorConsumer) {
+            final FatalErrorConsumer fatalErrorConsumer,
+            final PreConsensusEventWriter preConsensusEventWriter) {
 
         this.signer = signer;
         this.signatureTransmitter = new SignatureTransmitter(addressBook, selfId, prioritySystemTransactionSubmitter);
@@ -188,7 +190,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 selfId,
                 swirldName,
                 stateToDiskEventConsumer,
-                x -> {}); // TODO
+                preConsensusEventWriter::setMinimumGenerationToStore);
 
         final StateHasEnoughSignaturesConsumer combinedStateHasEnoughSignaturesConsumer = ssw -> {
             stateHasEnoughSignatures(ssw.get());
