@@ -27,7 +27,6 @@ import static com.swirlds.platform.state.signed.SignedStateFileUtils.VERSIONED_F
 
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.payloads.StateSavedToDiskPayload;
 import com.swirlds.platform.Settings;
 import com.swirlds.platform.state.EmergencyRecoveryFile;

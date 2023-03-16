@@ -46,7 +46,7 @@ import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
@@ -177,11 +177,11 @@ public record SavedStateMetadata(
             // We must elegantly handle the case where the metadata file does not exist
             // until we have fully migrated all state snapshots in production environments.
             logger.warn(STARTUP.getMarker(), "Signed state does not have a metadata file at {}", metadataFile);
-            return new HashMap<>();
+            return new EnumMap<>(SavedStateMetadataField.class);
         }
 
         try {
-            final Map<SavedStateMetadataField, String> map = new HashMap<>();
+            final Map<SavedStateMetadataField, String> map = new EnumMap<>(SavedStateMetadataField.class);
 
             try (final BufferedReader reader = new BufferedReader(new FileReader(metadataFile.toFile()))) {
                 String line;
@@ -208,7 +208,7 @@ public record SavedStateMetadata(
             return map;
         } catch (final IOException e) {
             logger.warn(STARTUP.getMarker(), "Failed to parse signed state metadata file: {}", metadataFile, e);
-            return new HashMap<>();
+            return new EnumMap<>(SavedStateMetadataField.class);
         }
     }
 
@@ -372,7 +372,7 @@ public record SavedStateMetadata(
      * Build a map of key/value pairs to be written to disk.
      */
     private Map<SavedStateMetadataField, String> buildStringMap() {
-        final Map<SavedStateMetadataField, String> map = new HashMap<>();
+        final Map<SavedStateMetadataField, String> map = new EnumMap<>(SavedStateMetadataField.class);
 
         putIfNotNull(map, ROUND, round);
         putIfNotNull(map, NUMBER_OF_CONSENSUS_EVENTS, numberOfConsensusEvents);

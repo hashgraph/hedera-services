@@ -29,7 +29,6 @@ import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomUtils;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.dispatch.triggers.control.ShutdownRequestedTrigger;
 import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.reconnect.emergency.EmergencySignedStateValidator;

@@ -400,9 +400,9 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      * @throws NoSuchElementException if the generation information for this round is not contained withing this state
      */
     public long getMinGen(final long round) {
-        for (final MinGenInfo minGenInfo : getMinGenInfo()) {
-            if (minGenInfo.round() == round) {
-                return minGenInfo.minimumGeneration();
+        for (final MinGenInfo info : getMinGenInfo()) {
+            if (info.round() == round) {
+                return info.minimumGeneration();
             }
         }
         throw new NoSuchElementException("No minimum generation found for round: " + round);
