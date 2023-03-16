@@ -1,11 +1,11 @@
 release:
   branching:
     execution:
-      time: "22:00:00"
+      time: "23:00:00"
     schedule:
-      - on: "2023-02-21"
+      - on: "2023-03-16"
         name: release/0.36
         initial-tag:
           create: true
-          name: v0.36.0-alpha.0
+          name: v0.36.0
 
