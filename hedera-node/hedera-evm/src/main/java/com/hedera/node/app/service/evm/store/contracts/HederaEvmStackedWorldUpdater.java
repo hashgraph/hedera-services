@@ -17,9 +17,8 @@
 package com.hedera.node.app.service.evm.store.contracts;
 
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
-public interface HederaEvmStackedWorldUpdater extends WorldUpdater {
+public interface HederaEvmStackedWorldUpdater {
     Address priorityAddress(final Address addressOrAlias);
 
     Address newAliasedContractAddress(final Address sponsor, final Address alias);
