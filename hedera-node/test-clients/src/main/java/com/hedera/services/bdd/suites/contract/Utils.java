@@ -210,7 +210,7 @@ public class Utils {
         if (!file.exists()) {
             throw new IllegalArgumentException("Invalid argument: " + path.substring(path.lastIndexOf('/') + 1));
         }
-        return path;
+        return file.getPath();
     }
 
     public enum FunctionType {

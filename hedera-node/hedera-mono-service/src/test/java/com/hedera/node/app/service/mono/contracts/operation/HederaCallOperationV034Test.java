@@ -23,6 +23,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -238,5 +239,37 @@ class HederaCallOperationV034Test {
         var opRes = subject.execute(evmMsgFrame, evm);
         assertEquals(null, opRes.getHaltReason());
         assertEquals(opRes.getGasCost(), cost);
+    }
+
+    @Test
+    void staticCallsDoNotCheckSignatures() {
+        commonSetup(evmMsgFrame, worldUpdater, acc);
+        given(calc.callOperationGasCost(
+                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
+                .willReturn(cost);
+        // and:
+        given(evmMsgFrame.getStackItem(0)).willReturn(Bytes.EMPTY);
+        given(evmMsgFrame.getStackItem(1)).willReturn(Bytes.EMPTY);
+        given(evmMsgFrame.getStackItem(2)).willReturn(Bytes.EMPTY);
+        given(evmMsgFrame.getStackItem(3)).willReturn(Bytes.EMPTY);
+        given(evmMsgFrame.getStackItem(4)).willReturn(Bytes.EMPTY);
+        given(evmMsgFrame.getStackItem(5)).willReturn(Bytes.EMPTY);
+        given(evmMsgFrame.getStackItem(6)).willReturn(Bytes.EMPTY);
+        // and:
+        given(evmMsgFrame.stackSize()).willReturn(20);
+        given(evmMsgFrame.getRemainingGas()).willReturn(cost);
+        given(evmMsgFrame.getMessageStackDepth()).willReturn(1025);
+
+        given(worldUpdater.get(any())).willReturn(acc);
+        given(acc.getBalance()).willReturn(Wei.of(100));
+        given(calc.gasAvailableForChildCall(any(), anyLong(), anyBoolean())).willReturn(10L);
+        given(addressValidator.test(any(), any())).willReturn(true);
+        given(evmMsgFrame.isStatic()).willReturn(true);
+
+        var opRes = subject.execute(evmMsgFrame, evm);
+        assertNull(opRes.getHaltReason());
+        assertEquals(opRes.getGasCost(), cost);
+        // and:
+        verifyNoInteractions(sigsVerifier);
     }
 }

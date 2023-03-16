@@ -4714,8 +4714,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                                                                                     somebodyElse))),
                                                                             serialNumberId)
                                                                     .array())))
-                                                    .setError(ByteString.copyFrom(
-                                                            "ERROR_DECODING_PRECOMPILE_INPUT".getBytes()))
+                                                    .setError(ByteString.copyFrom("PRECOMPILE_ERROR".getBytes()))
                                                     .setCallDepth(2)
                                                     .build())));
                 }));
