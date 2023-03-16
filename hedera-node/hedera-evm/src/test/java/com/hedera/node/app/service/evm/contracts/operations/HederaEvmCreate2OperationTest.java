@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
-import com.hedera.node.app.service.evm.store.contracts.HederaStackedEvmWorldUpdater;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmStackedWorldUpdater;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -42,7 +42,7 @@ class HederaEvmCreate2OperationTest {
     private static final Bytes oneOffsetStackItem = Bytes.of(10);
     private static final Bytes twoOffsetStackItem = Bytes.of(20);
     private static final MutableBytes initcode = MutableBytes.of((byte) 0xaa);
-    private Address recipientAddr = Address.fromHexString("0x0102030405060708090a0b0c0d0e0f1011121314");
+    private static final Address recipientAddr = Address.fromHexString("0x0102030405060708090a0b0c0d0e0f1011121314");
 
     @Mock
     private EvmProperties evmProperties;
@@ -54,7 +54,7 @@ class HederaEvmCreate2OperationTest {
     private GasCalculator gasCalculator;
 
     @Mock
-    private HederaStackedEvmWorldUpdater stackedUpdater;
+    private HederaEvmStackedWorldUpdater stackedUpdater;
 
     private HederaEvmCreate2Operation subject;
 
