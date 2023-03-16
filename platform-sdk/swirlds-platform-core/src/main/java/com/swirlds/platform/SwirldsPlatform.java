@@ -1795,24 +1795,35 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      */
     @Override
     public PlatformEvent[] getAllEvents() {
-        final EventImpl[] allEvents = shadowGraph.getAllEvents();
-        Arrays.sort(allEvents, (o1, o2) -> {
-            if (o1.getConsensusOrder() != -1 && o2.getConsensusOrder() != -1) {
-                // both are consensus
-                return Long.compare(o1.getConsensusOrder(), o2.getConsensusOrder());
-            } else if (o1.getConsensusTimestamp() == null && o2.getConsensusTimestamp() == null) {
-                // neither are consensus
-                return o1.getTimeReceived().compareTo(o2.getTimeReceived());
-            } else {
-                // one is consensus, the other is not
-                if (o1.getConsensusTimestamp() == null) {
-                    return 1;
-                } else {
-                    return -1;
-                }
+        // There is currently a race condition that can cause an exception if event order changes at
+        // just the right moment. Since this is just a testing utility method and not used in production
+        // environments, we can just retry until we succeed.
+        int maxRetries = 100;
+        while (maxRetries-- > 0) {
+            try {
+                final EventImpl[] allEvents = shadowGraph.getAllEvents();
+                Arrays.sort(allEvents, (o1, o2) -> {
+                    if (o1.getConsensusOrder() != -1 && o2.getConsensusOrder() != -1) {
+                        // both are consensus
+                        return Long.compare(o1.getConsensusOrder(), o2.getConsensusOrder());
+                    } else if (o1.getConsensusTimestamp() == null && o2.getConsensusTimestamp() == null) {
+                        // neither are consensus
+                        return o1.getTimeReceived().compareTo(o2.getTimeReceived());
+                    } else {
+                        // one is consensus, the other is not
+                        if (o1.getConsensusTimestamp() == null) {
+                            return 1;
+                        } else {
+                            return -1;
+                        }
+                    }
+                });
+                return allEvents;
+            } catch (final IllegalArgumentException e) {
+                logger.error(EXCEPTION.getMarker(), "Exception while sorting events", e);
             }
-        });
-        return allEvents;
+        }
+        throw new IllegalStateException("Unable to sort events after 100 retries");
     }
 
     /**
