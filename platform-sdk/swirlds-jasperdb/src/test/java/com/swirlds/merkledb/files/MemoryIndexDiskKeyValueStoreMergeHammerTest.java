@@ -341,7 +341,7 @@ class MemoryIndexDiskKeyValueStoreMergeHammerTest {
          * @throws IOException in case of emergency
          */
         private void save(final Map<Long, Long> cache) throws IOException {
-            coll.startWriting();
+            coll.startWriting(firstPath);
             final List<Long> sortedKeys = cache.keySet().stream().sorted().toList();
             for (final long key : sortedKeys) {
                 if (key < firstPath || key > lastPath || key == DELETED) {

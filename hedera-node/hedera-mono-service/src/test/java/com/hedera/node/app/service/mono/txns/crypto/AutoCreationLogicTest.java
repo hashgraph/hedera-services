@@ -26,6 +26,7 @@ import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_S
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -208,6 +209,10 @@ class AutoCreationLogicTest {
         assertEquals(totalFee, mockBuilder.getFee());
         assertEquals(Pair.of(OK, totalFee), result);
         assertTrue(subject.getTokenAliasMap().isEmpty());
+
+        final var pendingCreations = subject.pendingCreations.get(0);
+        final var record = pendingCreations.recordBuilder().build();
+        assertArrayEquals(new byte[0], record.getEvmAddress());
     }
 
     @Test
@@ -237,6 +242,11 @@ class AutoCreationLogicTest {
         verify(accountsLedger, never())
                 .set(createdNum.toGrpcAccountId(), AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS, 1);
         verify(recordsHistorian).trackPrecedingChildRecord(DEFAULT_SOURCE_ID, syntheticECAliasCreation, mockBuilder);
+
+        final var pendingCreations = subject.pendingCreations.get(0);
+        final var record = pendingCreations.recordBuilder().build();
+        assertArrayEquals(evmAddress.toByteArray(), record.getEvmAddress());
+
         assertEquals(totalFee, mockBuilder.getFee());
         assertEquals(Pair.of(OK, totalFee), result);
         assertTrue(subject.getTokenAliasMap().isEmpty());
