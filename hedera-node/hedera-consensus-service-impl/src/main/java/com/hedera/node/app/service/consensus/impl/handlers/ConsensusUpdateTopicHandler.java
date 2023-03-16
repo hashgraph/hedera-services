@@ -26,10 +26,7 @@ import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
@@ -46,7 +43,6 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -230,7 +226,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
     }
 
     private void validateMaybeNewMemo(
-            @NonNull final AttributeValidator attributeValidator, 
+            @NonNull final AttributeValidator attributeValidator,
             @NonNull final ConsensusUpdateTopicTransactionBody op) {
         if (op.hasMemo()) {
             attributeValidator.validateMemo(op.memo());
@@ -238,7 +234,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
     }
 
     private void validateMaybeNewAdminKey(
-            @NonNull final AttributeValidator attributeValidator, 
+            @NonNull final AttributeValidator attributeValidator,
             @NonNull final ConsensusUpdateTopicTransactionBody op) {
         if (op.hasAdminKey()) {
             attributeValidator.validateKey(op.adminKey());
@@ -246,7 +242,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
     }
 
     private void validateMaybeNewSubmitKey(
-            @NonNull final AttributeValidator attributeValidator, 
+            @NonNull final AttributeValidator attributeValidator,
             @NonNull final ConsensusUpdateTopicTransactionBody op) {
         if (op.hasSubmitKey()) {
             attributeValidator.validateKey(op.submitKey());

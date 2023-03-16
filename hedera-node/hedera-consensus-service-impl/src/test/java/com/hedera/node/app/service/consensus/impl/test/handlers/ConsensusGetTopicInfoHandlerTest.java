@@ -143,9 +143,7 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
         final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
         final var response = subject.findResponse(query, responseHeader, readableStore, queryContext);
         final var op = response.consensusGetTopicInfoOrThrow();
-        assertEquals(
-                ResponseCodeEnum.FAIL_FEE,
-                op.header().nodeTransactionPrecheckCode());
+        assertEquals(ResponseCodeEnum.FAIL_FEE, op.header().nodeTransactionPrecheckCode());
         assertNull(op.topicInfo());
     }
 

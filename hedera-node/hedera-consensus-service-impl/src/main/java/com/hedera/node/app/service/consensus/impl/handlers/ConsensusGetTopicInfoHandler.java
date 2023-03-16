@@ -22,7 +22,6 @@ import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
-import static com.hedera.node.app.service.mono.utils.MiscUtils.asPbjKeyUnchecked;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;

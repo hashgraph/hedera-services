@@ -17,12 +17,10 @@
 package com.hedera.node.app.service.mono;
 
 import static com.hedera.node.app.service.mono.legacy.core.jproto.JKey.mapKey;
-import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.Key;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 import org.apache.commons.codec.DecoderException;
 

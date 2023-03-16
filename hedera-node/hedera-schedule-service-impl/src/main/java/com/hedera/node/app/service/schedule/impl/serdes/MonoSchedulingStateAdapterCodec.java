@@ -29,8 +29,8 @@ public class MonoSchedulingStateAdapterCodec implements Codec<MerkleScheduledTra
 
     @NonNull
     @Override
-    public MerkleScheduledTransactionsState parseStrict(
-            @NonNull final ReadableSequentialData readableSequentialData) throws IOException {
+    public MerkleScheduledTransactionsState parseStrict(@NonNull final ReadableSequentialData readableSequentialData)
+            throws IOException {
         throw new AssertionError("Not implemented");
     }
 

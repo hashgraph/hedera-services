@@ -24,21 +24,15 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactionsState;
-import com.hedera.node.app.service.mono.state.submerkle.ExchangeRates;
-import com.hedera.node.app.service.mono.state.submerkle.SequenceNumber;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
-
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.time.Instant;
-
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -91,14 +85,11 @@ class CodecFactoryTest {
     @Test
     void codecWorksForSchedulingState() throws IOException {
         final Codec<MerkleScheduledTransactionsState> subject =
-                MonoMapCodecAdapter.codecForSelfSerializable(
-                        CURRENT_VERSION,
-                        MerkleScheduledTransactionsState::new);
+                MonoMapCodecAdapter.codecForSelfSerializable(CURRENT_VERSION, MerkleScheduledTransactionsState::new);
 
         assertThrows(UnsupportedOperationException.class, () -> subject.measureRecord(SOME_STATE));
         assertThrows(UnsupportedOperationException.class, () -> subject.measure(input));
         assertThrows(UnsupportedOperationException.class, () -> subject.fastEquals(SOME_STATE, input));
-
 
         final var baos = new ByteArrayOutputStream();
         final var actualOut = new SerializableDataOutputStream(baos);
@@ -110,6 +101,5 @@ class CodecFactoryTest {
         assertEquals(SOME_STATE, parsed);
     }
 
-    private static final MerkleScheduledTransactionsState SOME_STATE =
-            new MerkleScheduledTransactionsState(1_234_567);
+    private static final MerkleScheduledTransactionsState SOME_STATE = new MerkleScheduledTransactionsState(1_234_567);
 }

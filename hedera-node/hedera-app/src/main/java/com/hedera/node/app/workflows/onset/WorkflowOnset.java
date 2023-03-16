@@ -31,7 +31,6 @@ import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.annotations.MaxSignedTxnSize;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -170,9 +169,9 @@ public class WorkflowOnset {
         final SignatureMap signatureMap;
         if (tx.signedTransactionBytes().length() > 0) {
             final SignedTransaction signedTransaction = parse(
-                    BufferedData.wrap(
-                            asBytes(tx.signedTransactionBytes())),
-                    SignedTransaction.PROTOBUF, INVALID_TRANSACTION);
+                    BufferedData.wrap(asBytes(tx.signedTransactionBytes())),
+                    SignedTransaction.PROTOBUF,
+                    INVALID_TRANSACTION);
             bodyBytes = signedTransaction.bodyBytes();
             signatureMap = signedTransaction.sigMap();
         } else {
@@ -197,9 +196,7 @@ public class WorkflowOnset {
     }
 
     public static <T extends Record> T parse(
-            ReadableSequentialData data,
-            Codec<T> codec,
-            ResponseCodeEnum parseErrorCode) throws PreCheckException {
+            ReadableSequentialData data, Codec<T> codec, ResponseCodeEnum parseErrorCode) throws PreCheckException {
         try {
             return codec.parseStrict(data);
         } catch (MalformedProtobufException e) {

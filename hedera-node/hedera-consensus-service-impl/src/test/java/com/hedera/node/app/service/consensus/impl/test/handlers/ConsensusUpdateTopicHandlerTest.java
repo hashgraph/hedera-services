@@ -59,8 +59,8 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
     private final ConsensusUpdateTopicTransactionBody.Builder OP_BUILDER =
             ConsensusUpdateTopicTransactionBody.newBuilder();
 
-    private final ExpiryMeta currentExpiryMeta = new ExpiryMeta(
-            expirationTime, autoRenewSecs, autoRenewId.accountNum());
+    private final ExpiryMeta currentExpiryMeta =
+            new ExpiryMeta(expirationTime, autoRenewSecs, autoRenewId.accountNum());
 
     @Mock
     private HandleContext handleContext;
