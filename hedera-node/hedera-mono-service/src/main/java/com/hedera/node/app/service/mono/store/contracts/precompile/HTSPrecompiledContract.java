@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
+import static com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isTokenProxyRedirect;
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isViewFunction;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
@@ -28,6 +29,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
@@ -131,8 +133,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
     public static final EntityId HTS_PRECOMPILE_MIRROR_ENTITY_ID =
             EntityId.fromGrpcContractId(HTS_PRECOMPILE_MIRROR_ID);
 
-    private static final PrecompileContractResult NO_RESULT =
-            new PrecompileContractResult(null, true, MessageFrame.State.COMPLETED_FAILED, Optional.empty());
+    public static final PrecompileContractResult INVALID_DELEGATE = new PrecompileContractResult(
+            null, true, MessageFrame.State.COMPLETED_FAILED, Optional.of(ExceptionalHaltReason.PRECOMPILE_ERROR));
 
     private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
     private static final String NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-20 token!";
@@ -221,13 +223,26 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
     @NonNull
     @Override
     public PrecompileContractResult computePrecompile(final Bytes input, @NonNull final MessageFrame frame) {
+        if (unqualifiedDelegateDetected(frame)) {
+            frame.setExceptionalHaltReason(Optional.of(ExceptionalHaltReason.PRECOMPILE_ERROR));
+            return INVALID_DELEGATE;
+        }
         prepareFields(frame);
-        prepareComputation(input, updater::unaliased);
+        try {
+            prepareComputation(input, updater::unaliased);
+        } catch (InvalidTransactionException e) {
+            final var haltReason = NOT_SUPPORTED.equals(e.getResponseCode())
+                    ? HederaExceptionalHaltReason.NOT_SUPPORTED
+                    : HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
+            frame.setExceptionalHaltReason(Optional.of(haltReason));
+            return PrecompileContractResult.halt(null, Optional.of(haltReason));
+        }
 
         gasRequirement = defaultGas();
         if (this.precompile == null || this.transactionBody == null) {
-            frame.setExceptionalHaltReason(Optional.of(ERROR_DECODING_PRECOMPILE_INPUT));
-            return NO_RESULT;
+            final var haltReason = Optional.of(ERROR_DECODING_PRECOMPILE_INPUT);
+            frame.setExceptionalHaltReason(haltReason);
+            return PrecompileContractResult.halt(null, haltReason);
         }
 
         final var now = frame.getBlockValues().getTimestamp();
@@ -237,6 +252,47 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
         return result == null
                 ? PrecompiledContract.PrecompileContractResult.halt(null, Optional.of(ExceptionalHaltReason.NONE))
                 : PrecompiledContract.PrecompileContractResult.success(result);
+    }
+
+    public boolean unqualifiedDelegateDetected(MessageFrame frame) {
+        // if the first message frame is not a delegate, it's not a delegate
+        if (!isDelegateCall(frame)) {
+            return false;
+        }
+
+        final var recipient = frame.getRecipientAddress();
+        // but we accept delegates iff the token redirect contract calls us,
+        // so if they are not a token, or on the permitted callers list, then
+        // we are a delegate and we are done.
+        if (isToken(frame, recipient)
+                || dynamicProperties.permittedDelegateCallers().contains(recipient)) {
+            // make sure we have a parent calling context
+            final var stack = frame.getMessageFrameStack();
+            final var frames = stack.iterator();
+            frames.next();
+            if (!frames.hasNext()) {
+                // Impossible to get here w/o a catastrophic EVM bug
+                log.error("Possibly CATASTROPHIC failure - delegatecall frame had no parent");
+                return false;
+            }
+            // If the token redirect contract was called via delegate, then it's a delegate
+            return isDelegateCall(frames.next());
+        }
+        return true;
+    }
+
+    static boolean isToken(final MessageFrame frame, final Address address) {
+        final var account = frame.getWorldUpdater().get(address);
+        if (account != null) {
+            return account.getNonce() == TOKEN_PROXY_ACCOUNT_NONCE;
+        }
+        return false;
+    }
+
+    private static boolean isDelegateCall(final MessageFrame frame) {
+        final var contract = frame.getContractAddress();
+        final var recipient = frame.getRecipientAddress();
+        return !contract.equals(recipient);
     }
 
     void prepareFields(final MessageFrame frame) {
