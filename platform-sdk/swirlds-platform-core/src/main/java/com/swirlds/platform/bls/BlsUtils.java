@@ -18,6 +18,8 @@ package com.swirlds.platform.bls;
 
 import com.hedera.platform.bls.api.BilinearMap;
 import com.hedera.platform.bls.api.GroupElement;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
 /**
  * Class containing utility helper functions to support the BLS protocols
@@ -36,9 +38,13 @@ public class BlsUtils {
      * @param elementName  the name of the element, to record errors
      */
     public static void throwIfNotSignatureGroup(
-            final BilinearMap bilinearMap,
-            final GroupElement groupElement,
-            final String elementName) {
+            @NonNull final BilinearMap bilinearMap,
+            @NonNull final GroupElement groupElement,
+            @NonNull final String elementName) {
+
+        Objects.requireNonNull(bilinearMap, "bilinearMap must not be null");
+        Objects.requireNonNull(groupElement, "groupElement must not be null");
+        Objects.requireNonNull(elementName, "elementName must not be null");
 
         if (!(groupElement.group().getClass().equals(bilinearMap.signatureGroup().getClass()))) {
             throw new IllegalArgumentException(String.format(
@@ -55,9 +61,13 @@ public class BlsUtils {
      * @param elementName  the name of the element, to record errors
      */
     public static void throwIfNotPublicKeyGroup(
-            final BilinearMap bilinearMap,
-            final GroupElement groupElement,
-            final String elementName) {
+            @NonNull final BilinearMap bilinearMap,
+            @NonNull final GroupElement groupElement,
+            @NonNull final String elementName) {
+
+        Objects.requireNonNull(bilinearMap, "bilinearMap must not be null");
+        Objects.requireNonNull(groupElement, "groupElement must not be null");
+        Objects.requireNonNull(elementName, "elementName must not be null");
 
         if (!(groupElement.group().getClass().equals(bilinearMap.keyGroup().getClass()))) {
             throw new IllegalArgumentException(String.format(

@@ -17,6 +17,7 @@
 package com.swirlds.platform.bls.protocol;
 
 import com.swirlds.common.system.NodeId;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A functional interface for cleaning up a protocol after disqualifying a counterparty
@@ -28,5 +29,5 @@ public interface BlsDisqualificationCleanup {
      *
      * @param disqualifiedNodeId the id of the counterparty which was disqualified
      */
-    void cleanUp(NodeId disqualifiedNodeId);
+    void cleanUp(@NonNull NodeId disqualifiedNodeId);
 }

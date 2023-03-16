@@ -17,6 +17,7 @@
 package com.swirlds.platform.bls.protocol;
 
 import com.hedera.platform.bls.api.BilinearMap;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * An interface representing a BLS protocol
@@ -29,6 +30,7 @@ public interface BlsProtocol<T> {
      *
      * @return the protocol manager
      */
+    @NonNull
     BlsProtocolManager<T> getProtocolManager();
 
     /**
@@ -36,5 +38,6 @@ public interface BlsProtocol<T> {
      *
      * @return the bilinear map
      */
+    @NonNull
     BilinearMap getBilinearMap();
 }

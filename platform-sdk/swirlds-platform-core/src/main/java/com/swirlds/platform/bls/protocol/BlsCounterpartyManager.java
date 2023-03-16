@@ -17,20 +17,28 @@
 package com.swirlds.platform.bls.protocol;
 
 import com.swirlds.common.system.NodeId;
-import java.util.*;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 /**
- * Object which keeps track of the behavior and status of counterparties during BLS protocol
- * execution
+ * Object which keeps track of the behavior and status of counterparties during BLS protocol execution
  */
 public class BlsCounterpartyManager {
     /** Set of counterparties who behaved in a verifiably incorrect way, assumed to be malicious */
+    @NonNull
     private final Set<NodeId> maliciousNodes;
 
     /** Set of counterparties who failed to send an expected message */
+    @NonNull
     private final Set<NodeId> offlineNodes;
 
     /** List of reports detailing the disqualification of a counterparty */
+    @NonNull
     private final List<BlsIncidentReport> incidentReports;
 
     /** Constructor */
@@ -46,7 +54,9 @@ public class BlsCounterpartyManager {
      *
      * @param nodeId the id of the malicious party
      */
-    public void declareMalicious(final NodeId nodeId, final BlsIncidentReport report) {
+    public void declareMalicious(@NonNull final NodeId nodeId, @NonNull final BlsIncidentReport report) {
+        Objects.requireNonNull(report, "report must not be null");
+
         // Don't disqualify a party in multiple ways
         if (checkDisqualified(nodeId)) {
             return;
@@ -61,7 +71,9 @@ public class BlsCounterpartyManager {
      *
      * @param nodeId the id of the offline party
      */
-    public void declareOffline(final NodeId nodeId, final BlsIncidentReport report) {
+    public void declareOffline(@NonNull final NodeId nodeId, @NonNull final BlsIncidentReport report) {
+        Objects.requireNonNull(report, "report must not be null");
+
         // Don't disqualify a party in multiple ways
         if (checkDisqualified(nodeId)) {
             return;
@@ -76,6 +88,7 @@ public class BlsCounterpartyManager {
      *
      * @return {@link #maliciousNodes} counterparties
      */
+    @NonNull
     public Set<NodeId> getMaliciousNodes() {
         return Collections.unmodifiableSet(maliciousNodes);
     }
@@ -85,6 +98,7 @@ public class BlsCounterpartyManager {
      *
      * @return {@link #offlineNodes} counterparties
      */
+    @NonNull
     public Set<NodeId> getOfflineNodes() {
         return Collections.unmodifiableSet(offlineNodes);
     }
@@ -95,7 +109,9 @@ public class BlsCounterpartyManager {
      * @param nodeId the nodeId to check
      * @return true if the node is malicious, otherwise false
      */
-    public boolean checkMalicious(final NodeId nodeId) {
+    public boolean checkMalicious(@NonNull final NodeId nodeId) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
+
         return maliciousNodes.contains(nodeId);
     }
 
@@ -105,7 +121,9 @@ public class BlsCounterpartyManager {
      * @param nodeId the nodeId to check
      * @return true if the node is offline, otherwise false
      */
-    public boolean checkOffline(final NodeId nodeId) {
+    public boolean checkOffline(@NonNull final NodeId nodeId) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
+
         return offlineNodes.contains(nodeId);
     }
 
@@ -115,7 +133,7 @@ public class BlsCounterpartyManager {
      * @param nodeId the nodeId to check
      * @return true if the node is malicious or offline, otherwise false
      */
-    public boolean checkDisqualified(final NodeId nodeId) {
+    public boolean checkDisqualified(@NonNull final NodeId nodeId) {
         return checkMalicious(nodeId) || checkOffline(nodeId);
     }
 
@@ -124,6 +142,7 @@ public class BlsCounterpartyManager {
      *
      * @return the {@link #incidentReports}
      */
+    @NonNull
     public List<BlsIncidentReport> getIncidentReports() {
         return incidentReports;
     }

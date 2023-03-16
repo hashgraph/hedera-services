@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.bls.addressbook;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.LongUnaryOperator;
 
 /** Represents different thresholds that have to be met */
@@ -32,6 +33,7 @@ public enum Threshold {
     /**
      * The method which calculates the minimum value which meets the threshold
      */
+    @NonNull
     private final LongUnaryOperator minValueMeetingThresholdMethod;
 
     /**
@@ -39,7 +41,7 @@ public enum Threshold {
      *
      * @param minValueMeetingThresholdMethod the method which calculates the minimum value that meets the threshold
      */
-    Threshold(final LongUnaryOperator minValueMeetingThresholdMethod) {
+    Threshold(@NonNull final LongUnaryOperator minValueMeetingThresholdMethod) {
         this.minValueMeetingThresholdMethod = minValueMeetingThresholdMethod;
     }
 

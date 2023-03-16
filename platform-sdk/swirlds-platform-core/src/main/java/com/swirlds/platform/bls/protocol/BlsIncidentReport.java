@@ -18,14 +18,26 @@ package com.swirlds.platform.bls.protocol;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.bls.message.BlsProtocolMessage;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Objects;
 
 /**
  * Record of an incident, where a counterparty was disqualified
  *
- * @param subject the ID of the node which caused the incident, and was disqualified
+ * @param subject     the ID of the node which caused the incident, and was disqualified
  * @param description a brief description of the reason for disqualification
- * @param message the message which resulted in the disqualification. can be either a bad message
- *     from the subject, a complaint from a different party revealing the malice of the subject, or
- *     null if a message was simply missing from the subject
+ * @param message     the message which resulted in the disqualification. can be either a bad message from the subject,
+ *                    a complaint from a different party revealing the malice of the subject, or null if a message was
+ *                    simply missing from the subject
  */
-public record BlsIncidentReport(NodeId subject, String description, BlsProtocolMessage message) {}
+public record BlsIncidentReport(@NonNull NodeId subject, @NonNull String description,
+                                @Nullable BlsProtocolMessage message) {
+    /**
+     * Constructor which requires a non-null subject and description
+     */
+    public BlsIncidentReport {
+        Objects.requireNonNull(subject, "subject must not be null");
+        Objects.requireNonNull(description, "description must not be null");
+    }
+}

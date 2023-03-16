@@ -17,6 +17,7 @@
 package com.swirlds.platform.bls.protocol;
 
 import com.swirlds.platform.bls.message.BlsProtocolMessage;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
 /**
@@ -32,5 +33,6 @@ public interface BlsProtocolFinisher<T> {
      * @param inputMessages the messages required as input for the protocol finishing calculations
      * @return the protocol output
      */
-    T performFinish(List<BlsProtocolMessage> inputMessages);
+    @NonNull
+    T performFinish(@NonNull List<BlsProtocolMessage> inputMessages);
 }

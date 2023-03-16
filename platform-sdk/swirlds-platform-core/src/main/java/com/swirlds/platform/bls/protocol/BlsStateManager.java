@@ -16,6 +16,9 @@
 
 package com.swirlds.platform.bls.protocol;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 /** An object to manage the current state of a protocol */
 public class BlsStateManager {
     /** The number of rounds that have been started */
@@ -25,6 +28,7 @@ public class BlsStateManager {
     private int roundsCompleted;
 
     /** Enum representing the current state of the protocol */
+    @NonNull
     private BlsProtocolState state;
 
     /** The BlsStateManager constructor */
@@ -112,6 +116,7 @@ public class BlsStateManager {
      *
      * @return the value of {@link #state}
      */
+    @NonNull
     public BlsProtocolState getState() {
         return state;
     }

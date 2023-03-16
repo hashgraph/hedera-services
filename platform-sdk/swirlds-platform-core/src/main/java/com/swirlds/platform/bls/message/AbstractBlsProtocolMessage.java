@@ -16,14 +16,15 @@
 
 package com.swirlds.platform.bls.message;
 
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-
 import com.swirlds.common.system.NodeId;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
 /** A class representing a BLS protocol message in the abstract */
 public abstract class AbstractBlsProtocolMessage implements BlsProtocolMessage {
 
     /** The id of the message sender */
+    @NonNull
     private final NodeId senderId;
 
     /**
@@ -31,12 +32,13 @@ public abstract class AbstractBlsProtocolMessage implements BlsProtocolMessage {
      *
      * @param senderId the id of the sender
      */
-    protected AbstractBlsProtocolMessage(final NodeId senderId) {
-        this.senderId = throwArgNull(senderId, "senderId");
+    protected AbstractBlsProtocolMessage(@NonNull final NodeId senderId) {
+        this.senderId = Objects.requireNonNull(senderId, "senderId must not be null");
     }
 
     /** {@inheritDoc} */
     @Override
+    @NonNull
     public NodeId getSenderId() {
         return senderId;
     }

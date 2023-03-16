@@ -18,6 +18,8 @@ package com.swirlds.platform.bls.protocol;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.bls.message.BlsProtocolMessage;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -32,10 +34,11 @@ public interface BlsProtocolManager<T> {
      * Executes the next round of the protocol
      *
      * @param inputMessages the messages that are an input to the round
-     * @return the message generated from the protocol round
+     * @return the message generated from the protocol round, or null if no message was generated
      * @throws IllegalStateException if no more rounds exist to be called
      */
-    BlsProtocolMessage executeNextRound(List<BlsProtocolMessage> inputMessages);
+    @Nullable
+    BlsProtocolMessage executeNextRound(@NonNull List<BlsProtocolMessage> inputMessages);
 
     /**
      * Finishes the protocol
@@ -43,7 +46,8 @@ public interface BlsProtocolManager<T> {
      * @param inputMessages the input messages needed to finish
      * @return the protocol output object
      */
-    T finish(List<BlsProtocolMessage> inputMessages);
+    @NonNull
+    T finish(@NonNull List<BlsProtocolMessage> inputMessages);
 
     /**
      * Accepts a list of messages, filters them, and returns a list containing messages which match a certain subtype,
@@ -59,10 +63,11 @@ public interface BlsProtocolManager<T> {
      * @param <U>                  the type of messages that should be returned
      * @return a list of messages of type U
      */
+    @NonNull
     <U extends BlsProtocolMessage> List<U> filterCast(
-            List<BlsProtocolMessage> inputMessages,
-            Collection<NodeId> acceptableSenders,
-            Class<U> subtype,
+            @NonNull List<BlsProtocolMessage> inputMessages,
+            @NonNull Collection<NodeId> acceptableSenders,
+            @NonNull Class<U> subtype,
             boolean disqualifyNonSenders);
 
     /**
@@ -70,7 +75,7 @@ public interface BlsProtocolManager<T> {
      *
      * @param round the round to add
      */
-    void addRound(BlsProtocolRound round);
+    void addRound(@NonNull BlsProtocolRound round);
 
     /**
      * Declares a counterparty to be offline. Does necessary cleanup, and evaluates whether the protocol still has
@@ -79,7 +84,7 @@ public interface BlsProtocolManager<T> {
      * @param nodeId the id of the node to declare offline
      * @param reason a string describing why the party was declared malicious
      */
-    void declareOfflineCounterparty(NodeId nodeId, String reason);
+    void declareOfflineCounterparty(@NonNull NodeId nodeId, @NonNull String reason);
 
     /**
      * Declares a counterparty to be malicious. Does necessary cleanup, and evaluates whether the protocol still has
@@ -89,13 +94,15 @@ public interface BlsProtocolManager<T> {
      * @param reason  a string describing why the party was declared malicious
      * @param trigger the message which caused the counterparty to be declared malicious
      */
-    void declareMaliciousCounterparty(NodeId nodeId, String reason, BlsProtocolMessage trigger);
+    void declareMaliciousCounterparty(@NonNull NodeId nodeId, @NonNull String reason,
+            @NonNull BlsProtocolMessage trigger);
 
     /**
      * Gets a set of nodes that have been declared offline
      *
      * @return the offline nodes
      */
+    @NonNull
     Set<NodeId> getOfflineNodes();
 
     /**
@@ -103,6 +110,7 @@ public interface BlsProtocolManager<T> {
      *
      * @return the malicious nodes
      */
+    @NonNull
     Set<NodeId> getMaliciousNodes();
 
     /**
@@ -110,6 +118,7 @@ public interface BlsProtocolManager<T> {
      *
      * @return the incident reports
      */
+    @NonNull
     List<BlsIncidentReport> getIncidentReports();
 
     /**
@@ -118,7 +127,7 @@ public interface BlsProtocolManager<T> {
      * @param nodeId the id of the node to check
      * @return true if the node has been disqualified, otherwise false
      */
-    boolean isCounterpartyDisqualified(NodeId nodeId);
+    boolean isCounterpartyDisqualified(@NonNull NodeId nodeId);
 
     /**
      * Called by a protocol when a catastrophic error has occurred, and execution cannot continue
@@ -130,6 +139,7 @@ public interface BlsProtocolManager<T> {
      *
      * @return the protocol state
      */
+    @NonNull
     BlsProtocolState getState();
 
     /**
@@ -142,7 +152,7 @@ public interface BlsProtocolManager<T> {
      *
      * @param cleanupMethod the method to use to clean up
      */
-    void setDisqualificationCleanup(BlsDisqualificationCleanup cleanupMethod);
+    void setDisqualificationCleanup(@NonNull BlsDisqualificationCleanup cleanupMethod);
 
     /**
      * Sets the method that the protocol uses to perform final calculations
@@ -154,7 +164,7 @@ public interface BlsProtocolManager<T> {
      *
      * @param finishMethod the method which performs the calculations of the protocol finish phase
      */
-    void setFinishingMethod(BlsProtocolFinisher<T> finishMethod);
+    void setFinishingMethod(@NonNull BlsProtocolFinisher<T> finishMethod);
 
     /**
      * Sets the method which the protocol uses to determine if enough qualified parties still exist to continue
@@ -167,5 +177,5 @@ public interface BlsProtocolManager<T> {
      *
      * @param viabilityChecker the method to check whether the protocol is still viable
      */
-    void setViabilityChecker(BlsProtocolViabilityChecker viabilityChecker);
+    void setViabilityChecker(@NonNull BlsProtocolViabilityChecker viabilityChecker);
 }

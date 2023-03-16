@@ -17,6 +17,7 @@
 package com.swirlds.platform.bls.message;
 
 import com.swirlds.common.system.NodeId;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /** An interface representing a BlsProtocolMessage */
 public interface BlsProtocolMessage {
@@ -25,5 +26,6 @@ public interface BlsProtocolMessage {
      *
      * @return the message senderId
      */
+    @NonNull
     NodeId getSenderId();
 }

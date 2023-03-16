@@ -21,8 +21,10 @@ import static com.swirlds.platform.bls.BlsUtils.throwIfNotPublicKeyGroup;
 
 import com.hedera.platform.bls.api.BilinearMap;
 import com.hedera.platform.bls.api.GroupElement;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.MessageDigest;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Random;
 
 /**
@@ -35,14 +37,17 @@ import java.util.Random;
 public class RandomGroupElements {
 
     /** The first random group element, in the public key group of the bilinear map */
+    @NonNull
     private final GroupElement randomGroupElement1;
 
     /** The second random group element, in the public key group of the bilinear map */
+    @NonNull
     private final GroupElement randomGroupElement2;
 
     /**
      * The underlying bilinear map. The random elements are part of the key group of this bilinear map
      */
+    @NonNull
     private final BilinearMap bilinearMap;
 
     /**
@@ -51,7 +56,11 @@ public class RandomGroupElements {
      * @param bilinearMap the underlying bilinear map
      * @param random      a source of randomness
      */
-    public RandomGroupElements(final BilinearMap bilinearMap, final Random random) {
+    public RandomGroupElements(@NonNull final BilinearMap bilinearMap, @NonNull final Random random) {
+        this.bilinearMap = Objects.requireNonNull(bilinearMap, "bilinearMap must not be null");
+
+        Objects.requireNonNull(random, "random must not be null");
+
         this.randomGroupElement1 = bilinearMap
                 .keyGroup()
                 .randomElement(randomByteArray(random, 32))
@@ -61,8 +70,6 @@ public class RandomGroupElements {
                 .keyGroup()
                 .randomElement(randomByteArray(random, 32))
                 .compress();
-
-        this.bilinearMap = bilinearMap;
     }
 
     /**
@@ -74,9 +81,9 @@ public class RandomGroupElements {
      * @param randomGroupElement2 the second random group element
      */
     public RandomGroupElements(
-            final BilinearMap bilinearMap,
-            final GroupElement randomGroupElement1,
-            final GroupElement randomGroupElement2) {
+            @NonNull final BilinearMap bilinearMap,
+            @NonNull final GroupElement randomGroupElement1,
+            @NonNull final GroupElement randomGroupElement2) {
 
         throwIfNotPublicKeyGroup(bilinearMap, randomGroupElement1, "randomGroupElement1");
         throwIfNotPublicKeyGroup(bilinearMap, randomGroupElement2, "randomGroupElement2");
@@ -92,6 +99,7 @@ public class RandomGroupElements {
      *
      * @return {@link #randomGroupElement1}
      */
+    @NonNull
     public GroupElement getRandomGroupElement1() {
         return randomGroupElement1;
     }
@@ -101,6 +109,7 @@ public class RandomGroupElements {
      *
      * @return {@link #randomGroupElement2}
      */
+    @NonNull
     public GroupElement getRandomGroupElement2() {
         return randomGroupElement2;
     }
@@ -110,6 +119,7 @@ public class RandomGroupElements {
      *
      * @return the bilinear map
      */
+    @NonNull
     public BilinearMap getBilinearMap() {
         return bilinearMap;
     }
@@ -120,7 +130,9 @@ public class RandomGroupElements {
      * @param digest the digest to use to generate the commitment
      * @return the generated commitment
      */
-    public byte[] commit(final MessageDigest digest) {
+    @NonNull
+    public byte[] commit(@NonNull final MessageDigest digest) {
+        Objects.requireNonNull(digest, "digest must not be null");
 
         digest.update(randomGroupElement1.toBytes());
         digest.update(randomGroupElement2.toBytes());

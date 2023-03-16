@@ -25,12 +25,14 @@ import com.swirlds.platform.bls.addressbook.BlsAddressBook;
 import com.swirlds.platform.bls.message.BlsProtocolMessage;
 import com.swirlds.platform.bls.message.CommitmentMessage;
 import com.swirlds.platform.bls.message.OpeningMessage;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 
 /**
@@ -51,36 +53,43 @@ public class CrsProtocol implements BlsProtocol<Crs> {
     /**
      * All the commitments that were broadcast in round 1
      */
+    @NonNull
     private final Map<NodeId, byte[]> commitments;
 
     /**
      * An object containing the random group elements this protocol generates, commits to, and finally opens
      */
+    @NonNull
     private final RandomGroupElements randomGroupElements;
 
     /**
      * The bilinear map that will be used throughout the BLS protocols
      */
+    @NonNull
     private final BilinearMap bilinearMap;
 
     /**
      * The address book of nodes performing this protocol
      */
+    @NonNull
     protected final BlsAddressBook addressBook;
 
     /**
      * The id of this node, where the protocol is running
      */
+    @NonNull
     private final NodeId nodeId;
 
     /**
      * The manager for this protocol
      */
+    @NonNull
     private final BlsProtocolManager<Crs> protocolManager;
 
     /**
      * The digest used throughout the protocol
      */
+    @NonNull
     private final MessageDigest digest;
 
     /**
@@ -94,18 +103,21 @@ public class CrsProtocol implements BlsProtocol<Crs> {
      * @param random          a source of randomness
      */
     public CrsProtocol(
-            final BlsAddressBook addressBook,
-            final NodeId nodeId,
-            final BlsProtocolManager<Crs> protocolManager,
-            final BilinearMap bilinearMap,
-            final MessageDigest digest,
-            final Random random) {
+            @NonNull final BlsAddressBook addressBook,
+            @NonNull final NodeId nodeId,
+            @NonNull final BlsProtocolManager<Crs> protocolManager,
+            @NonNull final BilinearMap bilinearMap,
+            @NonNull final MessageDigest digest,
+            @NonNull final Random random) {
 
-        this.addressBook = addressBook;
-        this.nodeId = nodeId;
-        this.digest = digest;
+        this.addressBook = Objects.requireNonNull(addressBook, "addressBook must not be null");
+        this.nodeId = Objects.requireNonNull(nodeId, "nodeId must not be null");
+        this.protocolManager = Objects.requireNonNull(protocolManager, "protocolManager must not be null");
+        this.bilinearMap = Objects.requireNonNull(bilinearMap, "bilinearMap must not be null");
+        this.digest = Objects.requireNonNull(digest, "digest must not be null");
 
-        this.protocolManager = protocolManager;
+        Objects.requireNonNull(random, "random must not be null");
+
         this.protocolManager.addRound(this::broadcastCommitment);
         this.protocolManager.addRound(this::verifyAndOpen);
         this.protocolManager.setDisqualificationCleanup(this::cleanupAfterDisqualification);
@@ -113,8 +125,6 @@ public class CrsProtocol implements BlsProtocol<Crs> {
         this.protocolManager.setFinishingMethod(this::performFinish);
 
         this.commitments = new HashMap<>();
-        this.bilinearMap = bilinearMap;
-
         this.randomGroupElements = new RandomGroupElements(bilinearMap, random);
     }
 
@@ -125,7 +135,10 @@ public class CrsProtocol implements BlsProtocol<Crs> {
      *
      * @return the {@link CommitmentMessage}
      */
-    private BlsProtocolMessage broadcastCommitment(final List<BlsProtocolMessage> inputMessages) {
+    @NonNull
+    private BlsProtocolMessage broadcastCommitment(@NonNull final List<BlsProtocolMessage> inputMessages) {
+        Objects.requireNonNull(inputMessages, "inputMessages must not be null");
+
         return new CommitmentMessage(nodeId, randomGroupElements, digest);
     }
 
@@ -138,7 +151,10 @@ public class CrsProtocol implements BlsProtocol<Crs> {
      * @param inputMessages a list of {@link BlsProtocolMessage}s received in round 1
      * @return an {@link OpeningMessage}
      */
-    private BlsProtocolMessage verifyAndOpen(final List<BlsProtocolMessage> inputMessages) {
+    @NonNull
+    private BlsProtocolMessage verifyAndOpen(@NonNull final List<BlsProtocolMessage> inputMessages) {
+        Objects.requireNonNull(inputMessages, "inputMessages must not be null");
+
         final List<CommitmentMessage> commitmentMessages = protocolManager.filterCast(
                 inputMessages, addressBook.getSortedNodeIds(), CommitmentMessage.class, true);
 
@@ -152,7 +168,10 @@ public class CrsProtocol implements BlsProtocol<Crs> {
     /**
      * <p>Throws an error if not enough commitments were received in the last round</p>
      */
-    private Crs performFinish(final List<BlsProtocolMessage> inputMessages) {
+    @NonNull
+    private Crs performFinish(@NonNull final List<BlsProtocolMessage> inputMessages) {
+        Objects.requireNonNull(inputMessages, "inputMessages must not be null");
+
         // Cast messages to correct type
         final List<OpeningMessage> openingMessages =
                 protocolManager.filterCast(inputMessages, addressBook.getSortedNodeIds(), OpeningMessage.class, true);
@@ -188,6 +207,7 @@ public class CrsProtocol implements BlsProtocol<Crs> {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public BlsProtocolManager<Crs> getProtocolManager() {
         return protocolManager;
     }
@@ -196,6 +216,7 @@ public class CrsProtocol implements BlsProtocol<Crs> {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public BilinearMap getBilinearMap() {
         return bilinearMap;
     }
@@ -205,7 +226,9 @@ public class CrsProtocol implements BlsProtocol<Crs> {
      *
      * @param nodeId the id of the node that was disqualified
      */
-    private void cleanupAfterDisqualification(final NodeId nodeId) {
+    private void cleanupAfterDisqualification(@NonNull final NodeId nodeId) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
+
         commitments.remove(nodeId);
     }
 

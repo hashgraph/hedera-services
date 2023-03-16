@@ -17,6 +17,8 @@
 package com.swirlds.platform.bls.protocol;
 
 import com.swirlds.platform.bls.message.BlsProtocolMessage;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 
 /** A functional interface representing a single round of a {@link BlsProtocol} */
@@ -26,7 +28,8 @@ public interface BlsProtocolRound {
      * A function which executes a single protocol round
      *
      * @param inputMessages the messages required as input for the protocol round
-     * @return the message produced by the protocol round
+     * @return the message produced by the protocol round, or null if no message is produced
      */
-    BlsProtocolMessage execute(List<BlsProtocolMessage> inputMessages);
+    @Nullable
+    BlsProtocolMessage execute(@NonNull List<BlsProtocolMessage> inputMessages);
 }

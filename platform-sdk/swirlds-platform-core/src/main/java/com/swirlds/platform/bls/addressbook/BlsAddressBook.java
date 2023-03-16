@@ -19,6 +19,8 @@ package com.swirlds.platform.bls.addressbook;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.bls.crypto.BlsPublicKey;
 import com.swirlds.platform.bls.crypto.PublicKeyShares;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -35,15 +37,18 @@ import java.util.TreeSet;
 public class BlsAddressBook {
 
     /** Mapping from nodeId to a data object describing the node */
+    @NonNull
     private final Map<NodeId, BlsNodeData> nodeDataMap;
 
     /** A sorted set of nodeIds */
+    @NonNull
     private final SortedSet<NodeId> sortedNodeIds;
 
     /** Total number of shares belonging to all nodes in the address book */
     private int totalShares;
 
     /** The {@link PublicKeyShares} object, representing the public keys of all existing shares */
+    @NonNull
     private PublicKeyShares publicKeyShares;
 
     /** True if nodes have been added or removed since calling {@link #recomputeTransientData()} */
@@ -63,16 +68,13 @@ public class BlsAddressBook {
      *
      * @param otherAddressBook the address book being copied
      */
-    public BlsAddressBook(final BlsAddressBook otherAddressBook) {
+    public BlsAddressBook(@NonNull final BlsAddressBook otherAddressBook) {
         Objects.requireNonNull(otherAddressBook, "otherAddressBook must not be null");
 
         final Map<NodeId, BlsNodeData> copiedNodeDataMap = new HashMap<>();
 
         for (final Map.Entry<NodeId, BlsNodeData> nodeDataEntry : otherAddressBook.nodeDataMap.entrySet()) {
-            final NodeId nodeId = nodeDataEntry.getKey();
-            final BlsNodeData nodeData = nodeDataEntry.getValue();
-
-            copiedNodeDataMap.put(nodeId, new BlsNodeData(nodeData));
+            copiedNodeDataMap.put(nodeDataEntry.getKey(), new BlsNodeData(nodeDataEntry.getValue()));
         }
 
         this.nodeDataMap = copiedNodeDataMap;
@@ -87,6 +89,7 @@ public class BlsAddressBook {
      *
      * @return a sorted list of node ids
      */
+    @NonNull
     public SortedSet<NodeId> getSortedNodeIds() {
         return Collections.unmodifiableSortedSet(sortedNodeIds);
     }
@@ -97,13 +100,8 @@ public class BlsAddressBook {
      * @param nodeId which node's share count is being requested
      * @return the corresponding share count
      */
-    public int getNodeShareCount(final NodeId nodeId) {
-        if (!containsNode(nodeId)) {
-            throw new IllegalArgumentException(
-                    String.format("Cannot get share count for node %s that isn't in the address book", nodeId));
-        }
-
-        return nodeDataMap.get(nodeId).getShareCount();
+    public int getNodeShareCount(@NonNull final NodeId nodeId) {
+        return getNodeData(nodeId).getShareCount();
     }
 
     /**
@@ -123,13 +121,9 @@ public class BlsAddressBook {
      * @param nodeId which node's public key is being requested
      * @return the corresponding IBE public key
      */
-    public BlsPublicKey getIbePublicKey(final NodeId nodeId) {
-        if (!containsNode(nodeId)) {
-            throw new IllegalArgumentException(
-                    String.format("Cannot get public key for node %s that isn't in the address book", nodeId));
-        }
-
-        return nodeDataMap.get(nodeId).getIbePublicKey();
+    @Nullable
+    public BlsPublicKey getIbePublicKey(@NonNull final NodeId nodeId) {
+        return getNodeData(nodeId).getIbePublicKey();
     }
 
     /**
@@ -142,7 +136,9 @@ public class BlsAddressBook {
 
         int shareId = 1;
         for (final NodeId nodeId : sortedNodeIds) {
-            int nodeShareCount = getNodeShareCount(nodeId);
+            final BlsNodeData nodeData = getNodeData(nodeId);
+
+            final int nodeShareCount = nodeData.getShareCount();
             totalShares = Math.addExact(totalShares, nodeShareCount);
 
             final List<Integer> nodeShareIds = new ArrayList<>();
@@ -152,7 +148,6 @@ public class BlsAddressBook {
                 ++shareId;
             }
 
-            final BlsNodeData nodeData = nodeDataMap.get(nodeId);
             nodeData.setShareIds(nodeShareIds);
         }
 
@@ -166,9 +161,8 @@ public class BlsAddressBook {
      * @param stake        consensus stake belonging to the new node
      * @param ibePublicKey IBE public key of the new node
      */
-    public void addNode(final NodeId nodeId, final long stake, final BlsPublicKey ibePublicKey) {
+    public void addNode(@NonNull final NodeId nodeId, final long stake, @Nullable final BlsPublicKey ibePublicKey) {
         Objects.requireNonNull(nodeId, "nodeId must not be null");
-        Objects.requireNonNull(ibePublicKey, "ibePublicKey must not be null");
 
         nodeDataMap.put(nodeId, new BlsNodeData(stake, ibePublicKey));
         sortedNodeIds.add(nodeId);
@@ -181,7 +175,7 @@ public class BlsAddressBook {
      *
      * @param nodeId the id of the node to remove
      */
-    public void removeNode(final NodeId nodeId) {
+    public void removeNode(@NonNull final NodeId nodeId) {
         Objects.requireNonNull(nodeId, "nodeId must not be null");
 
         nodeDataMap.remove(nodeId);
@@ -195,7 +189,7 @@ public class BlsAddressBook {
      *
      * @param publicKeyShares the new public key shares
      */
-    public void setPublicKeyShares(final PublicKeyShares publicKeyShares) {
+    public void setPublicKeyShares(@NonNull final PublicKeyShares publicKeyShares) {
         this.publicKeyShares = Objects.requireNonNull(publicKeyShares, "publicKeyShares must not be null");
     }
 
@@ -204,6 +198,7 @@ public class BlsAddressBook {
      *
      * @return the public key shares
      */
+    @NonNull
     public PublicKeyShares getPublicKeyShares() {
         return publicKeyShares;
     }
@@ -214,7 +209,7 @@ public class BlsAddressBook {
      * @param nodeId the id of the node to check
      * @return true if the node is in this address book, otherwise false
      */
-    public boolean containsNode(final NodeId nodeId) {
+    public boolean containsNode(@NonNull final NodeId nodeId) {
         Objects.requireNonNull(nodeId, "nodeId must not be null");
 
         return nodeDataMap.containsKey(nodeId);
@@ -226,15 +221,11 @@ public class BlsAddressBook {
      * @param nodeId the id of the node to get share ids for
      * @return a list of share ids that belong to nodeId
      */
-    public List<Integer> getNodeShareIds(final NodeId nodeId) {
+    @NonNull
+    public List<Integer> getNodeShareIds(@NonNull final NodeId nodeId) {
         checkDirty("getNodeShareIds");
 
-        if (!containsNode(nodeId)) {
-            throw new IllegalArgumentException(
-                    String.format("Cannot get share ids for node %s that isn't in the address book", nodeId));
-        }
-
-        return nodeDataMap.get(nodeId).getShareIds();
+        return getNodeData(nodeId).getShareIds();
     }
 
     /**
@@ -243,7 +234,7 @@ public class BlsAddressBook {
      * @param nodeSet the set of nodes to get the combined share count of
      * @return the combined share count of the set of nodes
      */
-    public int getCombinedShares(final Set<NodeId> nodeSet) {
+    public int getCombinedShares(@NonNull final Set<NodeId> nodeSet) {
         Objects.requireNonNull(nodeSet, "nodeSet must not be null");
 
         int combinedShares = 0;
@@ -251,8 +242,7 @@ public class BlsAddressBook {
         for (final NodeId nodeId : nodeSet) {
             if (containsNode(nodeId)) {
                 // we don't have to worry about overflow, since we check elsewhere that even the
-                // total share count won't
-                // exceed integer bounds
+                // total share count won't exceed integer bounds
                 combinedShares += getNodeShareCount(nodeId);
             }
         }
@@ -267,7 +257,8 @@ public class BlsAddressBook {
      * @param offlineNodes   the set of offline nodes
      * @return the combined share count of nodes in neither malicious nor offline sets
      */
-    public int getNonDisqualifiedShareCount(final Set<NodeId> maliciousNodes, final Set<NodeId> offlineNodes) {
+    public int getNonDisqualifiedShareCount(@NonNull final Set<NodeId> maliciousNodes,
+            @NonNull final Set<NodeId> offlineNodes) {
         return getTotalShares() - getCombinedShares(maliciousNodes) - getCombinedShares(offlineNodes);
     }
 
@@ -277,7 +268,7 @@ public class BlsAddressBook {
      * @param threshold the threshold the returned share count satisfies
      * @return the number of shares which satisfy the given threshold
      */
-    public int getSharesSatisfyingThreshold(final Threshold threshold) {
+    public int getSharesSatisfyingThreshold(@Nullable final Threshold threshold) {
         if (sortedNodeIds.isEmpty()) {
             throw new IllegalStateException("Cannot determine threshold if address book contains no nodes");
         }
@@ -299,19 +290,14 @@ public class BlsAddressBook {
      * @param nodeId       the id of the node to set the public key for
      * @param ibePublicKey the node's new public key
      */
-    public void setIbePublicKey(final NodeId nodeId, final BlsPublicKey ibePublicKey) {
-        if (!containsNode(nodeId)) {
-            throw new IllegalArgumentException(
-                    String.format("Cannot set IBE public key for node %s that isn't in the address book", nodeId));
-        }
+    public void setIbePublicKey(@NonNull final NodeId nodeId, @NonNull final BlsPublicKey ibePublicKey) {
+        final BlsNodeData nodeData = getNodeData(nodeId);
 
-        Objects.requireNonNull(ibePublicKey, "ibePublicKey must not be null");
-
-        if (nodeDataMap.get(nodeId).getIbePublicKey() != null) {
+        if (nodeData.getIbePublicKey() != null) {
             throw new IllegalStateException("Cannot overwrite existing IBE public key");
         }
 
-        nodeDataMap.get(nodeId).setIbePublicKey(ibePublicKey);
+        nodeData.setIbePublicKey(ibePublicKey);
     }
 
     /**
@@ -320,13 +306,8 @@ public class BlsAddressBook {
      * @param nodeId   the id of the node to set the stake of
      * @param newStake the new consensus stake value for the node
      */
-    public void setNodeStake(final NodeId nodeId, final long newStake) {
-        if (!containsNode(nodeId)) {
-            throw new IllegalArgumentException(
-                    String.format("Cannot set stake for node %s that doesn't exist in address book", nodeId));
-        }
-
-        nodeDataMap.get(nodeId).setStake(newStake);
+    public void setNodeStake(@NonNull final NodeId nodeId, final long newStake) {
+        getNodeData(nodeId).setStake(newStake);
 
         dirty = true;
     }
@@ -337,11 +318,27 @@ public class BlsAddressBook {
      * @param attemptedOperation the operation that is being attempted, for logging's sake in case address book is
      *                           dirty
      */
-    private void checkDirty(final String attemptedOperation) {
+    private void checkDirty(@NonNull final String attemptedOperation) {
+        Objects.requireNonNull(attemptedOperation, "attemptedOperation string must not be null");
+
         if (!dirty) {
             return;
         }
 
         throw new IllegalStateException("Cannot " + attemptedOperation + ", since address book is dirty");
+    }
+
+    /**
+     * Safely gets the node data for a given node id that is known to exist in the address book
+     *
+     * @param nodeId the node to get the BlsNodeData for
+     * @return the BlsNodeData for the given node id
+     */
+    @NonNull
+    private BlsNodeData getNodeData(@NonNull final NodeId nodeId) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
+
+        return Objects.requireNonNull(nodeDataMap.get(nodeId),
+                String.format("nodeId %s is not in the address book", nodeId));
     }
 }

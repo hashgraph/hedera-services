@@ -16,18 +16,18 @@
 
 package com.swirlds.platform.bls.message;
 
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-
 import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.bls.protocol.CrsProtocol;
 import com.swirlds.platform.bls.protocol.RandomGroupElements;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
 /**
- * The type of message sent in the second round of {@link CrsProtocol}, which opens elements
- * previously committed to
+ * The type of message sent in the second round of {@link CrsProtocol}, which opens elements previously committed to
  */
 public class OpeningMessage extends AbstractBlsProtocolMessage {
     /** The random group elements being opened */
+    @NonNull
     private final RandomGroupElements randomGroupElements;
 
     /**
@@ -35,10 +35,10 @@ public class OpeningMessage extends AbstractBlsProtocolMessage {
      *
      * @param randomGroupElements the random group elements being opened
      */
-    public OpeningMessage(final NodeId senderId, final RandomGroupElements randomGroupElements) {
+    public OpeningMessage(@NonNull final NodeId senderId, @NonNull final RandomGroupElements randomGroupElements) {
         super(senderId);
 
-        this.randomGroupElements = throwArgNull(randomGroupElements, "randomGroupElements");
+        this.randomGroupElements = Objects.requireNonNull(randomGroupElements, "randomGroupElements must not be null");
     }
 
     /**
@@ -46,6 +46,7 @@ public class OpeningMessage extends AbstractBlsProtocolMessage {
      *
      * @return the {@link #randomGroupElements} object
      */
+    @NonNull
     public RandomGroupElements getRandomGroupElements() {
         return randomGroupElements;
     }

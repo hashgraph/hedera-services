@@ -20,28 +20,31 @@ import static com.swirlds.platform.bls.BlsUtils.throwIfNotPublicKeyGroup;
 
 import com.hedera.platform.bls.api.BilinearMap;
 import com.hedera.platform.bls.api.GroupElement;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * The "Common Reference String" output object of {@link CrsProtocol}
  *
  * <p>Contains 2 generator points, which are used for threshold signatures and IBE encryption,
- * respectively. While it would be mathematically feasible to use a single generator to perform both
- * functions, the existing proofs were created with separate generators. This is no problem, since
- * the price of a second generator point is negligible.
+ * respectively. While it would be mathematically feasible to use a single generator to perform both functions, the
+ * existing proofs were created with separate generators. This is no problem, since the price of a second generator
+ * point is negligible.
  *
- * @param bilinearMap the {@link BilinearMap} signatures are created for and verified over
- * @param thresholdGenerator independent generator for BLS threshold signatures. exists in the key
- *     group of the bilinear map, since the generator is used to create share public keys
- * @param ibeGenerator independent generator, used for IBE encryption. exists in the key group of
- *     the bilinear map, since the generator is used to create IBE public keys
+ * @param bilinearMap        the {@link BilinearMap} signatures are created for and verified over
+ * @param thresholdGenerator independent generator for BLS threshold signatures. exists in the key group of the bilinear
+ *                           map, since the generator is used to create share public keys
+ * @param ibeGenerator       independent generator, used for IBE encryption. exists in the key group of the bilinear
+ *                           map, since the generator is used to create IBE public keys
  */
-public record Crs(BilinearMap bilinearMap, GroupElement thresholdGenerator, GroupElement ibeGenerator) {
+public record Crs(@NonNull BilinearMap bilinearMap,
+                  @NonNull GroupElement thresholdGenerator,
+                  @NonNull GroupElement ibeGenerator) {
     /**
      * Constructor asserting correct generator group membership
      *
-     * @param bilinearMap the bilinearMap in use
+     * @param bilinearMap        the bilinearMap in use
      * @param thresholdGenerator the public key group generator for creating share public keys
-     * @param ibeGenerator the public key group generator for creating IBE public keys
+     * @param ibeGenerator       the public key group generator for creating IBE public keys
      */
     public Crs {
         throwIfNotPublicKeyGroup(bilinearMap, thresholdGenerator, "thresholdGenerator");

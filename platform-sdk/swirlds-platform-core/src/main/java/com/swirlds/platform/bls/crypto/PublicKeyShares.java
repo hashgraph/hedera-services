@@ -16,12 +16,15 @@
 
 package com.swirlds.platform.bls.crypto;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /** Contains the public keys that correspond to all keyshares of an epoch */
 public class PublicKeyShares {
     /** The public keys of the epoch. The public key for a shareId is at index shareId - 1 */
+    @NonNull
     private final List<BlsPublicKey> publicKeys;
 
     /** Constructor */
@@ -34,7 +37,9 @@ public class PublicKeyShares {
      *
      * @param otherPublicKeyShares the {@link PublicKeyShares} object being copied
      */
-    public PublicKeyShares(final PublicKeyShares otherPublicKeyShares) {
+    public PublicKeyShares(@NonNull final PublicKeyShares otherPublicKeyShares) {
+        Objects.requireNonNull(otherPublicKeyShares, "otherPublicKeyShares must not be null");
+
         final List<BlsPublicKey> newPublicKeys = new ArrayList<>();
         for (final BlsPublicKey publicKey : otherPublicKeyShares.publicKeys) {
             newPublicKeys.add(new BlsPublicKey(publicKey));
@@ -49,8 +54,9 @@ public class PublicKeyShares {
      * @param shareId the shareId to get the public key of
      * @return the public key of the share
      */
+    @NonNull
     public BlsPublicKey getPublicKey(final int shareId) {
-        if (shareId <= 0) {
+        if (shareId <= 0 || shareId > publicKeys.size()) {
             throw new IllegalArgumentException("Invalid share id: " + shareId);
         }
 
@@ -63,7 +69,9 @@ public class PublicKeyShares {
      *
      * @param publicKey the public key to add
      */
-    public void addPublicKey(final BlsPublicKey publicKey) {
+    public void addPublicKey(@NonNull final BlsPublicKey publicKey) {
+        Objects.requireNonNull(publicKey, "publicKey must not be null");
+
         publicKeys.add(publicKey);
     }
 

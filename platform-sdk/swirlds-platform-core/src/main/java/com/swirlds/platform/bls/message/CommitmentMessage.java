@@ -16,12 +16,12 @@
 
 package com.swirlds.platform.bls.message;
 
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-
 import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.bls.protocol.CrsProtocol;
 import com.swirlds.platform.bls.protocol.RandomGroupElements;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.MessageDigest;
+import java.util.Objects;
 
 /**
  * The message type sent in the first {@link CrsProtocol} round
@@ -31,6 +31,7 @@ import java.security.MessageDigest;
 public class CommitmentMessage extends AbstractBlsProtocolMessage {
 
     /** A byte array representing a commitment */
+    @NonNull
     private final byte[] commitment;
 
     /**
@@ -40,11 +41,13 @@ public class CommitmentMessage extends AbstractBlsProtocolMessage {
      * @param randomGroupElements the elements being committed to
      * @param digest              the digest used to generate the commitment
      */
-    public CommitmentMessage(
-            final NodeId senderId, final RandomGroupElements randomGroupElements, final MessageDigest digest) {
+    public CommitmentMessage(@NonNull final NodeId senderId, @NonNull final RandomGroupElements randomGroupElements,
+            @NonNull final MessageDigest digest) {
+
         super(senderId);
 
-        throwArgNull(randomGroupElements, "randomGroupElements");
+        Objects.requireNonNull(randomGroupElements, "randomGroupElements must not be null");
+        Objects.requireNonNull(digest, "digest must not be null");
 
         this.commitment = randomGroupElements.commit(digest);
     }
@@ -56,10 +59,13 @@ public class CommitmentMessage extends AbstractBlsProtocolMessage {
      * @param commitment a byte array representing the commitment the message will contain
      * @param digest     the digest used to generate the commitment
      */
-    public CommitmentMessage(final NodeId senderId, final byte[] commitment, final MessageDigest digest) {
+    public CommitmentMessage(@NonNull final NodeId senderId, @NonNull final byte[] commitment,
+            @NonNull final MessageDigest digest) {
+
         super(senderId);
 
-        throwArgNull(commitment, "commitment");
+        Objects.requireNonNull(commitment, "commitment must not be null");
+        Objects.requireNonNull(digest, "digest must not be null");
 
         if (commitment.length != digest.getDigestLength()) {
             throw new IllegalArgumentException(
@@ -74,6 +80,7 @@ public class CommitmentMessage extends AbstractBlsProtocolMessage {
      *
      * @return the commitment
      */
+    @NonNull
     public byte[] getCommitment() {
         return commitment;
     }

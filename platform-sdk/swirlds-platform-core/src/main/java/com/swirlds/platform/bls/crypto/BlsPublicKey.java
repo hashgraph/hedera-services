@@ -20,15 +20,15 @@ import static com.swirlds.platform.bls.BlsUtils.throwIfNotPublicKeyGroup;
 
 import com.hedera.platform.bls.api.BilinearMap;
 import com.hedera.platform.bls.api.GroupElement;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A BLS public key
  *
  * @param bilinearMap the bilinear map behind the encryption scheme
- * @param keyMaterial the underlying public key material, that we do math with. in the key group of
- *     the bilinear map
+ * @param keyMaterial the underlying public key material, that we do math with. in the key group of the bilinear map
  */
-public record BlsPublicKey(BilinearMap bilinearMap, GroupElement keyMaterial) {
+public record BlsPublicKey(@NonNull BilinearMap bilinearMap, @NonNull GroupElement keyMaterial) {
 
     /** Constructor, which checks the group membership of the input key material */
     public BlsPublicKey {
@@ -40,7 +40,7 @@ public record BlsPublicKey(BilinearMap bilinearMap, GroupElement keyMaterial) {
      *
      * @param otherPublicKey the public key being copied
      */
-    public BlsPublicKey(final BlsPublicKey otherPublicKey) {
+    public BlsPublicKey(@NonNull final BlsPublicKey otherPublicKey) {
         this(otherPublicKey.bilinearMap, otherPublicKey.keyMaterial.copy());
     }
 }
