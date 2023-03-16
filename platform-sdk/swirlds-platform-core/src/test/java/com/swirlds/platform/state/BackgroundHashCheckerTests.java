@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.common.test.state.DummySwirldState2;
+import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.SignedState;
@@ -72,7 +72,7 @@ class BackgroundHashCheckerTests {
         validState1.getState().getPlatformState().getPlatformData().setEvents(new EventImpl[0]);
         validState1.getState().getPlatformState().getPlatformData().setMinGenInfo(List.of());
         validState1.getState().getPlatformState().getPlatformData().setRound(1);
-        validState1.getState().setSwirldState(new DummySwirldState2());
+        validState1.getState().setSwirldState(new DummySwirldState());
         MerkleCryptoFactory.getInstance().digestTreeSync(validState1.getState());
         signedState.set(validState1);
         TimeUnit.MILLISECONDS.sleep(200);
@@ -83,7 +83,7 @@ class BackgroundHashCheckerTests {
         validState2.getState().getPlatformState().getPlatformData().setEvents(new EventImpl[0]);
         validState2.getState().getPlatformState().getPlatformData().setMinGenInfo(List.of());
         validState2.getState().getPlatformState().getPlatformData().setRound(2);
-        validState2.getState().setSwirldState(new DummySwirldState2());
+        validState2.getState().setSwirldState(new DummySwirldState());
         MerkleCryptoFactory.getInstance().digestTreeSync(validState2.getState());
         signedState.set(validState2);
         TimeUnit.MILLISECONDS.sleep(200);
@@ -94,7 +94,7 @@ class BackgroundHashCheckerTests {
         validState3.getState().getPlatformState().getPlatformData().setEvents(new EventImpl[0]);
         validState3.getState().getPlatformState().getPlatformData().setMinGenInfo(List.of());
         validState3.getState().getPlatformState().getPlatformData().setRound(3);
-        validState3.getState().setSwirldState(new DummySwirldState2());
+        validState3.getState().setSwirldState(new DummySwirldState());
         MerkleCryptoFactory.getInstance().digestTreeSync(validState3.getState());
         signedState.set(validState3);
         TimeUnit.MILLISECONDS.sleep(200);
@@ -106,7 +106,7 @@ class BackgroundHashCheckerTests {
         invalidState4.getState().getPlatformState().getPlatformData().setEvents(new EventImpl[0]);
         invalidState4.getState().getPlatformState().getPlatformData().setMinGenInfo(List.of());
         invalidState4.getState().getPlatformState().getPlatformData().setRound(4);
-        invalidState4.getState().setSwirldState(new DummySwirldState2());
+        invalidState4.getState().setSwirldState(new DummySwirldState());
         MerkleCryptoFactory.getInstance().digestTreeSync(invalidState4.getState());
         invalidState4.getState().getSwirldState().setHash(null);
         signedState.set(invalidState4);
@@ -119,7 +119,7 @@ class BackgroundHashCheckerTests {
         validState5.getState().getPlatformState().getPlatformData().setEvents(new EventImpl[0]);
         validState5.getState().getPlatformState().getPlatformData().setMinGenInfo(List.of());
         validState5.getState().getPlatformState().getPlatformData().setRound(5);
-        validState5.getState().setSwirldState(new DummySwirldState2());
+        validState5.getState().setSwirldState(new DummySwirldState());
         MerkleCryptoFactory.getInstance().digestTreeSync(validState5.getState());
         signedState.set(validState5);
         TimeUnit.MILLISECONDS.sleep(200);

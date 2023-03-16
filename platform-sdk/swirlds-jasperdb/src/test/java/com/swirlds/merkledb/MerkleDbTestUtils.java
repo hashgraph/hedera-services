@@ -62,42 +62,43 @@ import javax.management.MBeanServer;
 @SuppressWarnings("unused")
 public class MerkleDbTestUtils {
     /**
-     * The amount of direct memory used by JVM and caches. This needs to be big enough to allow for variations in test
-     * runs while being small enough to catch leaks in tests.
+     * The amount of direct memory used by JVM and caches. This needs to be big enough to allow for
+     * variations in test runs while being small enough to catch leaks in tests.
      */
     private static final long DIRECT_MEMORY_BASE_USAGE = 4 * Units.MEBIBYTES_TO_BYTES;
 
     /**
-     * Run a callable test in the background and then make sure no direct memory is leaked and not databases are left
-     * open. Running test in a thread helps by allowing the thread to be killed so we can clean up any thread local
-     * cached data used in the test.
+     * Run a callable test in the background and then make sure no direct memory is leaked and not
+     * databases are left open. Running test in a thread helps by allowing the thread to be killed
+     * so we can clean up any thread local cached data used in the test.
      *
      * @param callable The test to run
      * @throws Exception If there was a problem running the test
      */
     @SuppressWarnings({"rawtypes", "unchecked"})
     public static void runTaskAndCleanThreadLocals(final Callable callable) throws Exception {
-        // Keep track of direct memory used already, so we can check if we leek over and above what we started with
+        // Keep track of direct memory used already, so we can check if we leek over and above what
+        // we started with
         final long directMemoryUsedAtStart = getDirectMemoryUsedBytes();
         // run test in background thread
         final ExecutorService executorService = Executors.newSingleThreadExecutor();
         final var future = executorService.submit(callable);
         future.get(60, TimeUnit.MINUTES);
         executorService.shutdown();
-        // check we did not leak direct memory now that the thread is shut down so thread locals should be released.
+        // Check we did not leak direct memory now that the thread is shut down so thread locals
+        // should be released
         assertTrue(
                 checkDirectMemoryIsCleanedUpToLessThanBaseUsage(directMemoryUsedAtStart),
                 "Direct Memory used is more than base usage even after 20 gc() calls. At start was "
-                        + (directMemoryUsedAtStart * Units.BYTES_TO_MEBIBYTES) + "MB and is now "
+                        + (directMemoryUsedAtStart * Units.BYTES_TO_MEBIBYTES)
+                        + "MB and is now "
                         + (getDirectMemoryUsedBytes() * Units.BYTES_TO_MEBIBYTES)
                         + "MB");
         // check db count
         assertEquals(0, MerkleDbDataSource.getCountOfOpenDatabases(), "Expected no open dbs");
     }
 
-    /**
-     * Dump the Java heap to a file in current working directory
-     */
+    /** Dump the Java heap to a file in current working directory */
     public static void dumpHeap() throws IOException {
         final MBeanServer server = ManagementFactory.getPlatformMBeanServer();
         final HotSpotDiagnosticMXBean mxBean = ManagementFactory.newPlatformMXBeanProxy(
@@ -110,14 +111,15 @@ public class MerkleDbTestUtils {
     }
 
     /**
-     * Check if direct memory used is less than base usage, calling gc() up to 20 times to try and clean it up, checking
-     * each time. The limit of was chosen as big enough to not be effected by any JVM internal use of direct memory
-     * and any cache maintained by sun.nio.ch.Util.
+     * Check if direct memory used is less than base usage, calling gc() up to 20 times to try and
+     * clean it up, checking each time. The limit of was chosen as big enough to not be effected by
+     * any JVM internal use of direct memory and any cache maintained by sun.nio.ch.Util.
      *
-     * <p><b>It is possible this is non-deterministic, because gc() is not guaranteed to free memory and is
-     * async.</b></p>
+     * <p><b>It is possible this is non-deterministic, because gc() is not guaranteed to free memory
+     * and is async.</b>
      *
-     * @param directMemoryBytesBefore The number of bytes of direct memory allocated before test was started
+     * @param directMemoryBytesBefore The number of bytes of direct memory allocated before test was
+     *     started
      * @return True if more than base usage of direct memory is being used after 20 gc() calls.
      */
     public static boolean checkDirectMemoryIsCleanedUpToLessThanBaseUsage(final long directMemoryBytesBefore) {
@@ -146,19 +148,17 @@ public class MerkleDbTestUtils {
                 .get();
     }
 
-    /**
-     * Get the amount of direct memory used in bytes
-     */
+    /** Get the amount of direct memory used in bytes */
     public static long getDirectMemoryUsedBytes() {
         return DIRECT_MEMORY_POOL.getMemoryUsed();
     }
 
     /**
-     * Creates a hash of the status of all files in a directory, that is their names, sizes and modification dates. This
-     * is useful to be able to check if any modifications have happened on a directory.
+     * Creates a hash of the status of all files in a directory, that is their names, sizes and
+     * modification dates. This is useful to be able to check if any modifications have happened on
+     * a directory.
      *
-     * @param dir
-     * 		The directory to scan and hash
+     * @param dir The directory to scan and hash
      * @return null if directory doesn't exist or hash of status of contents
      */
     public static Hash hashDirectoryContentsStatus(final Path dir) {
@@ -250,9 +250,7 @@ public class MerkleDbTestUtils {
         is.close();
     }
 
-    /**
-     * Code from method java.util.Collections.shuffle();
-     */
+    /** Code from method java.util.Collections.shuffle(); */
     public static int[] shuffle(Random random, final int[] array) {
         if (random == null) {
             random = new Random();
@@ -291,9 +289,7 @@ public class MerkleDbTestUtils {
         return data;
     }
 
-    /**
-     * Do a standard "ls -lh" on a directory or file and print results to System.out.
-     */
+    /** Do a standard "ls -lh" on a directory or file and print results to System.out. */
     public static void ls(final Path dir) {
         System.out.println("=== " + dir + " ======================================================");
         try {

@@ -52,11 +52,11 @@ public class TestValueSerializerMerkleDb implements ValueSerializer<TestValue> {
     }
 
     @Override
-    public int serialize(final TestValue data, final SerializableDataOutputStream outputStream) throws IOException {
+    public int serialize(final TestValue data, final ByteBuffer buffer) throws IOException {
         final String s = data.getValue();
         final byte[] bytes = CommonUtils.getNormalisedStringBytes(s);
-        outputStream.writeInt(bytes.length);
-        outputStream.write(bytes);
+        buffer.putInt(bytes.length);
+        buffer.put(bytes);
         return Integer.BYTES + bytes.length;
     }
 

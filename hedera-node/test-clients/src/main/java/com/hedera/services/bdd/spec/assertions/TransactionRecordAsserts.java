@@ -38,6 +38,8 @@ import org.junit.jupiter.api.Assertions;
 
 public class TransactionRecordAsserts extends BaseErroringAssertsProvider<TransactionRecord> {
     static final Logger log = LogManager.getLogger(TransactionRecordAsserts.class);
+    static final String RECEIPT = "receipt";
+    static final String TRANSACTION_FEE = "transactionFee";
 
     public static TransactionRecordAsserts recordWith() {
         return new TransactionRecordAsserts();
@@ -119,7 +121,7 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
     }
 
     public TransactionRecordAsserts status(ResponseCodeEnum expectedStatus) {
-        this.<TransactionReceipt>registerTypedProvider("receipt", spec -> receipt -> {
+        this.<TransactionReceipt>registerTypedProvider(RECEIPT, spec -> receipt -> {
             try {
                 Assertions.assertEquals(expectedStatus, receipt.getStatus(), "Bad status!");
             } catch (Throwable t) {
@@ -131,7 +133,7 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
     }
 
     public TransactionRecordAsserts serialNos(List<Long> minted) {
-        this.<TransactionReceipt>registerTypedProvider("receipt", spec -> receipt -> {
+        this.<TransactionReceipt>registerTypedProvider(RECEIPT, spec -> receipt -> {
             try {
                 Assertions.assertEquals(minted, receipt.getSerialNumbersList(), "Wrong serial nos");
             } catch (Throwable t) {
@@ -143,7 +145,7 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
     }
 
     public TransactionRecordAsserts newTotalSupply(long expected) {
-        this.<TransactionReceipt>registerTypedProvider("receipt", spec -> receipt -> {
+        this.<TransactionReceipt>registerTypedProvider(RECEIPT, spec -> receipt -> {
             try {
                 Assertions.assertEquals(expected, receipt.getNewTotalSupply(), "Wrong new total supply");
             } catch (Throwable t) {
@@ -155,7 +157,7 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
     }
 
     public TransactionRecordAsserts targetedContractId(final String id) {
-        this.<TransactionReceipt>registerTypedProvider("receipt", spec -> receipt -> {
+        this.<TransactionReceipt>registerTypedProvider(RECEIPT, spec -> receipt -> {
             try {
                 final var expected = TxnUtils.asContractId(id, spec);
                 Assertions.assertEquals(expected, receipt.getContractID(), "Bad targeted contract");
@@ -168,7 +170,7 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
     }
 
     public TransactionRecordAsserts targetedContractId(final ContractID id) {
-        this.<TransactionReceipt>registerTypedProvider("receipt", spec -> receipt -> {
+        this.<TransactionReceipt>registerTypedProvider(RECEIPT, spec -> receipt -> {
             try {
                 Assertions.assertEquals(id, receipt.getContractID(), "Bad targeted contract");
             } catch (Exception t) {
@@ -180,7 +182,7 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
     }
 
     public TransactionRecordAsserts checkTopicRunningHashVersion(int versionNumber) {
-        this.<TransactionReceipt>registerTypedProvider("receipt", spec -> receipt -> {
+        this.<TransactionReceipt>registerTypedProvider(RECEIPT, spec -> receipt -> {
             try {
                 Assertions.assertEquals(
                         versionNumber, receipt.getTopicRunningHashVersion(), "Bad TopicRunningHashVerions!");
@@ -263,12 +265,12 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
     }
 
     public TransactionRecordAsserts fee(Long amount) {
-        registerTypedProvider("transactionFee", shouldBe(amount));
+        registerTypedProvider(TRANSACTION_FEE, shouldBe(amount));
         return this;
     }
 
     public TransactionRecordAsserts feeGreaterThan(final long amount) {
-        this.<Long>registerTypedProvider("transactionFee", spec -> fee -> {
+        this.<Long>registerTypedProvider(TRANSACTION_FEE, spec -> fee -> {
             try {
                 assertTrue(fee > amount, "Fee should have exceeded " + amount + " but was " + fee);
             } catch (Throwable t) {
@@ -280,7 +282,7 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
     }
 
     public TransactionRecordAsserts feeDifferentThan(Long amount) {
-        registerTypedProvider("transactionFee", shouldNotBe(amount));
+        registerTypedProvider(TRANSACTION_FEE, shouldNotBe(amount));
         return this;
     }
 
@@ -300,7 +302,7 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
     }
 
     public TransactionRecordAsserts fee(Function<HapiSpec, Long> amountFn) {
-        registerTypedProvider("transactionFee", shouldBe(amountFn));
+        registerTypedProvider(TRANSACTION_FEE, shouldBe(amountFn));
         return this;
     }
 
