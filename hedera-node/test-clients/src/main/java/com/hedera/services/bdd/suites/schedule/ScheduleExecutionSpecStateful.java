@@ -63,14 +63,26 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
 
     private static final String defaultTxExpiry =
             HapiSpecSetup.getDefaultNodeProps().get("ledger.schedule.txExpiryTimeSecs");
+    private static final String LEDGER_TRANSFERS_MAX_LEN = "ledger.transfers.maxLen";
     private static final String defaultMaxTransferLen =
-            HapiSpecSetup.getDefaultNodeProps().get("ledger.transfers.maxLen");
+            HapiSpecSetup.getDefaultNodeProps().get(LEDGER_TRANSFERS_MAX_LEN);
+    private static final String LEDGER_TOKEN_TRANSFERS_MAX_LEN = "ledger.tokenTransfers.maxLen";
     private static final String defaultMaxTokenTransferLen =
-            HapiSpecSetup.getDefaultNodeProps().get("ledger.tokenTransfers.maxLen");
+            HapiSpecSetup.getDefaultNodeProps().get(LEDGER_TOKEN_TRANSFERS_MAX_LEN);
     private static final String defaultWhitelist =
             HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist");
 
     private static final String A_TOKEN = "token";
+    private static final String VALID_SCHEDULE = "validSchedule";
+    private static final String SCHEDULE_PAYER = "schedulePayer";
+    private static final String TOKENS_NFTS_ARE_ENABLED = "tokens.nfts.areEnabled";
+    private static final String TREASURY = "treasury";
+    private static final String SUPPLY_KEY = "supplyKey";
+    private static final String SENDER = "sender";
+    private static final String RECEIVER_A = "receiverA";
+    private static final String RECEIVER_B = "receiverB";
+    private static final String RECEIVER_C = "receiverC";
+    private static final String PAYING_ACCOUNT = "payingAccount";
     String failingTxn = "failingTxn";
 
     public static void main(String... args) {
@@ -91,9 +103,9 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
 
     private HapiSpec scheduledBurnWithInvalidTokenThrowsUnresolvableSigners() {
         return defaultHapiSpec("ScheduledBurnWithInvalidTokenThrowsUnresolvableSigners")
-                .given(cryptoCreate("schedulePayer"))
-                .when(scheduleCreate("validSchedule", burnToken("0.0.123231", List.of(1L, 2L)))
-                        .designatingPayer("schedulePayer")
+                .given(cryptoCreate(SCHEDULE_PAYER))
+                .when(scheduleCreate(VALID_SCHEDULE, burnToken("0.0.123231", List.of(1L, 2L)))
+                        .designatingPayer(SCHEDULE_PAYER)
                         .hasKnownStatus(UNRESOLVABLE_REQUIRED_SIGNERS))
                 .then();
     }
@@ -101,22 +113,22 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
     private HapiSpec scheduledUniqueMintFailsWithNftsDisabled() {
         return defaultHapiSpec("ScheduledUniqueMintFailsWithNftsDisabled")
                 .given(
-                        cryptoCreate("treasury"),
-                        cryptoCreate("schedulePayer"),
-                        newKeyNamed("supplyKey"),
+                        cryptoCreate(TREASURY),
+                        cryptoCreate(SCHEDULE_PAYER),
+                        newKeyNamed(SUPPLY_KEY),
                         tokenCreate(A_TOKEN)
-                                .supplyKey("supplyKey")
-                                .treasury("treasury")
+                                .supplyKey(SUPPLY_KEY)
+                                .treasury(TREASURY)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                                 .initialSupply(0),
-                        scheduleCreate("validSchedule", mintToken(A_TOKEN, List.of(ByteString.copyFromUtf8("m1"))))
-                                .designatingPayer("schedulePayer")
+                        scheduleCreate(VALID_SCHEDULE, mintToken(A_TOKEN, List.of(ByteString.copyFromUtf8("m1"))))
+                                .designatingPayer(SCHEDULE_PAYER)
                                 .via(failingTxn),
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(Map.of("tokens.nfts.areEnabled", "false")))
-                .when(scheduleSign("validSchedule")
-                        .alsoSigningWith("supplyKey", "schedulePayer", "treasury")
+                                .overridingProps(Map.of(TOKENS_NFTS_ARE_ENABLED, "false")))
+                .when(scheduleSign(VALID_SCHEDULE)
+                        .alsoSigningWith(SUPPLY_KEY, SCHEDULE_PAYER, TREASURY)
                         .hasKnownStatus(SUCCESS))
                 .then(
                         getTxnRecord(failingTxn)
@@ -125,28 +137,28 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
                         getTokenInfo(A_TOKEN).hasTotalSupply(0),
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(Map.of("tokens.nfts.areEnabled", "true")));
+                                .overridingProps(Map.of(TOKENS_NFTS_ARE_ENABLED, "true")));
     }
 
     private HapiSpec scheduledUniqueBurnFailsWithNftsDisabled() {
         return defaultHapiSpec("ScheduledUniqueBurnFailsWithNftsDisabled")
                 .given(
-                        cryptoCreate("treasury"),
-                        cryptoCreate("schedulePayer"),
-                        newKeyNamed("supplyKey"),
+                        cryptoCreate(TREASURY),
+                        cryptoCreate(SCHEDULE_PAYER),
+                        newKeyNamed(SUPPLY_KEY),
                         tokenCreate(A_TOKEN)
-                                .supplyKey("supplyKey")
-                                .treasury("treasury")
+                                .supplyKey(SUPPLY_KEY)
+                                .treasury(TREASURY)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                                 .initialSupply(0),
-                        scheduleCreate("validSchedule", burnToken(A_TOKEN, List.of(1L, 2L)))
-                                .designatingPayer("schedulePayer")
+                        scheduleCreate(VALID_SCHEDULE, burnToken(A_TOKEN, List.of(1L, 2L)))
+                                .designatingPayer(SCHEDULE_PAYER)
                                 .via(failingTxn),
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(Map.of("tokens.nfts.areEnabled", "false")))
-                .when(scheduleSign("validSchedule")
-                        .alsoSigningWith("supplyKey", "schedulePayer", "treasury")
+                                .overridingProps(Map.of(TOKENS_NFTS_ARE_ENABLED, "false")))
+                .when(scheduleSign(VALID_SCHEDULE)
+                        .alsoSigningWith(SUPPLY_KEY, SCHEDULE_PAYER, TREASURY)
                         .hasKnownStatus(SUCCESS))
                 .then(
                         getTxnRecord(failingTxn)
@@ -155,7 +167,7 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
                         getTokenInfo(A_TOKEN).hasTotalSupply(0),
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(Map.of("tokens.nfts.areEnabled", "true")));
+                                .overridingProps(Map.of(TOKENS_NFTS_ARE_ENABLED, "true")));
     }
 
     public HapiSpec executionWithTransferListWrongSizedFails() {
@@ -167,31 +179,31 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
 
         return defaultHapiSpec("ExecutionWithTransferListWrongSizedFails")
                 .given(
-                        overriding("ledger.transfers.maxLen", "" + TMP_MAX_TRANSFER_LENGTH),
-                        cryptoCreate("payingAccount").balance(payingAccountBalance),
-                        cryptoCreate("sender").balance(senderBalance),
-                        cryptoCreate("receiverA").balance(noBalance),
-                        cryptoCreate("receiverB").balance(noBalance),
-                        cryptoCreate("receiverC").balance(noBalance),
+                        overriding(LEDGER_TRANSFERS_MAX_LEN, "" + TMP_MAX_TRANSFER_LENGTH),
+                        cryptoCreate(PAYING_ACCOUNT).balance(payingAccountBalance),
+                        cryptoCreate(SENDER).balance(senderBalance),
+                        cryptoCreate(RECEIVER_A).balance(noBalance),
+                        cryptoCreate(RECEIVER_B).balance(noBalance),
+                        cryptoCreate(RECEIVER_C).balance(noBalance),
                         scheduleCreate(
                                         rejectedTxn,
                                         cryptoTransfer(
-                                                        tinyBarsFromTo("sender", "receiverA", transferAmount),
-                                                        tinyBarsFromTo("sender", "receiverB", transferAmount),
-                                                        tinyBarsFromTo("sender", "receiverC", transferAmount))
+                                                        tinyBarsFromTo(SENDER, RECEIVER_A, transferAmount),
+                                                        tinyBarsFromTo(SENDER, RECEIVER_B, transferAmount),
+                                                        tinyBarsFromTo(SENDER, RECEIVER_C, transferAmount))
                                                 .memo(randomUppercase(100)))
-                                .designatingPayer("payingAccount")
+                                .designatingPayer(PAYING_ACCOUNT)
                                 .via("createTx"))
                 .when(scheduleSign(rejectedTxn)
-                        .alsoSigningWith("sender", "payingAccount")
+                        .alsoSigningWith(SENDER, PAYING_ACCOUNT)
                         .via("signTx")
                         .hasKnownStatus(SUCCESS))
                 .then(
-                        overriding("ledger.transfers.maxLen", defaultMaxTransferLen),
-                        getAccountBalance("sender").hasTinyBars(senderBalance),
-                        getAccountBalance("receiverA").hasTinyBars(noBalance),
-                        getAccountBalance("receiverB").hasTinyBars(noBalance),
-                        getAccountBalance("receiverC").hasTinyBars(noBalance),
+                        overriding(LEDGER_TRANSFERS_MAX_LEN, defaultMaxTransferLen),
+                        getAccountBalance(SENDER).hasTinyBars(senderBalance),
+                        getAccountBalance(RECEIVER_A).hasTinyBars(noBalance),
+                        getAccountBalance(RECEIVER_B).hasTinyBars(noBalance),
+                        getAccountBalance(RECEIVER_C).hasTinyBars(noBalance),
                         withOpContext((spec, opLog) -> {
                             var triggeredTx = getTxnRecord("createTx").scheduled();
 
@@ -212,7 +224,7 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
 
         return defaultHapiSpec("ExecutionWithTokenTransferListSizeExceedFails")
                 .given(
-                        overriding("ledger.tokenTransfers.maxLen", "" + TMP_MAX_TOKEN_TRANSFER_LENGTH),
+                        overriding(LEDGER_TOKEN_TRANSFERS_MAX_LEN, "" + TMP_MAX_TOKEN_TRANSFER_LENGTH),
                         newKeyNamed("admin"),
                         cryptoCreate(schedulePayer),
                         cryptoCreate(xTreasury),
@@ -232,7 +244,7 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
                         .alsoSigningWith(xTreasury, schedulePayer)
                         .designatingPayer(schedulePayer))
                 .then(
-                        overriding("ledger.tokenTransfers.maxLen", defaultMaxTokenTransferLen),
+                        overriding(LEDGER_TOKEN_TRANSFERS_MAX_LEN, defaultMaxTokenTransferLen),
                         getTxnRecord(failedTxn)
                                 .scheduled()
                                 .hasPriority(recordWith().status(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED)),
@@ -248,7 +260,7 @@ public class ScheduleExecutionSpecStateful extends HapiSuite {
                         overriding("scheduling.whitelist", defaultWhitelist),
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(Map.of("tokens.nfts.areEnabled", "true")));
+                                .overridingProps(Map.of(TOKENS_NFTS_ARE_ENABLED, "true")));
     }
 
     @Override

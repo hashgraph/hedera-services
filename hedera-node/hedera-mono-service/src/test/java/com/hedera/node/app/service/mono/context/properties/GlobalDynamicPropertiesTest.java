@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.context.properties;
 
+import static com.hedera.node.app.service.mono.context.properties.PropertySource.AS_EVM_ADDRESSES;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_MAX_NUM;
 import static com.hedera.node.app.spi.config.PropertyNames.AUTO_CREATION_ENABLED;
@@ -50,6 +51,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_KV_PAIR
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_NUM;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PERMITTED_DELEGATE_CALLERS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST;
@@ -60,7 +62,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SCHEDULE_TH
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECARS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_STORAGE_SLOT_PRICE_TIERS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_THROTTLE_THROTTLE_BY_GAS;
-import static com.hedera.node.app.spi.config.PropertyNames.CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.CRYPTO_CREATE_WITH_ALIAS_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_LIMIT_TOKEN_ASSOCIATIONS;
 import static com.hedera.node.app.spi.config.PropertyNames.FEES_MIN_CONGESTION_PERIOD;
 import static com.hedera.node.app.spi.config.PropertyNames.FEES_PERCENT_CONGESTION_MULTIPLIERS;
@@ -151,6 +153,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -179,6 +182,7 @@ class GlobalDynamicPropertiesTest {
     private final ScaleFactor evenFactor = ScaleFactor.from("7:2");
     private final LegacyContractIdActivations contractIdActivations =
             LegacyContractIdActivations.from("1058134by[1062784]");
+    private Set<Address> permittedDelegateCallers = (Set<Address>) AS_EVM_ADDRESSES.apply("1062787,1461860");
     private GlobalDynamicProperties subject;
 
     @BeforeEach
@@ -221,7 +225,7 @@ class GlobalDynamicPropertiesTest {
         assertFalse(subject.shouldCompressAccountBalanceFilesOnCreation());
         assertTrue(subject.shouldDoTraceabilityExport());
         assertTrue(subject.isLazyCreationEnabled());
-        assertFalse(subject.isCryptoCreateWithAliasAndEvmAddressEnabled());
+        assertFalse(subject.isCryptoCreateWithAliasEnabled());
         assertFalse(subject.isAtomicCryptoTransferEnabled());
         assertFalse(subject.isImplicitCreationEnabled());
     }
@@ -342,6 +346,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(ContractStoragePriceTiers.from("0til100M,2000til450M", 88, 53L, 87L), subject.storagePriceTiers());
         assertEquals(evmVersions[1], subject.evmVersion());
         assertEquals(contractIdActivations, subject.legacyContractIdActivations());
+        assertEquals(permittedDelegateCallers, subject.permittedDelegateCallers());
         assertEquals(entityScaleFactors, subject.entityScaleFactors());
     }
 
@@ -380,7 +385,7 @@ class GlobalDynamicPropertiesTest {
         assertTrue(subject.dynamicEvmVersion());
         assertTrue(subject.shouldCompressAccountBalanceFilesOnCreation());
         assertFalse(subject.isLazyCreationEnabled());
-        assertTrue(subject.isCryptoCreateWithAliasAndEvmAddressEnabled());
+        assertTrue(subject.isCryptoCreateWithAliasEnabled());
         assertFalse(subject.shouldEnforceAccountCreationThrottleForContracts());
         assertFalse(subject.isImplicitCreationEnabled());
     }
@@ -635,12 +640,12 @@ class GlobalDynamicPropertiesTest {
         given(properties.getLegacyActivationsProperty(CONTRACTS_KEYS_LEGACY_ACTIVATIONS))
                 .willReturn(contractIdActivations);
         given(properties.getBooleanProperty(LAZY_CREATION_ENABLED)).willReturn((i + 89) % 2 == 0);
-        given(properties.getBooleanProperty(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED))
-                .willReturn((i + 90) % 2 == 0);
+        given(properties.getBooleanProperty(CRYPTO_CREATE_WITH_ALIAS_ENABLED)).willReturn((i + 90) % 2 == 0);
         given(properties.getEntityScaleFactorsProperty(FEES_PERCENT_UTILIZATION_SCALE_FACTORS))
                 .willReturn(entityScaleFactors);
         given(properties.getBooleanProperty(CONTRACTS_ENFORCE_CREATION_THROTTLE))
                 .willReturn((i + 91) % 2 == 0);
+        given(properties.getEvmAddresses(CONTRACTS_PERMITTED_DELEGATE_CALLERS)).willReturn(permittedDelegateCallers);
     }
 
     private Set<EntityType> typesFor(final int i) {

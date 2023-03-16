@@ -24,7 +24,6 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.merkledb.files.VirtualInternalRecordSerializer;
 import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
@@ -47,7 +46,7 @@ class VirtualInternalRecordSerializerTest {
 
     @Test
     void serializeEnforcesDefaultDigest() {
-        final SerializableDataOutputStream fout = mock(SerializableDataOutputStream.class);
+        final ByteBuffer bbuf = mock(ByteBuffer.class);
         final Hash nonDefaultHash = new Hash(DigestType.SHA_512);
         final VirtualInternalRecordSerializer subject = new VirtualInternalRecordSerializer();
         final VirtualInternalRecord data = new VirtualInternalRecord(1L, nonDefaultHash);
@@ -58,17 +57,8 @@ class VirtualInternalRecordSerializerTest {
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> subject.serialize(data, fout),
+                () -> subject.serialize(data, bbuf),
                 "Should have rejected attempt to serialize data with non-default hash digest");
-    }
-
-    @Test
-    void serializeUnhappyPath() {
-        final SerializableDataOutputStream fout = mock(SerializableDataOutputStream.class);
-        final VirtualInternalRecord data = new VirtualInternalRecord(42L, new Hash(DigestType.SHA_384));
-        final VirtualInternalRecordSerializer subject = new VirtualInternalRecordSerializer();
-        final NullPointerException e = assertThrows(
-                NullPointerException.class, () -> subject.serialize(data, fout), "Unchecked exceptions not handled");
     }
 
     @Test

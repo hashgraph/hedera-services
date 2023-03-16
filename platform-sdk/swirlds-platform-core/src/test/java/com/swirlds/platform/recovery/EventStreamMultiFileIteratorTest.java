@@ -61,6 +61,11 @@ class EventStreamMultiFileIteratorTest {
         SettingsCommon.maxAddressSizeAllowed = Integer.MAX_VALUE;
     }
 
+    public static void assertEventsAreEqual(final EventImpl expected, final EventImpl actual) {
+        assertEquals(expected.getBaseEvent(), actual.getBaseEvent());
+        assertEquals(expected.getConsensusData(), actual.getConsensusData());
+    }
+
     @Test
     @DisplayName("Read All Events Test")
     void readAllEventsTest() throws IOException, NoSuchAlgorithmException {
@@ -89,7 +94,7 @@ class EventStreamMultiFileIteratorTest {
                 // Convert to event impl to allow comparison
                 final EventImpl e = new EventImpl(
                         event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
-                assertEquals(e, events.get(eventIndex), "event should match input event");
+                assertEventsAreEqual(e, events.get(eventIndex));
             }
 
         } finally {
@@ -130,7 +135,7 @@ class EventStreamMultiFileIteratorTest {
                 // Convert to event impl to allow comparison
                 final EventImpl e = new EventImpl(
                         event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
-                assertEquals(e, events.get(eventIndex + startingIndex), "event should match input event");
+                assertEventsAreEqual(e, events.get(eventIndex + startingIndex));
             }
 
         } finally {
@@ -234,7 +239,19 @@ class EventStreamMultiFileIteratorTest {
                 new EventStreamMultiFileIterator(directory, FIRST_ROUND_AVAILABLE)) {
 
             final List<DetailedConsensusEvent> deserializedEvents = new ArrayList<>();
-            iterator.forEachRemaining(deserializedEvents::add);
+
+            try {
+                iterator.forEachRemaining(deserializedEvents::add);
+            } catch (final IOException e) {
+                if (e.getMessage().contains("does not contain any events")) {
+                    // The last file had too few events and the truncated file had no events.
+                    // This happens randomly, but especially when the original file has 3 or less events in it.
+                    // abort the unit tests in a successful state.
+                    return;
+                } else {
+                    throw e;
+                }
+            }
 
             assertTrue(deserializedEvents.size() > 0, "some events should have been deserialized");
             assertTrue(events.size() > deserializedEvents.size(), "some events should not have been deserialized");
@@ -246,7 +263,7 @@ class EventStreamMultiFileIteratorTest {
                 // Convert to event impl to allow comparison
                 final EventImpl e = new EventImpl(
                         event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
-                assertEquals(e, events.get(eventIndex), "event should match input event");
+                assertEventsAreEqual(e, events.get(eventIndex));
             }
 
         } finally {

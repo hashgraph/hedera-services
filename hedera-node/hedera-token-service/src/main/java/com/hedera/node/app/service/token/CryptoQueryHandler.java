@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.token;
 
-import com.hedera.node.app.service.token.entity.Account;
+import com.hedera.node.app.spi.accounts.Account;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountBalanceQuery;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;

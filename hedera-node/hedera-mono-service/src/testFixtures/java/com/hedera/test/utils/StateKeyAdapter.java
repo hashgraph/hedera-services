@@ -22,7 +22,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
 import java.util.function.Function;
 
-public class StateKeyAdapter<K1 extends Comparable<K1>, K2 extends Comparable<K2>, V>
+public class StateKeyAdapter<K1 extends Comparable<K1>, K2 extends Comparable<? super K2>, V>
         extends ReadableKVStateBase<K2, V> {
     private final ReadableKVState<K1, V> delegate;
     private final Function<K2, K1> keyAdapter;
@@ -42,5 +42,11 @@ public class StateKeyAdapter<K1 extends Comparable<K1>, K2 extends Comparable<K2
     @Override
     protected Iterator<K2> iterateFromDataSource() {
         throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public long size() {
+        return delegate.size();
     }
 }

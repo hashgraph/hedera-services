@@ -44,6 +44,11 @@ import org.apache.logging.log4j.Logger;
 
 public class Issue1765Suite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(Issue1765Suite.class);
+    private static final String ACCOUNT = "1.1.1";
+    private static final String INVALID_UPDATE_TXN = "invalidUpdateTxn";
+    private static final String INVALID_APPEND_TXN = "invalidAppendTxn";
+    private static final String IMAGINARY = "imaginary";
+    private static final String MEMO_IS = "Turning and turning in the widening gyre";
 
     public static void main(String... args) {
         new Issue1765Suite().runSuiteSync();
@@ -68,12 +73,12 @@ public class Issue1765Suite extends HapiSuite {
     }
 
     public static HapiSpec recordOfInvalidAccountTransferSanityChecks() {
-        final String INVALID_ACCOUNT = "imaginary";
+        final String INVALID_ACCOUNT = IMAGINARY;
 
         return defaultHapiSpec("RecordOfInvalidAccountTransferSanityChecks")
                 .given(flattened(
                         withOpContext((spec, ctxLog) -> {
-                            spec.registry().saveAccountId(INVALID_ACCOUNT, asAccount("1.1.1"));
+                            spec.registry().saveAccountId(INVALID_ACCOUNT, asAccount(ACCOUNT));
                         }),
                         takeBalanceSnapshots(FUNDING, GENESIS, NODE)))
                 .when(cryptoTransfer(tinyBarsFromTo(GENESIS, INVALID_ACCOUNT, 1L)))
@@ -81,12 +86,12 @@ public class Issue1765Suite extends HapiSuite {
     }
 
     public static HapiSpec recordOfInvalidAccountUpdateSanityChecks() {
-        final String INVALID_ACCOUNT = "imaginary";
+        final String INVALID_ACCOUNT = IMAGINARY;
 
         return defaultHapiSpec("RecordOfInvalidAccountSanityChecks")
                 .given(flattened(
                         withOpContext((spec, ctxLog) -> {
-                            spec.registry().saveAccountId(INVALID_ACCOUNT, asAccount("1.1.1"));
+                            spec.registry().saveAccountId(INVALID_ACCOUNT, asAccount(ACCOUNT));
                         }),
                         newKeyNamed(INVALID_ACCOUNT),
                         newKeyNamed("irrelevant"),
@@ -97,31 +102,31 @@ public class Issue1765Suite extends HapiSuite {
 
     public static HapiSpec recordOfInvalidContractUpdateSanityChecks() {
         final long ADEQUATE_FEE = 100_000_000L;
-        final String INVALID_CONTRACT = "imaginary";
-        final String THE_MEMO_IS = "Turning and turning in the widening gyre";
+        final String INVALID_CONTRACT = IMAGINARY;
+        final String THE_MEMO_IS = MEMO_IS;
 
         return defaultHapiSpec("RecordOfInvalidContractUpdateSanityChecks")
                 .given(flattened(
                         withOpContext((spec, ctxLog) -> {
-                            spec.registry().saveContractId(INVALID_CONTRACT, asContract("1.1.1"));
+                            spec.registry().saveContractId(INVALID_CONTRACT, asContract(ACCOUNT));
                         }),
                         newKeyNamed(INVALID_CONTRACT),
                         takeBalanceSnapshots(FUNDING, GENESIS, NODE)))
                 .when(contractUpdate(INVALID_CONTRACT)
                         .memo(THE_MEMO_IS)
                         .fee(ADEQUATE_FEE)
-                        .via("invalidUpdateTxn")
+                        .via(INVALID_UPDATE_TXN)
                         .hasKnownStatus(ResponseCodeEnum.INVALID_CONTRACT_ID))
                 .then(
-                        validateTransferListForBalances("invalidUpdateTxn", List.of(FUNDING, GENESIS, NODE)),
-                        getTxnRecord("invalidUpdateTxn")
+                        validateTransferListForBalances(INVALID_UPDATE_TXN, List.of(FUNDING, GENESIS, NODE)),
+                        getTxnRecord(INVALID_UPDATE_TXN)
                                 .hasPriority(recordWith().memo(THE_MEMO_IS)));
     }
 
     public static HapiSpec recordOfInvalidFileUpdateSanityChecks() {
         final long ADEQUATE_FEE = 100_000_000L;
-        final String INVALID_FILE = "imaginary";
-        final String THE_MEMO_IS = "Turning and turning in the widening gyre";
+        final String INVALID_FILE = IMAGINARY;
+        final String THE_MEMO_IS = MEMO_IS;
 
         return defaultHapiSpec("RecordOfInvalidFileUpdateSanityChecks")
                 .given(flattened(
@@ -133,18 +138,18 @@ public class Issue1765Suite extends HapiSuite {
                 .when(fileUpdate(INVALID_FILE)
                         .memo(THE_MEMO_IS)
                         .fee(ADEQUATE_FEE)
-                        .via("invalidUpdateTxn")
+                        .via(INVALID_UPDATE_TXN)
                         .hasKnownStatus(ResponseCodeEnum.INVALID_FILE_ID))
                 .then(
-                        validateTransferListForBalances("invalidUpdateTxn", List.of(FUNDING, GENESIS, NODE)),
-                        getTxnRecord("invalidUpdateTxn")
+                        validateTransferListForBalances(INVALID_UPDATE_TXN, List.of(FUNDING, GENESIS, NODE)),
+                        getTxnRecord(INVALID_UPDATE_TXN)
                                 .hasPriority(recordWith().memo(THE_MEMO_IS)));
     }
 
     public static HapiSpec recordOfInvalidFileAppendSanityChecks() {
         final long ADEQUATE_FEE = 100_000_000L;
-        final String INVALID_FILE = "imaginary";
-        final String THE_MEMO_IS = "Turning and turning in the widening gyre";
+        final String INVALID_FILE = IMAGINARY;
+        final String THE_MEMO_IS = MEMO_IS;
 
         return defaultHapiSpec("RecordOfInvalidFileAppendSanityChecks")
                 .given(flattened(
@@ -157,11 +162,11 @@ public class Issue1765Suite extends HapiSuite {
                         .memo(THE_MEMO_IS)
                         .content("Some more content.")
                         .fee(ADEQUATE_FEE)
-                        .via("invalidAppendTxn")
+                        .via(INVALID_APPEND_TXN)
                         .hasKnownStatus(ResponseCodeEnum.INVALID_FILE_ID))
                 .then(
-                        validateTransferListForBalances("invalidAppendTxn", List.of(FUNDING, GENESIS, NODE)),
-                        getTxnRecord("invalidAppendTxn")
+                        validateTransferListForBalances(INVALID_APPEND_TXN, List.of(FUNDING, GENESIS, NODE)),
+                        getTxnRecord(INVALID_APPEND_TXN)
                                 .hasPriority(recordWith().memo(THE_MEMO_IS)));
     }
 

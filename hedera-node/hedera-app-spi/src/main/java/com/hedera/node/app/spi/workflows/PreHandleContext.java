@@ -20,8 +20,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
+import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -40,7 +40,7 @@ import java.util.List;
 @SuppressWarnings("UnusedReturnValue")
 public class PreHandleContext {
 
-    private final AccountKeyLookup keyLookup;
+    private final AccountAccess accountAccess;
 
     private final TransactionBody txn;
     private final AccountID payer;
@@ -50,35 +50,35 @@ public class PreHandleContext {
     private HederaKey payerKey;
     private PreHandleContext innerContext;
 
-    public PreHandleContext(@NonNull final AccountKeyLookup keyLookup, @NonNull final TransactionBody txn) {
-        this(keyLookup, txn, txn.getTransactionID().getAccountID(), OK);
+    public PreHandleContext(@NonNull final AccountAccess accountAccess, @NonNull final TransactionBody txn) {
+        this(accountAccess, txn, txn.getTransactionID().getAccountID(), OK);
     }
 
     public PreHandleContext(
-            @NonNull final AccountKeyLookup keyLookup,
+            @NonNull final AccountAccess accountAccess,
             @NonNull final TransactionBody txn,
             @NonNull final AccountID payer) {
-        this(keyLookup, txn, payer, OK);
+        this(accountAccess, txn, payer, OK);
     }
 
     public PreHandleContext(
-            @NonNull final AccountKeyLookup keyLookup,
+            @NonNull final AccountAccess accountAccess,
             @NonNull final TransactionBody txn,
             @NonNull final ResponseCodeEnum status) {
-        this(keyLookup, txn, txn.getTransactionID().getAccountID(), status);
+        this(accountAccess, txn, txn.getTransactionID().getAccountID(), status);
     }
 
     public PreHandleContext(
-            @NonNull final AccountKeyLookup keyLookup,
+            @NonNull final AccountAccess accountAccess,
             @NonNull final TransactionBody txn,
             @NonNull final AccountID payer,
             @NonNull final ResponseCodeEnum status) {
-        this.keyLookup = requireNonNull(keyLookup);
+        this.accountAccess = requireNonNull(accountAccess);
         this.txn = requireNonNull(txn);
         this.payer = requireNonNull(payer);
         this.status = requireNonNull(status);
 
-        final var lookedUpPayerKey = keyLookup.getKey(payer);
+        final var lookedUpPayerKey = accountAccess.getKey(payer);
         addToKeysOrFail(lookedUpPayerKey, INVALID_PAYER_ACCOUNT_ID, true);
     }
 
@@ -209,7 +209,7 @@ public class PreHandleContext {
         if (isNotNeeded(requireNonNull(id))) {
             return this;
         }
-        final var result = keyLookup.getKey(id);
+        final var result = accountAccess.getKey(id);
         addToKeysOrFail(result, failureStatusToUse, false);
         return this;
     }
@@ -219,7 +219,7 @@ public class PreHandleContext {
         if (isNotNeeded(requireNonNull(id))) {
             return this;
         }
-        final var result = keyLookup.getKey(id);
+        final var result = accountAccess.getKey(id);
         addToKeysOrFail(result, null, false);
         return this;
     }
@@ -239,7 +239,7 @@ public class PreHandleContext {
         if (isNotNeeded(requireNonNull(id))) {
             return this;
         }
-        final var result = keyLookup.getKeyIfReceiverSigRequired(id);
+        final var result = accountAccess.getKeyIfReceiverSigRequired(id);
         addToKeysOrFail(result, failureStatusToUse, false);
         return this;
     }
@@ -249,7 +249,7 @@ public class PreHandleContext {
         if (isNotNeeded(requireNonNull(id))) {
             return this;
         }
-        final var result = keyLookup.getKeyIfReceiverSigRequired(id);
+        final var result = accountAccess.getKeyIfReceiverSigRequired(id);
         addToKeysOrFail(result, null, false);
         return this;
     }
@@ -264,8 +264,8 @@ public class PreHandleContext {
 
     @Override
     public String toString() {
-        return "PreHandleContext{" + "keyLookup="
-                + keyLookup + ", txn="
+        return "PreHandleContext{" + "accountAccess="
+                + accountAccess + ", txn="
                 + txn + ", payer="
                 + payer + ", requiredNonPayerKeys="
                 + requiredNonPayerKeys + ", status="
@@ -357,6 +357,6 @@ public class PreHandleContext {
     @NonNull
     public PreHandleContext createNestedContext(
             @NonNull final TransactionBody nestedTxn, @NonNull final AccountID payerForNested) {
-        return new PreHandleContext(keyLookup, nestedTxn, payerForNested);
+        return new PreHandleContext(accountAccess, nestedTxn, payerForNested);
     }
 }

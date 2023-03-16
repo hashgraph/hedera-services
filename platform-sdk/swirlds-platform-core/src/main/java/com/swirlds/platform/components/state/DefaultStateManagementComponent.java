@@ -26,17 +26,19 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.stream.HashSigner;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.time.OSTime;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
-import com.swirlds.platform.components.common.output.StateSignature;
 import com.swirlds.platform.components.common.query.PrioritySystemTransactionSubmitter;
 import com.swirlds.platform.components.state.output.IssConsumer;
 import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
+import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionTypedHandler;
+import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionTypedHandler;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
@@ -46,6 +48,7 @@ import com.swirlds.platform.dispatch.triggers.control.StateDumpRequestedTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.StateHashedTrigger;
 import com.swirlds.platform.metrics.IssMetrics;
 import com.swirlds.platform.state.SignatureTransmitter;
+import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.iss.ConsensusHashManager;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.signed.SignedState;
@@ -314,9 +317,10 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         if (stateRoundIsTooOld(signedState)) {
             return; // do not process older states.
         }
+        signedStateHasher.hashState(signedState);
+
         newSignedStateBeingTracked(signedState, SourceOfSignedState.TRANSACTIONS);
 
-        signedStateHasher.hashState(signedState);
         final Signature signature = signer.sign(signedState.getState().getHash());
         signatureTransmitter.transmitSignature(
                 signedState.getRound(), signature, signedState.getState().getHash());
@@ -324,15 +328,29 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         signedStateManager.addUnsignedState(signedState);
     }
 
-    @Override
-    public void handleStateSignature(final StateSignature stateSignature, final boolean isConsensus) {
-        if (isConsensus) {
-            consensusHashManager.postConsensusSignatureObserver(
-                    stateSignature.round(), stateSignature.signerId(), stateSignature.stateHash());
-        } else {
-            signedStateManager.preConsensusSignatureObserver(
-                    stateSignature.round(), stateSignature.signerId(), stateSignature.signature());
-        }
+    /**
+     * Do pre consensus handling for a state signature transaction
+     *
+     * @param creatorId                 the id of the transaction creator
+     * @param stateSignatureTransaction the pre-consensus state signature transaction
+     */
+    public void handleStateSignatureTransactionPreConsensus(
+            final long creatorId, final StateSignatureTransaction stateSignatureTransaction) {
+
+        signedStateManager.preConsensusSignatureObserver(
+                stateSignatureTransaction.getRound(), creatorId, stateSignatureTransaction.getStateSignature());
+    }
+
+    /**
+     * Do post-consensus handling for a state signature transaction
+     * <p>
+     * The {@code state} parameter isn't used in this function, since a signature transaction doesn't modify the state
+     */
+    public void handleStateSignatureTransactionPostConsensus(
+            final State state, final long creatorId, final StateSignatureTransaction stateSignatureTransaction) {
+
+        consensusHashManager.postConsensusSignatureObserver(
+                stateSignatureTransaction.getRound(), creatorId, stateSignatureTransaction.getStateHash());
     }
 
     @Override
@@ -348,11 +366,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     @Override
     public long getLastCompleteRound() {
         return signedStateManager.getLastCompleteRound();
-    }
-
-    @Override
-    public long getLastRoundSavedToDisk() {
-        return signedStateFileManager.getLastRoundSavedToDisk();
     }
 
     @Override
@@ -422,5 +435,23 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         try (final AutoCloseableWrapper<SignedState> wrapper = signedStateManager.getLatestImmutableState()) {
             signedStateFileManager.dumpState(wrapper.get(), reason, blocking);
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<PreConsensusSystemTransactionTypedHandler<?>> getPreConsensusHandleMethods() {
+        return List.of(new PreConsensusSystemTransactionTypedHandler<>(
+                StateSignatureTransaction.class, this::handleStateSignatureTransactionPreConsensus));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<PostConsensusSystemTransactionTypedHandler<?>> getPostConsensusHandleMethods() {
+        return List.of(new PostConsensusSystemTransactionTypedHandler<>(
+                StateSignatureTransaction.class, this::handleStateSignatureTransactionPostConsensus));
     }
 }

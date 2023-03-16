@@ -38,6 +38,7 @@ module com.hedera.node.app {
     requires org.apache.commons.lang3;
     requires com.google.common;
     requires com.hedera.node.app.hapi.fees;
+    requires com.hedera.node.hapi;
 
     exports com.hedera.node.app to
             com.swirlds.platform;

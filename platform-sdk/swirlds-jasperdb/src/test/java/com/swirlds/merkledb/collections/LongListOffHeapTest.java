@@ -27,11 +27,16 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
@@ -115,6 +120,30 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
             for (int i = 0; i < longListFromFile.size(); i++) {
                 assertEquals(list.get(i), longListFromFile.get(i));
             }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {2, 3, 4, 5, 10, 50})
+    public void minValidIndexRespectedInForEachTest(final int countDivider) throws InterruptedException {
+        final int sampleSize = getSampleSize();
+        try (final LongListOffHeap list = createFullyParameterizedLongListWith(
+                sampleSize / 100, // 100 chunks, 100 longs each
+                sampleSize + DEFAULT_NUM_LONGS_PER_CHUNK)) {
+            for (int i = 1; i < getSampleSize(); i++) {
+                list.put(i, i + 1);
+            }
+            final long minIndex = sampleSize / countDivider;
+            list.updateMinValidIndex(minIndex);
+            final AtomicLong count = new AtomicLong(0);
+            final Set<Long> keysInForEach = new HashSet<>();
+            list.forEach((path, location) -> {
+                count.incrementAndGet();
+                keysInForEach.add(path);
+                assertEquals(path + 1, location);
+            });
+            assertEquals(sampleSize - minIndex, count.get(), "Wrong number of valid index entries");
+            assertEquals(sampleSize - minIndex, keysInForEach.size(), "Wrong number of valid index entries");
         }
     }
 }

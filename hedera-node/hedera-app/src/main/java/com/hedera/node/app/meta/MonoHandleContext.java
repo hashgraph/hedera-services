@@ -32,6 +32,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.function.LongSupplier;
+import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
@@ -48,6 +49,7 @@ public class MonoHandleContext implements HandleContext {
     private final TransactionContext txnCtx;
     private final AttributeValidator attributeValidator;
 
+    @Inject
     public MonoHandleContext(
             @NonNull final EntityIdSource ids,
             @NonNull final ExpiryValidator expiryValidator,
@@ -92,7 +94,7 @@ public class MonoHandleContext implements HandleContext {
         return expiryValidator;
     }
 
-    private static class MonoAttributeValidator implements AttributeValidator {
+    private static final class MonoAttributeValidator implements AttributeValidator {
         private final OptionValidator optionValidator;
 
         private MonoAttributeValidator(final OptionValidator optionValidator) {

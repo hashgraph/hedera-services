@@ -17,22 +17,30 @@
 package com.hedera.node.app.workflows.prehandle;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.hedera.node.app.signature.SigExpansionResult;
 import com.hedera.node.app.signature.SignaturePreparer;
+import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.onset.OnsetResult;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
@@ -40,9 +48,11 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
@@ -64,6 +74,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class PreHandleWorkflowImplTest {
 
     @Mock(strictness = LENIENT)
+    private TransactionSignature cryptoSig;
+
+    @Mock(strictness = LENIENT)
+    private HederaKey payerKey;
+
+    @Mock(strictness = LENIENT)
+    private ReadableStoreFactory storeFactory;
+
+    @Mock(strictness = LENIENT)
     private SwirldTransaction transaction;
 
     @Mock(strictness = LENIENT)
@@ -77,6 +96,9 @@ class PreHandleWorkflowImplTest {
 
     @Mock(strictness = LENIENT)
     private Cryptography cryptography;
+
+    @Mock(strictness = LENIENT)
+    private PreHandleContext context;
 
     @Mock(strictness = LENIENT)
     private HederaState state;
@@ -103,9 +125,17 @@ class PreHandleWorkflowImplTest {
                 .setTransactionID(transactionID)
                 .setConsensusCreateTopic(content)
                 .build();
+        final com.hederahashgraph.api.proto.java.Transaction txn =
+                com.hederahashgraph.api.proto.java.Transaction.newBuilder()
+                        .setSignedTransactionBytes(SignedTransaction.newBuilder()
+                                .setBodyBytes(txBody.toByteString())
+                                .build()
+                                .toByteString())
+                        .build();
         final SignatureMap signatureMap = SignatureMap.newBuilder().build();
         final HederaFunctionality functionality = HederaFunctionality.ConsensusCreateTopic;
-        final OnsetResult onsetResult = new OnsetResult(txBody, txBody.toByteArray(), OK, signatureMap, functionality);
+        final OnsetResult onsetResult =
+                new OnsetResult(txn, txBody, txBody.toByteArray(), OK, signatureMap, functionality);
         when(onset.parseAndCheck(any(), any(byte[].class))).thenReturn(onsetResult);
 
         final Iterator<Transaction> iterator =
@@ -115,6 +145,67 @@ class PreHandleWorkflowImplTest {
         when(transaction.getContents()).thenReturn(new byte[0]);
 
         workflow = new PreHandleWorkflowImpl(dispatcher, onset, signaturePreparer, cryptography, RUN_INSTANTLY);
+    }
+
+    @Test
+    void resetsDuplicateClassification() {
+        final var onsetResult = new OnsetResult(
+                com.hederahashgraph.api.proto.java.Transaction.getDefaultInstance(),
+                TransactionBody.getDefaultInstance(),
+                new byte[0],
+                DUPLICATE_TRANSACTION,
+                SignatureMap.getDefaultInstance(),
+                HederaFunctionality.CryptoTransfer);
+        given(context.getStatus()).willReturn(DUPLICATE_TRANSACTION);
+
+        final var meta = workflow.dispatchForMetadata(onsetResult, context, storeFactory);
+
+        assertNotNull(meta);
+        verify(context).status(OK);
+        verifyNoInteractions(signaturePreparer);
+    }
+
+    @Test
+    void verifiesExpandedSigsAsync() {
+        final var onsetResult = new OnsetResult(
+                com.hederahashgraph.api.proto.java.Transaction.getDefaultInstance(),
+                TransactionBody.getDefaultInstance(),
+                new byte[0],
+                DUPLICATE_TRANSACTION,
+                SignatureMap.getDefaultInstance(),
+                HederaFunctionality.CryptoTransfer);
+        given(context.getStatus()).willReturn(DUPLICATE_TRANSACTION);
+        given(context.getPayerKey()).willReturn(payerKey);
+        given(context.getRequiredNonPayerKeys()).willReturn(Collections.emptyList());
+        given(signaturePreparer.expandedSigsFor(onsetResult.transaction(), payerKey, Collections.emptyList()))
+                .willReturn(new SigExpansionResult(List.of(cryptoSig), OK));
+
+        final var meta = workflow.dispatchForMetadata(onsetResult, context, storeFactory);
+
+        assertNotNull(meta);
+        verify(cryptography).verifyAsync(List.of(cryptoSig));
+    }
+
+    @Test
+    void shortCircuitsIfExpandedSigsFail() {
+        final var onsetResult = new OnsetResult(
+                com.hederahashgraph.api.proto.java.Transaction.getDefaultInstance(),
+                TransactionBody.getDefaultInstance(),
+                new byte[0],
+                DUPLICATE_TRANSACTION,
+                SignatureMap.getDefaultInstance(),
+                HederaFunctionality.CryptoTransfer);
+        given(context.getStatus()).willReturn(DUPLICATE_TRANSACTION);
+        given(context.getPayerKey()).willReturn(payerKey);
+        given(context.getRequiredNonPayerKeys()).willReturn(Collections.emptyList());
+        given(signaturePreparer.expandedSigsFor(onsetResult.transaction(), payerKey, Collections.emptyList()))
+                .willReturn(new SigExpansionResult(List.of(), INVALID_TOKEN_ID));
+
+        final var meta = workflow.dispatchForMetadata(onsetResult, context, storeFactory);
+
+        assertNotNull(meta);
+        verify(context).status(INVALID_TOKEN_ID);
+        verifyNoInteractions(cryptography);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -207,10 +298,17 @@ class PreHandleWorkflowImplTest {
                 .setTransactionID(transactionID)
                 .setConsensusCreateTopic(content)
                 .build();
+        final com.hederahashgraph.api.proto.java.Transaction txn =
+                com.hederahashgraph.api.proto.java.Transaction.newBuilder()
+                        .setSignedTransactionBytes(SignedTransaction.newBuilder()
+                                .setBodyBytes(txBody.toByteString())
+                                .build()
+                                .toByteString())
+                        .build();
         final SignatureMap signatureMap = SignatureMap.newBuilder().build();
         final HederaFunctionality functionality = HederaFunctionality.ConsensusCreateTopic;
         final OnsetResult onsetResult =
-                new OnsetResult(txBody, txBody.toByteArray(), DUPLICATE_TRANSACTION, signatureMap, functionality);
+                new OnsetResult(txn, txBody, txBody.toByteArray(), DUPLICATE_TRANSACTION, signatureMap, functionality);
         when(localOnset.parseAndCheck(any(), any(byte[].class))).thenReturn(onsetResult);
 
         workflow = new PreHandleWorkflowImpl(dispatcher, localOnset, signaturePreparer, cryptography, RUN_INSTANTLY);

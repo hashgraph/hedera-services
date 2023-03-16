@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -36,6 +37,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param functionality the {@link HederaFunctionality} of the transaction
  */
 public record OnsetResult(
+        @NonNull Transaction transaction,
         @NonNull TransactionBody txBody,
         @NonNull byte[] bodyBytes,
         @NonNull ResponseCodeEnum errorCode,
@@ -53,6 +55,7 @@ public record OnsetResult(
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public OnsetResult(
+            @NonNull final Transaction transaction,
             @NonNull final TransactionBody txBody,
             @NonNull final byte[] bodyBytes,
             @NonNull final ResponseCodeEnum errorCode,
@@ -61,6 +64,7 @@ public record OnsetResult(
         this.txBody = requireNonNull(txBody);
         this.bodyBytes = requireNonNull(bodyBytes);
         this.errorCode = requireNonNull(errorCode);
+        this.transaction = requireNonNull(transaction);
         this.signatureMap = requireNonNull(signatureMap);
         this.functionality = requireNonNull(functionality);
     }
