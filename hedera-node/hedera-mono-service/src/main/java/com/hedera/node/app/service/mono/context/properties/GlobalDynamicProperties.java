@@ -51,6 +51,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_KV_PAIR
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_NUM;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PERMITTED_DELEGATE_CALLERS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS;
@@ -63,7 +64,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECARS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECAR_VALIDATION_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_STORAGE_SLOT_PRICE_TIERS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_THROTTLE_THROTTLE_BY_GAS;
-import static com.hedera.node.app.spi.config.PropertyNames.CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.CRYPTO_CREATE_WITH_ALIAS_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_LIMIT_TOKEN_ASSOCIATIONS;
 import static com.hedera.node.app.spi.config.PropertyNames.FEES_MIN_CONGESTION_PERIOD;
 import static com.hedera.node.app.spi.config.PropertyNames.FEES_PERCENT_CONGESTION_MULTIPLIERS;
@@ -275,8 +276,9 @@ public class GlobalDynamicProperties implements EvmProperties {
     private long traceabilityMaxExportsPerConsSec;
     private long traceabilityMinFreeToUsedGasThrottleRatio;
     private boolean lazyCreationEnabled;
-    private boolean cryptoCreateWithAliasAndEvmAddressEnabled;
+    private boolean cryptoCreateWithAliasEnabled;
     private boolean enforceContractCreationThrottle;
+    private Set<Address> permittedDelegateCallers;
     private EntityScaleFactors entityScaleFactors;
     private LegacyContractIdActivations legacyContractIdActivations;
 
@@ -416,10 +418,10 @@ public class GlobalDynamicProperties implements EvmProperties {
         traceabilityMinFreeToUsedGasThrottleRatio =
                 properties.getLongProperty(TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO);
         lazyCreationEnabled = properties.getBooleanProperty(LAZY_CREATION_ENABLED);
-        cryptoCreateWithAliasAndEvmAddressEnabled =
-                properties.getBooleanProperty(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED);
+        cryptoCreateWithAliasEnabled = properties.getBooleanProperty(CRYPTO_CREATE_WITH_ALIAS_ENABLED);
         enforceContractCreationThrottle = properties.getBooleanProperty(CONTRACTS_ENFORCE_CREATION_THROTTLE);
         entityScaleFactors = properties.getEntityScaleFactorsProperty(FEES_PERCENT_UTILIZATION_SCALE_FACTORS);
+        permittedDelegateCallers = properties.getEvmAddresses(CONTRACTS_PERMITTED_DELEGATE_CALLERS);
         legacyContractIdActivations = properties.getLegacyActivationsProperty(CONTRACTS_KEYS_LEGACY_ACTIVATIONS);
     }
 
@@ -875,8 +877,8 @@ public class GlobalDynamicProperties implements EvmProperties {
         return lazyCreationEnabled;
     }
 
-    public boolean isCryptoCreateWithAliasAndEvmAddressEnabled() {
-        return cryptoCreateWithAliasAndEvmAddressEnabled;
+    public boolean isCryptoCreateWithAliasEnabled() {
+        return cryptoCreateWithAliasEnabled;
     }
 
     public EntityScaleFactors entityScaleFactors() {
@@ -893,5 +895,9 @@ public class GlobalDynamicProperties implements EvmProperties {
 
     public boolean isImplicitCreationEnabled() {
         return autoCreationEnabled && lazyCreationEnabled;
+    }
+
+    public Set<Address> permittedDelegateCallers() {
+        return permittedDelegateCallers;
     }
 }

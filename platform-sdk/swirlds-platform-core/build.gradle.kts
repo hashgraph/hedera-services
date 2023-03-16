@@ -29,6 +29,7 @@ dependencies {
   api(project(":swirlds-fcqueue"))
   api(project(":swirlds-jasperdb"))
   api(project(":swirlds-cli"))
+  compileOnly(libs.spotbugs.annotations)
   runtimeOnly(project(":swirlds-config-impl"))
 
   implementation(libs.hedera.bls.api)

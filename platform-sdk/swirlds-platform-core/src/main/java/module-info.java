@@ -118,7 +118,6 @@ module com.swirlds.platform {
     exports com.swirlds.platform.components.transaction;
     exports com.swirlds.platform.components.transaction.system.internal;
     exports com.swirlds.platform.components.transaction.system;
-    exports com.swirlds.platform.components.transaction.throttle;
 
     /* Swirlds Libraries */
     requires transitive com.swirlds.common;
@@ -164,4 +163,5 @@ module com.swirlds.platform {
     requires info.picocli;
     requires com.fasterxml.jackson.databind;
     requires com.fasterxml.jackson.dataformat.yaml;
+    requires static com.github.spotbugs.annotations;
 }

@@ -17,6 +17,7 @@
 package com.swirlds.platform.recovery;
 
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
+import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.util.BootstrapUtils.loadAppMain;
 import static com.swirlds.platform.util.BootstrapUtils.setupConstructableRegistry;
@@ -45,6 +46,7 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.internal.EventStreamRoundIterator;
 import com.swirlds.platform.recovery.internal.RecoveryPlatform;
+import com.swirlds.platform.state.EmergencyRecoveryFile;
 import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
@@ -76,7 +78,7 @@ public final class EventRecoveryWorkflow {
      * Read a signed state from disk and apply events from an event stream on disk. Write the resulting signed state to
      * disk.
      *
-     * @param signedStateFile         the initial signed state file
+     * @param signedStateFile         the bootstrap signed state file
      * @param configurationFiles      files containing configuration
      * @param eventStreamDirectory    a directory containing the event stream
      * @param mainClassName           the fully qualified class name of the {@link SwirldMain} for the app
@@ -141,9 +143,42 @@ public final class EventRecoveryWorkflow {
 
         SignedStateFileWriter.writeSignedStateFilesToDirectory(resultingStateDirectory, resultingState);
 
+        updateEmergencyRecoveryFile(resultingStateDirectory, initialState.getConsensusTimestamp());
+
         logger.info(STARTUP.getMarker(), "Recovery process completed");
 
         resultingState.release();
+    }
+
+    /**
+     * Update the resulting emergency recovery file to contain the bootstrap timestamp.
+     *
+     * @param recoveryFileDir the directory containing the emergency recovery file
+     * @param bootstrapTime   the consensus timestamp of the bootstrap state
+     */
+    public static void updateEmergencyRecoveryFile(final Path recoveryFileDir, final Instant bootstrapTime) {
+        try {
+            // Read the existing recovery file and write it to a backup directory
+            final EmergencyRecoveryFile oldRecoveryFile = EmergencyRecoveryFile.read(recoveryFileDir);
+            if (oldRecoveryFile == null) {
+                logger.error(EXCEPTION.getMarker(), "Recovery file does not exist at {}", recoveryFileDir);
+                return;
+            }
+            final Path backupDir = recoveryFileDir.resolve("backup");
+            if (!Files.exists(backupDir)) {
+                Files.createDirectories(backupDir);
+            }
+            oldRecoveryFile.write(backupDir);
+
+            // Create a new recovery file with the bootstrap time, overwriting the original
+            final EmergencyRecoveryFile newRecoveryFile =
+                    new EmergencyRecoveryFile(oldRecoveryFile.recovery().state(), bootstrapTime);
+            newRecoveryFile.write(recoveryFileDir);
+        } catch (final IOException e) {
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "Exception occurred when updating the emergency recovery file with the bootstrap time");
+        }
     }
 
     /**
