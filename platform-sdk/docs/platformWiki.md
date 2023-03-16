@@ -35,7 +35,7 @@ This code is maintained by the "Platform Hashgraph" team.
     - Reconnect
     - Transaction Handling
     - BLS
-    - Notification Engine
+    - Application Communication
 - Event Flow
     - Event Intake
     - Pre-consensus event stream
