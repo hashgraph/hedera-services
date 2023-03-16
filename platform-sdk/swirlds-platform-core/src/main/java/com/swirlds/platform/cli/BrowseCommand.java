@@ -16,6 +16,9 @@
 
 package com.swirlds.platform.cli;
 
+import static com.swirlds.platform.system.SystemExitReason.BROWSER_WINDOW_CLOSED;
+import static com.swirlds.platform.system.SystemExitReason.FATAL_ERROR;
+
 import com.swirlds.cli.PlatformCli;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
@@ -57,10 +60,10 @@ public class BrowseCommand extends AbstractCommand {
             Browser.launch(new HashSet<>(localNodes), null);
         } catch (final Exception e) {
             e.printStackTrace();
-            return 1;
+            return FATAL_ERROR.getExitCode();
         }
 
         Browser.join();
-        return 0;
+        return BROWSER_WINDOW_CLOSED.getExitCode();
     }
 }

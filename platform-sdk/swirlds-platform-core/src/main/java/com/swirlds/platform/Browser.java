@@ -343,12 +343,10 @@ public class Browser {
      *
      * @param args args is ignored, and has no effect
      */
-    public static synchronized void launch(final String... args) {
+    public static synchronized void parseCommandLineArgsAndLaunch(final String... args) {
         if (INSTANCE != null) {
             return;
         }
-
-        StartupTime.markStartupTime();
 
         // This set contains the nodes set by the command line to start, if none are passed, then IP
         // addresses will be compared to determine which node to start
@@ -393,6 +391,10 @@ public class Browser {
      * @param log4jPath         the path to the log4j configuraiton file, if null then log4j is not started
      */
     public static synchronized void launch(final Set<Integer> localNodesToStart, final Path log4jPath) {
+        if (INSTANCE != null) {
+            return;
+        }
+
         // Initialize the log4j2 configuration and logging subsystem if a log4j2.xml file is present in the current
         // working directory
         try {
@@ -405,6 +407,7 @@ public class Browser {
             System.err.println("FATAL Unable to load log context: " + e);
         }
         try {
+            StartupTime.markStartupTime();
             INSTANCE = new Browser(localNodesToStart);
         } catch (IOException e) {
             throw new RuntimeException("Unable to create Browser", e);
@@ -682,6 +685,6 @@ public class Browser {
     }
 
     public static void main(final String[] args) {
-        launch(args);
+        parseCommandLineArgsAndLaunch(args);
     }
 }

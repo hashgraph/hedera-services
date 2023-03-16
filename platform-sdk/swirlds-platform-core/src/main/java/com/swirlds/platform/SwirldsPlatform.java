@@ -1745,12 +1745,13 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      */
     @Override
     public PlatformEvent[] getAllEvents() {
-        final EventImpl[] allEvents = shadowGraph.getAllEvents();
         // There is currently a race condition that can cause an exception if event order changes at
         // just the right moment. Since this is just a testing utility method and not used in production
         // environments, we can just retry until we succeed.
-        while (true) {
+        int maxRetries = 100;
+        while (maxRetries-- > 0) {
             try {
+                final EventImpl[] allEvents = shadowGraph.getAllEvents();
                 Arrays.sort(allEvents, (o1, o2) -> {
                     if (o1.getConsensusOrder() != -1 && o2.getConsensusOrder() != -1) {
                         // both are consensus
@@ -1767,12 +1768,12 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                         }
                     }
                 });
-                break;
+                return allEvents;
             } catch (final IllegalArgumentException e) {
                 logger.error(EXCEPTION.getMarker(), "Exception while sorting events", e);
             }
         }
-        return allEvents;
+        throw new IllegalStateException("Unable to sort events after 100 retries");
     }
 
     /**
