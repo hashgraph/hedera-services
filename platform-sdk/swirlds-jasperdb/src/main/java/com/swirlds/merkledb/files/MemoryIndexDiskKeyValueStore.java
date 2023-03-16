@@ -229,11 +229,11 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
      *
      * @throws IOException If there was a problem opening a writing session
      */
-    public void startWriting(final long minimumValidKey) throws IOException {
+    public void startWriting(final long minimumValidKey, final long maxValidIndex) throws IOException {
         // By calling `updateMinValidIndex` we compact the index if it's applicable.
         // We need to do this before we start putting values into the index, otherwise we could put a value by
         // index that is not yet valid.
-        index.updateMinValidIndex(minimumValidKey);
+        index.updateValidRange(minimumValidKey, maxValidIndex);
         fileCollection.startWriting();
     }
 

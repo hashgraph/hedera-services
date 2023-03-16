@@ -18,6 +18,7 @@ package com.swirlds.merkledb.collections;
 
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
@@ -45,10 +46,16 @@ public class LongListDisk extends AbstractLongList<Long> {
     /** A temp byte buffer for reading and writing longs */
     private static final ThreadLocal<ByteBuffer> TEMP_LONG_BUFFER_THREAD_LOCAL;
 
-    /** This file channel is to work with the temporary file. The field is effectively immutable, however it can't be
-     * declared final because in some cases it has to be initialized in {@link LongListDisk#readBodyFromFileChannelOnInit}
+    /** This file channel is to work with the temporary file.
      */
-    private FileChannel currentFileChannel;
+    private final FileChannel currentFileChannel;
+
+    /**
+     * Path to the temporary file used to store the data.
+     * The field is effectively immutable, however it can't be declared
+     * final because in some cases it has to be initialized in {@link LongListDisk#readBodyFromFileChannelOnInit}
+     */
+    private Path tempFile;
 
     /** A temp byte buffer for transferring data between file channels */
     private static final ThreadLocal<ByteBuffer> TRANSFER_BUFFER_THREAD_LOCAL;
@@ -65,6 +72,9 @@ public class LongListDisk extends AbstractLongList<Long> {
                 ThreadLocal.withInitial(() -> ByteBuffer.allocate(Long.BYTES).order(ByteOrder.nativeOrder()));
     }
 
+    /**
+     * Create a {@link LongListDisk} with default parameters.
+     */
     public LongListDisk() {
         this(DEFAULT_NUM_LONGS_PER_CHUNK, DEFAULT_MAX_LONGS_TO_STORE, DEFAULT_RESERVED_BUFFER_LENGTH);
     }
@@ -97,12 +107,30 @@ public class LongListDisk extends AbstractLongList<Long> {
     LongListDisk(final Path file, final long reservedBufferLength) throws IOException {
         super(file, reservedBufferLength);
         freeChunks = new ConcurrentLinkedDeque<>();
+        // IDE complains that the tempFile is not initialized, but it's initialized in readBodyFromFileChannelOnInit
+        // which is called from the constructor of the parent class
+        //noinspection ConstantValue
+        if (tempFile == null) {
+            throw new IllegalStateException("The temp file is not initialized");
+        }
+        currentFileChannel = FileChannel.open(
+                tempFile, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
     }
 
+    /**
+     * Initializes the file channel to a temporary file.
+     * @param path the path to the source file
+     */
+    @Override
+    protected void onEmptyOrAbsentSourceFile(final Path path) throws IOException {
+        tempFile = createTempFile(path.toFile().getName());
+    }
+
+    /** {@inheritDoc} */
     @Override
     protected void readBodyFromFileChannelOnInit(final String sourceFileName, final FileChannel fileChannel)
             throws IOException {
-        Path tempFile = createTempFile(sourceFileName);
+        tempFile = createTempFile(sourceFileName);
         // create temporary file for writing
         // the warning is suppressed because the file is not supposed to be closed
         // as this implementation uses a file channel from it.
@@ -110,7 +138,7 @@ public class LongListDisk extends AbstractLongList<Long> {
             // ensure that the amount of disk space is enough
             // two additional chunks are required to accommodate "compressed" first and last chunks in the original file
             rf.setLength(fileChannel.size() + 2L * memoryChunkSize);
-            currentFileChannel = rf.getChannel();
+            FileChannel tempFileCHannel = rf.getChannel();
 
             final int totalNumberOfChunks = calculateNumberOfChunks(size());
             final int firstChunkWithDataIndex = (int) (minValidIndex.get() / numLongsPerChunk);
@@ -125,30 +153,24 @@ public class LongListDisk extends AbstractLongList<Long> {
             MerkleDbFileUtils.completelyRead(fileChannel, transferBuffer);
             transferBuffer.flip();
             // writing the full chunk, all values before minValidIndexInChunk are zeroes
-            MerkleDbFileUtils.completelyWrite(currentFileChannel, transferBuffer, 0);
+            MerkleDbFileUtils.completelyWrite(tempFileCHannel, transferBuffer, 0);
             chunkList.set(firstChunkWithDataIndex, 0L);
 
             // copy everything except for the first chunk and the last chunk
             MerkleDbFileUtils.completelyTransferFrom(
-                    currentFileChannel,
-                    fileChannel,
-                    memoryChunkSize,
-                    (long) (totalNumberOfChunks - 2) * memoryChunkSize);
+                    tempFileCHannel, fileChannel, memoryChunkSize, (long) (totalNumberOfChunks - 2) * memoryChunkSize);
 
             // copy the last chunk
             transferBuffer.clear();
             MerkleDbFileUtils.completelyRead(fileChannel, transferBuffer);
             transferBuffer.flip();
             MerkleDbFileUtils.completelyWrite(
-                    currentFileChannel, transferBuffer, (long) (totalNumberOfChunks - 1) * memoryChunkSize);
+                    tempFileCHannel, transferBuffer, (long) (totalNumberOfChunks - 1) * memoryChunkSize);
 
             for (int i = firstChunkWithDataIndex + 1; i < totalNumberOfChunks; i++) {
                 chunkList.set(i, (long) (i - firstChunkWithDataIndex) * memoryChunkSize);
             }
         }
-        // now, once the file is copied, we can create another channel to access it
-        currentFileChannel = FileChannel.open(
-                tempFile, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
     }
 
     private static void fillBufferWithZeroes(ByteBuffer transferBuffer) {
@@ -170,17 +192,6 @@ public class LongListDisk extends AbstractLongList<Long> {
 
     static Path createTempFile(final String sourceFileName) throws IOException {
         return TemporaryFileBuilder.buildTemporaryDirectory(STORE_POSTFIX).resolve(sourceFileName);
-    }
-
-    /**
-     * Initializes the file channel to a temporary file.
-     * @param path the path to the source file
-     */
-    @Override
-    protected void onEmptyOrAbsentSourceFile(final Path path) throws IOException {
-        Path tempFile = createTempFile(path.toFile().getName());
-        currentFileChannel = FileChannel.open(
-                tempFile, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
     }
 
     /** {@inheritDoc} */
@@ -238,7 +249,7 @@ public class LongListDisk extends AbstractLongList<Long> {
         final ByteBuffer transferBuffer = initOrGetTransferBuffer();
         final int totalNumOfChunks = calculateNumberOfChunks(size());
         final long currentMinValidIndex = minValidIndex.get();
-        final int firstChunkWithDataIndex = (int) currentMinValidIndex / numLongsPerChunk;
+        final int firstChunkWithDataIndex = (int) (currentMinValidIndex / numLongsPerChunk);
 
         // The following logic sequentially processes chunks. This kind of processing allows to get rid of
         // non-contiguous memory allocation and gaps that may be present in the current file.
@@ -251,7 +262,7 @@ public class LongListDisk extends AbstractLongList<Long> {
                 final long chunkOffset;
                 if (i == firstChunkWithDataIndex) {
                     // writing starts from the first valid index in the first valid chunk
-                    final int firstValidIndexInChunk = (int) currentMinValidIndex % numLongsPerChunk;
+                    final int firstValidIndexInChunk = (int) (currentMinValidIndex % numLongsPerChunk);
                     transferBuffer.position(firstValidIndexInChunk * Long.BYTES);
                     chunkOffset = currentChunkStartOffset + calculateOffsetInChunk(currentMinValidIndex);
                 } else {
@@ -286,7 +297,7 @@ public class LongListDisk extends AbstractLongList<Long> {
      * @return The stored long value at given index
      */
     @Override
-    protected long lookupInChunk(final Long chunkOffset, final long subIndex) {
+    protected long lookupInChunk(@NonNull final Long chunkOffset, final long subIndex) {
         try {
             final ByteBuffer buf = TEMP_LONG_BUFFER_THREAD_LOCAL.get();
             // if there is nothing to read the buffer will have the default value
@@ -301,7 +312,7 @@ public class LongListDisk extends AbstractLongList<Long> {
     }
 
     /**
-     * Closes the open file
+     *  Flushes and closes the file chanel and clears the free chunks offset list.
      *
      * @throws IOException if an I/O error occurs
      */
@@ -316,15 +327,11 @@ public class LongListDisk extends AbstractLongList<Long> {
         freeChunks.clear();
     }
 
+    /** {@inheritDoc} */
     @Override
-    protected void releaseChunk(final Long chunk) {
-        // if it's the last chunk, don't do any cleanup as it may be claimed by another threads
-        if (chunk / numLongsPerChunk == size() / numLongsPerChunk) {
-            return;
-        }
-
+    protected void releaseChunk(@NonNull final Long chunk) {
         final ByteBuffer transferBuffer = initOrGetTransferBuffer();
-        transferBuffer.clear();
+        fillBufferWithZeroes(transferBuffer);
         try {
             currentFileChannel.write(transferBuffer, chunk);
         } catch (IOException e) {
@@ -333,22 +340,33 @@ public class LongListDisk extends AbstractLongList<Long> {
         freeChunks.add(chunk);
     }
 
+    /** {@inheritDoc} */
     @Override
-    protected void partialChunkCleanup(final int chunkIndex, final long entriesToCleanUp) {
-        Long position = chunkList.get(chunkIndex);
-        if (position == null) {
-            // nothing to clean up
-            return;
-        }
+    protected void partialChunkCleanup(
+            @NonNull final Long chunkOffset, final boolean leftSide, final long entriesToCleanUp) {
         final ByteBuffer transferBuffer = initOrGetTransferBuffer();
-        transferBuffer.limit((int) (entriesToCleanUp * Long.BYTES));
-        try {
-            currentFileChannel.write(transferBuffer, position);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        fillBufferWithZeroes(transferBuffer);
+
+        if (leftSide) {
+            transferBuffer.limit((int) (entriesToCleanUp * Long.BYTES));
+            try {
+                currentFileChannel.write(transferBuffer, chunkOffset);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        } else {
+            transferBuffer.limit(transferBuffer.capacity());
+            long cleanUpOffset = memoryChunkSize - (entriesToCleanUp * Long.BYTES);
+            transferBuffer.position((int) cleanUpOffset);
+            try {
+                currentFileChannel.write(transferBuffer, chunkOffset + cleanUpOffset);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
         }
     }
 
+    /** {@inheritDoc} */
     @Override
     protected Long createChunk() {
         Long chunkOffset = freeChunks.poll();

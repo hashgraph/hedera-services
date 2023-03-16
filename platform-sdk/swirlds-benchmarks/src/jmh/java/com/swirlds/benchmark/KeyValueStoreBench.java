@@ -56,7 +56,7 @@ public class KeyValueStoreBench extends BaseBench {
         // Write files
         long start = System.currentTimeMillis();
         for (int i = 0; i < numFiles; i++) {
-            store.startWriting(0);
+            store.startWriting(0, maxKey);
             resetKeys();
             for (int j = 0; j < numRecords; ++j) {
                 long id = nextAscKey();

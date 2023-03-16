@@ -20,6 +20,7 @@ import static com.swirlds.common.utility.Units.MEBIBYTES_TO_BYTES;
 import static com.swirlds.merkledb.utilities.MerkleDbFileUtils.readFromFileChannel;
 
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -50,6 +51,8 @@ public abstract class AbstractLongList<C> implements LongList {
     public static final String MAX_CHUNKS_EXCEEDED_MSG = "The maximum number of memory chunks should not exceed %s. "
             + "Either increase numLongsPerChunk or decrease maxLongs";
     public static final String CHUNK_SIZE_EXCEEDED_MSG = "Cannot store %d per chunk (max is %d)";
+    public static final String MIN_VALID_INDEX_NON_NEGATIVE_MSG = "Min valid index %d must be non-negative";
+    public static final String MAX_VALID_INDEX_LIMIT = "Max valid index %d must be less than max capacity %d";
 
     static {
         try {
@@ -111,7 +114,7 @@ public abstract class AbstractLongList<C> implements LongList {
     protected final int numLongsPerChunk;
     /** Size in bytes for each memory chunk to allocate */
     protected final int memoryChunkSize;
-    /** The number of longs that this list would contain if it was not optimized by {@link AbstractLongList#updateMinValidIndex}.
+    /** The number of longs that this list would contain if it was not optimized by {@link LongList#updateValidRange}.
      * Practically speaking, it defines the list's right boundary. */
     protected final AtomicLong size = new AtomicLong(0);
     /**
@@ -129,7 +132,7 @@ public abstract class AbstractLongList<C> implements LongList {
 
     /**
      * A length of a buffer that is reserved to remain intact after memory optimization that is
-     * happening in {@link LongListOffHeap#updateMinValidIndex}
+     * happening in {@link LongList#updateValidRange}
      */
     protected final long reservedBufferLength;
 
@@ -347,21 +350,13 @@ public abstract class AbstractLongList<C> implements LongList {
         return get(index, IMPERMISSIBLE_VALUE);
     }
 
-    /**
-     * Get the maximum capacity of this LongList; that is, one greater than the maximum legal value
-     * of an {@code index} parameter used in a {@code put()} call.
-     */
+    /** {@inheritDoc} */
     @Override
     public final long capacity() {
         return maxLongs;
     }
 
-    /**
-     * Get the maximum number of indices in this LongList that may be non-zero. (That is, one more
-     * than the largest {@code index} used in a call to {@code put()}.
-     *
-     * <p>Bounded above by {@link AbstractLongList#capacity()}.
-     */
+    /** {@inheritDoc} */
     @Override
     public final long size() {
         return size.get();
@@ -441,25 +436,23 @@ public abstract class AbstractLongList<C> implements LongList {
      * @param subIndex   The sub index of the long in that chunk
      * @return The stored long value at given index
      */
-    protected abstract long lookupInChunk(final C chunk, final long subIndex);
+    protected abstract long lookupInChunk(@NonNull final C chunk, final long subIndex);
 
-    /**
-     * After invocation of this method, {@link AbstractLongList#get(long)}) calls
-     * will return {@link AbstractLongList#IMPERMISSIBLE_VALUE} for indices that
-     * are before {@code newMinValidIndex}.
-     * Also, a call to this method releases memory taken by unused byte buffers.
-     * Note that newMinValidIndex is allowed to exceed the current size of the list.
-     *
-     * @param newMinValidIndex minimal valid index of the list
-     */
+    /** {@inheritDoc} */
     @Override
-    public final void updateMinValidIndex(final long newMinValidIndex) {
+    public final void updateValidRange(final long newMinValidIndex, long maxValidIndex) {
         if (newMinValidIndex < 0) {
-            throw new IndexOutOfBoundsException("Min valid index " + newMinValidIndex + " must be non-negative");
+            throw new IndexOutOfBoundsException(MIN_VALID_INDEX_NON_NEGATIVE_MSG.formatted(newMinValidIndex));
+        }
+
+        if (maxValidIndex > maxLongs - 1) {
+            throw new IndexOutOfBoundsException(MAX_VALID_INDEX_LIMIT.formatted(maxValidIndex, maxLongs));
         }
 
         minValidIndex.set(newMinValidIndex);
-        shrinkIfNeeded(newMinValidIndex);
+        shrinkIfNeeded(newMinValidIndex, maxValidIndex);
+        // everything to the right of the maxValidIndex is going to be discarded, adjust the size accordingly
+        size.set(Math.min(maxValidIndex + 1, size.get()));
     }
 
     /**
@@ -488,13 +481,23 @@ public abstract class AbstractLongList<C> implements LongList {
     }
 
     /**
-     * Deletes values up to {@code newMinValidIndex} or the end of the list, releases memory chunks reserved for these
-     * values. Note that it takes {@code reservedBufferOffset} into account to decide if a chunk has
-     * to be released.
+     * Deletes values up to {@code newMinValidIndex} and from {@code newMaxValidIndex} to  the end of the list,
+     * releases memory chunks reserved for these values.
+     * Note that it takes {@code reservedBufferOffset} into account to decide if a chunk has to be released.
      *
      * @param newMinValidIndex new minimal valid index, left boundary of the list
+     * @param newMaxValidIndex new maximal valid index, right boundary of the list
      */
-    private void shrinkIfNeeded(final long newMinValidIndex) {
+    private void shrinkIfNeeded(final long newMinValidIndex, final long newMaxValidIndex) {
+        shrinkLeftSideIfNeeded(newMinValidIndex);
+        shrinkRightSideIfNeeded(newMaxValidIndex);
+    }
+
+    /**
+     * Deletes values up to {@code newMinValidIndex} and releases memory chunks reserved for these values.
+     * @param newMinValidIndex new minimal valid index, left boundary of the list
+     */
+    private void shrinkLeftSideIfNeeded(final long newMinValidIndex) {
         final int firstValidChunkWithBuffer =
                 (int) Math.max((newMinValidIndex - reservedBufferLength) / numLongsPerChunk, 0);
         final int firstChunkIndexToDelete = firstValidChunkWithBuffer - 1;
@@ -506,13 +509,58 @@ public abstract class AbstractLongList<C> implements LongList {
         }
 
         // clean up a chunk with data
-        final int firstChunkWithData = (int) (newMinValidIndex / numLongsPerChunk);
+        final int firstChunkWithDataIndex = (int) (newMinValidIndex / numLongsPerChunk);
         final long numberOfElementsToCleanUp = (newMinValidIndex % numLongsPerChunk);
-        partialChunkCleanup(firstChunkWithData, numberOfElementsToCleanUp);
+        C chunk = chunkList.get(firstChunkWithDataIndex);
+        if (chunk != null && numberOfElementsToCleanUp > 0) {
+            partialChunkCleanup(chunk, true, numberOfElementsToCleanUp);
+        }
 
         // clean up chunk(s) reserved for buffer
-        for (int i = firstValidChunkWithBuffer; i < firstChunkWithData; i++) {
-            partialChunkCleanup(i, numLongsPerChunk);
+        for (int i = firstValidChunkWithBuffer; i < firstChunkWithDataIndex; i++) {
+            chunk = chunkList.get(i);
+            if (chunk != null) {
+                partialChunkCleanup(chunk, true, numLongsPerChunk);
+            }
+        }
+    }
+
+    /**
+     * Deletes values from {@code maxValidIndex} to the end of the list and releases memory chunks reserved for these values.
+     * @param maxValidIndex new maximal valid index, right boundary of the list
+     */
+    private void shrinkRightSideIfNeeded(long maxValidIndex) {
+        final int listLength = chunkList.length();
+        final int lastValidChunkWithBufferIndex =
+                (int) Math.min((maxValidIndex + reservedBufferLength) / numLongsPerChunk, listLength);
+        final int firstChunkIndexToDelete = lastValidChunkWithBufferIndex + 1;
+        final int numberOfChunks = calculateNumberOfChunks(size());
+
+        for (int i = firstChunkIndexToDelete; i < numberOfChunks; i++) {
+            final C chunk = chunkList.get(i);
+            if (chunk != null && chunkList.compareAndSet(i, chunk, null)) {
+                releaseChunk(chunk);
+            }
+        }
+
+        // clean up a chunk with data
+        final int firstChunkWithDataIndex = (int) (maxValidIndex / numLongsPerChunk);
+        final long numberOfElementsToCleanUp = numLongsPerChunk - (maxValidIndex % numLongsPerChunk) - 1;
+        C chunk = chunkList.get(firstChunkWithDataIndex);
+        if (chunk != null && numberOfElementsToCleanUp > 0) {
+            partialChunkCleanup(chunk, false, numberOfElementsToCleanUp);
+        }
+
+        // clean up chunk(s) reserved for buffer
+        for (int i = firstChunkWithDataIndex + 1; i <= lastValidChunkWithBufferIndex; i++) {
+            if (i >= listLength) {
+                // we're at the end of the list, no more chunks to clean up
+                break;
+            }
+            chunk = chunkList.get(i);
+            if (chunk != null) {
+                partialChunkCleanup(chunk, false, numLongsPerChunk);
+            }
         }
     }
 
@@ -520,14 +568,17 @@ public abstract class AbstractLongList<C> implements LongList {
      * Releases a chunk that is no longer in use. Some implementation may preserve the chunk for further use.
      * @param chunk chunk to release
      */
-    protected abstract void releaseChunk(C chunk);
+    protected abstract void releaseChunk(@NonNull final C chunk);
 
     /**
-     * Zeroes out a part of a chunk
-     * @param chunkIndex index of the chunk to clean up
+     * Zeroes out a part of a chunk.
+     * @param chunk index of the chunk to clean up
+     * @param leftSide         if true, cleans up {@code elementsToCleanUp} on the left side of the chunk,
+     *                         if false, cleans up {@code elementsToCleanUp} on the right side of the chunk
      * @param entriesToCleanUp number of entries to clean up in the chunk counting from the left boundary
      */
-    protected abstract void partialChunkCleanup(final int chunkIndex, final long entriesToCleanUp);
+    protected abstract void partialChunkCleanup(
+            @NonNull final C chunk, final boolean leftSide, final long entriesToCleanUp);
 
     /**
      * @return a new chunk
@@ -585,6 +636,7 @@ public abstract class AbstractLongList<C> implements LongList {
         return result;
     }
 
+    /** {@inheritDoc} */
     @Override
     public final void close() {
         try {
@@ -598,6 +650,10 @@ public abstract class AbstractLongList<C> implements LongList {
         }
     }
 
+    /**
+     * Called when the list is closed. Subclasses may override this method to perform additional cleanup.
+     * @throws IOException if an I/O error occurs
+     */
     protected void onClose() throws IOException {
         // to be overridden
     }

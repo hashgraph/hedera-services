@@ -20,6 +20,7 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static java.util.Objects.requireNonNullElse;
 
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
@@ -34,7 +35,7 @@ import org.apache.logging.log4j.Logger;
  * A {@link LongList} that stores its contents off-heap via a {@link AtomicReferenceArray} of direct
  * {@link ByteBuffer}s. Each {@link ByteBuffer} is the same size, so the "chunk" containing the
  * value for any given index is easily found using modular arithmetic. Note that <br>
- * to reduce memory consumption one can use {@link LongListOffHeap#updateMinValidIndex(long)}.
+ * to reduce memory consumption one can use {@link LongList#updateValidRange(long, long)}.
  * A call to this method discards memory chunks reserved for the indices that are before the index
  * passed as an argument subtracted by {@link AbstractLongList#reservedBufferLength}. The idea is to
  * keep the amount of memory defined by {@link AbstractLongList#reservedBufferLength} reserved even
@@ -92,6 +93,7 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> {
         super(file, DEFAULT_RESERVED_BUFFER_LENGTH);
     }
 
+    /** {@inheritDoc} */
     @Override
     protected void readBodyFromFileChannelOnInit(String sourceFileName, FileChannel fileChannel) throws IOException {
         final int totalNumberOfChunks = calculateNumberOfChunks(size());
@@ -112,7 +114,7 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> {
     }
 
     /**
-     * Clean up resources
+     * Clean up all the direct buffers reserved for chunks
      */
     @Override
     protected void onClose() {
@@ -149,9 +151,6 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> {
         return UNSAFE.compareAndSwapLong(null, chunkPointer + subIndexBytes, oldValue, newValue);
     }
 
-    // =================================================================================================================
-    // Protected methods
-
     /**
      * Write the long data to file, This it is expected to be in one simple block of raw longs.
      *
@@ -162,7 +161,7 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> {
     protected void writeLongsData(final FileChannel fc) throws IOException {
         final int totalNumOfChunks = calculateNumberOfChunks(size());
         final long currentMinValidIndex = minValidIndex.get();
-        final int firstChunkWithDataIndex = (int) currentMinValidIndex / numLongsPerChunk;
+        final int firstChunkWithDataIndex = (int) (currentMinValidIndex / numLongsPerChunk);
         // write data
         final ByteBuffer emptyBuffer = createChunk();
         try {
@@ -172,7 +171,7 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> {
                 final ByteBuffer buf = nonNullBuffer.slice(); // slice so we don't mess with state
                 if (i == firstChunkWithDataIndex) {
                     // writing starts from the first valid index in the first valid chunk
-                    final int firstValidIndexInChunk = (int) currentMinValidIndex % numLongsPerChunk;
+                    final int firstValidIndexInChunk = (int) (currentMinValidIndex % numLongsPerChunk);
                     buf.position(firstValidIndexInChunk * Long.BYTES);
                 } else {
                     buf.position(0);
@@ -201,7 +200,7 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> {
      * @return The stored long value at given index
      */
     @Override
-    protected long lookupInChunk(final ByteBuffer chunk, final long subIndex) {
+    protected long lookupInChunk(@NonNull final ByteBuffer chunk, final long subIndex) {
         try {
             /* Do a volatile memory read from off-heap memory */
             final long chunkPointer = address(chunk);
@@ -217,8 +216,6 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> {
             throw e;
         }
     }
-    // =================================================================================================================
-    // Private helper methods
 
     protected ByteBuffer createChunk() {
         final ByteBuffer directBuffer = ByteBuffer.allocateDirect(memoryChunkSize);
@@ -226,7 +223,7 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> {
         return directBuffer;
     }
 
-    protected void releaseChunk(ByteBuffer newChunk) {
+    protected void releaseChunk(@NonNull ByteBuffer newChunk) {
         UNSAFE.invokeCleaner(newChunk);
     }
 
@@ -234,19 +231,20 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> {
      * Looks up a chunk by {@code chunkIndex} and, if the chunk exists,
      * zeros values up to {@code elementsToCleanUp} index.
      *
-     * @param chunkIndex        an index of a chunk to clean up
+     * @param chunk            a chunk to clean up,
      * @param entriesToCleanUp number of elements to clean up starting with 0 index
      */
-    protected void partialChunkCleanup(final int chunkIndex, final long entriesToCleanUp) {
-        if (entriesToCleanUp == 0) {
-            // nothing to clean up
-            return;
-        }
-        final ByteBuffer validChunk = chunkList.get(chunkIndex);
-        if (validChunk != null) {
-            final long chunkPointer = address(validChunk);
+    @Override
+    protected void partialChunkCleanup(
+            @NonNull final ByteBuffer chunk, final boolean leftSide, final long entriesToCleanUp) {
+        final long chunkPointer = address(chunk);
+        if (leftSide) {
             // cleans up all values up to newMinValidIndex in the first chunk
             UNSAFE.setMemory(chunkPointer, entriesToCleanUp * Long.BYTES, (byte) 0);
+        } else {
+            // cleans up all values on the right side of the last chunk
+            final long offset = (numLongsPerChunk - entriesToCleanUp) * Long.BYTES;
+            UNSAFE.setMemory(chunkPointer + offset, entriesToCleanUp * Long.BYTES, (byte) 0);
         }
     }
 

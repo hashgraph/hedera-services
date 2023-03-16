@@ -84,6 +84,7 @@ class MemoryIndexDiskKeyValueStoreTest {
             final var dataItem = store.get(i);
             assertNotNull(dataItem, "dataItem unexpectedly null");
             assertNull(store.get(i, false), "dataItem should be null if deserialize=false");
+            //noinspection EnhancedSwitchMigration
             switch (testType) {
                 default:
                 case fixed:
@@ -109,7 +110,7 @@ class MemoryIndexDiskKeyValueStoreTest {
             final long lastLeafPath,
             final int valueAddition)
             throws IOException {
-        store.startWriting(0);
+        store.startWriting(0, lastLeafPath);
         writeDataBatch(testType, store, start, count, valueAddition);
         store.endWriting(0, lastLeafPath);
     }
@@ -123,6 +124,7 @@ class MemoryIndexDiskKeyValueStoreTest {
             throws IOException {
         for (int i = start; i < (start + count); i++) {
             long[] dataValue;
+            //noinspection EnhancedSwitchMigration
             switch (testType) {
                 default:
                 case fixed:
@@ -283,7 +285,7 @@ class MemoryIndexDiskKeyValueStoreTest {
         writeBatch(testType, store, 10, 20, 30, 1234);
         checkRange(testType, store, 0, 20, 1234);
         // start writing new range
-        store.startWriting(10);
+        store.startWriting(10, 30);
         writeDataBatch(testType, store, 10, 30, 5678);
         // merge all files
         store.merge(dataFileReaders -> dataFileReaders, 2);
