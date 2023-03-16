@@ -56,9 +56,8 @@ import org.junit.jupiter.api.Test;
 
 class ScheduleDeleteHandlerParityTest {
     static final KeyTree ADMIN_KEY = KeyTree.withRoot(ed25519());
-
-    private AccountAccess keyLookup;
     private final ScheduleDeleteHandler subject = new ScheduleDeleteHandler();
+    private AccountAccess keyLookup;
     private ReadableScheduleStore scheduleStore;
 
     @BeforeEach
@@ -70,7 +69,7 @@ class ScheduleDeleteHandlerParityTest {
     void getsScheduleDeleteWithMissingSchedule() throws Throwable {
         final var theTxn = txnFrom(SCHEDULE_DELETE_WITH_MISSING_SCHEDULE);
         scheduleStore = AdapterUtils.mockSchedule(
-                999L, ADMIN_KEY); // use any schedule id that does not match UNKNOWN_SCHEDULE_ID
+                999L, ADMIN_KEY, theTxn); // use any schedule id that does not match UNKNOWN_SCHEDULE_ID
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, scheduleStore);
 
@@ -83,7 +82,7 @@ class ScheduleDeleteHandlerParityTest {
     void getsScheduleDeleteWithMissingAdminKey() throws Throwable {
         final var theTxn = txnFrom(SCHEDULE_DELETE_WITH_MISSING_SCHEDULE_ADMIN_KEY);
         scheduleStore = AdapterUtils.mockSchedule(
-                IdUtils.asSchedule(KNOWN_SCHEDULE_IMMUTABLE_ID).getScheduleNum(), null);
+                IdUtils.asSchedule(KNOWN_SCHEDULE_IMMUTABLE_ID).getScheduleNum(), null, theTxn);
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, scheduleStore);
 
@@ -96,7 +95,7 @@ class ScheduleDeleteHandlerParityTest {
     void getsScheduleDeleteKnownSchedule() throws Throwable {
         final var theTxn = txnFrom(SCHEDULE_DELETE_WITH_KNOWN_SCHEDULE);
         scheduleStore = AdapterUtils.mockSchedule(
-                IdUtils.asSchedule(KNOWN_SCHEDULE_WITH_ADMIN_ID).getScheduleNum(), ADMIN_KEY);
+                IdUtils.asSchedule(KNOWN_SCHEDULE_WITH_ADMIN_ID).getScheduleNum(), ADMIN_KEY, theTxn);
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, scheduleStore);
 
@@ -130,8 +129,7 @@ class AdapterUtils {
     /**
      * Returns the {@link AccountAccess} containing the "well-known" accounts that exist in a
      * {@code SigRequirementsTest} scenario. This allows us to re-use these scenarios in unit tests
-     * of {@link com.hedera.node.app.spi.Tr} implementations that require an {@link
-     * AccountAccess}.
+     * that require an {@link AccountAccess}.
      *
      * @return the well-known account store
      */
@@ -146,10 +144,12 @@ class AdapterUtils {
         return mockStates;
     }
 
-    public static ReadableScheduleStore mockSchedule(Long schedId, KeyTree key) throws DecoderException {
+    public static ReadableScheduleStore mockSchedule(Long schedId, KeyTree key, TransactionBody txnBody)
+            throws DecoderException {
         final ScheduleID scheduleID =
                 ScheduleID.newBuilder().scheduleNum(schedId).build();
         given(schedule.adminKey()).willReturn(key == null ? Optional.empty() : Optional.of(key.asJKey()));
+        given(schedule.ordinaryViewOfScheduledTxn()).willReturn(PbjConverter.fromPbj(txnBody));
         given(schedulesById.get(scheduleID.scheduleNum())).willReturn(schedule);
         return new ReadableScheduleStore(new MapReadableStates(Map.of("SCHEDULES_BY_ID", schedulesById)));
     }
