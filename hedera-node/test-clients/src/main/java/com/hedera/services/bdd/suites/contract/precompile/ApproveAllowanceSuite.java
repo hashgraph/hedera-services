@@ -85,7 +85,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
     private static final String HTS_APPROVE_ALLOWANCE_CONTRACT = "HtsApproveAllowance";
     private static final String SPENDER = "spender";
     private static final String ALLOWANCE_TX = "allowanceTxn";
-    public static final String APPROVE_SIGNATURE = "Approval(address,address,uint256)";
+    private static final String APPROVE_SIGNATURE = "Approval(address,address,uint256)";
     private static final String APPROVE_FOR_ALL_SIGNATURE = "ApprovalForAll(address,address,bool)";
     public static final String CALL_TO = "callTo";
 
