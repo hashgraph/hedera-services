@@ -162,4 +162,5 @@ module com.swirlds.platform {
     requires info.picocli;
     requires com.fasterxml.jackson.databind;
     requires com.fasterxml.jackson.dataformat.yaml;
+    requires static com.github.spotbugs.annotations;
 }
