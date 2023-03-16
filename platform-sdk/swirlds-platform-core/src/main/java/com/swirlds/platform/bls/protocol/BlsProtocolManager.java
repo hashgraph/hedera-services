@@ -94,8 +94,8 @@ public interface BlsProtocolManager<T> {
      * @param reason  a string describing why the party was declared malicious
      * @param trigger the message which caused the counterparty to be declared malicious
      */
-    void declareMaliciousCounterparty(@NonNull NodeId nodeId, @NonNull String reason,
-            @NonNull BlsProtocolMessage trigger);
+    void declareMaliciousCounterparty(
+            @NonNull NodeId nodeId, @NonNull String reason, @NonNull BlsProtocolMessage trigger);
 
     /**
      * Gets a set of nodes that have been declared offline

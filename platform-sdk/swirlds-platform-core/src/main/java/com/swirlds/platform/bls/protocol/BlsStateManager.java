@@ -17,7 +17,6 @@
 package com.swirlds.platform.bls.protocol;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 
 /** An object to manage the current state of a protocol */
 public class BlsStateManager {

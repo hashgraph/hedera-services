@@ -41,7 +41,9 @@ public class CommitmentMessage extends AbstractBlsProtocolMessage {
      * @param randomGroupElements the elements being committed to
      * @param digest              the digest used to generate the commitment
      */
-    public CommitmentMessage(@NonNull final NodeId senderId, @NonNull final RandomGroupElements randomGroupElements,
+    public CommitmentMessage(
+            @NonNull final NodeId senderId,
+            @NonNull final RandomGroupElements randomGroupElements,
             @NonNull final MessageDigest digest) {
 
         super(senderId);
@@ -59,8 +61,8 @@ public class CommitmentMessage extends AbstractBlsProtocolMessage {
      * @param commitment a byte array representing the commitment the message will contain
      * @param digest     the digest used to generate the commitment
      */
-    public CommitmentMessage(@NonNull final NodeId senderId, @NonNull final byte[] commitment,
-            @NonNull final MessageDigest digest) {
+    public CommitmentMessage(
+            @NonNull final NodeId senderId, @NonNull final byte[] commitment, @NonNull final MessageDigest digest) {
 
         super(senderId);
 

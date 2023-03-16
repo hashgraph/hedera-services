@@ -46,9 +46,12 @@ public class BlsUtils {
         Objects.requireNonNull(groupElement, "groupElement must not be null");
         Objects.requireNonNull(elementName, "elementName must not be null");
 
-        if (!(groupElement.group().getClass().equals(bilinearMap.signatureGroup().getClass()))) {
-            throw new IllegalArgumentException(String.format(
-                    "%s must be in the signature group of the bilinear map", elementName));
+        if (!(groupElement
+                .group()
+                .getClass()
+                .equals(bilinearMap.signatureGroup().getClass()))) {
+            throw new IllegalArgumentException(
+                    String.format("%s must be in the signature group of the bilinear map", elementName));
         }
     }
 
@@ -70,8 +73,8 @@ public class BlsUtils {
         Objects.requireNonNull(elementName, "elementName must not be null");
 
         if (!(groupElement.group().getClass().equals(bilinearMap.keyGroup().getClass()))) {
-            throw new IllegalArgumentException(String.format(
-                    "%s must be in the public key group of the bilinear map", elementName));
+            throw new IllegalArgumentException(
+                    String.format("%s must be in the public key group of the bilinear map", elementName));
         }
     }
 }

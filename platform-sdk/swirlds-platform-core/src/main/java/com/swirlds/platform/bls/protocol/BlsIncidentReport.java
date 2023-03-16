@@ -31,8 +31,8 @@ import java.util.Objects;
  *                    a complaint from a different party revealing the malice of the subject, or null if a message was
  *                    simply missing from the subject
  */
-public record BlsIncidentReport(@NonNull NodeId subject, @NonNull String description,
-                                @Nullable BlsProtocolMessage message) {
+public record BlsIncidentReport(
+        @NonNull NodeId subject, @NonNull String description, @Nullable BlsProtocolMessage message) {
     /**
      * Constructor which requires a non-null subject and description
      */

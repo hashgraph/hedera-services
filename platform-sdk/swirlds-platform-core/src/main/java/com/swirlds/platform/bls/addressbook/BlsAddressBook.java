@@ -257,8 +257,8 @@ public class BlsAddressBook {
      * @param offlineNodes   the set of offline nodes
      * @return the combined share count of nodes in neither malicious nor offline sets
      */
-    public int getNonDisqualifiedShareCount(@NonNull final Set<NodeId> maliciousNodes,
-            @NonNull final Set<NodeId> offlineNodes) {
+    public int getNonDisqualifiedShareCount(
+            @NonNull final Set<NodeId> maliciousNodes, @NonNull final Set<NodeId> offlineNodes) {
         return getTotalShares() - getCombinedShares(maliciousNodes) - getCombinedShares(offlineNodes);
     }
 
@@ -338,7 +338,7 @@ public class BlsAddressBook {
     private BlsNodeData getNodeData(@NonNull final NodeId nodeId) {
         Objects.requireNonNull(nodeId, "nodeId must not be null");
 
-        return Objects.requireNonNull(nodeDataMap.get(nodeId),
-                String.format("nodeId %s is not in the address book", nodeId));
+        return Objects.requireNonNull(
+                nodeDataMap.get(nodeId), String.format("nodeId %s is not in the address book", nodeId));
     }
 }

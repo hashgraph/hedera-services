@@ -36,9 +36,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param ibeGenerator       independent generator, used for IBE encryption. exists in the key group of the bilinear
  *                           map, since the generator is used to create IBE public keys
  */
-public record Crs(@NonNull BilinearMap bilinearMap,
-                  @NonNull GroupElement thresholdGenerator,
-                  @NonNull GroupElement ibeGenerator) {
+public record Crs(
+        @NonNull BilinearMap bilinearMap,
+        @NonNull GroupElement thresholdGenerator,
+        @NonNull GroupElement ibeGenerator) {
     /**
      * Constructor asserting correct generator group membership
      *
