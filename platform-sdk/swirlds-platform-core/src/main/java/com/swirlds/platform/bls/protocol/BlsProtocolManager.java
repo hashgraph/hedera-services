@@ -53,7 +53,7 @@ public interface BlsProtocolManager<T> {
      * Accepts a list of messages, filters them, and returns a list containing messages which match a certain subtype,
      * cast to that subtype
      * <p>
-     * Filters out messages that should be ignored by the protocol
+     * Filters out messages that should be ignored by the protocol, and disqualifies provably malicious nodes
      *
      * @param inputMessages        a list of messages of type U
      * @param acceptableSenders    a list of senders from whom we are expecting to potentially receive messages
