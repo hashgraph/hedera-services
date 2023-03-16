@@ -574,7 +574,7 @@ class PreConsensusEventFileManagerTests {
 
             minimumGeneration = random.nextLong(minimumGeneration, maximumGeneration + 1);
             maximumGeneration =
-                    Math.max(maximumGeneration, random.nextLong(minimumGeneration, minimumGeneration + maxDelta));
+                    Math.max(maximumGeneration + 1, random.nextLong(minimumGeneration, minimumGeneration + maxDelta));
             timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
 
             files.add(file);

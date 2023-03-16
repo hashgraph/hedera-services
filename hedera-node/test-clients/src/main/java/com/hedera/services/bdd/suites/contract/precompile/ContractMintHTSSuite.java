@@ -168,6 +168,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                 .when(
                         contractCall(MINT_CONTRACT, "mintFungibleTokenWithEvent", BigInteger.valueOf(amount))
                                 .via(FIRST_MINT_TXN)
+                                .gas(GAS_TO_OFFER)
                                 .payingWith(ACCOUNT)
                                 .alsoSigningWithFullPrefix(MULTI_KEY),
                         getTxnRecord(FIRST_MINT_TXN).andAllChildRecords().logged())
@@ -316,6 +317,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                 .when(
                         contractCall(MINT_CONTRACT, "mintFungibleTokenWithEvent", BigInteger.valueOf(10))
                                 .via(FIRST_MINT_TXN)
+                                .gas(GAS_TO_OFFER)
                                 .payingWith(ACCOUNT)
                                 .alsoSigningWithFullPrefix(MULTI_KEY),
                         getTxnRecord(FIRST_MINT_TXN).andAllChildRecords().logged(),
@@ -469,7 +471,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                                                                     .withStatus(SUCCESS)
                                                                     .withTotalSupply(1L)
                                                                     .withSerialNumbers(1L))
-                                                            .gas(3_838_738L)
+                                                            .gas(3_837_920L)
                                                             .amount(0L)
                                                             .functionParameters(functionParameters()
                                                                     .forFunction(
@@ -535,6 +537,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                                         20L)
                                 .payingWith(GENESIS)
                                 .via(failedMintTxn)
+                                .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         getTxnRecord(failedMintTxn).andAllChildRecords().logged())))
                 .then(
