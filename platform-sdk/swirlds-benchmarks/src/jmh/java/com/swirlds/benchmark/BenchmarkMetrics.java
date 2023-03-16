@@ -22,7 +22,6 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
 
-import com.sun.management.OperatingSystemMXBean;
 import com.swirlds.benchmark.config.BenchmarkConfig;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metric;
@@ -37,6 +36,7 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import java.io.IOException;
 import java.lang.management.BufferPoolMXBean;
 import java.lang.management.ManagementFactory;
+import java.lang.management.OperatingSystemMXBean;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -107,16 +107,27 @@ public final class BenchmarkMetrics {
             .withDescription("used bytes of the JVM direct memory")
             .withFormat(FORMAT_INTEGER);
 
-    private static final OperatingSystemMXBean osBean =
-            (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
+    private static final OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
 
     private static final FunctionGauge.Config<Double> CPU_LOAD_PROC_CONFIG = new FunctionGauge.Config<>(
                     "AAE",
                     "cpuLoadProc",
                     Double.class,
-                    () -> osBean.getProcessCpuLoad() * Runtime.getRuntime().availableProcessors())
+                    () -> osBean instanceof com.sun.management.OperatingSystemMXBean sunBean
+                            ? sunBean.getProcessCpuLoad() * Runtime.getRuntime().availableProcessors()
+                            : -1.0)
             .withDescription("CPU load of the JVM process")
             .withFormat(FORMAT_FLOAT1);
+
+    private static final FunctionGauge.Config<Long> OPEN_FDS_CONFIG = new FunctionGauge.Config<>(
+                    "AAF",
+                    "openFileDesc",
+                    Long.class,
+                    () -> osBean instanceof com.sun.management.UnixOperatingSystemMXBean unixBean
+                            ? unixBean.getOpenFileDescriptorCount()
+                            : -1L)
+            .withDescription("Open file descriptors")
+            .withFormat(FORMAT_INTEGER);
 
     private static final RunningAverageMetric.Config TPS_CONFIG = new RunningAverageMetric.Config(
                     BENCHMARK_CATEGORY, "tps")
@@ -332,6 +343,7 @@ public final class BenchmarkMetrics {
         metrics.getOrCreate(MEM_FREE_CONFIG);
         metrics.getOrCreate(DIRECT_MEM_CONFIG);
         metrics.getOrCreate(CPU_LOAD_PROC_CONFIG);
+        metrics.getOrCreate(OPEN_FDS_CONFIG);
         registerDiskMetrics();
 
         origMetricString = curMetricString = getMetricNames(metrics.getAll());
