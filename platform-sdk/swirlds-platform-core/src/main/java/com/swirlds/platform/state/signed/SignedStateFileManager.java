@@ -36,7 +36,6 @@ import com.swirlds.common.threading.interrupt.Uninterruptable;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.Startable;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -89,7 +88,6 @@ public class SignedStateFileManager implements Startable {
     private final SignedStateMetrics metrics;
 
     private final StateConfig stateConfig;
-    private final Configuration configuration;
 
     /**
      * Provides system time
@@ -125,7 +123,6 @@ public class SignedStateFileManager implements Startable {
         this.mainClassName = mainClassName;
         this.swirldName = swirldName;
         this.stateToDiskAttemptConsumer = stateToDiskAttemptConsumer;
-        this.configuration = context.getConfiguration();
         this.stateConfig = context.getConfiguration().getConfigData(StateConfig.class);
 
         final BasicConfig basicConfig = context.getConfiguration().getConfigData(BasicConfig.class);
@@ -204,7 +201,7 @@ public class SignedStateFileManager implements Startable {
             final long start = time.nanoTime();
             boolean success = false;
             try {
-                writeSignedStateToDisk(configuration, selfId.getId(), directory, signedState, taskDescription);
+                writeSignedStateToDisk(selfId.getId(), directory, signedState, taskDescription);
                 metrics.getWriteStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
 
                 success = true;

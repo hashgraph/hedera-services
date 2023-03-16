@@ -125,11 +125,11 @@ public class SigSet implements FastCopyable, Iterable<Long /* signing node ID */
     }
 
     /**
-     * Get a list of all signing nodes.
+     * Get a list of all signing nodes. This list is safe to modify without affecting the SigSet.
      *
      * @return a list of all signing nodes
      */
-    public List<Long> getSigningNodes() { // TODO test
+    public List<Long> getSigningNodes() {
         return new ArrayList<>(signatures.keySet());
     }
 

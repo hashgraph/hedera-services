@@ -155,10 +155,7 @@ class SignedStateFileReadWriteTest {
         final Path settingsUsedFile = directory.resolve("settingsUsed.txt");
 
         throwIfFileExists(stateFile, hashInfoFile, settingsUsedFile, directory);
-
-        final Configuration configuration = mock(Configuration.class); // TODO
-
-        writeSignedStateToDisk(configuration, 0, directory, signedState, "test");
+        writeSignedStateToDisk(0, directory, signedState, "test");
 
         assertTrue(exists(stateFile), "state file should exist");
         assertTrue(exists(hashInfoFile), "hash info file should exist");

@@ -398,12 +398,9 @@ public class SavedStateLoaderTests {
         for (int i = 1; i < numStates + 1; i++) {
             states.addFirst(generator.setRound(i * 5L).build());
         }
-
-        final Configuration configuration = mock(Configuration.class); // TODO
-
         states.forEach(ss -> {
             try {
-                SignedStateFileWriter.writeSignedStateToDisk(configuration, 0, getStateDir(ss.getRound()), ss, "test");
+                SignedStateFileWriter.writeSignedStateToDisk(0, getStateDir(ss.getRound()), ss, "test");
             } catch (final IOException e) {
                 throw new RuntimeException(e);
             }

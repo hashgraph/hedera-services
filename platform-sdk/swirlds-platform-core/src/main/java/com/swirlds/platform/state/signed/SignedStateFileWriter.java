@@ -137,16 +137,14 @@ public final class SignedStateFileWriter {
      * Writes a SignedState to a file. Also writes auxiliary files such as "settingsUsed.txt". This is the top level
      * method called by the platform when it is ready to write a state.
      *
-     * @param configuration       configuration for the platform
      * @param selfId              the id of the platform
      * @param savedStateDirectory the directory where the state will be stored
      * @param signedState         the object to be written
      * @param taskDescription     a description of the task
      */
     public static void writeSignedStateToDisk(
-            final Configuration configuration,
             final long selfId,
-            final Path savedStateDirectory, // TODO can we get this from configuration?
+            final Path savedStateDirectory,
             final SignedState signedState,
             final String taskDescription)
             throws IOException {
