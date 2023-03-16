@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -63,6 +64,8 @@ public class BlsAddressBook {
      * @param otherAddressBook the address book being copied
      */
     public BlsAddressBook(final BlsAddressBook otherAddressBook) {
+        Objects.requireNonNull(otherAddressBook, "otherAddressBook must not be null");
+
         final Map<NodeId, BlsNodeData> copiedNodeDataMap = new HashMap<>();
 
         for (final Map.Entry<NodeId, BlsNodeData> nodeDataEntry : otherAddressBook.nodeDataMap.entrySet()) {
@@ -122,7 +125,8 @@ public class BlsAddressBook {
      */
     public BlsPublicKey getIbePublicKey(final NodeId nodeId) {
         if (!containsNode(nodeId)) {
-            throw new IllegalArgumentException("Cannot get public key for node that isn't in the address book");
+            throw new IllegalArgumentException(
+                    String.format("Cannot get public key for node %s that isn't in the address book", nodeId));
         }
 
         return nodeDataMap.get(nodeId).getIbePublicKey();
@@ -163,6 +167,9 @@ public class BlsAddressBook {
      * @param ibePublicKey IBE public key of the new node
      */
     public void addNode(final NodeId nodeId, final long stake, final BlsPublicKey ibePublicKey) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
+        Objects.requireNonNull(ibePublicKey, "ibePublicKey must not be null");
+
         nodeDataMap.put(nodeId, new BlsNodeData(stake, ibePublicKey));
         sortedNodeIds.add(nodeId);
 
@@ -175,6 +182,8 @@ public class BlsAddressBook {
      * @param nodeId the id of the node to remove
      */
     public void removeNode(final NodeId nodeId) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
+
         nodeDataMap.remove(nodeId);
         sortedNodeIds.remove(nodeId);
 
@@ -187,7 +196,7 @@ public class BlsAddressBook {
      * @param publicKeyShares the new public key shares
      */
     public void setPublicKeyShares(final PublicKeyShares publicKeyShares) {
-        this.publicKeyShares = publicKeyShares;
+        this.publicKeyShares = Objects.requireNonNull(publicKeyShares, "publicKeyShares must not be null");
     }
 
     /**
@@ -206,6 +215,8 @@ public class BlsAddressBook {
      * @return true if the node is in this address book, otherwise false
      */
     public boolean containsNode(final NodeId nodeId) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
+
         return nodeDataMap.containsKey(nodeId);
     }
 
@@ -219,7 +230,8 @@ public class BlsAddressBook {
         checkDirty("getNodeShareIds");
 
         if (!containsNode(nodeId)) {
-            throw new IllegalArgumentException("Cannot get share ids for node that isn't in the address book");
+            throw new IllegalArgumentException(
+                    String.format("Cannot get share ids for node %s that isn't in the address book", nodeId));
         }
 
         return nodeDataMap.get(nodeId).getShareIds();
@@ -232,6 +244,8 @@ public class BlsAddressBook {
      * @return the combined share count of the set of nodes
      */
     public int getCombinedShares(final Set<NodeId> nodeSet) {
+        Objects.requireNonNull(nodeSet, "nodeSet must not be null");
+
         int combinedShares = 0;
 
         for (final NodeId nodeId : nodeSet) {
@@ -286,9 +300,12 @@ public class BlsAddressBook {
      * @param ibePublicKey the node's new public key
      */
     public void setIbePublicKey(final NodeId nodeId, final BlsPublicKey ibePublicKey) {
-        if (!nodeDataMap.containsKey(nodeId)) {
-            throw new IllegalArgumentException("Cannot set IBE public key for node that doesn't exist in address book");
+        if (!containsNode(nodeId)) {
+            throw new IllegalArgumentException(
+                    String.format("Cannot set IBE public key for node %s that isn't in the address book", nodeId));
         }
+
+        Objects.requireNonNull(ibePublicKey, "ibePublicKey must not be null");
 
         if (nodeDataMap.get(nodeId).getIbePublicKey() != null) {
             throw new IllegalStateException("Cannot overwrite existing IBE public key");
@@ -304,8 +321,9 @@ public class BlsAddressBook {
      * @param newStake the new consensus stake value for the node
      */
     public void setNodeStake(final NodeId nodeId, final long newStake) {
-        if (!nodeDataMap.containsKey(nodeId)) {
-            throw new IllegalArgumentException("Cannot set stake for node that doesn't exist in address book");
+        if (!containsNode(nodeId)) {
+            throw new IllegalArgumentException(
+                    String.format("Cannot set stake for node %s that doesn't exist in address book", nodeId));
         }
 
         nodeDataMap.get(nodeId).setStake(newStake);
