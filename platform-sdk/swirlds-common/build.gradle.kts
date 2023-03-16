@@ -37,6 +37,7 @@ dependencies {
   api(libs.bundles.cryptography.core)
   runtimeOnly(libs.bundles.cryptography.runtime)
   implementation(libs.bundles.logging.impl)
+  compileOnly(libs.spotbugs.annotations)
 
   // Test Dependencies
   testImplementation(testLibs.bundles.junit)
