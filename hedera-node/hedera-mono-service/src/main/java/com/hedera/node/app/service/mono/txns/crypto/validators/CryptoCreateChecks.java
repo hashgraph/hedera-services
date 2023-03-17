@@ -16,13 +16,10 @@
 
 package com.hedera.node.app.service.mono.txns.crypto.validators;
 
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer.hasStakedId;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asFcKeyUnchecked;
-import static com.hedera.node.app.service.mono.utils.MiscUtils.asPrimitiveKeyUnchecked;
-import static com.hedera.node.app.service.mono.utils.MiscUtils.isSerializedProtoKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
@@ -40,7 +37,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.STAKING_NOT_ENABLED;
 
-import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -50,7 +46,6 @@ import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -145,7 +140,7 @@ public class CryptoCreateChecks {
         if (onlyKeyProvided(op)) {
             return validateKey(op);
         } else if (onlyAliasProvided(op)) {
-            return INVALID_ALIAS_KEY;
+            return dynamicProperties.isCryptoCreateWithAliasEnabled() ? INVALID_ALIAS_KEY : NOT_SUPPORTED;
         } else if (keyAndAliasProvided(op)) {
             return validateKeyAndAliasProvidedCase(op);
         } else {
@@ -180,11 +175,9 @@ public class CryptoCreateChecks {
         if (HederaEvmContractAliases.isMirror(op.getAlias().toByteArray())) {
             return INVALID_ALIAS_KEY;
         }
-        var isEvmAddressUsedCheck = isUsedAsAliasCheck(op.getAlias());
-        if (isEvmAddressUsedCheck != OK) {
-            return isEvmAddressUsedCheck;
+        if (!aliasManager.lookupIdBy(op.getAlias()).equals(MISSING_NUM)) {
+            return ALIAS_ALREADY_ASSIGNED;
         }
-
-        return validateEcdsaKey(op.getKey().getECDSASecp256K1(), op.getAlias().toByteArray());
+        return OK;
     }
 }
