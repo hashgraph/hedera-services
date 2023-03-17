@@ -486,7 +486,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      * @param minimumGenerationNonAncient the minimum generation of non-ancient events
      * @return this object
      */
-    public PlatformData setMinimumGenerationNonAncient(long minimumGenerationNonAncient) {
+    public PlatformData setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
         this.minimumGenerationNonAncient = minimumGenerationNonAncient;
         return this;
     }

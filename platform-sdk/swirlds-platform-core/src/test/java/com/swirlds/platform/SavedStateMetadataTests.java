@@ -17,7 +17,6 @@
 package com.swirlds.platform;
 
 import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.SIGNING_NODES;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.WALL_CLOCK_TIME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -42,8 +41,6 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -317,9 +314,8 @@ class SavedStateMetadataTests {
      * @param invalidFields the fields expected to be invalid in the mal-formatted file
      */
     private void testMalFormedFile(
-            final Random random,
-            final FileUpdater fileUpdater,
-            final Set<SavedStateMetadataField> invalidFields) throws IOException {
+            final Random random, final FileUpdater fileUpdater, final Set<SavedStateMetadataField> invalidFields)
+            throws IOException {
 
         final long round = random.nextLong();
         final long numberOfConsensusEvents = random.nextLong();
@@ -440,10 +436,7 @@ class SavedStateMetadataTests {
         final Set<SavedStateMetadataField> allFields =
                 Arrays.stream(SavedStateMetadataField.values()).collect(Collectors.toSet());
 
-        testMalFormedFile(
-                random,
-                (s, m) -> "",
-                allFields);
+        testMalFormedFile(random, (s, m) -> "", allFields);
     }
 
     @Test
@@ -454,10 +447,7 @@ class SavedStateMetadataTests {
         final Set<SavedStateMetadataField> allFields =
                 Arrays.stream(SavedStateMetadataField.values()).collect(Collectors.toSet());
 
-        testMalFormedFile(
-                random,
-                (s, m) -> null,
-                allFields);
+        testMalFormedFile(random, (s, m) -> null, allFields);
     }
 
     @Test
@@ -546,10 +536,7 @@ class SavedStateMetadataTests {
                 Set.of(SavedStateMetadataField.SIGNING_NODES));
 
         // Whitespace in list shouldn't hurt anything
-        testMalFormedFile(
-                random,
-                (s, m) -> s.replace(",", "   ,   "),
-                Set.of());
+        testMalFormedFile(random, (s, m) -> s.replace(",", "   ,   "), Set.of());
     }
 
     @Test
@@ -558,7 +545,8 @@ class SavedStateMetadataTests {
         final Random random = getRandomPrintSeed();
         testMalFormedFile(
                 random,
-                (s, m) -> s.replace(SavedStateMetadataField.WALL_CLOCK_TIME + ":",
+                (s, m) -> s.replace(
+                        SavedStateMetadataField.WALL_CLOCK_TIME + ":",
                         SavedStateMetadataField.WALL_CLOCK_TIME.toString()),
                 Set.of(SavedStateMetadataField.WALL_CLOCK_TIME));
     }
