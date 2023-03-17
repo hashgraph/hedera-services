@@ -19,16 +19,16 @@ contract UpdateTokenInfoContract is HederaTokenService, FeeHelper {
         bytes memory ecdsa,
         address contractID,
         address autoRenewAccount,
-        uint32 autoRenewPeriod,
+        int64 autoRenewPeriod,
         string memory _name,
         string memory _symbol,
         string memory _memo) public payable {
         IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](5);
-        keys[0] = getSingleKey(0, 1, 3, ed25519); //admin 3
-        keys[1] = getSingleKey(2, 3, 4, ecdsa); //freeze 12
-        keys[2] = getSingleKey(4, 2, contractID); //supply 16
-        keys[3] = getSingleKey(6, 2, contractID); //pause 64
-        keys[4] = getSingleKey(5, 5, contractID); //schedule 32
+        keys[0] = getSingleKey(KeyType.ADMIN, KeyType.KYC, KeyValueType.ED25519, ed25519); //admin 3
+        keys[1] = getSingleKey(KeyType.FREEZE, KeyType.WIPE, KeyValueType.SECP256K1, ecdsa); //freeze 12
+        keys[2] = getSingleKey(KeyType.SUPPLY, KeyValueType.CONTRACT_ID, contractID); //supply 16
+        keys[3] = getSingleKey(KeyType.PAUSE, KeyValueType.CONTRACT_ID, contractID); //pause 64
+        keys[4] = getSingleKey(KeyType.FREEZE, KeyValueType.DELEGETABLE_CONTRACT_ID, contractID); //schedule 32
 
         name = _name;
         symbol = _symbol;
@@ -91,11 +91,11 @@ contract UpdateTokenInfoContract is HederaTokenService, FeeHelper {
         bytes memory ecdsa,
         address contractID) public payable {
         IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](5);
-        keys[0] = getSingleKey(0, 1, 3, ed25519);
-        keys[1] = getSingleKey(2, 3, 4, ecdsa);
-        keys[2] = getSingleKey(4, 2, contractID);
-        keys[3] = getSingleKey(6, 2, contractID);
-        keys[4] = getSingleKey(5, 5, contractID);
+        keys[0] = getSingleKey(KeyType.ADMIN, KeyType.KYC, KeyValueType.ED25519, ed25519);
+        keys[1] = getSingleKey(KeyType.FREEZE, KeyType.WIPE, KeyValueType.SECP256K1, ecdsa);
+        keys[2] = getSingleKey(KeyType.WIPE, KeyValueType.CONTRACT_ID, contractID);
+        keys[3] = getSingleKey(KeyType.PAUSE, KeyValueType.CONTRACT_ID, contractID);
+        keys[4] = getSingleKey(KeyType.FEE, KeyValueType.DELEGETABLE_CONTRACT_ID, contractID);
 
         IHederaTokenService.HederaToken memory token;
         token.treasury = treasury;
@@ -116,7 +116,7 @@ contract UpdateTokenInfoContract is HederaTokenService, FeeHelper {
     function updateTokenWithInvalidKeyValues(
         address tokenID,
         address autoRenewAccount,
-        uint32 autoRenewPeriod
+        int64 autoRenewPeriod
     ) public payable  {
         // create the invalid key
         IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](1);
@@ -146,11 +146,11 @@ contract UpdateTokenInfoContract is HederaTokenService, FeeHelper {
         address contractID) public payable {
 
         IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](5);
-        keys[0] = getSingleKey(0, 1, 3, ed25519);
-        keys[1] = getSingleKey(2, 3, 4, ecdsa);
-        keys[2] = getSingleKey(4, 2, contractID);
-        keys[3] = getSingleKey(6, 2, contractID);
-        keys[4] = getSingleKey(5, 5, contractID);
+        keys[0] = getSingleKey(KeyType.ADMIN, KeyType.KYC, KeyValueType.ED25519, ed25519);
+        keys[1] = getSingleKey(KeyType.FREEZE, KeyType.WIPE, KeyValueType.SECP256K1, ecdsa);
+        keys[2] = getSingleKey(KeyType.WIPE, KeyValueType.CONTRACT_ID, contractID);
+        keys[3] = getSingleKey(KeyType.PAUSE, KeyValueType.CONTRACT_ID, contractID);
+        keys[4] = getSingleKey(KeyType.FEE, KeyValueType.DELEGETABLE_CONTRACT_ID, contractID);
 
         int responseCode = super.updateTokenKeys(token, keys);
 
@@ -177,9 +177,9 @@ contract UpdateTokenInfoContract is HederaTokenService, FeeHelper {
 
     function tokenWithExpiry(
         address treasury,
-        uint32 second,
+        int64 second,
         address autoRenewAccount,
-        uint32 autoRenewPeriod,
+        int64 autoRenewPeriod,
         IHederaTokenService.TokenKey[] memory keys
     ) internal view returns (IHederaTokenService.HederaToken memory token) {
 

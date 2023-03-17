@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.6.0 <0.9.0;
 
-import "./hip-206/HederaTokenService.sol";
-import "./hip-206/HederaResponseCodes.sol";
+import "./HederaTokenService.sol";
+import "./HederaResponseCodes.sol";
 
 contract ZenosBank is HederaTokenService {
 
@@ -12,7 +12,7 @@ contract ZenosBank is HederaTokenService {
 
     int64 deposited;
 
-    constructor(address _tokenAddress) public {
+    constructor(address _tokenAddress) {
         tokenAddress = _tokenAddress;
     }
 

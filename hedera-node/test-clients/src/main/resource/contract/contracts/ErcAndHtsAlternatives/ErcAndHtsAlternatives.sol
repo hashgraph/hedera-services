@@ -4,7 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import "./IERC721.sol";
 import "./IERC721Metadata.sol";
-import "./hip-206/IHederaTokenService.sol";
+import "./IHederaTokenService.sol";
 
 contract ErcAndHtsAlternatives {
     address constant HTS_ENTRY_POINT = address(0x167);

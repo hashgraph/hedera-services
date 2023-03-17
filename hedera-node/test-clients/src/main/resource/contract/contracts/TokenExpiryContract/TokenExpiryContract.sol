@@ -20,9 +20,9 @@ contract TokenExpiryContract is HederaTokenService {
 
     function updateExpiryInfoForToken(
         address token,
-        uint32 second,
+        int64 second,
         address autoRenewAccount,
-        uint32 autoRenewPeriod) public {
+        int64 autoRenewPeriod) public {
         IHederaTokenService.Expiry memory expiry;
         expiry.second = second;
         expiry.autoRenewAccount = autoRenewAccount;
@@ -37,9 +37,9 @@ contract TokenExpiryContract is HederaTokenService {
 
     function updateExpiryInfoForTokenAndReadLatestInfo(
         address token,
-        uint32 second,
+        int64 second,
         address autoRenewAccount,
-        uint32 autoRenewPeriod) external returns (
+        int64 autoRenewPeriod) external returns (
         IHederaTokenService.Expiry memory expiry) {
         updateExpiryInfoForToken(token, second, autoRenewAccount, autoRenewPeriod);
 

@@ -1,6 +1,7 @@
 [
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "_tokenAddress",
@@ -11,7 +12,8 @@
     "type": "constructor"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "uint64",
         "name": "amount",

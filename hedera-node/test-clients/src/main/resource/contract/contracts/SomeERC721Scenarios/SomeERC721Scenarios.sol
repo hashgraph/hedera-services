@@ -2,10 +2,12 @@
 pragma solidity >=0.5.0 <0.9.0;
 pragma experimental ABIEncoderV2;
 
-import "./ERC721/IERC721.sol";
-import "./hip-206/HederaTokenService.sol";
+import "./IERC721.sol";
+import "./HederaTokenService.sol";
 
-contract SomeERC721Scenarios is HederaTokenService {
+contract SomeERC721Scenarios {
+    IHederaTokenService HederaTokenService = IHederaTokenService(address(0x167));
+
     function iMustOwnAfterReceiving(
         address token, 
         uint256 serialNo

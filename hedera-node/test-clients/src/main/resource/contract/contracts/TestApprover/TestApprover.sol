@@ -1,6 +1,6 @@
-pragma solidity 0.8.16;
-import '../hip-206/HederaResponseCodes.sol';
-import '../hip-206/HederaTokenService.sol';
+pragma solidity ^0.8.16;
+import '../HederaResponseCodes.sol';
+import '../HederaTokenService.sol';
 contract TestApprover is HederaTokenService {
     address public immutable TOKEN;
     address public immutable SPENDER;

@@ -3,8 +3,9 @@ pragma solidity >=0.5.0 <0.9.0;
 pragma experimental ABIEncoderV2;
 
 import "./FeeHelper.sol";
+import "./HederaTokenService.sol";
 
-contract TokenInfoContract is FeeHelper {
+contract TokenInfoContract is FeeHelper, HederaTokenService {
 
     function getInformationForToken(address token) external returns (IHederaTokenService.TokenInfo memory tokenInfo) {
         (int responseCode, IHederaTokenService.TokenInfo memory retrievedTokenInfo) = HederaTokenService.getTokenInfo(token);
@@ -99,13 +100,13 @@ contract TokenInfoContract is FeeHelper {
         address contractID) public payable {
 
         IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](7);
-        keys[0] = getSingleKey(0, 2, contractID);
-        keys[1] = getSingleKey(1, 2, contractID);
-        keys[2] = getSingleKey(2, 2, contractID);
-        keys[3] = getSingleKey(3, 2, contractID);
-        keys[4] = getSingleKey(4, 2, contractID);
-        keys[5] = getSingleKey(6, 2, contractID);
-        keys[6] = getSingleKey(5, 2, contractID);
+        keys[0] = getSingleKey(KeyType.ADMIN, KeyValueType.CONTRACT_ID, contractID);
+        keys[1] = getSingleKey(KeyType.KYC, KeyValueType.CONTRACT_ID, contractID);
+        keys[2] = getSingleKey(KeyType.FREEZE, KeyValueType.CONTRACT_ID, contractID);
+        keys[3] = getSingleKey(KeyType.WIPE, KeyValueType.CONTRACT_ID, contractID);
+        keys[4] = getSingleKey(KeyType.SUPPLY, KeyValueType.CONTRACT_ID, contractID);
+        keys[5] = getSingleKey(KeyType.PAUSE, KeyValueType.CONTRACT_ID, contractID);
+        keys[6] = getSingleKey(KeyType.FEE, KeyValueType.CONTRACT_ID, contractID);
 
         int responseCode = super.updateTokenKeys(token, keys);
 

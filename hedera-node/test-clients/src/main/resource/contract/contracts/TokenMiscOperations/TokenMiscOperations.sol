@@ -3,18 +3,19 @@ pragma solidity >=0.5.0 <0.9.0;
 pragma experimental ABIEncoderV2;
 
 import "./FeeHelper.sol";
+import "./HederaTokenService.sol";
 
-contract TokenMiscOperations is FeeHelper {
+contract TokenMiscOperations is FeeHelper, HederaTokenService {
 
     string name = "tokenName";
     string symbol = "tokenSymbol";
     string memo = "memo";
-    uint initialTotalSupply = 200;
-    uint decimals = 8;
+    int64 initialTotalSupply = 200;
+    int32 decimals = 8;
 
-    function createTokenWithHbarsFixedFeeAndTransferIt(uint32 feeAmount, address feeCollector, address firstRecipient, address secondRecipient, address treasury) public payable returns (address createdTokenAddress) {
+    function createTokenWithHbarsFixedFeeAndTransferIt(int64 feeAmount, address feeCollector, address firstRecipient, address secondRecipient, address treasury) public payable returns (address createdTokenAddress) {
         IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](1);
-        keys[0] = getSingleKey(0, 1, "");
+        keys[0] = getSingleKey(KeyType.ADMIN, KeyValueType.INHERIT_ACCOUNT_KEY, "");
 
         createdTokenAddress = createTokenWithCustomFees(keys, super.createSingleFixedFeeForHbars(feeAmount, feeCollector), super.getEmptyFractionalFees(), treasury);
 

@@ -1,1 +1,54 @@
-[{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"serialNo","type":"uint256"}],"name":"canGetMetadataViaERC","outputs":[{"internalType":"bytes","name":"","type":"bytes"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"serialNo","type":"uint256"}],"name":"canGetMetadataViaHTS","outputs":[{"internalType":"bytes","name":"","type":"bytes"}],"stateMutability":"nonpayable","type":"function"}]
+[
+  {
+    "inputs":
+    [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "serialNo",
+        "type": "uint256"
+      }
+    ],
+    "name": "canGetMetadataViaERC",
+    "outputs":
+    [
+      {
+        "internalType": "bytes",
+        "name": "",
+        "type": "bytes"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs":
+    [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "serialNo",
+        "type": "uint256"
+      }
+    ],
+    "name": "canGetMetadataViaHTS",
+    "outputs":
+    [
+      {
+        "internalType": "bytes",
+        "name": "",
+        "type": "bytes"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

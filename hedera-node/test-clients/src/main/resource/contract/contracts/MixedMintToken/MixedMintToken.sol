@@ -1,4 +1,6 @@
-contract MixedMintTokenContract is HederaResponseCodes {
+import "./IHederaTokenService.sol";
+
+contract MixedMintTokenContract {
 
     address constant precompileAddress = address(0x167);
 

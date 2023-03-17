@@ -13,13 +13,13 @@ contract HTSCalls is HederaTokenService {
         return HederaTokenService.transferNFT(token, sender, receiver, serialNum);
     }
 
-    function mintTokenCall(address token, uint64 amount, bytes[] memory metadata) external
-    returns (int responseCode, uint64 newTotalSupply, int[] memory serialNumbers) {
+    function mintTokenCall(address token, int64 amount, bytes[] memory metadata) external
+    returns (int responseCode, int64 newTotalSupply, int64[] memory serialNumbers) {
         return HederaTokenService.mintToken(token, amount, metadata);
     }
 
-    function burnTokenCall(address token, uint64 amount, int64[] memory serialNumbers) external
-    returns (int responseCode, uint64 newTotalSupply) {
+    function burnTokenCall(address token, int64 amount, int64[] memory serialNumbers) external
+    returns (int responseCode, int64 newTotalSupply) {
         return HederaTokenService.burnToken(token, amount, serialNumbers);
     }
 }

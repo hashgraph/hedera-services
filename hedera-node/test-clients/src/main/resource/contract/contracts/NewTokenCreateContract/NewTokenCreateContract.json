@@ -1,7 +1,28 @@
 [
   {
     "anonymous": false,
-    "inputs": [
+    "inputs":
+    [
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes",
+        "name": "",
+        "type": "bytes"
+      }
+    ],
+    "name": "CallResponseEvent",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs":
+    [
       {
         "indexed": false,
         "internalType": "address",
@@ -14,7 +35,8 @@
   },
   {
     "anonymous": false,
-    "inputs": [
+    "inputs":
+    [
       {
         "indexed": false,
         "internalType": "bool",
@@ -27,12 +49,13 @@
   },
   {
     "anonymous": false,
-    "inputs": [
+    "inputs":
+    [
       {
         "indexed": false,
-        "internalType": "uint64",
+        "internalType": "int64",
         "name": "newTotalSupply",
-        "type": "uint64"
+        "type": "int64"
       },
       {
         "indexed": false,
@@ -46,7 +69,8 @@
   },
   {
     "anonymous": false,
-    "inputs": [
+    "inputs":
+    [
       {
         "indexed": false,
         "internalType": "int256",
@@ -58,7 +82,8 @@
     "type": "event"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "account",
@@ -71,7 +96,8 @@
       }
     ],
     "name": "associateTokenPublic",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "int256",
         "name": "responseCode",
@@ -82,7 +108,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "account",
@@ -95,7 +122,8 @@
       }
     ],
     "name": "associateTokensPublic",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "int256",
         "name": "responseCode",
@@ -106,7 +134,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "treasury",
@@ -119,7 +148,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "treasury",
@@ -137,7 +167,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "treasury",
@@ -150,7 +181,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "treasury",
@@ -168,7 +200,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
@@ -191,7 +224,8 @@
       }
     ],
     "name": "delegateTransferFrom",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "int64",
         "name": "responseCode",
@@ -202,7 +236,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
@@ -225,7 +260,8 @@
       }
     ],
     "name": "delegateTransferFromNFT",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "int64",
         "name": "responseCode",
@@ -236,7 +272,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
@@ -249,7 +286,8 @@
       }
     ],
     "name": "grantTokenKycPublic",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "int64",
         "name": "responseCode",
@@ -260,16 +298,17 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
         "type": "address"
       },
       {
-        "internalType": "uint64",
+        "internalType": "int64",
         "name": "amount",
-        "type": "uint64"
+        "type": "int64"
       },
       {
         "internalType": "bytes[]",
@@ -278,16 +317,17 @@
       }
     ],
     "name": "mintTokenPublic",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "int256",
         "name": "responseCode",
         "type": "int256"
       },
       {
-        "internalType": "uint64",
+        "internalType": "int64",
         "name": "newTotalSupply",
-        "type": "uint64"
+        "type": "int64"
       },
       {
         "internalType": "int64[]",
@@ -299,7 +339,27 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "encodedFunctionSelector",
+        "type": "bytes"
+      }
+    ],
+    "name": "redirectForToken",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
@@ -322,7 +382,8 @@
       }
     ],
     "name": "transferFrom",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "int64",
         "name": "responseCode",
@@ -333,7 +394,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
@@ -356,7 +418,8 @@
       }
     ],
     "name": "transferFromNFT",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "int64",
         "name": "responseCode",

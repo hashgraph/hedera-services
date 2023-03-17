@@ -8,7 +8,7 @@ contract HbarFeeCollector is HederaTokenService {
 
     NestedHTSTransferrer nestedHTSTransferrer;
 
-    constructor(address transferrerContractAddress) public {
+    constructor(address transferrerContractAddress) {
         nestedHTSTransferrer = NestedHTSTransferrer(transferrerContractAddress);
     }
 

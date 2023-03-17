@@ -2,8 +2,8 @@
 pragma solidity >=0.5.0 <0.9.0;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./hip-206/HederaTokenService.sol";
+import "./IERC20.sol";
+import "./HederaTokenService.sol";
 
 contract SomeERC20Scenarios {
 

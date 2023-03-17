@@ -2,15 +2,17 @@
 pragma solidity >=0.6.0 <0.9.0;
 pragma experimental ABIEncoderV2;
 
-import "./HederaTokenService.sol";
+import "./IHederaTokenService.sol";
+import "./HederaResponseCodes.sol";
 
-contract CryptoTransfer is HederaTokenService {
+contract CryptoTransfer {
+    IHederaTokenService HTS = IHederaTokenService(address(0x167));
 
     constructor() public {
     }
 
     function transferMultipleTokens(IHederaTokenService.TokenTransferList[] memory tokenTransfers) external {
-        int response = HederaTokenService.cryptoTransfer(tokenTransfers);
+        int response = HTS.cryptoTransfer(tokenTransfers);
         if (response != HederaResponseCodes.SUCCESS) {
             revert ("Crypto Transfer Failed");
         }

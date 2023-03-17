@@ -9,7 +9,7 @@ import "./FeeDistributor.sol";
 contract VersatileTransfers is HederaTokenService {
     FeeDistributor feeDistributor;
 
-    constructor(address feeDistributorContractAddress) public {
+    constructor(address feeDistributorContractAddress) {
         feeDistributor = FeeDistributor(feeDistributorContractAddress);
     }
 

@@ -1,7 +1,28 @@
 [
   {
     "anonymous": false,
-    "inputs": [
+    "inputs":
+    [
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes",
+        "name": "",
+        "type": "bytes"
+      }
+    ],
+    "name": "CallResponseEvent",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs":
+    [
       {
         "indexed": false,
         "internalType": "int256",
@@ -13,31 +34,8 @@
     "type": "event"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      }
-    ],
-    "name": "associateToken",
-    "outputs": [
-      {
-        "internalType": "int256",
-        "name": "responseCode",
-        "type": "int256"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "account",
@@ -50,7 +48,8 @@
       }
     ],
     "name": "associateTokenPublic",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "int256",
         "name": "responseCode",
@@ -61,7 +60,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
@@ -74,7 +74,8 @@
       }
     ],
     "name": "balanceOf",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "uint256",
         "name": "",
@@ -85,7 +86,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
@@ -108,7 +110,8 @@
       }
     ],
     "name": "delegateTransferFrom",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "int64",
         "name": "responseCode",
@@ -119,7 +122,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
@@ -142,7 +146,8 @@
       }
     ],
     "name": "delegateTransferFromNFT",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "int64",
         "name": "responseCode",
@@ -153,7 +158,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
@@ -171,7 +177,8 @@
       }
     ],
     "name": "ercIsApprovedForAll",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "bool",
         "name": "",
@@ -182,7 +189,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
@@ -205,7 +213,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
@@ -213,7 +222,8 @@
       }
     ],
     "name": "name",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "string",
         "name": "",
@@ -224,7 +234,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
@@ -237,7 +248,8 @@
       }
     ],
     "name": "ownerOf",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "",
@@ -248,7 +260,27 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "encodedFunctionSelector",
+        "type": "bytes"
+      }
+    ],
+    "name": "redirectForToken",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
@@ -256,7 +288,8 @@
       }
     ],
     "name": "symbol",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "string",
         "name": "",
@@ -267,7 +300,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
@@ -280,7 +314,8 @@
       }
     ],
     "name": "tokenURI",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "string",
         "name": "",
@@ -291,7 +326,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
@@ -299,7 +335,8 @@
       }
     ],
     "name": "totalSupply",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "uint256",
         "name": "",
@@ -310,7 +347,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
@@ -333,7 +371,8 @@
       }
     ],
     "name": "transferFrom",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "int64",
         "name": "responseCode",
@@ -344,7 +383,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
@@ -367,7 +407,8 @@
       }
     ],
     "name": "transferFromNFT",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "int64",
         "name": "responseCode",

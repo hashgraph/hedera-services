@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 import "./HederaTokenService.sol";
 import "./MintNFTContract.sol";
 
-contract NestedMintContract is HederaTokenService {
+contract NestedMint is HederaTokenService {
 
     address mintNFTContractAddress;
     address tokenAddress;

@@ -3,18 +3,19 @@ pragma solidity >=0.5.0 <0.9.0;
 pragma experimental ABIEncoderV2;
 
 import "./FeeHelper.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
+import "./IERC20.sol";
+import "./ERC20.sol";
+import "./IERC721.sol";
+import "./IERC721Metadata.sol";
+import "./HederaTokenService.sol";
 
-contract TokenCreateContract is FeeHelper {
+contract TokenCreateContract is FeeHelper, HederaTokenService {
 
     string name = "tokenName";
     string symbol = "tokenSymbol";
     string memo = "memo";
-    uint initialTotalSupply = 200;
-    uint decimals = 8;
+    int64 initialTotalSupply = 200;
+    int32 decimals = 8;
 
     // TEST-001
     function createTokenWithKeysAndExpiry(
@@ -24,15 +25,15 @@ contract TokenCreateContract is FeeHelper {
         address contractID,
         address delegatableContractID,
         address autoRenewAccount,
-        uint32 autoRenewPeriod,
+        int64 autoRenewPeriod,
         address toAssociateWith
     ) public payable returns (address createdTokenAddress) {
         IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](5);
-        keys[0] = getSingleKey(0, 1, 3, ed25519);
-        keys[1] = getSingleKey(2, 3, 4, ecdsa);
-        keys[2] = getSingleKey(4, 2, contractID);
-        keys[3] = getSingleKey(5, 5, delegatableContractID);
-        keys[4] = getSingleKey(6, 1, "");
+        keys[0] = getSingleKey(KeyType.ADMIN, KeyType.KYC, KeyValueType.ED25519, ed25519);
+        keys[1] = getSingleKey(KeyType.FREEZE, KeyType.WIPE, KeyValueType.SECP256K1, ecdsa);
+        keys[2] = getSingleKey(KeyType.SUPPLY, KeyValueType.CONTRACT_ID, contractID);
+        keys[3] = getSingleKey(KeyType.FEE, KeyValueType.DELEGETABLE_CONTRACT_ID, delegatableContractID);
+        keys[4] = getSingleKey(KeyType.PAUSE, KeyValueType.INHERIT_ACCOUNT_KEY, "");
 
         IHederaTokenService.HederaToken memory token =
         createTokenWithExpiry(treasury, 0, autoRenewAccount, autoRenewPeriod, keys);
@@ -49,7 +50,7 @@ contract TokenCreateContract is FeeHelper {
             revert ();
         }
 
-        (int responseCode2, uint64 newTotalSupply) = HederaTokenService.burnToken(tokenAddress, 100, new int64[](0));
+        (int responseCode2, int64 newTotalSupply) = HederaTokenService.burnToken(tokenAddress, 100, new int64[](0));
         if (responseCode2 != HederaResponseCodes.SUCCESS) {
             revert ();
         }
@@ -63,10 +64,10 @@ contract TokenCreateContract is FeeHelper {
         address feeCollector,
         address existingTokenAddress,
         address autoRenewAccount,
-        uint32 autoRenewPeriod
+        int64 autoRenewPeriod
     ) public payable returns (address createdTokenAddress) {
         IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](1);
-        keys[0] = getSingleKey(0, 4, ecdsaAdminKey);
+        keys[0] = getSingleKey(KeyType.ADMIN, KeyValueType.SECP256K1, ecdsaAdminKey);
 
         IHederaTokenService.HederaToken memory token =
         createTokenWithExpiry(address(this), 0, autoRenewAccount, autoRenewPeriod, keys);
@@ -92,9 +93,9 @@ contract TokenCreateContract is FeeHelper {
         address treasury,
         bytes memory ed25519,
         address autoRenewAccount,
-        uint32 autoRenewPeriod
+        int64 autoRenewPeriod
     ) public payable returns (address createdTokenAddress) {
-        IHederaTokenService.TokenKey[] memory keys = getAllTypeKeys(3, ed25519);
+        IHederaTokenService.TokenKey[] memory keys = getAllTypeKeys(KeyValueType.ED25519, ed25519);
         IHederaTokenService.HederaToken memory token =
         createTokenWithExpiry(treasury, 0, autoRenewAccount, autoRenewPeriod, keys);
         token.tokenSupplyType = true;
@@ -117,13 +118,13 @@ contract TokenCreateContract is FeeHelper {
         address feeCollectorAndTreasury,
         address existingTokenAddress,
         address autoRenewAccount,
-        uint32 autoRenewPeriod,
+        int64 autoRenewPeriod,
         bytes memory ed25519
     )
     public payable returns (address createdTokenAddress) {
         IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](2);
-        keys[0] = getSingleKey(0, 2, contractIdKey);
-        keys[1] = getSingleKey(4, 3, ed25519);
+        keys[0] = getSingleKey(KeyType.ADMIN, KeyValueType.CONTRACT_ID, contractIdKey);
+        keys[1] = getSingleKey(KeyType.SUPPLY, KeyValueType.ED25519, ed25519);
 
         IHederaTokenService.HederaToken memory token =
         createTokenWithExpiry(feeCollectorAndTreasury, 0, autoRenewAccount, autoRenewPeriod, keys);
@@ -149,12 +150,12 @@ contract TokenCreateContract is FeeHelper {
     function createTokenThenQueryAndTransfer(
         bytes memory ed25519AdminKey,
         address autoRenewAccount,
-        uint32 autoRenewPeriod
+        int64 autoRenewPeriod
     ) public payable returns (address createdTokenAddress) {
         IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](3);
-        keys[0] = getSingleKey(0, 3, ed25519AdminKey);
-        keys[1] = getSingleKey(4, 2, address(this));
-        keys[2] = getSingleKey(6, 2, address(this));
+        keys[0] = getSingleKey(KeyType.ADMIN, KeyValueType.ED25519, ed25519AdminKey);
+        keys[1] = getSingleKey(KeyType.SUPPLY, KeyValueType.CONTRACT_ID, address(this));
+        keys[2] = getSingleKey(KeyType.PAUSE, KeyValueType.CONTRACT_ID, address(this));
 
         IHederaTokenService.HederaToken memory token =
         createTokenWithExpiry(address(this), 0, autoRenewAccount, autoRenewPeriod, keys);
@@ -188,11 +189,11 @@ contract TokenCreateContract is FeeHelper {
     function createNonFungibleTokenThenQuery(
         address contractIdAndFeeCollector,
         address autoRenewAccount,
-        uint32 autoRenewPeriod
+        int64 autoRenewPeriod
     ) public payable returns (address createdTokenAddress) {
         IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](2);
-        keys[0] = getSingleKey(0, 2, contractIdAndFeeCollector);
-        keys[1] = getSingleKey(4, 2, contractIdAndFeeCollector);
+        keys[0] = getSingleKey(KeyType.ADMIN, KeyValueType.CONTRACT_ID, contractIdAndFeeCollector);
+        keys[1] = getSingleKey(KeyType.SUPPLY, KeyValueType.CONTRACT_ID, contractIdAndFeeCollector);
 
         IHederaTokenService.HederaToken memory token =
         createTokenWithExpiry(address(this), 0, autoRenewAccount, autoRenewPeriod, keys);
@@ -223,7 +224,7 @@ contract TokenCreateContract is FeeHelper {
     // TEST-007
     function createTokenWithEmptyKeysArray(
         address autoRenewAccount,
-        uint32 autoRenewPeriod
+        int64 autoRenewPeriod
     ) public payable returns (address createdTokenAddress) {
         IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](2);
 
@@ -243,7 +244,7 @@ contract TokenCreateContract is FeeHelper {
     // TEST-008
     function createTokenWithKeyWithMultipleValues(
         address autoRenewAccount,
-        uint32 autoRenewPeriod
+        int64 autoRenewPeriod
     ) public payable returns (address createdTokenAddress) {
         // create the invalid key
         IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](1);
@@ -273,10 +274,10 @@ contract TokenCreateContract is FeeHelper {
         bytes memory ecdsaAdminKey,
         address feeCollector,
         address autoRenewAccount,
-        uint32 autoRenewPeriod
+        int64 autoRenewPeriod
     ) public payable returns (address createdTokenAddress) {
         IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](1);
-        keys[0] = getSingleKey(0, 4, ecdsaAdminKey);
+        keys[0] = getSingleKey(KeyType.ADMIN, KeyValueType.SECP256K1, ecdsaAdminKey);
 
         IHederaTokenService.HederaToken memory token =
         createTokenWithExpiry(address(this), 0, autoRenewAccount, autoRenewPeriod, keys);
@@ -314,7 +315,7 @@ contract TokenCreateContract is FeeHelper {
     // TEST-011
     function createTokenWithInvalidExpiry(
         address autoRenewAccount,
-        uint32 autoRenewPeriod
+        int64 autoRenewPeriod
     ) public payable returns (address createdTokenAddress) {
         IHederaTokenService.HederaToken memory token =
         createTokenWithExpiry(address(this), 0, autoRenewAccount, autoRenewPeriod, new IHederaTokenService.TokenKey[](0));
@@ -338,13 +339,13 @@ contract TokenCreateContract is FeeHelper {
         address feeCollectorAndTreasury,
         address existingTokenAddress,
         address autoRenewAccount,
-        uint32 autoRenewPeriod,
+        int64 autoRenewPeriod,
         bytes memory ed25519
     )
     public payable returns (address createdTokenAddress) {
         IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](2);
-        keys[0] = getSingleKey(0, 2, contractIdKey);
-        keys[1] = getSingleKey(4, 3, ed25519);
+        keys[0] = getSingleKey(KeyType.ADMIN, KeyValueType.CONTRACT_ID, contractIdKey);
+        keys[1] = getSingleKey(KeyType.SUPPLY, KeyValueType.ED25519, ed25519);
 
         IHederaTokenService.HederaToken memory token =
         createTokenWithExpiry(feeCollectorAndTreasury, 0, autoRenewAccount, autoRenewPeriod, keys);
@@ -368,16 +369,16 @@ contract TokenCreateContract is FeeHelper {
     function delegateCallCreate(
         address treasury,
         address autoRenewAccount,
-        uint32 autoRenewPeriod
+        int64 autoRenewPeriod
     ) public returns (address createdTokenAddress) {
 
         IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](1);
-        keys[0] = getSingleKey(0, 1, "");
+        keys[0] = getSingleKey(KeyType.ADMIN, KeyValueType.INHERIT_ACCOUNT_KEY, "");
 
         IHederaTokenService.HederaToken memory token =
         createTokenWithExpiry(treasury, 0, autoRenewAccount, autoRenewPeriod, keys);
 
-        (bool success, bytes memory result) = precompileAddress.delegatecall(
+        (bool success, bytes memory result) = address(0x167).delegatecall(
             abi.encodeWithSelector(IHederaTokenService.createFungibleToken.selector, token, initialTotalSupply
         , decimals));
 
@@ -398,9 +399,9 @@ contract TokenCreateContract is FeeHelper {
 
     function createTokenWithExpiry(
         address treasury,
-        uint32 second,
+        int64 second,
         address autoRenewAccount,
-        uint32 autoRenewPeriod,
+        int64 autoRenewPeriod,
         IHederaTokenService.TokenKey[] memory keys
     ) internal returns (IHederaTokenService.HederaToken memory token) {
 
@@ -422,68 +423,68 @@ contract TokenCreateContract is FeeHelper {
     }
 
     function createTokenWithInheritedSupplyKey() external returns (address createdTokenAddress) {
-        createdTokenAddress = createToken(super.getCustomSingleTypeKeys(4, 1, ""));
+        createdTokenAddress = createToken(super.getCustomSingleTypeKeys(KeyType.SUPPLY, KeyValueType.INHERIT_ACCOUNT_KEY, ""));
     }
 
-    function createTokenWithAllTypeKeys(uint8 keyValueType, bytes memory key) external returns (address createdTokenAddress) {
+    function createTokenWithAllTypeKeys(KeyValueType keyValueType, bytes memory key) external returns (address createdTokenAddress) {
         createdTokenAddress = createToken(super.getAllTypeKeys(keyValueType, key));
     }
 
-    function createTokenWithCustomSingleTypeKeys(uint8 keyType, uint8 keyValueType, bytes memory key) external returns (address createdTokenAddress) {
+    function createTokenWithCustomSingleTypeKeys(KeyType keyType, KeyValueType keyValueType, bytes memory key) external returns (address createdTokenAddress) {
         createdTokenAddress = createToken(super.getCustomSingleTypeKeys(keyType, keyValueType, key));
     }
 
-    function createTokenWithCustomDuplexTypeKeys(uint8 firstKeyType, uint8 secondKeyType, uint8 keyValueType, bytes memory key) external returns (address createdTokenAddress) {
+    function createTokenWithCustomDuplexTypeKeys(KeyType firstKeyType, KeyType secondKeyType, KeyValueType keyValueType, bytes memory key) external returns (address createdTokenAddress) {
         createdTokenAddress = createToken(super.getCustomDuplexTypeKeys(firstKeyType, secondKeyType, keyValueType, key));
     }
 
-    function createTokenWithTokenFixedFee(uint32 amount, address tokenId, address feeCollector) external returns (address createdTokenAddress) {
+    function createTokenWithTokenFixedFee(int64 amount, address tokenId, address feeCollector) external returns (address createdTokenAddress) {
         createdTokenAddress = createTokenWithCustomFees(super.getDefaultKeys(), super.createSingleFixedFeeForToken(amount, tokenId, feeCollector), super.getEmptyFractionalFees());
     }
 
-    function createTokenWithTokenFixedFees(uint32 amount, address tokenId, address firstFeeCollector, address secondFeeCollector) external returns (address createdTokenAddress) {
+    function createTokenWithTokenFixedFees(int64 amount, address tokenId, address firstFeeCollector, address secondFeeCollector) external returns (address createdTokenAddress) {
         createdTokenAddress = createTokenWithCustomFees(super.getDefaultKeys(), super.createFixedFeesForToken(amount, tokenId, firstFeeCollector, secondFeeCollector), super.getEmptyFractionalFees());
     }
 
-    function createTokenWithCorrectAndWrongTokenFixedFee(uint32 amount, address tokenId, address feeCollector) external returns (address createdTokenAddress) {
+    function createTokenWithCorrectAndWrongTokenFixedFee(int64 amount, address tokenId, address feeCollector) external returns (address createdTokenAddress) {
         createdTokenAddress = createTokenWithCustomFees(super.getDefaultKeys(), super.createFixedFeesForToken(amount, tokenId, feeCollector, address(0)), super.getEmptyFractionalFees());
     }
 
-    function createTokenWithHbarsFixedFee(uint32 amount, address feeCollector) external returns (address createdTokenAddress) {
+    function createTokenWithHbarsFixedFee(int64 amount, address feeCollector) external returns (address createdTokenAddress) {
         createdTokenAddress = createTokenWithCustomFees(super.getDefaultKeys(), super.createSingleFixedFeeForHbars(amount, feeCollector), super.getEmptyFractionalFees());
     }
 
-    function createTokenWithCurrentTokenFixedFee(uint32 amount, address feeCollector) external returns (address createdTokenAddress) {
+    function createTokenWithCurrentTokenFixedFee(int64 amount, address feeCollector) external returns (address createdTokenAddress) {
         createdTokenAddress = createTokenWithCustomFees(super.getDefaultKeys(), super.createSingleFixedFeeForCurrentToken(amount, feeCollector), super.getEmptyFractionalFees());
     }
 
-    function createTokenWithAllTypesFixedFee(uint32 amount, address tokenId, address feeCollector) external returns (address createdTokenAddress) {
+    function createTokenWithAllTypesFixedFee(int64 amount, address tokenId, address feeCollector) external returns (address createdTokenAddress) {
         createdTokenAddress = createTokenWithCustomFees(super.getDefaultKeys(), super.createFixedFeesWithAllTypes(amount, tokenId, feeCollector), super.getEmptyFractionalFees());
     }
 
-    function createTokenWithInvalidFlagsFixedFee(uint32 amount, address feeCollector) external returns (address createdTokenAddress) {
+    function createTokenWithInvalidFlagsFixedFee(int64 amount, address feeCollector) external returns (address createdTokenAddress) {
         createdTokenAddress = createTokenWithCustomFees(super.getDefaultKeys(), super.createSingleFixedFeeWithInvalidFlags(amount, feeCollector), super.getEmptyFractionalFees());
     }
 
-    function createTokenWithFixedFeeForTokenAndHbars(address tokenId, uint32 amount, address feeCollector) external returns (address createdTokenAddress) {
+    function createTokenWithFixedFeeForTokenAndHbars(address tokenId, int64 amount, address feeCollector) external returns (address createdTokenAddress) {
         createdTokenAddress = createTokenWithCustomFees(super.getDefaultKeys(), super.createSingleFixedFeeWithTokenIdAndHbars(amount, tokenId, feeCollector), super.getEmptyFractionalFees());
     }
 
-    function createTokenWithFractionalFee(uint32 numerator, uint32 denominator, bool netOfTransfers, address feeCollector) external returns (address createdTokenAddress) {
+    function createTokenWithFractionalFee(int64 numerator, int64 denominator, bool netOfTransfers, address feeCollector) external returns (address createdTokenAddress) {
         createdTokenAddress = createTokenWithCustomFees(super.getDefaultKeys(), super.getEmptyFixedFees(), super.createSingleFractionalFee(numerator, denominator, netOfTransfers, feeCollector));
     }
 
-    function createTokenWithFractionalFeeWithLimits(uint32 numerator, uint32 denominator, uint32 minimumAmount, uint32 maximumAmount,
+    function createTokenWithFractionalFeeWithLimits(int64 numerator, int64 denominator, int64 minimumAmount, int64 maximumAmount,
         bool netOfTransfers, address feeCollector) external returns (address createdTokenAddress) {
         createdTokenAddress = createTokenWithCustomFees(super.getDefaultKeys(), super.getEmptyFixedFees(), super.createSingleFractionalFeeWithLimits(numerator, denominator, minimumAmount, maximumAmount, netOfTransfers, feeCollector));
     }
 
-    function createTokenWithHbarFixedFeeAndFractionalFee(uint32 amount, uint32 numerator, uint32 denominator,
+    function createTokenWithHbarFixedFeeAndFractionalFee(int64 amount, int64 numerator, int64 denominator,
         bool netOfTransfers, address fixedFeeCollector, address fractionalFeeCollector) external returns (address createdTokenAddress) {
         createdTokenAddress = createTokenWithCustomFees(super.getDefaultKeys(), super.createSingleFixedFeeForHbars(amount, fixedFeeCollector), super.createSingleFractionalFee(numerator, denominator, netOfTransfers, fractionalFeeCollector));
     }
 
-    function createTokenWithNAmountHbarFixedFeesAndNAmountFractionalFees(uint8 numberOfFixedFees, uint8 numberOfFractionalFees, uint32 amount, uint32 numerator, uint32 denominator, bool netOfTransfers,
+    function createTokenWithNAmountHbarFixedFeesAndNAmountFractionalFees(uint8 numberOfFixedFees, uint8 numberOfFractionalFees, int64 amount, int64 numerator, int64 denominator, bool netOfTransfers,
         address fixedFeeCollector, address fractionalFeeCollector) external returns (address createdTokenAddress) {
         createdTokenAddress = createTokenWithCustomFees(super.getDefaultKeys(),
             super.createNAmountFixedFeesForHbars(numberOfFixedFees, amount, fixedFeeCollector), super.createNAmountFractionalFees(numberOfFractionalFees, numerator, denominator, netOfTransfers, fractionalFeeCollector));
@@ -496,7 +497,7 @@ contract TokenCreateContract is FeeHelper {
         token.treasury = address(this);
         token.tokenKeys = keys;
 
-        (bool success, bytes memory result) = precompileAddress.call(
+        (bool success, bytes memory result) = address(0x167).call(
             abi.encodeWithSelector(IHederaTokenService.createFungibleToken.selector,
             token, initialTotalSupply, decimals));
         (int responseCode, address tokenAddress) = success ? abi.decode(result, (int32, address)) : (HederaResponseCodes.UNKNOWN, address(0));

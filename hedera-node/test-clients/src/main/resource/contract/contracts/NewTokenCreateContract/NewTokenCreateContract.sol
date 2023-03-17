@@ -6,19 +6,19 @@ import "./HederaTokenService.sol";
 import "./ExpiryHelper.sol";
 import "./KeyHelper.sol";
 
-contract TokenCreateContract is HederaTokenService, ExpiryHelper, KeyHelper {
+contract NewTokenCreateContract is HederaTokenService, ExpiryHelper, KeyHelper {
 
     string name = "tokenName";
     string symbol = "tokenSymbol";
     string memo = "memo";
-    uint64 initialTotalSupply = 1000;
+    int64 initialTotalSupply = 1000;
     int64 maxSupply = 1000;
-    uint32 decimals = 8;
+    int32 decimals = 8;
     bool freezeDefaultStatus = false;
 
     event ResponseCode(int responseCode);
     event CreatedToken(address tokenAddress);
-    event MintedToken(uint64 newTotalSupply, int64[] serialNumbers);
+    event MintedToken(int64 newTotalSupply, int64[] serialNumbers);
     event KycGranted(bool kycGranted);
 
     function createFungibleTokenPublic(
@@ -144,8 +144,8 @@ contract TokenCreateContract is HederaTokenService, ExpiryHelper, KeyHelper {
         emit CreatedToken(tokenAddress);
     }
 
-    function mintTokenPublic(address token, uint64 amount, bytes[] memory metadata) public
-    returns (int responseCode, uint64 newTotalSupply, int64[] memory serialNumbers)  {
+    function mintTokenPublic(address token, int64 amount, bytes[] memory metadata) public
+    returns (int responseCode, int64 newTotalSupply, int64[] memory serialNumbers)  {
         (responseCode, newTotalSupply, serialNumbers) = HederaTokenService.mintToken(token, amount, metadata);
         emit ResponseCode(responseCode);
 

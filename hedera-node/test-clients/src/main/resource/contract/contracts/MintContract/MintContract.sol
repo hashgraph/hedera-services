@@ -6,14 +6,14 @@ import "./HederaTokenService.sol";
 
 contract MintContract is HederaTokenService {
 
-    event MintedTokenInfo(uint64 indexed totalSupply, int256 indexed firstSerialNumber) anonymous;
+    event MintedTokenInfo(int64 indexed totalSupply, int256 indexed firstSerialNumber) anonymous;
     address tokenAddress;
 
     constructor(address _tokenAddress) public {
         tokenAddress = _tokenAddress;
     }
 
-    function mintFungibleToken(uint64 amount) external {
+    function mintFungibleToken(int64 amount) external {
         HederaTokenService.mintToken(tokenAddress, amount, new bytes[](0));
     }
 
@@ -21,8 +21,8 @@ contract MintContract is HederaTokenService {
         HederaTokenService.mintToken(tokenAddress, 0, metadata);
     }
 
-    function mintFungibleTokenWithEvent(uint64 amount) public {
-        (int responseCode, uint64 newTotalSupply, int64[] memory serialNumbers) = HederaTokenService.mintToken(tokenAddress, amount, new bytes[](0));
+    function mintFungibleTokenWithEvent(int64 amount) public {
+        (int responseCode, int64 newTotalSupply, int64[] memory serialNumbers) = HederaTokenService.mintToken(tokenAddress, amount, new bytes[](0));
         emit MintedTokenInfo(newTotalSupply, 0);
 
         if (responseCode != HederaResponseCodes.SUCCESS || serialNumbers.length > 0) {
@@ -31,7 +31,7 @@ contract MintContract is HederaTokenService {
     }
 
     function mintNonFungibleTokenWithEvent(bytes[] memory metadata) external {
-         (int responseCode, uint64 newTotalSupply, int64[] memory serialNumbers) = HederaTokenService.mintToken(tokenAddress, 0, metadata);
+         (int responseCode, int64 newTotalSupply, int64[] memory serialNumbers) = HederaTokenService.mintToken(tokenAddress, 0, metadata);
          emit MintedTokenInfo(newTotalSupply,serialNumbers[0]);
 
          if (responseCode != HederaResponseCodes.SUCCESS) {
@@ -40,7 +40,7 @@ contract MintContract is HederaTokenService {
     }
 
     function mintNonFungibleTokenWithAddress(address _tokenAddress, bytes[] memory metadata) external {
-        (int responseCode, uint64 newTotalSupply, int64[] memory serialNumbers) = HederaTokenService.mintToken(_tokenAddress, 0, metadata);
+        (int responseCode, int64 newTotalSupply, int64[] memory serialNumbers) = HederaTokenService.mintToken(_tokenAddress, 0, metadata);
         if (responseCode != HederaResponseCodes.SUCCESS) {
             revert ("Non fungible mint failed!");
         }
@@ -48,7 +48,7 @@ contract MintContract is HederaTokenService {
 
     function revertMintAfterFailedMint(address sender, address recipient, int64 amount) external {
         HederaTokenService.transferToken(tokenAddress, sender, recipient, amount);
-        (int responseCode, uint64 newTotalSupply, int64[] memory serialNumbers) = HederaTokenService.mintToken(tokenAddress, 0, new bytes[](0));
+        (int responseCode, int64 newTotalSupply, int64[] memory serialNumbers) = HederaTokenService.mintToken(tokenAddress, 0, new bytes[](0));
         if (responseCode != HederaResponseCodes.SUCCESS) {
                 revert ("Mint of fungible token failed!");
             }

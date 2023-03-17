@@ -1,7 +1,8 @@
 [
   {
     "anonymous": false,
-    "inputs": [
+    "inputs":
+    [
       {
         "indexed": false,
         "internalType": "address",
@@ -19,7 +20,8 @@
     "type": "event"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "bytes",
         "name": "bytecode",
@@ -37,7 +39,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "bytes",
         "name": "bytecode",
@@ -50,7 +53,8 @@
       }
     ],
     "name": "getAddress",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "address",
         "name": "",
@@ -61,7 +65,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "_owner",
@@ -74,7 +79,8 @@
       }
     ],
     "name": "getBytecode",
-    "outputs": [
+    "outputs":
+    [
       {
         "internalType": "bytes",
         "name": "",
@@ -85,7 +91,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "bytes",
         "name": "bytecode",

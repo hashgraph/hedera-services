@@ -70,7 +70,7 @@ contract User is HederaTokenService {
     }
 
     function mintNft(address token_type, bytes[] memory metadata) external {
-        (int rc, uint64 newSupply, int256[] memory sns) = HederaTokenService.mintToken(token_type, 0, metadata);
+        (int rc, int64 newSupply, int64[] memory sns) = HederaTokenService.mintToken(token_type, 0, metadata);
 
         if (rc != HederaResponseCodes.SUCCESS) {
             revert("Can't!");
@@ -86,7 +86,7 @@ contract User is HederaTokenService {
 
 contract Helper is HederaTokenService {
     function mintNft(address token_type, bytes[] memory metadata) external {
-        (int rc, uint64 newSupply, int256[] memory sns) = HederaTokenService.mintToken(token_type, 0, metadata);
+        (int rc, int64 newSupply, int64[] memory sns) = HederaTokenService.mintToken(token_type, 0, metadata);
 
         if (rc != HederaResponseCodes.SUCCESS) {
             revert("Can't even!");

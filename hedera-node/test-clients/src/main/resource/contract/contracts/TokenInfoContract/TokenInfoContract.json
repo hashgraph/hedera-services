@@ -1,6 +1,99 @@
 [
   {
-    "inputs": [
+    "anonymous": false,
+    "inputs":
+    [
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes",
+        "name": "",
+        "type": "bytes"
+      }
+    ],
+    "name": "CallResponseEvent",
+    "type": "event"
+  },
+  {
+    "inputs":
+    [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "delegateTransferFrom",
+    "outputs":
+    [
+      {
+        "internalType": "int64",
+        "name": "responseCode",
+        "type": "int64"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs":
+    [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "serialNumber",
+        "type": "uint256"
+      }
+    ],
+    "name": "delegateTransferFromNFT",
+    "outputs":
+    [
+      {
+        "internalType": "int64",
+        "name": "responseCode",
+        "type": "int64"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
@@ -8,13 +101,15 @@
       }
     ],
     "name": "getCustomFeesForToken",
-    "outputs": [
+    "outputs":
+    [
       {
-        "components": [
+        "components":
+        [
           {
-            "internalType": "uint32",
+            "internalType": "int64",
             "name": "amount",
-            "type": "uint32"
+            "type": "int64"
           },
           {
             "internalType": "address",
@@ -42,26 +137,27 @@
         "type": "tuple[]"
       },
       {
-        "components": [
+        "components":
+        [
           {
-            "internalType": "uint32",
+            "internalType": "int64",
             "name": "numerator",
-            "type": "uint32"
+            "type": "int64"
           },
           {
-            "internalType": "uint32",
+            "internalType": "int64",
             "name": "denominator",
-            "type": "uint32"
+            "type": "int64"
           },
           {
-            "internalType": "uint32",
+            "internalType": "int64",
             "name": "minimumAmount",
-            "type": "uint32"
+            "type": "int64"
           },
           {
-            "internalType": "uint32",
+            "internalType": "int64",
             "name": "maximumAmount",
-            "type": "uint32"
+            "type": "int64"
           },
           {
             "internalType": "bool",
@@ -79,21 +175,22 @@
         "type": "tuple[]"
       },
       {
-        "components": [
+        "components":
+        [
           {
-            "internalType": "uint32",
+            "internalType": "int64",
             "name": "numerator",
-            "type": "uint32"
+            "type": "int64"
           },
           {
-            "internalType": "uint32",
+            "internalType": "int64",
             "name": "denominator",
-            "type": "uint32"
+            "type": "int64"
           },
           {
-            "internalType": "uint32",
+            "internalType": "int64",
             "name": "amount",
-            "type": "uint32"
+            "type": "int64"
           },
           {
             "internalType": "address",
@@ -120,7 +217,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
@@ -128,13 +226,17 @@
       }
     ],
     "name": "getInformationForFungibleToken",
-    "outputs": [
+    "outputs":
+    [
       {
-        "components": [
+        "components":
+        [
           {
-            "components": [
+            "components":
+            [
               {
-                "components": [
+                "components":
+                [
                   {
                     "internalType": "string",
                     "name": "name",
@@ -171,14 +273,16 @@
                     "type": "bool"
                   },
                   {
-                    "components": [
+                    "components":
+                    [
                       {
                         "internalType": "uint256",
                         "name": "keyType",
                         "type": "uint256"
                       },
                       {
-                        "components": [
+                        "components":
+                        [
                           {
                             "internalType": "bool",
                             "name": "inheritAccountKey",
@@ -215,11 +319,12 @@
                     "type": "tuple[]"
                   },
                   {
-                    "components": [
+                    "components":
+                    [
                       {
-                        "internalType": "uint32",
+                        "internalType": "int64",
                         "name": "second",
-                        "type": "uint32"
+                        "type": "int64"
                       },
                       {
                         "internalType": "address",
@@ -227,9 +332,9 @@
                         "type": "address"
                       },
                       {
-                        "internalType": "uint32",
+                        "internalType": "int64",
                         "name": "autoRenewPeriod",
-                        "type": "uint32"
+                        "type": "int64"
                       }
                     ],
                     "internalType": "struct IHederaTokenService.Expiry",
@@ -242,9 +347,9 @@
                 "type": "tuple"
               },
               {
-                "internalType": "uint64",
+                "internalType": "int64",
                 "name": "totalSupply",
-                "type": "uint64"
+                "type": "int64"
               },
               {
                 "internalType": "bool",
@@ -262,11 +367,12 @@
                 "type": "bool"
               },
               {
-                "components": [
+                "components":
+                [
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "amount",
-                    "type": "uint32"
+                    "type": "int64"
                   },
                   {
                     "internalType": "address",
@@ -294,26 +400,27 @@
                 "type": "tuple[]"
               },
               {
-                "components": [
+                "components":
+                [
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "numerator",
-                    "type": "uint32"
+                    "type": "int64"
                   },
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "denominator",
-                    "type": "uint32"
+                    "type": "int64"
                   },
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "minimumAmount",
-                    "type": "uint32"
+                    "type": "int64"
                   },
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "maximumAmount",
-                    "type": "uint32"
+                    "type": "int64"
                   },
                   {
                     "internalType": "bool",
@@ -331,21 +438,22 @@
                 "type": "tuple[]"
               },
               {
-                "components": [
+                "components":
+                [
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "numerator",
-                    "type": "uint32"
+                    "type": "int64"
                   },
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "denominator",
-                    "type": "uint32"
+                    "type": "int64"
                   },
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "amount",
-                    "type": "uint32"
+                    "type": "int64"
                   },
                   {
                     "internalType": "address",
@@ -378,9 +486,9 @@
             "type": "tuple"
           },
           {
-            "internalType": "uint32",
+            "internalType": "int32",
             "name": "decimals",
-            "type": "uint32"
+            "type": "int32"
           }
         ],
         "internalType": "struct IHederaTokenService.FungibleTokenInfo",
@@ -392,7 +500,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
@@ -405,13 +514,17 @@
       }
     ],
     "name": "getInformationForNonFungibleToken",
-    "outputs": [
+    "outputs":
+    [
       {
-        "components": [
+        "components":
+        [
           {
-            "components": [
+            "components":
+            [
               {
-                "components": [
+                "components":
+                [
                   {
                     "internalType": "string",
                     "name": "name",
@@ -448,14 +561,16 @@
                     "type": "bool"
                   },
                   {
-                    "components": [
+                    "components":
+                    [
                       {
                         "internalType": "uint256",
                         "name": "keyType",
                         "type": "uint256"
                       },
                       {
-                        "components": [
+                        "components":
+                        [
                           {
                             "internalType": "bool",
                             "name": "inheritAccountKey",
@@ -492,11 +607,12 @@
                     "type": "tuple[]"
                   },
                   {
-                    "components": [
+                    "components":
+                    [
                       {
-                        "internalType": "uint32",
+                        "internalType": "int64",
                         "name": "second",
-                        "type": "uint32"
+                        "type": "int64"
                       },
                       {
                         "internalType": "address",
@@ -504,9 +620,9 @@
                         "type": "address"
                       },
                       {
-                        "internalType": "uint32",
+                        "internalType": "int64",
                         "name": "autoRenewPeriod",
-                        "type": "uint32"
+                        "type": "int64"
                       }
                     ],
                     "internalType": "struct IHederaTokenService.Expiry",
@@ -519,9 +635,9 @@
                 "type": "tuple"
               },
               {
-                "internalType": "uint64",
+                "internalType": "int64",
                 "name": "totalSupply",
-                "type": "uint64"
+                "type": "int64"
               },
               {
                 "internalType": "bool",
@@ -539,11 +655,12 @@
                 "type": "bool"
               },
               {
-                "components": [
+                "components":
+                [
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "amount",
-                    "type": "uint32"
+                    "type": "int64"
                   },
                   {
                     "internalType": "address",
@@ -571,26 +688,27 @@
                 "type": "tuple[]"
               },
               {
-                "components": [
+                "components":
+                [
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "numerator",
-                    "type": "uint32"
+                    "type": "int64"
                   },
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "denominator",
-                    "type": "uint32"
+                    "type": "int64"
                   },
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "minimumAmount",
-                    "type": "uint32"
+                    "type": "int64"
                   },
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "maximumAmount",
-                    "type": "uint32"
+                    "type": "int64"
                   },
                   {
                     "internalType": "bool",
@@ -608,21 +726,22 @@
                 "type": "tuple[]"
               },
               {
-                "components": [
+                "components":
+                [
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "numerator",
-                    "type": "uint32"
+                    "type": "int64"
                   },
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "denominator",
-                    "type": "uint32"
+                    "type": "int64"
                   },
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "amount",
-                    "type": "uint32"
+                    "type": "int64"
                   },
                   {
                     "internalType": "address",
@@ -689,7 +808,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
@@ -697,11 +817,14 @@
       }
     ],
     "name": "getInformationForToken",
-    "outputs": [
+    "outputs":
+    [
       {
-        "components": [
+        "components":
+        [
           {
-            "components": [
+            "components":
+            [
               {
                 "internalType": "string",
                 "name": "name",
@@ -738,14 +861,16 @@
                 "type": "bool"
               },
               {
-                "components": [
+                "components":
+                [
                   {
                     "internalType": "uint256",
                     "name": "keyType",
                     "type": "uint256"
                   },
                   {
-                    "components": [
+                    "components":
+                    [
                       {
                         "internalType": "bool",
                         "name": "inheritAccountKey",
@@ -782,11 +907,12 @@
                 "type": "tuple[]"
               },
               {
-                "components": [
+                "components":
+                [
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "second",
-                    "type": "uint32"
+                    "type": "int64"
                   },
                   {
                     "internalType": "address",
@@ -794,9 +920,9 @@
                     "type": "address"
                   },
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "autoRenewPeriod",
-                    "type": "uint32"
+                    "type": "int64"
                   }
                 ],
                 "internalType": "struct IHederaTokenService.Expiry",
@@ -809,9 +935,9 @@
             "type": "tuple"
           },
           {
-            "internalType": "uint64",
+            "internalType": "int64",
             "name": "totalSupply",
-            "type": "uint64"
+            "type": "int64"
           },
           {
             "internalType": "bool",
@@ -829,11 +955,12 @@
             "type": "bool"
           },
           {
-            "components": [
+            "components":
+            [
               {
-                "internalType": "uint32",
+                "internalType": "int64",
                 "name": "amount",
-                "type": "uint32"
+                "type": "int64"
               },
               {
                 "internalType": "address",
@@ -861,26 +988,27 @@
             "type": "tuple[]"
           },
           {
-            "components": [
+            "components":
+            [
               {
-                "internalType": "uint32",
+                "internalType": "int64",
                 "name": "numerator",
-                "type": "uint32"
+                "type": "int64"
               },
               {
-                "internalType": "uint32",
+                "internalType": "int64",
                 "name": "denominator",
-                "type": "uint32"
+                "type": "int64"
               },
               {
-                "internalType": "uint32",
+                "internalType": "int64",
                 "name": "minimumAmount",
-                "type": "uint32"
+                "type": "int64"
               },
               {
-                "internalType": "uint32",
+                "internalType": "int64",
                 "name": "maximumAmount",
-                "type": "uint32"
+                "type": "int64"
               },
               {
                 "internalType": "bool",
@@ -898,21 +1026,22 @@
             "type": "tuple[]"
           },
           {
-            "components": [
+            "components":
+            [
               {
-                "internalType": "uint32",
+                "internalType": "int64",
                 "name": "numerator",
-                "type": "uint32"
+                "type": "int64"
               },
               {
-                "internalType": "uint32",
+                "internalType": "int64",
                 "name": "denominator",
-                "type": "uint32"
+                "type": "int64"
               },
               {
-                "internalType": "uint32",
+                "internalType": "int64",
                 "name": "amount",
-                "type": "uint32"
+                "type": "int64"
               },
               {
                 "internalType": "address",
@@ -949,48 +1078,27 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
         "type": "address"
-      }
-    ],
-    "name": "getTokenExpiryInfo",
-    "outputs": [
-      {
-        "internalType": "int256",
-        "name": "responseCode",
-        "type": "int256"
       },
       {
-        "components": [
-          {
-            "internalType": "uint32",
-            "name": "second",
-            "type": "uint32"
-          },
-          {
-            "internalType": "address",
-            "name": "autoRenewAccount",
-            "type": "address"
-          },
-          {
-            "internalType": "uint32",
-            "name": "autoRenewPeriod",
-            "type": "uint32"
-          }
-        ],
-        "internalType": "struct IHederaTokenService.Expiry",
-        "name": "expiryInfo",
-        "type": "tuple"
+        "internalType": "bytes",
+        "name": "encodedFunctionSelector",
+        "type": "bytes"
       }
     ],
+    "name": "redirectForToken",
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
@@ -998,12 +1106,23 @@
       },
       {
         "internalType": "address",
-        "name": "account",
+        "name": "from",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
       }
     ],
-    "name": "grantTokenKyc",
-    "outputs": [
+    "name": "transferFrom",
+    "outputs":
+    [
       {
         "internalType": "int64",
         "name": "responseCode",
@@ -1014,7 +1133,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
@@ -1022,60 +1142,23 @@
       },
       {
         "internalType": "address",
-        "name": "account",
-        "type": "address"
-      }
-    ],
-    "name": "isKyc",
-    "outputs": [
-      {
-        "internalType": "int64",
-        "name": "responseCode",
-        "type": "int64"
-      },
-      {
-        "internalType": "bool",
-        "name": "kycGranted",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      }
-    ],
-    "name": "pauseToken",
-    "outputs": [
-      {
-        "internalType": "int256",
-        "name": "responseCode",
-        "type": "int256"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "token",
+        "name": "from",
         "type": "address"
       },
       {
         "internalType": "address",
-        "name": "account",
+        "name": "to",
         "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "serialNumber",
+        "type": "uint256"
       }
     ],
-    "name": "revokeTokenKyc",
-    "outputs": [
+    "name": "transferFromNFT",
+    "outputs":
+    [
       {
         "internalType": "int64",
         "name": "responseCode",
@@ -1086,26 +1169,8 @@
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      }
-    ],
-    "name": "unpauseToken",
-    "outputs": [
-      {
-        "internalType": "int256",
-        "name": "responseCode",
-        "type": "int256"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "tokenId",
@@ -1133,13 +1198,17 @@
       }
     ],
     "name": "updateInformationForFungibleTokenAndGetLatestInformation",
-    "outputs": [
+    "outputs":
+    [
       {
-        "components": [
+        "components":
+        [
           {
-            "components": [
+            "components":
+            [
               {
-                "components": [
+                "components":
+                [
                   {
                     "internalType": "string",
                     "name": "name",
@@ -1176,14 +1245,16 @@
                     "type": "bool"
                   },
                   {
-                    "components": [
+                    "components":
+                    [
                       {
                         "internalType": "uint256",
                         "name": "keyType",
                         "type": "uint256"
                       },
                       {
-                        "components": [
+                        "components":
+                        [
                           {
                             "internalType": "bool",
                             "name": "inheritAccountKey",
@@ -1220,11 +1291,12 @@
                     "type": "tuple[]"
                   },
                   {
-                    "components": [
+                    "components":
+                    [
                       {
-                        "internalType": "uint32",
+                        "internalType": "int64",
                         "name": "second",
-                        "type": "uint32"
+                        "type": "int64"
                       },
                       {
                         "internalType": "address",
@@ -1232,9 +1304,9 @@
                         "type": "address"
                       },
                       {
-                        "internalType": "uint32",
+                        "internalType": "int64",
                         "name": "autoRenewPeriod",
-                        "type": "uint32"
+                        "type": "int64"
                       }
                     ],
                     "internalType": "struct IHederaTokenService.Expiry",
@@ -1247,9 +1319,9 @@
                 "type": "tuple"
               },
               {
-                "internalType": "uint64",
+                "internalType": "int64",
                 "name": "totalSupply",
-                "type": "uint64"
+                "type": "int64"
               },
               {
                 "internalType": "bool",
@@ -1267,11 +1339,12 @@
                 "type": "bool"
               },
               {
-                "components": [
+                "components":
+                [
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "amount",
-                    "type": "uint32"
+                    "type": "int64"
                   },
                   {
                     "internalType": "address",
@@ -1299,26 +1372,27 @@
                 "type": "tuple[]"
               },
               {
-                "components": [
+                "components":
+                [
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "numerator",
-                    "type": "uint32"
+                    "type": "int64"
                   },
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "denominator",
-                    "type": "uint32"
+                    "type": "int64"
                   },
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "minimumAmount",
-                    "type": "uint32"
+                    "type": "int64"
                   },
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "maximumAmount",
-                    "type": "uint32"
+                    "type": "int64"
                   },
                   {
                     "internalType": "bool",
@@ -1336,21 +1410,22 @@
                 "type": "tuple[]"
               },
               {
-                "components": [
+                "components":
+                [
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "numerator",
-                    "type": "uint32"
+                    "type": "int64"
                   },
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "denominator",
-                    "type": "uint32"
+                    "type": "int64"
                   },
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "amount",
-                    "type": "uint32"
+                    "type": "int64"
                   },
                   {
                     "internalType": "address",
@@ -1383,9 +1458,9 @@
             "type": "tuple"
           },
           {
-            "internalType": "uint32",
+            "internalType": "int32",
             "name": "decimals",
-            "type": "uint32"
+            "type": "int32"
           }
         ],
         "internalType": "struct IHederaTokenService.FungibleTokenInfo",
@@ -1397,7 +1472,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "tokenId",
@@ -1430,13 +1506,17 @@
       }
     ],
     "name": "updateInformationForNonFungibleTokenAndGetLatestInformation",
-    "outputs": [
+    "outputs":
+    [
       {
-        "components": [
+        "components":
+        [
           {
-            "components": [
+            "components":
+            [
               {
-                "components": [
+                "components":
+                [
                   {
                     "internalType": "string",
                     "name": "name",
@@ -1473,14 +1553,16 @@
                     "type": "bool"
                   },
                   {
-                    "components": [
+                    "components":
+                    [
                       {
                         "internalType": "uint256",
                         "name": "keyType",
                         "type": "uint256"
                       },
                       {
-                        "components": [
+                        "components":
+                        [
                           {
                             "internalType": "bool",
                             "name": "inheritAccountKey",
@@ -1517,11 +1599,12 @@
                     "type": "tuple[]"
                   },
                   {
-                    "components": [
+                    "components":
+                    [
                       {
-                        "internalType": "uint32",
+                        "internalType": "int64",
                         "name": "second",
-                        "type": "uint32"
+                        "type": "int64"
                       },
                       {
                         "internalType": "address",
@@ -1529,9 +1612,9 @@
                         "type": "address"
                       },
                       {
-                        "internalType": "uint32",
+                        "internalType": "int64",
                         "name": "autoRenewPeriod",
-                        "type": "uint32"
+                        "type": "int64"
                       }
                     ],
                     "internalType": "struct IHederaTokenService.Expiry",
@@ -1544,9 +1627,9 @@
                 "type": "tuple"
               },
               {
-                "internalType": "uint64",
+                "internalType": "int64",
                 "name": "totalSupply",
-                "type": "uint64"
+                "type": "int64"
               },
               {
                 "internalType": "bool",
@@ -1564,11 +1647,12 @@
                 "type": "bool"
               },
               {
-                "components": [
+                "components":
+                [
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "amount",
-                    "type": "uint32"
+                    "type": "int64"
                   },
                   {
                     "internalType": "address",
@@ -1596,26 +1680,27 @@
                 "type": "tuple[]"
               },
               {
-                "components": [
+                "components":
+                [
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "numerator",
-                    "type": "uint32"
+                    "type": "int64"
                   },
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "denominator",
-                    "type": "uint32"
+                    "type": "int64"
                   },
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "minimumAmount",
-                    "type": "uint32"
+                    "type": "int64"
                   },
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "maximumAmount",
-                    "type": "uint32"
+                    "type": "int64"
                   },
                   {
                     "internalType": "bool",
@@ -1633,21 +1718,22 @@
                 "type": "tuple[]"
               },
               {
-                "components": [
+                "components":
+                [
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "numerator",
-                    "type": "uint32"
+                    "type": "int64"
                   },
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "denominator",
-                    "type": "uint32"
+                    "type": "int64"
                   },
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "amount",
-                    "type": "uint32"
+                    "type": "int64"
                   },
                   {
                     "internalType": "address",
@@ -1714,7 +1800,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "tokenId",
@@ -1742,11 +1829,14 @@
       }
     ],
     "name": "updateInformationForTokenAndGetLatestInformation",
-    "outputs": [
+    "outputs":
+    [
       {
-        "components": [
+        "components":
+        [
           {
-            "components": [
+            "components":
+            [
               {
                 "internalType": "string",
                 "name": "name",
@@ -1783,14 +1873,16 @@
                 "type": "bool"
               },
               {
-                "components": [
+                "components":
+                [
                   {
                     "internalType": "uint256",
                     "name": "keyType",
                     "type": "uint256"
                   },
                   {
-                    "components": [
+                    "components":
+                    [
                       {
                         "internalType": "bool",
                         "name": "inheritAccountKey",
@@ -1827,11 +1919,12 @@
                 "type": "tuple[]"
               },
               {
-                "components": [
+                "components":
+                [
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "second",
-                    "type": "uint32"
+                    "type": "int64"
                   },
                   {
                     "internalType": "address",
@@ -1839,9 +1932,9 @@
                     "type": "address"
                   },
                   {
-                    "internalType": "uint32",
+                    "internalType": "int64",
                     "name": "autoRenewPeriod",
-                    "type": "uint32"
+                    "type": "int64"
                   }
                 ],
                 "internalType": "struct IHederaTokenService.Expiry",
@@ -1854,9 +1947,9 @@
             "type": "tuple"
           },
           {
-            "internalType": "uint64",
+            "internalType": "int64",
             "name": "totalSupply",
-            "type": "uint64"
+            "type": "int64"
           },
           {
             "internalType": "bool",
@@ -1874,11 +1967,12 @@
             "type": "bool"
           },
           {
-            "components": [
+            "components":
+            [
               {
-                "internalType": "uint32",
+                "internalType": "int64",
                 "name": "amount",
-                "type": "uint32"
+                "type": "int64"
               },
               {
                 "internalType": "address",
@@ -1906,26 +2000,27 @@
             "type": "tuple[]"
           },
           {
-            "components": [
+            "components":
+            [
               {
-                "internalType": "uint32",
+                "internalType": "int64",
                 "name": "numerator",
-                "type": "uint32"
+                "type": "int64"
               },
               {
-                "internalType": "uint32",
+                "internalType": "int64",
                 "name": "denominator",
-                "type": "uint32"
+                "type": "int64"
               },
               {
-                "internalType": "uint32",
+                "internalType": "int64",
                 "name": "minimumAmount",
-                "type": "uint32"
+                "type": "int64"
               },
               {
-                "internalType": "uint32",
+                "internalType": "int64",
                 "name": "maximumAmount",
-                "type": "uint32"
+                "type": "int64"
               },
               {
                 "internalType": "bool",
@@ -1943,21 +2038,22 @@
             "type": "tuple[]"
           },
           {
-            "components": [
+            "components":
+            [
               {
-                "internalType": "uint32",
+                "internalType": "int64",
                 "name": "numerator",
-                "type": "uint32"
+                "type": "int64"
               },
               {
-                "internalType": "uint32",
+                "internalType": "int64",
                 "name": "denominator",
-                "type": "uint32"
+                "type": "int64"
               },
               {
-                "internalType": "uint32",
+                "internalType": "int64",
                 "name": "amount",
-                "type": "uint32"
+                "type": "int64"
               },
               {
                 "internalType": "address",
@@ -1994,48 +2090,8 @@
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      },
-      {
-        "components": [
-          {
-            "internalType": "uint32",
-            "name": "second",
-            "type": "uint32"
-          },
-          {
-            "internalType": "address",
-            "name": "autoRenewAccount",
-            "type": "address"
-          },
-          {
-            "internalType": "uint32",
-            "name": "autoRenewPeriod",
-            "type": "uint32"
-          }
-        ],
-        "internalType": "struct IHederaTokenService.Expiry",
-        "name": "expiryInfo",
-        "type": "tuple"
-      }
-    ],
-    "name": "updateTokenExpiryInfo",
-    "outputs": [
-      {
-        "internalType": "int256",
-        "name": "responseCode",
-        "type": "int256"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
