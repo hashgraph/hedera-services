@@ -24,9 +24,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.common.utility.CommonUtils.unhex;
-import static java.lang.System.arraycopy;
+
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import static java.lang.System.arraycopy;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
@@ -42,17 +44,7 @@ import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.utility.CommonUtils;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.Instant;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.IntStream;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -64,8 +56,20 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Instant;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
+
 public class Utils {
-    public static final String RESOURCE_PATH = "src/main/resource/contract/contracts/%1$s/%1$s";
+    public static final String RESOURCE_PATH = "src/main/resource/contract/contracts/%1$s/%1$s%2$s";
     public static final String UNIQUE_CLASSPATH_RESOURCE_TPL = "contract/contracts/%s/%s";
     private static final Logger log = LogManager.getLogger(Utils.class);
     private static final String JSON_EXTENSION = ".json";
@@ -202,7 +206,7 @@ public class Utils {
      */
     public static String getResourcePath(String resourceName, final String extension) {
         resourceName = resourceName.replaceAll("\\d*$", "");
-        final var path = String.join(RESOURCE_PATH, extension, resourceName);
+        final var path = String.format(RESOURCE_PATH, resourceName, extension);
         final var file = relocatedIfNotPresentInWorkingDir(new File(path));
         if (!file.exists()) {
             throw new IllegalArgumentException("Invalid argument: " + path.substring(path.lastIndexOf('/') + 1));
