@@ -1323,15 +1323,13 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                     .receiverSigReq(false)
                                     .memo(AUTO_MEMO));
 
-                    final var op3 = childRecordsCheck(
-                            transferToECDSA,
-                            SUCCESS,
+                    childRecordsCheck(transferToECDSA, SUCCESS,
                             recordWith()
                                     .evmAddress(evmAddress.get())
                                     .hasNoAlias()
                                     .status(SUCCESS));
 
-                    allRunFor(spec, hbarCreateTransfer, op1, op2, op3);
+                    allRunFor(spec, hbarCreateTransfer, op1, op2);
                 }))
                 .then(getTxnRecord(transferToECDSA).andAllChildRecords().logged());
     }
