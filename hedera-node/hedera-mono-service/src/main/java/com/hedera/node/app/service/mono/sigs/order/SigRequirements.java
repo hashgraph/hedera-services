@@ -26,9 +26,7 @@ import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.INV
 import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
 import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
 import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.NONE;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAlias;
-import static com.hedera.node.app.service.mono.utils.MiscUtils.asPrimitiveKeyUnchecked;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asUsableFcKey;
 import static java.util.Collections.EMPTY_LIST;
 

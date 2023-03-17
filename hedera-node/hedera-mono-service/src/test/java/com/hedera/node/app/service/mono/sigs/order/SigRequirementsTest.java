@@ -16,48 +16,6 @@
 
 package com.hedera.node.app.service.mono.sigs.order;
 
-import com.google.protobuf.ByteString;
-import com.hedera.node.app.service.mono.config.EntityNumbers;
-import com.hedera.node.app.service.mono.config.MockEntityNumbers;
-import com.hedera.node.app.service.mono.files.HederaFs;
-import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.sigs.metadata.AccountSigningMetadata;
-import com.hedera.node.app.service.mono.sigs.metadata.ContractSigningMetadata;
-import com.hedera.node.app.service.mono.sigs.metadata.DelegatingSigMetadataLookup;
-import com.hedera.node.app.service.mono.sigs.metadata.SafeLookupResult;
-import com.hedera.node.app.service.mono.sigs.metadata.SigMetadataLookup;
-import com.hedera.node.app.service.mono.sigs.metadata.TopicSigningMetadata;
-import com.hedera.node.app.service.mono.sigs.metadata.lookups.AccountSigMetaLookup;
-import com.hedera.node.app.service.mono.sigs.metadata.lookups.ContractSigMetaLookup;
-import com.hedera.node.app.service.mono.sigs.metadata.lookups.FileSigMetaLookup;
-import com.hedera.node.app.service.mono.sigs.metadata.lookups.HfsSigMetaLookup;
-import com.hedera.node.app.service.mono.sigs.metadata.lookups.TopicSigMetaLookup;
-import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
-import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
-import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
-import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
-import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
-import com.hedera.node.app.service.mono.store.tokens.TokenStore;
-import com.hedera.node.app.service.mono.txns.auth.SystemOpPolicies;
-import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.numbers.HederaFileNumbers;
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hedera.test.mocks.MockFileNumbers;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TopicID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.merkle.map.MerkleMap;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Function;
-
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.node.app.service.mono.sigs.metadata.DelegatingSigMetadataLookup.PRETEND_SIGNING_TIME;
 import static com.hedera.node.app.service.mono.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
@@ -361,6 +319,47 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+
+import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.mono.config.EntityNumbers;
+import com.hedera.node.app.service.mono.config.MockEntityNumbers;
+import com.hedera.node.app.service.mono.files.HederaFs;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.sigs.metadata.AccountSigningMetadata;
+import com.hedera.node.app.service.mono.sigs.metadata.ContractSigningMetadata;
+import com.hedera.node.app.service.mono.sigs.metadata.DelegatingSigMetadataLookup;
+import com.hedera.node.app.service.mono.sigs.metadata.SafeLookupResult;
+import com.hedera.node.app.service.mono.sigs.metadata.SigMetadataLookup;
+import com.hedera.node.app.service.mono.sigs.metadata.TopicSigningMetadata;
+import com.hedera.node.app.service.mono.sigs.metadata.lookups.AccountSigMetaLookup;
+import com.hedera.node.app.service.mono.sigs.metadata.lookups.ContractSigMetaLookup;
+import com.hedera.node.app.service.mono.sigs.metadata.lookups.FileSigMetaLookup;
+import com.hedera.node.app.service.mono.sigs.metadata.lookups.HfsSigMetaLookup;
+import com.hedera.node.app.service.mono.sigs.metadata.lookups.TopicSigMetaLookup;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
+import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
+import com.hedera.node.app.service.mono.store.tokens.TokenStore;
+import com.hedera.node.app.service.mono.txns.auth.SystemOpPolicies;
+import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.numbers.HederaFileNumbers;
+import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hedera.test.mocks.MockFileNumbers;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TopicID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.swirlds.merkle.map.MerkleMap;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
+import org.junit.jupiter.api.Test;
 
 public class SigRequirementsTest {
     private static class TopicAdapter {
