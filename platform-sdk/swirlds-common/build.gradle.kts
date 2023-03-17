@@ -25,6 +25,7 @@ dependencies {
   // Individual Dependencies
   api(project(":swirlds-logging"))
   api(project(":swirlds-config-api"))
+  implementation(project(":swirlds-base"))
   implementation(libs.classgraph)
   implementation(libs.commons.codec)
   implementation(libs.prometheus.httpserver) {
