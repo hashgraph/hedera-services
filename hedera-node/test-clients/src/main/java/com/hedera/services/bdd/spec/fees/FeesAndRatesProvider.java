@@ -253,7 +253,8 @@ public class FeesAndRatesProvider {
         return perturbedSet;
     }
 
-    public ExchangeRateSet rateSetWith(int curHbarEquiv, int curCentEquiv, int nextHbarEquiv, int nextCentEquiv) {
+    public ExchangeRateSet rateSetWith(
+            int curHbarEquiv, int curCentEquiv, int nextHbarEquiv, int nextCentEquiv) {
         ExchangeRate.Builder curRate =
                 rateSet.getCurrentRate().toBuilder()
                         .setHbarEquiv(curHbarEquiv)
