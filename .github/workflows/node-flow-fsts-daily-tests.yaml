@@ -20,7 +20,7 @@ name: "Node: FSTS Daily Tests"
 on:
   workflow_dispatch:
   schedule:
-    - cron: '* 1 * * *'
+    - cron: '18 21 * * *'
 
 defaults:
   run:
