@@ -31,11 +31,13 @@ dependencies {
     exclude("io.prometheus", "simpleclient_tracer_otel")
     exclude("io.prometheus", "simpleclient_tracer_otel_agent")
   }
+  compileOnly(libs.spotbugs.annotations)
 
   // Bundle Dependencies
   api(libs.bundles.cryptography.core)
   runtimeOnly(libs.bundles.cryptography.runtime)
   implementation(libs.bundles.logging.impl)
+  compileOnly(libs.spotbugs.annotations)
 
   // Test Dependencies
   testImplementation(testLibs.bundles.junit)

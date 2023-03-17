@@ -334,7 +334,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                     final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
                     // create with ECDSA alias and no key
                     final var op =
-                            cryptoCreate(ACCOUNT).alias(ecdsaKey.toByteString()).hasPrecheck(NOT_SUPPORTED);
+                            cryptoCreate(ACCOUNT).alias(ecdsaKey.toByteString()).hasPrecheck(INVALID_ALIAS_KEY);
                     // create with EVM address alias and no key
                     final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                     final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(tmp));
@@ -343,7 +343,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                     final var ed25519Key = spec.registry().getKey(ED_25519_KEY);
                     final var op3 = cryptoCreate(ACCOUNT)
                             .alias(ed25519Key.toByteString())
-                            .hasPrecheck(NOT_SUPPORTED);
+                            .hasPrecheck(INVALID_ALIAS_KEY);
                     // create with evm address alias and ECDSA key
                     final var op4 = cryptoCreate(ACCOUNT)
                             .key(SECP_256K1_SOURCE_KEY)
@@ -353,12 +353,12 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                     final var op5 = cryptoCreate(ACCOUNT)
                             .key(ED_25519_KEY)
                             .alias(ed25519Key.toByteString())
-                            .hasPrecheck(NOT_SUPPORTED);
+                            .hasPrecheck(INVALID_ALIAS_KEY);
                     // create with ECDSA alias and key
                     final var op6 = cryptoCreate(ACCOUNT)
                             .key(SECP_256K1_SOURCE_KEY)
                             .alias(ecdsaKey.toByteString())
-                            .hasPrecheck(NOT_SUPPORTED);
+                            .hasPrecheck(INVALID_ALIAS_KEY);
                     // assert that an account created with ECDSA key and no alias
                     // does not automagically set alias to evm address
                     final var op7 = cryptoCreate(ACCOUNT).key(SECP_256K1_SOURCE_KEY);

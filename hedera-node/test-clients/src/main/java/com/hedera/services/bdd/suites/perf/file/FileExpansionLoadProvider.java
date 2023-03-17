@@ -142,9 +142,7 @@ public class FileExpansionLoadProvider extends HapiSuite {
                             .contents(DATA_CHUNK)
                             .payingWith(GENESIS)
                             .deferStatusResolution()
-                            .exposingNumTo(num -> {
-                                usableTargets.add(name);
-                            });
+                            .exposingNumTo(num -> usableTargets.add(name));
                 } else {
                     final var skips = r.nextInt(usableTargets.size());
                     final var iter = usableTargets.iterator();

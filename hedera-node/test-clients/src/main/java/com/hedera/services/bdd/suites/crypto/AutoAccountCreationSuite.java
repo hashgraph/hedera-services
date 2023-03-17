@@ -193,7 +193,8 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 failureAfterHollowAccountCreationReclaimsAlias(),
                 transferHbarsToEVMAddressAlias(),
                 transferFungibleToEVMAddressAlias(),
-                transferNonFungibleToEVMAddressAlias());
+                transferNonFungibleToEVMAddressAlias(),
+                transferHbarsToECDSAKey());
     }
 
     private HapiSpec canAutoCreateWithHbarAndTokenTransfers() {
@@ -1285,6 +1286,52 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .via(TRANSFER_TXN),
                         getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                                 .has(accountWith().expectedBalanceWithChargedUsd(3 * ONE_HBAR, 0, 0)));
+    }
+
+    private HapiSpec transferHbarsToECDSAKey() {
+
+        final AtomicReference<ByteString> evmAddress = new AtomicReference<>();
+        final var transferToECDSA = "transferToЕCDSA";
+
+        return defaultHapiSpec("transferHbarsToECDSAKey")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(PAYER).balance(10 * ONE_HBAR),
+                        withOpContext((spec, opLog) -> {
+                            final var registry = spec.registry();
+                            final var ecdsaKey = registry.getKey(SECP_256K1_SOURCE_KEY);
+                            final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                            final var addressBytes = recoverAddressFromPubKey(tmp);
+                            final var evmAddressBytes = ByteString.copyFrom(addressBytes);
+                            evmAddress.set(evmAddressBytes);
+                        }))
+                .when(withOpContext((spec, opLog) -> {
+                    final var hbarCreateTransfer = cryptoTransfer(
+                                    tinyBarsFromAccountToAlias(PAYER, SECP_256K1_SOURCE_KEY, ONE_HBAR))
+                            .via(transferToECDSA);
+
+                    final var op1 = cryptoTransfer(tinyBarsFromTo(PAYER, evmAddress.get(), ONE_HBAR));
+
+                    final var op2 = getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                            .has(accountWith()
+                                    .balance(2 * ONE_HBAR)
+                                    .alias(SECP_256K1_SOURCE_KEY)
+                                    .key(SECP_256K1_SOURCE_KEY)
+                                    .autoRenew(THREE_MONTHS_IN_SECONDS)
+                                    .receiverSigReq(false)
+                                    .memo(AUTO_MEMO));
+
+                    final var op3 = childRecordsCheck(
+                            transferToECDSA,
+                            SUCCESS,
+                            recordWith()
+                                    .evmAddress(evmAddress.get())
+                                    .hasNoAlias()
+                                    .status(SUCCESS));
+
+                    allRunFor(spec, hbarCreateTransfer, op1, op2, op3);
+                }))
+                .then(getTxnRecord(transferToECDSA).andAllChildRecords().logged());
     }
 
     private HapiSpec transferFungibleToEVMAddressAlias() {

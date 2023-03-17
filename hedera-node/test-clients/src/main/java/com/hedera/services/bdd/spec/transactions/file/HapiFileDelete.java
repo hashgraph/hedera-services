@@ -68,9 +68,7 @@ public class HapiFileDelete extends HapiTxnOp<HapiFileDelete> {
         var fid = TxnUtils.asFileId(file, spec);
         FileDeleteTransactionBody opBody = spec.txns()
                 .<FileDeleteTransactionBody, FileDeleteTransactionBody.Builder>body(
-                        FileDeleteTransactionBody.class, builder -> {
-                            builder.setFileID(fid);
-                        });
+                        FileDeleteTransactionBody.class, builder -> builder.setFileID(fid));
         return builder -> builder.setFileDelete(opBody);
     }
 

@@ -22,6 +22,7 @@ plugins {
 dependencies {
   // Individual Dependencies
   implementation(project(":swirlds-merkle"))
+  compileOnly(libs.spotbugs.annotations)
 
   // Bundle Dependencies
   implementation(libs.bundles.logging.impl)

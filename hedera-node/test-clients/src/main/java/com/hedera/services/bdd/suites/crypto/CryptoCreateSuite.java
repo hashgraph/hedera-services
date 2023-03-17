@@ -49,7 +49,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -189,12 +188,10 @@ public class CryptoCreateSuite extends HapiSuite {
                 }))
                 .then(
                         sourcing(() -> cryptoCreate(ACCOUNT)
-                                .alias(secp256k1Key.get())
-                                .signedBy(GENESIS, ecdsaKey)
-                                .sigMapPrefixes(uniqueWithFullPrefixesFor(ecdsaKey))
+                                .key(ecdsaKey)
+                                .alias(evmAddress.get())
                                 .via(creation)),
-                        sourcing(() ->
-                                getTxnRecord(creation).hasPriority(recordWith().evmAddress(evmAddress.get()))));
+                        sourcing(() -> getTxnRecord(creation).logged()));
     }
 
     /* Prior to 0.13.0, a "canonical" CryptoCreate (one sig, 3 month auto-renew) cost 1¢. */
@@ -486,23 +483,9 @@ public class CryptoCreateSuite extends HapiSuite {
                     final var op = cryptoCreate(ACCOUNT)
                             .alias(ecdsaKey.toByteString())
                             .balance(100 * ONE_HBAR)
-                            .signedBy(GENESIS, SECP_256K1_SOURCE_KEY)
-                            .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY));
-                    final var op2 = cryptoCreate(ACCOUNT)
-                            .alias(ecdsaKey.toByteString())
-                            .hasPrecheck(ALIAS_ALREADY_ASSIGNED)
-                            .balance(100 * ONE_HBAR)
-                            .signedBy(GENESIS, SECP_256K1_SOURCE_KEY)
-                            .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY));
+                            .hasPrecheck(INVALID_ALIAS_KEY);
 
-                    allRunFor(spec, op, op2);
-                    var hapiGetAccountInfo = getAccountInfo(ACCOUNT)
-                            .has(accountWith()
-                                    .key(ecdsaKey)
-                                    .alias(SECP_256K1_SOURCE_KEY)
-                                    .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                    .receiverSigReq(false));
-                    allRunFor(spec, hapiGetAccountInfo);
+                    allRunFor(spec, op);
                 }))
                 .then();
     }
@@ -514,21 +497,10 @@ public class CryptoCreateSuite extends HapiSuite {
                     var ed25519Key = spec.registry().getKey(ED_25519_KEY);
                     final var op = cryptoCreate(ACCOUNT)
                             .alias(ed25519Key.toByteString())
-                            .signedBy(GENESIS, ED_25519_KEY)
-                            .sigMapPrefixes(uniqueWithFullPrefixesFor(ED_25519_KEY))
-                            .balance(1000 * ONE_HBAR);
-                    final var op2 = cryptoCreate(ACCOUNT)
-                            .alias(ed25519Key.toByteString())
-                            .hasPrecheck(ALIAS_ALREADY_ASSIGNED);
+                            .balance(1000 * ONE_HBAR)
+                            .hasPrecheck(INVALID_ALIAS_KEY);
 
-                    allRunFor(spec, op, op2);
-                    var hapiGetAccountInfo = getAccountInfo(ACCOUNT)
-                            .has(accountWith()
-                                    .key(ed25519Key)
-                                    .alias(ED_25519_KEY)
-                                    .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                    .receiverSigReq(false));
-                    allRunFor(spec, hapiGetAccountInfo);
+                    allRunFor(spec, op);
                 }))
                 .then();
     }
@@ -557,9 +529,7 @@ public class CryptoCreateSuite extends HapiSuite {
 
                     final var createWithECDSAKeyAlias = cryptoCreate(ANOTHER_ACCOUNT)
                             .alias(ecdsaKey.toByteString())
-                            .signedBy(GENESIS, SECP_256K1_SOURCE_KEY)
-                            .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
-                            .hasKnownStatus(SUCCESS)
+                            .hasPrecheck(INVALID_ALIAS_KEY)
                             .balance(100 * ONE_HBAR);
 
                     final var createWithEVMAddressAlias = cryptoCreate(ANOTHER_ACCOUNT)
@@ -595,19 +565,10 @@ public class CryptoCreateSuite extends HapiSuite {
                     final var op = cryptoCreate(ACCOUNT)
                             .key(ED_25519_KEY)
                             .alias(ed25519Key.toByteString())
-                            .balance(1000 * ONE_HBAR);
-                    final var op2 = cryptoCreate(ACCOUNT)
-                            .alias(ed25519Key.toByteString())
-                            .hasPrecheck(ALIAS_ALREADY_ASSIGNED);
+                            .balance(1000 * ONE_HBAR)
+                            .hasPrecheck(INVALID_ALIAS_KEY);
 
-                    allRunFor(spec, op, op2);
-                    var hapiGetAccountInfo = getAccountInfo(ACCOUNT)
-                            .has(accountWith()
-                                    .key(ED_25519_KEY)
-                                    .alias(ED_25519_KEY)
-                                    .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                    .receiverSigReq(false));
-                    allRunFor(spec, hapiGetAccountInfo);
+                    allRunFor(spec, op);
                 }))
                 .then();
     }
@@ -625,33 +586,24 @@ public class CryptoCreateSuite extends HapiSuite {
                     final var op = cryptoCreate(ACCOUNT)
                             .key(SECP_256K1_SOURCE_KEY)
                             .alias(ecdsaKey.toByteString())
-                            .balance(100 * ONE_HBAR);
+                            .balance(100 * ONE_HBAR)
+                            .hasPrecheck(INVALID_ALIAS_KEY);
                     final var op2 = cryptoCreate(ANOTHER_ACCOUNT)
                             .key(SECP_256K1_SOURCE_KEY)
                             .balance(100 * ONE_HBAR);
                     final var op3 = cryptoCreate(ACCOUNT)
-                            .alias(ecdsaKey.toByteString())
+                            .alias(evmAddressBytes)
                             .hasPrecheck(ALIAS_ALREADY_ASSIGNED)
                             .balance(100 * ONE_HBAR);
-                    final var op4 = cryptoCreate(ACCOUNT)
-                            .alias(evmAddressBytes)
-                            .hasPrecheck(INVALID_ALIAS_KEY)
-                            .balance(100 * ONE_HBAR);
 
-                    allRunFor(spec, op, op2, op3, op4);
-                    var hapiGetAccountInfo = getAccountInfo(ACCOUNT)
-                            .has(accountWith()
-                                    .key(SECP_256K1_SOURCE_KEY)
-                                    .alias(SECP_256K1_SOURCE_KEY)
-                                    .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                    .receiverSigReq(false));
+                    allRunFor(spec, op, op2, op3);
                     var hapiGetAnotherAccountInfo = getAccountInfo(ANOTHER_ACCOUNT)
                             .has(accountWith()
                                     .key(SECP_256K1_SOURCE_KEY)
                                     .noAlias()
                                     .autoRenew(THREE_MONTHS_IN_SECONDS)
                                     .receiverSigReq(false));
-                    allRunFor(spec, hapiGetAccountInfo, hapiGetAnotherAccountInfo);
+                    allRunFor(spec, hapiGetAnotherAccountInfo);
                 }))
                 .then();
     }

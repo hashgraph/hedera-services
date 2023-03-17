@@ -234,7 +234,7 @@ class CryptoCreateTransitionLogicTest {
         cryptoCreateTxn =
                 TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
 
-        assertEquals(NOT_SUPPORTED, subject.semanticCheck().apply(cryptoCreateTxn));
+        assertEquals(INVALID_ALIAS_KEY, subject.semanticCheck().apply(cryptoCreateTxn));
     }
 
     @Test
@@ -319,7 +319,7 @@ class CryptoCreateTransitionLogicTest {
     }
 
     @Test
-    void acceptsTxnWithEDKeyAliasWhenCryptoCreateWithAliasIsEnabled() {
+    void rejectsTxnWithEDKeyAliasWhenCryptoCreateWithAliasIsEnabled() {
         final var opBuilder = CryptoCreateTransactionBody.newBuilder()
                 .setAlias(aPrimitiveEDKey.toByteString())
                 .setAutoRenewPeriod(Duration.newBuilder().setSeconds(CUSTOM_AUTO_RENEW_PERIOD));
@@ -328,11 +328,11 @@ class CryptoCreateTransitionLogicTest {
         given(aliasManager.lookupIdBy(any())).willReturn(MISSING_NUM);
         given(dynamicProperties.isCryptoCreateWithAliasEnabled()).willReturn(true);
 
-        assertEquals(OK, subject.semanticCheck().apply(cryptoCreateTxn));
+        assertEquals(INVALID_ALIAS_KEY, subject.semanticCheck().apply(cryptoCreateTxn));
     }
 
     @Test
-    void acceptsTxnWithEDKeyAndEDKeyAliasWhenCryptoCreateWithAliasIsEnabled() {
+    void rejectsTxnWithEDKeyAndEDKeyAliasWhenCryptoCreateWithAliasIsEnabled() {
         final var opBuilder = CryptoCreateTransactionBody.newBuilder()
                 .setKey(aPrimitiveEDKey)
                 .setAlias(aPrimitiveEDKey.toByteString())
@@ -342,7 +342,7 @@ class CryptoCreateTransitionLogicTest {
         given(aliasManager.lookupIdBy(any())).willReturn(MISSING_NUM);
         given(dynamicProperties.isCryptoCreateWithAliasEnabled()).willReturn(true);
 
-        assertEquals(OK, subject.semanticCheck().apply(cryptoCreateTxn));
+        assertEquals(INVALID_ALIAS_KEY, subject.semanticCheck().apply(cryptoCreateTxn));
     }
 
     @Test
@@ -408,7 +408,7 @@ class CryptoCreateTransitionLogicTest {
         given(aliasManager.lookupIdBy(any())).willReturn(MISSING_NUM);
         given(dynamicProperties.isCryptoCreateWithAliasEnabled()).willReturn(false);
 
-        assertEquals(NOT_SUPPORTED, subject.semanticCheck().apply(cryptoCreateTxn));
+        assertEquals(INVALID_ALIAS_KEY, subject.semanticCheck().apply(cryptoCreateTxn));
     }
 
     @Test
@@ -584,7 +584,7 @@ class CryptoCreateTransitionLogicTest {
                 TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
         given(dynamicProperties.isCryptoCreateWithAliasEnabled()).willReturn(false);
 
-        assertEquals(NOT_SUPPORTED, subject.semanticCheck().apply(cryptoCreateTxn));
+        assertEquals(INVALID_ALIAS_KEY, subject.semanticCheck().apply(cryptoCreateTxn));
     }
 
     @Test
@@ -839,180 +839,6 @@ class CryptoCreateTransitionLogicTest {
         assertEquals(MEMO, changes.get(AccountProperty.MEMO));
         assertEquals(MAX_AUTO_ASSOCIATIONS, changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
         assertEquals(false, changes.get(DECLINE_REWARD));
-    }
-
-    @Test
-    void followsHappyPathECKeyAsAlias() throws DecoderException {
-        final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
-
-        final var opBuilder = CryptoCreateTransactionBody.newBuilder()
-                .setMemo(MEMO)
-                .setReceiverSigRequired(false)
-                .setDeclineReward(false)
-                .setMaxAutomaticTokenAssociations(MAX_AUTO_ASSOCIATIONS)
-                .setAlias(ECDSA_KEY.toByteString());
-        cryptoCreateTxn =
-                TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
-        given(accessor.getTxn()).willReturn(cryptoCreateTxn);
-        given(txnCtx.activePayer()).willReturn(ourAccount());
-        given(txnCtx.accessor()).willReturn(accessor);
-        given(aliasManager.lookupIdBy(ECDSA_KEY.toByteString())).willReturn(MISSING_NUM);
-        given(aliasManager.lookupIdBy(ByteString.copyFrom(EVM_ADDRESS_BYTES))).willReturn(MISSING_NUM);
-
-        given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
-        given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
-        given(usageLimits.areCreatableAccounts(1)).willReturn(true);
-        given(ledger.getAccountsLedger()).willReturn(accountsLedger);
-        given(accountsLedger.get(ourAccount(), AccountProperty.BALANCE)).willReturn(BALANCE);
-
-        subject.doStateTransition();
-
-        verify(ledger).create(argThat(PAYER::equals), longThat(ZERO_BALANCE::equals), captor.capture());
-        verify(txnCtx).setCreated(CREATED);
-        verify(txnCtx).setStatus(SUCCESS);
-        verify(sigImpactHistorian).markEntityChanged(CREATED.getAccountNum());
-
-        final var changes = captor.getValue().getChanges();
-        assertEquals(8, changes.size());
-        assertEquals(ECDSA_KEY, JKey.mapJKey((JKey) changes.get(AccountProperty.KEY)));
-        assertEquals(0, (long) changes.get(AUTO_RENEW_PERIOD));
-        assertEquals(txnCtx.consensusTime().getEpochSecond(), (long) changes.get(EXPIRY));
-        assertEquals(false, changes.get(IS_RECEIVER_SIG_REQUIRED));
-        assertEquals(MEMO, changes.get(AccountProperty.MEMO));
-        assertEquals(MAX_AUTO_ASSOCIATIONS, changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
-        assertEquals(false, changes.get(DECLINE_REWARD));
-        assertEquals(ECDSA_KEY.toByteString(), changes.get(AccountProperty.ALIAS));
-    }
-
-    @Test
-    void followsHappyPathEDKeyAsAlias() throws DecoderException {
-        final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
-
-        final var opBuilder = CryptoCreateTransactionBody.newBuilder()
-                .setMemo(MEMO)
-                .setReceiverSigRequired(false)
-                .setDeclineReward(false)
-                .setMaxAutomaticTokenAssociations(MAX_AUTO_ASSOCIATIONS)
-                .setAlias(aPrimitiveEDKey.toByteString());
-        cryptoCreateTxn =
-                TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
-        given(accessor.getTxn()).willReturn(cryptoCreateTxn);
-        given(txnCtx.activePayer()).willReturn(ourAccount());
-        given(txnCtx.accessor()).willReturn(accessor);
-        given(aliasManager.lookupIdBy(aPrimitiveEDKey.toByteString())).willReturn(MISSING_NUM);
-
-        given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
-        given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
-        given(usageLimits.areCreatableAccounts(1)).willReturn(true);
-        given(ledger.getAccountsLedger()).willReturn(accountsLedger);
-        given(accountsLedger.get(ourAccount(), AccountProperty.BALANCE)).willReturn(BALANCE);
-
-        subject.doStateTransition();
-
-        verify(ledger).create(argThat(PAYER::equals), longThat(ZERO_BALANCE::equals), captor.capture());
-        verify(txnCtx).setCreated(CREATED);
-        verify(txnCtx).setStatus(SUCCESS);
-        verify(sigImpactHistorian).markEntityChanged(CREATED.getAccountNum());
-
-        final var changes = captor.getValue().getChanges();
-        assertEquals(8, changes.size());
-        assertEquals(aPrimitiveEDKey, JKey.mapJKey((JKey) changes.get(AccountProperty.KEY)));
-        assertEquals(0, (long) changes.get(AUTO_RENEW_PERIOD));
-        assertEquals(txnCtx.consensusTime().getEpochSecond(), (long) changes.get(EXPIRY));
-        assertEquals(false, changes.get(IS_RECEIVER_SIG_REQUIRED));
-        assertEquals(MEMO, changes.get(AccountProperty.MEMO));
-        assertEquals(MAX_AUTO_ASSOCIATIONS, changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
-        assertEquals(false, changes.get(DECLINE_REWARD));
-        assertEquals(aPrimitiveEDKey.toByteString(), changes.get(AccountProperty.ALIAS));
-    }
-
-    @Test
-    void followsHappyPathECKeyAndECKeyAsAlias() throws DecoderException {
-        final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
-
-        final var opBuilder = CryptoCreateTransactionBody.newBuilder()
-                .setMemo(MEMO)
-                .setReceiverSigRequired(false)
-                .setDeclineReward(false)
-                .setMaxAutomaticTokenAssociations(MAX_AUTO_ASSOCIATIONS)
-                .setKey(ECDSA_KEY)
-                .setAlias(ECDSA_KEY.toByteString());
-        cryptoCreateTxn =
-                TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
-        given(accessor.getTxn()).willReturn(cryptoCreateTxn);
-        given(txnCtx.activePayer()).willReturn(ourAccount());
-        given(txnCtx.accessor()).willReturn(accessor);
-        given(aliasManager.lookupIdBy(ECDSA_KEY.toByteString())).willReturn(MISSING_NUM);
-        given(aliasManager.lookupIdBy(ByteString.copyFrom(EVM_ADDRESS_BYTES))).willReturn(MISSING_NUM);
-        given(dynamicProperties.isCryptoCreateWithAliasEnabled()).willReturn(true);
-        given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
-
-        given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
-        given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
-        given(usageLimits.areCreatableAccounts(1)).willReturn(true);
-        given(ledger.getAccountsLedger()).willReturn(accountsLedger);
-        given(accountsLedger.get(ourAccount(), AccountProperty.BALANCE)).willReturn(BALANCE);
-
-        subject.doStateTransition();
-
-        verify(ledger).create(argThat(PAYER::equals), longThat(ZERO_BALANCE::equals), captor.capture());
-        verify(txnCtx).setCreated(CREATED);
-        verify(txnCtx).setStatus(SUCCESS);
-        verify(sigImpactHistorian).markEntityChanged(CREATED.getAccountNum());
-
-        final var changes = captor.getValue().getChanges();
-        assertEquals(8, changes.size());
-        assertEquals(ECDSA_KEY, JKey.mapJKey((JKey) changes.get(AccountProperty.KEY)));
-        assertEquals(0, (long) changes.get(AUTO_RENEW_PERIOD));
-        assertEquals(txnCtx.consensusTime().getEpochSecond(), (long) changes.get(EXPIRY));
-        assertEquals(false, changes.get(IS_RECEIVER_SIG_REQUIRED));
-        assertEquals(MEMO, changes.get(AccountProperty.MEMO));
-        assertEquals(MAX_AUTO_ASSOCIATIONS, changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
-        assertEquals(false, changes.get(DECLINE_REWARD));
-        assertEquals(ECDSA_KEY.toByteString(), changes.get(AccountProperty.ALIAS));
-    }
-
-    @Test
-    void followsHappyPathEDKeyAndEDKeyAsAlias() throws DecoderException {
-        final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
-
-        final var opBuilder = CryptoCreateTransactionBody.newBuilder()
-                .setMemo(MEMO)
-                .setReceiverSigRequired(false)
-                .setDeclineReward(false)
-                .setMaxAutomaticTokenAssociations(MAX_AUTO_ASSOCIATIONS)
-                .setKey(aPrimitiveEDKey)
-                .setAlias(aPrimitiveEDKey.toByteString());
-        cryptoCreateTxn =
-                TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
-        given(accessor.getTxn()).willReturn(cryptoCreateTxn);
-        given(txnCtx.activePayer()).willReturn(ourAccount());
-        given(txnCtx.accessor()).willReturn(accessor);
-        given(aliasManager.lookupIdBy(aPrimitiveEDKey.toByteString())).willReturn(MISSING_NUM);
-
-        given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
-        given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
-        given(usageLimits.areCreatableAccounts(1)).willReturn(true);
-        given(ledger.getAccountsLedger()).willReturn(accountsLedger);
-        given(accountsLedger.get(ourAccount(), AccountProperty.BALANCE)).willReturn(BALANCE);
-
-        subject.doStateTransition();
-
-        verify(ledger).create(argThat(PAYER::equals), longThat(ZERO_BALANCE::equals), captor.capture());
-        verify(txnCtx).setCreated(CREATED);
-        verify(txnCtx).setStatus(SUCCESS);
-        verify(sigImpactHistorian).markEntityChanged(CREATED.getAccountNum());
-
-        final var changes = captor.getValue().getChanges();
-        assertEquals(8, changes.size());
-        assertEquals(aPrimitiveEDKey, JKey.mapJKey((JKey) changes.get(AccountProperty.KEY)));
-        assertEquals(0, (long) changes.get(AUTO_RENEW_PERIOD));
-        assertEquals(txnCtx.consensusTime().getEpochSecond(), (long) changes.get(EXPIRY));
-        assertEquals(false, changes.get(IS_RECEIVER_SIG_REQUIRED));
-        assertEquals(MEMO, changes.get(AccountProperty.MEMO));
-        assertEquals(MAX_AUTO_ASSOCIATIONS, changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
-        assertEquals(false, changes.get(DECLINE_REWARD));
-        assertEquals(aPrimitiveEDKey.toByteString(), changes.get(AccountProperty.ALIAS));
     }
 
     @Test
