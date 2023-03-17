@@ -41,19 +41,22 @@ import com.hederahashgraph.service.proto.java.SmartContractServiceGrpc.SmartCont
 import com.hederahashgraph.service.proto.java.TokenServiceGrpc;
 import com.hederahashgraph.service.proto.java.TokenServiceGrpc.TokenServiceBlockingStub;
 import com.hederahashgraph.service.proto.java.UtilServiceGrpc;
+
 import io.grpc.ManagedChannel;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NegotiationType;
 import io.grpc.netty.NettyChannelBuilder;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SupportedCipherSuiteFilter;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class HapiApiClients {
     static final Logger log = LogManager.getLogger(HapiApiClients.class);
@@ -192,7 +195,11 @@ public class HapiApiClients {
         int after = stubCount();
         this.defaultNode = defaultNode;
         if (after > before) {
-            log.info("Constructed " + (after - before) + " new stubs building clients for " + this);
+            String message =
+                    String.format(
+                            "Constructed %s new stubs building clients for %s",
+                            (after - before), this);
+            log.info(message);
         }
     }
 

@@ -33,12 +33,14 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiSuite;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class NftTransferSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(NftTransferSuite.class);
@@ -55,7 +57,7 @@ public class NftTransferSuite extends HapiSuite {
         new NftTransferSuite().runSuiteSync();
         final long endTimeMillis = System.currentTimeMillis();
         final long deltaMillis = endTimeMillis - startTimeMillis;
-        System.out.printf("Total time: %.3f\n", deltaMillis / 1000f);
+        System.out.printf("Total time: %.3f%n", deltaMillis / 1000f);
     }
 
     public static void main(String... args) throws ExecutionException, InterruptedException {

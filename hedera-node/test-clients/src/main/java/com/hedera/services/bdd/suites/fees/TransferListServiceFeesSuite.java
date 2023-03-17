@@ -35,12 +35,14 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class TransferListServiceFeesSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TransferListServiceFeesSuite.class);
@@ -139,37 +141,54 @@ public class TransferListServiceFeesSuite extends HapiSuite {
                                 .via(REFERENCE_TRANSFER)
                                 .payingWith("anon"))
                 .when(
-                        cryptoCreate(PAYER).balance(getBalanceFromFee.apply(REFERENCE_TRANSFER, Function.identity())),
+                        cryptoCreate(PAYER)
+                                .balance(
+                                        getBalanceFromFee.apply(
+                                                REFERENCE_TRANSFER, Function.identity())),
                         cryptoTransfer(
                                         tinyBarsFromTo(PAYER, "A", TRANSFER_AMOUNT),
                                         tinyBarsFromTo(PAYER, "B", TRANSFER_AMOUNT))
                                 .payingWith(PAYER)
                                 .via("subjectTransfer")
                                 .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE))
-                .then(UtilVerbs.assertionsHold((spec, assertLog) -> {
-                    HapiGetTxnRecord refOp = QueryVerbs.getTxnRecord(REFERENCE_TRANSFER);
-                    allRunFor(spec, refOp);
-                    AccountID payer = spec.registry().getAccountID("anon");
-                    TransactionRecord refRecord =
-                            refOp.getResponse().getTransactionGetRecord().getTransactionRecord();
-                    boolean isServicePayment = false;
-                    long serviceFee = 0L;
-                    for (AccountAmount entry : refRecord.getTransferList().getAccountAmountsList()) {
-                        if (entry.getAccountID().equals(payer)) {
-                            if (!isServicePayment) {
-                                isServicePayment = true;
-                            } else {
-                                serviceFee = -1L * entry.getAmount();
-                                break;
-                            }
-                        }
-                    }
-                    assertLog.info("Should(?!) be missing fee of " + serviceFee + "...");
-                    HapiGetTxnRecord subOp = QueryVerbs.getTxnRecord("subjectTransfer")
-                            .noLogging()
-                            .hasPriority(recordWith().transfers(missingPayments(from(PAYER, serviceFee))));
-                    allRunFor(spec, subOp);
-                }));
+                .then(
+                        UtilVerbs.assertionsHold(
+                                (spec, assertLog) -> {
+                                    HapiGetTxnRecord refOp =
+                                            QueryVerbs.getTxnRecord(REFERENCE_TRANSFER);
+                                    allRunFor(spec, refOp);
+                                    AccountID payer = spec.registry().getAccountID("anon");
+                                    TransactionRecord refRecord =
+                                            refOp.getResponse()
+                                                    .getTransactionGetRecord()
+                                                    .getTransactionRecord();
+                                    boolean isServicePayment = false;
+                                    long serviceFee = 0L;
+                                    for (AccountAmount entry :
+                                            refRecord.getTransferList().getAccountAmountsList()) {
+                                        if (entry.getAccountID().equals(payer)) {
+                                            if (!isServicePayment) {
+                                                isServicePayment = true;
+                                            } else {
+                                                serviceFee = -1L * entry.getAmount();
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    assertLog.info(
+                                            "Should(?!) be missing fee of {}...", serviceFee);
+                                    HapiGetTxnRecord subOp =
+                                            QueryVerbs.getTxnRecord("subjectTransfer")
+                                                    .noLogging()
+                                                    .hasPriority(
+                                                            recordWith()
+                                                                    .transfers(
+                                                                            missingPayments(
+                                                                                    from(
+                                                                                            PAYER,
+                                                                                            serviceFee))));
+                                    allRunFor(spec, subOp);
+                                }));
     }
 
     @Override

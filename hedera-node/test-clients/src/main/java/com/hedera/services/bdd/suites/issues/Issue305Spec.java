@@ -24,20 +24,24 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+
 import static java.util.stream.Collectors.toList;
 
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.IntStream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
+
 public class Issue305Spec extends HapiSuite {
     private static final Logger log = LogManager.getLogger(Issue305Spec.class);
+    private static final String KEY = "tbdKey";
 
     public static void main(String... args) {
         new Issue305Spec().runSuiteSync();
@@ -54,21 +58,25 @@ public class Issue305Spec extends HapiSuite {
         AtomicReference<String> nextFileId = new AtomicReference<>();
         return defaultHapiSpec("CreateDeleteInSameRoundWorks")
                 .given(
-                        newKeyNamed("tbdKey").type(KeyFactory.KeyType.LIST),
+                        newKeyNamed(KEY).type(KeyFactory.KeyType.LIST),
                         fileCreate("marker").via("markerTxn"))
-                .when(withOpContext((spec, opLog) -> {
-                    var lookup = getTxnRecord("markerTxn");
-                    allRunFor(spec, lookup);
-                    var markerFid = lookup.getResponseRecord().getReceipt().getFileID();
-                    var nextFid = markerFid.toBuilder()
-                            .setFileNum(markerFid.getFileNum() + 1)
-                            .build();
-                    nextFileId.set(HapiPropertySource.asFileString(nextFid));
-                    opLog.info("Next file will be " + nextFileId.get());
-                }))
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    var lookup = getTxnRecord("markerTxn");
+                                    allRunFor(spec, lookup);
+                                    var markerFid =
+                                            lookup.getResponseRecord().getReceipt().getFileID();
+                                    var nextFid =
+                                            markerFid.toBuilder()
+                                                    .setFileNum(markerFid.getFileNum() + 1)
+                                                    .build();
+                                    nextFileId.set(HapiPropertySource.asFileString(nextFid));
+                                    opLog.info("Next file will be {}", nextFileId.get());
+                                }))
                 .then(
-                        fileCreate("tbd").key("tbdKey").deferStatusResolution(),
-                        fileDelete(nextFileId::get).signedBy(GENESIS, "tbdKey").logged(),
+                        fileCreate("tbd").key(KEY).deferStatusResolution(),
+                        fileDelete(nextFileId::get).signedBy(GENESIS, KEY).logged(),
                         getFileInfo(nextFileId::get).logged());
     }
 

@@ -26,6 +26,12 @@ import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.utility.CommonUtils;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.bouncycastle.jce.ECNamedCurveTable;
+import org.bouncycastle.jce.spec.ECPrivateKeySpec;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.math.BigInteger;
@@ -34,11 +40,8 @@ import java.nio.file.Paths;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.util.Optional;
+
 import javax.annotation.Nullable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.bouncycastle.jce.ECNamedCurveTable;
-import org.bouncycastle.jce.spec.ECPrivateKeySpec;
 
 public class SpecKeyFromEcdsaFile extends UtilOp {
     private static final Logger log = LogManager.getLogger(SpecKeyFromEcdsaFile.class);
@@ -71,7 +74,7 @@ public class SpecKeyFromEcdsaFile extends UtilOp {
             final @Nullable Logger logToUse) {
         final var hexedKey = CommonUtils.hex(pubKey);
         if (logToUse != null) {
-            logToUse.info("Hex-encoded public key: " + hexedKey);
+            logToUse.info("Hex-encoded public key: {}", hexedKey);
         }
         final var key =
                 Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(pubKey)).build();

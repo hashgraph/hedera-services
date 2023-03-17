@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.common.base.MoreObjects;
@@ -32,6 +33,12 @@ import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.utility.CommonUtils;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
+import org.junit.jupiter.api.Assertions;
+
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -41,10 +48,6 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.Nullable;
-import org.junit.jupiter.api.Assertions;
 
 public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
     private static final Logger log = LogManager.getLogger(HapiGetAccountInfo.class);
@@ -279,7 +282,11 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
                     cb -> cb.accept(infoResponse.getAccountInfo().getContractAccountID()));
         }
         if (verboseLoggingOn) {
-            log.info("Info for '" + repr() + "': " + response.getCryptoGetInfo().getAccountInfo());
+            String message =
+                    String.format(
+                            "Info for '%s': %s",
+                            repr(), response.getCryptoGetInfo().getAccountInfo());
+            log.info(message);
         }
         if (customLog.isPresent()) {
             customLog.get().accept(response.getCryptoGetInfo().getAccountInfo(), log);

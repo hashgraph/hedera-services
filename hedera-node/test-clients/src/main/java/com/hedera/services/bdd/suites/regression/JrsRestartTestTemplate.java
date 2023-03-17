@@ -47,12 +47,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NO
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * This restart test uses the named entities under
@@ -114,16 +116,30 @@ public class JrsRestartTestTemplate extends HapiSuite {
                 .withProperties(Map.of("persistentEntities.dir.path", ENTITIES_DIR))
                 .given(expectedEntitiesExist())
                 .when()
-                .then(withOpContext((spec, opLog) -> {
-                    boolean isPostRestart = spec.setup().ciPropertiesMap().getBoolean("postRestart");
-                    if (isPostRestart) {
-                        opLog.info("\n\n" + bannerWith("POST-RESTART VALIDATION PHASE"));
-                        allRunFor(spec, postRestartValidation());
-                    } else {
-                        opLog.info("\n\n" + bannerWith("PRE-RESTART SETUP PHASE"));
-                        allRunFor(spec, preRestartSetup());
-                    }
-                }));
+                .then(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    boolean isPostRestart =
+                                            spec.setup()
+                                                    .ciPropertiesMap()
+                                                    .getBoolean("postRestart");
+                                    if (isPostRestart) {
+                                        String message =
+                                                String.format(
+                                                        "%n%n%s",
+                                                        bannerWith(
+                                                                "POST-RESTART VALIDATION PHASE"));
+                                        opLog.info(message);
+                                        allRunFor(spec, postRestartValidation());
+                                    } else {
+                                        String message =
+                                                String.format(
+                                                        "%n%n%s",
+                                                        bannerWith("PRE-RESTART SETUP PHASE"));
+                                        opLog.info(message);
+                                        allRunFor(spec, preRestartSetup());
+                                    }
+                                }));
     }
 
     private HapiSpecOperation[] preRestartSetup() {

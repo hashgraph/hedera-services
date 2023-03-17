@@ -20,18 +20,22 @@ import static com.hedera.node.app.service.mono.utils.SleepingPause.SLEEPING_PAUS
 
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.utils.Pause;
+
 import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class NettyGrpcServerManager implements GrpcServerManager {
@@ -93,7 +97,7 @@ public class NettyGrpcServerManager implements GrpcServerManager {
                 break;
             } catch (IOException e) {
                 final var summaryMsg = nettyAction("Still trying to start", sslEnabled, port, true);
-                log.warn("(Attempts=" + retryNo + ") " + summaryMsg + e.getMessage());
+                log.warn(String.format("(Attempts=%s) %s%s", retryNo, summaryMsg, e.getMessage()));
                 pause.forMs(startRetryIntervalMs);
             }
         }

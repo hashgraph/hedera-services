@@ -18,6 +18,7 @@ package com.hedera.services.bdd.spec;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
+
 import static java.util.Collections.EMPTY_LIST;
 import static java.util.stream.Collectors.toList;
 
@@ -52,6 +53,10 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -67,9 +72,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+
 import javax.annotation.Nullable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public abstract class HapiSpecOperation {
     private static final Logger log = LogManager.getLogger(HapiSpecOperation.class);
@@ -253,9 +257,9 @@ public abstract class HapiSpecOperation {
                 return Optional.empty();
             }
             if (verboseLoggingOn) {
-                log.warn(spec.logPrefix() + this + " failed - {}", t);
+                log.warn("%s%s failed - {}".formatted(spec.logPrefix(), this), t);
             } else if (!loggingOff) {
-                log.warn(spec.logPrefix() + this + " failed {}!", t.getMessage());
+                log.warn("%s%s failed {}!".formatted(spec.logPrefix(), this), t.getMessage());
             }
             return Optional.of(t);
         }

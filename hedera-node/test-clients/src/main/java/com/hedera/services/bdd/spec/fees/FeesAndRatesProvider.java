@@ -43,14 +43,16 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.File;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.file.Files;
 import java.time.Instant;
 import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class FeesAndRatesProvider {
     private static final Logger log = LogManager.getLogger(FeesAndRatesProvider.class);
@@ -104,7 +106,8 @@ public class FeesAndRatesProvider {
 
     public void updateRateSet(ExchangeRateSet newSet) {
         rateSet = newSet;
-        log.info("Updating rates! Now :: " + rateSetAsString(newSet));
+        String message = String.format("Updating rates! Now :: %s", rateSetAsString(newSet));
+        log.info(message);
     }
 
     public ExchangeRateSet rateSet() {
@@ -121,8 +124,11 @@ public class FeesAndRatesProvider {
     private void readRateSet() throws Throwable {
         File f = new File(setup.clientExchangeRatesPath());
         byte[] bytes = Files.readAllBytes(f.toPath());
-        rateSet = ExchangeRateSet.parseFrom(bytes);
-        log.info("The exchange rates from '" + f.getAbsolutePath() + "' are :: " + rateSetAsString(rateSet));
+        final String message =
+                String.format(
+                        "The exchange rates from '%s' are :: %s",
+                        f.getAbsolutePath(), rateSetAsString(ExchangeRateSet.parseFrom(bytes)));
+        log.info(message);
     }
 
     public boolean hasRateSet() {
@@ -133,8 +139,11 @@ public class FeesAndRatesProvider {
         long queryFee = lookupDownloadFee(setup.exchangeRatesId());
         FileGetContentsResponse response = downloadWith(queryFee, false, setup.exchangeRatesId());
         byte[] bytes = response.getFileContents().getContents().toByteArray();
-        rateSet = ExchangeRateSet.parseFrom(bytes);
-        log.info("The exchange rates are :: " + rateSetAsString(rateSet));
+        final String message =
+                String.format(
+                        "The exchange rates are :: %s",
+                        rateSetAsString(ExchangeRateSet.parseFrom(bytes)));
+        log.info(message);
     }
 
     private void readFeeSchedule() throws Throwable {
@@ -142,11 +151,11 @@ public class FeesAndRatesProvider {
         byte[] bytes = Files.readAllBytes(f.toPath());
         CurrentAndNextFeeSchedule wrapper = CurrentAndNextFeeSchedule.parseFrom(bytes);
         feeSchedule = wrapper.getCurrentFeeSchedule();
-        log.info("The fee schedule from '"
-                + f.getAbsolutePath()
-                + "' covers "
-                + feeSchedule.getTransactionFeeScheduleList().size()
-                + " ops.");
+        final String message =
+                String.format(
+                        "The fee schedule from '%s' covers %s ops.",
+                        f.getAbsolutePath(), feeSchedule.getTransactionFeeScheduleList().size());
+        log.info(message);
     }
 
     private void downloadFeeSchedule() throws Throwable {
@@ -155,9 +164,11 @@ public class FeesAndRatesProvider {
         byte[] bytes = response.getFileContents().getContents().toByteArray();
         CurrentAndNextFeeSchedule wrapper = CurrentAndNextFeeSchedule.parseFrom(bytes);
         feeSchedule = typePatching.withPatchedTypesIfNecessary(wrapper.getCurrentFeeSchedule());
-        log.info("The fee schedule covers "
-                + feeSchedule.getTransactionFeeScheduleList().size()
-                + " ops.");
+        String message =
+                String.format(
+                        "The fee schedule covers %s ops.",
+                        feeSchedule.getTransactionFeeScheduleList().size());
+        log.info(message);
     }
 
     private long lookupDownloadFee(FileID fileId) throws Throwable {
@@ -230,29 +241,34 @@ public class FeesAndRatesProvider {
 
     public ExchangeRateSet rateSetWith(int curHbarEquiv, int curCentEquiv) {
         ExchangeRate.Builder curRate =
-                rateSet.getCurrentRate().toBuilder().setHbarEquiv(curHbarEquiv).setCentEquiv(curCentEquiv);
+                rateSet.getCurrentRate().toBuilder()
+                        .setHbarEquiv(curHbarEquiv)
+                        .setCentEquiv(curCentEquiv);
 
-        ExchangeRateSet perturbedSet =
-                rateSet.toBuilder().setCurrentRate(curRate).build();
-
-        log.info("Computed a new rate set :: " + rateSetAsString(perturbedSet));
+        ExchangeRateSet perturbedSet = rateSet.toBuilder().setCurrentRate(curRate).build();
+        String message =
+                String.format("Computed a new rate set :: %s", rateSetAsString(perturbedSet));
+        log.info(message);
 
         return perturbedSet;
     }
 
     public ExchangeRateSet rateSetWith(int curHbarEquiv, int curCentEquiv, int nextHbarEquiv, int nextCentEquiv) {
         ExchangeRate.Builder curRate =
-                rateSet.getCurrentRate().toBuilder().setHbarEquiv(curHbarEquiv).setCentEquiv(curCentEquiv);
+                rateSet.getCurrentRate().toBuilder()
+                        .setHbarEquiv(curHbarEquiv)
+                        .setCentEquiv(curCentEquiv);
 
         ExchangeRate.Builder nextRate =
-                rateSet.getCurrentRate().toBuilder().setHbarEquiv(nextHbarEquiv).setCentEquiv(nextCentEquiv);
+                rateSet.getCurrentRate().toBuilder()
+                        .setHbarEquiv(nextHbarEquiv)
+                        .setCentEquiv(nextCentEquiv);
 
-        ExchangeRateSet perturbedSet = rateSet.toBuilder()
-                .setCurrentRate(curRate)
-                .setNextRate(nextRate)
-                .build();
-
-        log.info("Computed a new rate set :: " + rateSetAsString(perturbedSet));
+        ExchangeRateSet perturbedSet =
+                rateSet.toBuilder().setCurrentRate(curRate).setNextRate(nextRate).build();
+        String message =
+                String.format("Computed a new rate set :: %s", rateSetAsString(perturbedSet));
+        log.info(message);
 
         return perturbedSet;
     }

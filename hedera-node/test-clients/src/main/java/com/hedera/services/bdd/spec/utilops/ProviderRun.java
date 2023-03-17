@@ -18,6 +18,7 @@ package com.hedera.services.bdd.spec.utilops;
 
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
+
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.google.common.base.Stopwatch;
@@ -25,6 +26,10 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -38,8 +43,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class ProviderRun extends UtilOp {
     private static final Logger log = LogManager.getLogger(ProviderRun.class);
@@ -133,17 +136,19 @@ public class ProviderRun extends UtilOp {
                 nextLogTargetMs += logIncrementMs;
                 long delta = duration - stopwatch.elapsed(unit);
                 if (delta != lastDeltaLogged) {
-                    log.info(delta
-                            + " "
-                            + unit.toString().toLowerCase()
-                            + (fixedOpSubmission ? (" or " + remainingOpsToSubmit + " ops ") : "")
-                            + " left in test - "
-                            + submittedSoFar
-                            + " ops submitted so far ("
-                            + numPending
-                            + " pending).");
-                    log.info("Precheck txn status counts :: " + spec.precheckStatusCounts());
-                    log.info("Resolved txn status counts :: " + spec.finalizedStatusCounts());
+                    String message =
+                            String.format(
+                                    "%d %s%s left in test - %d ops submitted so far (%d pending).",
+                                    delta,
+                                    unit.toString().toLowerCase(),
+                                    (fixedOpSubmission
+                                            ? (" or " + remainingOpsToSubmit + " ops ")
+                                            : ""),
+                                    submittedSoFar,
+                                    numPending);
+                    log.info(message);
+                    log.info("Precheck txn status counts :: {}", spec.precheckStatusCounts());
+                    log.info("Resolved txn status counts :: {}", spec.finalizedStatusCounts());
                     log.info("\n------------------------------\n");
                     lastDeltaLogged = delta;
                 }
@@ -179,7 +184,8 @@ public class ProviderRun extends UtilOp {
                     opsThisSecond.getAndAdd(burst.length);
                 }
             } else {
-                log.warn("Now " + numPending + " ops pending; backing off for " + BACKOFF_SLEEP_SECS + "s!");
+                log.warn(
+                        "Now {} ops pending; backing off for {}s!", numPending, BACKOFF_SLEEP_SECS);
                 try {
                     Thread.sleep(BACKOFF_SLEEP_SECS * 1_000L);
                 } catch (InterruptedException ignore) {
@@ -187,12 +193,14 @@ public class ProviderRun extends UtilOp {
             }
         }
 
-        Map<HederaFunctionality, Integer> finalCounts = counts.entrySet().stream()
-                .filter(entry -> entry.getValue().get() > 0)
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey, entry -> entry.getValue().get()));
-        log.info("Final breakdown of *provided* ops: " + finalCounts);
-        log.info("Final breakdown of *resolved* statuses: " + spec.finalizedStatusCounts());
+        Map<HederaFunctionality, Integer> finalCounts =
+                counts.entrySet().stream()
+                        .filter(entry -> entry.getValue().get() > 0)
+                        .collect(
+                                Collectors.toMap(
+                                        Map.Entry::getKey, entry -> entry.getValue().get()));
+        log.info("Final breakdown of *provided* ops: {}", finalCounts);
+        log.info("Final breakdown of *resolved* statuses: {}", spec.finalizedStatusCounts());
 
         return false;
     }

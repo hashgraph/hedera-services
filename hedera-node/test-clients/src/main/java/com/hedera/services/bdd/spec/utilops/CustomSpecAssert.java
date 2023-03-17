@@ -22,10 +22,12 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.convertHapiCallsToE
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import java.util.List;
-import java.util.Optional;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.List;
+import java.util.Optional;
 
 public class CustomSpecAssert extends UtilOp {
     static final Logger log = LogManager.getLogger(CustomSpecAssert.class);
@@ -57,7 +59,7 @@ public class CustomSpecAssert extends UtilOp {
     private static void handleExec(final HapiSpec spec, final HapiSpecOperation op) {
         Optional<Throwable> error = op.execFor(spec);
         if (error.isPresent()) {
-            log.error("Operation '" + op + "' :: " + error.get().getMessage());
+            log.error("Operation '{}' :: {}", op, error.get().getMessage());
             throw new IllegalStateException(error.get());
         }
     }

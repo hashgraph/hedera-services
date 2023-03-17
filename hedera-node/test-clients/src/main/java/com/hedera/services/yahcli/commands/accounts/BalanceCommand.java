@@ -19,11 +19,13 @@ package com.hedera.services.yahcli.commands.accounts;
 import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
 
 import com.hedera.services.yahcli.suites.BalanceSuite;
-import java.util.concurrent.Callable;
+
 import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.ParentCommand;
+
+import java.util.concurrent.Callable;
 
 @Command(
         name = "balance",
@@ -43,7 +45,7 @@ public class BalanceCommand implements Callable<Integer> {
         StringBuilder balanceRegister = new StringBuilder();
         String serviceBorder = "---------------------|----------------------|";
         balanceRegister.append(serviceBorder).append("\n");
-        balanceRegister.append(String.format("%20s | %20s |\n", "Account Id", "Balance"));
+        balanceRegister.append(String.format("%20s | %20s |%n", "Account Id", "Balance"));
         balanceRegister.append(serviceBorder);
 
         printTable(balanceRegister);

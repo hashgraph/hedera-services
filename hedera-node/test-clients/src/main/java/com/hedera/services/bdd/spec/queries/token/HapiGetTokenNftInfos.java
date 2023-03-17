@@ -29,13 +29,15 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.TokenGetNftInfosQuery;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.hederahashgraph.api.proto.java.Transaction;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Assertions;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Assertions;
 
 public class HapiGetTokenNftInfos extends HapiQueryOp<HapiGetTokenNftInfos> {
 
@@ -93,7 +95,8 @@ public class HapiGetTokenNftInfos extends HapiQueryOp<HapiGetTokenNftInfos> {
         Query query = getTokenNftInfosQuery(spec, payment, false);
         response = spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls).getTokenNftInfos(query);
         if (verboseLoggingOn) {
-            log.info("NftInfo for '" + token + "': ");
+            String message = String.format("NftInfo for '%s': ", token);
+            log.info(message);
             response.getTokenGetNftInfos().getNftsList().forEach(nft -> log.info(nft.toString()));
         }
     }

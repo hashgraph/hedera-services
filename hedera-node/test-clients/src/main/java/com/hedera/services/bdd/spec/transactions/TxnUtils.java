@@ -35,6 +35,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRAN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+
 import static java.lang.System.arraycopy;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
@@ -78,6 +79,10 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.utility.CommonUtils;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.math.BigInteger;
@@ -98,8 +103,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class TxnUtils {
     private static final Logger log = LogManager.getLogger(TxnUtils.class);
@@ -348,8 +351,11 @@ public class TxnUtils {
         final HapiGetFileInfo subOp = getFileInfo(file).payingWith(payer).noLogging();
         final Optional<Throwable> error = subOp.execFor(spec);
         if (error.isPresent()) {
-            log.error("Unable to look up current expiration timestamp of file 0.0."
-                    + spec.registry().getFileId(file).getFileNum());
+            String message =
+                    String.format(
+                            "Unable to look up current expiration timestamp of file 0.0.%d",
+                            spec.registry().getFileId(file).getFileNum());
+            log.error(message);
             throw error.get();
         }
         return subOp.getResponse().getFileGetInfo().getFileInfo().getExpirationTime();
@@ -363,8 +369,11 @@ public class TxnUtils {
         final HapiGetContractInfo subOp = getContractInfo(contract).noLogging();
         final Optional<Throwable> error = subOp.execFor(spec);
         if (error.isPresent()) {
-            log.error("Unable to look up current expiration timestamp of contract 0.0."
-                    + spec.registry().getContractId(contract).getContractNum());
+            String message =
+                    String.format(
+                            "Unable to look up current expiration timestamp of contract 0.0.%d",
+                            spec.registry().getContractId(contract).getContractNum());
+            log.error(message);
             throw error.get();
         }
         return subOp.getResponse().getContractGetInfo().getContractInfo().getExpirationTime();
@@ -374,8 +383,11 @@ public class TxnUtils {
         final HapiGetContractInfo subOp = getContractInfo(contract).noLogging();
         final Optional<Throwable> error = subOp.execFor(spec);
         if (error.isPresent()) {
-            log.error("Unable to look up current expiration timestamp of contract 0.0."
-                    + spec.registry().getContractId(contract).getContractNum());
+            String message =
+                    String.format(
+                            "Unable to look up current expiration timestamp of contract 0.0.%d",
+                            spec.registry().getContractId(contract).getContractNum());
+            log.error(message);
             throw error.get();
         }
         return subOp.getResponse().getContractGetInfo().getContractInfo().getMaxAutomaticTokenAssociations();

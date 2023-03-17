@@ -30,10 +30,12 @@ import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.swirlds.common.utility.CommonUtils;
-import java.util.List;
-import java.util.Map;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.List;
+import java.util.Map;
 
 public class WalletTestSetup extends HapiSuite {
     private static final Logger log = LogManager.getLogger(WalletTestSetup.class);
@@ -66,10 +68,12 @@ public class WalletTestSetup extends HapiSuite {
         return defaultHapiSpec("MnemonicToPem")
                 .given(keyFromMnemonic("fm", mnemonic))
                 .when()
-                .then(withOpContext((spec, opLog) -> {
-                    KeyFactory.PEM_PASSPHRASE = "guessAgain";
-                    spec.keys().exportSimpleKey(String.format("pretend-genesis.pem"), "fm");
-                }));
+                .then(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    KeyFactory.PEM_PASSPHRASE = "guessAgain";
+                                    spec.keys().exportSimpleKey("pretend-genesis.pem", "fm");
+                                }));
     }
 
     private HapiSpec createDeterministicWalletForRecovery() {

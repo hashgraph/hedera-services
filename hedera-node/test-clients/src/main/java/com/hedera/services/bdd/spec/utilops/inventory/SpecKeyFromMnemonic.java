@@ -24,16 +24,20 @@ import com.hedera.services.bdd.spec.keys.deterministic.Bip0032;
 import com.hedera.services.bdd.spec.keys.deterministic.Ed25519Factory;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.swirlds.common.utility.CommonUtils;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.util.Optional;
-import javax.annotation.Nullable;
-import javax.crypto.ShortBufferException;
+
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
 import net.i2p.crypto.eddsa.spec.EdDSAPrivateKeySpec;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.util.Optional;
+
+import javax.annotation.Nullable;
+import javax.crypto.ShortBufferException;
 
 public class SpecKeyFromMnemonic extends UtilOp {
     private static final Logger log = LogManager.getLogger(SpecKeyFromMnemonic.class);
@@ -73,7 +77,7 @@ public class SpecKeyFromMnemonic extends UtilOp {
         var pk = new EdDSAPrivateKey(privateKeySpec);
         var pubKeyHex = CommonUtils.hex(pk.getAbyte());
         if (logToUse != null) {
-            logToUse.info("Hex-encoded public key: " + pubKeyHex);
+            logToUse.info("Hex-encoded public key: {}", pubKeyHex);
         }
         var key = Ed25519Factory.populatedFrom(pk.getAbyte());
         spec.registry().saveKey(name, key);

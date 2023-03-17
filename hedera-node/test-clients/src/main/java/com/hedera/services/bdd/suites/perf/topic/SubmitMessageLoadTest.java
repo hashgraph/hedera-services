@@ -45,6 +45,11 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
+
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.List;
@@ -52,9 +57,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class SubmitMessageLoadTest extends LoadTest {
 
@@ -87,19 +89,19 @@ public class SubmitMessageLoadTest extends LoadTest {
         // parsing local argument specific to this test
         if (args.length > (usedArgs)) {
             messageSize = Integer.parseInt(args[usedArgs]);
-            log.info("Set messageSize as " + messageSize);
+            log.info("Set messageSize as {}", messageSize);
             usedArgs++;
         }
 
         if (args.length > (usedArgs)) {
             pemFile = args[usedArgs];
-            log.info("Set pemFile as " + pemFile);
+            log.info("Set pemFile as {}", pemFile);
             usedArgs++;
         }
 
         if (args.length > usedArgs) {
             topicID = args[usedArgs];
-            log.info("Set topicID as " + topicID);
+            log.info("Set topicID as {}", topicID);
             usedArgs++;
         }
 

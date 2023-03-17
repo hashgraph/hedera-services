@@ -27,13 +27,15 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class HapiFileDelete extends HapiTxnOp<HapiFileDelete> {
     static final Logger log = LogManager.getLogger(HapiFileDelete.class);
@@ -66,11 +68,10 @@ public class HapiFileDelete extends HapiTxnOp<HapiFileDelete> {
     protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
         file = fileSupplier.isPresent() ? fileSupplier.get().get() : file;
         var fid = TxnUtils.asFileId(file, spec);
-        FileDeleteTransactionBody opBody = spec.txns()
-                .<FileDeleteTransactionBody, FileDeleteTransactionBody.Builder>body(
-                        FileDeleteTransactionBody.class, builder -> {
-                            builder.setFileID(fid);
-                        });
+        FileDeleteTransactionBody opBody =
+                spec.txns()
+                        .<FileDeleteTransactionBody, FileDeleteTransactionBody.Builder>body(
+                                FileDeleteTransactionBody.class, builder -> builder.setFileID(fid));
         return builder -> builder.setFileDelete(opBody);
     }
 
@@ -88,7 +89,7 @@ public class HapiFileDelete extends HapiTxnOp<HapiFileDelete> {
     @Override
     protected void updateStateOf(HapiSpec spec) throws Throwable {
         if (verboseLoggingOn) {
-            log.info("Actual status was " + actualStatus);
+            log.info("Actual status was {}", actualStatus);
             log.info("Deleted file {} with ID {} ", file, spec.registry().getFileId(file));
         }
         if (actualStatus != ResponseCodeEnum.SUCCESS) {

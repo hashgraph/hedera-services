@@ -26,6 +26,12 @@ import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Assertions;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -33,10 +39,6 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.io.FileUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Assertions;
 
 public class UpdateServerFiles extends HapiSuite {
     private static final Logger log = LogManager.getLogger(UpdateServerFiles.class);
@@ -45,7 +47,6 @@ public class UpdateServerFiles extends HapiSuite {
 
     private static String uploadPath = "updateFiles/";
 
-    private static final int FREEZE_LAST_MINUTES = 2;
     private static String fileIDString = "UPDATE_FEATURE"; // mnemonic for file 0.0.150
 
     public static void main(final String... args) {
@@ -79,7 +80,7 @@ public class UpdateServerFiles extends HapiSuite {
     // then send to server to update server
     private HapiSpec uploadGivenDirectory() {
 
-        log.info("Creating zip file from " + uploadPath);
+        log.info("Creating zip file from {}", uploadPath);
         // create directory if uploadPath doesn't exist
         if (!new File(uploadPath).exists()) {
             new File(uploadPath).mkdirs();
@@ -105,7 +106,7 @@ public class UpdateServerFiles extends HapiSuite {
             createZip(temp_dir, zipFile, DEFAULT_SCRIPT);
             final String uploadFile = zipFile;
 
-            log.info("Uploading file " + uploadFile);
+            log.info("Uploading file {}", uploadFile);
             data = Files.readAllBytes(Paths.get(uploadFile));
         } catch (final IOException e) {
             log.error("Directory creation failed", e);

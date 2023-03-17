@@ -44,13 +44,15 @@ import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class HapiTokenFeeScheduleUpdate extends HapiTxnOp<HapiTokenFeeScheduleUpdate> {
     private static final TokenOpsUsage TOKEN_OPS_USAGE = new TokenOpsUsage();
@@ -156,11 +158,12 @@ public class HapiTokenFeeScheduleUpdate extends HapiTxnOp<HapiTokenFeeScheduleUp
         final Optional<Throwable> error = subOp.execFor(spec);
         if (error.isPresent()) {
             if (!loggingOff) {
-                scopedLog.warn(
-                        "Unable to look up current info for "
-                                + HapiPropertySource.asTokenString(
-                                        spec.registry().getTokenID(token)),
-                        error.get());
+                String message =
+                        String.format(
+                                "Unable to look up current info for %s",
+                                HapiPropertySource.asTokenString(
+                                        spec.registry().getTokenID(token)));
+                scopedLog.warn(message, error.get());
             }
             throw error.get();
         }
