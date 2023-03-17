@@ -319,10 +319,13 @@ public record SavedStateMetadata(
         final String value = data.get(field);
         final String[] parts = value.split(",");
         final List<Long> list = new ArrayList<>();
+
+        if (parts.length == 1 && parts[0].isBlank()) {
+            logInvalidField(field, value, new IllegalArgumentException("List is empty"));
+            return null;
+        }
+
         for (final String part : parts) {
-            if (part.isBlank()) {
-                continue;
-            }
             try {
                 list.add(Long.parseLong(part.strip()));
             } catch (final NumberFormatException e) {
