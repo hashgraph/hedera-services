@@ -110,6 +110,7 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -213,6 +214,12 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
     @LoggingSubject
     private ServicesState subject;
+
+    @BeforeAll
+    static void setUpAll() {
+        // Use a different VirtualMap factory instance for every test to avoid VM folder name conflicts
+        ServicesState.setVmFactory(VirtualMapFactory::new);
+    }
 
     @BeforeEach
     void setUp() {

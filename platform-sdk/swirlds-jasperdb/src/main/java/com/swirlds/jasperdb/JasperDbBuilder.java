@@ -251,7 +251,8 @@ public class JasperDbBuilder<K extends VirtualKey<? super K>, V extends VirtualV
      * {@inheritDoc}
      */
     @Override
-    public VirtualDataSourceJasperDB<K, V> copy(final VirtualDataSource<K, V> snapshotMe) {
+    public VirtualDataSourceJasperDB<K, V> copy(final VirtualDataSource<K, V> snapshotMe,
+            final boolean makeCopyActive) {
         validateBuilderState();
         if (!(snapshotMe instanceof VirtualDataSourceJasperDB<K, V> snapshotMeJasperDB)) {
             throw new IllegalArgumentException("The datasource must be compatible with the jasperdb");

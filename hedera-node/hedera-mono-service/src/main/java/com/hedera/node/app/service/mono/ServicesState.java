@@ -261,7 +261,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                         INSERTIONS_PER_COPY,
                         this,
                         new ToDiskMigrations(enableVirtualAccounts, enableVirtualTokenRels),
-                        vmFactory.get(),
+                        getVirtualMapFactory(),
                         accountMigrator,
                         tokenRelMigrator);
             }
@@ -555,7 +555,7 @@ public class ServicesState extends PartialNaryMerkleInternal
 
     void createGenesisChildren(
             final AddressBook addressBook, final long seqStart, final BootstrapProperties bootstrapProperties) {
-        final VirtualMapFactory virtualMapFactory = vmFactory.get();
+        final VirtualMapFactory virtualMapFactory = getVirtualMapFactory();
         if (enabledVirtualNft) {
             setChild(StateChildIndices.UNIQUE_TOKENS, virtualMapFactory.newVirtualizedUniqueTokenStorage());
         } else {
@@ -599,7 +599,8 @@ public class ServicesState extends PartialNaryMerkleInternal
     }
 
     private static StakingInfoBuilder stakingInfoBuilder = StakingInfoMapBuilder::buildStakingInfoMap;
-    private static Supplier<VirtualMapFactory> vmFactory = VirtualMapFactory::new;
+    private static Supplier<VirtualMapFactory> vmFactorySupplier = null; // for testing purposes
+    private static VirtualMapFactory vmFactory = null;
     private static Supplier<ServicesApp.Builder> appBuilder = DaggerServicesApp::builder;
     private static MapToDiskMigration mapToDiskMigration = MapMigrationToDisk::migrateToDiskAsApropos;
     static final Function<MerkleAccountState, OnDiskAccount> accountMigrator = OnDiskAccount::from;
@@ -632,7 +633,7 @@ public class ServicesState extends PartialNaryMerkleInternal
     }
 
     private static void migrateVirtualMapsToMerkleDb(final ServicesState state) {
-        final VirtualMapFactory virtualMapFactory = vmFactory.get();
+        final VirtualMapFactory virtualMapFactory = getVirtualMapFactory();
 
         // virtualized blobs
         final VirtualMap<VirtualBlobKey, VirtualBlobValue> storageMap = state.getChild(StateChildIndices.STORAGE);
@@ -792,9 +793,20 @@ public class ServicesState extends PartialNaryMerkleInternal
         ServicesState.stakingInfoBuilder = stakingInfoBuilder;
     }
 
+    private static VirtualMapFactory getVirtualMapFactory() {
+        if (vmFactorySupplier != null) {
+            return vmFactorySupplier.get();
+        }
+        if (vmFactory == null) {
+            vmFactory = new VirtualMapFactory();
+        }
+        return vmFactory;
+    }
+
     @VisibleForTesting
-    public static void setVmFactory(final Supplier<VirtualMapFactory> vmFactory) {
-        ServicesState.vmFactory = vmFactory;
+    public static void setVmFactory(final Supplier<VirtualMapFactory> vmFactorySupplier) {
+        ServicesState.vmFactorySupplier = vmFactorySupplier;
+        vmFactory = null;
     }
 
     @VisibleForTesting

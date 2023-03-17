@@ -299,7 +299,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
                         (t, ex) -> logger.error(EXCEPTION.getMarker(), "Uncaught exception during snapshots", ex))
                 .buildFactory());
 
-        final Path storageDir = database.getTableDir(tableName);
+        final Path storageDir = database.getTableDir(tableName, tableId);
         dbPaths = new MerkleDbPaths(storageDir);
 
         // check if we are loading an existing database or creating a new one
@@ -822,7 +822,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
         try {
             close();
         } finally {
-            database.removeDataSource(tableName);
+            database.removeTable(tableId);
         }
     }
 
@@ -1484,5 +1484,24 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
      */
     boolean isLongKeyMode() {
         return isLongKeyMode;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(database, tableId);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof MerkleDbDataSource<?,?> other)) {
+            return false;
+        }
+        return Objects.equals(database, other.database) && Objects.equals(tableId, other.tableId);
     }
 }

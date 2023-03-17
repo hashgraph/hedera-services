@@ -118,20 +118,14 @@ public class MerkleDbDataSourceBuilder<K extends VirtualKey<? super K>, V extend
      * {@inheritDoc}
      */
     @Override
-    public VirtualDataSource<K, V> copy(final VirtualDataSource<K, V> snapshotMe) {
+    public VirtualDataSource<K, V> copy(final VirtualDataSource<K, V> snapshotMe,
+            final boolean makeCopyActive) {
         if (!(snapshotMe instanceof MerkleDbDataSource<K, V> source)) {
             throw new IllegalArgumentException("The datasource must be compatible with the MerkleDb");
         }
         final String name = source.getTableName();
         try {
-            // Creates a new database instance in a temp folder, snapshots the data source to
-            // that database, and then returns the resulting data source
-            final Path copyPath = TemporaryFileBuilder.buildTemporaryFile("merkledb-" + name);
-            // Snapshot one table
-            source.getDatabase().snapshot(copyPath, Set.of(source));
-            // Get the data source in the target database
-            final MerkleDb database = MerkleDb.getInstance(copyPath);
-            return database.getDataSource(name, false);
+            return source.getDatabase().copyDataSource(source, makeCopyActive);
         } catch (final IOException z) {
             throw new UncheckedIOException(z);
         }
