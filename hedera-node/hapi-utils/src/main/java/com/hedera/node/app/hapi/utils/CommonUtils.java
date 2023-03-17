@@ -71,6 +71,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody.DataCase;
 import com.hederahashgraph.api.proto.java.TransactionOrBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.MessageDigest;
@@ -146,141 +147,55 @@ public final class CommonUtils {
      */
     @NonNull
     public static HederaFunctionality functionOf(@NonNull final TransactionBody txn) throws UnknownHederaFunctionality {
-        if (txn.hasContractCall()) {
-            return ContractCall;
-        }
-        if (txn.hasContractCreateInstance()) {
-            return ContractCreate;
-        }
-        if (txn.hasContractUpdateInstance()) {
-            return ContractUpdate;
-        }
-        if (txn.hasContractDeleteInstance()) {
-            return ContractDelete;
-        }
-        if (txn.hasEthereumTransaction()) {
-            return EthereumTransaction;
-        }
-        if (txn.hasCryptoAddLiveHash()) {
-            return CryptoAddLiveHash;
-        }
-        if (txn.hasCryptoApproveAllowance()) {
-            return CryptoApproveAllowance;
-        }
-        if (txn.hasCryptoDeleteAllowance()) {
-            return CryptoDeleteAllowance;
-        }
-        if (txn.hasCryptoCreateAccount()) {
-            return CryptoCreate;
-        }
-        if (txn.hasCryptoDelete()) {
-            return CryptoDelete;
-        }
-        if (txn.hasCryptoDeleteLiveHash()) {
-            return CryptoDeleteLiveHash;
-        }
-        if (txn.hasCryptoTransfer()) {
-            return CryptoTransfer;
-        }
-        if (txn.hasCryptoUpdateAccount()) {
-            return CryptoUpdate;
-        }
-        if (txn.hasFileAppend()) {
-            return FileAppend;
-        }
-        if (txn.hasFileCreate()) {
-            return FileCreate;
-        }
-        if (txn.hasFileDelete()) {
-            return FileDelete;
-        }
-        if (txn.hasFileUpdate()) {
-            return FileUpdate;
-        }
-        if (txn.hasSystemDelete()) {
-            return SystemDelete;
-        }
-        if (txn.hasSystemUndelete()) {
-            return SystemUndelete;
-        }
-        if (txn.hasFreeze()) {
-            return Freeze;
-        }
-        if (txn.hasConsensusCreateTopic()) {
-            return ConsensusCreateTopic;
-        }
-        if (txn.hasConsensusUpdateTopic()) {
-            return ConsensusUpdateTopic;
-        }
-        if (txn.hasConsensusDeleteTopic()) {
-            return ConsensusDeleteTopic;
-        }
-        if (txn.hasConsensusSubmitMessage()) {
-            return ConsensusSubmitMessage;
-        }
-        if (txn.hasUncheckedSubmit()) {
-            return UncheckedSubmit;
-        }
-        if (txn.hasTokenCreation()) {
-            return TokenCreate;
-        }
-        if (txn.hasTokenFreeze()) {
-            return TokenFreezeAccount;
-        }
-        if (txn.hasTokenUnfreeze()) {
-            return TokenUnfreezeAccount;
-        }
-        if (txn.hasTokenGrantKyc()) {
-            return TokenGrantKycToAccount;
-        }
-        if (txn.hasTokenRevokeKyc()) {
-            return TokenRevokeKycFromAccount;
-        }
-        if (txn.hasTokenDeletion()) {
-            return TokenDelete;
-        }
-        if (txn.hasTokenUpdate()) {
-            return TokenUpdate;
-        }
-        if (txn.hasTokenMint()) {
-            return TokenMint;
-        }
-        if (txn.hasTokenBurn()) {
-            return TokenBurn;
-        }
-        if (txn.hasTokenWipe()) {
-            return TokenAccountWipe;
-        }
-        if (txn.hasTokenAssociate()) {
-            return TokenAssociateToAccount;
-        }
-        if (txn.hasTokenDissociate()) {
-            return TokenDissociateFromAccount;
-        }
-        if (txn.hasTokenFeeScheduleUpdate()) {
-            return TokenFeeScheduleUpdate;
-        }
-        if (txn.hasTokenPause()) {
-            return TokenPause;
-        }
-        if (txn.hasTokenUnpause()) {
-            return TokenUnpause;
-        }
-        if (txn.hasScheduleCreate()) {
-            return ScheduleCreate;
-        }
-        if (txn.hasScheduleDelete()) {
-            return ScheduleDelete;
-        }
-        if (txn.hasScheduleSign()) {
-            return ScheduleSign;
-        }
-        if (txn.hasNodeStakeUpdate()) {
-            return NodeStakeUpdate;
-        }
-        if (txn.hasUtilPrng()) {
-            return UtilPrng;
-        }
-        throw new UnknownHederaFunctionality("Unknown HederaFunctionality for " + txn);
+        DataCase dataCase = txn.getDataCase();
+
+        return switch (dataCase) {
+            case CONTRACTCALL -> ContractCall;
+            case CONTRACTCREATEINSTANCE -> ContractCreate;
+            case CONTRACTUPDATEINSTANCE -> ContractUpdate;
+            case CONTRACTDELETEINSTANCE -> ContractDelete;
+            case ETHEREUMTRANSACTION -> EthereumTransaction;
+            case CRYPTOADDLIVEHASH -> CryptoAddLiveHash;
+            case CRYPTOAPPROVEALLOWANCE -> CryptoApproveAllowance;
+            case CRYPTODELETEALLOWANCE -> CryptoDeleteAllowance;
+            case CRYPTOCREATEACCOUNT -> CryptoCreate;
+            case CRYPTODELETE -> CryptoDelete;
+            case CRYPTODELETELIVEHASH -> CryptoDeleteLiveHash;
+            case CRYPTOTRANSFER -> CryptoTransfer;
+            case CRYPTOUPDATEACCOUNT -> CryptoUpdate;
+            case FILEAPPEND -> FileAppend;
+            case FILECREATE -> FileCreate;
+            case FILEDELETE -> FileDelete;
+            case FILEUPDATE -> FileUpdate;
+            case SYSTEMDELETE -> SystemDelete;
+            case SYSTEMUNDELETE -> SystemUndelete;
+            case FREEZE -> Freeze;
+            case CONSENSUSCREATETOPIC -> ConsensusCreateTopic;
+            case CONSENSUSUPDATETOPIC -> ConsensusUpdateTopic;
+            case CONSENSUSDELETETOPIC -> ConsensusDeleteTopic;
+            case CONSENSUSSUBMITMESSAGE -> ConsensusSubmitMessage;
+            case UNCHECKEDSUBMIT -> UncheckedSubmit;
+            case TOKENCREATION -> TokenCreate;
+            case TOKENFREEZE -> TokenFreezeAccount;
+            case TOKENUNFREEZE -> TokenUnfreezeAccount;
+            case TOKENGRANTKYC -> TokenGrantKycToAccount;
+            case TOKENREVOKEKYC -> TokenRevokeKycFromAccount;
+            case TOKENDELETION -> TokenDelete;
+            case TOKENUPDATE -> TokenUpdate;
+            case TOKENMINT -> TokenMint;
+            case TOKENBURN -> TokenBurn;
+            case TOKENWIPE -> TokenAccountWipe;
+            case TOKENASSOCIATE -> TokenAssociateToAccount;
+            case TOKENDISSOCIATE -> TokenDissociateFromAccount;
+            case TOKEN_FEE_SCHEDULE_UPDATE -> TokenFeeScheduleUpdate;
+            case TOKEN_PAUSE -> TokenPause;
+            case TOKEN_UNPAUSE -> TokenUnpause;
+            case SCHEDULECREATE -> ScheduleCreate;
+            case SCHEDULEDELETE -> ScheduleDelete;
+            case SCHEDULESIGN -> ScheduleSign;
+            case NODE_STAKE_UPDATE -> NodeStakeUpdate;
+            case UTIL_PRNG -> UtilPrng;
+            default -> throw new UnknownHederaFunctionality("Unknown HederaFunctionality for " + txn);
+        };
     }
 }
