@@ -32,9 +32,9 @@ jobs:
     with:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
+      hedera-tests-enabled: true
       panel-config: "configs/services/suites/daily/GCP-Daily-Services-Comp-NetError-4N-1C.json"
     secrets:
-      hedera-tests-enabled: true
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
       jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
       jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
@@ -53,9 +53,9 @@ jobs:
     with:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
+      hedera-tests-enabled: true
       panel-config: "configs/services/suites/daily/GCP-Daily-Services-Crypto-Migration-7N-1C.json"
     secrets:
-      hedera-tests-enabled: true
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
       jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
       jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
