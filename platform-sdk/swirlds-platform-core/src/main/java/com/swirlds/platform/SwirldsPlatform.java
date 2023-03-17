@@ -23,7 +23,6 @@ import static com.swirlds.logging.LogMarker.PLATFORM_STATUS;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
-import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
 
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.ConsensusConfig;
@@ -182,13 +181,11 @@ import com.swirlds.platform.reconnect.ReconnectProtocol;
 import com.swirlds.platform.reconnect.ReconnectProtocolResponder;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.reconnect.emergency.EmergencyReconnectProtocol;
-import com.swirlds.platform.reconnect.emergency.EmergencySignedStateValidator;
 import com.swirlds.platform.state.BackgroundHashChecker;
 import com.swirlds.platform.state.EmergencyRecoveryManager;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.StateSettings;
 import com.swirlds.platform.state.SwirldStateManager;
-import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.stats.StatConstructor;
@@ -203,6 +200,8 @@ import com.swirlds.platform.system.SystemUtils;
 import com.swirlds.platform.threading.PauseAndClear;
 import com.swirlds.platform.threading.PauseAndLoad;
 import com.swirlds.platform.util.PlatformComponents;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
@@ -416,32 +415,37 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /**
      * the browser gives the Platform what app to run. There can be multiple Platforms on one computer.
      *
-     * @param instanceNumber      this is the Nth copy of the Platform running on this machine (N=instanceNumber)
-     * @param parameters          parameters given to the Platform at the start, for app to use
-     * @param crypto              an object holding all the public/private key pairs and the CSPRNG state for this
-     *                            member
-     * @param swirldId            the ID of the swirld being run
-     * @param id                  the ID number for this member (if this computer has multiple members in one swirld)
-     * @param initialAddressBook  the address book listing all members in the community
-     * @param platformContext     the context for this platform
-     * @param mainClassName       the name of the app class inheriting from SwirldMain
-     * @param swirldName          the name of the swirld being run
-     * @param appVersion          the current version of the running application
-     * @param genesisStateBuilder used to construct a genesis state if no suitable state from disk can be found
+     * @param instanceNumber           this is the Nth copy of the Platform running on this machine (N=instanceNumber)
+     * @param parameters               parameters given to the Platform at the start, for app to use
+     * @param crypto                   an object holding all the public/private key pairs and the CSPRNG state for this
+     *                                 member
+     * @param swirldId                 the ID of the swirld being run
+     * @param id                       the ID number for this member (if this computer has multiple members in one
+     *                                 swirld)
+     * @param initialAddressBook       the address book listing all members in the community
+     * @param platformContext          the context for this platform
+     * @param mainClassName            the name of the app class inheriting from SwirldMain
+     * @param swirldName               the name of the swirld being run
+     * @param appVersion               the current version of the running application
+     * @param genesisStateBuilder      used to construct a genesis state if no suitable state from disk can be found
+     * @param loadedSignedState        used to initialize the loaded state
+     * @param emergencyRecoveryManager used in emergency recovery.
      */
     SwirldsPlatform(
             final int instanceNumber,
-            final String[] parameters,
-            final Crypto crypto,
-            final byte[] swirldId,
-            final NodeId id,
-            final AddressBook initialAddressBook,
-            final PlatformContext platformContext,
-            final String platformName,
-            final String mainClassName,
-            final String swirldName,
-            final SoftwareVersion appVersion,
-            final Supplier<SwirldState> genesisStateBuilder) {
+            @NonNull final String[] parameters,
+            @NonNull final Crypto crypto,
+            @NonNull final byte[] swirldId,
+            @NonNull final NodeId id,
+            @NonNull final AddressBook initialAddressBook,
+            @NonNull final PlatformContext platformContext,
+            @NonNull final String platformName,
+            @NonNull final String mainClassName,
+            @NonNull final String swirldName,
+            @NonNull final SoftwareVersion appVersion,
+            @NonNull final Supplier<SwirldState> genesisStateBuilder,
+            @NonNull final SignedState loadedSignedState,
+            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
 
         this.platformContext = CommonUtils.throwArgNull(platformContext, "platformContext");
         this.basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
@@ -460,10 +464,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         reconnectStateLoadedDispatcher =
                 dispatchBuilder.getDispatcher(this, ReconnectStateLoadedTrigger.class)::dispatch;
         diskStateLoadedDispatcher = dispatchBuilder.getDispatcher(this, DiskStateLoadedTrigger.class)::dispatch;
-        // We can't send a "real" dispatch, since the dispatcher will not have been started by the
-        // time this class is used.
-        this.emergencyRecoveryManager =
-                new EmergencyRecoveryManager(Shutdown::immediateShutDown, settings.getEmergencyRecoveryFileLoadDir());
+
+        this.emergencyRecoveryManager = emergencyRecoveryManager;
 
         this.simultaneousSyncThrottle =
                 new SimultaneousSyncThrottle(settings.getMaxIncomingSyncsInc() + settings.getMaxOutgoingSyncs());
@@ -582,7 +584,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         // FUTURE WORK remove this when there are no more ShutdownRequestedTriggers being dispatched
         components.add(new Shutdown());
 
-        final LoadedState loadedState = loadSavedStateFromDisk();
+        final LoadedState loadedState = initializeLoadedStateFromSignedState(loadedSignedState);
         init(loadedState, genesisStateBuilder);
 
         OSHealthChecker.performOSHealthChecks(
@@ -713,23 +715,13 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     }
 
     /**
-     * Load the state from the disk if it is present.
+     * Create the LoadedState from the SignedState loaded from disk, if it is present.
+     *
+     * @param signedStateFromDisk the SignedState loaded from disk.
+     * @return the LoadedState
      */
-    private LoadedState loadSavedStateFromDisk() {
-        final SavedStateInfo[] savedStateFiles = getSavedStateFiles(mainClassName, selfId, swirldName);
-
-        // We can't send a "real" dispatcher for shutdown, since the dispatcher will not have been started by the
-        // time this class is used.
-        final SavedStateLoader savedStateLoader = new SavedStateLoader(
-                Shutdown::immediateShutDown,
-                getAddressBook(),
-                savedStateFiles,
-                appVersion,
-                () -> new EmergencySignedStateValidator(emergencyRecoveryManager.getEmergencyRecoveryFile()),
-                emergencyRecoveryManager);
-
+    private LoadedState initializeLoadedStateFromSignedState(@Nullable final SignedState signedStateFromDisk) {
         try {
-            final SignedState signedStateFromDisk = savedStateLoader.getSavedStateToLoad();
             if (signedStateFromDisk != null) {
                 updateLoadedStateAddressBook(signedStateFromDisk, initialAddressBook);
                 diskStateHash = signedStateFromDisk.getState().getHash();
