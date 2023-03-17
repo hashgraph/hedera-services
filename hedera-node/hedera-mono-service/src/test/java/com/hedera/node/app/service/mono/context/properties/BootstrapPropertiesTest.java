@@ -81,6 +81,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_KV_PAIR
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_NUM;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PERMITTED_DELEGATE_CALLERS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS;
@@ -90,9 +91,10 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_REDIRECT_TO
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_REFERENCE_SLOT_LIFETIME;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECARS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECAR_VALIDATION_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_STORAGE_SLOT_PRICE_TIERS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_THROTTLE_THROTTLE_BY_GAS;
-import static com.hedera.node.app.spi.config.PropertyNames.CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.CRYPTO_CREATE_WITH_ALIAS_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.DEV_DEFAULT_LISTENING_NODE_ACCOUNT;
 import static com.hedera.node.app.spi.config.PropertyNames.DEV_ONLY_DEFAULT_NODE_LISTENS;
 import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_LIMIT_TOKEN_ASSOCIATIONS;
@@ -116,6 +118,8 @@ import static com.hedera.node.app.spi.config.PropertyNames.FILES_SOFTWARE_UPDATE
 import static com.hedera.node.app.spi.config.PropertyNames.FILES_THROTTLE_DEFINITIONS;
 import static com.hedera.node.app.spi.config.PropertyNames.GRPC_PORT;
 import static com.hedera.node.app.spi.config.PropertyNames.GRPC_TLS_PORT;
+import static com.hedera.node.app.spi.config.PropertyNames.GRPC_WORKFLOWS_PORT;
+import static com.hedera.node.app.spi.config.PropertyNames.GRPC_WORKFLOWS_TLS_PORT;
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_ACCOUNTS_EXPORT_PATH;
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_ALLOWANCES_IS_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT;
@@ -260,18 +264,18 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.commons.lang3.tuple.Pair;
 import org.hamcrest.Matchers;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith({LogCaptureExtension.class})
 class BootstrapPropertiesTest {
-
     @LoggingTarget
     private LogCaptor logCaptor;
 
     @LoggingSubject
-    private final BootstrapProperties subject = new BootstrapProperties();
+    private BootstrapProperties subject = new BootstrapProperties();
 
     private static final String STD_PROPS_RESOURCE = "bootstrap/standard.properties";
     private static final String INVALID_PROPS_RESOURCE = "bootstrap/not.properties";
@@ -325,6 +329,9 @@ class BootstrapPropertiesTest {
             entry(CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL, 163_840),
             entry(CONTRACTS_CHAIN_ID, 295),
             entry(CONTRACTS_THROTTLE_THROTTLE_BY_GAS, true),
+            entry(
+                    CONTRACTS_PERMITTED_DELEGATE_CALLERS,
+                    Set.of(Address.fromHexString("0x164e64"), Address.fromHexString("0x103783"))),
             entry(CONTRACTS_KEYS_LEGACY_ACTIVATIONS, LegacyContractIdActivations.from("1058134by[1062784]")),
             entry(CONTRACTS_KNOWN_BLOCK_HASH, MISSING_BLOCK_VALUES),
             entry(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, 20),
@@ -362,6 +369,8 @@ class BootstrapPropertiesTest {
             entry(FILES_SOFTWARE_UPDATE_RANGE, Pair.of(150L, 159L)),
             entry(GRPC_PORT, 50211),
             entry(GRPC_TLS_PORT, 50212),
+            entry(GRPC_WORKFLOWS_PORT, 60211),
+            entry(GRPC_WORKFLOWS_TLS_PORT, 60212),
             entry(HEDERA_ACCOUNTS_EXPORT_PATH, "data/onboard/exportedAccount.txt"),
             entry(HEDERA_EXPORT_ACCOUNTS_ON_STARTUP, false),
             entry(HEDERA_FIRST_USER_ENTITY, 1001L),
@@ -390,7 +399,7 @@ class BootstrapPropertiesTest {
             entry(LEDGER_TOTAL_TINY_BAR_FLOAT, 5000000000000000000L),
             entry(AUTO_CREATION_ENABLED, true),
             entry(LAZY_CREATION_ENABLED, true),
-            entry(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, true),
+            entry(CRYPTO_CREATE_WITH_ALIAS_ENABLED, true),
             entry(AUTO_RENEW_TARGET_TYPES, Collections.emptySet()),
             entry(AUTO_RENEW_NUM_OF_ENTITIES_TO_SCAN, 100),
             entry(AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE, 2),
@@ -486,6 +495,7 @@ class BootstrapPropertiesTest {
             entry(TOKENS_MAX_AGGREGATE_RELS, 10_000_000L),
             entry(UTIL_PRNG_IS_ENABLED, true),
             entry(CONTRACTS_SIDECARS, EnumSet.of(SidecarType.CONTRACT_STATE_CHANGE, SidecarType.CONTRACT_BYTECODE)),
+            entry(CONTRACTS_SIDECAR_VALIDATION_ENABLED, false),
             entry(HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB, 256),
             entry(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION, true),
             entry(TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO, 9L),
@@ -493,7 +503,7 @@ class BootstrapPropertiesTest {
             entry(HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION, false),
             entry(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION, true),
             entry(TOKENS_AUTO_CREATIONS_ENABLED, true),
-            entry(WORKFLOWS_ENABLED, false),
+            entry(WORKFLOWS_ENABLED, Set.of()),
             entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, false));
 
     @Test
@@ -572,6 +582,7 @@ class BootstrapPropertiesTest {
 
     @Test
     void doesntThrowOnMissingOverridesFile() {
+        subject = new BootstrapProperties(false);
         subject.bootstrapPropsResource = STD_PROPS_RESOURCE;
         subject.bootstrapOverridePropsLoc = "im-not-here";
 

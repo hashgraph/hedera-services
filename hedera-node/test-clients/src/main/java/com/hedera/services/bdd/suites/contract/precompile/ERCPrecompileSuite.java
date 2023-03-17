@@ -53,6 +53,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.reduceFeeFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -73,7 +74,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER;
@@ -114,13 +114,13 @@ public class ERCPrecompileSuite extends HapiSuite {
     private static final String ERC_20_CONTRACT_NAME = "erc20Contract";
     private static final String OWNER = "owner";
     private static final String ACCOUNT = "anybody";
-    private static final String RECIPIENT = "recipient";
+    public static final String RECIPIENT = "recipient";
     private static final String FIRST = "FIRST";
     private static final String TOKEN_NAME = "TokenA";
     private static final ByteString FIRST_META = ByteString.copyFrom(FIRST.getBytes(StandardCharsets.UTF_8));
     private static final ByteString SECOND_META = ByteString.copyFrom(FIRST.getBytes(StandardCharsets.UTF_8));
     private static final String TRANSFER_SIG_NAME = "transferSig";
-    private static final String ERC_20_CONTRACT = "ERC20Contract";
+    public static final String ERC_20_CONTRACT = "ERC20Contract";
     private static final String ERC_721_CONTRACT = "ERC721Contract";
     private static final String NAME_TXN = "nameTxn";
     private static final String SYMBOL_TXN = "symbolTxn";
@@ -128,9 +128,9 @@ public class ERCPrecompileSuite extends HapiSuite {
     private static final String BALANCE_OF_TXN = "balanceOfTxn";
     private static final String ALLOWANCE_TXN = "allowanceTxn";
     private static final String TRANSFER_TXN = "transferTxn";
-    private static final String TRANSFER_FROM_ACCOUNT_TXN = "transferFromAccountTxn";
+    public static final String TRANSFER_FROM_ACCOUNT_TXN = "transferFromAccountTxn";
     private static final String BASE_APPROVE_TXN = "baseApproveTxn";
-    private static final String IS_APPROVED_FOR_ALL = "isApprovedForAll";
+    private static final String IS_APPROVED_FOR_ALL = "outerIsApprovedForAll";
     private static final String GET_ALLOWANCE = "getAllowance";
     private static final String ALLOWANCE = "allowance";
     private static final String SYMBOL = "symbol";
@@ -144,14 +144,14 @@ public class ERCPrecompileSuite extends HapiSuite {
     private static final String TOKEN = "token";
     private static final String SPENDER = "spender";
     private static final String NF_TOKEN = "nfToken";
-    private static final String TRANSFER_FROM = "transferFrom";
+    public static final String TRANSFER_FROM = "transferFrom";
     private static final String ERC_20_ABI = "ERC20ABI";
     private static final String ERC_721_ABI = "ERC721ABI";
     private static final String MULTI_KEY_NAME = "multiKey";
     private static final String A_CIVILIAN = "aCivilian";
     private static final String B_CIVILIAN = "bCivilian";
     private static final String DO_TRANSFER_FROM = "doTransferFrom";
-    private static final String GET_APPROVED = "getApproved";
+    private static final String GET_APPROVED = "outerGetApproved";
     private static final String GET_BALANCE_OF = "getBalanceOf";
     private static final String MISSING_FROM = "MISSING_FROM";
     private static final String MISSING_TO = "MISSING_TO";
@@ -159,7 +159,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     private static final String SOME_ERC_721_SCENARIOS = "SomeERC721Scenarios";
     private static final String GET_OWNER_OF = "getOwnerOf";
     private static final String OPERATOR_DOES_NOT_EXISTS = "OPERATOR_DOES_NOT_EXISTS";
-    private static final String SET_APPROVAL_FOR_ALL = "setApprovalForAll";
+    private static final String SET_APPROVAL_FOR_ALL = "outerSetApprovalForAll";
     private static final String REVOKE_SPECIFIC_APPROVAL = "revokeSpecificApproval";
     private static final String MSG_SENDER_IS_NOT_THE_SAME_AS_FROM = "MSG_SENDER_IS_NOT_THE_SAME_AS_FROM";
     private static final String MSG_SENDER_IS_THE_SAME_AS_FROM = "MSG_SENDER_IS_THE_SAME_AS_FROM";
@@ -199,7 +199,6 @@ public class ERCPrecompileSuite extends HapiSuite {
                 getErc20TokenDecimalsFromErc721TokenFails(),
                 transferErc20TokenFromErc721TokenFails(),
                 transferErc20TokenReceiverContract(),
-                transferErc20TokenSenderAccount(),
                 transferErc20TokenAliasedSender(),
                 directCallsWorkForERC20(),
                 erc20TransferFrom(),
@@ -645,74 +644,6 @@ public class ERCPrecompileSuite extends HapiSuite {
                         getAccountBalance(nestedContract).hasTokenBalance(FUNGIBLE_TOKEN, 2));
     }
 
-    private HapiSpec transferErc20TokenSenderAccount() {
-        return defaultHapiSpec("ERC_20_TRANSFER_SENDER_ACCOUNT")
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(ACCOUNT).balance(100 * ONE_MILLION_HBARS),
-                        cryptoCreate(RECIPIENT),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .initialSupply(5)
-                                .treasury(TOKEN_TREASURY)
-                                .adminKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY),
-                        tokenAssociate(ACCOUNT, List.of(FUNGIBLE_TOKEN)),
-                        tokenAssociate(RECIPIENT, List.of(FUNGIBLE_TOKEN)),
-                        cryptoTransfer(moving(5, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
-                        uploadInitCode(ERC_20_CONTRACT),
-                        contractCreate(ERC_20_CONTRACT))
-                .when(withOpContext((spec, opLog) -> allRunFor(
-                        spec,
-                        contractCall(
-                                        ERC_20_CONTRACT,
-                                        "delegateTransfer",
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(RECIPIENT))),
-                                        BigInteger.TWO)
-                                .payingWith(ACCOUNT)
-                                .alsoSigningWithFullPrefix(MULTI_KEY)
-                                .via(TRANSFER_TXN)
-                                .gas(GAS_TO_OFFER)
-                                .hasKnownStatus(SUCCESS))))
-                .then(
-                        getAccountInfo(ACCOUNT).savingSnapshot(ACCOUNT),
-                        getAccountInfo(RECIPIENT).savingSnapshot(RECIPIENT),
-                        withOpContext((spec, log) -> {
-                            final var sender =
-                                    spec.registry().getAccountInfo(ACCOUNT).getAccountID();
-                            final var receiver =
-                                    spec.registry().getAccountInfo(RECIPIENT).getAccountID();
-
-                            var txnRecord = getTxnRecord(TRANSFER_TXN)
-                                    .hasPriority(recordWith()
-                                            .contractCallResult(resultWith()
-                                                    .logs(inOrder(logWith()
-                                                            .withTopicsInOrder(List.of(
-                                                                    eventSignatureOf(TRANSFER_SIGNATURE),
-                                                                    parsedToByteString(sender.getAccountNum()),
-                                                                    parsedToByteString(receiver.getAccountNum())))
-                                                            .longValue(2)))))
-                                    .andAllChildRecords()
-                                    .logged();
-                            allRunFor(spec, txnRecord);
-                        }),
-                        childRecordsCheck(
-                                TRANSFER_TXN,
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(resultWith()
-                                                .contractCallResult(htsPrecompileResult()
-                                                        .forFunction(FunctionType.ERC_TRANSFER)
-                                                        .withErcFungibleTransferStatus(true)))),
-                        getAccountBalance(ACCOUNT).hasTokenBalance(FUNGIBLE_TOKEN, 3),
-                        getAccountBalance(RECIPIENT).hasTokenBalance(FUNGIBLE_TOKEN, 2));
-    }
-
     private HapiSpec transferErc20TokenAliasedSender() {
         final var aliasedTransferTxn = "aliasedTransferTxn";
         final var addLiquidityTxn = "addLiquidityTxn";
@@ -1029,7 +960,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                 asHexedAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))))
                                 .payingWith(ACCOUNT)
                                 .via(invalidDecimalsTxn)
-                                .hasKnownStatus(INVALID_TOKEN_ID)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                 .gas(GAS_TO_OFFER))))
                 .then(getTxnRecord(invalidDecimalsTxn).andAllChildRecords().logged());
     }
@@ -1037,6 +968,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     private HapiSpec transferErc20TokenFromErc721TokenFails() {
         return defaultHapiSpec("ERC_20_TRANSFER_FROM_ERC_721_TOKEN")
                 .given(
+                        overriding("hedera.allowances.isEnabled", "true"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_MILLION_HBARS),
                         cryptoCreate(RECIPIENT),
@@ -1068,7 +1000,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .via(TRANSFER_TXN)
                                 .gas(GAS_TO_OFFER)
-                                .hasKnownStatus(INVALID_TOKEN_ID))))
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged());
     }
 
@@ -1452,7 +1384,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                         BigInteger.ONE)
                                 .payingWith(ACCOUNT)
                                 .via(invalidTokenURITxn)
-                                .hasKnownStatus(INVALID_TOKEN_ID)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                 .gas(GAS_TO_OFFER))))
                 .then(getTxnRecord(invalidTokenURITxn).andAllChildRecords().logged());
     }
@@ -1485,7 +1417,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                         BigInteger.ONE)
                                 .payingWith(OWNER)
                                 .via(invalidOwnerOfTxn)
-                                .hasKnownStatus(INVALID_TOKEN_ID)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                 .gas(GAS_TO_OFFER))))
                 .then(getTxnRecord(invalidOwnerOfTxn).andAllChildRecords().logged());
     }
@@ -1783,11 +1715,10 @@ public class ERCPrecompileSuite extends HapiSuite {
                         tokenAssociate(A_CIVILIAN, NF_TOKEN),
                         tokenAssociate(B_CIVILIAN, NF_TOKEN))
                 .when(
-                        withOpContext((spec, opLog) -> {
-                            zCivilianMirrorAddr.set(asHexedSolidityAddress(AccountID.newBuilder()
-                                    .setAccountNum(666_666_666L)
-                                    .build()));
-                        }),
+                        withOpContext(
+                                (spec, opLog) -> zCivilianMirrorAddr.set(asHexedSolidityAddress(AccountID.newBuilder()
+                                        .setAccountNum(666_666_666L)
+                                        .build()))),
                         // --- Negative cases for approve ---
                         // * Can't approve a non-existent serial number
                         sourcing(() -> contractCall(
@@ -2983,7 +2914,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                         spec,
                         contractCall(
                                         ERC_721_CONTRACT,
-                                        IS_APPROVED_FOR_ALL,
+                                        "isApprovedForAll",
                                         HapiParserUtil.asHeadlongAddress(
                                                 asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
                                         HapiParserUtil.asHeadlongAddress(
@@ -2996,7 +2927,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER),
                         contractCall(
                                         ERC_721_CONTRACT,
-                                        IS_APPROVED_FOR_ALL,
+                                        "isApprovedForAll",
                                         HapiParserUtil.asHeadlongAddress(
                                                 asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
                                         HapiParserUtil.asHeadlongAddress(
@@ -3098,7 +3029,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                         spec,
                         contractCall(
                                         ERC_721_CONTRACT,
-                                        GET_APPROVED,
+                                        "getApproved",
                                         HapiParserUtil.asHeadlongAddress(
                                                 asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
                                         BigInteger.ONE)

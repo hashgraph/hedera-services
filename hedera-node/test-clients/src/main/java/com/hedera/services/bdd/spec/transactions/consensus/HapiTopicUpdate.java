@@ -163,11 +163,11 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
     protected List<Function<HapiSpec, Key>> defaultSigners() {
         final List<Function<HapiSpec, Key>> signers = new ArrayList<>();
         signers.add(spec -> spec.registry().getKey(effectivePayer(spec)));
-        signers.add(spec -> {
-            return spec.registry().hasKey(topic)
-                    ? spec.registry().getKey(topic)
-                    : Key.getDefaultInstance(); // same as no key
-        });
+        signers.add(
+                spec -> spec.registry().hasKey(topic)
+                        ? spec.registry().getKey(topic)
+                        : Key.getDefaultInstance() // same as no key
+                );
         newAdminKey.ifPresent(key -> {
             if (key != EMPTY_KEY) {
                 signers.add(ignored -> key);
@@ -183,7 +183,8 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
 
     @Override
     protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
-        return spec.clients().getConsSvcStub(targetNodeFor(spec), useTls)::updateTopic;
+        return spec.clients()
+                .getConsSvcStub(targetNodeFor(spec), useTls, spec.setup().workflowOperations())::updateTopic;
     }
 
     @Override

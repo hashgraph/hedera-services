@@ -26,8 +26,9 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteHandler;
-import com.hedera.node.app.spi.meta.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -54,8 +55,8 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     void preHandlesCryptoDeleteIfNoReceiverSigRequired() {
         final var keyUsed = (JKey) payerKey;
 
-        given(accounts.get(deleteAccountNum)).willReturn(deleteAccount);
-        given(accounts.get(transferAccountNum)).willReturn(transferAccount);
+        given(accounts.get(EntityNumVirtualKey.fromLong(deleteAccountNum))).willReturn(deleteAccount);
+        given(accounts.get(EntityNumVirtualKey.fromLong(transferAccountNum))).willReturn(transferAccount);
         given(deleteAccount.getAccountKey()).willReturn(keyUsed);
         given(transferAccount.getAccountKey()).willReturn(keyUsed);
         given(transferAccount.isReceiverSigRequired()).willReturn(false);
@@ -75,8 +76,8 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     void preHandlesCryptoDeleteIfReceiverSigRequiredVanilla() {
         final var keyUsed = (JKey) payerKey;
 
-        given(accounts.get(deleteAccountNum)).willReturn(deleteAccount);
-        given(accounts.get(transferAccountNum)).willReturn(transferAccount);
+        given(accounts.get(EntityNumVirtualKey.fromLong(deleteAccountNum))).willReturn(deleteAccount);
+        given(accounts.get(EntityNumVirtualKey.fromLong(transferAccountNum))).willReturn(transferAccount);
         given(deleteAccount.getAccountKey()).willReturn(keyUsed);
         given(transferAccount.getAccountKey()).willReturn(keyUsed);
         given(transferAccount.isReceiverSigRequired()).willReturn(true);
@@ -109,7 +110,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     void doesntAddTransferKeyIfAccountSameAsPayerForCryptoDelete() {
         final var keyUsed = (JKey) payerKey;
 
-        given(accounts.get(deleteAccountNum)).willReturn(deleteAccount);
+        given(accounts.get(EntityNumVirtualKey.fromLong(deleteAccountNum))).willReturn(deleteAccount);
         given(deleteAccount.getAccountKey()).willReturn(keyUsed);
 
         final var txn = deleteAccountTransaction(deleteAccountId, payer);
@@ -127,7 +128,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     void doesntAddDeleteKeyIfAccountSameAsPayerForCryptoDelete() {
         final var keyUsed = (JKey) payerKey;
 
-        given(accounts.get(transferAccountNum)).willReturn(transferAccount);
+        given(accounts.get(EntityNumVirtualKey.fromLong(transferAccountNum))).willReturn(transferAccount);
         given(transferAccount.getAccountKey()).willReturn(keyUsed);
         given(transferAccount.isReceiverSigRequired()).willReturn(true);
 
@@ -148,9 +149,9 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
         /* ------ payerAccount missing, so deleteAccount and transferAccount will not be added  ------ */
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
-        given(accounts.get(payerNum)).willReturn(null);
-        given(accounts.get(deleteAccountNum)).willReturn(deleteAccount);
-        given(accounts.get(transferAccountNum)).willReturn(transferAccount);
+        given(accounts.get(EntityNumVirtualKey.fromLong(payerNum))).willReturn(null);
+        given(accounts.get(EntityNumVirtualKey.fromLong(deleteAccountNum))).willReturn(deleteAccount);
+        given(accounts.get(EntityNumVirtualKey.fromLong(transferAccountNum))).willReturn(transferAccount);
         given(deleteAccount.getAccountKey()).willReturn(keyUsed);
 
         final var context1 = new PreHandleContext(store, txn, payer);
@@ -160,10 +161,10 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         assertIterableEquals(List.of(), context1.getRequiredNonPayerKeys());
 
         /* ------ deleteAccount missing, so transferAccount will not be added ------ */
-        given(accounts.get(payerNum)).willReturn(payerAccount);
+        given(accounts.get(EntityNumVirtualKey.fromLong(payerNum))).willReturn(payerAccount);
         given(payerAccount.getAccountKey()).willReturn(keyUsed);
-        given(accounts.get(deleteAccountNum)).willReturn(null);
-        given(accounts.get(transferAccountNum)).willReturn(transferAccount);
+        given(accounts.get(EntityNumVirtualKey.fromLong(deleteAccountNum))).willReturn(null);
+        given(accounts.get(EntityNumVirtualKey.fromLong(transferAccountNum))).willReturn(transferAccount);
 
         final var context2 = new PreHandleContext(store, txn, payer);
         subject.preHandle(context2);
@@ -173,9 +174,9 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         assertIterableEquals(List.of(), context2.getRequiredNonPayerKeys());
 
         /* ------ transferAccount missing ------ */
-        given(accounts.get(deleteAccountNum)).willReturn(deleteAccount);
+        given(accounts.get(EntityNumVirtualKey.fromLong(deleteAccountNum))).willReturn(deleteAccount);
         given(deleteAccount.getAccountKey()).willReturn(keyUsed);
-        given(accounts.get(transferAccountNum)).willReturn(null);
+        given(accounts.get(EntityNumVirtualKey.fromLong(transferAccountNum))).willReturn(null);
 
         final var context3 = new PreHandleContext(store, txn, payer);
         subject.preHandle(context3);
@@ -189,7 +190,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     void doesntExecuteIfAccountIdIsDefaultInstance() {
         final var keyUsed = (JKey) payerKey;
 
-        given(accounts.get(deleteAccountNum)).willReturn(deleteAccount);
+        given(accounts.get(EntityNumVirtualKey.fromLong(deleteAccountNum))).willReturn(deleteAccount);
         given(deleteAccount.getAccountKey()).willReturn(keyUsed);
 
         final var txn = deleteAccountTransaction(deleteAccountId, AccountID.getDefaultInstance());

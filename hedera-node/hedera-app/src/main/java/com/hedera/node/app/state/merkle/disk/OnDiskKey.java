@@ -17,9 +17,9 @@
 package com.hedera.node.app.state.merkle.disk;
 
 import com.hedera.node.app.spi.state.Serdes;
+import com.hedera.node.app.spi.state.serdes.ByteBufferDataInput;
+import com.hedera.node.app.spi.state.serdes.ByteBufferDataOutput;
 import com.hedera.node.app.state.merkle.StateMetadata;
-import com.hedera.node.app.state.merkle.data.ByteBufferDataInput;
-import com.hedera.node.app.state.merkle.data.ByteBufferDataOutput;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
@@ -44,7 +44,7 @@ import java.util.Objects;
  *
  * @param <K> The type of key
  */
-public final class OnDiskKey<K extends Comparable<K>> implements VirtualKey<OnDiskKey<K>> {
+public final class OnDiskKey<K extends Comparable<? super K>> implements VirtualKey<OnDiskKey<K>> {
     @Deprecated(forRemoval = true)
     private static final long CLASS_ID = 0x2929238293892373L;
     /** The metadata */
@@ -136,5 +136,10 @@ public final class OnDiskKey<K extends Comparable<K>> implements VirtualKey<OnDi
     @Override
     public int hashCode() {
         return Objects.hash(key);
+    }
+
+    @Override
+    public String toString() {
+        return "OnDiskKey{" + "key=" + key + '}';
     }
 }

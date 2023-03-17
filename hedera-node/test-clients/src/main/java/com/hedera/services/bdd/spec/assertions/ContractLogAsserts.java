@@ -24,7 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
@@ -36,7 +36,7 @@ public class ContractLogAsserts extends BaseErroringAssertsProvider<ContractLogi
 
     public ContractLogAsserts utf8data(String data) {
         registerProvider((spec, o) -> {
-            String actual = new String(dataFrom(o), Charset.forName("UTF-8"));
+            String actual = new String(dataFrom(o), StandardCharsets.UTF_8);
             Assertions.assertEquals(data, actual, "Wrong UTF-8 data!");
         });
         return this;
@@ -45,7 +45,6 @@ public class ContractLogAsserts extends BaseErroringAssertsProvider<ContractLogi
     public ContractLogAsserts accountAtBytes(String account, int start) {
         registerProvider((spec, o) -> {
             byte[] data = dataFrom(o);
-            System.out.println("Length of event: " + data.length);
             AccountID expected = spec.registry().getAccountID(account);
             AccountID actual = accountFromBytes(data, start);
             Assertions.assertEquals(expected, actual, "Bad account in log data, starting at byte " + start);
@@ -56,7 +55,6 @@ public class ContractLogAsserts extends BaseErroringAssertsProvider<ContractLogi
     public ContractLogAsserts ecdsaAliasStartingAt(String aliasKey, int start) {
         registerProvider((spec, o) -> {
             byte[] data = dataFrom(o);
-            System.out.println("Length of event: " + data.length);
             ByteString alias = spec.registry().aliasIdFor(aliasKey).getAlias();
             byte[] expected = recoverAddressFromPubKey(alias.substring(2).toByteArray());
             byte[] actual = Arrays.copyOfRange(data, start, start + 20);
@@ -93,11 +91,9 @@ public class ContractLogAsserts extends BaseErroringAssertsProvider<ContractLogi
     }
 
     public ContractLogAsserts noTopics() {
-        registerProvider((spec, o) -> {
-            Assertions.assertTrue(
-                    ((ContractLoginfo) o).getTopicList().isEmpty(),
-                    "Bad topics value in Topics array. " + "No topics expected");
-        });
+        registerProvider((spec, o) -> Assertions.assertTrue(
+                ((ContractLoginfo) o).getTopicList().isEmpty(),
+                "Bad topics value in Topics array. " + "No topics expected"));
         return this;
     }
 
@@ -107,9 +103,8 @@ public class ContractLogAsserts extends BaseErroringAssertsProvider<ContractLogi
     }
 
     public ContractLogAsserts noData() {
-        registerProvider((spec, o) -> {
-            Assertions.assertTrue(((ContractLoginfo) o).getData().isEmpty(), "Bad data value. " + "No data expected");
-        });
+        registerProvider((spec, o) -> Assertions.assertTrue(
+                ((ContractLoginfo) o).getData().isEmpty(), "Bad data value. " + "No data expected"));
         return this;
     }
 

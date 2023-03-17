@@ -47,6 +47,7 @@ import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
@@ -196,9 +197,9 @@ class GetAccountDetailsAnswerTest {
                 .explicitNftAllowances(nftAllowances)
                 .get();
 
-        children.setAccounts(AccountStorageAdapter.fromInMemory(accounts));
+        children.setAccounts(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)));
         children.setTokenAssociations(tokenRels);
-        children.setTokens(tokens);
+        children.setTokens(MerkleMapLike.from(tokens));
 
         view = new StateView(scheduleStore, children, networkInfo);
 
@@ -250,7 +251,7 @@ class GetAccountDetailsAnswerTest {
     void getsTheAccountDetails() throws Throwable {
         given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokensPerAccountInfo);
         final MerkleMap<EntityNum, MerkleToken> tokens = mock(MerkleMap.class);
-        children.setTokens(tokens);
+        children.setTokens(MerkleMapLike.from(tokens));
 
         given(token.hasKycKey()).willReturn(true);
         given(token.hasFreezeKey()).willReturn(true);
@@ -347,7 +348,7 @@ class GetAccountDetailsAnswerTest {
         // setup:
         final Query query = validQuery(COST_ANSWER, fee, target);
 
-        given(optionValidator.queryableAccountStatus(eq(EntityNum.fromAccountId(payerId)), any()))
+        given(optionValidator.queryableAccountOrContractStatus(eq(EntityNum.fromAccountId(payerId)), any()))
                 .willReturn(ACCOUNT_DELETED);
 
         // when:
@@ -364,7 +365,8 @@ class GetAccountDetailsAnswerTest {
 
         given(aliasManager.lookupIdBy(any())).willReturn(entityNum);
 
-        given(optionValidator.queryableAccountStatus(eq(entityNum), any())).willReturn(INVALID_ACCOUNT_ID);
+        given(optionValidator.queryableAccountOrContractStatus(eq(entityNum), any()))
+                .willReturn(INVALID_ACCOUNT_ID);
 
         final ResponseCodeEnum validity = subject.checkValidity(query, view);
         assertEquals(INVALID_ACCOUNT_ID, validity);

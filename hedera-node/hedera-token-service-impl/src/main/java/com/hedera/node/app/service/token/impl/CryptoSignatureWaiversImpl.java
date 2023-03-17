@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.token.impl;
 
-import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
+import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -25,7 +25,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.commons.lang3.NotImplementedException;
 
 /**
- * A Singleton implementation of signature waivers needed for transactions in {@link CryptoService}.
+ * A Singleton implementation of signature waivers needed for transactions in {@link TokenService}.
  * NOTE: FUTURE - These will be implemented in the coming PR and this class should be a singleton.
  */
 public class CryptoSignatureWaiversImpl implements CryptoSignatureWaivers {

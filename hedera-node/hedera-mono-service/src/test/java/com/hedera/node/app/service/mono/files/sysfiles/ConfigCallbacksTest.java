@@ -32,6 +32,7 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.context.properties.PropertySources;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.throttling.ExpiryThrottle;
@@ -107,7 +108,7 @@ class ConfigCallbacksTest {
                 () -> addressBook,
                 properties,
                 () -> networkCtx,
-                () -> stakingInfos,
+                () -> MerkleMapLike.from(stakingInfos),
                 sigImpactHistorian,
                 fileNumbers);
     }

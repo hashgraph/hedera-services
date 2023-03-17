@@ -64,9 +64,7 @@ public class HapiTopicDelete extends HapiTxnOp<HapiTopicDelete> {
         TopicID id = resolveTopicId(spec);
         ConsensusDeleteTopicTransactionBody opBody = spec.txns()
                 .<ConsensusDeleteTopicTransactionBody, ConsensusDeleteTopicTransactionBody.Builder>body(
-                        ConsensusDeleteTopicTransactionBody.class, b -> {
-                            b.setTopicID(id);
-                        });
+                        ConsensusDeleteTopicTransactionBody.class, b -> b.setTopicID(id));
         return b -> b.setConsensusDeleteTopic(opBody);
     }
 
@@ -84,7 +82,8 @@ public class HapiTopicDelete extends HapiTxnOp<HapiTopicDelete> {
 
     @Override
     protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        return spec.clients().getConsSvcStub(targetNodeFor(spec), useTls)::deleteTopic;
+        return spec.clients()
+                .getConsSvcStub(targetNodeFor(spec), useTls, spec.setup().workflowOperations())::deleteTopic;
     }
 
     @Override

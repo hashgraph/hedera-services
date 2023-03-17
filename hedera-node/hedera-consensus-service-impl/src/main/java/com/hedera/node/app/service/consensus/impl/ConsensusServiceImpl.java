@@ -16,9 +16,50 @@
 
 package com.hedera.node.app.service.consensus.impl;
 
+import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.hapi.node.state.consensus.parser.TopicProtoParser;
+import com.hedera.hapi.node.state.consensus.writer.TopicWriter;
 import com.hedera.node.app.service.consensus.ConsensusService;
+import com.hedera.node.app.service.consensus.impl.serdes.EntityNumSerdes;
+import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.spi.state.Schema;
+import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.hedera.node.app.spi.state.StateDefinition;
+import com.hedera.node.app.spi.state.serdes.SerdesFactory;
+import com.hederahashgraph.api.proto.java.SemanticVersion;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Set;
 
 /**
  * Standard implementation of the {@link ConsensusService} {@link com.hedera.node.app.spi.Service}.
  */
-public final class ConsensusServiceImpl implements ConsensusService {}
+public final class ConsensusServiceImpl implements ConsensusService {
+    private static final SemanticVersion CURRENT_VERSION =
+            SemanticVersion.newBuilder().setMinor(34).build();
+    public static final long RUNNING_HASH_VERSION = 3L;
+    public static final int RUNNING_HASH_BYTE_ARRAY_SIZE = 48;
+    public static final String TOPICS_KEY = "TOPICS";
+
+    @Override
+    public void registerSchemas(@NonNull SchemaRegistry registry) {
+        registry.register(consensusSchema());
+    }
+
+    private Schema consensusSchema() {
+        return new Schema(CURRENT_VERSION) {
+            @NonNull
+            @Override
+            public Set<StateDefinition> statesToCreate() {
+                return Set.of(topicsDef());
+            }
+        };
+    }
+
+    private StateDefinition<EntityNum, Topic> topicsDef() {
+        final var keySerdes = new EntityNumSerdes();
+
+        final var valueSerdes = SerdesFactory.newInMemorySerdes(TopicProtoParser::parse, TopicWriter::write);
+
+        return StateDefinition.inMemory(TOPICS_KEY, keySerdes, valueSerdes);
+    }
+}

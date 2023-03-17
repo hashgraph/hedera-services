@@ -73,7 +73,7 @@ public final class MerkleTopic extends PartialMerkleLeaf implements Keyed<Entity
 
     static final int RELEASE_0180_VERSION = 2;
 
-    static final int CURRENT_VERSION = RELEASE_0180_VERSION;
+    public static final int CURRENT_VERSION = RELEASE_0180_VERSION;
 
     static final long RUNTIME_CONSTRUCTABLE_ID = 0xcfc535576b57baf0L;
 

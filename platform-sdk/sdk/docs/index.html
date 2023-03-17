@@ -1,0 +1,397 @@
+<!--
+  ~ Copyright 2016-2022 Hedera Hashgraph, LLC
+  ~
+  ~ This software is the confidential and proprietary information of
+  ~ Hedera Hashgraph, LLC. ("Confidential Information"). You shall not
+  ~ disclose such Confidential Information and shall use it only in
+  ~ accordance with the terms of the license agreement you entered into
+  ~ with Hedera Hashgraph.
+  ~
+  ~ HEDERA HASHGRAPH MAKES NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF
+  ~ THE SOFTWARE, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+  ~ TO THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+  ~ PARTICULAR PURPOSE, OR NON-INFRINGEMENT. HEDERA HASHGRAPH SHALL NOT BE LIABLE FOR
+  ~ ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING OR
+  ~ DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
+  -->
+
+<html>
+<head>
+	<style>
+		pre {
+			font-family: "Courier 10 Pitch", Courier, monospace;
+			margin-bottom: 1.6em;
+			max-width: 100%;
+			overflow: auto;
+			background-color: #efefef;
+		}
+	</style>
+</head>
+<body>
+
+<h1>Swirlds SDK</h1>
+
+The Swirlds SDK contains the Swirlds browser, example apps with source code that can run in that browser, and
+documentation for installing, running, and writing new apps using Eclipse.
+
+<h2>Useful documentation</h2>
+
+<a href="license.html">Swirlds SDK license</a>
+<p>
+
+	<a href="acknowledgments.html">Libraries used by the SDK</a>
+<p>
+
+	<a href="runBrowser.html">How to run apps in the Swirlds browser</a>
+<p>
+
+	<a href="keyManagement.html">Key management</a>
+<p>
+
+	<a href="demoApps.html">The Swirlds SDK demo apps</a>
+<p>
+
+	<a href="installEclipse.html">How to install / recompile the example apps in Eclipse</a>
+<p>
+
+	<a href="installCLI.html">How to install / recompile the example apps from the command line</a>
+<p>
+
+	<a href="installDebian.html">Installing on the Debian operating system</a>
+<p>
+
+	<a href="installRaspbian.html">Installing on Raspbian operating system</a>
+<p>
+
+	<a href="newApp.html">How to create a new Swirlds app using the SDK and Eclipse</a>
+<p>
+
+	<a href="javadoc/index.html">The javadoc for the various platform classes that apps use</a>
+<p>
+
+	<a href="ImplementingFastCopyable.html">Advanced development: optimizing FastCopyable classes</a>
+<p>
+
+	<a href="http://www.swirlds.com/downloads/SWIRLDS-TR-2016-01.pdf">Tech Report SWIRLDS-TR-2016-01</a> - a long
+	description of the hashgraph, the consensus algorithm, and the math proofs
+<p>
+
+	<a href="http://www.swirlds.com/downloads/SWIRLDS-TR-2016-02.pdf">Tech Report SWIRLDS-TR-2016-02</a> - examples that
+	walk through every step of the algorithm
+<p>
+
+<h2>Files and directories in the sdk directory</h2>
+
+<table border=0>
+	<tr>
+		<td>README.txt &nbsp;&nbsp;&nbsp;&nbsp;</td>
+		<td>a note saying to see this file</td>
+	</tr>
+	<tr>
+		<td>swirlds.jar</td>
+		<td>the browser (contains the platform and API)</td>
+	</tr>
+	<tr>
+		<td>config.txt</td>
+		<td>this controls which app runs in the browser, and how it runs</td>
+	</tr>
+	<tr>
+		<td>pom.xml</td>
+		<td>useful for recompiling all the demos in Eclipse with Maven</td>
+	</tr>
+	<tr>
+		<td>/data</td>
+		<td>information used by the browser</td>
+	</tr>
+	<tr>
+		<td>/data/apps</td>
+		<td>a few demo apps</td>
+	</tr>
+	<tr>
+		<td>/data/keys</td>
+		<td>the cryptographic keys to use (if any) and scripts to generate them</td>
+	</tr>
+	<tr>
+		<td>/source</td>
+		<td>Eclipse projects with source code for all the demo apps (also on <a
+				href="https://github.com/lbaird/swirlds-demos">GitHub</a>)
+		</td>
+	</tr>
+	<tr>
+		<td>/docs</td>
+		<td>documentation for using the browser and writing new apps</td>
+	</tr>
+	<tr>
+		<td>/docs/index.html</td>
+		<td>this file</td>
+	</tr>
+	<tr>
+		<td>/docs/javadoc</td>
+		<td>the javadoc files for various platform API classes and methods that apps can use</td>
+	</tr>
+</table>
+
+<h2>Version history</h2>
+
+<b> Version 0.23.1</b><br/>
+Fixes and performance improvements for VirtualMap and JasperDB. Iterator performance improvements. Addressed concerns with very verbose log output.
+<br><br>
+
+<b> Version 0.22.1</b><br/>
+Introduced the new disk based VirtualMap and JasperDB engine. Performance enhancements. New APIs introduced for VirtualMap and JasperDB.
+<br><br>
+
+<b> Version 0.21.0</b><br/>
+Performance enhancements to the network protocols.
+<br><br>
+
+<b> Version 0.20.0</b><br/>
+Minor fixes and improvements. Enhanced serialization interfaces.
+<br><br>
+
+<b> Version 0.19.0</b><br/>
+Full support for running in docker/containerd environments.
+<br><br>
+
+<b> Version 0.18.1</b><br/>
+Improved FCMap memory utilization. Minor fixes and enhancements.
+<br><br>
+
+<b> Version 0.17.1</b><br/>
+Fixed several performance and correctness issues.
+<br><br>
+
+<b> Version 0.16.0</b><br/>
+New data structures introduced. Minor bug fixes and enhancements.
+<br><br>
+
+<b> Version 0.15.1</b><br/>
+Version number realignment. Major changes to the event stream API, new statistics added, merkle tree routes introduced, and updates to the FCMap and other Platform Public APIs.
+<br><br>
+
+<b> Version 0.9.4</b><br/>
+Resolves a locking issue in the FCQueue hashing.
+<br><br>
+
+<b> Version 0.9.3</b><br/>
+Updated third-party dependencies.
+<br><br>
+
+<b> Version 0.9.2</b><br/>
+Resolves issues with third-party Maven dependencies impacted by the JCenter sunset.
+<br><br>
+
+<b> Version 0.9.1</b><br/>
+Performance enhancements and bug fix related to locking during a reconnect.
+<br><br>
+
+<b> Version 0.9.0</b><br/>
+Minor enhancements to the consensus algorithm implementation. Optimized <i>BinaryObjectStore</i> thread safety to
+increase performance and reduce the possibility of high lock contention.
+<br><br>
+
+<b> Version 0.8.1</b><br/>
+Minor performance improvements to the new <i>Object Streaming API</i> implemented in the prior release.
+<br><br>
+
+<b> Version 0.8.0</b><br/>
+Major functional and performance enhancements to the <i>Object Streaming API</i>.
+<br><br>
+
+<b> Version 0.7.4</b><br/>
+Major breaking changes as outlined below:
+
+<ul>
+	<li>
+		Renamed the <i>Signature</i> class to <i>TransactionSignature</i> and added a new <i>SelfSignature</i>
+		implementation for use with the <i>Object Streaming API</i>.
+	</li>
+	<li>
+		Performance improvements to the <i>FCQueue</i> hashing implementation.
+	</li>
+	<li>
+		Required changes in the <i>SwirldState</i> interface:
+		<ul>
+			<li>
+				Added the new <i>genesisInit(Platform platform, AddressBook addressBook)</i> method, which is called
+				exactly once when state is first created.
+			</li>
+			<li>
+				The old <i>init(Platform platform, AddressBook addressBook)</i> method, will now be
+				called when a pre-existing state is recreated (e.g. restart / reconnect).
+			</li>
+		</ul>
+	</li>
+	<li>
+		Added the following new Platform statistics:
+		<ul>
+			<li>fcmGetMicroSec</li>
+			<li>fcmGfmMicroSec</li>
+			<li>fcmReplaceMicroSec</li>
+			<li>fcmPutMicroSec</li>
+			<li>fcqAddLockAcquisitionMicros</li>
+			<li>fcqRemoveLockAcqMicroSec</li>
+			<li>fcqPollLockAcqMicroSec</li>
+			<li>fcqAddExecMicroSec</li>
+			<li>fcqRemoveExecMicroSec</li>
+		</ul>
+	</li>
+</ul>
+<br>
+
+<b> Version 0.7.3</b><br/>
+Minor bug fixes and implemented changes suggested by our audit team.
+<br><br>
+
+<b> Version 0.7.2</b><br/>
+Minor enhancements and improvements to the <i>Merkle Data Structures API</i>.
+<br><br>
+
+<b> Version 0.7.1</b><br/>
+Minor bug fixes to address various issues identified in the <i>Merkle Data Structures API</i> that was introduced in the
+prior release.
+<br><br>
+
+<b> Version 0.7.0</b><br/>
+Major system-wide enhancements and performance improvements as outlined below:
+<ul>
+	<li>
+		The <i>FastCopyable</i> interface now requires the <i>copy</i> method to return mutable objects.
+	</li>
+	<li>
+		<i>Log4j2</i> dependency version updated to <i>2.13.2</i> to resolve security vulnerabilities.
+	</li>
+	<li>
+		Added a new <i>LocalEvents.evn</i> file that is written with every saved state on disk and should be included
+		backups.
+	</li>
+	<li>
+		<b>Beta Mirror Nodes</b>
+		<ul>
+			<li>
+				Added support for Beta Mirror Nodes.
+			</li>
+			<li>
+				Added a new <i>isZeroStakeNode()</i> method to the <i>Platform</i> interface.
+			</li>
+		</ul>
+	</li>
+	<li>
+		<b>Cryptography API</b>
+		<ul>
+			<li>
+				Relocated the <i>Cryptography API</i> package to the <i>swirlds-common</i> module.
+			</li>
+			<li>
+				Major internal optimizations and support for <i>Merkle</i> data structures added.
+			</li>
+		</ul>
+	</li>
+	<li>
+		<b>Merkle Data Structures</b>
+		<ul>
+			<li>
+				<i>Merkle Data Structures</i> API added and data structures updated.
+			</li>
+			<li>
+				FCQueue and FCMap updated to implement <i>Merkle Data Structure</i> support.
+			</li>
+		</ul>
+	</li>
+</ul>
+<br>
+
+<b> Version 0.6.5-patch.2</b><br>
+Patch release to address an overly verbose log statement from the prior patch release.
+<br><br>
+
+<b> Version 0.6.5-patch.1</b><br>
+Patch release to address an issue with gossip/sync connection reference counting.
+<br><br>
+
+<b> Version 0.6.5</b><br>
+FCMap implementation moved to separate maven dependency <i>swirlds-fcmap</i>.
+FCQueue introduced as a separate maven dependency <i>swirlds-fcqueue</i>.
+Cryptography introduced as a new public API located in the <i>com.swirlds.common.crypto</i> package.
+Some classes moved from <i>com.swirlds.platform</i> package and relocated to subpackages under the
+<i>com.swirlds.common</i> top-level package.
+The <i>swirlds-common</i> maven dependency is now mandatory for all Swirlds apps.
+Platform improvements and bug fixes.
+<br><br>
+
+<b> Version 0.6.0</b><br>
+Introduced semantic versioning across all Swirlds Platform components.
+Maven dependency for <i>swirlds-platform</i> renamed to <i>swirlds-platform-core</i>.
+Platform improvements and bug fixes.
+<br><br>
+
+<b> Version 19.10.03</b><br>
+Removed the FCFileSystem.
+Added methods copyFromExtra(), copyToExtra(), diffCopyFrom(), diffCopyTo() & delete() to the FastCopyable interface.
+Added newSignedState() to the SwirldMain interface.
+Added InvalidSignedStateListener interface to help developers debug if an app allows the state on different nodes to get
+out of sync.
+Platform improvements and bug fixes.
+<br><br>
+
+<b> Version 18.12.30</b><br>
+Updated file system documentation. Deprecated old file system method names and introduced updated method names.
+Added additional statistics.
+New setting "waitAtStartup" added to config.txt.
+Added new method to SwirldMain API called "platformStatusChange".
+<br><br>
+
+<b> Version 18.10.23</b><br>
+Runs on JDK 10. Support for ed25519 signature verification.
+Small improvements in the API, which require small changes in the apps, as shown in the
+source code of the demo apps. <br><br>
+
+<b> Version 18.05.23</b><br>
+Minor improvements, bug fixes, performance tweaks. <br><br>
+
+<b> Version 18.02.27</b><br>
+The platform now predicts an estimated consensus timestamp for transactions that don't yet have consensus. The GameDemo
+app has been restructured to take advantage of this new feature. <br><br>
+
+<b> Version 17.09.15</b><br>
+Added a browser window showing various aspects of how the network is performing. <br><br>
+
+<b> Version 17.06.11</b><br>
+Enabled TLS. All communication is encrypted with TLS 1.2, with algorithms and key sizes chosen to conform to the
+Commercial National Security Algorithm Suite
+<a href="https://www.iad.gov/iad/library/ia-guidance/ia-solutions-for-classified/algorithm-guidance/commercial-national-security-algorithm-suite-factsheet.cfm">(CNSA
+	suite)</a>, using the Java 8 cipher suite TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384. Documentation is now available
+for <a href="keyManagement.html">key management</a>. <br><br>
+
+<b>Version 17.01.18</b><br>
+Added documentation and support for developing new apps without Eclipse. App development can now be done from the
+command line using only Java, Maven, and a text editor.<br><br>
+
+<b>Version 17.01.04</b><br>
+Added NAT piercing. If this is run on a machine behind a router that does Network Address Translation (NAT), then it
+will now tell the router to set up port forwarding, so that computers outside the router can communicate with it. This
+will use either uPNP or NAT-PMP, whichever the router supports. <br><br>
+
+<b>Version 16.12.11</b><br>
+Added a new fast copyable filesystem, and a FilesystemDemo app to demonstrate it. This means the app can create what
+appears to be an external hard drive, and can create files and directories on it. But it is actually shared between all
+the members, and all of them see a single, consistent view of it as it changes over time. Furthermore, even if it has
+grown very large, an app can make a "fast copy" of it, which appears to be a new external drive containing an exact copy
+of all the bytes on the original drive. Both the original and copy can then be modified independently. The "fast copy"
+happens almost instantly because of a copy-on-write mechanism that causes information to only be truly copied when a
+file changes. <br><br>
+
+<b>Version 16.10.05</b><br>
+Added two new demos. The StatsDemo collects various statistics about the running system, such as transactions per
+second, and writes them to a CSV file. The CryptocurrencyDemo app demonstrates a simulated stock market running on a
+real cryptocurrency (at least it would be real if the program were to be allowed to run forever, and encryption were
+turned on). This also allows unlimited numbers of members.<br><br>
+
+<b>Version 16.08.11</b><br>
+This is the initial Alpha release of the Swirlds platform and SDK. This is just a very early Alpha version. It doesn't
+have signatures and security, it only has a limited set of features, the API may change, and future releases will flesh
+out more of the core features. This supports up to three computers running the browser and communicating over the
+internet, or three instances can run on a single machine. Either way, they should be started at the same time, in order
+to connect with each other.<br><br>
+
+</body>

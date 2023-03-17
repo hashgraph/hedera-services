@@ -1,0 +1,62 @@
+<!--
+  ~ Copyright 2016-2022 Hedera Hashgraph, LLC
+  ~
+  ~ This software is the confidential and proprietary information of
+  ~ Hedera Hashgraph, LLC. ("Confidential Information"). You shall not
+  ~ disclose such Confidential Information and shall use it only in
+  ~ accordance with the terms of the license agreement you entered into
+  ~ with Hedera Hashgraph.
+  ~
+  ~ HEDERA HASHGRAPH MAKES NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF
+  ~ THE SOFTWARE, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+  ~ TO THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+  ~ PARTICULAR PURPOSE, OR NON-INFRINGEMENT. HEDERA HASHGRAPH SHALL NOT BE LIABLE FOR
+  ~ ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING OR
+  ~ DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
+  -->
+
+<h1>Running experiments on a set of AWS instances</h1>
+
+Do the following to start up the AWS instances, run a set of experiments, and stop the instances.
+Multiple experiments can be run, and the results from each will end up in a different directory with a different timestamp in the name.
+
+<h2>Setting up the eviroment (only needed first time)</h1>
+	<ul>
+		<li>Ensure that the scripts in this directory are executable, by running <span
+				style="color:blue;">chmod +x *.sh</span> in a bash console
+		</li>
+		<li>Install AWS CLI (<a target="_blank" href="http://docs.aws.amazon.com/cli/latest/userguide/installing.html">installation
+			instructions</a>)
+		</li>
+		<li>Do an AWS CLI quick configuration and MAKE SURE to set the "Default output format" to "<span
+				style="color:red;">text</span>"
+			(<a target="_blank"
+				href="http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html#cli-quick-configuration">quick
+				configuration instructions</a>)
+		</li>
+		<li>
+			Run <span style="color:blue;">openssl version</span> in a bash console to see if OpenSSL is installed.
+			If not, you must install OpenSSL before continuing, the installation is platform specific.
+			On most linux systems the following commands will work:
+			<span style="color:blue;">apt-get install openssl</span> or <span
+				style="color:blue;">yum install openssl</span>
+		</li>
+		<li>Run <span style="color:blue;">./generateKeyPair.sh</span> from a bash console to generate a key pair for
+			accessing AWS instances via SSH
+		</li>
+	</ul>
+
+	<h2>Configuring the tests and running</h1>
+		<ul>
+			<li>Edit the _config.sh file and specify the tests you want to run as well as the AWS instances you want to
+				start
+			</li>
+			<li>Run <span style="color:blue;">./createSpotFleetAndRunTests.sh</span> from a bash console</li>
+			<li>Once the script is done, there will be a results directory with all the statistics</li>
+		</ul>
+
+		<h1>WARNING</h1>
+		These scripts start AWS instances that are not free. If anything goes wrong with the script, it might end with
+		the instances still running.
+		So, after the script ends, <b>always</b> log into AWS and verify that the instances were terminated. Failure to
+		do that could be <b>very</b> expensive.

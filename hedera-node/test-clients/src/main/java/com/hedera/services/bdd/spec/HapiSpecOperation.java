@@ -61,6 +61,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -112,6 +113,7 @@ public abstract class HapiSpecOperation {
     protected HapiSpecSetup.TxnProtoStructure txnProtoStructure = HapiSpecSetup.TxnProtoStructure.ALTERNATE;
     protected boolean useRandomNode = false;
     protected boolean unavailableNode = false;
+    protected Set<HederaFunctionality> skipIfAutoScheduling = Collections.emptySet();
     protected Optional<String> expectedLedgerId = Optional.empty();
     protected Optional<Integer> hardcodedNumPayerKeys = Optional.empty();
     protected Optional<SigMapGenerator> sigMapGen = Optional.empty();
@@ -197,6 +199,29 @@ public abstract class HapiSpecOperation {
                 node = Optional.of(spec.setup().defaultNode());
             }
         }
+    }
+
+    /**
+     * Gives the {@link HapiSpec} author the option to skip this operation if certain
+     * functions are being auto-scheduled.
+     *
+     * @param functions the functions being auto-scheduled
+     * @return this operation
+     */
+    public HapiSpecOperation skippedIfAutoScheduling(final Set<HederaFunctionality> functions) {
+        skipIfAutoScheduling = functions;
+        return this;
+    }
+
+    /**
+     * Indicates whether this operation should be skipped, given a set of functions being
+     * auto-scheduled.
+     *
+     * @param beingAutoScheduled the functions being auto-scheduled
+     * @return true if this operation should be skipped
+     */
+    public boolean shouldSkipWhenAutoScheduling(final Set<HederaFunctionality> beingAutoScheduled) {
+        return !Collections.disjoint(skipIfAutoScheduling, beingAutoScheduled);
     }
 
     private AccountID randomNodeFrom(final HapiSpec spec) {
@@ -290,10 +315,8 @@ public abstract class HapiSpecOperation {
             } else {
                 node.ifPresent(builder::setNodeAccountID);
             }
-            validDurationSecs.ifPresent(s -> {
-                builder.setTransactionValidDuration(
-                        Duration.newBuilder().setSeconds(s).build());
-            });
+            validDurationSecs.ifPresent(s -> builder.setTransactionValidDuration(
+                    Duration.newBuilder().setSeconds(s).build()));
             genRecord.ifPresent(builder::setGenerateRecord);
             memo.ifPresent(builder::setMemo);
         };
@@ -401,15 +424,17 @@ public abstract class HapiSpecOperation {
                 : spec.keys().sign(spec, builder, keys, overrides);
     }
 
-    private void setKeyControlOverrides(final HapiSpec spec) {
+    public Map<Key, SigControl> setKeyControlOverrides(final HapiSpec spec) {
         if (controlOverrides.isPresent()) {
             overrides = new HashMap<>();
             Stream.of(controlOverrides.get())
                     .forEach(c -> overrides.put(lookupKey(spec, c.getKeyName()), c.getController()));
+            return overrides;
         }
+        return Collections.emptyMap();
     }
 
-    private List<Key> signersToUseFor(final HapiSpec spec) {
+    public List<Key> signersToUseFor(final HapiSpec spec) {
         final List<Key> active = signers.orElse(defaultSigners()).stream()
                 .map(f -> f.apply(spec))
                 .filter(k -> k != Key.getDefaultInstance())

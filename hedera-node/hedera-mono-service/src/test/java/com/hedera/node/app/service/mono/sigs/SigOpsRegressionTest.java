@@ -60,6 +60,7 @@ import com.hedera.node.app.service.mono.sigs.order.SigningOrderResult;
 import com.hedera.node.app.service.mono.sigs.order.SigningOrderResultFactory;
 import com.hedera.node.app.service.mono.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
 import com.hedera.node.app.service.mono.sigs.verification.SyncVerifier;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.txns.auth.SystemOpPolicies;
@@ -361,7 +362,7 @@ class SigOpsRegressionTest {
                 defaultLookupsFor(
                         aliasManager,
                         null,
-                        () -> AccountStorageAdapter.fromInMemory(accounts),
+                        () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
                         () -> null,
                         ref -> null,
                         ref -> null),
@@ -381,7 +382,7 @@ class SigOpsRegressionTest {
                 defaultLookupsFor(
                         aliasManager,
                         hfsSigMetaLookup,
-                        () -> AccountStorageAdapter.fromInMemory(accounts),
+                        () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
                         null,
                         ref -> null,
                         ref -> null),
@@ -395,14 +396,14 @@ class SigOpsRegressionTest {
         SigMetadataLookup sigMetaLookups = defaultLookupsFor(
                 aliasManager,
                 hfsSigMetaLookup,
-                () -> AccountStorageAdapter.fromInMemory(accounts),
+                () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
                 () -> null,
                 ref -> null,
                 ref -> null);
         SigRequirements keyOrder = new SigRequirements(sigMetaLookups, mockSignatureWaivers);
 
         final var pkToSigFn = new PojoSigMapPubKeyToSigBytes(platformTxn.getSigMap());
-        expandIn(platformTxn, keyOrder, pkToSigFn);
+        expandIn(platformTxn, keyOrder, pkToSigFn, aliasManager);
     }
 
     private Rationalization invokeRationalizationScenario() {
@@ -413,7 +414,7 @@ class SigOpsRegressionTest {
         SigMetadataLookup sigMetaLookups = defaultLookupsFor(
                 aliasManager,
                 hfsSigMetaLookup,
-                () -> AccountStorageAdapter.fromInMemory(accounts),
+                () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
                 () -> null,
                 ref -> null,
                 ref -> null);
@@ -440,7 +441,7 @@ class SigOpsRegressionTest {
                 defaultLookupsFor(
                         aliasManager,
                         hfsSigMetaLookup,
-                        () -> AccountStorageAdapter.fromInMemory(accounts),
+                        () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
                         () -> null,
                         ref -> null,
                         ref -> null),

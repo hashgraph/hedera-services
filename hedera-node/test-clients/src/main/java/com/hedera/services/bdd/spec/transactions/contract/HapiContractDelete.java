@@ -107,12 +107,10 @@ public class HapiContractDelete extends HapiTxnOp<HapiContractDelete> {
             if (spec.registry().hasContractChoice(contract)) {
                 SupportedContract choice = spec.registry().getContractChoice(contract);
                 AtomicInteger tag = new AtomicInteger();
-                choice.getCallDetails().forEach(detail -> {
-                    spec.registry().removeActionableCall(contract + "-" + tag.getAndIncrement());
-                });
-                choice.getLocalCallDetails().forEach(detail -> {
-                    spec.registry().removeActionableLocalCall(contract + "-" + tag.getAndIncrement());
-                });
+                choice.getCallDetails().forEach(detail -> spec.registry()
+                        .removeActionableCall(contract + "-" + tag.getAndIncrement()));
+                choice.getLocalCallDetails().forEach(detail -> spec.registry()
+                        .removeActionableLocalCall(contract + "-" + tag.getAndIncrement()));
                 spec.registry().removeContractChoice(contract);
             }
         }

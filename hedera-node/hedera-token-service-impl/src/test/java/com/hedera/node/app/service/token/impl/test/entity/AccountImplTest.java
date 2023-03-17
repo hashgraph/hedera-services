@@ -17,8 +17,12 @@
 package com.hedera.node.app.service.token.impl.test.entity;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.node.app.service.token.entity.Account.HBARS_TO_TINYBARS;
-import static org.junit.jupiter.api.Assertions.*;
+import static com.hedera.node.app.spi.accounts.Account.HBARS_TO_TINYBARS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.token.impl.entity.AccountBuilderImpl;
@@ -91,8 +95,6 @@ class AccountImplTest {
         assertEquals(1_000L, subject.stakeAtStartOfLastRewardedPeriod());
         assertEquals(3_000L, subject.autoRenewAccountNumber());
         assertEquals(360_000, subject.autoRenewSecs());
-        assertEquals(0, subject.shardNumber());
-        assertEquals(0, subject.realmNumber());
         assertFalse(subject.isHollow());
     }
 

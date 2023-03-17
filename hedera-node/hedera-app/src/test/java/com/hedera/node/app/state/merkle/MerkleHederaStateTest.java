@@ -18,6 +18,7 @@ package com.hedera.node.app.state.merkle;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.hedera.node.app.spi.state.ReadableKVState;
@@ -56,8 +57,8 @@ class MerkleHederaStateTest extends MerkleTestBase {
         setupFruitMerkleMap();
         hederaMerkle = new MerkleHederaState(
                 tree -> onMigrateCalled.set(true),
-                evt -> onPreHandleCalled.set(true),
-                (round, dual) -> onHandleCalled.set(true));
+                (evt, meta, provider) -> onPreHandleCalled.set(true),
+                (round, state, dual, metadata) -> onHandleCalled.set(true));
     }
 
     /** Looks for a merkle node with the given label */
@@ -641,7 +642,9 @@ class MerkleHederaStateTest extends MerkleTestBase {
             final var round = Mockito.mock(Round.class);
             final var dualState = Mockito.mock(SwirldDualState.class);
             final var state = new MerkleHederaState(
-                    tree -> onMigrateCalled.set(true), evt -> onPreHandleCalled.set(true), (r, d) -> {
+                    tree -> onMigrateCalled.set(true),
+                    (evt, meta, provider) -> onPreHandleCalled.set(true),
+                    (r, s, d, m) -> {
                         assertThat(round).isSameAs(r);
                         assertThat(dualState).isSameAs(d);
                         onHandleCalled.set(true);
@@ -663,8 +666,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
             // The original no longer has the listener
             final var round = Mockito.mock(Round.class);
             final var dualState = Mockito.mock(SwirldDualState.class);
-            hederaMerkle.handleConsensusRound(round, dualState);
-            assertThat(onHandleCalled).isFalse();
+            assertThrows(MutabilityException.class, () -> hederaMerkle.handleConsensusRound(round, dualState));
 
             // But the copy does
             copy.handleConsensusRound(round, dualState);
