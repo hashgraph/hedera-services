@@ -16,8 +16,22 @@
 
 package com.hedera.node.app.hapi.utils.exception;
 
+/**
+ * An exception that thrown if unknown HederaFunctionality is found.
+ *
+ */
 public class UnknownHederaFunctionality extends Exception {
-    public UnknownHederaFunctionality(String message) {
-        super(message);
+    /** this is for backward compatibility as some current code also uses this exception*/
+    public UnknownHederaFunctionality() {
+        super();
+    }
+
+    /**
+     * Constructs a new exception with the specified detail message.
+     *
+     * @param errMessage, the detail error message.
+     */
+    public UnknownHederaFunctionality(String errMessage) {
+        super(errMessage);
     }
 }

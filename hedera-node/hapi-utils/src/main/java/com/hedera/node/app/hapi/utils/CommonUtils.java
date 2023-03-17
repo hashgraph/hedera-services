@@ -72,6 +72,7 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionOrBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
@@ -136,7 +137,15 @@ public final class CommonUtils {
         CommonUtils.sha384HashTag = sha384HashTag;
     }
 
-    public static HederaFunctionality functionOf(final TransactionBody txn) throws UnknownHederaFunctionality {
+    /**
+     * check TransactionBody and return the HederaFunctionality
+     *
+     * @param txn the {@code TransactionBody}
+     * @return one of HederaFunctionality
+     * @throws UnknownHederaFunctionality if all the check fails
+     */
+    @NonNull
+    public static HederaFunctionality functionOf(@NonNull final TransactionBody txn) throws UnknownHederaFunctionality {
         if (txn.hasContractCall()) {
             return ContractCall;
         }
