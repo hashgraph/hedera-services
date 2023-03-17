@@ -1323,7 +1323,9 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                     .receiverSigReq(false)
                                     .memo(AUTO_MEMO));
 
-                    childRecordsCheck(transferToECDSA, SUCCESS,
+                    childRecordsCheck(
+                            transferToECDSA,
+                            SUCCESS,
                             recordWith()
                                     .evmAddress(evmAddress.get())
                                     .hasNoAlias()
@@ -1556,7 +1558,8 @@ public class AutoAccountCreationSuite extends HapiSuite {
                     getTxnRecord("failedTxn").logged();
                     getTxnRecord("passedTxn")
                             .hasChildRecordCount(1)
-                            .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO).alias(evmAddress.get()));
+                            .hasChildRecords(
+                                    recordWith().status(SUCCESS).memo(LAZY_MEMO).alias(evmAddress.get()));
                 }));
     }
 }
