@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.schedule.impl;
 
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.node.app.service.mono.state.codec.MonoMapCodecAdapter;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKeySerializer;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualKey;
@@ -30,8 +32,6 @@ import com.hedera.node.app.service.schedule.impl.serdes.MonoSchedulingStateAdapt
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.app.spi.state.serdes.MonoMapCodecAdapter;
-import com.hederahashgraph.api.proto.java.SemanticVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
@@ -40,7 +40,7 @@ import java.util.Set;
  */
 public final class ScheduleServiceImpl implements ScheduleService {
     private static final SemanticVersion CURRENT_VERSION =
-            SemanticVersion.newBuilder().setMinor(34).build();
+            SemanticVersion.newBuilder().minor(34).build();
 
     public static final String SCHEDULING_STATE_KEY = "SCHEDULING_STATE";
     public static final String SCHEDULES_BY_ID_KEY = "SCHEDULES_BY_ID";
