@@ -27,6 +27,9 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+
+import java.util.Objects;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -65,6 +68,7 @@ public class ContractGetBySolidityIDHandler extends PaidQueryHandler {
      * @throws PreCheckException if validation fails
      */
     public ResponseCodeEnum validate(@NonNull final Query query) throws PreCheckException {
+        Objects.requireNonNull(query);
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -81,6 +85,8 @@ public class ContractGetBySolidityIDHandler extends PaidQueryHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public Response findResponse(@NonNull final Query query, @NonNull final ResponseHeader header) {
+        Objects.requireNonNull(query);
+        Objects.requireNonNull(header);
         throw new UnsupportedOperationException("Not implemented");
     }
 }

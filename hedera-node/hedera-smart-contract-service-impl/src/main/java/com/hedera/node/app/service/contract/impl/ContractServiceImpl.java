@@ -46,6 +46,7 @@ public final class ContractServiceImpl implements ContractService {
         return new Schema(CURRENT_VERSION) {
             @NonNull
             @Override
+            @SuppressWarnings("rawtypes")
             public Set<StateDefinition> statesToCreate() {
                 return Set.of(storageDef());
             }

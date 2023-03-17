@@ -67,9 +67,8 @@ public class ContractUpdateHandler implements TransactionHandler {
             final var key = asHederaKey(op.adminKeyOrThrow());
             key.ifPresent(context::addToReqNonPayerKeys);
         }
-        // TODO This code isn't right, autoRenewAccountId may be null
-        if (op.hasAutoRenewAccountId() && !op.autoRenewAccountId().equals(AccountID.DEFAULT)) {
-            context.addNonPayerKey(op.autoRenewAccountId(), INVALID_AUTORENEW_ACCOUNT);
+        if (op.hasAutoRenewAccountId() && !op.autoRenewAccountIdOrThrow().equals(AccountID.DEFAULT)) {
+            context.addNonPayerKey(op.autoRenewAccountIdOrThrow(), INVALID_AUTORENEW_ACCOUNT);
         }
     }
 
