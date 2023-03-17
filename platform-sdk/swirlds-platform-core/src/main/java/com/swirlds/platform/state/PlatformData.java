@@ -575,6 +575,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
                 .append("consensusTimestamp", consensusTimestamp)
                 .append("minGenInfo", minGenInfo)
                 .append("epochHash", epochHash)
+                .append("minimumGenerationNonAncient", minimumGenerationNonAncient)
                 .toString();
     }
 }
