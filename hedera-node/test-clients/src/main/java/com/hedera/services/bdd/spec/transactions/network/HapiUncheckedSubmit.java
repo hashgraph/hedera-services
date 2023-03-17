@@ -28,12 +28,10 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.function.Consumer;
 import java.util.function.Function;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class HapiUncheckedSubmit<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiUncheckedSubmit<T>> {
     private static final Logger log = LogManager.getLogger(HapiUncheckedSubmit.class);
@@ -63,11 +61,9 @@ public class HapiUncheckedSubmit<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiU
                     "Submitting unchecked: {}",
                     CommonUtils.extractTransactionBody(Transaction.parseFrom(subOpBytes)));
         }
-        final UncheckedSubmitBody opBody =
-                spec.txns()
-                        .<UncheckedSubmitBody, UncheckedSubmitBody.Builder>body(
-                                UncheckedSubmitBody.class,
-                                b -> b.setTransactionBytes(ByteString.copyFrom(subOpBytes)));
+        final UncheckedSubmitBody opBody = spec.txns()
+                .<UncheckedSubmitBody, UncheckedSubmitBody.Builder>body(
+                        UncheckedSubmitBody.class, b -> b.setTransactionBytes(ByteString.copyFrom(subOpBytes)));
         return b -> b.setUncheckedSubmit(opBody);
     }
 
