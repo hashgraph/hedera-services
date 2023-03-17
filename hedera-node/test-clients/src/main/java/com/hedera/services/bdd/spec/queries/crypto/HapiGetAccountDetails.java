@@ -20,7 +20,6 @@ import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummary
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.common.base.MoreObjects;
@@ -36,11 +35,6 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Assertions;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -48,6 +42,9 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Assertions;
 
 public class HapiGetAccountDetails extends HapiQueryOp<HapiGetAccountDetails> {
     private static final Logger log = LogManager.getLogger(HapiGetAccountDetails.class);
@@ -222,10 +219,8 @@ public class HapiGetAccountDetails extends HapiQueryOp<HapiGetAccountDetails> {
             idObserver.ifPresent(cb -> cb.accept(details.getAccountDetails().getAccountId()));
         }
         if (verboseLoggingOn) {
-            String message =
-                    String.format(
-                            "Details for '%s': %s",
-                            repr(), response.getAccountDetails().getAccountDetails());
+            String message = String.format(
+                    "Details for '%s': %s", repr(), response.getAccountDetails().getAccountDetails());
             log.info(message);
         }
         if (customLog.isPresent()) {

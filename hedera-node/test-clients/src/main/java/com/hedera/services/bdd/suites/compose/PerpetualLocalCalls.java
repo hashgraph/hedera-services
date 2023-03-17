@@ -25,17 +25,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
-
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.suites.HapiSuite;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Optional;
@@ -44,6 +39,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class PerpetualLocalCalls extends HapiSuite {
     private static final Logger log = LogManager.getLogger(PerpetualLocalCalls.class);
@@ -75,37 +72,27 @@ public class PerpetualLocalCalls extends HapiSuite {
     }
 
     private Function<HapiSpec, OpProvider> localCallsFactory() {
-        return spec ->
-                new OpProvider() {
-                    @Override
-                    public List<HapiSpecOperation> suggestedInitializers() {
-                        return List.of(
-                                uploadInitCode(CHILD_STORAGE), contractCreate(CHILD_STORAGE));
-                    }
+        return spec -> new OpProvider() {
+            @Override
+            public List<HapiSpecOperation> suggestedInitializers() {
+                return List.of(uploadInitCode(CHILD_STORAGE), contractCreate(CHILD_STORAGE));
+            }
 
-                    @Override
-                    public Optional<HapiSpecOperation> get() {
-                        var op =
-                                contractCallLocal(CHILD_STORAGE, "getMyValue")
-                                        .noLogging()
-                                        .has(
-                                                resultWith()
-                                                        .resultThruAbi(
-                                                                getABIFor(
-                                                                        FUNCTION,
-                                                                        "getMyValue",
-                                                                        CHILD_STORAGE),
-                                                                isLiteralResult(
-                                                                        new Object[] {
-                                                                            BigInteger.valueOf(73)
-                                                                        })));
-                        var soFar = totalBeforeFailure.getAndIncrement();
-                        if (soFar % 1000 == 0) {
-                            log.info("--- {}", soFar);
-                        }
-                        return Optional.of(op);
-                    }
-                };
+            @Override
+            public Optional<HapiSpecOperation> get() {
+                var op = contractCallLocal(CHILD_STORAGE, "getMyValue")
+                        .noLogging()
+                        .has(resultWith()
+                                .resultThruAbi(
+                                        getABIFor(FUNCTION, "getMyValue", CHILD_STORAGE),
+                                        isLiteralResult(new Object[] {BigInteger.valueOf(73)})));
+                var soFar = totalBeforeFailure.getAndIncrement();
+                if (soFar % 1000 == 0) {
+                    log.info("--- {}", soFar);
+                }
+                return Optional.of(op);
+            }
+        };
     }
 
     @Override

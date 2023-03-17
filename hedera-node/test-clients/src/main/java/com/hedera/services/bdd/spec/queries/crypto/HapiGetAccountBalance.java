@@ -20,7 +20,6 @@ import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.common.base.MoreObjects;
@@ -41,12 +40,6 @@ import com.hederahashgraph.api.proto.java.TokenBalance;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.utility.CommonUtils;
-
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Assertions;
-
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -59,8 +52,11 @@ import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
 import javax.annotation.Nullable;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Assertions;
 
 public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
     private static final Logger log = LogManager.getLogger(HapiGetAccountBalance.class);
@@ -192,10 +188,9 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
             balanceObserver.accept(actual);
         }
         if (verboseLoggingOn) {
-            String message =
-                    String.format(
-                            "Explicit token balances: %s",
-                            response.getCryptogetAccountBalance().getTokenBalancesList());
+            String message = String.format(
+                    "Explicit token balances: %s",
+                    response.getCryptogetAccountBalance().getTokenBalancesList());
             log.info(message);
         }
 
@@ -287,9 +282,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
             long hBars = balance / TINYBARS_PER_HBAR;
             if (!loggingOff) {
                 String message =
-                        String.format(
-                                "%sbalance for '%s':%d tinyBars (%dh)",
-                                spec.logPrefix(), repr, balance, hBars);
+                        String.format("%sbalance for '%s':%d tinyBars (%dh)", spec.logPrefix(), repr, balance, hBars);
                 log.info(message);
             }
             if (yahcliLogger) {

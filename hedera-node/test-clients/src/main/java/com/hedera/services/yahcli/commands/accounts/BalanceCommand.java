@@ -19,13 +19,11 @@ package com.hedera.services.yahcli.commands.accounts;
 import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
 
 import com.hedera.services.yahcli.suites.BalanceSuite;
-
+import java.util.concurrent.Callable;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.ParentCommand;
-
-import java.util.concurrent.Callable;
 
 @Command(
         name = "balance",

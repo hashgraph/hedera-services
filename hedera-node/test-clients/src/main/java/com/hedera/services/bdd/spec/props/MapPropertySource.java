@@ -19,14 +19,12 @@ package com.hedera.services.bdd.spec.props;
 import static java.util.stream.Collectors.toMap;
 
 import com.hedera.services.bdd.spec.HapiPropertySource;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class MapPropertySource implements HapiPropertySource {
     private static final Logger log = LogManager.getLogger(MapPropertySource.class);
@@ -43,10 +41,9 @@ public class MapPropertySource implements HapiPropertySource {
 
     public MapPropertySource(Map props) {
         Map<String, Object> typedProps = (Map<String, Object>) props;
-        var filteredProps =
-                typedProps.entrySet().stream()
-                        .filter(entry -> !KEYS_TO_CENSOR.contains(entry.getKey()))
-                        .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
+        var filteredProps = typedProps.entrySet().stream()
+                .filter(entry -> !KEYS_TO_CENSOR.contains(entry.getKey()))
+                .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
         String message = String.format("Initializing a MapPropertySource from %s", filteredProps);
         log.info(message);
         this.props = props;

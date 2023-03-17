@@ -18,7 +18,6 @@ package com.hedera.services.bdd.spec.queries.token;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
@@ -32,14 +31,12 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.TokenGetNftInfoQuery;
 import com.hederahashgraph.api.proto.java.Transaction;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Assertions;
-
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.BiFunction;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Assertions;
 
 public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
     private static final Logger log = LogManager.getLogger(HapiGetTokenNftInfo.class);
@@ -165,9 +162,8 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
         Query query = getTokenNftInfoQuery(spec, payment, false);
         response = spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls).getTokenNftInfo(query);
         if (verboseLoggingOn) {
-            String message =
-                    String.format(
-                            "Info for '%s': %s", token, response.getTokenGetNftInfo().getNft());
+            String message = String.format(
+                    "Info for '%s': %s", token, response.getTokenGetNftInfo().getNft());
             log.info(message);
         }
     }

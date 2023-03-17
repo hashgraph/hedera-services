@@ -25,11 +25,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.swirlds.common.utility.CommonUtils;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Assertions;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -38,6 +33,9 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.Function;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Assertions;
 
 public class TrieSigMapGenerator implements SigMapGenerator {
     private static final Logger log = LogManager.getLogger(TrieSigMapGenerator.class);
@@ -152,9 +150,7 @@ public class TrieSigMapGenerator implements SigMapGenerator {
                     prefix = trie.randomPrefix(key.length);
                     break;
             }
-            String message =
-                    String.format(
-                            "%s gets prefix %s", CommonUtils.hex(key), CommonUtils.hex(prefix));
+            String message = String.format("%s gets prefix %s", CommonUtils.hex(key), CommonUtils.hex(prefix));
             log.debug(message);
             return prefix;
         };

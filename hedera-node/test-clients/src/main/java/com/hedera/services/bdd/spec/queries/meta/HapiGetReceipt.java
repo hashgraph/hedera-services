@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.spec.queries.meta;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.txnReceiptQueryFor;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.common.base.MoreObjects;
@@ -31,12 +30,10 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
-
+import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
-
-import java.util.Optional;
 
 public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
     static final Logger log = LogManager.getLogger(HapiGetReceipt.class);
@@ -126,16 +123,12 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
         response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getTransactionReceipts(query);
         childReceipts = response.getTransactionGetReceipt().getChildTransactionReceiptsList();
         if (verboseLoggingOn) {
-            String message =
-                    String.format("Receipt: %s", response.getTransactionGetReceipt().getReceipt());
+            String message = String.format(
+                    "Receipt: %s", response.getTransactionGetReceipt().getReceipt());
             log.info(message);
-            String message2 =
-                    String.format(
-                            "%s  And %d child receipts%s: %s",
-                            spec.logPrefix(),
-                            childReceipts.size(),
-                            childReceipts.size() > 1 ? "s" : "",
-                            childReceipts);
+            String message2 = String.format(
+                    "%s  And %d child receipts%s: %s",
+                    spec.logPrefix(), childReceipts.size(), childReceipts.size() > 1 ? "s" : "", childReceipts);
 
             log.info(message2);
         }

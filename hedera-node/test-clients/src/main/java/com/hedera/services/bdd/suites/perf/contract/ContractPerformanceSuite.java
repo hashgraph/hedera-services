@@ -37,10 +37,6 @@ import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -49,6 +45,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class ContractPerformanceSuite extends HapiSuite {
     private static final Logger LOG = LogManager.getLogger(ContractPerformanceSuite.class);
@@ -82,9 +80,7 @@ public class ContractPerformanceSuite extends HapiSuite {
                     .replace(REVERT_CONTRACT_ADDRESS, asSolidityAddress(revertAccountAddress));
             return fileCreate(test + BYTECODE).contents(contentString.getBytes(StandardCharsets.US_ASCII));
         } catch (Exception e) {
-            String message =
-                    String.format(
-                            "createTestProgram for %s failed to read bytes from '%s'!", test, path);
+            String message = String.format("createTestProgram for %s failed to read bytes from '%s'!", test, path);
             LOG.warn(message, e);
             return fileCreate(test);
         }
@@ -113,10 +109,7 @@ public class ContractPerformanceSuite extends HapiSuite {
             try {
                 contractCode = new String(Files.toByteArray(new File(path)), StandardCharsets.US_ASCII);
             } catch (IOException e) {
-                String message =
-                        String.format(
-                                "createTestProgram for %s failed to read bytes from '%s'!",
-                                test, path);
+                String message = String.format("createTestProgram for %s failed to read bytes from '%s'!", test, path);
                 LOG.warn(message, e);
                 contractCode = "FE";
             }

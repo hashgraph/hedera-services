@@ -27,7 +27,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.txnToString;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
-
 import static java.lang.Thread.sleep;
 import static java.util.stream.Collectors.toList;
 
@@ -54,10 +53,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
@@ -65,6 +60,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOperation {
     private static final Logger log = LogManager.getLogger(HapiQueryOp.class);
@@ -165,10 +162,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
             }
 
             if (needsPayment() && !loggingOff) {
-                String message =
-                        String.format(
-                                "%sPaying for %s with %s",
-                                spec.logPrefix(), this, txnToString(payment));
+                String message = String.format("%sPaying for %s with %s", spec.logPrefix(), this, txnToString(payment));
                 log.info(message);
             }
             timedSubmitWith(spec, payment);
@@ -252,10 +246,8 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
             long initNodePayment = costOnlyNodePayment(spec);
             Transaction payment = finalizedTxn(spec, opDef(spec, initNodePayment), true);
             if (!loggingOff) {
-                String message =
-                        String.format(
-                                "%sPaying for COST_ANSWER of %s with %s",
-                                spec.logPrefix(), this, txnToString(payment));
+                String message = String.format(
+                        "%sPaying for COST_ANSWER of %s with %s", spec.logPrefix(), this, txnToString(payment));
                 log.info(message);
             }
             long realNodePayment = timedCostLookupWith(spec, payment);
@@ -276,10 +268,8 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
             }
             txnSubmitted = payment;
             if (!loggingOff) {
-                String message =
-                        String.format(
-                                "%s--> Node payment for %s is %s tinyBars.",
-                                spec.logPrefix(), this, realNodePayment);
+                String message = String.format(
+                        "%s--> Node payment for %s is %s tinyBars.", spec.logPrefix(), this, realNodePayment);
                 log.info(message);
             }
             if (expectStrictCostAnswer) {

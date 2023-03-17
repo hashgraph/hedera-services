@@ -21,7 +21,6 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-
 import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.MoreObjects;
@@ -35,15 +34,13 @@ import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.*;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
     static final Logger log = LogManager.getLogger(HapiTokenAssociate.class);
@@ -94,11 +91,9 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
             Optional<Throwable> error = subOp.execFor(spec);
             if (error.isPresent()) {
                 if (!loggingOff) {
-                    String message =
-                            String.format(
-                                    "Unable to look up current info for %s",
-                                    HapiPropertySource.asAccountString(
-                                            spec.registry().getAccountID(account)));
+                    String message = String.format(
+                            "Unable to look up current info for %s",
+                            HapiPropertySource.asAccountString(spec.registry().getAccountID(account)));
                     log.warn(message, error.get());
                 }
                 throw error.get();
@@ -113,11 +108,9 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
             Optional<Throwable> error = subOp.execFor(spec);
             if (error.isPresent()) {
                 if (!loggingOff) {
-                    String message =
-                            String.format(
-                                    "Unable to look up current info for %s",
-                                    HapiPropertySource.asContractString(
-                                            spec.registry().getContractId(account)));
+                    String message = String.format(
+                            "Unable to look up current info for %s",
+                            HapiPropertySource.asContractString(spec.registry().getContractId(account)));
                     log.warn(message, error.get());
                 }
                 throw error.get();

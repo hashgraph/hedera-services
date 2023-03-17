@@ -19,14 +19,12 @@ package com.hedera.services.bdd.spec.props;
 import com.google.common.io.ByteSource;
 import com.google.common.io.Resources;
 import com.hedera.services.bdd.spec.HapiPropertySource;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.Properties;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class JutilPropertySource implements HapiPropertySource {
     static final Logger log = LogManager.getLogger(JutilPropertySource.class);

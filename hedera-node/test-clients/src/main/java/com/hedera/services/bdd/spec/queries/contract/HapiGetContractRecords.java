@@ -38,16 +38,14 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Assertions;
-
 import java.io.File;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Assertions;
 
 public class HapiGetContractRecords extends HapiQueryOp<HapiGetContractRecords> {
     private static final Logger log = LogManager.getLogger(HapiGetContractRecords.class);

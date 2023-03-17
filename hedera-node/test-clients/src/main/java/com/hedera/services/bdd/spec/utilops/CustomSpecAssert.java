@@ -22,12 +22,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.convertHapiCallsToE
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.List;
 import java.util.Optional;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class CustomSpecAssert extends UtilOp {
     static final Logger log = LogManager.getLogger(CustomSpecAssert.class);

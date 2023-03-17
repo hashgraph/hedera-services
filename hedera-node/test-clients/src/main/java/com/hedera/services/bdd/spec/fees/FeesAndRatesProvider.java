@@ -43,16 +43,14 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.File;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.file.Files;
 import java.time.Instant;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class FeesAndRatesProvider {
     private static final Logger log = LogManager.getLogger(FeesAndRatesProvider.class);
@@ -124,10 +122,9 @@ public class FeesAndRatesProvider {
     private void readRateSet() throws Throwable {
         File f = new File(setup.clientExchangeRatesPath());
         byte[] bytes = Files.readAllBytes(f.toPath());
-        final String message =
-                String.format(
-                        "The exchange rates from '%s' are :: %s",
-                        f.getAbsolutePath(), rateSetAsString(ExchangeRateSet.parseFrom(bytes)));
+        final String message = String.format(
+                "The exchange rates from '%s' are :: %s",
+                f.getAbsolutePath(), rateSetAsString(ExchangeRateSet.parseFrom(bytes)));
         log.info(message);
     }
 
@@ -140,9 +137,7 @@ public class FeesAndRatesProvider {
         FileGetContentsResponse response = downloadWith(queryFee, false, setup.exchangeRatesId());
         byte[] bytes = response.getFileContents().getContents().toByteArray();
         final String message =
-                String.format(
-                        "The exchange rates are :: %s",
-                        rateSetAsString(ExchangeRateSet.parseFrom(bytes)));
+                String.format("The exchange rates are :: %s", rateSetAsString(ExchangeRateSet.parseFrom(bytes)));
         log.info(message);
     }
 
@@ -151,10 +146,9 @@ public class FeesAndRatesProvider {
         byte[] bytes = Files.readAllBytes(f.toPath());
         CurrentAndNextFeeSchedule wrapper = CurrentAndNextFeeSchedule.parseFrom(bytes);
         feeSchedule = wrapper.getCurrentFeeSchedule();
-        final String message =
-                String.format(
-                        "The fee schedule from '%s' covers %s ops.",
-                        f.getAbsolutePath(), feeSchedule.getTransactionFeeScheduleList().size());
+        final String message = String.format(
+                "The fee schedule from '%s' covers %s ops.",
+                f.getAbsolutePath(), feeSchedule.getTransactionFeeScheduleList().size());
         log.info(message);
     }
 
@@ -164,10 +158,9 @@ public class FeesAndRatesProvider {
         byte[] bytes = response.getFileContents().getContents().toByteArray();
         CurrentAndNextFeeSchedule wrapper = CurrentAndNextFeeSchedule.parseFrom(bytes);
         feeSchedule = typePatching.withPatchedTypesIfNecessary(wrapper.getCurrentFeeSchedule());
-        String message =
-                String.format(
-                        "The fee schedule covers %s ops.",
-                        feeSchedule.getTransactionFeeScheduleList().size());
+        String message = String.format(
+                "The fee schedule covers %s ops.",
+                feeSchedule.getTransactionFeeScheduleList().size());
         log.info(message);
     }
 
@@ -241,34 +234,28 @@ public class FeesAndRatesProvider {
 
     public ExchangeRateSet rateSetWith(int curHbarEquiv, int curCentEquiv) {
         ExchangeRate.Builder curRate =
-                rateSet.getCurrentRate().toBuilder()
-                        .setHbarEquiv(curHbarEquiv)
-                        .setCentEquiv(curCentEquiv);
+                rateSet.getCurrentRate().toBuilder().setHbarEquiv(curHbarEquiv).setCentEquiv(curCentEquiv);
 
-        ExchangeRateSet perturbedSet = rateSet.toBuilder().setCurrentRate(curRate).build();
-        String message =
-                String.format("Computed a new rate set :: %s", rateSetAsString(perturbedSet));
+        ExchangeRateSet perturbedSet =
+                rateSet.toBuilder().setCurrentRate(curRate).build();
+        String message = String.format("Computed a new rate set :: %s", rateSetAsString(perturbedSet));
         log.info(message);
 
         return perturbedSet;
     }
 
-    public ExchangeRateSet rateSetWith(
-            int curHbarEquiv, int curCentEquiv, int nextHbarEquiv, int nextCentEquiv) {
+    public ExchangeRateSet rateSetWith(int curHbarEquiv, int curCentEquiv, int nextHbarEquiv, int nextCentEquiv) {
         ExchangeRate.Builder curRate =
-                rateSet.getCurrentRate().toBuilder()
-                        .setHbarEquiv(curHbarEquiv)
-                        .setCentEquiv(curCentEquiv);
+                rateSet.getCurrentRate().toBuilder().setHbarEquiv(curHbarEquiv).setCentEquiv(curCentEquiv);
 
         ExchangeRate.Builder nextRate =
-                rateSet.getCurrentRate().toBuilder()
-                        .setHbarEquiv(nextHbarEquiv)
-                        .setCentEquiv(nextCentEquiv);
+                rateSet.getCurrentRate().toBuilder().setHbarEquiv(nextHbarEquiv).setCentEquiv(nextCentEquiv);
 
-        ExchangeRateSet perturbedSet =
-                rateSet.toBuilder().setCurrentRate(curRate).setNextRate(nextRate).build();
-        String message =
-                String.format("Computed a new rate set :: %s", rateSetAsString(perturbedSet));
+        ExchangeRateSet perturbedSet = rateSet.toBuilder()
+                .setCurrentRate(curRate)
+                .setNextRate(nextRate)
+                .build();
+        String message = String.format("Computed a new rate set :: %s", rateSetAsString(perturbedSet));
         log.info(message);
 
         return perturbedSet;

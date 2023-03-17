@@ -19,10 +19,8 @@ package com.hedera.services.yahcli.commands.fees;
 import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
 
 import com.hedera.services.yahcli.suites.CostOfEveryThingSuite;
-
-import picocli.CommandLine;
-
 import java.util.concurrent.Callable;
+import picocli.CommandLine;
 
 @CommandLine.Command(
         name = "list-base-prices",

@@ -18,11 +18,9 @@ package com.hedera.services.bdd.spec.assertions;
 
 import static com.hedera.services.bdd.spec.assertions.EqualityAssertsProviderFactory.shouldBe;
 import static com.hedera.services.bdd.spec.assertions.EqualityAssertsProviderFactory.shouldNotBe;
-
+import static java.util.Collections.EMPTY_LIST;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import static java.util.Collections.EMPTY_LIST;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -30,15 +28,13 @@ import com.hedera.services.bdd.spec.queries.QueryUtils;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hederahashgraph.api.proto.java.*;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Assertions;
-
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Assertions;
 
 public class TransactionRecordAsserts extends BaseErroringAssertsProvider<TransactionRecord> {
     static final Logger log = LogManager.getLogger(TransactionRecordAsserts.class);
@@ -328,20 +324,16 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
     private <T> void registerTypedProvider(String forField, ErroringAssertsProvider<T> provider) {
         try {
             Method m = TransactionRecord.class.getMethod(QueryUtils.asGetter(forField));
-            registerProvider(
-                    (spec, o) -> {
-                        TransactionRecord transactionRecord = (TransactionRecord) o;
-                        T instance = (T) m.invoke(transactionRecord);
-                        ErroringAsserts<T> asserts = provider.assertsFor(spec);
-                        List<Throwable> errors = asserts.errorsIn(instance);
-                        AssertUtils.rethrowSummaryError(log, "Bad " + forField + "!", errors);
-                    });
+            registerProvider((spec, o) -> {
+                TransactionRecord transactionRecord = (TransactionRecord) o;
+                T instance = (T) m.invoke(transactionRecord);
+                ErroringAsserts<T> asserts = provider.assertsFor(spec);
+                List<Throwable> errors = asserts.errorsIn(instance);
+                AssertUtils.rethrowSummaryError(log, "Bad " + forField + "!", errors);
+            });
         } catch (Exception e) {
             log.warn(
-                    String.format(
-                            "Unable to register asserts provider for TransactionRecord field '%s'",
-                            forField),
-                    e);
+                    String.format("Unable to register asserts provider for TransactionRecord field '%s'", forField), e);
         }
     }
 }

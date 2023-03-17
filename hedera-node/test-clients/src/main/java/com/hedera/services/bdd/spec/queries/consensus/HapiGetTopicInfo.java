@@ -19,7 +19,6 @@ package com.hedera.services.bdd.spec.queries.consensus;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
-
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -34,17 +33,14 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
-
 import edu.umd.cs.findbugs.annotations.Nullable;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Assertions;
-
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Assertions;
 
 public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
     private static final Logger log = LogManager.getLogger(HapiGetTopicInfo.class);
@@ -153,8 +149,8 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
                 .getConsSvcStub(targetNodeFor(spec), useTls, spec.setup().workflowOperations())
                 .getTopicInfo(query);
         if (verboseLoggingOn) {
-            String message =
-                    String.format("Info: %s", response.getConsensusGetTopicInfo().getTopicInfo());
+            String message = String.format(
+                    "Info: %s", response.getConsensusGetTopicInfo().getTopicInfo());
             log.info(message);
         }
         if (saveRunningHash) {
