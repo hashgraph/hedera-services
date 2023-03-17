@@ -28,10 +28,12 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
-import java.util.function.Consumer;
-import java.util.function.Function;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class HapiUncheckedSubmit<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiUncheckedSubmit<T>> {
     private static final Logger log = LogManager.getLogger(HapiUncheckedSubmit.class);
