@@ -28,28 +28,32 @@ public class PojoSigMap {
 
     private final KeyType[] keyTypes;
     private final byte[][][] rawMap;
+    private final boolean hasEcdsaSig;
 
-    private PojoSigMap(final byte[][][] rawMap, final KeyType[] keyTypes) {
+    private PojoSigMap(final byte[][][] rawMap, final KeyType[] keyTypes, final boolean hasEcdsaSig) {
         this.rawMap = rawMap;
         this.keyTypes = keyTypes;
+        this.hasEcdsaSig = hasEcdsaSig;
     }
 
     public static PojoSigMap fromGrpc(final SignatureMap sigMap) {
         final var n = sigMap.getSigPairCount();
         final var rawMap = new byte[n][DATA_PER_SIG_PAIR][];
         final var keyTypes = new KeyType[n];
+        var hasEcdsaSig = false;
         for (var i = 0; i < n; i++) {
             final var sigPair = sigMap.getSigPair(i);
             rawMap[i][PUB_KEY_PREFIX_INDEX] = unwrapUnsafelyIfPossible(sigPair.getPubKeyPrefix());
             if (!sigPair.getECDSASecp256K1().isEmpty()) {
                 rawMap[i][SIG_BYTES_INDEX] = unwrapUnsafelyIfPossible(sigPair.getECDSASecp256K1());
                 keyTypes[i] = KeyType.ECDSA_SECP256K1;
+                hasEcdsaSig = true;
             } else {
                 rawMap[i][SIG_BYTES_INDEX] = unwrapUnsafelyIfPossible(sigPair.getEd25519());
                 keyTypes[i] = KeyType.ED25519;
             }
         }
-        return new PojoSigMap(rawMap, keyTypes);
+        return new PojoSigMap(rawMap, keyTypes, hasEcdsaSig);
     }
 
     public boolean isFullPrefixAt(final int i) {
@@ -74,6 +78,10 @@ public class PojoSigMap {
 
     public int numSigsPairs() {
         return rawMap.length;
+    }
+
+    public boolean hasEcdsaSig() {
+        return hasEcdsaSig;
     }
 
     public String toString() {
