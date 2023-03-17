@@ -234,6 +234,10 @@ public class PlatformTestingToolMain implements SwirldMain {
             new SpeedometerMetric.Config(VM_CATEGORY, "vmContractExecute").withDescription("VM Contract Execution TPS");
     private SpeedometerMetric vmContractExecutionSpeed;
 
+    private static final SpeedometerMetric.Config TRAN_SUBMIT_TPS_SPEED_CONFIG =
+            new SpeedometerMetric.Config("Debug.info", "tranSubTPS").withDescription("Transaction submitted TPS");
+    private SpeedometerMetric transactionSubmitSpeedometer;
+
     private FCMQueryController queryController;
     private NftQueryController nftQueryController;
 
@@ -291,7 +295,7 @@ public class PlatformTestingToolMain implements SwirldMain {
      * 		these are not used
      */
     public static void main(String[] args) {
-        Browser.launch(args);
+        Browser.parseCommandLineArgsAndLaunch(args);
     }
 
     private void printJVMParameters() {
@@ -354,7 +358,7 @@ public class PlatformTestingToolMain implements SwirldMain {
                     checkedThisIdleInterval = false;
                 }
                 transactionSubmitted.increment();
-
+                transactionSubmitSpeedometer.update(1);
                 try {
                     final PlatformTestingToolState state = ((PlatformWithDeprecatedMethods) platform).getState();
                     ExpectedMapUtils.modifySubmitStatus(state, true, isActive, submittedPayloadTriple, payloadConfig);
@@ -392,6 +396,7 @@ public class PlatformTestingToolMain implements SwirldMain {
 
         // Add some global information for debugging
         transactionSubmitted = metrics.getOrCreate(TRANSACTION_SUBMITTED_CONFIG);
+        transactionSubmitSpeedometer = metrics.getOrCreate(TRAN_SUBMIT_TPS_SPEED_CONFIG);
 
         // add stats for time taken to query a leaf
         queryLeafTimeCostMicroSec = metrics.getOrCreate(QUERY_LEAF_TIME_COST_MICRO_SEC_CONFIG);
