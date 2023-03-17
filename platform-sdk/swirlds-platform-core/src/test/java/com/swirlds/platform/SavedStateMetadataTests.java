@@ -285,4 +285,19 @@ class SavedStateMetadataTests {
         assertEquals(signingStakeSum, deserialized.signingStakeSum());
         assertEquals(totalStake, deserialized.totalStake());
     }
+
+
+    // TODO
+    //    attempting to parse string value containing newline
+    //    file doesn't exist
+    //    line missing colon
+    //    whitespace is successfully stripped from around keys and values
+    //    signing nodes are successfully sorted
+    //    malformed long value
+    //    malformed hash value
+    //    long list correctly handles empty parts
+    //    long list correctly strips whitespace surrounding values
+    //    long list correctly handles malformed values
+    //    newlines are serialized to //
+
 }
