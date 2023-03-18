@@ -69,6 +69,10 @@ dependencies {
   implementation(libs.swirlds.platform.core) // for `yahcli contract` only
   implementation(libs.swirlds.virtualmap) // for `yahcli contract` only
   implementation(testLibs.testcontainers.core)
+
+  testCompileOnly(libs.spotbugs.annotations)
+  testImplementation(testLibs.assertj.core)
+
   itestImplementation(libs.bundles.swirlds)
   itestImplementation(testLibs.bundles.testcontainers)
   itestImplementation(project(":hedera-node:hedera-app"))

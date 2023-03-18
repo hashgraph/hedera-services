@@ -107,7 +107,6 @@ public class Yahcli implements Callable<Integer> {
     }
 
     public static void main(String... args) {
-        System.out.printf("classpath: %s%n", System.getProperty("java.class.path"));
         int rc = new CommandLine(new Yahcli()).execute(args);
         System.exit(rc);
     }

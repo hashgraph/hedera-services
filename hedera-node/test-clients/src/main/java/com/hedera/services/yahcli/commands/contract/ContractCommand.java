@@ -17,6 +17,10 @@
 package com.hedera.services.yahcli.commands.contract;
 
 import com.hedera.services.yahcli.Yahcli;
+import com.hedera.services.yahcli.commands.contract.subcommands.DecompileContractCommand;
+import com.hedera.services.yahcli.commands.contract.subcommands.DumpRawContractsCommand;
+import com.hedera.services.yahcli.commands.contract.subcommands.ResolveSelectorCommand;
+import com.hedera.services.yahcli.commands.contract.subcommands.SummarizeSignedStateFileCommand;
 import java.util.concurrent.Callable;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -28,8 +32,8 @@ import picocli.CommandLine.ParentCommand;
             CommandLine.HelpCommand.class,
             SummarizeSignedStateFileCommand.class,
             DumpRawContractsCommand.class,
-            //                DecompileContractCommand.class,
-            //                ResolveSelectorCommand.class
+            DecompileContractCommand.class,
+            ResolveSelectorCommand.class
         },
         description = "Dealing with contracts")
 public class ContractCommand implements Callable<Integer> {
