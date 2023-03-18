@@ -17,6 +17,7 @@
 package com.hedera.services.yahcli;
 
 import com.hedera.services.yahcli.commands.accounts.AccountsCommand;
+import com.hedera.services.yahcli.commands.contract.ContractCommand;
 import com.hedera.services.yahcli.commands.fees.FeesCommand;
 import com.hedera.services.yahcli.commands.files.SysFilesCommand;
 import com.hedera.services.yahcli.commands.keys.KeysCommand;
@@ -44,6 +45,7 @@ import picocli.CommandLine.Model.CommandSpec;
             PrepareUpgradeCommand.class,
             FreezeUpgradeCommand.class,
             TelemetryUpgradeCommand.class,
+            ContractCommand.class,
             VersionInfoCommand.class
         },
         description = "Performs DevOps-type actions against a Hedera Services network")
@@ -105,6 +107,7 @@ public class Yahcli implements Callable<Integer> {
     }
 
     public static void main(String... args) {
+        System.out.printf("classpath: %s%n", System.getProperty("java.class.path"));
         int rc = new CommandLine(new Yahcli()).execute(args);
         System.exit(rc);
     }

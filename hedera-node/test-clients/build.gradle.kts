@@ -30,7 +30,7 @@ tasks.test {
   // remove them
   // from src/test into src/eet, so it can be part of an eet test task instead. See issue #3412
   // (https://github.com/hashgraph/hedera-services/issues/3412).
-  exclude("**/*")
+  include("com/hedera/services/yahcli/**")
 }
 
 configurations { evaluationDependsOn(":hedera-node:hapi-fees") }
@@ -44,6 +44,8 @@ sourceSets {
 dependencies {
   implementation(project(":hedera-node:hapi-utils"))
   implementation(project(":hedera-node:hapi-fees"))
+  implementation(project(":hedera-node:hedera-mono-service")) // for `yahcli contract` only
+  implementation(testLibs.classgraph) // for `yahcli contract` only"))
   implementation(libs.bundles.besu) { exclude("javax.annotation", "javax.annotation-api") }
   implementation(libs.bundles.logging)
   implementation(testLibs.besu.internal)
@@ -64,6 +66,8 @@ dependencies {
   implementation(libs.protobuf.java)
   implementation(testLibs.snakeyaml)
   implementation(libs.swirlds.common)
+  implementation(libs.swirlds.platform.core) // for `yahcli contract` only
+  implementation(libs.swirlds.virtualmap) // for `yahcli contract` only
   implementation(testLibs.testcontainers.core)
   itestImplementation(libs.bundles.swirlds)
   itestImplementation(testLibs.bundles.testcontainers)
@@ -125,6 +129,7 @@ tasks.eet {
 
 tasks.shadowJar {
   dependsOn(project(":hedera-node:hapi-fees").tasks.jar)
+  dependsOn(project(":hedera-node:hedera-mono-service").tasks.jar)
 
   mergeServiceFiles()
 
@@ -143,6 +148,7 @@ tasks.shadowJar {
 val yahCliJar =
     tasks.register<ShadowJar>("yahCliJar") {
       dependsOn(project(":hedera-node:hapi-fees").tasks.jar)
+      dependsOn(project(":hedera-node:hedera-mono-service").tasks.jar)
 
       group = "shadow"
       from(sourceSets.main.get().output)
