@@ -37,6 +37,7 @@ jobs:
       hedera-tests-enabled: true
       slack-results-channel: hedera-regression
       slack-summary-channel: hedera-regression-summary
+      use-branch-for-slack-channel: false
       panel-config: "configs/services/suites/daily/GCP-Daily-Services-Comp-NetError-4N-1C.json"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
@@ -58,6 +59,7 @@ jobs:
       hedera-tests-enabled: true
       slack-results-channel: hedera-regression
       slack-summary-channel: hedera-regression-summary
+      use-branch-for-slack-channel: false
       panel-config: "configs/services/suites/daily/GCP-Daily-Services-Crypto-Migration-7N-1C.json"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
