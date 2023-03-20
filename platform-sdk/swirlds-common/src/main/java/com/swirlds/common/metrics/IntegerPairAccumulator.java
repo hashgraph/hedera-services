@@ -17,6 +17,7 @@
 package com.swirlds.common.metrics;
 
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.common.utility.CommonUtils.throwArgBlank;
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
 import java.util.EnumSet;
@@ -34,7 +35,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  *
  * @param <T> The type of the combined value
  */
-public interface IntegerPairAccumulator<T> extends Metric {
+public non-sealed interface IntegerPairAccumulator<T> extends BaseMetric {
 
     BiFunction<Integer, Integer, Double> AVERAGE = (sum, count) -> {
         if (count == 0) {
@@ -46,7 +47,24 @@ public interface IntegerPairAccumulator<T> extends Metric {
 
     /**
      * {@inheritDoc}
+     *
+     * @deprecated {@link MetricType} turned out to be too limited. You can use the class-name instead.
      */
+    @SuppressWarnings("removal")
+    @Deprecated(forRemoval = true)
+    @Override
+    default MetricType getMetricType() {
+        return MetricType.ACCUMULATOR;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @deprecated {@code ValueType} turned out to be too limited. You can get sub-metrics via
+     * {@link #getBaseMetrics()}.
+     */
+    @SuppressWarnings("removal")
+    @Deprecated(forRemoval = true)
     @Override
     default EnumSet<ValueType> getValueTypes() {
         return EnumSet.of(VALUE);
@@ -54,7 +72,12 @@ public interface IntegerPairAccumulator<T> extends Metric {
 
     /**
      * {@inheritDoc}
+     *
+     * @deprecated {@code ValueType} turned out to be too limited. You can get sub-metrics via
+     * {@link #getBaseMetrics()}.
      */
+    @SuppressWarnings("removal")
+    @Deprecated(forRemoval = true)
     @Override
     default T get(final ValueType valueType) {
         throwArgNull(valueType, "valueType");
@@ -100,28 +123,61 @@ public interface IntegerPairAccumulator<T> extends Metric {
     /**
      * Configuration of a {@link IntegerPairAccumulator}
      */
-    final class Config<T> extends MetricConfig<IntegerPairAccumulator<T>, IntegerPairAccumulator.Config<T>> {
-
-        private final Class<T> type;
-
-        private final BiFunction<Integer, Integer, T> resultFunction;
-
-        private final IntBinaryOperator leftAccumulator;
-        private final IntBinaryOperator rightAccumulator;
-
-        private final IntSupplier leftInitializer;
-        private final IntSupplier rightInitializer;
+    record Config<T> (
+            String category,
+            String name,
+            String description,
+            String unit,
+            String format,
+            Class<T> type,
+            BiFunction<Integer, Integer, T> resultFunction,
+            IntBinaryOperator leftAccumulator,
+            IntBinaryOperator rightAccumulator,
+            IntSupplier leftInitializer,
+            IntSupplier rightInitializer
+    ) implements MetricConfig<IntegerPairAccumulator<T>> {
 
         private static final IntSupplier DEFAULT_INITIALIZER = () -> 0;
+
+        /**
+         * Constructor of {@code IntegerPairAccumulator.Config}
+         *
+         * @param category the kind of metric (metrics are grouped or filtered by this)
+         * @param name a short name for the metric
+         * @param description a longer description of the metric
+         * @param unit the unit of the metric
+         * @param format the format of the metric
+         * @param type the type of the values this {@code IntegerPairAccumulator} returns
+         * @param resultFunction the function that is used to calculate the {@code IntegerAccumulator}'s value.
+         * @param leftAccumulator the function that is used to combine the left {@code int}-values
+         * @param rightAccumulator the function that is used to combine the right {@code int}-values
+         * @param leftInitializer the function that is used to initialize the left {@code int}-value
+         * @param rightInitializer the function that is used to initialize the right {@code int}-value
+         * @throws IllegalArgumentException if one of the parameters is {@code null} or consists only of whitespaces
+         * (except for {@code unit} which can be empty)
+         */
+        public Config {
+            throwArgBlank(category, "category");
+            throwArgBlank(name, "name");
+            MetricConfig.checkDescription(description);
+            throwArgNull(unit, "unit");
+            throwArgBlank(format, "format");
+            throwArgNull(type, "type");
+            throwArgNull(resultFunction, "resultFunction");
+            throwArgNull(leftAccumulator, "leftAccumulator");
+            throwArgNull(rightAccumulator, "rightAccumulator");
+            throwArgNull(leftInitializer, "leftInitializer");
+            throwArgNull(rightInitializer, "rightInitializer");
+        }
 
         /**
          * Constructor of {@code IntegerPairAccumulator.Config}
          * <p>
          * The accumulators are by default set to {@code Integer::sum}.
          *
-         * @param category       the kind of metric (metrics are grouped or filtered by this)
-         * @param name           a short name for the metric
-         * @param type           the type of the values this {@code IntegerPairAccumulator} returns
+         * @param category the kind of metric (metrics are grouped or filtered by this)
+         * @param name a short name for the metric
+         * @param type the type of the values this {@code IntegerPairAccumulator} returns
          * @param resultFunction the function that is used to calculate the {@code IntegerAccumulator}'s value.
          * @throws IllegalArgumentException if one of the parameters is {@code null} or consists only of whitespaces
          */
@@ -130,74 +186,56 @@ public interface IntegerPairAccumulator<T> extends Metric {
                 final String name,
                 final Class<T> type,
                 final BiFunction<Integer, Integer, T> resultFunction) {
-
-            super(category, name, "%s");
-            this.type = throwArgNull(type, "type");
-            this.resultFunction = throwArgNull(resultFunction, "resultFunction");
-            this.leftAccumulator = Integer::sum;
-            this.rightAccumulator = Integer::sum;
-            this.leftInitializer = DEFAULT_INITIALIZER;
-            this.rightInitializer = DEFAULT_INITIALIZER;
-        }
-
-        private Config(
-                final String category,
-                final String name,
-                final String description,
-                final String unit,
-                final String format,
-                final Class<T> type,
-                final BiFunction<Integer, Integer, T> resultFunction,
-                final IntBinaryOperator leftAccumulator,
-                final IntBinaryOperator rightAccumulator,
-                final IntSupplier leftInitializer,
-                final IntSupplier rightInitializer) {
-
-            super(category, name, description, unit, format);
-            this.type = throwArgNull(type, "type");
-            this.resultFunction = throwArgNull(resultFunction, "resultFunction");
-            this.leftAccumulator = throwArgNull(leftAccumulator, "leftAccumulator");
-            this.rightAccumulator = throwArgNull(rightAccumulator, "rightAccumulator");
-            this.leftInitializer = throwArgNull(leftInitializer, "leftInitializer");
-            this.rightInitializer = throwArgNull(rightInitializer, "rightInitializer");
+            this(category, name, name, "", "%s", type, resultFunction, Integer::sum, Integer::sum,
+                    DEFAULT_INITIALIZER, DEFAULT_INITIALIZER);
         }
 
         /**
-         * {@inheritDoc}
+         * Sets the {@link Metric#getDescription() Metric.description} in fluent style.
+         *
+         * @param description the description
+         * @return a new configuration-object with updated {@code description}
+         * @throws IllegalArgumentException if {@code description} is {@code null}, too long or consists only of whitespaces
+         * @deprecated Please use {@link ConfigBuilder} instead
          */
-        @Override
+        @Deprecated(forRemoval = true)
         public IntegerPairAccumulator.Config<T> withDescription(final String description) {
             return new IntegerPairAccumulator.Config<>(
-                    getCategory(),
-                    getName(),
+                    category,
+                    name,
                     description,
-                    getUnit(),
-                    getFormat(),
-                    getType(),
-                    getResultFunction(),
-                    getLeftAccumulator(),
-                    getRightAccumulator(),
-                    getLeftInitializer(),
-                    getRightInitializer());
+                    unit,
+                    format,
+                    type,
+                    resultFunction,
+                    leftAccumulator,
+                    rightAccumulator,
+                    leftInitializer,
+                    rightInitializer);
         }
 
         /**
-         * {@inheritDoc}
+         * Sets the {@link Metric#getUnit() Metric.unit} in fluent style.
+         *
+         * @param unit the unit
+         * @return a new configuration-object with updated {@code unit}
+         * @throws IllegalArgumentException if {@code unit} is {@code null}
+         * @deprecated Please use {@link ConfigBuilder} instead
          */
-        @Override
+        @Deprecated(forRemoval = true)
         public IntegerPairAccumulator.Config<T> withUnit(final String unit) {
             return new IntegerPairAccumulator.Config<>(
-                    getCategory(),
-                    getName(),
-                    getDescription(),
+                    category,
+                    name,
+                    description,
                     unit,
-                    getFormat(),
-                    getType(),
-                    getResultFunction(),
-                    getLeftAccumulator(),
-                    getRightAccumulator(),
-                    getLeftInitializer(),
-                    getRightInitializer());
+                    format,
+                    type,
+                    resultFunction,
+                    leftAccumulator,
+                    rightAccumulator,
+                    leftInitializer,
+                    rightInitializer);
         }
 
         /**
@@ -206,47 +244,55 @@ public interface IntegerPairAccumulator<T> extends Metric {
          * @param format the format-string
          * @return a new configuration-object with updated {@code format}
          * @throws IllegalArgumentException if {@code format} is {@code null} or consists only of whitespaces
+         * @deprecated Please use {@link ConfigBuilder} instead
          */
+        @Deprecated(forRemoval = true)
         public IntegerPairAccumulator.Config<T> withFormat(final String format) {
             return new IntegerPairAccumulator.Config<>(
-                    getCategory(),
-                    getName(),
-                    getDescription(),
-                    getUnit(),
+                    category,
+                    name,
+                    description,
+                    unit,
                     format,
-                    getType(),
-                    getResultFunction(),
-                    getLeftAccumulator(),
-                    getRightAccumulator(),
-                    getLeftInitializer(),
-                    getRightInitializer());
+                    type,
+                    resultFunction,
+                    leftAccumulator,
+                    rightAccumulator,
+                    leftInitializer,
+                    rightInitializer);
         }
 
         /**
          * Getter of the type of the returned values
          *
          * @return the type of the returned values
+         * @deprecated Please use {@link #type()} instead
          */
+        @Deprecated(forRemoval = true)
         public Class<T> getType() {
-            return type;
+            return type();
         }
 
         /**
          * Getter of the {@code resultFunction}
          *
          * @return the {@code resultFunction}
+         * @deprecated Please use {@link #resultFunction()} instead
          */
+        @Deprecated(forRemoval = true)
         public BiFunction<Integer, Integer, T> getResultFunction() {
-            return resultFunction;
+            return resultFunction();
         }
 
         /**
          * Getter of the {@code leftAccumulator}
          *
          * @return the {@code leftAccumulator}
+         * @deprecated Please use {@link #leftAccumulator()} instead
          */
+        @Deprecated(forRemoval = true)
         public IntBinaryOperator getLeftAccumulator() {
-            return leftAccumulator;
+            return leftAccumulator();
         }
 
         /**
@@ -254,29 +300,33 @@ public interface IntegerPairAccumulator<T> extends Metric {
          *
          * @param leftAccumulator the left accumulator
          * @return a new configuration-object with updated {@code leftAccumulator}
+         * @deprecated Please use {@link ConfigBuilder} instead
          */
+        @Deprecated(forRemoval = true)
         public IntegerPairAccumulator.Config<T> withLeftAccumulator(final IntBinaryOperator leftAccumulator) {
             return new IntegerPairAccumulator.Config<>(
-                    getCategory(),
-                    getName(),
-                    getDescription(),
-                    getUnit(),
-                    getFormat(),
-                    getType(),
-                    getResultFunction(),
+                    category,
+                    name,
+                    description,
+                    unit,
+                    format,
+                    type,
+                    resultFunction,
                     leftAccumulator,
-                    getRightAccumulator(),
-                    getLeftInitializer(),
-                    getRightInitializer());
+                    rightAccumulator,
+                    leftInitializer,
+                    rightInitializer);
         }
 
         /**
          * Getter of the {@code rightAccumulator}
          *
          * @return the {@code rightAccumulator}
+         * @deprecated Please use {@link #rightAccumulator()} instead
          */
+        @Deprecated(forRemoval = true)
         public IntBinaryOperator getRightAccumulator() {
-            return rightAccumulator;
+            return rightAccumulator();
         }
 
         /**
@@ -284,29 +334,33 @@ public interface IntegerPairAccumulator<T> extends Metric {
          *
          * @param rightAccumulator the right accumulator value
          * @return a new configuration-object with updated {@code rightAccumulator}
+         * @deprecated Please use {@link ConfigBuilder} instead
          */
+        @Deprecated(forRemoval = true)
         public IntegerPairAccumulator.Config<T> withRightAccumulator(final IntBinaryOperator rightAccumulator) {
             return new IntegerPairAccumulator.Config<>(
-                    getCategory(),
-                    getName(),
-                    getDescription(),
-                    getUnit(),
-                    getFormat(),
-                    getType(),
-                    getResultFunction(),
-                    getLeftAccumulator(),
+                    category,
+                    name,
+                    description,
+                    unit,
+                    format,
+                    type,
+                    resultFunction,
+                    leftAccumulator,
                     rightAccumulator,
-                    getLeftInitializer(),
-                    getRightInitializer());
+                    leftInitializer,
+                    rightInitializer);
         }
 
         /**
          * Getter of the {@code leftInitializer}
          *
          * @return the {@code leftInitializer}
+         * @deprecated Please use {@link #leftInitializer()} instead
          */
+        @Deprecated(forRemoval = true)
         public IntSupplier getLeftInitializer() {
-            return leftInitializer;
+            return leftInitializer();
         }
 
         /**
@@ -314,20 +368,22 @@ public interface IntegerPairAccumulator<T> extends Metric {
          *
          * @param leftInitializer the left initializer
          * @return a new configuration-object with updated {@code leftInitializer}
+         * @deprecated Please use {@link ConfigBuilder} instead
          */
+        @Deprecated(forRemoval = true)
         public IntegerPairAccumulator.Config<T> withLeftInitializer(final IntSupplier leftInitializer) {
             return new IntegerPairAccumulator.Config<>(
-                    getCategory(),
-                    getName(),
-                    getDescription(),
-                    getUnit(),
-                    getFormat(),
-                    getType(),
-                    getResultFunction(),
-                    getLeftAccumulator(),
-                    getRightAccumulator(),
+                    category,
+                    name,
+                    description,
+                    unit,
+                    format,
+                    type,
+                    resultFunction,
+                    leftAccumulator,
+                    rightAccumulator,
                     leftInitializer,
-                    getRightInitializer());
+                    rightInitializer);
         }
 
         /**
@@ -335,29 +391,33 @@ public interface IntegerPairAccumulator<T> extends Metric {
          *
          * @param leftInitialValue the left initial value
          * @return a new configuration-object with updated {@code leftInitializer}
+         * @deprecated Please use {@link ConfigBuilder} instead
          */
+        @Deprecated(forRemoval = true)
         public IntegerPairAccumulator.Config<T> withLeftInitialValue(final int leftInitialValue) {
             return new IntegerPairAccumulator.Config<>(
-                    getCategory(),
-                    getName(),
-                    getDescription(),
-                    getUnit(),
-                    getFormat(),
-                    getType(),
-                    getResultFunction(),
-                    getLeftAccumulator(),
-                    getRightAccumulator(),
+                    category,
+                    name,
+                    description,
+                    unit,
+                    format,
+                    type,
+                    resultFunction,
+                    leftAccumulator,
+                    rightAccumulator,
                     leftInitialValue == 0 ? DEFAULT_INITIALIZER : () -> leftInitialValue,
-                    getRightInitializer());
+                    rightInitializer);
         }
 
         /**
          * Getter of the {@code rightInitializer}
          *
          * @return the {@code rightInitializer}
+         * @deprecated Please use {@link #rightInitializer()} instead
          */
+        @Deprecated(forRemoval = true)
         public IntSupplier getRightInitializer() {
-            return rightInitializer;
+            return rightInitializer();
         }
 
         /**
@@ -365,19 +425,21 @@ public interface IntegerPairAccumulator<T> extends Metric {
          *
          * @param rightInitializer the right initializer value
          * @return a new configuration-object with updated {@code rightInitializer}
+         * @deprecated Please use {@link ConfigBuilder} instead
          */
+        @Deprecated(forRemoval = true)
         public IntegerPairAccumulator.Config<T> withRightInitializer(final IntSupplier rightInitializer) {
             return new IntegerPairAccumulator.Config<>(
-                    getCategory(),
-                    getName(),
-                    getDescription(),
-                    getUnit(),
-                    getFormat(),
-                    getType(),
-                    getResultFunction(),
-                    getLeftAccumulator(),
-                    getRightAccumulator(),
-                    getLeftInitializer(),
+                    category,
+                    name,
+                    description,
+                    unit,
+                    format,
+                    type,
+                    resultFunction,
+                    leftAccumulator,
+                    rightAccumulator,
+                    leftInitializer,
                     rightInitializer);
         }
 
@@ -386,26 +448,29 @@ public interface IntegerPairAccumulator<T> extends Metric {
          *
          * @param rightInitialValue the right initial value
          * @return a new configuration-object with updated {@code rightInitializer}
+         * @deprecated Please use {@link ConfigBuilder} instead
          */
+        @Deprecated(forRemoval = true)
         public IntegerPairAccumulator.Config<T> withRightInitialValue(final int rightInitialValue) {
             return new IntegerPairAccumulator.Config<>(
-                    getCategory(),
-                    getName(),
-                    getDescription(),
-                    getUnit(),
-                    getFormat(),
-                    getType(),
-                    getResultFunction(),
-                    getLeftAccumulator(),
-                    getRightAccumulator(),
-                    getLeftInitializer(),
+                    category,
+                    name,
+                    description,
+                    unit,
+                    format,
+                    type,
+                    resultFunction,
+                    leftAccumulator,
+                    rightAccumulator,
+                    leftInitializer,
                     rightInitialValue == 0 ? DEFAULT_INITIALIZER : () -> rightInitialValue);
         }
 
         /**
-         * {@inheritDoc}
+         * @deprecated This functionality will be removed soon
          */
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings({"unchecked", "removal"})
+        @Deprecated(forRemoval = true)
         @Override
         public Class<IntegerPairAccumulator<T>> getResultClass() {
             return (Class<IntegerPairAccumulator<T>>) (Class<?>) IntegerPairAccumulator.class;
@@ -415,7 +480,7 @@ public interface IntegerPairAccumulator<T> extends Metric {
          * {@inheritDoc}
          */
         @Override
-        IntegerPairAccumulator<T> create(final MetricsFactory factory) {
+        public IntegerPairAccumulator<T> create(final MetricsFactory factory) {
             return factory.createIntegerPairAccumulator(this);
         }
 
@@ -425,9 +490,149 @@ public interface IntegerPairAccumulator<T> extends Metric {
         @Override
         public String toString() {
             return new ToStringBuilder(this)
-                    .appendSuper(super.toString())
+                    .append("category", category)
+                    .append("name", name)
+                    .append("description", description)
+                    .append("unit", unit)
+                    .append("format", format)
                     .append("type", type.getName())
                     .toString();
         }
+    }
+
+    class ConfigBuilder<T> extends AbstractMetricConfigBuilder<IntegerPairAccumulator<T>, Config<T>, ConfigBuilder<T>> {
+
+        private final Class<T> type;
+
+        private final BiFunction<Integer, Integer, T> resultFunction;
+
+        private IntBinaryOperator leftAccumulator;
+        private IntBinaryOperator rightAccumulator;
+
+        private IntSupplier leftInitializer;
+        private int leftInitialValue;
+
+        private IntSupplier rightInitializer;
+        private int rightInitialValue;
+
+        public ConfigBuilder(final String category, final String name, final Class<T> type, final BiFunction<Integer, Integer, T> resultFunction) {
+            super(category, name);
+            this.type = throwArgNull(type, "type");
+            this.resultFunction = throwArgNull(resultFunction, "resultFunction");
+            this.leftAccumulator = Integer::sum;
+            this.rightAccumulator = Integer::sum;
+            this.leftInitializer = Config.DEFAULT_INITIALIZER;
+            this.rightInitializer = Config.DEFAULT_INITIALIZER;
+        }
+
+        public ConfigBuilder(final MetricConfig<?> config, final Class<T> type, final BiFunction<Integer, Integer, T> resultFunction) {
+            super(config);
+            this.type = throwArgNull(type, "type");
+            this.resultFunction = throwArgNull(resultFunction, "resultFunction");
+            this.leftAccumulator = Integer::sum;
+            this.rightAccumulator = Integer::sum;
+            this.leftInitializer = Config.DEFAULT_INITIALIZER;
+            this.rightInitializer = Config.DEFAULT_INITIALIZER;
+        }
+
+        @Override
+        public ConfigBuilder<T> withUnit(String unit) {
+            return super.withUnit(unit);
+        }
+
+        @Override
+        public ConfigBuilder<T> withFormat(String format) {
+            return super.withFormat(format);
+        }
+
+        public Class<T> getType() {
+            return type;
+        }
+
+        public BiFunction<Integer, Integer, T> getResultFunction() {
+            return resultFunction;
+        }
+
+        public IntBinaryOperator getLeftAccumulator() {
+            return leftAccumulator;
+        }
+
+        public ConfigBuilder<T> withLeftAccumulator(IntBinaryOperator leftAccumulator) {
+            this.leftAccumulator = throwArgNull(leftAccumulator, "leftAccumulator");
+            return this;
+        }
+
+        public IntBinaryOperator getRightAccumulator() {
+            return rightAccumulator;
+        }
+
+        public ConfigBuilder<T> withRightAccumulator(IntBinaryOperator rightAccumulator) {
+            this.rightAccumulator = throwArgNull(rightAccumulator, "rightAccumulator");
+            return this;
+        }
+
+        public IntSupplier getLeftInitializer() {
+            return leftInitializer;
+        }
+
+        public ConfigBuilder<T> withLeftInitializer(IntSupplier leftInitializer) {
+            this.leftInitializer = throwArgNull(leftInitializer, "leftInitializer");
+            return this;
+        }
+
+        public int getLeftInitialValue() {
+            return leftInitialValue;
+        }
+
+        public ConfigBuilder<T> withLeftInitialValue(int leftInitialValue) {
+            this.leftInitialValue = leftInitialValue;
+            return this;
+        }
+
+        public IntSupplier getRightInitializer() {
+            return rightInitializer;
+        }
+
+        public ConfigBuilder<T> withRightInitializer(IntSupplier rightInitializer) {
+            this.rightInitializer = throwArgNull(rightInitializer, "rightInitializer");
+            return this;
+        }
+
+        public int getRightInitialValue() {
+            return rightInitialValue;
+        }
+
+        public ConfigBuilder<T> withRightInitialValue(int rightInitialValue) {
+            this.rightInitialValue = rightInitialValue;
+            return this;
+        }
+
+        @Override
+        public Config<T> build() {
+            IntSupplier leftInit;
+            if (leftInitializer != null) {
+                leftInit = leftInitializer;
+            } else if (leftInitialValue != 0) {
+                leftInit = () -> leftInitialValue;
+            } else {
+                leftInit = Config.DEFAULT_INITIALIZER;
+            }
+            IntSupplier rightInit;
+            if (rightInitializer != null) {
+                rightInit = rightInitializer;
+            } else if (rightInitialValue != 0) {
+                rightInit = () -> rightInitialValue;
+            } else {
+                rightInit = Config.DEFAULT_INITIALIZER;
+            }
+            return new Config<>(getCategory(), getName(), getDescription(), getUnit(), getFormat(), type,
+                    resultFunction, leftAccumulator, rightAccumulator, leftInit, rightInit);
+        }
+
+        @Override
+        protected ConfigBuilder<T> self() {
+            return this;
+        }
+
     }
 }

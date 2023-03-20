@@ -23,24 +23,25 @@ import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
 import com.swirlds.common.metrics.Metric;
+import com.swirlds.common.metrics.Metric.DataType;
 import com.swirlds.common.metrics.platform.Snapshot;
+import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType;
 import com.swirlds.common.system.NodeId;
 import io.prometheus.client.Collector;
 import io.prometheus.client.CollectorRegistry;
-import io.prometheus.client.Info;
-import java.util.Objects;
+import io.prometheus.client.Gauge;
 
 /**
- * Adapter that synchronizes a {@link Metric} with a single value of {@link Metric#getDataType() type} {@code String}
+ * Adapter that synchronizes a {@link Metric} with a single numeric or boolean value
  * with the corresponding Prometheus {@link Collector}.
  */
-public class StringAdapter extends AbstractMetricAdapter {
+public class SingleGaugeAdapter extends AbstractMetricAdapter {
 
-    private final Info info;
+    private final Gauge gauge;
 
     /**
-     * Constructor of {@code StringAdapter}.
+     * Constructor of {@code SingleGaugeAdapter}.
      *
      * @param registry
      * 		The {@link CollectorRegistry} with which the Prometheus {@link Collector} should be registered
@@ -50,18 +51,19 @@ public class StringAdapter extends AbstractMetricAdapter {
      * 		Scope of the {@link Metric}, either {@link AdapterType#GLOBAL} or {@link AdapterType#PLATFORM}
      * @throws IllegalArgumentException if one of the parameters is {@code null}
      */
-    public StringAdapter(final CollectorRegistry registry, final Metric metric, final AdapterType adapterType) {
+    public SingleGaugeAdapter(final CollectorRegistry registry, final Metric metric, final AdapterType adapterType) {
         super(adapterType);
         throwArgNull(registry, "registry");
         throwArgNull(metric, "metric");
-        final Info.Builder builder = new Info.Builder()
+        final Gauge.Builder builder = new Gauge.Builder()
                 .subsystem(fix(metric.getCategory()))
                 .name(fix(metric.getName()))
-                .help(metric.getDescription());
+                .help(metric.getDescription())
+                .unit(metric.getUnit());
         if (adapterType == PLATFORM) {
             builder.labelNames(NODE_LABEL);
         }
-        this.info = builder.register(registry);
+        this.gauge = builder.register(registry);
     }
 
     /**
@@ -70,13 +72,17 @@ public class StringAdapter extends AbstractMetricAdapter {
     @Override
     public void update(final Snapshot snapshot, final NodeId nodeId) {
         throwArgNull(snapshot, "snapshot");
-        final String newValue = Objects.toString(snapshot.getValue());
+        // A SingleGaugeAdapter can have only one entry
+        SnapshotEntry snapshotEntry = snapshot.entries().get(0);
+        final double newValue = snapshot.metric().getDataType() == DataType.BOOLEAN
+                ? convertBoolean(snapshotEntry.value())
+                : convertDouble(snapshotEntry.value());
         if (adapterType == GLOBAL) {
-            info.info("value", newValue);
+            gauge.set(newValue);
         } else {
             throwArgNull(nodeId, "nodeId");
-            final Info.Child child = info.labels(Long.toString(nodeId.getId()));
-            child.info("value", newValue);
+            final Gauge.Child child = gauge.labels(Long.toString(nodeId.getId()));
+            child.set(newValue);
         }
     }
 
@@ -85,6 +91,6 @@ public class StringAdapter extends AbstractMetricAdapter {
      */
     @Override
     public void unregister(final CollectorRegistry registry) {
-        registry.unregister(info);
+        registry.unregister(gauge);
     }
 }

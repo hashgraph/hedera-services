@@ -24,7 +24,7 @@ import com.swirlds.common.metrics.MetricConfig;
  */
 public class NoOpIntegerGauge extends AbstractNoOpMetric implements IntegerGauge {
 
-    public NoOpIntegerGauge(final MetricConfig<?, ?> config) {
+    public NoOpIntegerGauge(final MetricConfig<?> config) {
         super(config);
     }
 

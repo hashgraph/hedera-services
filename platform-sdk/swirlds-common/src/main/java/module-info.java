@@ -152,6 +152,7 @@ module com.swirlds.common {
     opens com.swirlds.common.units to
             com.fasterxml.jackson.databind;
 
+    exports com.swirlds.common.metrics.auxiliary;
     exports com.swirlds.common.metrics.extensions;
 
     requires com.swirlds.base;

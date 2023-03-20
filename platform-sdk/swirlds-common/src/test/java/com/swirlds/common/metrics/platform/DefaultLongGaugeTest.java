@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.LongGauge;
 import com.swirlds.common.metrics.Metric;
-import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
+import com.swirlds.common.metrics.platform.DefaultMetric.LegacySnapshotEntry;
 import com.swirlds.common.statistics.StatsBuffered;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -88,12 +88,12 @@ class DefaultLongGaugeTest {
         final DefaultLongGauge gauge = new DefaultLongGauge(config);
 
         // when
-        final List<SnapshotEntry> snapshot = gauge.takeSnapshot();
+        final List<LegacySnapshotEntry> snapshot = gauge.takeSnapshot();
 
         // then
         assertEquals(2L, gauge.get(), "Value should be 2");
         assertEquals(2L, gauge.get(VALUE), "Value should be 2");
-        assertThat(snapshot).containsExactly(new SnapshotEntry(VALUE, 2L));
+        assertThat(snapshot).containsExactly(new LegacySnapshotEntry(VALUE, 2L));
     }
 
     @Test

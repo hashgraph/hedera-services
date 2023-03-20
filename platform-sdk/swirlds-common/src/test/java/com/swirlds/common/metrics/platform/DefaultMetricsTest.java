@@ -553,7 +553,7 @@ class DefaultMetricsTest {
 
     @Test
     void testRemoveByConfigWithNullParameter() {
-        assertThatThrownBy(() -> metrics.remove((MetricConfig<?, ?>) null))
+        assertThatThrownBy(() -> metrics.remove((MetricConfig<?>) null))
                 .isInstanceOf(IllegalArgumentException.class);
         verify(subscriber, never()).accept(any());
     }

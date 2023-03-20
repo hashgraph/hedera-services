@@ -195,7 +195,6 @@ public class SnapshotService implements Startable {
         final long start = time.nanoTime();
 
         final Map<String, Snapshot> globalSnapshots = globalMetrics.getAll().stream()
-                .map(DefaultMetric.class::cast)
                 .map(Snapshot::of)
                 .collect(Collectors.toMap(snapshot -> calculateMetricKey(snapshot.metric()), Function.identity()));
 
@@ -207,7 +206,7 @@ public class SnapshotService implements Startable {
         for (final DefaultMetrics platformMetrics : platformMetricsList) {
             final List<Snapshot> platformSnapshots = platformMetrics.getAll().stream()
                     .map(metric -> globalSnapshots.getOrDefault(
-                            calculateMetricKey(metric), Snapshot.of((DefaultMetric) metric)))
+                            calculateMetricKey(metric), Snapshot.of(metric)))
                     .toList();
 
             logger.trace(() -> String.format(

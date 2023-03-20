@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.SpeedometerMetric;
-import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
+import com.swirlds.common.metrics.platform.DefaultMetric.LegacySnapshotEntry;
 import com.swirlds.common.statistics.StatsBuffered;
 import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.test.framework.TestQualifierTags;
@@ -302,7 +302,7 @@ class DefaultSpeedometerMetricTest {
         sendCycles(metric, time, 0, 1000, 1000);
         time.set(Duration.ofSeconds(1000));
         final double rate = metric.get();
-        final List<SnapshotEntry> snapshot = metric.takeSnapshot();
+        final List<LegacySnapshotEntry> snapshot = metric.takeSnapshot();
 
         // then
         assertEquals(1000.0, rate, 0.001, "Rate should be 1000.0");

@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.swirlds.common.metrics.DoubleGauge;
 import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.Metric;
-import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
+import com.swirlds.common.metrics.platform.DefaultMetric.LegacySnapshotEntry;
 import com.swirlds.common.statistics.StatsBuffered;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -108,7 +108,7 @@ class DefaultDoubleGaugeTest {
         final DefaultDoubleGauge gauge = new DefaultDoubleGauge(config);
 
         // when
-        final List<SnapshotEntry> snapshot = gauge.takeSnapshot();
+        final List<LegacySnapshotEntry> snapshot = gauge.takeSnapshot();
 
         // then
         assertEquals(Math.PI, gauge.get(), EPSILON, "Value should be " + Math.PI);

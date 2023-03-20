@@ -20,7 +20,6 @@ import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 
 import com.swirlds.common.metrics.DoubleGauge;
 import com.swirlds.common.metrics.atomic.AtomicDouble;
-import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import java.util.List;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
@@ -39,9 +38,10 @@ public class DefaultDoubleGauge extends DefaultMetric implements DoubleGauge {
     /**
      * {@inheritDoc}
      */
+    @SuppressWarnings("removal")
     @Override
-    public List<SnapshotEntry> takeSnapshot() {
-        return List.of(new SnapshotEntry(VALUE, get()));
+    public List<LegacySnapshotEntry> takeSnapshot() {
+        return List.of(new LegacySnapshotEntry(VALUE, get()));
     }
 
     /**

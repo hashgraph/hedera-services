@@ -26,10 +26,12 @@ import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.sun.net.httpserver.HttpServer;
 import com.swirlds.common.AutoCloseableNonThrowing;
+import com.swirlds.common.metrics.BaseMetric;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
 import com.swirlds.common.metrics.Metric;
+import com.swirlds.common.metrics.Metric.DataType;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
@@ -169,20 +171,25 @@ public class PrometheusEndpoint implements AutoCloseableNonThrowing {
     @SuppressWarnings("removal")
     private MetricAdapter doCreate(final NodeId nodeId, final Metric metric) {
         final AdapterType adapterType = nodeId == null ? GLOBAL : PLATFORM;
-        if (metric instanceof Counter) {
+        final Map<String, BaseMetric> baseMetrics = metric.getBaseMetrics();
+
+        if (baseMetrics.size() > 1) {
+            return new MultipleGaugeAdapter(registry, metric, adapterType);
+        }
+
+        final BaseMetric baseMetric = baseMetrics.values().iterator().next();
+        if (baseMetric instanceof Counter) {
             return new CounterAdapter(registry, metric, adapterType);
-        } else if (metric instanceof RunningAverageMetric || metric instanceof SpeedometerMetric) {
+        } else if (baseMetric instanceof RunningAverageMetric || baseMetric instanceof SpeedometerMetric) {
             return new DistributionAdapter(registry, metric, adapterType);
-        } else if (metric instanceof IntegerPairAccumulator<?>
-                || metric instanceof FunctionGauge<?>
-                || metric instanceof StatEntry) {
-            return switch (metric.getDataType()) {
-                case STRING -> new StringAdapter(registry, metric, adapterType);
-                case BOOLEAN -> new BooleanAdapter(registry, metric, adapterType);
-                default -> new NumberAdapter(registry, metric, adapterType);
-            };
+        } else if (baseMetric instanceof IntegerPairAccumulator<?>
+                || baseMetric instanceof FunctionGauge<?>
+                || baseMetric instanceof StatEntry) {
+            return baseMetric.getDataType() == DataType.STRING
+                    ? new InfoAdapter(registry, metric, adapterType)
+                    : new SingleGaugeAdapter(registry, metric, adapterType);
         } else {
-            return new NumberAdapter(registry, metric, adapterType);
+            return new SingleGaugeAdapter(registry, metric, adapterType);
         }
     }
 

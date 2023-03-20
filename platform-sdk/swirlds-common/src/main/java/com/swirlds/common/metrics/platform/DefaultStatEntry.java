@@ -24,7 +24,6 @@ import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.metrics.MetricConfig;
 import com.swirlds.common.metrics.StatEntry;
-import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.common.statistics.StatsBuffered;
 import java.util.List;
 import java.util.function.Consumer;
@@ -111,10 +110,11 @@ public class DefaultStatEntry extends DefaultMetric implements StatEntry {
     /**
      * {@inheritDoc}
      */
+    @SuppressWarnings("removal")
     @Override
-    public List<SnapshotEntry> takeSnapshot() {
+    public List<LegacySnapshotEntry> takeSnapshot() {
         if (buffered == null) {
-            return List.of(new SnapshotEntry(VALUE, resetStatsStringSupplier.get()));
+            return List.of(new LegacySnapshotEntry(VALUE, resetStatsStringSupplier.get()));
         }
 
         final double max = buffered.getMax();
@@ -122,10 +122,10 @@ public class DefaultStatEntry extends DefaultMetric implements StatEntry {
         final double stdDev = buffered.getStdDev();
         final Object value = resetStatsStringSupplier.get();
         return List.of(
-                new SnapshotEntry(VALUE, value),
-                new SnapshotEntry(MAX, max),
-                new SnapshotEntry(MIN, min),
-                new SnapshotEntry(STD_DEV, stdDev));
+                new LegacySnapshotEntry(VALUE, value),
+                new LegacySnapshotEntry(MAX, max),
+                new LegacySnapshotEntry(MIN, min),
+                new LegacySnapshotEntry(STD_DEV, stdDev));
     }
 
     /**

@@ -20,8 +20,10 @@ import static com.swirlds.common.metrics.Metric.ValueType.MAX;
 import static com.swirlds.common.metrics.Metric.ValueType.MIN;
 import static com.swirlds.common.metrics.Metric.ValueType.STD_DEV;
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.common.utility.CommonUtils.throwArgBlank;
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
+import com.swirlds.common.metrics.IntegerAccumulator.ConfigBuilder;
 import com.swirlds.common.statistics.StatsBuffered;
 import java.util.EnumSet;
 import java.util.function.Consumer;
@@ -35,11 +37,15 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  * @deprecated This class will be removed. Use one of the specialized {@link Metric}-implementations instead.
  */
 @Deprecated(forRemoval = true)
-public interface StatEntry extends Metric {
+public non-sealed interface StatEntry extends BaseMetric {
 
     /**
      * {@inheritDoc}
+     *
+     * @deprecated {@link MetricType} turned out to be too limited. You can use the class-name instead.
      */
+    @SuppressWarnings("removal")
+    @Deprecated(forRemoval = true)
     @Override
     default MetricType getMetricType() {
         return MetricType.STAT_ENTRY;
@@ -47,7 +53,12 @@ public interface StatEntry extends Metric {
 
     /**
      * {@inheritDoc}
+     *
+     * @deprecated {@code ValueType} turned out to be too limited. You can get sub-metrics via
+     * {@link #getBaseMetrics()}.
      */
+    @SuppressWarnings("removal")
+    @Deprecated(forRemoval = true)
     @Override
     default EnumSet<ValueType> getValueTypes() {
         return getBuffered() == null ? EnumSet.of(VALUE) : EnumSet.of(VALUE, MAX, MIN, STD_DEV);
@@ -55,7 +66,12 @@ public interface StatEntry extends Metric {
 
     /**
      * {@inheritDoc}
+     *
+     * @deprecated {@code ValueType} turned out to be too limited. You can get sub-metrics via
+     * {@link #getBaseMetrics()}.
      */
+    @SuppressWarnings("removal")
+    @Deprecated(forRemoval = true)
     @Override
     default Object get(final ValueType valueType) {
         throwArgNull(valueType, "valueType");
@@ -97,8 +113,8 @@ public interface StatEntry extends Metric {
     Supplier<Object> getStatsStringSupplier();
 
     /**
-     * Getter for {@code resetStatsStringSupplier}, a lambda that returns the statistic string
-     * and resets it at the same time
+     * Getter for {@code resetStatsStringSupplier}, a lambda that returns the statistic string and resets it at the same
+     * time
      *
      * @return the lambda
      */
@@ -109,130 +125,152 @@ public interface StatEntry extends Metric {
      *
      * @param <T> the type of the value that will be contained in the {@code StatEntry}
      */
-    final class Config<T> extends MetricConfig<StatEntry, Config<T>> {
+    record Config<T>(
+            String category,
+            String name,
+            String description,
+            String unit,
+            String format,
+            Class<T> type,
+            StatsBuffered buffered,
+            Function<Double, StatsBuffered> init,
+            Consumer<Double> reset,
+            Supplier<T> statsStringSupplier,
+            Supplier<T> resetStatsStringSupplier
 
-        private final Class<T> type;
-        private final StatsBuffered buffered;
-        private final Function<Double, StatsBuffered> init;
-        private final Consumer<Double> reset;
-        private final Supplier<T> statsStringSupplier;
-        private final Supplier<T> resetStatsStringSupplier;
+    ) implements MetricConfig<StatEntry> {
+
+        /**
+         * Constructor of {@code Counter.Config}
+         *
+         * @param category the kind of metric (metrics are grouped or filtered by this)
+         * @param name a short name for the metric
+         * @param description a longer description of the metric
+         * @param unit the unit of the metric
+         * @param format the format of the metric
+         * @param type the type of the values this {@code StatEntry} returns
+         * @param buffered the {@link StatsBuffered}, if available, otherwise {@code null}
+         * @param init a lambda that initializes the {@link StatsBuffered}, using the given half life
+         * @param reset a lambda that resets the metric, using the given half life
+         * @param statsStringSupplier a lambda that returns the metric value
+         * @throws IllegalArgumentException if one of the mandatory parameters is {@code null} or consists only of
+         * whitespaces (except for {@code unit} which can be empty)
+         */
+        public Config {
+            throwArgBlank(category, "category");
+            throwArgBlank(name, "name");
+            MetricConfig.checkDescription(description);
+            throwArgNull(unit, "unit");
+            throwArgBlank(format, "format");
+            throwArgNull(type, "type");
+            throwArgNull(statsStringSupplier, "statsStringSupplier");
+            throwArgNull(resetStatsStringSupplier, "resetStatsStringSupplier");
+        }
 
         /**
          * stores all the parameters, which can be accessed directly
          *
-         * @param category
-         * 		the kind of metric (metrics are grouped or filtered by this)
-         * @param name
-         * 		a short name for the metric
-         * @param type
-         * 		the type of the values this {@code StatEntry} returns
-         * @param statsStringSupplier
-         * 		a lambda that returns the metric string
-         * @throws IllegalArgumentException
-         * 		if one of the parameters is {@code null} or consists only of whitespaces
+         * @param category the kind of metric (metrics are grouped or filtered by this)
+         * @param name a short name for the metric
+         * @param type the type of the values this {@code StatEntry} returns
+         * @param statsStringSupplier a lambda that returns the metric string
+         * @throws IllegalArgumentException if one of the parameters is {@code null} or consists only of whitespaces
          */
         public Config(
                 final String category, final String name, final Class<T> type, final Supplier<T> statsStringSupplier) {
-
-            super(category, name, FloatFormats.FORMAT_11_3);
-            this.type = throwArgNull(type, "type");
-            this.buffered = null;
-            this.init = null;
-            this.reset = null;
-            this.statsStringSupplier = throwArgNull(statsStringSupplier, "statsStringSupplier");
-            this.resetStatsStringSupplier = statsStringSupplier;
-        }
-
-        @SuppressWarnings("java:S107")
-        private Config(
-                final String category,
-                final String name,
-                final String description,
-                final String unit,
-                final String format,
-                final Class<T> type,
-                final StatsBuffered buffered,
-                final Function<Double, StatsBuffered> init,
-                final Consumer<Double> reset,
-                final Supplier<T> statsStringSupplier,
-                final Supplier<T> resetStatsStringSupplier) {
-            super(category, name, description, unit, format);
-            this.type = throwArgNull(type, "type");
-            this.buffered = buffered;
-            this.init = init;
-            this.reset = reset;
-            this.statsStringSupplier = throwArgNull(statsStringSupplier, "statsStringSupplier");
-            this.resetStatsStringSupplier = throwArgNull(resetStatsStringSupplier, "resetStatsStringSupplier");
+            this(
+                    category,
+                    name,
+                    name,
+                    "",
+                    FloatFormats.FORMAT_11_3,
+                    type,
+                    null,
+                    null,
+                    null,
+                    statsStringSupplier,
+                    statsStringSupplier);
         }
 
         /**
-         * {@inheritDoc}
+         * Sets the {@link Metric#getDescription() Metric.description} in fluent style.
+         *
+         * @param description the description
+         * @return a new configuration-object with updated {@code description}
+         * @throws IllegalArgumentException if {@code description} is {@code null}, too long or consists only of whitespaces
+         * @deprecated Please use {@link ConfigBuilder} instead.
          */
-        @Override
+        @Deprecated(forRemoval = true)
         public StatEntry.Config<T> withDescription(final String description) {
             return new StatEntry.Config<>(
-                    getCategory(),
-                    getName(),
+                    category,
+                    name,
                     description,
-                    getUnit(),
-                    getFormat(),
-                    getType(),
-                    getBuffered(),
-                    getInit(),
-                    getReset(),
-                    getStatsStringSupplier(),
-                    getResetStatsStringSupplier());
+                    unit,
+                    format,
+                    type,
+                    buffered,
+                    init,
+                    reset,
+                    statsStringSupplier,
+                    resetStatsStringSupplier);
         }
 
         /**
-         * {@inheritDoc}
+         * Sets the {@link Metric#getUnit() Metric.unit} in fluent style.
+         *
+         * @param unit the unit
+         * @return a new configuration-object with updated {@code unit}
+         * @throws IllegalArgumentException if {@code unit} is {@code null}
+         * @deprecated Please use {@link ConfigBuilder} instead
          */
-        @Override
+        @Deprecated(forRemoval = true)
         public StatEntry.Config<T> withUnit(final String unit) {
             return new StatEntry.Config<>(
-                    getCategory(),
-                    getName(),
-                    getDescription(),
+                    category,
+                    name,
+                    description,
                     unit,
-                    getFormat(),
-                    getType(),
-                    getBuffered(),
-                    getInit(),
-                    getReset(),
-                    getStatsStringSupplier(),
-                    getResetStatsStringSupplier());
+                    format,
+                    type,
+                    buffered,
+                    init,
+                    reset,
+                    statsStringSupplier,
+                    resetStatsStringSupplier);
         }
 
         /**
          * Sets the {@link Metric#getFormat() Metric.format} in fluent style.
          *
-         * @param format
-         * 		the format-string
+         * @param format the format-string
          * @return a new configuration-object with updated {@code format}
-         * @throws IllegalArgumentException
-         * 		if {@code format} is {@code null} or consists only of whitespaces
+         * @throws IllegalArgumentException if {@code format} is {@code null} or consists only of whitespaces
+         * @deprecated Please use {@link ConfigBuilder} instead
          */
+        @Deprecated(forRemoval = true)
         public StatEntry.Config<T> withFormat(final String format) {
             return new StatEntry.Config<>(
-                    getCategory(),
-                    getName(),
-                    getDescription(),
-                    getUnit(),
+                    category,
+                    name,
+                    description,
+                    unit,
                     format,
-                    getType(),
-                    getBuffered(),
-                    getInit(),
-                    getReset(),
-                    getStatsStringSupplier(),
-                    getResetStatsStringSupplier());
+                    type,
+                    buffered,
+                    init,
+                    reset,
+                    statsStringSupplier,
+                    resetStatsStringSupplier);
         }
 
         /**
          * Getter of the type of the returned values
          *
          * @return the type of the returned values
+         * @deprecated Please use {@link #type()} instead
          */
+        @Deprecated(forRemoval = true)
         public Class<T> getType() {
             return type;
         }
@@ -241,7 +279,9 @@ public interface StatEntry extends Metric {
          * Getter of {@code buffered}
          *
          * @return {@code buffered}
+         * @deprecated Please use {@link #buffered()} instead
          */
+        @Deprecated(forRemoval = true)
         public StatsBuffered getBuffered() {
             return buffered;
         }
@@ -249,30 +289,33 @@ public interface StatEntry extends Metric {
         /**
          * Fluent-style setter of {@code buffered}.
          *
-         * @param buffered
-         * 		the {@link StatsBuffered}
+         * @param buffered the {@link StatsBuffered}
          * @return a reference to {@code this}
+         * @deprecated Please use {@link ConfigBuilder} instead
          */
+        @Deprecated(forRemoval = true)
         public StatEntry.Config<T> withBuffered(final StatsBuffered buffered) {
             return new StatEntry.Config<>(
-                    getCategory(),
-                    getName(),
-                    getDescription(),
-                    getUnit(),
-                    getFormat(),
-                    getType(),
+                    category,
+                    name,
+                    description,
+                    unit,
+                    format,
+                    type,
                     buffered,
-                    getInit(),
-                    getReset(),
-                    getStatsStringSupplier(),
-                    getResetStatsStringSupplier());
+                    init,
+                    reset,
+                    statsStringSupplier,
+                    resetStatsStringSupplier);
         }
 
         /**
          * Getter of {@code init}
          *
          * @return {@code init}
+         * @deprecated Please use {@link #init()} instead
          */
+        @Deprecated(forRemoval = true)
         public Function<Double, StatsBuffered> getInit() {
             return init;
         }
@@ -280,30 +323,33 @@ public interface StatEntry extends Metric {
         /**
          * Fluent-style setter of {@code init}.
          *
-         * @param init
-         * 		the init-function
+         * @param init the init-function
          * @return a reference to {@code this}
+         * @deprecated Please use {@link ConfigBuilder} instead
          */
+        @Deprecated(forRemoval = true)
         public StatEntry.Config<T> withInit(final Function<Double, StatsBuffered> init) {
             return new StatEntry.Config<>(
-                    getCategory(),
-                    getName(),
-                    getDescription(),
-                    getUnit(),
-                    getFormat(),
-                    getType(),
-                    getBuffered(),
+                    category,
+                    name,
+                    description,
+                    unit,
+                    format,
+                    type,
+                    buffered,
                     init,
-                    getReset(),
-                    getStatsStringSupplier(),
-                    getResetStatsStringSupplier());
+                    reset,
+                    statsStringSupplier,
+                    resetStatsStringSupplier);
         }
 
         /**
          * Getter of {@code reset}
          *
          * @return {@code reset}
+         * @deprecated Please use {@link #reset()} instead
          */
+        @Deprecated(forRemoval = true)
         public Consumer<Double> getReset() {
             return reset;
         }
@@ -311,30 +357,33 @@ public interface StatEntry extends Metric {
         /**
          * Fluent-style setter of {@code reset}.
          *
-         * @param reset
-         * 		the reset-function
+         * @param reset the reset-function
          * @return a reference to {@code this}
+         * @deprecated Please use {@link ConfigBuilder} instead
          */
+        @Deprecated(forRemoval = true)
         public StatEntry.Config<T> withReset(final Consumer<Double> reset) {
             return new StatEntry.Config<>(
-                    getCategory(),
-                    getName(),
-                    getDescription(),
-                    getUnit(),
-                    getFormat(),
-                    getType(),
-                    getBuffered(),
-                    getInit(),
+                    category,
+                    name,
+                    description,
+                    unit,
+                    format,
+                    type,
+                    buffered,
+                    init,
                     reset,
-                    getStatsStringSupplier(),
-                    getResetStatsStringSupplier());
+                    statsStringSupplier,
+                    resetStatsStringSupplier);
         }
 
         /**
          * Getter of {@code statsStringSupplier}
          *
          * @return {@code statsStringSupplier}
+         * @deprecated Please use {@link #statsStringSupplier()} instead
          */
+        @Deprecated(forRemoval = true)
         public Supplier<T> getStatsStringSupplier() {
             return statsStringSupplier;
         }
@@ -343,7 +392,9 @@ public interface StatEntry extends Metric {
          * Getter of {@code resetStatsStringSupplier}
          *
          * @return {@code resetStatsStringSupplier}
+         * @deprecated Please use {@link #resetStatsStringSupplier()} instead
          */
+        @Deprecated(forRemoval = true)
         public Supplier<T> getResetStatsStringSupplier() {
             return resetStatsStringSupplier;
         }
@@ -351,28 +402,33 @@ public interface StatEntry extends Metric {
         /**
          * Fluent-style setter of {@code resetStatsStringSupplier}.
          *
-         * @param resetStatsStringSupplier
-         * 		the reset-supplier
+         * @param resetStatsStringSupplier the reset-supplier
          * @return a reference to {@code this}
+         * @deprecated Please use {@link ConfigBuilder} instead
          */
+        @Deprecated(forRemoval = true)
         public StatEntry.Config<T> withResetStatsStringSupplier(final Supplier<T> resetStatsStringSupplier) {
             return new StatEntry.Config<>(
-                    getCategory(),
-                    getName(),
-                    getDescription(),
-                    getUnit(),
-                    getFormat(),
-                    getType(),
-                    getBuffered(),
-                    getInit(),
-                    getReset(),
-                    getStatsStringSupplier(),
+                    category,
+                    name,
+                    description,
+                    unit,
+                    format,
+                    type,
+                    buffered,
+                    init,
+                    reset,
+                    statsStringSupplier,
                     resetStatsStringSupplier);
         }
 
         /**
          * {@inheritDoc}
+         *
+         * @deprecated This functionality will be removed soon
          */
+        @SuppressWarnings("removal")
+        @Deprecated(forRemoval = true)
         @Override
         public Class<StatEntry> getResultClass() {
             return StatEntry.class;
@@ -382,7 +438,7 @@ public interface StatEntry extends Metric {
          * {@inheritDoc}
          */
         @Override
-        StatEntry create(final MetricsFactory factory) {
+        public StatEntry create(final MetricsFactory factory) {
             return factory.createStatEntry(this);
         }
 
@@ -392,8 +448,12 @@ public interface StatEntry extends Metric {
         @Override
         public String toString() {
             return new ToStringBuilder(this)
-                    .appendSuper(super.toString())
-                    .append("type", type.getName())
+                    .append("category", category)
+                    .append("name", name)
+                    .append("description", description)
+                    .append("unit", unit)
+                    .append("format", format)
+                    .append("type", type)
                     .toString();
         }
     }

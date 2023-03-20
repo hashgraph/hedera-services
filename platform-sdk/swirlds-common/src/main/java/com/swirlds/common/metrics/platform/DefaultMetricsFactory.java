@@ -27,6 +27,8 @@ import com.swirlds.common.metrics.IntegerPairAccumulator;
 import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.metrics.LongGauge;
 import com.swirlds.common.metrics.Metric;
+import com.swirlds.common.metrics.Metric.DataType;
+import com.swirlds.common.metrics.MetricConfig;
 import com.swirlds.common.metrics.MetricsFactory;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
@@ -128,6 +130,20 @@ public class DefaultMetricsFactory implements MetricsFactory {
     @Override
     public SpeedometerMetric createSpeedometerMetric(final SpeedometerMetric.Config config) {
         return new DefaultSpeedometerMetric(config);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public <T extends Metric> T createSubMetric(MetricConfig<?> mainConfig, MetricConfig<T> subMetricConfig) {
+        final T metric = subMetricConfig.create(this);
+        boolean stringTypeFound = metric.getBaseMetrics().values().stream()
+                .anyMatch(m -> m.getDataType() == DataType.STRING);
+        if (stringTypeFound) {
+            throw new IllegalArgumentException("Metric groups cannot contain sub-metrics with data-type STRING");
+        }
+        return metric;
     }
 
     /**

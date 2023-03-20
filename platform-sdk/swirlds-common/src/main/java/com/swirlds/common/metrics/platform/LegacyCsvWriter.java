@@ -26,10 +26,12 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 
 import com.swirlds.common.internal.SettingsCommon;
+import com.swirlds.common.metrics.BaseMetric;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.Metric.ValueType;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.config.MetricsConfig;
+import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.utility.ThresholdLimitingHandler;
 import java.io.IOException;
@@ -199,8 +201,7 @@ public class LegacyCsvWriter {
                 addAllSupportedTypes(categories, names, metric);
             } else {
                 // Only main value needs to be added
-                categories.add(metric.getCategory());
-                names.add(metric.getName());
+                addOnlyMainValues(categories, names, metric);
             }
         }
         builder.addCell("").addCell("").addCells(categories).newRow(); // indent by two columns
@@ -211,14 +212,25 @@ public class LegacyCsvWriter {
     private static void addAllSupportedTypes(
             final List<String> categories, final List<String> names, final Metric metric) {
 
-        for (final ValueType metricType : metric.getValueTypes()) {
-            categories.add(metric.getCategory());
-            switch (metricType) {
-                case MAX -> names.add(metric.getName() + "Max");
-                case MIN -> names.add(metric.getName() + "Min");
-                case STD_DEV -> names.add(metric.getName() + "Std");
-                default -> names.add(metric.getName());
+        for (final BaseMetric baseMetric : metric.getBaseMetrics().values()) {
+            for (final ValueType metricType : baseMetric.getValueTypes()) {
+                categories.add(baseMetric.getCategory());
+                switch (metricType) {
+                    case MAX -> names.add(baseMetric.getName() + "Max");
+                    case MIN -> names.add(baseMetric.getName() + "Min");
+                    case STD_DEV -> names.add(baseMetric.getName() + "Std");
+                    default -> names.add(baseMetric.getName());
+                }
             }
+        }
+    }
+
+    private static void addOnlyMainValues(
+            final List<String> categories, final List<String> names, final Metric metric) {
+
+        for (final BaseMetric baseMetric : metric.getBaseMetrics().values()) {
+            categories.add(baseMetric.getCategory());
+            names.add(baseMetric.getName());
         }
     }
 
@@ -271,22 +283,12 @@ public class LegacyCsvWriter {
     }
 
     private void addSnapshotData(final ContentBuilder builder, final Snapshot snapshot) {
-        if (showAllEntries(snapshot.metric())) {
-            // add all supported value-types
-            snapshot.entries().forEach(entry -> builder.addCell(format(snapshot.metric(), entry.value())));
-        } else {
-            // add only main value
-            final List<Snapshot.SnapshotEntry> entries = snapshot.entries();
-            final Object value = entries.size() == 1
-                    ? entries.get(0).value()
-                    : entries.stream()
-                            .filter(entry -> entry.valueType() == ValueType.VALUE)
-                            .findAny()
-                            .map(Snapshot.SnapshotEntry::value)
-                            .orElse(null);
-
-            builder.addCell(format(snapshot.metric(), value));
-        }
+        final List<SnapshotEntry> entries = showAllEntries(snapshot.metric())
+                ? snapshot.entries()
+                : snapshot.getMainEntry()
+                        .map(List::of)
+                        .orElse(snapshot.entries());
+        entries.forEach(entry -> builder.addCell(format(snapshot.metric(), entry.value())));
     }
 
     // Format the given value according to the given format

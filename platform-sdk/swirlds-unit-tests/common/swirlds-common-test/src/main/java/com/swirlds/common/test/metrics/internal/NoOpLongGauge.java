@@ -24,7 +24,7 @@ import com.swirlds.common.metrics.MetricConfig;
  */
 public class NoOpLongGauge extends AbstractNoOpMetric implements LongGauge {
 
-    public NoOpLongGauge(final MetricConfig<?, ?> config) {
+    public NoOpLongGauge(final MetricConfig<?> config) {
         super(config);
     }
 

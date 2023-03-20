@@ -40,9 +40,10 @@ public class DefaultDurationGauge extends DefaultMetric implements DurationGauge
     /**
      * {@inheritDoc}
      */
+    @SuppressWarnings("removal")
     @Override
-    public List<Snapshot.SnapshotEntry> takeSnapshot() {
-        return List.of(new Snapshot.SnapshotEntry(VALUE, get()));
+    public List<LegacySnapshotEntry> takeSnapshot() {
+        return List.of(new LegacySnapshotEntry(VALUE, get()));
     }
 
     private double getAsDouble() {

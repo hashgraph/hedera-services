@@ -21,28 +21,28 @@ import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType.PLATFORM;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.NODE_LABEL;
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-import static java.lang.Boolean.TRUE;
 
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.platform.Snapshot;
+import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType;
 import com.swirlds.common.system.NodeId;
 import io.prometheus.client.Collector;
 import io.prometheus.client.CollectorRegistry;
-import io.prometheus.client.Gauge;
+import io.prometheus.client.Info;
+import java.util.Objects;
 
 /**
- * Adapter that synchronizes a {@link Metric} with a single value of {@link Metric#getDataType() type} {@code boolean}
+ * Adapter that synchronizes a {@link Metric} with a single value of {@link Metric#getDataType() type} {@code String}
  * with the corresponding Prometheus {@link Collector}.
  */
-public class BooleanAdapter extends AbstractMetricAdapter {
+@SuppressWarnings("removal")
+public class InfoAdapter extends AbstractMetricAdapter {
 
-    private static final double TRUE_VALUE = 1.0;
-    private static final double FALSE_VALUE = 0.0;
-    private final Gauge gauge;
+    private final Info info;
 
     /**
-     * Constructor of {@code BooleanAdapter}.
+     * Constructor of {@code StringAdapter}.
      *
      * @param registry
      * 		The {@link CollectorRegistry} with which the Prometheus {@link Collector} should be registered
@@ -52,18 +52,18 @@ public class BooleanAdapter extends AbstractMetricAdapter {
      * 		Scope of the {@link Metric}, either {@link AdapterType#GLOBAL} or {@link AdapterType#PLATFORM}
      * @throws IllegalArgumentException if one of the parameters is {@code null}
      */
-    public BooleanAdapter(final CollectorRegistry registry, final Metric metric, final AdapterType adapterType) {
+    public InfoAdapter(final CollectorRegistry registry, final Metric metric, final AdapterType adapterType) {
         super(adapterType);
         throwArgNull(registry, "registry");
         throwArgNull(metric, "metric");
-        final Gauge.Builder builder = new Gauge.Builder()
+        final Info.Builder builder = new Info.Builder()
                 .subsystem(fix(metric.getCategory()))
                 .name(fix(metric.getName()))
                 .help(metric.getDescription());
         if (adapterType == PLATFORM) {
             builder.labelNames(NODE_LABEL);
         }
-        this.gauge = builder.register(registry);
+        this.info = builder.register(registry);
     }
 
     /**
@@ -72,13 +72,15 @@ public class BooleanAdapter extends AbstractMetricAdapter {
     @Override
     public void update(final Snapshot snapshot, final NodeId nodeId) {
         throwArgNull(snapshot, "snapshot");
-        final double newValue = TRUE.equals(snapshot.getValue()) ? TRUE_VALUE : FALSE_VALUE;
+        // An InfoAdapter can have only one entry
+        SnapshotEntry snapshotEntry = snapshot.entries().get(0);
+        final String newValue = Objects.toString(snapshotEntry.value());
         if (adapterType == GLOBAL) {
-            gauge.set(newValue);
+            info.info("value", newValue);
         } else {
             throwArgNull(nodeId, "nodeId");
-            final Gauge.Child child = gauge.labels(Long.toString(nodeId.getId()));
-            child.set(newValue);
+            final Info.Child child = info.labels(Long.toString(nodeId.getId()));
+            child.info("value", newValue);
         }
     }
 
@@ -87,6 +89,6 @@ public class BooleanAdapter extends AbstractMetricAdapter {
      */
     @Override
     public void unregister(final CollectorRegistry registry) {
-        registry.unregister(gauge);
+        registry.unregister(info);
     }
 }

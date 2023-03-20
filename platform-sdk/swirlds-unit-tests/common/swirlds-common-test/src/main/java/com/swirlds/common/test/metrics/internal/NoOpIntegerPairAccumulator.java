@@ -27,7 +27,7 @@ public class NoOpIntegerPairAccumulator<T> extends AbstractNoOpMetric implements
 
     private final T value;
 
-    public NoOpIntegerPairAccumulator(final MetricConfig<?, ?> config, final T value) {
+    public NoOpIntegerPairAccumulator(final MetricConfig<?> config, final T value) {
         super(config);
         this.value = value;
     }

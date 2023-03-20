@@ -24,7 +24,7 @@ import com.swirlds.common.metrics.MetricConfig;
  */
 public class NoOpLongAccumulator extends AbstractNoOpMetric implements LongAccumulator {
 
-    public NoOpLongAccumulator(final MetricConfig<?, ?> config) {
+    public NoOpLongAccumulator(final MetricConfig<?> config) {
         super(config);
     }
 

@@ -19,7 +19,6 @@ package com.swirlds.common.metrics.platform;
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 
 import com.swirlds.common.metrics.IntegerAccumulator;
-import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntBinaryOperator;
@@ -54,9 +53,10 @@ public class DefaultIntegerAccumulator extends DefaultMetric implements IntegerA
     /**
      * {@inheritDoc}
      */
+    @SuppressWarnings("removal")
     @Override
-    public List<SnapshotEntry> takeSnapshot() {
-        return List.of(new SnapshotEntry(VALUE, container.getAndSet(initializer.getAsInt())));
+    public List<LegacySnapshotEntry> takeSnapshot() {
+        return List.of(new LegacySnapshotEntry(VALUE, container.getAndSet(initializer.getAsInt())));
     }
 
     /**

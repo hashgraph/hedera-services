@@ -150,7 +150,7 @@ public interface Metrics extends Startable {
      * @throws IllegalStateException
      * 		if a {@code Metric} with the same category and name exists, but has a different type
      */
-    <T extends Metric> T getOrCreate(final MetricConfig<T, ?> config);
+    <T extends Metric> T getOrCreate(final MetricConfig<T> config);
 
     /**
      * Remove the {@link Metric} with the given category and name
@@ -186,7 +186,7 @@ public interface Metrics extends Startable {
      * @throws IllegalArgumentException
      * 		if {@code config} is {@code null}
      */
-    void remove(final MetricConfig<?, ?> config);
+    void remove(final MetricConfig<?> config);
 
     /**
      * Add an updater that will be called once per second. An updater should only be used to update metrics regularly.

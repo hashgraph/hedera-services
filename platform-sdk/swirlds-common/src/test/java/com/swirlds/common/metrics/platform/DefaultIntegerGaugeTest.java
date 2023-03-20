@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.Metric;
-import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
+import com.swirlds.common.metrics.platform.DefaultMetric.LegacySnapshotEntry;
 import com.swirlds.common.statistics.StatsBuffered;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -88,12 +88,12 @@ class DefaultIntegerGaugeTest {
         final DefaultIntegerGauge gauge = new DefaultIntegerGauge(config);
 
         // when
-        final List<SnapshotEntry> snapshot = gauge.takeSnapshot();
+        final List<LegacySnapshotEntry> snapshot = gauge.takeSnapshot();
 
         // then
         assertEquals(2, gauge.get(), "Value should be 2");
         assertEquals(2, gauge.get(VALUE), "Value should be 2");
-        assertThat(snapshot).containsExactly(new SnapshotEntry(VALUE, 2));
+        assertThat(snapshot).containsExactly(new LegacySnapshotEntry(VALUE, 2));
     }
 
     @Test

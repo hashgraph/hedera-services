@@ -18,7 +18,9 @@ package com.swirlds.common.metrics;
 
 /**
  * The types of {@code Metric}
+ * @deprecated {@code MetricType} turned out to be to limited. Use the class-name of a metric instead.
  */
+@Deprecated(forRemoval = true)
 public enum MetricType {
 
     /**

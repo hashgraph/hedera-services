@@ -25,7 +25,7 @@ import java.time.Duration;
  */
 public class NoOpDurationGauge extends AbstractNoOpMetric implements DurationGauge {
 
-    public NoOpDurationGauge(final MetricConfig<?, ?> config) {
+    public NoOpDurationGauge(final MetricConfig<?> config) {
         super(config);
     }
 

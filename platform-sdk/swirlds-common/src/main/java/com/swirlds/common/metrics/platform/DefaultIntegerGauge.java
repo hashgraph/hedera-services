@@ -19,7 +19,6 @@ package com.swirlds.common.metrics.platform;
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 
 import com.swirlds.common.metrics.IntegerGauge;
-import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -39,9 +38,10 @@ public class DefaultIntegerGauge extends DefaultMetric implements IntegerGauge {
     /**
      * {@inheritDoc}
      */
+    @SuppressWarnings("removal")
     @Override
-    public List<SnapshotEntry> takeSnapshot() {
-        return List.of(new SnapshotEntry(VALUE, get()));
+    public List<LegacySnapshotEntry> takeSnapshot() {
+        return List.of(new LegacySnapshotEntry(VALUE, get()));
     }
 
     /**

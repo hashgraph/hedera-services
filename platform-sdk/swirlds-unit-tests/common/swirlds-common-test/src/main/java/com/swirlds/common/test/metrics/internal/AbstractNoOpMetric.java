@@ -26,9 +26,9 @@ import java.util.EnumSet;
  */
 public abstract class AbstractNoOpMetric implements Metric {
 
-    private final MetricConfig<?, ?> config;
+    private final MetricConfig<?> config;
 
-    protected AbstractNoOpMetric(final MetricConfig<?, ?> config) {
+    protected AbstractNoOpMetric(final MetricConfig<?> config) {
         this.config = config;
     }
 

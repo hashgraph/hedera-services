@@ -24,7 +24,7 @@ import com.swirlds.common.metrics.RunningAverageMetric;
  */
 public class NoOpRunningAverageMetric extends AbstractNoOpMetric implements RunningAverageMetric {
 
-    public NoOpRunningAverageMetric(final MetricConfig<?, ?> config) {
+    public NoOpRunningAverageMetric(final MetricConfig<?> config) {
         super(config);
     }
 

@@ -19,7 +19,6 @@ package com.swirlds.common.metrics.platform;
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 
 import com.swirlds.common.metrics.LongAccumulator;
-import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import java.util.List;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
@@ -49,9 +48,10 @@ public class DefaultLongAccumulator extends DefaultMetric implements LongAccumul
     /**
      * {@inheritDoc}
      */
+    @SuppressWarnings("removal")
     @Override
-    public List<SnapshotEntry> takeSnapshot() {
-        return List.of(new SnapshotEntry(VALUE, container.getThenReset()));
+    public List<LegacySnapshotEntry> takeSnapshot() {
+        return List.of(new LegacySnapshotEntry(VALUE, container.getThenReset()));
     }
 
     /**
