@@ -31,7 +31,6 @@ import static com.swirlds.platform.gui.internal.BrowserWindowManager.setStateHie
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
 import static com.swirlds.platform.state.address.AddressBookUtils.getOwnHostCount;
 import static com.swirlds.platform.system.SystemExitReason.NODE_ADDRESS_MISMATCH;
-import static com.swirlds.platform.util.HederaLogo.HEDERA_LOGO;
 
 import com.swirlds.common.StartupTime;
 import com.swirlds.common.config.BasicConfig;
@@ -149,11 +148,17 @@ public class Browser {
 
     private final Configuration configuration;
 
+    private static final String STARTUP_MESSAGE =
+            """
+              //////////////////////
+             // Node is Starting //
+            //////////////////////""";
+
     /**
      * Prevent this class from being instantiated.
      */
     private Browser(final Set<Integer> localNodesToStart) throws IOException {
-        logger.info(STARTUP.getMarker(), "Starting the Hedera Consensus Node Platform\n{}", HEDERA_LOGO);
+        logger.info(STARTUP.getMarker(), "\n\n" + STARTUP_MESSAGE + "\n");
         logger.debug(STARTUP.getMarker(), () -> new NodeStartPayload().toString());
 
         // The properties from the config.txt
