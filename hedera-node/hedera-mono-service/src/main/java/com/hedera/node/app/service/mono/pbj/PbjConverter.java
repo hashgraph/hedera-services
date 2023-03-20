@@ -30,6 +30,8 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.SignaturePair;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TopicID;
@@ -48,6 +50,8 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Objects;
 import java.util.Optional;
@@ -1304,5 +1308,19 @@ public final class PbjConverter {
                 .setShardNum(someFileId.shardNum())
                 .setFileNum(someFileId.fileNum())
                 .build();
+    }
+
+    public static TopicID toPbj(com.hederahashgraph.api.proto.java.TopicID topicId) {
+        return protoToPbj(topicId, TopicID.class);
+    }
+
+    public static SignatureMap toPbj(com.hederahashgraph.api.proto.java.SignatureMap sigMap) {
+        return protoToPbj(sigMap, SignatureMap.class);
+    }
+
+    public static com.hederahashgraph.api.proto.java.SignatureMap fromPbj(
+            SignatureMap signatureMap) {
+        return pbjToProto(signatureMap, SignatureMap.class,
+                com.hederahashgraph.api.proto.java.SignatureMap.class);
     }
 }

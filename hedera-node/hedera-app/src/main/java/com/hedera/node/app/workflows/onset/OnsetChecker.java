@@ -88,9 +88,9 @@ public class OnsetChecker {
     public void checkTransaction(@NonNull final Transaction tx) throws PreCheckException {
         requireNonNull(tx);
 
-        final var hasSignedTxnBytes = tx.signedTransactionBytes().getLength() > 0;
+        final var hasSignedTxnBytes = tx.signedTransactionBytes().length() > 0;
         final var hasDeprecatedSigMap = tx.sigMap() != null;
-        final var hasDeprecatedBodyBytes = tx.bodyBytes().getLength() > 0;
+        final var hasDeprecatedBodyBytes = tx.bodyBytes().length() > 0;
         final var hasDeprecatedBody = tx.body() != null;
         final var hasDeprecatedSigs = tx.sigs() != null;
 
@@ -123,7 +123,7 @@ public class OnsetChecker {
         }
 
         var txnId = txBody.transactionID();
-        if (!isPlausibleAccount(txnId.accountID())) {
+        if (!isPlausibleAccount(txnId.accountIDOrElse(AccountID.DEFAULT))) {
             throw new PreCheckException(PAYER_ACCOUNT_NOT_FOUND);
         }
 
@@ -137,7 +137,7 @@ public class OnsetChecker {
             return INSUFFICIENT_TX_FEE;
         }
 
-        return checkTimeBox(txnId.transactionValidStart(), txBody.transactionValidDuration());
+        return checkTimeBox(txnId.transactionValidStart(), txBody.transactionValidDurationOrElse(Duration.DEFAULT));
     }
 
     private static boolean isPlausibleTxnFee(final long transactionFee) {
@@ -145,7 +145,7 @@ public class OnsetChecker {
     }
 
     private static boolean isPlausibleAccount(final AccountID accountID) {
-        return accountID.accountNum().isPresent() && accountID.realmNum() >= 0 && accountID.shardNum() >= 0;
+        return accountID.hasAccountNum() && accountID.realmNum() >= 0 && accountID.shardNum() >= 0;
     }
 
     private void checkMemo(final String memo) throws PreCheckException {
