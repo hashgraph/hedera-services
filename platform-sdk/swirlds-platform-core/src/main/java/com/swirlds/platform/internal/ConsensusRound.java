@@ -47,23 +47,15 @@ public class ConsensusRound implements Round {
     /** The number of application transactions in this round */
     private int numAppTransactions = 0;
 
-    /** The minimum generation of the non-ancient events in this round */
-    private final long minimumGenerationNonAncient;
-
     /**
      * Create a new instance with the provided consensus events.
      *
      * @param consensusEvents             the events in the round, in consensus order
      * @param generations                 the consensus generations for this round
-     * @param minimumGenerationNonAncient the minimum generation of the non-ancient events in this round
      */
-    public ConsensusRound(
-            final List<EventImpl> consensusEvents,
-            final GraphGenerations generations,
-            final long minimumGenerationNonAncient) {
+    public ConsensusRound(final List<EventImpl> consensusEvents, final GraphGenerations generations) {
         this.consensusEvents = Collections.unmodifiableList(consensusEvents);
         this.generations = generations;
-        this.minimumGenerationNonAncient = minimumGenerationNonAncient;
 
         for (final EventImpl e : consensusEvents) {
             numAppTransactions += e.getNumAppTransactions();
@@ -100,13 +92,6 @@ public class ConsensusRound implements Round {
      */
     public GraphGenerations getGenerations() {
         return generations;
-    }
-
-    /**
-     * @return the minimum generation of the non-ancient events in this round
-     */
-    public long getMinimumGenerationNonAncient() {
-        return minimumGenerationNonAncient;
     }
 
     /**

@@ -65,7 +65,7 @@ class ChatterNotifierTest {
     @Test
     @Tag(TIME_CONSUMING)
     void testPurge() {
-        notifier.consensusRound(new ConsensusRound(List.of(event), new Generations(1, 2, 3), -1));
+        notifier.consensusRound(new ConsensusRound(List.of(event), new Generations(1, 2, 3)));
         verify(chatterCore).shiftWindow(1);
     }
 }

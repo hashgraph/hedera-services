@@ -400,7 +400,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
                 .setConsensusTimestamp(round.getLastEvent().getLastTransTime())
                 .setMinGenInfo(minGen)
                 .setCreationSoftwareVersion(softwareVersion)
-                .setMinimumGenerationNonAncient(round.getMinimumGenerationNonAncient());
+                .setMinimumGenerationNonAncient(round.getGenerations().getMinGenerationNonAncient());
     }
 
     private void createSignedState() throws InterruptedException {

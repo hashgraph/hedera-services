@@ -99,6 +99,11 @@ public record SavedStateMetadata(
      */
     public static final String FILE_NAME = "stateMetadata.txt";
 
+    /**
+     * Use this constant for the node ID if the thing writing the state is not a node.
+     */
+    public static final long NO_NODE_ID = -1;
+
     private static final Logger logger = LogManager.getLogger(SavedStateMetadata.class);
 
     /**
