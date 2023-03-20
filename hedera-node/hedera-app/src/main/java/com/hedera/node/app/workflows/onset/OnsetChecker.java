@@ -145,7 +145,7 @@ public class OnsetChecker {
     }
 
     private static boolean isPlausibleAccount(final AccountID accountID) {
-        return accountID != null && accountID.realmNum() >= 0 && accountID.shardNum() >= 0;
+        return accountID.hasAccountNum() && accountID.realmNum() >= 0 && accountID.shardNum() >= 0;
     }
 
     private void checkMemo(final String memo) throws PreCheckException {
