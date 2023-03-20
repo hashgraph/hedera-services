@@ -1323,7 +1323,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                     .receiverSigReq(false)
                                     .memo(AUTO_MEMO));
 
-                    childRecordsCheck(
+                    final var op3 = childRecordsCheck(
                             transferToECDSA,
                             SUCCESS,
                             recordWith()
@@ -1331,7 +1331,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                     .hasNoAlias()
                                     .status(SUCCESS));
 
-                    allRunFor(spec, hbarCreateTransfer, op1, op2);
+                    allRunFor(spec, hbarCreateTransfer, op1, op2, op3);
                 }))
                 .then(getTxnRecord(transferToECDSA).andAllChildRecords().logged());
     }
