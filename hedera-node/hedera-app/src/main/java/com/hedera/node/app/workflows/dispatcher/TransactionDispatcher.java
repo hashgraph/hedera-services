@@ -88,7 +88,7 @@ public class TransactionDispatcher {
      * Dispatches a transaction of the given type to the appropriate handler.
      *
      * <p>This will not be final signature of the dispatch method, since as per
-     * https://github.com/hashgraph/hedera-services/issues/4945, we are currently
+     * <a href="https://github.com/hashgraph/hedera-services/issues/4945">issue #4945</a>, we are currently
      * just adapting the last step of mono-service "workflow"; and only for
      * Consensus Service transactions.
      *
@@ -196,14 +196,14 @@ public class TransactionDispatcher {
             case UTIL_PRNG -> handlers.utilPrngHandler().preHandle(context);
 
             case SYSTEM_DELETE -> {
-                switch (txBody.systemDelete().get().id().kind()) {
+                switch (txBody.systemDeleteOrThrow().id().kind()) {
                     case CONTRACT_ID -> handlers.contractSystemDeleteHandler().preHandle(context);
                     case FILE_ID -> handlers.fileSystemDeleteHandler().preHandle(context);
                     case UNSET -> throw new IllegalArgumentException("SystemDelete without IdCase");
                 }
             }
             case SYSTEM_UNDELETE -> {
-                switch (txBody.systemUndelete().get().id().kind()) {
+                switch (txBody.systemUndeleteOrThrow().id().kind()) {
                     case CONTRACT_ID -> handlers.contractSystemUndeleteHandler().preHandle(context);
                     case FILE_ID -> handlers.fileSystemUndeleteHandler().preHandle(context);
                     case UNSET -> throw new IllegalArgumentException("SystemUndelete without IdCase");

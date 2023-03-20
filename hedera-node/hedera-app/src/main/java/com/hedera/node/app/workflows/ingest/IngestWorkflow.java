@@ -20,7 +20,7 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionResponse;
 import com.hedera.node.app.SessionContext;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
-import com.hedera.pbj.runtime.io.buffer.RandomAccessData;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -42,6 +42,6 @@ public interface IngestWorkflow {
      */
     void submitTransaction(
             @NonNull SessionContext session,
-            @NonNull RandomAccessData requestBuffer,
+            @NonNull Bytes requestBuffer,
             @NonNull BufferedData responseBuffer);
 }

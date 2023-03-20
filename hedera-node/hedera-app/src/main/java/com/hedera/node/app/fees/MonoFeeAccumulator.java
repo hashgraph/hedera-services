@@ -74,7 +74,7 @@ public class MonoFeeAccumulator implements FeeAccumulator {
         // Special case here because when running with workflows enabled, the underlying
         // states will have PBJ Topic's as keys, not MerkleTopic's; so the mono-service
         // resource estimator would hit a ClassCastException
-        if (functionality == CONSENSUS_GET_TOPIC_INFO) {
+        if (functionality == HederaFunctionality.CONSENSUS_GET_TOPIC_INFO) {
             final var topicStore = readableStoreFactory.createTopicStore();
             final var usage = getTopicInfoUsage.computeUsage(monoQuery, topicStore);
             return feeCalculator.computeFromQueryResourceUsage(usage, usagePrices, monoNow);

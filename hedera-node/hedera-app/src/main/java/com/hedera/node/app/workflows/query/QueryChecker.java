@@ -22,9 +22,11 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.SessionContext;
@@ -35,6 +37,10 @@ import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
+
+import java.util.Collections;
+import java.util.List;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -120,12 +126,12 @@ public class QueryChecker {
         }
 
         // A super-user cannot use an alias. Sorry, Clark Kent. TODO Verify we have a test for this
-        final var accountOpt = payer.accountNum();
-        if (accountOpt.isPresent() && accountNumbers.isSuperuser(accountOpt.get())) {
+        final var accountOpt = payer.accountNumOrElse(AccountID.DEFAULT.accountNumOrThrow());
+        if (accountNumbers.isSuperuser(accountOpt)) {
             return;
         }
 
-        final var xfers = txBody.cryptoTransferOrThrow().transfers().accountAmounts();
+        final var xfers = txBody.cryptoTransferOrThrow().transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(Collections.emptyList());
         final var feeStatus = queryFeeCheck.nodePaymentValidity2(xfers, fee, txBody.nodeAccountID());
         if (feeStatus != OK) {
             throw new InsufficientBalanceException(feeStatus, fee);

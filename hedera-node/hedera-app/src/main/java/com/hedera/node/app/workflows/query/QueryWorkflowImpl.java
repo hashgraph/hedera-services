@@ -149,7 +149,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     @Override
     public void handleQuery(
             @NonNull final SessionContext session,
-            @NonNull final RandomAccessData requestBuffer,
+            @NonNull final Bytes requestBuffer,
             @NonNull final BufferedData responseBuffer) {
         requireNonNull(session);
         requireNonNull(requestBuffer);
@@ -158,7 +158,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         // 1. Parse and check header
         final Query query;
         try {
-            query = Query.PROTOBUF.parse(requestBuffer);
+            query = Query.PROTOBUF.parse(requestBuffer.toReadableSequentialData());
         } catch (IOException e) {
             // TODO there may be other types of errors here. Please cross check with ingest parsing
             throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
@@ -176,8 +176,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         if (queryHeader == null) {
             throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
         }
-        final ResponseType responseType = queryHeader.getResponseType();
-        LOGGER.info("Started answering a {} query of type {}", function, responseType);
+        final ResponseType responseType = queryHeader.responseType();
+        LOGGER.info("Started answering a {} query of type {}", functionality, responseType);
 
         Response response;
         long fee = 0L;
