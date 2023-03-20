@@ -68,9 +68,9 @@ public class FeeCalculator {
             return;
         }
         final FeeSchedule feeSchedule = provider.currentSchedule();
-        feeSchedule.getTransactionFeeScheduleList().forEach(f -> {
-            opFeeData.put(f.getHederaFunctionality(), feesListToMap(f.getFeesList()));
-        });
+        feeSchedule
+                .getTransactionFeeScheduleList()
+                .forEach(f -> opFeeData.put(f.getHederaFunctionality(), feesListToMap(f.getFeesList())));
         tokenTransferUsageMultiplier = setup.feesTokenTransferUsageMultiplier();
     }
 

@@ -49,7 +49,7 @@ import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
  * A specialized map like disk based data store with long keys. It is assumed the keys are a single
  * sequential block of numbers that does not need to start at zero. The index from long key to disk
  * location for value is in RAM and the value data is stored in a set of files on disk.
- *
+ * <p>
  * There is an assumption that keys are a contiguous range of incrementing numbers. This allows
  * easy deletion during merging by accepting any key/value with a key outside this range is not
  * needed any more. This design comes from being used where keys are leaf paths in a binary tree.
@@ -229,7 +229,11 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
      *
      * @throws IOException If there was a problem opening a writing session
      */
-    public void startWriting() throws IOException {
+    public void startWriting(final long minimumValidKey) throws IOException {
+        // By calling `updateMinValidIndex` we compact the index if it's applicable.
+        // We need to do this before we start putting values into the index, otherwise we could put a value by
+        // index that is not yet valid.
+        index.updateMinValidIndex(minimumValidKey);
         fileCollection.startWriting();
     }
 
@@ -256,10 +260,6 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
      */
     public void endWriting(final long minimumValidKey, final long maximumValidKey) throws IOException {
         final DataFileReader<D> dataFileReader = fileCollection.endWriting(minimumValidKey, maximumValidKey);
-        // At this point we know exactly what list indices are in use and, therefore,
-        // it's a good time to free memory reserved for the unused data.
-        // By calling `updateMinValidIndex` we compact the index if it's applicable.
-        index.updateMinValidIndex(minimumValidKey);
 
         // we have updated all indexes so the data file can now be included in merges
         dataFileReader.setFileCompleted();

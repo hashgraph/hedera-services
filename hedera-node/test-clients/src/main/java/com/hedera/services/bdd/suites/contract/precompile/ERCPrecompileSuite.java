@@ -1715,11 +1715,10 @@ public class ERCPrecompileSuite extends HapiSuite {
                         tokenAssociate(A_CIVILIAN, NF_TOKEN),
                         tokenAssociate(B_CIVILIAN, NF_TOKEN))
                 .when(
-                        withOpContext((spec, opLog) -> {
-                            zCivilianMirrorAddr.set(asHexedSolidityAddress(AccountID.newBuilder()
-                                    .setAccountNum(666_666_666L)
-                                    .build()));
-                        }),
+                        withOpContext(
+                                (spec, opLog) -> zCivilianMirrorAddr.set(asHexedSolidityAddress(AccountID.newBuilder()
+                                        .setAccountNum(666_666_666L)
+                                        .build()))),
                         // --- Negative cases for approve ---
                         // * Can't approve a non-existent serial number
                         sourcing(() -> contractCall(

@@ -27,6 +27,7 @@ import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.sigs.factories.TxnScopedPlatformSigFactory;
@@ -76,11 +77,14 @@ class ExpansionTest {
     @Mock
     private Expansion.CryptoSigsCreation cryptoSigsCreation;
 
+    @Mock
+    private AliasManager aliasManager;
+
     private Expansion subject;
 
     @BeforeEach
     void setUp() {
-        subject = new Expansion(txnAccessor, sigReqs, pkToSigFn, cryptoSigsCreation, sigFactory);
+        subject = new Expansion(txnAccessor, sigReqs, pkToSigFn, cryptoSigsCreation, sigFactory, aliasManager);
         given(cryptoSigsCreation.createFrom(any(), any(), any())).willReturn(new PlatformSigsCreationResult());
     }
 

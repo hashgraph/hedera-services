@@ -25,12 +25,14 @@ dependencies {
   // Individual Dependencies
   api(project(":swirlds-logging"))
   api(project(":swirlds-config-api"))
+  implementation(project(":swirlds-base"))
   implementation(libs.classgraph)
   implementation(libs.commons.codec)
   implementation(libs.prometheus.httpserver) {
     exclude("io.prometheus", "simpleclient_tracer_otel")
     exclude("io.prometheus", "simpleclient_tracer_otel_agent")
   }
+  compileOnly(libs.spotbugs.annotations)
 
   // Bundle Dependencies
   api(libs.bundles.cryptography.core)

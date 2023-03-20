@@ -315,10 +315,8 @@ public abstract class HapiSpecOperation {
             } else {
                 node.ifPresent(builder::setNodeAccountID);
             }
-            validDurationSecs.ifPresent(s -> {
-                builder.setTransactionValidDuration(
-                        Duration.newBuilder().setSeconds(s).build());
-            });
+            validDurationSecs.ifPresent(s -> builder.setTransactionValidDuration(
+                    Duration.newBuilder().setSeconds(s).build()));
             genRecord.ifPresent(builder::setGenerateRecord);
             memo.ifPresent(builder::setMemo);
         };
