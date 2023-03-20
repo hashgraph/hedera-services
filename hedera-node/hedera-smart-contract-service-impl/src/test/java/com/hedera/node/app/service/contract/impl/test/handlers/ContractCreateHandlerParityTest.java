@@ -33,7 +33,6 @@ import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,7 +43,6 @@ class ContractCreateHandlerParityTest {
 
     @BeforeEach
     void setUp() {
-        final var now = Instant.now();
         keyLookup = AdapterUtils.wellKnownKeyLookupAt();
     }
 
