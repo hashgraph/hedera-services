@@ -25,8 +25,8 @@ import com.hedera.node.app.state.merkle.MerkleTestBase;
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.node.app.state.merkle.StateUtils;
 import com.hedera.pbj.runtime.Codec;
-import com.hedera.pbj.runtime.io.DataInput;
-import com.hedera.pbj.runtime.io.DataOutput;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.jasperdb.JasperDbBuilder;
@@ -209,9 +209,10 @@ class OnDiskTest extends MerkleTestBase {
     private record Account(@NonNull OnDiskTest.AccountID accountID, @NonNull String memo, long balance) {}
 
     private static final class AccountIDCodec implements Codec<AccountID> {
+
         @NonNull
         @Override
-        public AccountID parse(@NonNull DataInput input) throws IOException {
+        public AccountID parse(@NonNull ReadableSequentialData input) {
             final long shard = input.readLong();
             final long realm = input.readLong();
             final long num = input.readLong();
@@ -220,19 +221,19 @@ class OnDiskTest extends MerkleTestBase {
 
         @NonNull
         @Override
-        public AccountID parseStrict(@NonNull DataInput dataInput) throws IOException {
-            return parse(dataInput);
+        public AccountID parseStrict(@NonNull ReadableSequentialData input) {
+            return parse(input);
         }
 
         @Override
-        public void write(@NonNull AccountID value, @NonNull DataOutput output) throws IOException {
+        public void write(@NonNull AccountID value, @NonNull WritableSequentialData output) throws IOException {
             output.writeLong(value.shard);
             output.writeLong(value.realm);
             output.writeLong(value.num);
         }
 
         @Override
-        public int measure(@NonNull DataInput input) {
+        public int measure(@NonNull ReadableSequentialData readableSequentialData) {
             // This implementation doesn't need to read from input.
             return Long.BYTES * 3;
         }
@@ -243,7 +244,7 @@ class OnDiskTest extends MerkleTestBase {
         }
 
         @Override
-        public boolean fastEquals(@NonNull AccountID item, @NonNull DataInput input) {
+        public boolean fastEquals(@NonNull AccountID item, @NonNull ReadableSequentialData input) {
             try {
                 return item.equals(parse(input));
             } catch (Exception e) {
@@ -258,7 +259,7 @@ class OnDiskTest extends MerkleTestBase {
 
         @NonNull
         @Override
-        public Account parse(@NonNull DataInput input) throws IOException {
+        public Account parse(@NonNull ReadableSequentialData input) throws IOException {
             final var id = accountIDSerdes.parse(input);
             final int memoLen = input.readInt();
             final byte[] memoBytes = new byte[memoLen];
@@ -270,12 +271,12 @@ class OnDiskTest extends MerkleTestBase {
 
         @NonNull
         @Override
-        public Account parseStrict(@NonNull DataInput dataInput) throws IOException {
-            return parse(dataInput);
+        public Account parseStrict(@NonNull ReadableSequentialData input) throws IOException {
+            return parse(input);
         }
 
         @Override
-        public void write(@NonNull Account acct, @NonNull DataOutput output) throws IOException {
+        public void write(@NonNull Account acct, @NonNull WritableSequentialData output) throws IOException {
             // id
             accountIDSerdes.write(acct.accountID(), output);
             // memo
@@ -287,7 +288,7 @@ class OnDiskTest extends MerkleTestBase {
         }
 
         @Override
-        public int measure(@NonNull DataInput input) {
+        public int measure(@NonNull ReadableSequentialData readableSequentialData) {
             throw new UnsupportedOperationException("Not used");
         }
 
@@ -297,7 +298,7 @@ class OnDiskTest extends MerkleTestBase {
         }
 
         @Override
-        public boolean fastEquals(@NonNull Account item, @NonNull DataInput input) {
+        public boolean fastEquals(@NonNull Account account, @NonNull ReadableSequentialData readableSequentialData) {
             throw new UnsupportedOperationException("Not used");
         }
     }

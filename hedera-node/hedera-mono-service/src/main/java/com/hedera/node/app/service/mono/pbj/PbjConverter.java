@@ -28,14 +28,15 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.SignatureMap;
-import com.hedera.hapi.node.base.SignaturePair;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.network.NetworkGetExecutionTimeQuery;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
@@ -1329,5 +1330,15 @@ public final class PbjConverter {
             SignatureMap signatureMap) {
         return pbjToProto(signatureMap, SignatureMap.class,
                 com.hederahashgraph.api.proto.java.SignatureMap.class);
+    }
+
+    public static com.hederahashgraph.api.proto.java.QueryHeader fromPbj(QueryHeader queryHeader) {
+        return pbjToProto(queryHeader, QueryHeader.class,
+                com.hederahashgraph.api.proto.java.QueryHeader.class);
+    }
+
+    public static NetworkGetExecutionTimeQuery toPbj(
+            com.hederahashgraph.api.proto.java.NetworkGetExecutionTimeQuery query) {
+        return protoToPbj(query, NetworkGetExecutionTimeQuery.class);
     }
 }

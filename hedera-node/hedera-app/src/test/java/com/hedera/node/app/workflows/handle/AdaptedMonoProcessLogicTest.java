@@ -23,6 +23,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.logic.StandardProcessLogic;
@@ -77,7 +78,8 @@ class AdaptedMonoProcessLogicTest {
 
         final var noopTxn = Transaction.newBuilder().build();
         final var cryptoSigs = List.of(signature);
-        final var meta = new TransactionMetadata(null, null, null, OK, PAYER_KEY, OTHER_PARTY_KEYS, cryptoSigs, null);
+        final var meta = new TransactionMetadata(
+                null, null, null, ResponseCodeEnum.OK, PAYER_KEY, OTHER_PARTY_KEYS, cryptoSigs, null);
 
         given(platformTxn.getMetadata()).willReturn(meta);
         given(platformTxn.getContents()).willReturn(noopTxn.toByteArray());
@@ -100,7 +102,7 @@ class AdaptedMonoProcessLogicTest {
         final var noopTxn = Transaction.newBuilder().build();
         final var cryptoSigs = List.of(signature);
         final var meta = new TransactionMetadata(
-                null, null, null, INVALID_ACCOUNT_ID, PAYER_KEY, OTHER_PARTY_KEYS, cryptoSigs, null);
+                null, null, null, ResponseCodeEnum.INVALID_ACCOUNT_ID, PAYER_KEY, OTHER_PARTY_KEYS, cryptoSigs, null);
 
         given(platformTxn.getMetadata()).willReturn(meta);
         given(platformTxn.getContents()).willReturn(noopTxn.toByteArray());
@@ -122,8 +124,8 @@ class AdaptedMonoProcessLogicTest {
 
         final var noopTxn = Transaction.newBuilder().build();
         final var cryptoSigs = List.of(signature);
-        final var meta =
-                new TransactionMetadata(null, null, null, INVALID_ACCOUNT_ID, null, OTHER_PARTY_KEYS, cryptoSigs, null);
+        final var meta = new TransactionMetadata(
+                null, null, null, ResponseCodeEnum.INVALID_ACCOUNT_ID, null, OTHER_PARTY_KEYS, cryptoSigs, null);
 
         given(platformTxn.getMetadata()).willReturn(meta);
         given(platformTxn.getContents()).willReturn(noopTxn.toByteArray());
@@ -147,8 +149,8 @@ class AdaptedMonoProcessLogicTest {
                 .setSignedTransactionBytes(ByteString.copyFrom("NONSENSE".getBytes()))
                 .build();
         final var cryptoSigs = List.of(signature);
-        final var meta =
-                new TransactionMetadata(null, null, null, INVALID_ACCOUNT_ID, null, OTHER_PARTY_KEYS, cryptoSigs, null);
+        final var meta = new TransactionMetadata(
+                null, null, null, ResponseCodeEnum.INVALID_ACCOUNT_ID, null, OTHER_PARTY_KEYS, cryptoSigs, null);
 
         given(platformTxn.getMetadata()).willReturn(meta);
         given(platformTxn.getContents()).willReturn(nonsenseTxn.toByteArray());

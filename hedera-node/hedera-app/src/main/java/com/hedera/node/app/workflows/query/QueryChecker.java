@@ -22,7 +22,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Transaction;
@@ -37,11 +36,8 @@ import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
-
-import java.util.Collections;
-import java.util.List;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Collections;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -131,7 +127,9 @@ public class QueryChecker {
             return;
         }
 
-        final var xfers = txBody.cryptoTransferOrThrow().transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(Collections.emptyList());
+        final var xfers = txBody.cryptoTransferOrThrow()
+                .transfersOrElse(TransferList.DEFAULT)
+                .accountAmountsOrElse(Collections.emptyList());
         final var feeStatus = queryFeeCheck.nodePaymentValidity2(xfers, fee, txBody.nodeAccountID());
         if (feeStatus != OK) {
             throw new InsufficientBalanceException(feeStatus, fee);

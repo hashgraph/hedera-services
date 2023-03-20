@@ -30,6 +30,7 @@ import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.calculation.UsageBasedFeeCalculator;
 import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hederahashgraph.api.proto.java.FeeData;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,8 +44,8 @@ class MonoFeeAccumulatorTest {
     private final Query mockQuery = Query.newBuilder().build();
     private final FeeData mockUsage = FeeData.getDefaultInstance();
     private final FeeData mockPrices = FeeData.getDefaultInstance();
-    private final Timestamp mockTime =
-            com.hedera.hapi.node.base.Timestamp.newBuilder().seconds(1_234_567L).build();
+    private final com.hederahashgraph.api.proto.java.Timestamp mockTime =
+            PbjConverter.fromPbj(Timestamp.newBuilder().seconds(1_234_567L).build());
 
     @Mock
     private UsageBasedFeeCalculator usageBasedFeeCalculator;
@@ -78,12 +79,16 @@ class MonoFeeAccumulatorTest {
         given(usagePricesProvider.defaultPricesGiven(ConsensusGetTopicInfo, mockTime))
                 .willReturn(mockPrices);
         given(readableStoreFactory.createTopicStore()).willReturn(readableTopicStore);
-        given(getTopicInfoUsage.computeUsage(mockQuery, readableTopicStore)).willReturn(mockUsage);
+        given(getTopicInfoUsage.computeUsage(PbjConverter.fromPbj(mockQuery), readableTopicStore))
+                .willReturn(mockUsage);
         given(usageBasedFeeCalculator.computeFromQueryResourceUsage(mockUsage, mockUsage, mockTime))
                 .willReturn(expectedFees);
 
         final var actualFees = subject.computePayment(
-                readableStoreFactory, HederaFunctionality.CONSENSUS_GET_TOPIC_INFO, mockQuery, mockTime);
+                readableStoreFactory,
+                HederaFunctionality.CONSENSUS_GET_TOPIC_INFO,
+                mockQuery,
+                PbjConverter.toPbj(mockTime));
 
         assertSame(expectedFees, actualFees);
     }
@@ -100,7 +105,8 @@ class MonoFeeAccumulatorTest {
         given(usageBasedFeeCalculator.computeFromQueryResourceUsage(eq(mockUsage), eq(mockPrices), any()))
                 .willReturn(expectedFee);
 
-        final var fee = subject.computePayment(readableStoreFactory, queryFunction, mockQuery, mockTime);
+        final var fee =
+                subject.computePayment(readableStoreFactory, queryFunction, mockQuery, PbjConverter.toPbj(mockTime));
 
         assertSame(expectedFee, fee);
     }

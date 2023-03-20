@@ -33,7 +33,5 @@ public interface QueryWorkflow {
      * @param responseBuffer The raw protobuf response bytes.
      */
     void handleQuery(
-            @NonNull SessionContext session,
-            @NonNull Bytes requestBuffer,
-            @NonNull BufferedData responseBuffer);
+            @NonNull SessionContext session, @NonNull Bytes requestBuffer, @NonNull BufferedData responseBuffer);
 }
