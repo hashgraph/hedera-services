@@ -13,7 +13,6 @@ module com.hedera.node.app.spi {
     exports com.hedera.node.app.spi.numbers;
     exports com.hedera.node.app.spi.workflows;
     exports com.hedera.node.app.spi.exceptions;
-
     exports com.hedera.node.app.spi.config;
     exports com.hedera.node.app.spi.records;
     exports com.hedera.node.app.spi.validation;

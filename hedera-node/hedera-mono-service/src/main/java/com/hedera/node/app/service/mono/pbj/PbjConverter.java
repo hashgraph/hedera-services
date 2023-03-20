@@ -16,9 +16,11 @@
 
 package com.hedera.node.app.service.mono.pbj;
 
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -34,13 +36,21 @@ import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Objects;
+import java.util.Optional;
 
 public final class PbjConverter {
     public static @NonNull AccountID toPbj(@NonNull com.hederahashgraph.api.proto.java.AccountID accountID) {
@@ -677,6 +687,10 @@ public final class PbjConverter {
                 .build();
     }
 
+    public static @NonNull Transaction toPbj(final @NonNull com.hederahashgraph.api.proto.java.Transaction t) {
+        return protoToPbj(Objects.requireNonNull(t), Transaction.class);
+    }
+
     public static Timestamp toPbj(@NonNull com.hederahashgraph.api.proto.java.Timestamp t) {
         requireNonNull(t);
         return Timestamp.newBuilder()
@@ -1176,13 +1190,105 @@ public final class PbjConverter {
         };
     }
 
-    public static byte[] asBytes(Bytes b) {
+    public static com.hederahashgraph.api.proto.java.Query toProtoQuery(final Query query) {
+        return pbjToProto(query, Query.class, com.hederahashgraph.api.proto.java.Query.class);
+    }
+
+    public static TopicID toPbjTopicId(final com.hederahashgraph.api.proto.java.TopicID topicId) {
+        return protoToPbj(topicId, TopicID.class);
+    }
+
+    public static <T extends Record, R extends GeneratedMessageV3> R pbjToProto(
+            final T pbj, final Class<T> pbjClass, final Class<R> protoClass) {
+        try {
+            final var codecField = pbjClass.getDeclaredField("PROTOBUF");
+            final var codec = (Codec<T>) codecField.get(null);
+            final var bytes = asBytes(codec, pbj);
+            final var protocParser = protoClass.getMethod("parseFrom", byte[].class);
+            return (R) protocParser.invoke(null, bytes);
+        } catch (NoSuchFieldException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+            // Should be impossible, so just propagate an exception
+            throw new RuntimeException("Invalid conversion to proto for " + pbjClass.getSimpleName(), e);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T extends GeneratedMessageV3, R extends Record> @NonNull R protoToPbj(
+            @NonNull final T proto, @NonNull final Class<R> pbjClass) {
+        try {
+            final var bytes = Objects.requireNonNull(proto).toByteArray();
+            final var codecField = Objects.requireNonNull(pbjClass).getDeclaredField("PROTOBUF");
+            final var codec = (Codec<R>) codecField.get(null);
+            return codec.parse(BufferedData.wrap(bytes));
+        } catch (NoSuchFieldException | IllegalAccessException | IOException e) {
+            // Should be impossible, so just propagate an exception
+            throw new RuntimeException("Invalid conversion to PBJ for " + pbjClass.getSimpleName(), e);
+        }
+    }
+
+    /**
+     * Convenience method to do an unchecked conversion from a PBJ {@link Bytes} to a byte array.
+     *
+     * @param bytes the PBJ {@link Bytes} to convert
+     * @return the byte array
+     * @throws IllegalStateException if the conversion fails
+     */
+    public static @NonNull byte[] unwrapPbj(@NonNull final Bytes bytes) {
+        final var ret = new byte[Math.toIntExact(Objects.requireNonNull(bytes).length())];
+        bytes.getBytes(0, ret);
+        return ret;
+    }
+
+    /**
+     * Converts a gRPC {@link com.hederahashgraph.api.proto.java.Key} to a PBJ {@link Key}.
+     * (We will encounter gRPC keys until the handle workflow is using PBJ objects.)
+     *
+     * @param grpcKey the gRPC {@link com.hederahashgraph.api.proto.java.Key} to convert
+     * @return the PBJ {@link Key}
+     * @throws IllegalStateException if the conversion fails
+     */
+    public static @NonNull Key fromGrpcKey(@NonNull final com.hederahashgraph.api.proto.java.Key grpcKey) {
+        try (final var bais =
+                new ByteArrayInputStream(Objects.requireNonNull(grpcKey).toByteArray())) {
+            return Key.PROTOBUF.parse(new ReadableStreamingData(bais));
+        } catch (final IOException e) {
+            // Should be impossible, so just propagate an exception
+            throw new IllegalStateException("Invalid conversion to PBJ for Key", e);
+        }
+    }
+
+    /**
+     * Tries to convert a PBJ {@link Key} to a {@link JKey} (the only {@link HederaKey} implementation);
+     * returns an empty optional if the conversion succeeds, but the resulting {@link JKey} is not valid.
+     *
+     * @param pbjKey the PBJ {@link Key} to convert
+     * @return the converted {@link JKey} if valid, or an empty optional if invalid
+     * @throws IllegalStateException if the conversion fails
+     */
+    public static @NonNull Optional<HederaKey> fromPbjKey(@Nullable final Key pbjKey) {
+        if (pbjKey == null) {
+            return Optional.empty();
+        }
+        try (final var baos = new ByteArrayOutputStream();
+                final var dos = new WritableStreamingData(baos)) {
+            Key.PROTOBUF.write(pbjKey, dos);
+            dos.flush();
+            final var grpcKey = com.hederahashgraph.api.proto.java.Key.parseFrom(baos.toByteArray());
+            return asHederaKey(grpcKey);
+        } catch (final IOException e) {
+            // Should be impossible, so just propagate an exception
+            throw new IllegalStateException("Invalid conversion from PBJ for Key", e);
+        }
+    }
+
+    public static @NonNull byte[] asBytes(@NonNull Bytes b) {
         final var buf = new byte[Math.toIntExact(b.length())];
         b.getBytes(0, buf);
         return buf;
     }
 
-    public static com.hederahashgraph.api.proto.java.ContractID fromPbj(ContractID contractID) {
+    public static @NonNull com.hederahashgraph.api.proto.java.ContractID fromPbj(final @NonNull ContractID contractID) {
+        requireNonNull(contractID);
         return com.hederahashgraph.api.proto.java.ContractID.newBuilder()
                 .setRealmNum(contractID.realmNum())
                 .setShardNum(contractID.shardNum())

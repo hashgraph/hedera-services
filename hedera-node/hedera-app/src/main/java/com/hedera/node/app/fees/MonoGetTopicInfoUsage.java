@@ -16,8 +16,9 @@
 
 package com.hedera.node.app.fees;
 
-import static com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter.fromPbjKey;
-import static com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter.unwrapPbj;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjKey;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbjTopicId;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.unwrapPbj;
 
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
@@ -62,7 +63,7 @@ public class MonoGetTopicInfoUsage {
         final var topicInfoQuery = query.getConsensusGetTopicInfo();
         final var topicId = topicInfoQuery.getTopicID();
         final var responseType = topicInfoQuery.getHeader().getResponseType();
-        final var maybeTopic = topicStore.getTopicLeaf(topicId);
+        final var maybeTopic = topicStore.getTopicLeaf(toPbjTopicId(topicId));
         return delegate.usageGivenTypeAndTopic(
                 maybeTopic.map(MonoGetTopicInfoUsage::monoTopicFrom).orElse(null), responseType);
     }

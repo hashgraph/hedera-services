@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_OVERSIZE;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -39,7 +40,6 @@ import com.hedera.pbj.runtime.UnknownFieldException;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.hedera.pbj.runtime.io.buffer.BytesBuffer;
 import com.hedera.pbj.runtime.io.buffer.RandomAccessData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -167,9 +167,11 @@ public class WorkflowOnset {
         // 2. Parse and validate the signed transaction (if available)
         final Bytes bodyBytes;
         final SignatureMap signatureMap;
-        if (tx.signedTransactionBytes().getLength() > 0) {
+        if (tx.signedTransactionBytes().length() > 0) {
             final SignedTransaction signedTransaction = parse(
-                    BytesBuffer.wrap(tx.signedTransactionBytes()), SignedTransaction.PROTOBUF, INVALID_TRANSACTION);
+                    BufferedData.wrap(asBytes(tx.signedTransactionBytes())),
+                    SignedTransaction.PROTOBUF,
+                    INVALID_TRANSACTION);
             bodyBytes = signedTransaction.bodyBytes();
             signatureMap = signedTransaction.sigMap();
         } else {

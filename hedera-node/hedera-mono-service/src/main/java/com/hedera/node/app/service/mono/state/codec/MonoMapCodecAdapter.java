@@ -29,6 +29,8 @@ import com.swirlds.jasperdb.files.hashmap.KeySerializer;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.function.Supplier;
@@ -55,13 +57,11 @@ public class MonoMapCodecAdapter {
             @NonNull
             @Override
             public T parse(final @NonNull ReadableSequentialData input) throws IOException {
+                final var buffer = new byte[input.readInt()];
+                input.readBytes(buffer);
+                final var bais = new ByteArrayInputStream(buffer);
                 final var item = factory.get();
-                if (input instanceof ReadableStreamingData in) {
-                    item.deserialize(new SerializableDataInputStream(in), version);
-                } else {
-                    throw new IllegalArgumentException(
-                            "Expected a ReadableStreamingData, but found: " + input.getClass());
-                }
+                item.deserialize(new SerializableDataInputStream(bais), version);
                 return item;
             }
 
@@ -73,12 +73,13 @@ public class MonoMapCodecAdapter {
 
             @Override
             public void write(final @NonNull T item, final @NonNull WritableSequentialData output) throws IOException {
-                if (output instanceof WritableStreamingData out) {
-                    item.serialize(new SerializableDataOutputStream(out));
-                } else {
-                    throw new IllegalArgumentException(
-                            "Expected a WritableStreamingData, but found: " + output.getClass());
+                final var baos = new ByteArrayOutputStream();
+                try (final var out = new SerializableDataOutputStream(baos)) {
+                    item.serialize(out);
+                    out.flush();
                 }
+                output.writeInt(baos.toByteArray().length);
+                output.writeBytes(baos.toByteArray());
             }
 
             @Override
