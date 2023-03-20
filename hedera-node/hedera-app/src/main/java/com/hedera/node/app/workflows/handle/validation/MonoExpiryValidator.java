@@ -20,7 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hedera.node.app.spi.exceptions.HandleStatusException.validateTrue;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
@@ -170,7 +170,8 @@ public class MonoExpiryValidator implements ExpiryValidator {
         }
         final var autoRenewId = new Id(numbers.shard(), numbers.realm(), num);
         try {
-            accountStore.loadAccountOrFailWith(autoRenewId, INVALID_AUTORENEW_ACCOUNT);
+            accountStore.loadAccountOrFailWith(autoRenewId,
+                    PbjConverter.fromPbj(INVALID_AUTORENEW_ACCOUNT));
         } catch (final InvalidTransactionException e) {
             throw new HandleStatusException(PbjConverter.toPbj(e.getResponseCode()));
         }

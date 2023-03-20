@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_OVERSIZE;
+
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -37,17 +38,18 @@ import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.MalformedProtobufException;
 import com.hedera.pbj.runtime.UnknownFieldException;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
-import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.hedera.pbj.runtime.io.buffer.BytesBuffer;
 import com.hedera.pbj.runtime.io.buffer.RandomAccessData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
-import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * This class does some pre-processing before each workflow. It parses the provided {@link
@@ -93,33 +95,12 @@ public class WorkflowOnset {
      * @throws PreCheckException if the data is not valid
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public OnsetResult parseAndCheck(@NonNull final SessionContext ctx, @NonNull final RandomAccessData buffer)
+    public OnsetResult parseAndCheck(@NonNull final SessionContext ctx, @NonNull final Bytes buffer)
             throws PreCheckException {
         requireNonNull(ctx);
         requireNonNull(buffer);
 
         return doParseAndCheck(ctx, buffer);
-    }
-
-    /**
-     * Parse the given {@link ByteBuffer} and check its validity
-     *
-     * <p>The checks are very general: syntax checks, size limit checks, and some general semantic
-     * checks that apply to all transactions (e.g. does the transaction have a payer, are the
-     * timestamps valid).
-     *
-     * @param ctx the {@link SessionContext}
-     * @param buffer the {@code ByteBuffer} with the serialized transaction
-     * @return an {@link OnsetResult} with the parsed and checked entities
-     * @throws PreCheckException if the data is not valid
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public OnsetResult parseAndCheck(@NonNull final SessionContext ctx, @NonNull final byte[] buffer)
-            throws PreCheckException {
-        requireNonNull(ctx);
-        requireNonNull(buffer);
-
-        return doParseAndCheck(ctx, BufferedData.wrap(buffer));
     }
 
     /**
@@ -148,28 +129,28 @@ public class WorkflowOnset {
             throw new PreCheckException(INVALID_TRANSACTION);
         }
 
-        return doParseAndCheck(ctx, BufferedData.wrap(byteStream.toByteArray()));
+        return doParseAndCheck(ctx, Bytes.wrap(byteStream.toByteArray()));
     }
 
     @SuppressWarnings("deprecation")
-    private OnsetResult doParseAndCheck(@NonNull final SessionContext ctx, @NonNull final RandomAccessData txData)
+    private OnsetResult doParseAndCheck(@NonNull final SessionContext ctx, @NonNull final Bytes txData)
             throws PreCheckException {
 
         // 0. Fail fast if there are too many transaction bytes
-        if (txData.remaining() > maxSignedTxnSize) {
+        if (txData.length() > maxSignedTxnSize) {
             throw new PreCheckException(TRANSACTION_OVERSIZE);
         }
 
         // 1. Parse and validate transaction object
-        final Transaction tx = parse(txData, Transaction.PROTOBUF, INVALID_TRANSACTION);
+        final Transaction tx = parse(txData.toReadableSequentialData(), Transaction.PROTOBUF, INVALID_TRANSACTION);
         checker.checkTransaction(tx);
 
         // 2. Parse and validate the signed transaction (if available)
         final Bytes bodyBytes;
         final SignatureMap signatureMap;
-        if (tx.signedTransactionBytes().getLength() > 0) {
+        if (tx.signedTransactionBytes().length() > 0) {
             final SignedTransaction signedTransaction = parse(
-                    BytesBuffer.wrap(tx.signedTransactionBytes()), SignedTransaction.PROTOBUF, INVALID_TRANSACTION);
+                    tx.signedTransactionBytes().toReadableSequentialData(), SignedTransaction.PROTOBUF, INVALID_TRANSACTION);
             bodyBytes = signedTransaction.bodyBytes();
             signatureMap = signedTransaction.sigMap();
         } else {
@@ -194,7 +175,8 @@ public class WorkflowOnset {
     }
 
     public static <T extends Record> T parse(
-            ReadableSequentialData data, Codec<T> codec, ResponseCodeEnum parseErrorCode) throws PreCheckException {
+            @NonNull ReadableSequentialData data, Codec<T> codec, ResponseCodeEnum parseErrorCode) throws PreCheckException {
+
         try {
             return codec.parseStrict(data);
         } catch (MalformedProtobufException e) {

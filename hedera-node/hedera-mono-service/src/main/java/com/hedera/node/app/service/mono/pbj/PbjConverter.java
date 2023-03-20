@@ -28,6 +28,8 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.SignaturePair;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TopicID;
@@ -41,6 +43,8 @@ import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 
 public final class PbjConverter {
     public static @NonNull AccountID toPbj(@NonNull com.hederahashgraph.api.proto.java.AccountID accountID) {
@@ -1196,6 +1200,40 @@ public final class PbjConverter {
                 .setRealmNum(someFileId.realmNum())
                 .setShardNum(someFileId.shardNum())
                 .setFileNum(someFileId.fileNum())
+                .build();
+    }
+
+    public static TopicID toPbj(com.hederahashgraph.api.proto.java.TopicID topicId) {
+        return TopicID.newBuilder()
+                .realmNum(topicId.getRealmNum())
+                .shardNum(topicId.getShardNum())
+                .topicNum(topicId.getTopicNum())
+                .build();
+    }
+
+    public static SignatureMap toPbj(com.hederahashgraph.api.proto.java.SignatureMap sigMap) {
+        final var pbjSigMap = SignatureMap.newBuilder();
+        for (var sig : sigMap.getSigPairList()) {
+            final var pbjSigPair = SignaturePair.newBuilder()
+                    .ed25519(Bytes.wrap(sig.getEd25519().toByteArray()))
+                    .pubKeyPrefix(Bytes.wrap(sig.getPubKeyPrefix().toByteArray()));
+            pbjSigMap.sigPair(pbjSigPair.build());
+        }
+        return pbjSigMap.build();
+    }
+
+    public static com.hederahashgraph.api.proto.java.SignatureMap fromPbj(
+            SignatureMap signatureMap) {
+        final var sigMap = com.hederahashgraph.api.proto.java.SignatureMap.newBuilder();
+        signatureMap.sigPairOrElse(Collections.emptyList()).forEach(sigPair -> sigMap.addSigPair(fromPbj(sigPair)));
+        return sigMap.build();
+    }
+
+    private static com.hederahashgraph.api.proto.java.SignaturePair fromPbj(
+            SignaturePair sigPair) {
+        return com.hederahashgraph.api.proto.java.SignaturePair.newBuilder()
+                .setEd25519(ByteString.copyFrom(asBytes(sigPair.ed25519OrElse(Bytes.EMPTY))))
+                .setPubKeyPrefix(ByteString.copyFrom(asBytes(sigPair.pubKeyPrefix())))
                 .build();
     }
 }

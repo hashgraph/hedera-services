@@ -57,11 +57,6 @@ public interface HandleWorkflowModule {
     }
 
     @Provides
-    static Function<SignatureMap, PubKeyToSigBytes> provideKeyToSigFactory() {
-        return PojoSigMapPubKeyToSigBytes::new;
-    }
-
-    @Provides
     static Function<TxnAccessor, TxnScopedPlatformSigFactory> provideScopedFactoryProvider() {
         return ReusableBodySigningFactory::new;
     }

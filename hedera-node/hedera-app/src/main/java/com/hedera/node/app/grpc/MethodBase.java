@@ -18,7 +18,7 @@ package com.hedera.node.app.grpc;
 
 import com.hedera.node.app.SessionContext;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
-import com.hedera.pbj.runtime.io.buffer.RandomAccessData;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
@@ -116,7 +116,7 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData, Buffe
             responseBuffer.reset();
 
             // Call the workflow
-            handle(session, requestBuffer, responseBuffer);
+            handle(session, Bytes.wrap(requestBuffer.toDataInputStream().readAllBytes()), responseBuffer);
 
             // Respond to the client
             responseBuffer.flip();
@@ -138,12 +138,12 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData, Buffe
      * if a gRPC <b>ERROR</b> is to be returned.
      *
      * @param session The {@link SessionContext} for this call
-     * @param requestBuffer The {@link RandomAccessData} containing the protobuf bytes for the request
+     * @param requestBuffer The {@link Bytes} containing the protobuf bytes for the request
      * @param responseBuffer A {@link BufferedData} into which the response protobuf bytes may be written
      */
     protected abstract void handle(
             @NonNull final SessionContext session,
-            @NonNull final RandomAccessData requestBuffer,
+            @NonNull final Bytes requestBuffer,
             @NonNull final BufferedData responseBuffer);
 
     /**
