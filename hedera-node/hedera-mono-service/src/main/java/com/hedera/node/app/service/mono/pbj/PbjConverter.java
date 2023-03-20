@@ -1292,6 +1292,13 @@ public final class PbjConverter {
         return buf;
     }
 
+    // Note: this method will throw an exception if <code>b</code>'s length is not representable as an int
+    public static @NonNull byte[] asBytes(@NonNull BufferedData b) {
+        final var buf = new byte[Math.toIntExact(b.length())];
+        b.getBytes(0, buf);
+        return buf;
+    }
+
     public static @NonNull com.hederahashgraph.api.proto.java.ContractID fromPbj(final @NonNull ContractID contractID) {
         requireNonNull(contractID);
         return com.hederahashgraph.api.proto.java.ContractID.newBuilder()
