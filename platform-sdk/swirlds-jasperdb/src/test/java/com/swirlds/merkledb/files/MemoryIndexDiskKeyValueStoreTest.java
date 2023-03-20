@@ -109,7 +109,7 @@ class MemoryIndexDiskKeyValueStoreTest {
             final long lastLeafPath,
             final int valueAddition)
             throws IOException {
-        store.startWriting();
+        store.startWriting(0);
         writeDataBatch(testType, store, start, count, valueAddition);
         store.endWriting(0, lastLeafPath);
     }
@@ -283,10 +283,8 @@ class MemoryIndexDiskKeyValueStoreTest {
         writeBatch(testType, store, 10, 20, 30, 1234);
         checkRange(testType, store, 0, 20, 1234);
         // start writing new range
-        store.startWriting();
+        store.startWriting(10);
         writeDataBatch(testType, store, 10, 30, 5678);
-        // heck the index to put in bad data so that logging conditions are met
-        index.put(9, DataFileCommon.dataLocation(1000, 0));
         // merge all files
         store.merge(dataFileReaders -> dataFileReaders, 2);
         // finish writing range

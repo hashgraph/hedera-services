@@ -111,13 +111,12 @@ public class TopicUpdateSuite extends HapiSuite {
 
     private HapiSpec topicUpdateSigReqsEnforcedAtConsensus() {
         long PAYER_BALANCE = 199_999_999_999L;
-        Function<String[], HapiTopicUpdate> updateTopicSignedBy = (signers) -> {
-            return updateTopic("testTopic")
-                    .payingWith("payer")
-                    .adminKey("newAdminKey")
-                    .autoRenewAccountId("newAutoRenewAccount")
-                    .signedBy(signers);
-        };
+        Function<String[], HapiTopicUpdate> updateTopicSignedBy = (signers) -> updateTopic("testTopic")
+                .payingWith("payer")
+                .adminKey("newAdminKey")
+                .autoRenewAccountId("newAutoRenewAccount")
+                .signedBy(signers);
+        ;
         return defaultHapiSpec("topicUpdateSigReqsEnforcedAtConsensus")
                 .given(
                         newKeyNamed("oldAdminKey"),
