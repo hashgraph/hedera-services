@@ -52,6 +52,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -253,9 +254,11 @@ public abstract class HapiSpecOperation {
                 return Optional.empty();
             }
             if (verboseLoggingOn) {
-                log.warn(String.format("{}{} failed - {}", spec.logPrefix(), this, t));
+                String message = MessageFormat.format("{0}{1} failed - {2}", spec.logPrefix(), this, t);
+                log.warn(message);
             } else if (!loggingOff) {
-                log.warn(String.format("{}{} failed {}!", spec.logPrefix(), this, t.getMessage()));
+                String message = MessageFormat.format("{0}{1} failed - {2}!", spec.logPrefix(), this, t.getMessage());
+                log.warn(message);
             }
             return Optional.of(t);
         }
