@@ -20,7 +20,7 @@ module com.hedera.node.app.service.consensus.impl {
             com.hedera.node.app;
     exports com.hedera.node.app.service.consensus.impl.handlers;
     exports com.hedera.node.app.service.consensus.impl.components;
-    exports com.hedera.node.app.service.consensus.impl.serdes;
+    exports com.hedera.node.app.service.consensus.impl.codecs;
     exports com.hedera.node.app.service.consensus.impl.config;
     exports com.hedera.node.app.service.consensus.impl.records;
 

@@ -65,7 +65,7 @@ public class KeyTree {
     }
 
     public com.hedera.hapi.node.base.Key asPbjKey() {
-        return PbjConverter.toPbj(asKey());
+        return PbjConverter.protoToPbj(asKey(), com.hedera.hapi.node.base.Key.class);
     }
 
     public Key asKey(final KeyFactory factoryToUse) {

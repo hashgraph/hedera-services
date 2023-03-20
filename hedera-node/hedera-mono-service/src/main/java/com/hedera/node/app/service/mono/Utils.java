@@ -17,11 +17,10 @@
 package com.hedera.node.app.service.mono;
 
 import static com.hedera.node.app.service.mono.legacy.core.jproto.JKey.mapKey;
-import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.Key;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
 import org.apache.commons.codec.DecoderException;
 
@@ -49,8 +48,10 @@ public class Utils {
         }
     }
 
-    public static Optional<HederaKey> asHederaKey(@NonNull final com.hedera.hapi.node.base.Key key) {
-        requireNonNull(key);
+    public static Optional<HederaKey> asHederaKey(@Nullable final com.hedera.hapi.node.base.Key key) {
+        if (key == null) {
+            return Optional.empty();
+        }
         try {
             // Need to move JKey after refactoring, adding equals & hashcode into this package
             final var fcKey = mapKey(key);

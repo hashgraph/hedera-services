@@ -24,6 +24,14 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 
 public class MonoSchedulingStateAdapterCodec implements Codec<MerkleScheduledTransactionsState> {
+
+    @NonNull
+    @Override
+    public MerkleScheduledTransactionsState parseStrict(@NonNull final ReadableSequentialData readableSequentialData)
+            throws IOException {
+        throw new AssertionError("Not implemented");
+    }
+
     @NonNull
     @Override
     public MerkleScheduledTransactionsState parse(final @NonNull ReadableSequentialData input) throws IOException {
@@ -51,12 +59,12 @@ public class MonoSchedulingStateAdapterCodec implements Codec<MerkleScheduledTra
     }
 
     @Override
-    public int measureRecord(final MerkleScheduledTransactionsState merkleScheduledTransactionsState) {
+    public int measureRecord(final @NonNull MerkleScheduledTransactionsState merkleScheduledTransactionsState) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean fastEquals(@NonNull MerkleScheduledTransactionsState item, @NonNull ReadableSequentialData input) {
-        throw new UnsupportedOperationException();
+    public int measureRecord(MerkleScheduledTransactionsState merkleScheduledTransactionsState) {
+        return 0;
     }
 }
