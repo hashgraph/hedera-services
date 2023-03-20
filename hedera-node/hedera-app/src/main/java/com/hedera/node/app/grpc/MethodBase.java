@@ -116,7 +116,7 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData, Buffe
             responseBuffer.reset();
 
             // Call the workflow
-            handle(session, Bytes.wrap(requestBuffer.toDataInputStream().readAllBytes()), responseBuffer);
+            handle(session, requestBuffer, responseBuffer);
 
             // Respond to the client
             responseBuffer.flip();
