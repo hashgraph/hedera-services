@@ -122,6 +122,8 @@ public class ServicesState extends PartialNaryMerkleInternal
     private int deserializedStateVersion = CURRENT_VERSION;
     // All of the state that is not itself hashed or serialized, but only derived from such state
     private StateMetadata metadata;
+    // Virtual map factory. If multiple states are in a single JVM, each has its own factory
+    private VirtualMapFactory vmFactory = null;
     /* Set to true if virtual NFTs are enabled. */
     private boolean enabledVirtualNft;
     private boolean enableVirtualAccounts;
@@ -600,7 +602,6 @@ public class ServicesState extends PartialNaryMerkleInternal
 
     private static StakingInfoBuilder stakingInfoBuilder = StakingInfoMapBuilder::buildStakingInfoMap;
     private static Supplier<VirtualMapFactory> vmFactorySupplier = null; // for testing purposes
-    private static VirtualMapFactory vmFactory = null;
     private static Supplier<ServicesApp.Builder> appBuilder = DaggerServicesApp::builder;
     private static MapToDiskMigration mapToDiskMigration = MapMigrationToDisk::migrateToDiskAsApropos;
     static final Function<MerkleAccountState, OnDiskAccount> accountMigrator = OnDiskAccount::from;
@@ -633,7 +634,7 @@ public class ServicesState extends PartialNaryMerkleInternal
     }
 
     private static void migrateVirtualMapsToMerkleDb(final ServicesState state) {
-        final VirtualMapFactory virtualMapFactory = getVirtualMapFactory();
+        final VirtualMapFactory virtualMapFactory = state.getVirtualMapFactory();
 
         // virtualized blobs
         final VirtualMap<VirtualBlobKey, VirtualBlobValue> storageMap = state.getChild(StateChildIndices.STORAGE);
@@ -793,7 +794,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         ServicesState.stakingInfoBuilder = stakingInfoBuilder;
     }
 
-    private static VirtualMapFactory getVirtualMapFactory() {
+    private VirtualMapFactory getVirtualMapFactory() {
         if (vmFactorySupplier != null) {
             return vmFactorySupplier.get();
         }
@@ -806,7 +807,6 @@ public class ServicesState extends PartialNaryMerkleInternal
     @VisibleForTesting
     public static void setVmFactory(final Supplier<VirtualMapFactory> vmFactorySupplier) {
         ServicesState.vmFactorySupplier = vmFactorySupplier;
-        vmFactory = null;
     }
 
     @VisibleForTesting
