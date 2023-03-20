@@ -1318,28 +1318,12 @@ public final class PbjConverter {
     }
 
     public static SignatureMap toPbj(com.hederahashgraph.api.proto.java.SignatureMap sigMap) {
-        final var pbjSigMap = SignatureMap.newBuilder();
-        for (var sig : sigMap.getSigPairList()) {
-            final var pbjSigPair = SignaturePair.newBuilder()
-                    .ed25519(Bytes.wrap(sig.getEd25519().toByteArray()))
-                    .pubKeyPrefix(Bytes.wrap(sig.getPubKeyPrefix().toByteArray()));
-            pbjSigMap.sigPair(pbjSigPair.build());
-        }
-        return pbjSigMap.build();
+        return protoToPbj(sigMap, SignatureMap.class);
     }
 
     public static com.hederahashgraph.api.proto.java.SignatureMap fromPbj(
             SignatureMap signatureMap) {
-        final var sigMap = com.hederahashgraph.api.proto.java.SignatureMap.newBuilder();
-        signatureMap.sigPairOrElse(Collections.emptyList()).forEach(sigPair -> sigMap.addSigPair(fromPbj(sigPair)));
-        return sigMap.build();
-    }
-
-    private static com.hederahashgraph.api.proto.java.SignaturePair fromPbj(
-            SignaturePair sigPair) {
-        return com.hederahashgraph.api.proto.java.SignaturePair.newBuilder()
-                .setEd25519(ByteString.copyFrom(asBytes(sigPair.ed25519OrElse(Bytes.EMPTY))))
-                .setPubKeyPrefix(ByteString.copyFrom(asBytes(sigPair.pubKeyPrefix())))
-                .build();
+        return pbjToProto(signatureMap, SignatureMap.class,
+                com.hederahashgraph.api.proto.java.SignatureMap.class);
     }
 }
