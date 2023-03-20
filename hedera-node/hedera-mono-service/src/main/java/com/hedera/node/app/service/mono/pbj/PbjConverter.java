@@ -1310,11 +1310,7 @@ public final class PbjConverter {
     }
 
     public static TopicID toPbj(com.hederahashgraph.api.proto.java.TopicID topicId) {
-        return TopicID.newBuilder()
-                .realmNum(topicId.getRealmNum())
-                .shardNum(topicId.getShardNum())
-                .topicNum(topicId.getTopicNum())
-                .build();
+        return protoToPbj(topicId, TopicID.class);
     }
 
     public static SignatureMap toPbj(com.hederahashgraph.api.proto.java.SignatureMap sigMap) {
