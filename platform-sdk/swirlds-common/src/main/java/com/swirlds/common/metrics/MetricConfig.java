@@ -82,7 +82,9 @@ public abstract sealed class MetricConfig<T extends Metric, C extends MetricConf
         this.description = throwArgBlank(description, "description");
         if (description.length() > MAX_DESCRIPTION_LENGTH) {
             throw new IllegalArgumentException(
-                    "Description must not be longer than " + MAX_DESCRIPTION_LENGTH + " characters: " + description);
+                    "Description has " + description.length() +
+                            " characters, must not be longer than " + MAX_DESCRIPTION_LENGTH +
+                            " characters: " + description);
         }
         this.unit = throwArgNull(unit, "unit");
         this.format = throwArgBlank(format, "format");

@@ -53,9 +53,8 @@ public class ConsensusHandlingMetrics {
                     INTERNAL_CATEGORY, "consensusTimeDeviation")
             .withDescription("The difference between the consensus time of "
                     + "the round currently being handled and this node's wall clock time. "
-                    + "Positive values mean that this node's clock is behind the consensus time. "
-                    + "Negative values mean that this node's clock is ahead of the consensus time. "
-                    + "Healthy nodes in a healthy network should tend to have slightly negative values.")
+                    + "Positive values mean that this node's clock is behind the consensus time, "
+                    + "negative values mean that it's ahead.")
             .withUnit("milliseconds");
     private final LongGauge consensusTimeDeviation;
 
