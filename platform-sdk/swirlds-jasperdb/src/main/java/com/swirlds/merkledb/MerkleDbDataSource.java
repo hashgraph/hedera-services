@@ -953,16 +953,19 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
     }
 
     @Override
-    public long estimatedSize(final long dirtyInternals, final long dirtyLeaves, final long deletedLeaves) {
+    public long estimatedSize(final long dirtyInternals, final long dirtyLeaves) {
         // Deleted leaves count is ignored, as deleted leaves aren't flushed to data source
-        final long estimatedSize =
-                dirtyInternals * (Long.BYTES + DigestType.SHA_384.digestLength()) + // path and hash
-                        dirtyLeaves * (Long.BYTES + // path
-                                DigestType.SHA_384.digestLength() + // hash
-                                tableConfig.getKeySerializer().getTypicalSerializedSize() + // key
-                                tableConfig.getValueSerializer().getTypicalSerializedSize()); // value
-        logger.debug(MERKLE_DB.getMarker(), "Estimated flush size {}", estimatedSize);
-        return estimatedSize;
+        final long estimatedInternalsSize = dirtyInternals
+                * (Long.BYTES // path
+                        + DigestType.SHA_384.digestLength()); // hash
+        final long estimatedLeavesSize = dirtyLeaves
+                * (Long.BYTES // path
+                        + DigestType.SHA_384.digestLength() // hash
+                        + tableConfig.getKeySerializer().getTypicalSerializedSize() // key
+                        + tableConfig.getValueSerializer().getTypicalSerializedSize()); // value
+        final long estimatedTotalSize = estimatedInternalsSize + estimatedLeavesSize;
+        logger.debug(MERKLE_DB.getMarker(), "Estimated flush size {}", estimatedTotalSize);
+        return estimatedTotalSize;
     }
 
     /** toString for debugging */

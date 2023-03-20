@@ -71,8 +71,8 @@ public class TestVirtualMapSettings implements VirtualMapSettings {
     }
 
     @Override
-    public long getTotalFlushThreshold() {
-        return original.getTotalFlushThreshold();
+    public long getFamilyThrottleThreshold() {
+        return original.getFamilyThrottleThreshold();
     }
 
     @Override

@@ -594,7 +594,7 @@ class VirtualPipelineTests {
     @ParameterizedTest
     @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.VMAP)
-    @ValueSource(ints = { 11, 50, 99, 100, 500, 1000, 1111 })
+    @ValueSource(ints = {11, 50, 99, 100, 500, 1000, 1111})
     @DisplayName("Size based flushes")
     public void sizeBasedFlushes(int copyCount) throws InterruptedException {
         final VirtualMapSettings settings = VirtualMapSettingsFactory.get();
@@ -650,7 +650,6 @@ class VirtualPipelineTests {
         afterCopy.waitUntilFlushed();
         assertTrue(afterCopy.isFlushed());
     }
-
 
     @Test
     @Tag(TestTypeTags.FUNCTIONAL)

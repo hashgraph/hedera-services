@@ -225,18 +225,12 @@ public interface VirtualDataSource<K extends VirtualKey<? super K>, V extends Vi
     VirtualKeySet<K> buildKeySet();
 
     /**
-     * Provides estimation how much space is needed to store the given number of internal / leaf nodes
-     * in the data source. This estimation is used to decided when to flush virtual node caches to
-     * data sources.
+     * Provides estimation how much space is needed to store the given number of internal / leaf nodes in the data
+     * source. This estimation is used to decide when to flush virtual node caches to data sources.
      *
-     * @param dirtyInternals
-     * 		Number of dirty internal nodes in the node cache
-     * @param dirtyLeaves
-     * 		Number of dirty leaf nodes in the node cache
-     * @param deletedLeaves
-     * 		Number of deleted leaf nodes in the node cache
-     * @return
-     * 		Estimated space needed to store the given number of nodes in the data source, in bytes
+     * @param dirtyInternals Number of dirty internal nodes in the node cache
+     * @param dirtyLeaves    Number of dirty leaf nodes in the node cache
+     * @return Estimated space needed to store the given number of nodes in the data source, in bytes
      */
-    long estimatedSize(long dirtyInternals, long dirtyLeaves, long deletedLeaves);
+    long estimatedSize(long dirtyInternals, long dirtyLeaves);
 }

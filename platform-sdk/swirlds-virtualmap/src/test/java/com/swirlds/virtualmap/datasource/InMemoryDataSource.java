@@ -372,7 +372,7 @@ public class InMemoryDataSource<K extends VirtualKey<? super K>, V extends Virtu
     }
 
     @Override
-    public long estimatedSize(final long dirtyInternals, final long dirtyLeaves, final long deletedLeaves) {
+    public long estimatedSize(final long dirtyInternals, final long dirtyLeaves) {
         // It doesn't have to be very precise as this data source is used for testing purposed only
         return dirtyInternals * (Long.BYTES + DigestType.SHA_384.digestLength()) + dirtyLeaves * 1024;
     }

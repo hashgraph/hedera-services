@@ -608,9 +608,9 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
     }
 
     @Override
-    public long estimatedSize(final long dirtyInternals, final long dirtyLeaves, final long deletedLeaves) {
-        return dirtyInternals * (Long.BYTES + DigestType.SHA_384.digestLength()) +
-                dirtyLeaves * pathToHashKeyValue.getSerializer().getTypicalSerializedSize();
+    public long estimatedSize(final long dirtyInternals, final long dirtyLeaves) {
+        return dirtyInternals * (Long.BYTES + DigestType.SHA_384.digestLength())
+                + dirtyLeaves * pathToHashKeyValue.getSerializer().getTypicalSerializedSize();
     }
 
     /**

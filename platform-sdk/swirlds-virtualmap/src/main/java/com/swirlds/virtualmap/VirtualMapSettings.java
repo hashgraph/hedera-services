@@ -16,8 +16,7 @@
 
 package com.swirlds.virtualmap;
 
-import com.swirlds.virtualmap.datasource.VirtualDataSource;
-
+import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import java.time.Duration;
 
 /**
@@ -105,25 +104,33 @@ public interface VirtualMapSettings {
      * The value must be positive and will typically be a fairly small number, such as 20. The first copy is not
      * flushed, but every Nth copy thereafter is.
      *
-     * This setting is ignored, if {@link #getTotalFlushThreshold()} is set to a positive value.
+     * This setting is ignored, if {@link #getFamilyThrottleThreshold()} is set to a positive value.
      *
      * @return The number of copies between flushes
      */
     int getFlushInterval();
 
     /**
-     * Get size threshold when virtual node cache needs to be flushed to the data source. This threshold is
-     * checked against estimated size provided by {@link VirtualDataSource#estimatedSize(long, long, long)}.
+     * Virtual root flush threshold, in bytes. When virtual root size exceeds the threshold, it is
+     * no longer merged with next copies, but marked to flush to disk, when it becomes the oldest
+     * accessible version.
      *
-     * If the threshold is not set, set to 0, or set to a negative value, flushes are based on {@link
-     * #getFlushInterval()} setting.
+     * If a virtual root is explicitly requested to flush with {@link VirtualRootNode#enableFlush()},
+     * its size isn't checked against this threshold.
+     *
+     * @return Virtual root flush threshold
+     */
+    long getCopyFlushThreshold();
+
+    /**
+     * Virtual root family throttle threshold, in bytes. When sum of estimated sizes of all
+     * virtual roots in a single family (virtual map) exceeds the threshold, virtual pipeline
+     * starts throttling creating new virtual root copies.
      *
      * @return
-     * 		Virtual node cache flush threshold
+     * 		Virtual root family throttle threshold
      */
-    long getTotalFlushThreshold();
-
-    long getCopyFlushThreshold();
+    long getFamilyThrottleThreshold();
 
     /**
      * The preferred maximum number of virtual maps waiting to be flushed. If more maps than this number are awaiting

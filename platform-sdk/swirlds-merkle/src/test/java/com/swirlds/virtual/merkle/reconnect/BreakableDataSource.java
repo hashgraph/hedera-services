@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public abstract class BreakableDataSource implements VirtualDataSource<TestKey, TestValue> {
@@ -50,8 +49,7 @@ public abstract class BreakableDataSource implements VirtualDataSource<TestKey, 
             final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete)
             throws IOException {
 
-        final List<VirtualLeafRecord<TestKey, TestValue>> leaves =
-                leafRecordsToAddOrUpdate.toList();
+        final List<VirtualLeafRecord<TestKey, TestValue>> leaves = leafRecordsToAddOrUpdate.toList();
 
         if (builder.numTimesBroken < builder.numTimesToBreak) {
             builder.numCalls += leaves.size();
@@ -111,7 +109,7 @@ public abstract class BreakableDataSource implements VirtualDataSource<TestKey, 
     public abstract VirtualKeySet<TestKey> buildKeySet();
 
     @Override
-    public long estimatedSize(final long dirtyInternals, final long dirtyLeaves, final long deletedLeaves) {
-        return delegate.estimatedSize(dirtyInternals, dirtyLeaves, deletedLeaves);
+    public long estimatedSize(final long dirtyInternals, final long dirtyLeaves) {
+        return delegate.estimatedSize(dirtyInternals, dirtyLeaves);
     }
 }

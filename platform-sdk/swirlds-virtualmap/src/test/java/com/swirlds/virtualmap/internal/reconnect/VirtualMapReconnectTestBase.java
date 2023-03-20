@@ -356,8 +356,8 @@ public abstract class VirtualMapReconnectTestBase {
         }
 
         @Override
-        public long estimatedSize(final long dirtyInternals, final long dirtyLeaves, final long deletedLeaves) {
-            return delegate.estimatedSize(dirtyInternals, dirtyLeaves, deletedLeaves);
+        public long estimatedSize(final long dirtyInternals, final long dirtyLeaves) {
+            return delegate.estimatedSize(dirtyInternals, dirtyLeaves);
         }
     }
 }

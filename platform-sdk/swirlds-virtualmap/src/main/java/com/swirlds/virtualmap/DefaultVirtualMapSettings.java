@@ -36,7 +36,7 @@ public final class DefaultVirtualMapSettings implements VirtualMapSettings {
     public static final long DEFAULT_VIRTUAL_MAP_WARNING_INTERVAL = 100_000;
     public static final int DEFAULT_FLUSH_INTERVAL = 20;
     public static final long DEFAULT_COPY_FLUSH_THRESHOLD = 500_000_000L;
-    public static final long DEFAULT_TOTAL_FLUSH_THRESHOLD = 2_500_000_000L;
+    public static final long DEFAULT_FAMILY_THROTTLE_THRESHOLD = 2_500_000_000L;
     public static final int DEFAULT_PREFERRED_FLUSH_QUEUE_SIZE = 2;
     public static final Duration DEFAULT_FLUSH_THROTTLE_STEP_SIZE = Duration.ofMillis(200);
     public static final Duration DEFAULT_MAXIMUM_FLUSH_THROTTLE_PERIOD = Duration.ofSeconds(5);
@@ -110,8 +110,8 @@ public final class DefaultVirtualMapSettings implements VirtualMapSettings {
      * {@inheritDoc}
      */
     @Override
-    public long getTotalFlushThreshold() {
-        return DEFAULT_TOTAL_FLUSH_THRESHOLD;
+    public long getFamilyThrottleThreshold() {
+        return DEFAULT_FAMILY_THROTTLE_THRESHOLD;
     }
 
     /**

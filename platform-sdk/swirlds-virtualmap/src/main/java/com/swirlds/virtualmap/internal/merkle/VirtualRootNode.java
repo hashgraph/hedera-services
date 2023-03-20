@@ -374,9 +374,9 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
         }
 
         this.state = Objects.requireNonNull(state);
-        final long flushThreshold = settings.getTotalFlushThreshold();
+        final long flushThreshold = settings.getFamilyThrottleThreshold();
         if (flushThreshold <= 0) {
-            // If flush threshold is not set, use flush interval
+            // If throttle threshold is not set, use flush interval
             this.shouldBeFlushed.set(fastCopyVersion != 0 && fastCopyVersion % settings.getFlushInterval() == 0);
         }
         if (this.dataSourceBuilder != null && this.dataSource == null) {
@@ -950,9 +950,7 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
         final long estimatedDirtyLeavesCount =
                 cache.estimatedDirtyLeavesCount(state.getFirstLeafPath(), state.getLastLeafPath());
         final long estimatedInternalsCount = cache.estimatedInternalsCount(state.getFirstLeafPath());
-        final long estimatedFlushSize = dataSource.estimatedSize(
-                estimatedInternalsCount, estimatedDirtyLeavesCount, 0);
-        return estimatedFlushSize;
+        return dataSource.estimatedSize(estimatedInternalsCount, estimatedDirtyLeavesCount);
     }
 
     /*

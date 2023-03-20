@@ -1080,8 +1080,7 @@ class VirtualNodeCacheTest extends VirtualTestBase {
         cache0.seal();
         cache0.release();
 
-        assertNull(cache0.lookupLeafByPath(ROOT_PATH, false),
-                "should not be able to look up value on destroyed cache");
+        assertNull(cache0.lookupLeafByPath(ROOT_PATH, false), "should not be able to look up value on destroyed cache");
     }
 
     @Test
@@ -1371,9 +1370,7 @@ class VirtualNodeCacheTest extends VirtualTestBase {
         cache.seal();
         cache.release();
 
-        assertNull(
-                cache.lookupLeafByKey(A_KEY, false),
-                "shouldn't be able to key on destroyed cache");
+        assertNull(cache.lookupLeafByKey(A_KEY, false), "shouldn't be able to key on destroyed cache");
     }
 
     @Test

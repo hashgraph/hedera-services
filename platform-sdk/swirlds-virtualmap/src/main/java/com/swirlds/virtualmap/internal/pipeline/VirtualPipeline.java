@@ -228,11 +228,11 @@ public class VirtualPipeline {
 
     /**
      * Slow down the fast copy operation if total size of all (unreleased) virtual root copies
-     * in this pipeline exceeds {@link VirtualMapSettings#getTotalFlushThreshold()}.
+     * in this pipeline exceeds {@link VirtualMapSettings#getFamilyThrottleThreshold()}.
      */
     private void applyTotalSizeBackpressure() {
         final long totalSize = currentTotalSize();
-        final long sizeThreshold = VirtualMapSettingsFactory.get().getTotalFlushThreshold();
+        final long sizeThreshold = VirtualMapSettingsFactory.get().getFamilyThrottleThreshold();
         final double ratio = (double) totalSize / sizeThreshold;
         final int over100percentExcess = (int) ((ratio - 1.0) * 100);
         if (over100percentExcess < 0) {
@@ -283,11 +283,6 @@ public class VirtualPipeline {
             unhashedCopies.add(copy);
         }
         mostRecentCopy.set(copy);
-//        synchronized (this) {
-//            if (alive) {
-//                scheduleWork();
-//            }
-//        }
 
         applyFlushBackpressure();
         applyTotalSizeBackpressure();
@@ -432,8 +427,8 @@ public class VirtualPipeline {
      * Check if this copy should be flushed.
      */
     private boolean shouldBeFlushed(final VirtualRoot copy) {
-        return (copy.requestedToFlush() || copySizeToFlush(copy)) &&
-                (copy.isDestroyed() || copy.isDetached());
+        return (copy.requestedToFlush() || copySizeToFlush(copy)) // copy should be flushed
+                && (copy.isDestroyed() || copy.isDetached()); // destroyed or detached
     }
 
     /**
@@ -492,14 +487,10 @@ public class VirtualPipeline {
         final PipelineListNode<VirtualRoot> mergeTarget = mergeCandidate.getNext();
 
         return !copy.requestedToFlush() // not explicitly requested to flush
-                &&
-                !copySizeToFlush(copy) // don't let merged copies grow too much
-                &&
-                (copy.isDestroyed() || copy.isDetached()) // copy must be destroyed or detached
-                &&
-                mergeTarget != null // target must exist
-                &&
-                mergeTarget.getValue().isImmutable(); // target must be immutable
+                && !copySizeToFlush(copy) // don't let merged copies grow too much
+                && (copy.isDestroyed() || copy.isDetached()) // copy must be destroyed or detached
+                && mergeTarget != null // target must exist
+                && mergeTarget.getValue().isImmutable(); // target must be immutable
     }
 
     /**
@@ -534,8 +525,7 @@ public class VirtualPipeline {
     private void hashFlushMerge() {
         PipelineListNode<VirtualRoot> next = copies.getFirst();
         // Iterate from the oldest copy to the newest
-        while ((next != null)
-                && !Thread.currentThread().isInterrupted()) {
+        while ((next != null) && !Thread.currentThread().isInterrupted()) {
             final VirtualRoot copy = next.getValue();
             // The newest copy. Nothing can be done to it
             if (!copy.isImmutable()) {
