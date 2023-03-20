@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * Virtual data source builder that manages {@link MerkleDb} based data sources.
@@ -118,8 +117,7 @@ public class MerkleDbDataSourceBuilder<K extends VirtualKey<? super K>, V extend
      * {@inheritDoc}
      */
     @Override
-    public VirtualDataSource<K, V> copy(final VirtualDataSource<K, V> snapshotMe,
-            final boolean makeCopyActive) {
+    public VirtualDataSource<K, V> copy(final VirtualDataSource<K, V> snapshotMe, final boolean makeCopyActive) {
         if (!(snapshotMe instanceof MerkleDbDataSource<K, V> source)) {
             throw new IllegalArgumentException("The datasource must be compatible with the MerkleDb");
         }

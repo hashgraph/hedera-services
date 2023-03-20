@@ -1499,7 +1499,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
      */
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof MerkleDbDataSource<?,?> other)) {
+        if (!(o instanceof MerkleDbDataSource<?, ?> other)) {
             return false;
         }
         return Objects.equals(database, other.database) && Objects.equals(tableId, other.tableId);

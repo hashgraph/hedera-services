@@ -101,8 +101,8 @@ public class MerkleDbTest {
         final Path dbDir = instance.getStorageDir();
         final int tableId = dataSource.getTableId();
         Assertions.assertEquals(dbDir.resolve("tables/" + tableName + "-" + tableId), dataSource.getStorageDir());
-        Assertions.assertEquals(dbDir.resolve("tables/" + tableName + "-" + tableId),
-                instance.getTableDir(tableName, tableId));
+        Assertions.assertEquals(
+                dbDir.resolve("tables/" + tableName + "-" + tableId), instance.getTableDir(tableName, tableId));
         dataSource.close();
     }
 

@@ -404,10 +404,12 @@ class MerkleDbDataSourceTest {
         // close data source
         dataSource.close();
         // check directory still exists and temporary snapshot path does not
-        assertTrue(Files.exists(originalDb.getTableDir(tableName, dataSource.getTableId())),
+        assertTrue(
+                Files.exists(originalDb.getTableDir(tableName, dataSource.getTableId())),
                 "Database dir should still exist");
         final MerkleDb snapshotDb = MerkleDb.getInstance(snapshotDbPath);
-        assertTrue(Files.exists(snapshotDb.getTableDir(tableName, dataSource.getTableId())),
+        assertTrue(
+                Files.exists(snapshotDb.getTableDir(tableName, dataSource.getTableId())),
                 "Snapshot dir [" + snapshotDbPath + "] should exist");
         // reopen data source and check
         final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource2 =

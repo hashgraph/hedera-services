@@ -343,7 +343,8 @@ public final class MerkleDb {
             final MerkleDbDataSource<K, V> dataSource, final boolean makeCopyPrimary) throws IOException {
         final String label = dataSource.getTableName();
         final int tableId = getNextTableId();
-        final MerkleDbTableConfig<K, V> tableConfig = dataSource.getTableConfig().copy();
+        final MerkleDbTableConfig<K, V> tableConfig =
+                dataSource.getTableConfig().copy();
         tableConfigs.set(tableId, new TableMetadata(tableId, label, tableConfig));
         try {
             startSnapshot(Set.of(dataSource));

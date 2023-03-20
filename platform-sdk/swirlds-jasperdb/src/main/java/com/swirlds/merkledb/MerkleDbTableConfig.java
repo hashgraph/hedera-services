@@ -332,8 +332,8 @@ public final class MerkleDbTableConfig<K extends VirtualKey<? super K>, V extend
      * @return Table config copy
      */
     public MerkleDbTableConfig<K, V> copy() {
-        final MerkleDbTableConfig<K, V> copy = new MerkleDbTableConfig<>(hashVersion, hashType,
-                keyVersion, keySerializer, valueVersion, valueSerializer);
+        final MerkleDbTableConfig<K, V> copy = new MerkleDbTableConfig<>(
+                hashVersion, hashType, keyVersion, keySerializer, valueVersion, valueSerializer);
         copy.preferDiskIndices(preferDiskBasedIndices);
         copy.internalHashesRamToDiskThreshold(internalHashesRamToDiskThreshold);
         copy.maxNumberOfKeys(maxNumberOfKeys);

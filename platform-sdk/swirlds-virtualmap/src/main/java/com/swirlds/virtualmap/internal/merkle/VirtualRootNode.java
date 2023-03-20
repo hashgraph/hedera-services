@@ -1089,8 +1089,7 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
         final T snapshot;
         if (destination == null) {
             //noinspection unchecked
-            snapshot = (T) new RecordAccessorImpl<>(state, cache.snapshot(),
-                    dataSourceBuilder.copy(dataSource, false));
+            snapshot = (T) new RecordAccessorImpl<>(state, cache.snapshot(), dataSourceBuilder.copy(dataSource, false));
         } else {
             dataSourceBuilder.snapshot(destination, dataSource);
             //noinspection unchecked

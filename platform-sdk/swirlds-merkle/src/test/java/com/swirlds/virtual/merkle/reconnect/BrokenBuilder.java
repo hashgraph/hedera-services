@@ -62,8 +62,8 @@ public abstract class BrokenBuilder implements VirtualDataSourceBuilder<TestKey,
     public abstract BreakableDataSource build(final String label, final boolean withDbCompactionEnabled);
 
     @Override
-    public abstract BreakableDataSource copy(final VirtualDataSource<TestKey, TestValue> snapshotMe,
-            final boolean makeCopyActive);
+    public abstract BreakableDataSource copy(
+            final VirtualDataSource<TestKey, TestValue> snapshotMe, final boolean makeCopyActive);
 
     @Override
     public void snapshot(final Path to, final VirtualDataSource<TestKey, TestValue> snapshotMe) {
