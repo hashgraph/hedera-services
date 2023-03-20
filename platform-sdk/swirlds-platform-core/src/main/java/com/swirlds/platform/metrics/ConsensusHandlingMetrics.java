@@ -21,6 +21,7 @@ import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 
 import com.swirlds.common.metrics.LongGauge;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -58,16 +59,21 @@ public class ConsensusHandlingMetrics {
             .withUnit("milliseconds");
     private final LongGauge consensusTimeDeviation;
 
+    private final Time time;
+
     /**
      * Constructor of {@code ConsensusHandlingMetrics}
      *
      * @param metrics
      * 		a reference to the metrics-system
+     * @param time provides wall clock time
      * @throws IllegalArgumentException
      * 		if {@code metrics} is {@code null}
      */
-    public ConsensusHandlingMetrics(final Metrics metrics) {
+    public ConsensusHandlingMetrics(final Metrics metrics, final Time time) {
         CommonUtils.throwArgNull(metrics, "metrics");
+        this.time = time;
+
         consensusCycleTiming = new CycleTimingStat(
                 metrics,
                 ChronoUnit.MILLIS,
@@ -148,10 +154,10 @@ public class ConsensusHandlingMetrics {
      * Records the consensus time.
      *
      * @param consensusTime
-     * 		the consensus time of the most recently handled round
+     * 		the consensus time of the last transaction in the round that is currently being handled
      */
     public void recordConsensusTime(final Instant consensusTime) {
         this.consensusTime.set(consensusTime.toEpochMilli());
-        consensusTimeDeviation.set(consensusTime.toEpochMilli() - Instant.now().toEpochMilli());
+        consensusTimeDeviation.set(consensusTime.toEpochMilli() - time.now().toEpochMilli());
     }
 }
