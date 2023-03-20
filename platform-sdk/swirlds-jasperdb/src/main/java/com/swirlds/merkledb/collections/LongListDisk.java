@@ -348,6 +348,7 @@ public class LongListDisk extends AbstractLongList<Long> {
         fillBufferWithZeroes(transferBuffer);
 
         if (leftSide) {
+            transferBuffer.position(0);
             transferBuffer.limit((int) (entriesToCleanUp * Long.BYTES));
             try {
                 currentFileChannel.write(transferBuffer, chunkOffset);

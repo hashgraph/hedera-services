@@ -532,7 +532,7 @@ public abstract class AbstractLongList<C> implements LongList {
     private void shrinkRightSideIfNeeded(long maxValidIndex) {
         final int listLength = chunkList.length();
         final int lastValidChunkWithBufferIndex =
-                (int) Math.min((maxValidIndex + reservedBufferLength) / numLongsPerChunk, listLength);
+                (int) Math.min((maxValidIndex + reservedBufferLength) / numLongsPerChunk, listLength - 1);
         final int firstChunkIndexToDelete = lastValidChunkWithBufferIndex + 1;
         final int numberOfChunks = calculateNumberOfChunks(size());
 
@@ -553,10 +553,6 @@ public abstract class AbstractLongList<C> implements LongList {
 
         // clean up chunk(s) reserved for buffer
         for (int i = firstChunkWithDataIndex + 1; i <= lastValidChunkWithBufferIndex; i++) {
-            if (i >= listLength) {
-                // we're at the end of the list, no more chunks to clean up
-                break;
-            }
             chunk = chunkList.get(i);
             if (chunk != null) {
                 partialChunkCleanup(chunk, false, numLongsPerChunk);

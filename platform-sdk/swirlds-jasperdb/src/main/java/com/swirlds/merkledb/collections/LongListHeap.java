@@ -80,18 +80,7 @@ public final class LongListHeap extends AbstractLongList<AtomicLongArray> {
      * @throws IOException If there was a problem reading the file
      */
     public LongListHeap(final Path file) throws IOException {
-        super(file, DEFAULT_RESERVED_BUFFER_LENGTH);
-    }
-
-    /**
-     * Create a {@link LongListHeap} from a file that was saved.
-     *
-     * @param file the file to read from
-     * @param reservedBufferLength the number of bytes to reserve for the buffer
-     * @throws IOException If there was a problem reading the file
-     */
-    LongListHeap(final Path file, final long reservedBufferLength) throws IOException {
-        super(file, reservedBufferLength);
+        super(file, 0);
     }
 
     /** {@inheritDoc} */
