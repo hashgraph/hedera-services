@@ -504,11 +504,9 @@ class QueryWorkflowImplTest extends AppTestBase {
         final var localRequestBuffer = newEmptyBuffer();
         final var queryHeader =
                 QueryHeader.newBuilder().responseType(ANSWER_STATE_PROOF).build();
-        final var query =
-                Query.newBuilder()
-                        .fileGetInfo(
-                                FileGetInfoQuery.newBuilder().header(queryHeader).build())
-                        .build();
+        final var query = Query.newBuilder()
+                .fileGetInfo(FileGetInfoQuery.newBuilder().header(queryHeader).build())
+                .build();
 
         final var requestBytes = PbjConverter.asBytes(localRequestBuffer);
         when(handler.extractHeader(query)).thenReturn(queryHeader);
