@@ -62,6 +62,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpaus
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
+import static com.hederahashgraph.api.proto.java.TransactionBody.DataCase.NODE_STAKE_UPDATE;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
@@ -193,9 +194,26 @@ public final class CommonUtils {
             case SCHEDULECREATE -> ScheduleCreate;
             case SCHEDULEDELETE -> ScheduleDelete;
             case SCHEDULESIGN -> ScheduleSign;
-            case NODE_STAKE_UPDATE -> NodeStakeUpdate;
             case UTIL_PRNG -> UtilPrng;
             default -> throw new UnknownHederaFunctionality("Unknown HederaFunctionality for " + txn);
         };
+    }
+
+    /**
+     * check TransactionBody and return the NodeStakeUpdate HederaFunctionality
+     *
+     * @param txn the {@code TransactionBody}
+     * @return one of HederaFunctionality
+     * @throws UnknownHederaFunctionality if it's not a NodeStakeUpdate HederaFunctionality
+     */
+    @NonNull
+    public static HederaFunctionality functionOrStakeUpdateOf(@NonNull final TransactionBody txn)
+            throws UnknownHederaFunctionality {
+        DataCase dataCase = txn.getDataCase();
+        if (dataCase.equals(NODE_STAKE_UPDATE)) {
+            return NodeStakeUpdate;
+        } else {
+            throw new UnknownHederaFunctionality("Not NodeStakeUpdate HederaFunctionality");
+        }
     }
 }

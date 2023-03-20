@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.junit.utils;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.functionOf;
+import static com.hedera.node.app.hapi.utils.CommonUtils.functionOrStakeUpdateOf;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -24,21 +25,33 @@ import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.hapi.utils.exception.UnknownHederaFunctionality;
 import com.hedera.services.stream.proto.RecordStreamItem;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.HashSet;
 import java.util.Set;
 
 public class TransactionBodyClassifier {
     private final Set<HederaFunctionality> transactionType = new HashSet<>();
 
-    public HederaFunctionality incorporate(final RecordStreamItem item) {
+    public void incorporate(final RecordStreamItem item) throws InvalidProtocolBufferException {
+        var txnType = NONE;
+        TransactionBody txnBody = CommonUtils.extractTransactionBody(item.getTransaction());
+
+        try {
+            txnType = functionOrStakeUpdateOf(txnBody);
+            transactionType.add(txnType);
+        } catch (UnknownHederaFunctionality e) {
+            checkFunctionOf(txnBody);
+        }
+    }
+
+    private void checkFunctionOf(final TransactionBody txnBody) {
         var txnType = NONE;
         try {
-            txnType = functionOf(CommonUtils.extractTransactionBody(item.getTransaction()));
+            txnType = functionOf(txnBody);
             transactionType.add(txnType);
-        } catch (UnknownHederaFunctionality | InvalidProtocolBufferException e) {
+        } catch (UnknownHederaFunctionality ex) {
             transactionType.add(txnType);
         }
-        return txnType;
     }
 
     public boolean isInvalid() {
