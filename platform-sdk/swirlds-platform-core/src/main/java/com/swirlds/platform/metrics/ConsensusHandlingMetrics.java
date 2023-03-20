@@ -19,6 +19,7 @@ package com.swirlds.platform.metrics;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_8_1;
 import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 
+import com.swirlds.common.metrics.LongGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
@@ -27,6 +28,7 @@ import com.swirlds.platform.stats.AverageAndMax;
 import com.swirlds.platform.stats.AverageStat;
 import com.swirlds.platform.stats.CycleTimingStat;
 import com.swirlds.platform.stats.cycle.CycleDefinition;
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
@@ -40,6 +42,21 @@ public class ConsensusHandlingMetrics {
     private final CycleTimingStat newSignedStateCycleTiming;
 
     private final AverageAndMax avgEventsPerRound;
+
+    private static final LongGauge.Config consensusTimeConfig = new LongGauge.Config(INTERNAL_CATEGORY, "consensusTime")
+            .withDescription("The consensus timestamp of the round currently being handled.")
+            .withUnit("milliseconds since the epoch");
+    private final LongGauge consensusTime;
+
+    private static final LongGauge.Config consensusTimeDeviationConfig = new LongGauge.Config(
+                    INTERNAL_CATEGORY, "consensusTimeDeviation")
+            .withDescription("The difference between the consensus time of "
+                    + "the round currently being handled and this node's wall clock time. "
+                    + "Positive values mean that this node's clock is behind the consensus time. "
+                    + "Negative values mean that this node's clock is ahead of the consensus time. "
+                    + "Healthy nodes in a healthy network should tend to have slightly negative values.")
+            .withUnit("milliseconds");
+    private final LongGauge consensusTimeDeviation;
 
     /**
      * Constructor of {@code ConsensusHandlingMetrics}
@@ -96,6 +113,9 @@ public class ConsensusHandlingMetrics {
                 "average number of events in a consensus round",
                 FORMAT_8_1,
                 AverageStat.WEIGHT_VOLATILE);
+
+        consensusTime = metrics.getOrCreate(consensusTimeConfig);
+        consensusTimeDeviation = metrics.getOrCreate(consensusTimeDeviationConfig);
     }
 
     /**
@@ -122,5 +142,16 @@ public class ConsensusHandlingMetrics {
      */
     public void recordEventsPerRound(final int numEvents) {
         avgEventsPerRound.update(numEvents);
+    }
+
+    /**
+     * Records the consensus time.
+     *
+     * @param consensusTime
+     * 		the consensus time of the most recently handled round
+     */
+    public void recordConsensusTime(final Instant consensusTime) {
+        this.consensusTime.set(consensusTime.toEpochMilli());
+        consensusTimeDeviation.set(consensusTime.toEpochMilli() - Instant.now().toEpochMilli());
     }
 }
