@@ -20,8 +20,6 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 
@@ -37,24 +35,22 @@ public class MonoSchedulingStateAdapterCodec implements Codec<MerkleScheduledTra
     @NonNull
     @Override
     public MerkleScheduledTransactionsState parse(final @NonNull ReadableSequentialData input) throws IOException {
-        if (input instanceof SerializableDataInputStream in) {
-            final var context = new MerkleScheduledTransactionsState();
-            context.deserialize(in, MerkleScheduledTransactionsState.CURRENT_VERSION);
-            return context;
-        } else {
-            throw new IllegalArgumentException("Expected a SerializableDataInputStream");
-        }
+        return new MerkleScheduledTransactionsState(input.readLong());
+    }
+
+    @NonNull
+    @Override
+    public MerkleScheduledTransactionsState parseStrict(@NonNull final ReadableSequentialData input)
+            throws IOException {
+        return parse(input);
     }
 
     @Override
     public void write(
             final @NonNull MerkleScheduledTransactionsState item, final @NonNull WritableSequentialData output)
             throws IOException {
-        if (output instanceof SerializableDataOutputStream out) {
-            item.serialize(out);
-        } else {
-            throw new IllegalArgumentException("Expected a SerializableDataOutputStream");
-        }
+        // This is not ideal, but lacking an adapter from PBJ to pre-PBJ for IO.
+        output.writeLong(item.currentMinSecond());
     }
 
     @Override
@@ -63,7 +59,7 @@ public class MonoSchedulingStateAdapterCodec implements Codec<MerkleScheduledTra
     }
 
     @Override
-    public boolean fastEquals(@NonNull MerkleScheduledTransactionsState item, @NonNull ReadableSequentialData input) {
+    public int measureRecord(final @NonNull MerkleScheduledTransactionsState merkleScheduledTransactionsState) {
         throw new UnsupportedOperationException();
     }
 

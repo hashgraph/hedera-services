@@ -21,12 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactionsState;
 import com.hedera.node.app.service.schedule.impl.serdes.MonoSchedulingStateAdapterCodec;
-import com.hedera.pbj.runtime.io.DataInput;
-import com.hedera.pbj.runtime.io.DataInputStream;
-import com.hedera.pbj.runtime.io.DataOutput;
-import com.hedera.pbj.runtime.io.DataOutputStream;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
+import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -34,39 +31,31 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 class MonoSchedulingStateAdapterSerdesTest {
-    private static final long SOME_NUMBER = 666L;
+    private static final long SOME_NUMBER = 646L;
     private static final MerkleScheduledTransactionsState SOME_SCHEDULING_STATE =
             new MerkleScheduledTransactionsState(SOME_NUMBER);
-
-    @Mock
-    private DataInput input;
-
-    @Mock
-    private DataOutput output;
-
     final MonoSchedulingStateAdapterCodec subject = new MonoSchedulingStateAdapterCodec();
 
+    @Mock
+    private ReadableSequentialData input;
+
     @Test
-    void doesntSupportUnnecessary() {
+    void doesNotSupportUnnecessary() {
+        assertThrows(UnsupportedOperationException.class, () -> subject.measureRecord(SOME_SCHEDULING_STATE));
         assertThrows(UnsupportedOperationException.class, () -> subject.measure(input));
         assertThrows(UnsupportedOperationException.class, () -> subject.fastEquals(SOME_SCHEDULING_STATE, input));
     }
 
     @Test
     void canSerializeAndDeserializeFromAppropriateStream() throws IOException {
-        final var baos = new ByteArrayOutputStream();
-        final var actualOut = new SerializableDataOutputStream(baos);
-        subject.write(SOME_SCHEDULING_STATE, new DataOutputStream(actualOut));
+        final ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+        final WritableStreamingData actualOut = new WritableStreamingData(byteStream);
+        subject.write(SOME_SCHEDULING_STATE, actualOut);
         actualOut.flush();
 
-        final var actualIn = new SerializableDataInputStream(new ByteArrayInputStream(baos.toByteArray()));
-        final var parsed = subject.parse(new DataInputStream(actualIn));
+        final ReadableStreamingData actualIn =
+                new ReadableStreamingData(new ByteArrayInputStream(byteStream.toByteArray()));
+        final MerkleScheduledTransactionsState parsed = subject.parse(actualIn);
         assertEquals(SOME_SCHEDULING_STATE.getHash(), parsed.getHash());
-    }
-
-    @Test
-    void doesntSupportOtherStreams() {
-        assertThrows(IllegalArgumentException.class, () -> subject.parse(input));
-        assertThrows(IllegalArgumentException.class, () -> subject.write(SOME_SCHEDULING_STATE, output));
     }
 }

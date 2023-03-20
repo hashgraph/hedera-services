@@ -36,6 +36,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+@SuppressWarnings({"unchecked", "rawtypes"})
 @ExtendWith(MockitoExtension.class)
 class ReadableScheduleStoreTest {
     @Mock
@@ -86,7 +87,7 @@ class ReadableScheduleStoreTest {
         assertEquals(Optional.of(adminKey), meta.get().adminKey());
         assertEquals(TransactionBody.newBuilder().build(), meta.get().scheduledTxn());
         assertEquals(
-                Optional.of(EntityId.fromNum(2L).toGrpcAccountId()), meta.get().designatedPayer());
+                Optional.of(EntityId.fromNum(2L).toPbjAccountId()), meta.get().designatedPayer());
     }
 
     @Test

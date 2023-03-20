@@ -38,18 +38,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+@SuppressWarnings("NewClassNamingConvention")
 @ExtendWith(MockitoExtension.class)
 public class ContractHandlerTestBase implements TransactionFactory {
-    protected static final String ACCOUNTS = "ACCOUNTS";
-    protected static final String ALIASES = "ALIASES";
     protected final AccountID payer = asAccount("0.0.3");
     protected final AccountID autoRenewAccountId = asAccount("0.0.10001");
-    protected final HederaKey payerKey = asHederaKey(A_COMPLEX_KEY).get();
+    protected final HederaKey payerKey = asHederaKey(A_COMPLEX_KEY).orElseThrow();
     protected final Key adminKey = A_COMPLEX_KEY;
     protected final Key adminContractKey =
             Key.newBuilder().contractID(asContract("0.0.10002")).build();
-    protected final HederaKey adminHederaKey = asHederaKey(A_COMPLEX_KEY).get();
-    protected final HederaKey autoRenewHederaKey = asHederaKey(A_COMPLEX_KEY).get();
+    protected final HederaKey autoRenewHederaKey = asHederaKey(A_COMPLEX_KEY).orElseThrow();
     protected final Timestamp consensusTimestamp =
             Timestamp.newBuilder().seconds(1_234_567L).build();
     protected final ContractID targetContract =
