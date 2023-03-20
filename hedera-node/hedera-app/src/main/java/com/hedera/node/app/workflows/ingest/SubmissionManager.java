@@ -21,12 +21,13 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.config.Profile;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.RecordCache;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.system.Platform;
@@ -92,23 +93,25 @@ public class SubmissionManager {
 
         // Unchecked submits are a mechanism to inject transaction to the system, that bypass all
         // pre-checks.This is used in tests to check the reaction to illegal input.
-        final var optUncheckedSubmit = txBody.uncheckedSubmit();
-        if (optUncheckedSubmit.isPresent()) {
+        final var uncheckedSubmit = txBody.uncheckedSubmitOrElse(UncheckedSubmitBody.DEFAULT);
+        if (!uncheckedSubmit.equals(UncheckedSubmitBody.DEFAULT)) {
+            LOG.warn("Unchecked submit is not supported in this version of Hedera");
             if (nodeLocalProperties.activeProfile() == Profile.PROD) {
                 // we do not allow unchecked submits in PROD
                 throw new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED);
             }
-            final var uncheckedSubmit = optUncheckedSubmit.get();
             final var uncheckedTxBytes = uncheckedSubmit.transactionBytes();
-            final var uncheckedTxBuffer = Bytes.wrap(uncheckedTxBytes);
-            WorkflowOnset.parse(uncheckedTxBuffer, Transaction.PROTOBUF, PLATFORM_TRANSACTION_NOT_CREATED);
-            payload = new byte[uncheckedTxBytes.length()];
+            WorkflowOnset.parse(
+                    uncheckedTxBytes.toReadableSequentialData(),
+                    Transaction.PROTOBUF,
+                    PLATFORM_TRANSACTION_NOT_CREATED);
+            payload = PbjConverter.asBytes(uncheckedTxBytes);
             uncheckedTxBytes.getBytes(0, payload);
         }
 
         final var success = platform.createTransaction(payload);
         if (success) {
-            recordCache.addPreConsensus(txBody.transactionID());
+            recordCache.addPreConsensus(txBody.transactionIDOrThrow());
         } else {
             platformTxnRejections.cycle();
             throw new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED);

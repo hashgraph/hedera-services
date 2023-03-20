@@ -1281,6 +1281,7 @@ public final class PbjConverter {
         }
     }
 
+    // Note: this method will throw an exception if <code>b</code>'s length is not representable as an int
     public static @NonNull byte[] asBytes(@NonNull Bytes b) {
         final var buf = new byte[Math.toIntExact(b.length())];
         b.getBytes(0, buf);
