@@ -142,13 +142,11 @@ public class CongestionPricingSuite extends HapiSuite {
                                 .payingWith(GENESIS),
 
                         /* Check for error after resetting settings. */
-                        withOpContext((spec, opLog) -> {
-                            Assertions.assertEquals(
-                                    7.0,
-                                    (1.0 * sevenXPrice.get()) / normalPrice.get(),
-                                    0.1,
-                                    "~7x multiplier should be in affect!");
-                        }));
+                        withOpContext((spec, opLog) -> Assertions.assertEquals(
+                                7.0,
+                                (1.0 * sevenXPrice.get()) / normalPrice.get(),
+                                0.1,
+                                "~7x multiplier should be in affect!")));
     }
 
     @Override
