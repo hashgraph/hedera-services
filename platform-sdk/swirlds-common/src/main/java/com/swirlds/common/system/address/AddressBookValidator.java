@@ -158,18 +158,16 @@ public final class AddressBookValidator {
         return addressBookSize == addressBook2.getSize()
                 && IntStream.range(0, addressBookSize)
                         .mapToObj(i -> {
-                            final Address address1 = addressBook1.getAddress(i);
-                            final Address address2 = addressBook2.getAddress(i);
-                            if (address1 == null) {
-                                if (address2 == null) {
-                                    return true;
-                                } else {
-                                    logger.error(
-                                            EXCEPTION.getMarker(),
-                                            "Address at position {} is not the same between the two address books.",
-                                            i);
-                                    return false;
-                                }
+                            final long nodeId1 = addressBook1.getId(i);
+                            final long nodeId2 = addressBook2.getId(i);
+                            final Address address1 = addressBook1.getAddress(nodeId1);
+                            final Address address2 = addressBook2.getAddress(nodeId2);
+                            if (address1 == null || address2 == null) {
+                                logger.error(
+                                        EXCEPTION.getMarker(),
+                                        "Address at index {} is null when accessed in order.",
+                                        i);
+                                throw new IllegalStateException("Address at index " + i + " is null.");
                             }
                             final boolean equal = address1.equalsWithoutStake(address2);
                             if (!equal) {

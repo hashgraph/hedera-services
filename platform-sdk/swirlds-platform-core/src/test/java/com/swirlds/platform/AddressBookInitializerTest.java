@@ -61,8 +61,8 @@ class AddressBookInitializerTest {
     Path testDirectory;
 
     @Test
-    @DisplayName("Force the use of the config address book")
-    void forceUseOfConfigAddressBook() throws IOException {
+    @DisplayName("Force the use of the config address book, null signed state")
+    void forceUseOfConfigAddressBookNullSignedState() throws IOException {
         clearTestDirectory();
         final AddressBook configAddressBook = getRandomAddressBook();
         final AddressBookInitializer initializer = new AddressBookInitializer(
@@ -78,6 +78,28 @@ class AddressBookInitializerTest {
                 inititializedAddressBook,
                 "The initial address book must equal the config address book.");
         assertAddressBookFileContent(initializer, configAddressBook, null, inititializedAddressBook);
+    }
+
+    @Test
+    @DisplayName("Force the use of the config address book, non-null signed state")
+    void forceUseOfConfigAddressBookNonNullSignedState() throws IOException {
+        clearTestDirectory();
+        final AddressBook configAddressBook = getRandomAddressBook();
+        SignedState signedState = getMockSignedState(1);
+        final AddressBookInitializer initializer = new AddressBookInitializer(
+                getMockSoftwareVersion(1),
+                signedState,
+                getMockSwirldStateSupplier(1),
+                configAddressBook,
+                testDirectory.toString(),
+                true);
+        final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
+        assertEquals(
+                configAddressBook,
+                inititializedAddressBook,
+                "The initial address book must equal the config address book.");
+        assertAddressBookFileContent(
+                initializer, configAddressBook, signedState.getAddressBook(), inititializedAddressBook);
     }
 
     @Test
@@ -130,26 +152,6 @@ class AddressBookInitializerTest {
                 getMockSoftwareVersion(1),
                 getMockSignedState(0),
                 getMockSwirldStateSupplier(2),
-                configAddressBook,
-                testDirectory.toString(),
-                false);
-        final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
-        assertEquals(
-                configAddressBook,
-                inititializedAddressBook,
-                "The initial address book must equal the config address book.");
-        assertAddressBookFileContent(initializer, configAddressBook, null, inititializedAddressBook);
-    }
-
-    @Test
-    @DisplayName("SignedState has no address book or no SwirldState or no CreationSoftwareVersion.")
-    void noAddressBookNoPlatformData() throws IOException {
-        clearTestDirectory();
-        final AddressBook configAddressBook = getRandomAddressBook();
-        final AddressBookInitializer initializer = new AddressBookInitializer(
-                getMockSoftwareVersion(1),
-                getMockSignedState(1),
-                getMockSwirldStateSupplier(1),
                 configAddressBook,
                 testDirectory.toString(),
                 false);
@@ -226,8 +228,8 @@ class AddressBookInitializerTest {
     @DisplayName("Version upgrade, Swirld State modified the address book.")
     void versionUpgradeSwirldStateModifiedAddressBook() throws IOException {
         clearTestDirectory();
-        final SignedState signedState = getMockSignedState(2);
-        final AddressBook configAddressBook = copyWithStakeChanges(signedState.getAddressBook(), 7);
+        final SignedState signedState = getMockSignedState(2, 2);
+        final AddressBook configAddressBook = copyWithStakeChanges(signedState.getAddressBook(), 3);
         final AddressBookInitializer initializer = new AddressBookInitializer(
                 getMockSoftwareVersion(3),
                 signedState,
@@ -332,11 +334,11 @@ class AddressBookInitializerTest {
     private SignedState getMockSignedState(final int scenario, final int stakeValue) {
         final SignedState signedState = mock(SignedState.class);
         switch (scenario) {
-                // case 1: null content inside the SignedState
-            case 1:
-                return signedState;
-                // case 2: addressbook, SwirldState, and SoftwareVersion exist.
-            case 2: {
+                // case 0: null SignedState
+            case 0:
+                return null;
+                // default case: swirldstate exists with given staking scenario
+            default:
                 final SoftwareVersion softwareVersion = getMockSoftwareVersion(2);
                 final SwirldState swirldState =
                         getMockSwirldStateSupplier(stakeValue).get();
@@ -351,9 +353,6 @@ class AddressBookInitializerTest {
                 when(state.getPlatformState()).thenReturn(platformState);
                 when(signedState.getState()).thenReturn(state);
                 return signedState;
-            }
-            default:
-                return null;
         }
     }
 
@@ -461,13 +460,17 @@ class AddressBookInitializerTest {
 
         // check configAddressBook content
         final String configText = CONFIG_ADDRESS_BOOK_HEADER + "\n" + configAddressBook.toConfigText();
-        assertTrue(fileContent.contains(configText), "The configAddressBook content is not:\n" + configText);
+        assertTrue(
+                fileContent.contains(configText),
+                "The configAddressBook content is not:\n" + configText + "\n\n fileContent:\n" + fileContent);
 
         // check stateAddressBook content
         final String stateText = stateAddressBook == null
                 ? STATE_ADDRESS_BOOK_HEADER + "\n" + STATE_ADDRESS_BOOK_NULL
                 : STATE_ADDRESS_BOOK_HEADER + "\n" + stateAddressBook.toConfigText();
-        assertTrue(fileContent.contains(stateText), "The stateAddressBook content is not:\n" + stateText);
+        assertTrue(
+                fileContent.contains(stateText),
+                "The stateAddressBook content is not:\n" + stateText + "\n\n fileContent:\n" + fileContent);
 
         // check usedAddressBook content
         String usedText = USED_ADDRESS_BOOK_HEADER + "\n";
@@ -478,6 +481,8 @@ class AddressBookInitializerTest {
         } else {
             usedText += usedAddressBook.toConfigText();
         }
-        assertTrue(fileContent.contains(usedText), "The usedAddressBook content is not:\n" + usedText);
+        assertTrue(
+                fileContent.contains(usedText),
+                "The usedAddressBook content is not:\n" + usedText + "\n\n fileContent:\n" + fileContent);
     }
 }

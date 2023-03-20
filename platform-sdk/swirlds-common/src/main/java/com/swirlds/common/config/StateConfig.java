@@ -93,7 +93,7 @@ import com.swirlds.config.api.ConfigProperty;
  * 		performed on signed state objects).
  * @param forceUseOfConfigAddressBook
  *         If true, then the address book from the config file will be used instead of the address book from the
- *         signed state. This is useful for testing. It is not recommended to use this in production.
+ *         signed state and the swirld state will not be queried for any address book updates.
  */
 @ConfigData("state")
 public record StateConfig(
