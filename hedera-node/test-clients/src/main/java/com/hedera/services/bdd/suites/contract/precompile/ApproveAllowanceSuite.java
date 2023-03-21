@@ -581,7 +581,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
         final AtomicReference<String> attackerMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> whitelistedCalleeMirrorAddr = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec("WhitelistNegativeCases")
+        return propertyPreservingHapiSpec("WhitelistPositiveCases")
                 .preserving(CONTRACTS_PERMITTED_DELEGATE_CALLERS)
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
