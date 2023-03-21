@@ -17,6 +17,7 @@
 package com.swirlds.common.config.sources;
 
 import com.swirlds.common.utility.CommonUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -27,8 +28,8 @@ import java.util.Map;
 import java.util.Properties;
 
 /**
- * A {@link com.swirlds.config.api.source.ConfigSource} implementation that can be used to provide values from
- * a property file.
+ * A {@link com.swirlds.config.api.source.ConfigSource} implementation that can be used to provide values from a
+ * property file.
  */
 public class PropertyFileConfigSource extends AbstractConfigSource {
 
@@ -36,16 +37,29 @@ public class PropertyFileConfigSource extends AbstractConfigSource {
 
     private final Path filePath;
 
+    private final int ordinal;
+
+    /**
+     * Creates a new instance based on a file by using the {@link ConfigSourceOrdinalConstants#PROPERTY_FILE_ORDINAL}
+     * ordinal
+     *
+     * @param filePath the properties file
+     * @throws IOException if the file can not loaded or parsed
+     */
+    public PropertyFileConfigSource(@NonNull final Path filePath) throws IOException {
+        this(filePath, ConfigSourceOrdinalConstants.PROPERTY_FILE_ORDINAL);
+    }
+
     /**
      * Creates a new instance based on a file
      *
-     * @param filePath
-     * 		the file
-     * @throws IOException
-     * 		if the file can not parsed
+     * @param filePath the properties file
+     * @param ordinal  the ordinal of the config source
+     * @throws IOException if the file can not loaded or parsed
      */
-    public PropertyFileConfigSource(final Path filePath) throws IOException {
+    public PropertyFileConfigSource(@NonNull final Path filePath, final int ordinal) throws IOException {
         this.filePath = CommonUtils.throwArgNull(filePath, "filePath");
+        this.ordinal = ordinal;
         this.internalProperties = new HashMap<>();
         try (final BufferedReader reader = Files.newBufferedReader(filePath)) {
             final Properties loadedProperties = new Properties();
@@ -77,6 +91,6 @@ public class PropertyFileConfigSource extends AbstractConfigSource {
      */
     @Override
     public int getOrdinal() {
-        return ConfigSourceOrdinalConstants.PROPERTY_FILE_ORDINAL;
+        return ordinal;
     }
 }

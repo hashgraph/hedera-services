@@ -93,6 +93,9 @@ public class Utils {
     }
 
     public static byte[] asAddress(final ContractID id) {
+        if (id.getEvmAddress().size() == 20) {
+            return id.getEvmAddress().toByteArray();
+        }
         return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getContractNum());
     }
 
@@ -207,7 +210,7 @@ public class Utils {
         if (!file.exists()) {
             throw new IllegalArgumentException("Invalid argument: " + path.substring(path.lastIndexOf('/') + 1));
         }
-        return path;
+        return file.getPath();
     }
 
     public enum FunctionType {

@@ -45,7 +45,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
-import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import java.util.Map;
 import java.util.function.BiPredicate;
@@ -61,7 +60,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -82,9 +80,6 @@ class HederaStaticCallOperationTest {
     private Account acc;
 
     @Mock
-    private EvmSigsVerifier sigsVerifier;
-
-    @Mock
     private BiPredicate<Address, MessageFrame> addressValidator;
 
     @Mock
@@ -95,7 +90,7 @@ class HederaStaticCallOperationTest {
 
     @BeforeEach
     void setup() {
-        subject = new HederaStaticCallOperation(calc, sigsVerifier, addressValidator, precompiledContractMap);
+        subject = new HederaStaticCallOperation(calc, addressValidator, precompiledContractMap);
     }
 
     @Test
@@ -135,12 +130,8 @@ class HederaStaticCallOperationTest {
         given(worldUpdater.get(any())).willReturn(acc);
         given(acc.getBalance()).willReturn(Wei.of(100));
         given(calc.gasAvailableForChildCall(any(), anyLong(), anyBoolean())).willReturn(10L);
-        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any()))
-                .willReturn(true);
-        given(acc.getAddress()).willReturn(Address.ZERO);
         given(addressValidator.test(any(), any())).willReturn(true);
 
-        given(evmMsgFrame.getContractAddress()).willReturn(Address.ALTBN128_ADD);
         given(evmMsgFrame.getRecipientAddress()).willReturn(Address.ALTBN128_ADD);
 
         var opRes = subject.execute(evmMsgFrame, evm);

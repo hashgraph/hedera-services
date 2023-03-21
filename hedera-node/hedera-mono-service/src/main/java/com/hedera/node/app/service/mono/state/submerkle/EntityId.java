@@ -280,7 +280,7 @@ public class EntityId implements SelfSerializable {
     }
 
     public Address toEvmAddress() {
-        final var evmAddress = asEvmAddress((int) shard, realm, num);
+        final var evmAddress = asEvmAddress(num);
         return Address.wrap(Bytes.wrap(evmAddress));
     }
 }

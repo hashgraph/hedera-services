@@ -64,9 +64,7 @@ public class HapiTopicDelete extends HapiTxnOp<HapiTopicDelete> {
         TopicID id = resolveTopicId(spec);
         ConsensusDeleteTopicTransactionBody opBody = spec.txns()
                 .<ConsensusDeleteTopicTransactionBody, ConsensusDeleteTopicTransactionBody.Builder>body(
-                        ConsensusDeleteTopicTransactionBody.class, b -> {
-                            b.setTopicID(id);
-                        });
+                        ConsensusDeleteTopicTransactionBody.class, b -> b.setTopicID(id));
         return b -> b.setConsensusDeleteTopic(opBody);
     }
 

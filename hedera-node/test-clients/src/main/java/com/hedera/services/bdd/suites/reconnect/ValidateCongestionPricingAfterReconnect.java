@@ -167,13 +167,11 @@ public class ValidateCongestionPricingAfterReconnect extends HapiSuite {
                                 .setNode(reconnectingNode),
 
                         /* check if the multiplier took effect in the contract call operation */
-                        withOpContext((spec, opLog) -> {
-                            Assertions.assertEquals(
-                                    10.0,
-                                    (1.0 * tenXPrice.get()) / normalPrice.get(),
-                                    0.1,
-                                    "~10x multiplier should be in affect!");
-                        }),
+                        withOpContext((spec, opLog) -> Assertions.assertEquals(
+                                10.0,
+                                (1.0 * tenXPrice.get()) / normalPrice.get(),
+                                0.1,
+                                "~10x multiplier should be in affect!")),
 
                         /* revert the multiplier before test ends */
                         fileUpdate(THROTTLE_DEFS)
