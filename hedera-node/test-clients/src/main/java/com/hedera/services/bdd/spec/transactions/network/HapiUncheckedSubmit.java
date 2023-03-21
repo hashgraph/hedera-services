@@ -60,9 +60,8 @@ public class HapiUncheckedSubmit<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiU
             log.info("Submitting unchecked: " + CommonUtils.extractTransactionBody(Transaction.parseFrom(subOpBytes)));
         }
         final UncheckedSubmitBody opBody = spec.txns()
-                .<UncheckedSubmitBody, UncheckedSubmitBody.Builder>body(UncheckedSubmitBody.class, b -> {
-                    b.setTransactionBytes(ByteString.copyFrom(subOpBytes));
-                });
+                .<UncheckedSubmitBody, UncheckedSubmitBody.Builder>body(
+                        UncheckedSubmitBody.class, b -> b.setTransactionBytes(ByteString.copyFrom(subOpBytes)));
         return b -> b.setUncheckedSubmit(opBody);
     }
 

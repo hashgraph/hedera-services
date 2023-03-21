@@ -16,8 +16,8 @@
  */
 
 /**
- * A disk-based VirtualDataSource implementation; complete module documentation
- * to be assembled over time as the full implementation is transplanted here.
+ * A disk-based VirtualDataSource implementation; complete module documentation to be assembled over time as the full
+ * implementation is transplanted here.
  */
 open module com.swirlds.jasperdb {
     exports com.swirlds.jasperdb.collections;
@@ -47,4 +47,5 @@ open module com.swirlds.jasperdb {
     requires jdk.management;
     requires jdk.unsupported;
     requires com.swirlds.config;
+    requires static com.github.spotbugs.annotations;
 }
