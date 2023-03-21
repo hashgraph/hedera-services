@@ -123,11 +123,11 @@ public interface LongList extends CASableLongIndex, Closeable {
      * If {@code newMaxValidIndex} exceeds the current size of the list, there will be no effect.
      *
      * @param newMinValidIndex minimal valid index of the list
-     * @param maxValidIndex maximal valid index of the list
+     * @param newMaxValidIndex maximal valid index of the list
      * @throws IndexOutOfBoundsException if {@code newMinValidIndex} is negative or
      * {@code newMaxValidIndex} exceeds max number of chunks allowed.
      */
-    void updateValidRange(long newMinValidIndex, long maxValidIndex);
+    void updateValidRange(long newMinValidIndex, long newMaxValidIndex);
 
     /** {@inheritDoc} */
     @Override

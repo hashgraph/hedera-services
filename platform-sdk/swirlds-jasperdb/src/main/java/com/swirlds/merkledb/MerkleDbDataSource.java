@@ -1223,7 +1223,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
         });
 
         if (hasDiskStoreForInternalHashes) {
-            internalHashStoreDisk.endWriting(0, firstLeafPath - 1);
+            internalHashStoreDisk.endWriting();
         }
     }
 
@@ -1291,7 +1291,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
         });
 
         // end writing
-        pathToHashKeyValue.endWriting(firstLeafPath, lastLeafPath);
+        pathToHashKeyValue.endWriting();
         if (!isLongKeyMode) {
             objectKeyToPath.endWriting();
         }

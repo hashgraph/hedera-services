@@ -64,7 +64,7 @@ public class KeyValueStoreBench extends BaseBench {
                 store.put(id, value);
                 if (verify) map[(int) id] = value;
             }
-            store.endWriting(0, maxKey);
+            store.endWriting();
         }
         System.out.println("Created " + numFiles + " files in " + (System.currentTimeMillis() - start) + "ms");
 

@@ -352,7 +352,7 @@ class MemoryIndexDiskKeyValueStoreMergeHammerTest {
                     coll.put(key, new long[] {key, value});
                 }
             }
-            coll.endWriting(firstPath, lastPath);
+            coll.endWriting();
         }
 
         /**

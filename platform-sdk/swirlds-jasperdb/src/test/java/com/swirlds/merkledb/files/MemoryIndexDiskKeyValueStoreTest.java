@@ -112,7 +112,7 @@ class MemoryIndexDiskKeyValueStoreTest {
             throws IOException {
         store.startWriting(0, lastLeafPath);
         writeDataBatch(testType, store, start, count, valueAddition);
-        store.endWriting(0, lastLeafPath);
+        store.endWriting();
     }
 
     private void writeDataBatch(
@@ -290,7 +290,7 @@ class MemoryIndexDiskKeyValueStoreTest {
         // merge all files
         store.merge(dataFileReaders -> dataFileReaders, 2);
         // finish writing range
-        store.endWriting(10, 30);
+        store.endWriting();
         checkRange(testType, store, 10, 20, 5678);
         // check get out of range
         assertNull(store.get(1), "Getting a value that is below valid key range should return null.");

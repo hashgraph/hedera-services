@@ -346,19 +346,15 @@ public class LongListDisk extends AbstractLongList<Long> {
             @NonNull final Long chunkOffset, final boolean leftSide, final long entriesToCleanUp) {
         final ByteBuffer transferBuffer = initOrGetTransferBuffer();
         fillBufferWithZeroes(transferBuffer);
-
+        transferBuffer.limit((int) (entriesToCleanUp * Long.BYTES));
         if (leftSide) {
-            transferBuffer.position(0);
-            transferBuffer.limit((int) (entriesToCleanUp * Long.BYTES));
             try {
                 currentFileChannel.write(transferBuffer, chunkOffset);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
         } else {
-            transferBuffer.limit(transferBuffer.capacity());
             long cleanUpOffset = memoryChunkSize - (entriesToCleanUp * Long.BYTES);
-            transferBuffer.position((int) cleanUpOffset);
             try {
                 currentFileChannel.write(transferBuffer, chunkOffset + cleanUpOffset);
             } catch (IOException e) {
@@ -389,7 +385,8 @@ public class LongListDisk extends AbstractLongList<Long> {
     }
 
     // exposed for test purposes only - DO NOT USE IN PROD CODE
-    void resetTransferBuffer() {
+    LongListDisk resetTransferBuffer() {
         TRANSFER_BUFFER_THREAD_LOCAL.remove();
+        return this;
     }
 }

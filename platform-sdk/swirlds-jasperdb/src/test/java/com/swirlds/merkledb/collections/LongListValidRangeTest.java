@@ -101,7 +101,7 @@ class LongListValidRangeTest {
     void testInvalidMemoryChunkNumber() {
         new LongListOffHeap(1, 32768, 1).close();
         new LongListHeap(1, 32768, 1).close();
-        new LongListDisk(1, 32768, 1).close();
+        new LongListDisk(1, 32768, 1).resetTransferBuffer().close();
         assertThrows(IllegalArgumentException.class, () -> new LongListOffHeap(1, 32769, 1));
         assertThrows(IllegalArgumentException.class, () -> new LongListHeap(1, 32769, 1));
         assertThrows(IllegalArgumentException.class, () -> new LongListDisk(1, 32769, 1));
@@ -118,12 +118,16 @@ class LongListValidRangeTest {
         fill(2);
         assertHasValuesInRange(0, 2);
         assertMemoryChunksNumber(1);
+        assertEquals(3, list.size());
 
         list.updateValidRange(1, maxValidIndex());
 
         assertMemoryChunksNumber(1);
         assertEmptyUpToIndex(0);
         assertHasValuesInRange(1, 2);
+
+        // the size doesn't change
+        assertEquals(3, list.size());
     }
 
     @Tag(TestTypeTags.FUNCTIONAL)
@@ -137,12 +141,15 @@ class LongListValidRangeTest {
         fill(2);
         assertHasValuesInRange(0, 2);
         assertMemoryChunksNumber(1);
+        assertEquals(3, list.size());
 
         list.updateValidRange(0, 1);
 
         assertMemoryChunksNumber(1);
         assertHasValuesInRange(0, 1);
         assertEmptyFromIndex(2);
+        // the size decreases
+        assertEquals(2, list.size());
     }
 
     @Tag(TestTypeTags.FUNCTIONAL)
@@ -160,10 +167,12 @@ class LongListValidRangeTest {
         list.updateValidRange(1, maxValidIndex());
         // one more time
         list.updateValidRange(1, maxValidIndex());
+        assertEquals(3, list.size());
 
         assertMemoryChunksNumber(1);
         assertEmptyUpToIndex(0);
         assertHasValuesInRange(1, 2);
+        assertEquals(3, list.size());
     }
 
     @Tag(TestTypeTags.FUNCTIONAL)
@@ -177,12 +186,15 @@ class LongListValidRangeTest {
         fill(5);
         assertHasValuesInRange(0, 5);
         assertMemoryChunksNumber(2);
+        assertEquals(6, list.size());
 
         // 4 is min valid index, 3 is a buffer. 0-2 should be freed
         list.updateValidRange(4, maxValidIndex());
 
         assertEmptyUpToIndex(3);
         assertHasValuesInRange(5, 5);
+        // the size doesn't change
+        assertEquals(6, list.size());
     }
 
     @Tag(TestTypeTags.FUNCTIONAL)
@@ -196,12 +208,14 @@ class LongListValidRangeTest {
         fill(5);
         assertHasValuesInRange(0, 5);
         assertMemoryChunksNumber(2);
+        assertEquals(6, list.size());
 
         // 1 is max valid index, 2 is a buffer. 3-5 should be freed
         list.updateValidRange(0, 1);
 
         assertEmptyFromIndex(2);
         assertHasValuesInRange(0, 1);
+        assertEquals(2, list.size());
     }
 
     @Tag(TestTypeTags.FUNCTIONAL)
@@ -213,6 +227,7 @@ class LongListValidRangeTest {
         this.list = list;
         // two chunks: 0-2, 3-5
         fill(5);
+        assertEquals(6, list.size());
 
         list.updateValidRange(5, maxValidIndex());
         assertEmptyUpToIndex(4);
@@ -220,6 +235,7 @@ class LongListValidRangeTest {
         assertHasValuesInRange(5, 5);
         // it never discards the last chunk because there is at least one valid index
         assertMemoryChunksNumber(1);
+        assertEquals(6, list.size());
     }
 
     @Tag(TestTypeTags.FUNCTIONAL)
@@ -235,13 +251,16 @@ class LongListValidRangeTest {
         list.updateValidRange(5, maxValidIndex());
         // shrinks
         assertMemoryChunksNumber(1);
+        assertEquals(6, list.size());
 
         list.updateValidRange(2, maxValidIndex());
         // no additional chunks created
         assertMemoryChunksNumber(1);
+        assertEquals(6, list.size());
 
         assertEmptyUpToIndex(4);
         assertHasValuesInRange(5, 5);
+        assertEquals(6, list.size());
     }
 
     @Tag(TestTypeTags.FUNCTIONAL)
@@ -253,6 +272,7 @@ class LongListValidRangeTest {
         this.list = list;
         // two chunks: 0-2, 3-5
         fill(5);
+        assertEquals(6, list.size());
 
         list.updateValidRange(0, 0);
         assertEmptyFromIndex(1);
@@ -260,6 +280,7 @@ class LongListValidRangeTest {
         assertHasValuesInRange(0, 0);
         // it never discards the first chunk because there is at least one valid index
         assertMemoryChunksNumber(1);
+        assertEquals(1, list.size());
     }
 
     @Tag(TestTypeTags.FUNCTIONAL)
@@ -272,6 +293,7 @@ class LongListValidRangeTest {
         // three chunks: 0-2, 3-5, 6-8
         fill(8);
         assertMemoryChunksNumber(3);
+        assertEquals(9, list.size());
 
         list.updateValidRange(8, maxValidIndex());
         assertMemoryChunksNumber(1);
@@ -280,6 +302,7 @@ class LongListValidRangeTest {
         list.put(0, 1);
         // it allows non-contiguous list, therefore chunk at index 1 is absent
         assertMemoryChunksNumber(2);
+        assertEquals(9, list.size());
 
         list.put(1, 2);
         assertMemoryChunksNumber(2);
@@ -287,6 +310,7 @@ class LongListValidRangeTest {
 
         list.put(3, 4);
         assertMemoryChunksNumber(3);
+        assertEquals(9, list.size());
     }
 
     @Tag(TestTypeTags.FUNCTIONAL)
@@ -299,21 +323,26 @@ class LongListValidRangeTest {
         // three chunks: 0-2, 3-5, 6-8
         fill(8);
         assertMemoryChunksNumber(3);
+        assertEquals(9, list.size());
 
         list.updateValidRange(0, 0);
         assertMemoryChunksNumber(1);
+        assertEquals(1, list.size());
 
         list.updateValidRange(0, 8);
         list.put(8, 9);
         // it allows non-contiguous list, therefore chunk at index 1 is absent
         assertMemoryChunksNumber(2);
+        assertEquals(9, list.size());
 
         list.put(1, 2);
         assertMemoryChunksNumber(2);
         assertEquals(IMPERMISSIBLE_VALUE, list.get(3));
+        assertEquals(9, list.size());
 
         list.put(3, 4);
         assertMemoryChunksNumber(3);
+        assertEquals(9, list.size());
     }
 
     @Tag(TestTypeTags.FUNCTIONAL)
@@ -327,6 +356,7 @@ class LongListValidRangeTest {
         // three chunks: 0-2, 3-5, 6-8
         fill(8);
         assertMemoryChunksNumber(3);
+        assertEquals(9, list.size());
 
         list.updateValidRange(6, maxValidIndex());
 
@@ -335,6 +365,7 @@ class LongListValidRangeTest {
 
         assertEmptyUpToIndex(5);
         assertHasValuesInRange(6, 8);
+        assertEquals(9, list.size());
     }
 
     @Tag(TestTypeTags.FUNCTIONAL)
@@ -356,6 +387,7 @@ class LongListValidRangeTest {
 
         assertHasValuesInRange(0, 2);
         assertEmptyFromIndex(3);
+        assertEquals(3, list.size());
     }
 
     @Tag(TestTypeTags.FUNCTIONAL)
@@ -385,11 +417,12 @@ class LongListValidRangeTest {
     @MethodSource("longListProviderLargeBuffer")
     @DisplayName("Make sure that multiple chunks a not deleted on update of max valid index"
             + "if it has no data but required for the buffer that spans across multiple chunks")
-    void testKeepChunkForLargeBuffer_maxValidINdex(AbstractLongList<?> list) {
+    void testKeepChunkForLargeBuffer_maxValidIndex(AbstractLongList<?> list) {
         this.list = list;
         // three chunks: 0-2, 3-5, 6-8, 9-11
         fill(11);
         assertMemoryChunksNumber(4);
+        assertEquals(12, list.size());
 
         list.updateValidRange(0, 1);
 
@@ -398,6 +431,7 @@ class LongListValidRangeTest {
 
         assertHasValuesInRange(0, 1);
         assertEmptyFromIndex(2);
+        assertEquals(2, list.size());
     }
 
     @Tag(TestTypeTags.FUNCTIONAL)
@@ -434,6 +468,7 @@ class LongListValidRangeTest {
         // three chunks: 0-2, 3-5, 6-8
         fill(8);
         assertMemoryChunksNumber(3);
+        assertEquals(9, list.size());
 
         list.updateValidRange(0, 1);
 
@@ -442,6 +477,7 @@ class LongListValidRangeTest {
 
         assertHasValuesInRange(0, 1);
         assertEmptyFromIndex(2);
+        assertEquals(2, list.size());
     }
 
     @Tag(TestTypeTags.FUNCTIONAL)
@@ -472,14 +508,17 @@ class LongListValidRangeTest {
     @MethodSource("defaultLongListProvider")
     @DisplayName("Make sure that if we shrink the list twice on update of max valid index, "
             + "all the chunks that have to be deleted are deleted")
-    void testShrinkTwice_maxValidINdex(AbstractLongList<?> list) {
+    void testShrinkTwice_maxValidIndex(AbstractLongList<?> list) {
         this.list = list;
         // three chunks: 0-2, 3-5, 6-8, 9-11
         fill(11);
         assertMemoryChunksNumber(4);
+        assertEquals(12, list.size());
 
         list.updateValidRange(0, 7);
+        assertEquals(8, list.size());
         list.updateValidRange(0, 1);
+        assertEquals(2, list.size());
 
         // one chunk has data, another chunk is kept for the offset
         assertMemoryChunksNumber(1);
