@@ -112,6 +112,11 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
     private final RoundAppliedToStateConsumer roundAppliedToStateConsumer;
 
     /**
+     * The number of non-ancient rounds.
+     */
+    private final int roundsNonAncient;
+
+    /**
      * Instantiate, but don't start any threads yet. The Platform should first instantiate the
      * {@link ConsensusRoundHandler}. Then the Platform should call start to start the queue thread.
      *
@@ -170,6 +175,11 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
                         .logStackTracePauseDuration())
                 .setQueue(queue)
                 .build();
+
+        roundsNonAncient = platformContext
+                .getConfiguration()
+                .getConfigData(ConsensusConfig.class)
+                .roundsNonAncient();
     }
 
     /**
@@ -400,7 +410,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
                 .setConsensusTimestamp(round.getLastEvent().getLastTransTime())
                 .setMinGenInfo(minGen)
                 .setCreationSoftwareVersion(softwareVersion)
-                .setMinimumGenerationNonAncient(round.getGenerations().getMinGenerationNonAncient());
+                .setRoundsNonAncient(roundsNonAncient);
     }
 
     private void createSignedState() throws InterruptedException {

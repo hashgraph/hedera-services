@@ -471,7 +471,7 @@ class SignedStateFileManagerTests {
 
         if (startAtGenesis) {
             timestamp = Instant.EPOCH;
-            firstRound = 0;
+            firstRound = 1;
             nextBoundary = null;
         } else {
             firstRound = random.nextInt(1000);
@@ -498,7 +498,8 @@ class SignedStateFileManagerTests {
             final SignedState signedState = new RandomSignedStateGenerator(random)
                     .setConsensusTimestamp(timestamp)
                     .setRound(round)
-                    .setMinimumGenerationNonAncient(random.nextLong((round + 1) * 100, (round + 1) * 101))
+                    //                    .setMinimumGenerationNonAncient(random.nextLong((round + 1) * 100, (round + 1)
+                    // * 101)) // TODO
                     .build();
 
             manager.determineIfStateShouldBeSaved(signedState);
@@ -621,14 +622,14 @@ class SignedStateFileManagerTests {
 
         // Save a bunch of states. After each time, check the states that are still on disk.
         final List<SignedState> states = new ArrayList<>();
-        for (int round = 0; round < count; round++) {
+        for (int round = 1; round <= count; round++) {
             final SignedState signedState =
                     new RandomSignedStateGenerator(random).setRound(round).build();
             states.add(signedState);
             manager.saveSignedStateToDisk(signedState);
 
             // Verify that the states we want to be on disk are still on disk
-            for (int i = 0; i < statesOnDisk; i++) {
+            for (int i = 1; i <= statesOnDisk; i++) {
                 final int roundToValidate = round - i;
                 if (roundToValidate < 0) {
                     continue;
@@ -648,7 +649,7 @@ class SignedStateFileManagerTests {
 
             // Verify that old states are properly deleted
             assertEventuallyEquals(
-                    Math.min(statesOnDisk, round + 1),
+                    Math.min(statesOnDisk, round),
                     () -> {
                         try {
                             return (int) Files.list(statesDirectory).count();

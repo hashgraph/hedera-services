@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.state;
 
+import com.swirlds.common.config.ConsensusConfig;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -24,6 +26,7 @@ import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.events.EventSerializationOptions;
 import com.swirlds.common.utility.NonCryptographicHashing;
+import com.swirlds.platform.consensus.RoundCalculationUtils;
 import com.swirlds.platform.internal.EventImpl;
 import java.io.IOException;
 import java.time.Instant;
@@ -46,10 +49,8 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     private static final class ClassVersion {
         public static final int ORIGINAL = 1;
         public static final int EPOCH_HASH = 2;
-        public static final int MINIMUM_GENERATION_NON_ANCIENT = 3;
+        public static final int ROUNDS_NON_ANCIENT = 3;
     }
-
-    public static final int UNSET_MINIMUM_GENERATION_NON_ANCIENT = -1;
 
     /**
      * The round of this state. This state represents the handling of all transactions that have reached consensus in
@@ -108,9 +109,9 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     private Hash nextEpochHash;
 
     /**
-     * The minimum generation of non-ancient events for this state.
+     * The number of non-ancient rounds.
      */
-    private long minimumGenerationNonAncient;
+    private int roundsNonAncient;
 
     public PlatformData() {}
 
@@ -134,7 +135,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
         this.lastTransactionTimestamp = that.lastTransactionTimestamp;
         this.epochHash = that.epochHash;
         this.nextEpochHash = that.nextEpochHash;
-        this.minimumGenerationNonAncient = that.minimumGenerationNonAncient;
+        this.roundsNonAncient = that.roundsNonAncient;
     }
 
     /**
@@ -185,7 +186,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
         out.writeInstant(lastTransactionTimestamp);
         out.writeSerializable(creationSoftwareVersion, true);
         out.writeSerializable(epochHash, false);
-        out.writeLong(minimumGenerationNonAncient);
+        out.writeInt(roundsNonAncient);
     }
 
     /**
@@ -223,10 +224,13 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
             epochHash = in.readSerializable(false, Hash::new);
         }
 
-        if (version >= ClassVersion.MINIMUM_GENERATION_NON_ANCIENT) {
-            minimumGenerationNonAncient = in.readLong();
+        if (version < ClassVersion.ROUNDS_NON_ANCIENT) {
+            roundsNonAncient = ConfigurationHolder.getInstance()
+                    .get()
+                    .getConfigData(ConsensusConfig.class)
+                    .roundsNonAncient();
         } else {
-            minimumGenerationNonAncient = UNSET_MINIMUM_GENERATION_NON_ANCIENT;
+            roundsNonAncient = in.readInt();
         }
     }
 
@@ -235,7 +239,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      */
     @Override
     public int getVersion() {
-        return ClassVersion.MINIMUM_GENERATION_NON_ANCIENT;
+        return ClassVersion.ROUNDS_NON_ANCIENT;
     }
 
     /**
@@ -481,14 +485,23 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     }
 
     /**
-     * Sets the minimum generation of non-ancient events.
+     * Sets the number of non-ancient rounds.
      *
-     * @param minimumGenerationNonAncient the minimum generation of non-ancient events
+     * @param roundsNonAncient the number of non-ancient rounds
      * @return this object
      */
-    public PlatformData setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
-        this.minimumGenerationNonAncient = minimumGenerationNonAncient;
+    public PlatformData setRoundsNonAncient(final int roundsNonAncient) {
+        this.roundsNonAncient = roundsNonAncient;
         return this;
+    }
+
+    /**
+     * Gets the number of non-ancient rounds.
+     *
+     * @return the number of non-ancient rounds
+     */
+    public int getRoundsNonAncient() {
+        return roundsNonAncient;
     }
 
     /**
@@ -497,7 +510,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      * @return the minimum generation of non-ancient events
      */
     public long getMinimumGenerationNonAncient() {
-        return minimumGenerationNonAncient;
+        return RoundCalculationUtils.getMinGenNonAncient(roundsNonAncient, round, this::getMinGen);
     }
 
     /**
@@ -550,7 +563,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
                 .append(consensusTimestamp, that.consensusTimestamp)
                 .append(minGenInfo, that.minGenInfo)
                 .append(epochHash, that.epochHash)
-                .append(minimumGenerationNonAncient, that.minimumGenerationNonAncient)
+                .append(roundsNonAncient, that.roundsNonAncient)
                 .isEquals();
     }
 
@@ -575,7 +588,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
                 .append("consensusTimestamp", consensusTimestamp)
                 .append("minGenInfo", minGenInfo)
                 .append("epochHash", epochHash)
-                .append("minimumGenerationNonAncient", minimumGenerationNonAncient)
+                .append("roundsNonAncient", roundsNonAncient)
                 .toString();
     }
 }
