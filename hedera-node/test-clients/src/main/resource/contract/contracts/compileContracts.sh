@@ -125,8 +125,6 @@ compileContract ServiceContract
 compileContract SomeERC20Scenarios --include-path ../solidity
 
 compileContract SomeERC721Scenarios --include-path ../solidity
-# the ABI json file is hand crafted for a specific test
-git checkout -- SomeERC721Scenarios/SomeERC721Scenarios.json
 
 compileContract StaticContract  --include-path ServiceContract
 

@@ -1,6 +1,7 @@
 [
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
@@ -23,7 +24,34 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "serialNo",
+        "type": "uint256"
+      }
+    ],
+    "name": "getApproved",
+    "outputs":
+    [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
@@ -41,7 +69,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
@@ -59,7 +88,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
@@ -77,7 +107,39 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "operator",
+        "type": "address"
+      }
+    ],
+    "name": "isApprovedForAll",
+    "outputs":
+    [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
@@ -95,7 +157,8 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
@@ -113,102 +176,8 @@
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "serialNo",
-        "type": "uint256"
-      }
-    ],
-    "name": "outerGetApproved",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "owner",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "operator",
-        "type": "address"
-      }
-    ],
-    "name": "outerIsApprovedForAll",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "operator",
-        "type": "address"
-      },
-      {
-        "internalType": "bool",
-        "name": "approved",
-        "type": "bool"
-      }
-    ],
-    "name": "outerSetApprovalForAll",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      }
-    ],
-    "name": "pauseToken",
-    "outputs": [
-      {
-        "internalType": "int256",
-        "name": "responseCode",
-        "type": "int256"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",
@@ -226,7 +195,32 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs":
+    [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "operator",
+        "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "approved",
+        "type": "bool"
+      }
+    ],
+    "name": "setApprovalForAll",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs":
+    [
       {
         "internalType": "address",
         "name": "token",

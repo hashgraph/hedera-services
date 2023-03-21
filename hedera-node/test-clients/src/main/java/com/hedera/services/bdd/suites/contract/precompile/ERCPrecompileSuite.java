@@ -130,7 +130,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     private static final String TRANSFER_TXN = "transferTxn";
     public static final String TRANSFER_FROM_ACCOUNT_TXN = "transferFromAccountTxn";
     private static final String BASE_APPROVE_TXN = "baseApproveTxn";
-    private static final String IS_APPROVED_FOR_ALL = "outerIsApprovedForAll";
+    private static final String IS_APPROVED_FOR_ALL = "isApprovedForAll";
     private static final String GET_ALLOWANCE = "getAllowance";
     private static final String ALLOWANCE = "allowance";
     private static final String SYMBOL = "symbol";
@@ -151,7 +151,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     private static final String A_CIVILIAN = "aCivilian";
     private static final String B_CIVILIAN = "bCivilian";
     private static final String DO_TRANSFER_FROM = "doTransferFrom";
-    private static final String GET_APPROVED = "outerGetApproved";
+    private static final String GET_APPROVED = "getApproved";
     private static final String GET_BALANCE_OF = "getBalanceOf";
     private static final String MISSING_FROM = "MISSING_FROM";
     private static final String MISSING_TO = "MISSING_TO";
@@ -159,7 +159,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     private static final String SOME_ERC_721_SCENARIOS = "SomeERC721Scenarios";
     private static final String GET_OWNER_OF = "getOwnerOf";
     private static final String OPERATOR_DOES_NOT_EXISTS = "OPERATOR_DOES_NOT_EXISTS";
-    private static final String SET_APPROVAL_FOR_ALL = "outerSetApprovalForAll";
+    private static final String SET_APPROVAL_FOR_ALL = "setApprovalForAll";
     private static final String REVOKE_SPECIFIC_APPROVAL = "revokeSpecificApproval";
     private static final String MSG_SENDER_IS_NOT_THE_SAME_AS_FROM = "MSG_SENDER_IS_NOT_THE_SAME_AS_FROM";
     private static final String MSG_SENDER_IS_THE_SAME_AS_FROM = "MSG_SENDER_IS_THE_SAME_AS_FROM";
