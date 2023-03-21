@@ -20,17 +20,21 @@ import static com.hedera.services.yahcli.commands.contract.utils.SignedStateHold
 
 import com.hedera.services.yahcli.commands.contract.ContractCommand;
 import com.hedera.services.yahcli.commands.contract.utils.ByteArrayAsKey;
+import com.hedera.services.yahcli.commands.contract.utils.SignedStateHolder;
 import com.hedera.services.yahcli.commands.contract.utils.SignedStateHolder.Contract;
 import com.hedera.services.yahcli.commands.contract.utils.SignedStateHolder.Contracts;
+import com.hedera.services.yahcli.commands.contract.utils.SignedStateHolder.DumpOperation;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.config.Configurator;
@@ -39,10 +43,10 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
 
 @Command(
-        name = "dumprawcontracts",
+        name = "dumprawcontractstate",
         subcommands = {picocli.CommandLine.HelpCommand.class},
-        description = "Dumps contract bytecodes in hex (to stdout)")
-public class DumpRawContractsCommand implements Callable<Integer> {
+        description = "Dumps contract state in hex (to stdout)")
+public class DumpRawContractStateCommand implements Callable<Integer> {
     static final int ESTIMATED_NUMBER_OF_CONTRACTS = 2_000;
 
     @ParentCommand
@@ -53,11 +57,6 @@ public class DumpRawContractsCommand implements Callable<Integer> {
             arity = "1",
             description = "Input signed state file")
     Path inputFile;
-
-    @Option(
-            names = {"-u", "--unique"},
-            description = "Emit each contract only once (not matter how many times it occurs)")
-    boolean emitUnique;
 
     @Option(
             names = {"-p", "--prefix"},
@@ -77,72 +76,33 @@ public class DumpRawContractsCommand implements Callable<Integer> {
     @Override
     public Integer call() throws Exception {
 
+        // Refactor so the SignedStateHolder is dehydrated only once!
+
         if (suppressAllLogging) setRootLogLevel(Level.ERROR);
 
         final var zeroLengthCount = new int[1];
 
-        var r = getNonTrivialContracts(inputFile, zeroLengthCount);
-
-        final var totalContractsRegisteredWithAccounts = r.registeredContractsCount();
-        final var totalContractsPresentInFileStore = r.contracts().size();
-        int totalUniqueContractsPresentInFileStore = totalContractsPresentInFileStore;
-
-        if (emitUnique) {
-            r = uniquifyContracts(r);
-            totalUniqueContractsPresentInFileStore = r.contracts().size();
-        }
-
-        final var formattedContracts = formatContractLines(r);
-
-        System.out.printf(
-                "%d registered contracts, %d with bytecode (%d are 0-length)%s%n",
-                totalContractsRegisteredWithAccounts,
-                totalContractsPresentInFileStore + zeroLengthCount[0],
-                zeroLengthCount[0],
-                emitUnique ? ", %d unique (by bytecode)".formatted(totalUniqueContractsPresentInFileStore) : "");
-        for (final var s : formattedContracts) System.out.println(s);
+        final var signedState = new SignedStateHolder(inputFile);
+        final var summary = signedState.dumpContractStorage(DumpOperation.SUMMARIZE);
+        System.out.println(summary);
+        final var contents = signedState.dumpContractStorage(DumpOperation.CONTENTS);
+        System.out.println("%sfull contents %d characters".formatted(prefix, contents.length()));
+        FileUtils.writeStringToFile(
+                new File("./contracts-contents.txt"), contents, StandardCharsets.UTF_8); // TODO filename
 
         return 0;
     }
 
-    /** Format a collection of pairs of a set of contract ids with their associated bytecode */
-    @NonNull
-    private Collection</*@NonNull*/ String> formatContractLines(@NonNull final Contracts contracts) {
-        final Collection</*@NonNull*/ String> formattedContracts = new ArrayList<>(ESTIMATED_NUMBER_OF_CONTRACTS);
-        for (final var contract : contracts.contracts()) {
-            final var s = formatContractLine(contract);
-            formattedContracts.add(s);
-        }
-        return formattedContracts;
+    @Override
+    public String toString() {
+        return "DumpRawContractStateCommand{" + "hexer=" + hexer + '}';
     }
 
     private final HexFormat hexer = HexFormat.of().withUpperCase();
 
-    /** Format a single contract line - may have a prefix, may want any id, may want _all_ ids */
     @NonNull
-    private String formatContractLine(@NonNull final Contract contract) {
-        final var sb = new StringBuilder(
-                contract.bytecode().length * 2 + prefix.length() + 50 /*more than enuf for the rest*/);
-        if (!prefix.isEmpty()) {
-            sb.append(prefix);
-            sb.append('\t');
-        }
-
-        sb.append(hexer.formatHex(contract.bytecode()));
-
-        final var ids = contract.ids();
-        if (withIds && !ids.isEmpty()) {
-            // Output canonical id - we choose the minimum id (so it is deterministic)
-            sb.append('\t');
-            sb.append(ids.stream().mapToInt(i -> i).min().getAsInt());
-
-            // Now output _all_ ids
-            sb.append('\t');
-
-            sb.append(String.join(",", ids.stream().map(Object::toString).toList()));
-        }
-
-        return sb.toString();
+    protected byte[] getState(final int cid) {
+        return new byte[0];
     }
 
     /**

@@ -65,7 +65,7 @@ The subcommands of the `contract` command are:
     - second field is hex-encoded contract
     - third field is contract id (decimal) (if `--with-ids`) argument given
 
-- **update!** found 1932 contracts registered with accounts, 1876 with bytecode (3 with 0-length bytecode!)
+- 2023-03-16: found 3396 contracts registered with accounts, 3340 with bytecode (3 with 0-length bytecode! - precompiles?)
 
 Add `--unique` to get only _unique_ contracts (by bytecode), and now, if `--with-ids` argument
 present, each contract line has an additional tab-separated field:
@@ -74,8 +74,10 @@ present, each contract line has an additional tab-separated field:
 ```bash
 ./yahcli contract dumprawcontracts --unique --with-ids --prefix=">" \
    -f ~/Downloads/contract_state_hip_583_analysis/SignedState.swh | \
-   grep -E '^>' | cut -f 2,3 > raw-unique-contract-bytecodes.txt
+   grep -E '^>' | cut -f 2,4 > raw-unique-contract-bytecodes.txt
 ```
+
+- 2023-03-16: found 768 unique contracts
 
 ### find only solidity contracts
 
@@ -93,7 +95,7 @@ grep -E '^60..60..52' \
      < raw-unique-contract-bytecodes.txt \
      > raw-unique-solidity-only-contract-bytecodes.txt```
 ````
-- **update** 481 "solidity only" contracts left (with maybe some false positives)
+- 2023-03-16: 745 "solidity only" contracts left (with maybe some false positives)
 
 ### get a disassembly from a single contract
 

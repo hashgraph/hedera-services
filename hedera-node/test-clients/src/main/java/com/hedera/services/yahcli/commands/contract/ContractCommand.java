@@ -18,6 +18,7 @@ package com.hedera.services.yahcli.commands.contract;
 
 import com.hedera.services.yahcli.Yahcli;
 import com.hedera.services.yahcli.commands.contract.subcommands.DecompileContractCommand;
+import com.hedera.services.yahcli.commands.contract.subcommands.DumpRawContractStateCommand;
 import com.hedera.services.yahcli.commands.contract.subcommands.DumpRawContractsCommand;
 import com.hedera.services.yahcli.commands.contract.subcommands.ResolveSelectorCommand;
 import com.hedera.services.yahcli.commands.contract.subcommands.SummarizeSignedStateFileCommand;
@@ -32,6 +33,7 @@ import picocli.CommandLine.ParentCommand;
             CommandLine.HelpCommand.class,
             SummarizeSignedStateFileCommand.class,
             DumpRawContractsCommand.class,
+            DumpRawContractStateCommand.class,
             DecompileContractCommand.class,
             ResolveSelectorCommand.class
         },

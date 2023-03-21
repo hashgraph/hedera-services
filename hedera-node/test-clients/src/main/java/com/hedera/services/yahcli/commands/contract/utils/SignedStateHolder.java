@@ -16,21 +16,35 @@
 
 package com.hedera.services.yahcli.commands.contract.utils;
 
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static java.util.Comparator.naturalOrder;
+import static java.util.Map.Entry.comparingByKey;
+
 import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.state.virtual.ContractKey;
+import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey.Type;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.BiConsumer;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt256;
 
 /**
  * Navigates a signed state "file" and returns information from it
@@ -40,13 +54,11 @@ import java.util.Set;
  * the "signed state file". But the whole directory tree must be present.
  *
  * <p>This uses a `SignedStateFileReader` to suck that entire merkle tree into memory, plus the
- * indexes of the virtual maps ("vmap"s) - ~1Gb serialized (2022-11). Then you can traverse the
+ * indexes of the virtual maps ("vmap"s) - ~1.8Gb serialized (2023-03). Then you can traverse the
  * rematerialized hashgraph state.
  *
- * <p>Currently implements only operations needed for looking at contracts: - {@link
- * #getAllKnownContracts()} looks in all the accounts to get all the contract ids present, - {@link
- * #getAllContractContents(Collection)} returns a map, indexed by contract id, of the contract
- * bytecodes.
+ * <p>Currently implements only operations needed for looking at contract bytecodes and contract
+ * state, but you can grab them in bulk.
  */
 public class SignedStateHolder {
 
@@ -125,10 +137,198 @@ public class SignedStateHolder {
      */
     @NonNull
     public static Contracts getContracts(@NonNull final Path inputFile) throws Exception {
-        final var signedState = new SignedStateHolder(inputFile);
-        final var contractIds = signedState.getAllKnownContracts();
-        final var contractContents = signedState.getAllContractContents(contractIds);
+        return new SignedStateHolder(inputFile).getContracts();
+    }
+
+    @NonNull
+    public Contracts getContracts() {
+        final var contractIds = getAllKnownContracts();
+        final var contractContents = getAllContractContents(contractIds);
         return new Contracts(contractContents, contractIds.size());
+    }
+
+    public record ContractKeyLocal(long contractId, UInt256 key) {
+        public static ContractKeyLocal from(ContractKey ckey) {
+            return new ContractKeyLocal(ckey.getContractId(), toUInt256FromPackedIntArray(ckey.getKey()));
+        }
+    }
+
+    @NonNull
+    public static UInt256 toUInt256FromPackedIntArray(final int[] packed) {
+        final var buf = ByteBuffer.allocate(32);
+        buf.asIntBuffer().put(packed);
+        return UInt256.fromBytes(Bytes.wrap(buf.array()));
+    }
+
+    public enum DumpOperation {
+        SUMMARIZE,
+        CONTENTS
+    };
+
+    @NonNull
+    public static String dumpContractStorage(@NonNull DumpOperation operation, @NonNull final Path inputFile)
+            throws Exception {
+        return new SignedStateHolder(inputFile).dumpContractStorage(operation);
+    }
+
+    @NonNull
+    public String dumpContractStorage(@NonNull DumpOperation operation) {
+        final var contractKeys = new ConcurrentLinkedQueue<ContractKeyLocal>();
+        final var contractState = new ConcurrentHashMap<Long, ConcurrentLinkedQueue<Pair<UInt256, UInt256>>>(5000);
+        final var traversalOk = iterateThroughContractStorage((ckey, iter) -> {
+            final var contractId = ckey.getContractId();
+            final var key = toUInt256FromPackedIntArray(ckey.getKey());
+
+            contractKeys.add(new ContractKeyLocal(contractId, key));
+
+            contractState.computeIfAbsent(contractId, k -> new ConcurrentLinkedQueue<Pair<UInt256, UInt256>>());
+            contractState.get(contractId).add(Pair.of(key, iter.asUInt256()));
+        });
+
+        if (traversalOk) {
+            final var nDistinctContractIds = contractKeys.stream()
+                    .map(ContractKeyLocal::contractId)
+                    .distinct()
+                    .count();
+            final var nContractStateValues = contractState.values().stream()
+                    .mapToInt(ConcurrentLinkedQueue::size)
+                    .sum();
+
+            final var contractStates = contractState.entrySet().stream()
+                    .map(entry -> Pair.of(entry.getKey(), new ArrayList<>(entry.getValue())))
+                    .map(entry -> {
+                        entry.getRight().sort(naturalOrder());
+                        return entry;
+                    })
+                    .sorted(comparingByKey())
+                    .toList();
+
+            return switch (operation) {
+                case SUMMARIZE -> {
+                    final var sb = new StringBuilder(300_000);
+                    sb.append(
+                            "%s%n%d contractKeys found, %d distinct; %d contract state entries totalling %d values%n-----%n"
+                                    .formatted(
+                                            "=".repeat(80),
+                                            contractKeys.size(),
+                                            nDistinctContractIds,
+                                            contractState.size(),
+                                            nContractStateValues));
+
+                    sb.append(getContractStoreSlotSummary(contractStates));
+                    yield sb.toString();
+                }
+                case CONTENTS -> {
+                    // I can't seriously be intending to cons up the _entire_ store of all contracts as a single
+                    // string, can I? (Currently 29MB.) Well, this isn't the 1990s ...
+                    final var sb = new StringBuilder(50_000_000);
+                    for (final var aContractState : contractStates) {
+                        sb.append(serializeContractStoreToText(aContractState));
+                        sb.append("\n");
+                    }
+                    yield sb.toString();
+                }
+            };
+        } else return "*** traversal didn't complete (interrupted) ***";
+    }
+
+    @NonNull
+    public static String serializeContractStoreToText(
+            final Pair<Long, ArrayList<Pair<UInt256, UInt256>>> contractState) {
+        final var sb = new StringBuilder(contractState.getValue().size() * 100 /*???*/);
+        sb.append(contractState.getKey());
+        var nextSlot = 0L;
+        for (final var slotPair : contractState.getValue()) {
+            final var slot = slotPair.getKey();
+            if (slot.fitsLong()) {
+                final var slotL = slot.toLong();
+                if (nextSlot != slotL) {
+                    sb.append(" @");
+                    sb.append(slotL);
+                    nextSlot = slotL;
+                } else {
+                    nextSlot++;
+                }
+            } else {
+                sb.append(" @");
+                sb.append(slot.toQuantityHexString().substring(2)); // strip off hex prefix
+            }
+            sb.append(" ");
+            sb.append(slotPair.getValue().toQuantityHexString().substring(2)); // strip off hex prefix
+        }
+        return sb.toString();
+    }
+
+    @NonNull
+    public static String getContractStoreSlotSummary(
+            final List<Pair<Long, ArrayList<Pair<UInt256, UInt256>>>> contractStates) {
+
+        final var contractIds = new ArrayList<Long>(5000);
+
+        final var sb = new StringBuilder(200_000);
+
+        sb.append("contractId  #slots    min       max    oob\n");
+        //         ----------: ------ --------- --------- ------
+        for (final var state : contractStates) {
+            final var contractId = state.getKey();
+            final var slots = state.getValue();
+            contractIds.add(contractId);
+
+            record Acc(long min, long max, long outOfBounds) {}
+            final var slotSummary = slots.stream()
+                    .reduce(
+                            new Acc(Long.MAX_VALUE, Long.MIN_VALUE, 0L),
+                            (r, e) -> {
+                                final var slot = e.getKey();
+                                final var itFits = slot.fitsLong();
+                                if (itFits) {
+                                    final var slotL = slot.toLong();
+                                    return new Acc(Long.min(r.min(), slotL), Long.max(r.max(), slotL), r.outOfBounds());
+                                } else {
+                                    return new Acc(r.min(), r.max(), r.outOfBounds + 1L);
+                                }
+                            },
+                            (r1, r2) -> new Acc(
+                                    Long.min(r1.min(), r2.min()),
+                                    Long.max(r1.max(), r2.max()),
+                                    r1.outOfBounds() + r2.outOfBounds()));
+            sb.append("%10d: %6d %9d %9d %6d%n"
+                    .formatted(
+                            contractId, slots.size(), slotSummary.min(), slotSummary.max(), slotSummary.outOfBounds())
+                    .replace("-9223372036854775808", "      N/A") //  state had _no_ slot#s that fit
+                    .replace("9223372036854775807", "      N/A")); // in a long - clean that up
+        }
+
+        return sb.toString();
+    }
+
+    public boolean iterateThroughContractStorage(BiConsumer<ContractKey, IterableContractValue> visitor) {
+
+        final int THREAD_COUNT = 8;
+        final var contractStorageVMap = getRawContractStorage();
+
+        boolean ranToCompletion = true;
+        try {
+            contractStorageVMap.extractVirtualMapData(
+                    getStaticThreadManager(),
+                    entry -> {
+                        final var contractKey = entry.getKey();
+                        final var iterableContractValue = entry.getValue();
+                        visitor.accept(contractKey, iterableContractValue);
+                    },
+                    THREAD_COUNT);
+        } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            ranToCompletion = false;
+        }
+
+        contractStorageVMap.release();
+        return ranToCompletion;
+    }
+
+    @NonNull
+    public VirtualMapLike<ContractKey, IterableContractValue> getRawContractStorage() {
+        return getPlatformState().contractStorage();
     }
 
     @NonNull
