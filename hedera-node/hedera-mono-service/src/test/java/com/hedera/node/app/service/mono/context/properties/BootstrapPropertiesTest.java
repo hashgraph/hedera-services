@@ -67,6 +67,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_MESSAGE_MAX
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ALLOW_AUTO_ASSOCIATIONS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ALLOW_CREATE2;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_CHAIN_ID;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_CREATE_SYSTEM_CONTRACTS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_DEFAULT_LIFETIME;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_DYNAMIC_EVM_VERSION;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ENFORCE_CREATION_THROTTLE;
@@ -93,6 +94,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SCHEDULE_TH
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECARS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECAR_VALIDATION_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_STORAGE_SLOT_PRICE_TIERS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SYSTEM_CONTRACTS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_THROTTLE_THROTTLE_BY_GAS;
 import static com.hedera.node.app.spi.config.PropertyNames.CRYPTO_CREATE_WITH_ALIAS_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.DEV_DEFAULT_LISTENING_NODE_ACCOUNT;
@@ -332,6 +334,8 @@ class BootstrapPropertiesTest {
             entry(
                     CONTRACTS_PERMITTED_DELEGATE_CALLERS,
                     Set.of(Address.fromHexString("0x164e64"), Address.fromHexString("0x103783"))),
+            entry(CONTRACTS_CREATE_SYSTEM_CONTRACTS, true),
+            entry(CONTRACTS_SYSTEM_CONTRACTS, Set.of(359L, 360L)),
             entry(CONTRACTS_KEYS_LEGACY_ACTIVATIONS, LegacyContractIdActivations.from("1058134by[1062784]")),
             entry(CONTRACTS_KNOWN_BLOCK_HASH, MISSING_BLOCK_VALUES),
             entry(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, 20),
@@ -578,6 +582,7 @@ class BootstrapPropertiesTest {
         assertEquals(
                 EnumSet.of(CONTRACT_STATE_CHANGE, CONTRACT_ACTION, CONTRACT_BYTECODE),
                 subject.getProperty(CONTRACTS_SIDECARS));
+        assertEquals(Collections.emptySet(), subject.getProperty(CONTRACTS_SYSTEM_CONTRACTS));
     }
 
     @Test

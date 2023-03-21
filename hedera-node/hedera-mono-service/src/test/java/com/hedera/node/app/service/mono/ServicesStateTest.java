@@ -54,6 +54,7 @@ import com.hedera.node.app.service.mono.sigs.EventExpansion;
 import com.hedera.node.app.service.mono.state.DualStateAccessor;
 import com.hedera.node.app.service.mono.state.forensics.HashLogger;
 import com.hedera.node.app.service.mono.state.initialization.SystemAccountsCreator;
+import com.hedera.node.app.service.mono.state.initialization.SystemContractsCreator;
 import com.hedera.node.app.service.mono.state.initialization.SystemFilesManager;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
@@ -208,6 +209,9 @@ class ServicesStateTest extends ResponsibleVMapUser {
     @Mock
     private SystemFilesManager systemFilesManager;
 
+    @Mock
+    private SystemContractsCreator systemContractsCreator;
+
     @LoggingTarget
     private LogCaptor logCaptor;
 
@@ -243,10 +247,62 @@ class ServicesStateTest extends ResponsibleVMapUser {
         mockMigratorsOnly();
         subject.setMetadata(metadata);
         given(metadata.app()).willReturn(app);
+        given(app.bootstrapProps()).willReturn(bootstrapProperties);
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.CONTRACTS_CREATE_SYSTEM_CONTRACTS))
+                .willReturn(false);
         given(app.workingState()).willReturn(workingState);
 
         assertDoesNotThrow(() -> subject.migrateFrom(futureVersion));
 
+        unmockMigrators();
+    }
+
+    @Test
+    void migrationCreatesSystemContractsWhenEnabledAndMajorUpdate() {
+        mockMigratorsOnly();
+        subject.setMetadata(metadata);
+        given(metadata.app()).willReturn(app);
+        given(app.workingState()).willReturn(workingState);
+        given(app.bootstrapProps()).willReturn(bootstrapProperties);
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.CONTRACTS_CREATE_SYSTEM_CONTRACTS))
+                .willReturn(true);
+        given(app.systemContractsCreator()).willReturn(systemContractsCreator);
+
+        assertDoesNotThrow(() -> subject.migrateFrom(justPriorVersion));
+
+        verify(systemContractsCreator).ensureSystemContractsExist();
+        unmockMigrators();
+    }
+
+    @Test
+    void migrationDoesNotCreateSystemContractsWhenNotEnabled() {
+        mockMigratorsOnly();
+        subject.setMetadata(metadata);
+        given(metadata.app()).willReturn(app);
+        given(app.workingState()).willReturn(workingState);
+        given(app.bootstrapProps()).willReturn(bootstrapProperties);
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.CONTRACTS_CREATE_SYSTEM_CONTRACTS))
+                .willReturn(false);
+
+        assertDoesNotThrow(() -> subject.migrateFrom(futureVersion));
+
+        verify(app, never()).systemContractsCreator();
+        unmockMigrators();
+    }
+
+    @Test
+    void migrationDoesNotCreateSystemContractsWhenNotAMajorUpgrade() {
+        mockMigratorsOnly();
+        subject.setMetadata(metadata);
+        given(metadata.app()).willReturn(app);
+        given(app.workingState()).willReturn(workingState);
+        given(app.bootstrapProps()).willReturn(bootstrapProperties);
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.CONTRACTS_CREATE_SYSTEM_CONTRACTS))
+                .willReturn(true);
+
+        assertDoesNotThrow(() -> subject.migrateFrom(currentVersion));
+
+        verify(app, never()).systemContractsCreator();
         unmockMigrators();
     }
 
@@ -615,6 +671,8 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(platform.getSelfId()).willReturn(selfId);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
+        given(app.bootstrapProps()).willReturn(bootstrapProperties);
+
         // and:
         APPS.save(selfId.getId(), app);
 
@@ -647,6 +705,9 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(platform.getSelfId()).willReturn(selfId);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
+        given(app.bootstrapProps()).willReturn(bootstrapProperties);
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.CONTRACTS_CREATE_SYSTEM_CONTRACTS))
+                .willReturn(false);
         // and:
         APPS.save(selfId.getId(), app);
 

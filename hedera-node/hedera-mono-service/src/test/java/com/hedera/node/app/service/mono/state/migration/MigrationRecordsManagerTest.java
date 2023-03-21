@@ -22,6 +22,10 @@ import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.state.EntityCreator.NO_CUSTOM_FEES;
 import static com.hedera.node.app.service.mono.state.initialization.TreasuryClonerTest.accountWith;
 import static com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext.MAX_PENDING_REWARDS;
+import static com.hedera.node.app.service.mono.txns.contract.ContractCreateTransitionLogic.STANDIN_CONTRACT_ID_KEY;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
+import static com.hedera.node.app.spi.config.PropertyNames.AUTO_RENEW_GRANT_FREE_RENEWALS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_CREATE_SYSTEM_CONTRACTS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentCaptor.forClass;
@@ -32,10 +36,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.mono.config.MockGlobalDynamicProps;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
+import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
@@ -44,6 +50,7 @@ import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.EntityCreator;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.initialization.BackedSystemAccountsCreator;
+import com.hedera.node.app.service.mono.state.initialization.SystemContractsCreator;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
@@ -51,7 +58,6 @@ import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.TxnId;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.node.app.spi.config.PropertyNames;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.test.extensions.LogCaptor;
@@ -60,6 +66,7 @@ import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
@@ -102,6 +109,7 @@ class MigrationRecordsManagerTest {
     private static final String MEMO = "Release 0.24.1 migration record";
     private static final String TREASURY_CLONE_MEMO = "Synthetic zero-balance treasury clone";
     private static final String SYSTEM_ACCOUNT_CREATION_MEMO = "Synthetic system creation";
+    private static final String SYSTEM_CONTRACT_CREATION_MEMO = "Synthetic system contract creation";
     private static final long contract1Expiry = 2000000L;
     private static final long contract2Expiry = 4000000L;
     private static final EntityId contract1Id = EntityId.fromIdentityCode(1);
@@ -113,8 +121,12 @@ class MigrationRecordsManagerTest {
     private static final JKey systemAccountKey = new JEd25519Key("a123456789a123456789a1234567891011a1".getBytes());
     private final List<HederaAccount> treasuryClones = new ArrayList<>();
     private final List<HederaAccount> systemAccounts = new ArrayList<>();
+    private final List<HederaAccount> systemContracts = new ArrayList<>();
     private final MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
     private final AtomicInteger nextTracker = new AtomicInteger();
+    private final String systemContractMemo = "SYSTEM_CONTRACT_MEMO";
+    private final int systemContractNum1 = 359;
+    private final int systemContractNum2 = 360;
 
     @Mock
     private BootstrapProperties bootstrapProperties;
@@ -291,6 +303,61 @@ class MigrationRecordsManagerTest {
     }
 
     @Test
+    void streamsSystemContracttsCreationRecords() {
+        final ArgumentCaptor<TransactionBody.Builder> bodyCaptor = forClass(TransactionBody.Builder.class);
+        final var systemContractCreateSynthBody = expectedSyntheticSystemContractCreate();
+        givenSystemContractsCreated();
+
+        given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(Instant.now());
+        given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
+        given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker800, SYSTEM_CONTRACT_CREATION_MEMO))
+                .willReturn(pretend800);
+        given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker801, SYSTEM_CONTRACT_CREATION_MEMO))
+                .willReturn(pretend801);
+        given(bootstrapProperties.getBooleanProperty(CONTRACTS_CREATE_SYSTEM_CONTRACTS))
+                .willReturn(true);
+        given(bootstrapProperties.getBooleanProperty(AUTO_RENEW_GRANT_FREE_RENEWALS))
+                .willReturn(false);
+
+        subject.publishMigrationRecords(now);
+
+        verify(sigImpactHistorian).markEntityChanged(systemContractNum1);
+        verify(sigImpactHistorian).markEntityChanged(systemContractNum1);
+        verify(tracker800)
+                .trackAutoCreation(
+                        AccountID.newBuilder().setAccountNum(systemContractNum1).build());
+        verify(tracker801)
+                .trackAutoCreation(
+                        AccountID.newBuilder().setAccountNum(systemContractNum2).build());
+        verify(recordsHistorian).trackPrecedingChildRecord(eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend800));
+        verify(recordsHistorian).trackPrecedingChildRecord(eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend801));
+        verify(networkCtx).markMigrationRecordsStreamed();
+        verify(systemAccountsCreator).forgetCreations();
+        final var bodies = bodyCaptor.getAllValues();
+        assertEquals(systemContractCreateSynthBody, bodies.get(0).build());
+        assertEquals(systemContractCreateSynthBody, bodies.get(1).build());
+    }
+
+    @Test
+    void doesNotStreamSystemContractsIfFlagDisabled() {
+        given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(Instant.now());
+        given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
+        given(bootstrapProperties.getBooleanProperty(CONTRACTS_CREATE_SYSTEM_CONTRACTS))
+                .willReturn(false);
+        given(bootstrapProperties.getBooleanProperty(AUTO_RENEW_GRANT_FREE_RENEWALS))
+                .willReturn(false);
+
+        subject.publishMigrationRecords(now);
+
+        verifyNoInteractions(sigImpactHistorian);
+        verifyNoInteractions(tracker800);
+        verifyNoInteractions(tracker801);
+        verifyNoInteractions(recordsHistorian);
+        verify(networkCtx).markMigrationRecordsStreamed();
+        verify(systemAccountsCreator).forgetCreations();
+    }
+
+    @Test
     void ifContextIndicatesRecordsNeedToBeStreamedThenDoesSo() {
         final ArgumentCaptor<TransactionBody.Builder> bodyCaptor = forClass(TransactionBody.Builder.class);
         final var rewardSynthBody = expectedSyntheticRewardAccount();
@@ -442,9 +509,22 @@ class MigrationRecordsManagerTest {
         return TransactionBody.newBuilder().setCryptoCreateAccount(txnBody).build();
     }
 
+    private TransactionBody expectedSyntheticSystemContractCreate() {
+        final var txnBody = ContractCreateTransactionBody.newBuilder()
+                .setAdminKey(asKeyUnchecked(STANDIN_CONTRACT_ID_KEY))
+                .setMemo(systemContractMemo)
+                .setInitialBalance(0)
+                .setDeclineReward(true)
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(pretendExpiry - now.getEpochSecond()))
+                .setInitcode(
+                        ByteStringUtils.wrapUnsafely(SystemContractsCreator.SYSTEM_CONTRACT_BYTECODE.toArrayUnsafe()))
+                .build();
+        return TransactionBody.newBuilder().setContractCreateInstance(txnBody).build();
+    }
+
     private TransactionBody expectedSystemAccountCreationSynthBody() {
         final var txnBody = CryptoCreateTransactionBody.newBuilder()
-                .setKey(MiscUtils.asKeyUnchecked(systemAccountKey))
+                .setKey(asKeyUnchecked(systemAccountKey))
                 .setMemo("123")
                 .setInitialBalance(0L)
                 .setReceiverSigRequired(true)
@@ -455,7 +535,7 @@ class MigrationRecordsManagerTest {
 
     private TransactionBody expectedTreasuryAccountCreationSynthBody() {
         final var txnBody = CryptoCreateTransactionBody.newBuilder()
-                .setKey(MiscUtils.asKeyUnchecked(pretendTreasuryKey))
+                .setKey(asKeyUnchecked(pretendTreasuryKey))
                 .setMemo("123")
                 .setInitialBalance(MAX_PENDING_REWARDS)
                 .setReceiverSigRequired(true)
@@ -466,7 +546,7 @@ class MigrationRecordsManagerTest {
 
     private TransactionBody expectedSyntheticTreasuryClone() {
         final var txnBody = CryptoCreateTransactionBody.newBuilder()
-                .setKey(MiscUtils.asKeyUnchecked(pretendTreasuryKey))
+                .setKey(asKeyUnchecked(pretendTreasuryKey))
                 .setMemo("123")
                 .setInitialBalance(0)
                 .setReceiverSigRequired(true)
@@ -489,6 +569,26 @@ class MigrationRecordsManagerTest {
         systemAccounts.get(0).setEntityNum(EntityNum.fromLong(100L));
         systemAccounts.get(1).setEntityNum(EntityNum.fromLong(101L));
         given(systemAccountsCreator.getSystemAccountsCreated()).willReturn(systemAccounts);
+    }
+
+    private void givenSystemContractsCreated() {
+        systemContracts.addAll(List.of(systemContract(), systemContract()));
+        systemContracts.get(0).setEntityNum(EntityNum.fromInt(systemContractNum1));
+        systemContracts.get(1).setEntityNum(EntityNum.fromInt(systemContractNum2));
+        given(systemAccountsCreator.getSystemContractsCreated()).willReturn(systemContracts);
+    }
+
+    private HederaAccount systemContract() {
+        return new HederaAccountCustomizer()
+                .isSmartContract(true)
+                .isReceiverSigRequired(true)
+                .isDeclinedReward(true)
+                .isDeleted(false)
+                .expiry(pretendExpiry)
+                .memo(systemContractMemo)
+                .key(STANDIN_CONTRACT_ID_KEY)
+                .autoRenewPeriod(pretendExpiry)
+                .customizing(new MerkleAccount());
     }
 
     private void givenFreeRenewalsOnly() {

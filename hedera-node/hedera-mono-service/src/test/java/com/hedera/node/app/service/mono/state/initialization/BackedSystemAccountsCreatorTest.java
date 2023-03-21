@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.state.initialization;
 
 import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_CREATE_SYSTEM_CONTRACTS;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_NUM_SYSTEM_ACCOUNTS;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -77,6 +78,7 @@ class BackedSystemAccountsCreatorTest {
     private AddressBook book;
     private BackingStore<AccountID, HederaAccount> backingAccounts;
     private TreasuryCloner treasuryCloner;
+    private SystemContractsCreator systemContractsCreator;
     private HederaAccountNumbers accountNums;
 
     @LoggingTarget
@@ -120,16 +122,19 @@ class BackedSystemAccountsCreatorTest {
         given(backingAccounts.getImmutableRef(accountWith(4))).willReturn(withExpectedBalance(0));
 
         treasuryCloner = mock(TreasuryCloner.class);
+        systemContractsCreator = mock(SystemContractsCreator.class);
 
         subject = new BackedSystemAccountsCreator(
-                accountNums, properties, () -> pretendKey, MerkleAccount::new, treasuryCloner);
+                accountNums, properties, () -> pretendKey, MerkleAccount::new, treasuryCloner, systemContractsCreator);
     }
 
     @Test
     void gettersWorkAsExpected() throws NegativeAccountBalanceException {
         final var treasuryClones = List.of(withExpectedBalance(0), withExpectedBalance(0));
+        final var systemContracts = List.of(withExpectedBalance(0), withExpectedBalance(0));
         final var missingSystemAccount = List.of(withExpectedBalance(0));
         given(treasuryCloner.getClonesCreated()).willReturn(treasuryClones);
+        given(systemContractsCreator.getContractsCreated()).willReturn(systemContracts);
         givenMissingSystemAccount();
 
         // when:
@@ -137,10 +142,12 @@ class BackedSystemAccountsCreatorTest {
 
         assertEquals(missingSystemAccount, subject.getSystemAccountsCreated());
         assertEquals(treasuryClones, subject.getTreasuryClonesCreated());
+        assertEquals(systemContracts, subject.getSystemContractsCreated());
 
         subject.forgetCreations();
 
         verify(treasuryCloner).forgetCreatedClones();
+        verify(systemContractsCreator).forgetCreatedContracts();
         assertEquals(0, subject.getSystemAccountsCreated().size());
     }
 
@@ -214,11 +221,12 @@ class BackedSystemAccountsCreatorTest {
     }
 
     @Test
-    void createsStakingFundAndTreasuryCloneAccounts() {
+    void createsStakingFundAndTreasuryCloneAccountsAndSystemContracts() {
         final var captor = ArgumentCaptor.forClass(MerkleAccount.class);
         final var funding801 = AccountID.newBuilder().setAccountNum(801).build();
         given(backingAccounts.contains(any())).willReturn(true);
         given(backingAccounts.contains(funding801)).willReturn(false);
+        given(properties.getBooleanProperty(CONTRACTS_CREATE_SYSTEM_CONTRACTS)).willReturn(true);
 
         subject.ensureSystemAccounts(backingAccounts, book);
 
@@ -226,6 +234,24 @@ class BackedSystemAccountsCreatorTest {
         final var new801 = captor.getValue();
         assertEquals(canonicalFundingAccount(), new801);
         verify(treasuryCloner).ensureTreasuryClonesExist();
+        verify(systemContractsCreator).ensureSystemContractsExist();
+    }
+
+    @Test
+    void doesNotCreateSystemContractsIfFlagDisabled() {
+        final var captor = ArgumentCaptor.forClass(MerkleAccount.class);
+        final var funding801 = AccountID.newBuilder().setAccountNum(801).build();
+        given(backingAccounts.contains(any())).willReturn(true);
+        given(backingAccounts.contains(funding801)).willReturn(false);
+        given(properties.getBooleanProperty(CONTRACTS_CREATE_SYSTEM_CONTRACTS)).willReturn(false);
+
+        subject.ensureSystemAccounts(backingAccounts, book);
+
+        verify(backingAccounts).put(eq(funding801), captor.capture());
+        final var new801 = captor.getValue();
+        assertEquals(canonicalFundingAccount(), new801);
+        verify(treasuryCloner).ensureTreasuryClonesExist();
+        verify(systemContractsCreator, never()).ensureSystemContractsExist();
     }
 
     private MerkleAccount canonicalFundingAccount() {
