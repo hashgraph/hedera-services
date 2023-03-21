@@ -1,3 +1,5 @@
+[⇧ Platform Wiki](../../platformWiki.md)
+
 # Swirlds Configuration
 
 This documentation gives an overview to the config API of [SwirldsLabs](https://swirldslabs.com). The API is used
