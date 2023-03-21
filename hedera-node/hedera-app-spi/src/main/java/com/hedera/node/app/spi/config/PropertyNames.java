@@ -83,6 +83,8 @@ public class PropertyNames {
     public static final String CACHE_RECORDS_TTL = "cache.records.ttl";
     public static final String CONTRACTS_ITEMIZE_STORAGE_FEES = "contracts.itemizeStorageFees";
     public static final String CONTRACTS_PERMITTED_DELEGATE_CALLERS = "contracts.permittedDelegateCallers";
+    public static final String CONTRACTS_CREATE_SYSTEM_CONTRACTS = "contracts.createSystemContracts";
+    public static final String CONTRACTS_SYSTEM_CONTRACTS = "contracts.systemContracts";
     public static final String CONTRACTS_REFERENCE_SLOT_LIFETIME = "contracts.referenceSlotLifetime";
     public static final String CONTRACTS_FREE_STORAGE_TIER_LIMIT = "contracts.freeStorageTierLimit";
     public static final String CONTRACTS_STORAGE_SLOT_PRICE_TIERS = "contract.storageSlotPriceTiers";

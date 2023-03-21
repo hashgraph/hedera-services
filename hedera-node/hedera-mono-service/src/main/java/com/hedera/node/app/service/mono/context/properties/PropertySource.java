@@ -84,6 +84,9 @@ public interface PropertySource {
     Function<String, Object> AS_THROTTLE_SCALE_FACTOR = ScaleFactor::from;
     Function<String, Object> AS_ENTITY_NUM_RANGE = EntityIdUtils::parseEntityNumRange;
     Function<String, Object> AS_ENTITY_TYPES = EntityType::csvTypeSet;
+    Function<String, Object> AS_LONG_SET = s -> s.isEmpty()
+            ? Collections.emptySet()
+            : Arrays.stream(s.split(",")).map(Long::valueOf).collect(toSet());
     Function<String, Object> AS_ACCESS_LIST = MapAccessType::csvAccessList;
     Function<String, Object> AS_SIDECARS = s -> asEnumSet(SidecarType.class, SidecarType::valueOf, s);
     Function<String, Object> AS_RECOMPUTE_TYPES =
@@ -192,6 +195,10 @@ public interface PropertySource {
     }
 
     default Set<Address> getEvmAddresses(String name) {
+        return getTypedProperty(Set.class, name);
+    }
+
+    default Set<Long> getAccountNums(String name) {
         return getTypedProperty(Set.class, name);
     }
 

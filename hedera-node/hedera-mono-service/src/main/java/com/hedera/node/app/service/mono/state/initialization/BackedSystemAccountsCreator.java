@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.mono.context.properties.StaticProperti
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_CREATE_SYSTEM_CONTRACTS;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_NUM_SYSTEM_ACCOUNTS;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 
@@ -58,6 +59,7 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
     private final Supplier<JEd25519Key> genesisKeySource;
     private final TreasuryCloner treasuryCloner;
     private final Supplier<HederaAccount> accountSupplier;
+    private final SystemContractsCreator systemContractsCreator;
 
     private JKey genesisKey;
     private final List<HederaAccount> systemAccountsCreated = new ArrayList<>();
@@ -68,12 +70,14 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
             final @CompositeProps PropertySource properties,
             final Supplier<JEd25519Key> genesisKeySource,
             final Supplier<HederaAccount> accountSupplier,
-            final TreasuryCloner treasuryCloner) {
+            final TreasuryCloner treasuryCloner,
+            final SystemContractsCreator systemContractsCreator) {
         this.accountNums = accountNums;
         this.properties = properties;
         this.genesisKeySource = genesisKeySource;
         this.accountSupplier = accountSupplier;
         this.treasuryCloner = treasuryCloner;
+        this.systemContractsCreator = systemContractsCreator;
     }
 
     /** {@inheritDoc} */
@@ -121,6 +125,9 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
         }
 
         treasuryCloner.ensureTreasuryClonesExist();
+        if (properties.getBooleanProperty(CONTRACTS_CREATE_SYSTEM_CONTRACTS)) {
+            systemContractsCreator.ensureSystemContractsExist();
+        }
 
         var ledgerFloat = 0L;
         final var allIds = accounts.idSet();
@@ -171,6 +178,10 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
         return systemAccountsCreated;
     }
 
+    public List<HederaAccount> getSystemContractsCreated() {
+        return systemContractsCreator.getContractsCreated();
+    }
+
     public List<HederaAccount> getTreasuryClonesCreated() {
         return treasuryCloner.getClonesCreated();
     }
@@ -178,5 +189,6 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
     public void forgetCreations() {
         treasuryCloner.forgetCreatedClones();
         systemAccountsCreated.clear();
+        systemContractsCreator.forgetCreatedContracts();
     }
 }

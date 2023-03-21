@@ -61,6 +61,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_MESSAGE_MAX
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ALLOW_AUTO_ASSOCIATIONS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ALLOW_CREATE2;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_CHAIN_ID;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_CREATE_SYSTEM_CONTRACTS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_DEFAULT_LIFETIME;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_DYNAMIC_EVM_VERSION;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ENFORCE_CREATION_THROTTLE;
@@ -87,6 +88,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SCHEDULE_TH
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECARS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECAR_VALIDATION_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_STORAGE_SLOT_PRICE_TIERS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SYSTEM_CONTRACTS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_THROTTLE_THROTTLE_BY_GAS;
 import static com.hedera.node.app.spi.config.PropertyNames.CRYPTO_CREATE_WITH_ALIAS_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.DEV_DEFAULT_LISTENING_NODE_ACCOUNT;
@@ -435,6 +437,8 @@ public final class BootstrapProperties implements PropertySource {
             CACHE_RECORDS_TTL,
             CONTRACTS_DEFAULT_LIFETIME,
             CONTRACTS_PERMITTED_DELEGATE_CALLERS,
+            CONTRACTS_CREATE_SYSTEM_CONTRACTS,
+            CONTRACTS_SYSTEM_CONTRACTS,
             CONTRACTS_KEYS_LEGACY_ACTIVATIONS,
             CONTRACTS_ENFORCE_CREATION_THROTTLE,
             CONTRACTS_KNOWN_BLOCK_HASH,
@@ -731,6 +735,8 @@ public final class BootstrapProperties implements PropertySource {
             entry(TOPICS_MAX_NUM, AS_LONG),
             entry(CONTRACTS_MAX_NUM, AS_LONG),
             entry(CONTRACTS_PERMITTED_DELEGATE_CALLERS, AS_EVM_ADDRESSES),
+            entry(CONTRACTS_CREATE_SYSTEM_CONTRACTS, AS_BOOLEAN),
+            entry(CONTRACTS_SYSTEM_CONTRACTS, AS_LONG_SET),
             entry(CONTRACTS_KEYS_LEGACY_ACTIVATIONS, AS_LEGACY_ACTIVATIONS),
             entry(CONTRACTS_KNOWN_BLOCK_HASH, AS_KNOWN_BLOCK_VALUES),
             entry(CONTRACTS_LOCAL_CALL_EST_RET_BYTES, AS_INT),
