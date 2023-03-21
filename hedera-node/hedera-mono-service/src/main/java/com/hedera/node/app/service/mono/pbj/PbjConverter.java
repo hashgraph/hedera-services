@@ -1232,19 +1232,6 @@ public final class PbjConverter {
     }
 
     /**
-     * Convenience method to do an unchecked conversion from a PBJ {@link Bytes} to a byte array.
-     *
-     * @param bytes the PBJ {@link Bytes} to convert
-     * @return the byte array
-     * @throws IllegalStateException if the conversion fails
-     */
-    public static @NonNull byte[] unwrapPbj(@NonNull final Bytes bytes) {
-        final var ret = new byte[Math.toIntExact(Objects.requireNonNull(bytes).length())];
-        bytes.getBytes(0, ret);
-        return ret;
-    }
-
-    /**
      * Converts a gRPC {@link com.hederahashgraph.api.proto.java.Key} to a PBJ {@link Key}.
      * (We will encounter gRPC keys until the handle workflow is using PBJ objects.)
      *

@@ -21,7 +21,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.config.Profile;
@@ -93,13 +92,13 @@ public class SubmissionManager {
 
         // Unchecked submits are a mechanism to inject transaction to the system, that bypass all
         // pre-checks.This is used in tests to check the reaction to illegal input.
-        final var uncheckedSubmit = txBody.uncheckedSubmitOrElse(UncheckedSubmitBody.DEFAULT);
-        if (!uncheckedSubmit.equals(UncheckedSubmitBody.DEFAULT)) {
+        if (txBody.hasUncheckedSubmit()) {
             LOG.warn("Unchecked submit is not supported in this version of Hedera");
             if (nodeLocalProperties.activeProfile() == Profile.PROD) {
                 // we do not allow unchecked submits in PROD
                 throw new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED);
             }
+            final var uncheckedSubmit = txBody.uncheckedSubmitOrThrow();
             final var uncheckedTxBytes = uncheckedSubmit.transactionBytes();
             WorkflowOnset.parse(
                     uncheckedTxBytes.toReadableSequentialData(),

@@ -150,10 +150,10 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         try {
             // Parse the Transaction and check the syntax
             final var ctx = SESSION_CONTEXT_THREAD_LOCAL.get();
-            final var txBytes = platformTx.getContents();
+            final var txBytes = Bytes.wrap(platformTx.getContents());
 
             // 1. Parse the Transaction and check the syntax
-            final var onsetResult = onset.parseAndCheck(ctx, Bytes.wrap(txBytes));
+            final var onsetResult = onset.parseAndCheck(ctx, txBytes);
             txBody = onsetResult.txBody();
 
             // 2. Call PreTransactionHandler to do transaction-specific checks, get list of required
@@ -167,16 +167,14 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             final var signatureMap = onsetResult.signatureMap();
             final var txBodyBytes = onsetResult.transaction().bodyBytes();
             final var payerSignature = verifyPayerSignature(state, context, txBodyBytes, signatureMap);
-            final var otherSignatures =
-                    verifyOtherSignatures(state, context, PbjConverter.asBytes(txBodyBytes), signatureMap);
+            final var otherSignatures = verifyOtherSignatures(state, context, txBodyBytes, signatureMap);
 
             // 4. Eventually prepare and verify signatures of inner transaction
             final var innerContext = context.getInnerContext();
             TransactionMetadata innerMetadata = null;
             if (innerContext != null) {
                 // VERIFY: the txBytes used for inner transactions is the same as the outer transaction
-                final var innerPayerSignature =
-                        verifyPayerSignature(state, innerContext, Bytes.wrap(txBytes), signatureMap);
+                final var innerPayerSignature = verifyPayerSignature(state, innerContext, txBytes, signatureMap);
                 final var innerOtherSignatures = verifyOtherSignatures(state, innerContext, txBytes, signatureMap);
                 innerMetadata = createTransactionMetadata(
                         innerContext, signatureMap, innerPayerSignature, innerOtherSignatures, null);
@@ -216,10 +214,10 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     private Map<HederaKey, TransactionSignature> verifyOtherSignatures(
             @NonNull final HederaState state,
             @NonNull final PreHandleContext context,
-            @NonNull final byte[] txBodyBytes,
+            @NonNull final Bytes txBodyBytes,
             @NonNull final SignatureMap signatureMap) {
         final var otherSignatures = signaturePreparer.prepareSignatures(
-                state, txBodyBytes, signatureMap, context.getRequiredNonPayerKeys());
+                state, PbjConverter.asBytes(txBodyBytes), signatureMap, context.getRequiredNonPayerKeys());
         cryptography.verifyAsync(new ArrayList<>(otherSignatures.values()));
         return otherSignatures;
     }
