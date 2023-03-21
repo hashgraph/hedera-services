@@ -80,9 +80,7 @@ public class HapiTokenDelete extends HapiTxnOp<HapiTokenDelete> {
         final var tId = TxnUtils.asTokenId(token, spec);
         final TokenDeleteTransactionBody opBody = spec.txns()
                 .<TokenDeleteTransactionBody, TokenDeleteTransactionBody.Builder>body(
-                        TokenDeleteTransactionBody.class, b -> {
-                            b.setToken(tId);
-                        });
+                        TokenDeleteTransactionBody.class, b -> b.setToken(tId));
         return b -> b.setTokenDeletion(opBody);
     }
 

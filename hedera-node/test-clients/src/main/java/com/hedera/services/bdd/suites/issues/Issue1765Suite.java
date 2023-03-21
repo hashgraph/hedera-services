@@ -77,9 +77,8 @@ public class Issue1765Suite extends HapiSuite {
 
         return defaultHapiSpec("RecordOfInvalidAccountTransferSanityChecks")
                 .given(flattened(
-                        withOpContext((spec, ctxLog) -> {
-                            spec.registry().saveAccountId(INVALID_ACCOUNT, asAccount(ACCOUNT));
-                        }),
+                        withOpContext(
+                                (spec, ctxLog) -> spec.registry().saveAccountId(INVALID_ACCOUNT, asAccount(ACCOUNT))),
                         takeBalanceSnapshots(FUNDING, GENESIS, NODE)))
                 .when(cryptoTransfer(tinyBarsFromTo(GENESIS, INVALID_ACCOUNT, 1L)))
                 .then();
@@ -90,9 +89,8 @@ public class Issue1765Suite extends HapiSuite {
 
         return defaultHapiSpec("RecordOfInvalidAccountSanityChecks")
                 .given(flattened(
-                        withOpContext((spec, ctxLog) -> {
-                            spec.registry().saveAccountId(INVALID_ACCOUNT, asAccount(ACCOUNT));
-                        }),
+                        withOpContext(
+                                (spec, ctxLog) -> spec.registry().saveAccountId(INVALID_ACCOUNT, asAccount(ACCOUNT))),
                         newKeyNamed(INVALID_ACCOUNT),
                         newKeyNamed("irrelevant"),
                         takeBalanceSnapshots(FUNDING, GENESIS, NODE)))
@@ -107,9 +105,8 @@ public class Issue1765Suite extends HapiSuite {
 
         return defaultHapiSpec("RecordOfInvalidContractUpdateSanityChecks")
                 .given(flattened(
-                        withOpContext((spec, ctxLog) -> {
-                            spec.registry().saveContractId(INVALID_CONTRACT, asContract(ACCOUNT));
-                        }),
+                        withOpContext((spec, ctxLog) ->
+                                spec.registry().saveContractId(INVALID_CONTRACT, asContract(ACCOUNT))),
                         newKeyNamed(INVALID_CONTRACT),
                         takeBalanceSnapshots(FUNDING, GENESIS, NODE)))
                 .when(contractUpdate(INVALID_CONTRACT)
@@ -130,9 +127,7 @@ public class Issue1765Suite extends HapiSuite {
 
         return defaultHapiSpec("RecordOfInvalidFileUpdateSanityChecks")
                 .given(flattened(
-                        withOpContext((spec, ctxLog) -> {
-                            spec.registry().saveFileId(INVALID_FILE, asFile("0.0.0"));
-                        }),
+                        withOpContext((spec, ctxLog) -> spec.registry().saveFileId(INVALID_FILE, asFile("0.0.0"))),
                         newKeyNamed(INVALID_FILE).type(KeyFactory.KeyType.LIST),
                         takeBalanceSnapshots(FUNDING, GENESIS, NODE)))
                 .when(fileUpdate(INVALID_FILE)
@@ -153,9 +148,7 @@ public class Issue1765Suite extends HapiSuite {
 
         return defaultHapiSpec("RecordOfInvalidFileAppendSanityChecks")
                 .given(flattened(
-                        withOpContext((spec, ctxLog) -> {
-                            spec.registry().saveFileId(INVALID_FILE, asFile("0.0.0"));
-                        }),
+                        withOpContext((spec, ctxLog) -> spec.registry().saveFileId(INVALID_FILE, asFile("0.0.0"))),
                         newKeyNamed(INVALID_FILE).type(KeyFactory.KeyType.LIST),
                         takeBalanceSnapshots(FUNDING, GENESIS, NODE)))
                 .when(fileAppend(INVALID_FILE)

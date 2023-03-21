@@ -27,6 +27,7 @@ dependencies {
   // Individual Dependencies
   implementation(project(":swirlds-common"))
   api(testLibs.junit.jupiter.api)
+  compileOnly(libs.spotbugs.annotations)
 
   // Test Dependencies
 
