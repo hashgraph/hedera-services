@@ -22,8 +22,6 @@ import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUti
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.numFromCode;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asEvmAddress;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.numFromEvmAddress;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.realmFromEvmAddress;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.shardFromEvmAddress;
 
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.store.models.Id;
@@ -77,11 +75,6 @@ public class EntityNum implements Comparable<EntityNum> {
 
     public static EntityNum fromEvmAddress(final Address address) {
         final var bytes = address.toArrayUnsafe();
-        final var shard = shardFromEvmAddress(bytes);
-        final var realm = realmFromEvmAddress(bytes);
-        if (!areValidNums(shard, realm)) {
-            return MISSING_NUM;
-        }
         return fromLong(numFromEvmAddress(bytes));
     }
 
@@ -158,7 +151,7 @@ public class EntityNum implements Comparable<EntityNum> {
     }
 
     public byte[] toRawEvmAddress() {
-        return asEvmAddress((int) STATIC_PROPERTIES.getShard(), STATIC_PROPERTIES.getRealm(), numFromCode(value));
+        return asEvmAddress(numFromCode(value));
     }
 
     @Override

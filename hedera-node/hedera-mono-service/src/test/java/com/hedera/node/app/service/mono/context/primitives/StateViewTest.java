@@ -180,7 +180,7 @@ class StateViewTest {
             EntityNumPair.fromLongs(tokenAccountId.getAccountNum(), tokenId.getTokenNum());
     private final EntityNumPair nftAssociationId =
             EntityNumPair.fromLongs(tokenAccountId.getAccountNum(), nftTokenId.getTokenNum());
-    private final byte[] cidAddress = asEvmAddress(0, 0, cid.getContractNum());
+    private final byte[] cidAddress = asEvmAddress(cid.getContractNum());
     private final AccountID autoRenew = asAccount("0.0.6");
     private final AccountID creatorAccountID = asAccount("0.0.7");
     private final long autoRenewPeriod = 1_234_567;
