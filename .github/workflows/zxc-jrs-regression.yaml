@@ -246,7 +246,7 @@ jobs:
           echo "::endgroup::"
 
           echo "::group::Installing Python Virtual Environment"
-            sudo apt install python3 python3-venv
+            sudo apt install -y python3 python3-venv
           echo "::endgroup::"
 
       - name: Install SSH Keygen
