@@ -31,6 +31,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.MAX_CALL_DATA_SIZE;
 import static com.hedera.services.bdd.suites.HapiSuite.RELAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.WEIBARS_TO_TINYBARS;
+import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.esaulpaugh.headlong.util.Integers;
@@ -42,7 +43,7 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
-import com.hedera.services.bdd.suites.contract.Utils;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -168,6 +169,12 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         this.contract = contract;
     }
 
+    public HapiEthereumCall(String abi, ContractID contract, Object... params) {
+        this.abi = abi;
+        this.params = params;
+        this.explicitContractId = Optional.of(contract);
+    }
+
     public HapiEthereumCall(boolean isTokenFlow, String abi, String contract, Object... params) {
         this.abi = abi;
         this.params = params;
@@ -288,17 +295,19 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         byte[] callData = initializeCallData();
 
         final byte[] to;
-        if (alias != null) {
+        if (explicitContractId.isPresent()) {
+            to = asAddress(explicitContractId.get());
+        } else if (alias != null) {
             to = recoverAddressFromPubKey(alias.toByteArray());
         } else if (account != null) {
-            to = Utils.asAddress(spec.registry().getAccountID(account));
+            to = asAddress(spec.registry().getAccountID(account));
         } else if (isTokenFlow) {
-            to = Utils.asAddress(spec.registry().getTokenID(contract));
+            to = asAddress(spec.registry().getTokenID(contract));
         } else {
             if (!tryAsHexedAddressIfLenMatches) {
-                to = Utils.asAddress(spec.registry().getContractId(contract));
+                to = asAddress(spec.registry().getContractId(contract));
             } else {
-                to = Utils.asAddress(TxnUtils.asContractId(contract, spec));
+                to = asAddress(TxnUtils.asContractId(contract, spec));
             }
         }
 

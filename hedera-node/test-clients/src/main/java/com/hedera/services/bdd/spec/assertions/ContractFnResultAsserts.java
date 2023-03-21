@@ -95,6 +95,16 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
         return this;
     }
 
+    public ContractFnResultAsserts contract(ContractID expected) {
+        registerProvider((spec, o) -> {
+            final var result = (ContractFunctionResult) o;
+            Assertions.assertTrue(result.hasContractID(), "Missing ContractID, expected " + expected);
+            final var actual = result.getContractID();
+            Assertions.assertEquals(expected, actual, "Bad ContractID");
+        });
+        return this;
+    }
+
     public ContractFnResultAsserts hexedEvmAddress(String expected) {
         return evmAddress(ByteString.copyFrom(CommonUtils.unhex(expected)));
     }

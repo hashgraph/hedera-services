@@ -16,6 +16,9 @@
 
 package com.hedera.services.bdd.spec.transactions;
 
+import static com.hedera.services.bdd.spec.transactions.contract.HapiBaseCall.EXHANGE_RATE_CONTRACT_ID;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiBaseCall.HTS_PRECOMPILED_CONTRACT_ID;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiBaseCall.PRNG_CONTRACT_ID;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate.WELL_KNOWN_INITIAL_SUPPLY;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate.WELL_KNOWN_NFT_SUPPLY_KEY;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -380,6 +383,90 @@ public class TxnVerbs {
     public static HapiContractCall contractCall(String contract, String functionName, Object... params) {
         final var abi = getABIFor(FUNCTION, functionName, contract);
         return new HapiContractCall(abi, contract, params);
+    }
+
+    /**
+     * This method allows the developer to invoke a HTS precompile contract function directly via a ContractCall,
+     * giving the function name and (possibly) arguments.
+     *
+     * @param functionName the name of the function
+     * @param params the arguments (if any) passed to the contract's function
+     */
+    public static HapiContractCall directHTSPrecompileContractCall(String functionName, Object... params) {
+        final var abi = getABIForHTSPrecompiledContract(functionName);
+        return new HapiContractCall(abi, HTS_PRECOMPILED_CONTRACT_ID, params);
+    }
+
+    /**
+     * This method allows the developer to invoke a HTS precompile contract function directly via a EthereumCall,
+     * giving the function name and (possibly) arguments.
+     *
+     * @param functionName the name of the function
+     * @param params the arguments (if any) passed to the contract's function
+     */
+    public static HapiEthereumCall directHTSPrecompileEthereumCall(String functionName, Object... params) {
+        final var abi = getABIForHTSPrecompiledContract(functionName);
+        return new HapiEthereumCall(abi, HTS_PRECOMPILED_CONTRACT_ID, params);
+    }
+
+    private static String getABIForHTSPrecompiledContract(final String functionName) {
+        return getABIFor(FUNCTION, functionName, "IHederaTokenService");
+    }
+
+    /**
+     * This method allows the developer to invoke the exchange rate precompile directly via a ContractCall,
+     * giving the function name and (possibly) arguments.
+     *
+     * @param functionName the name of the function
+     * @param params the arguments (if any) passed to the contract's function
+     */
+    public static HapiContractCall directExchangeRatePrecompileContractCall(String functionName, Object... params) {
+        final var abi = getABIForExchangeRatePrecompiledContract(functionName);
+        return new HapiContractCall(abi, EXHANGE_RATE_CONTRACT_ID, params);
+    }
+
+    /**
+     * This method allows the developer to invoke the exchange rate precompile  contract function directly via a EthereumCall,
+     * giving the function name and (possibly) arguments.
+     *
+     * @param functionName the name of the function
+     * @param params the arguments (if any) passed to the contract's function
+     */
+    public static HapiEthereumCall directExchangeRatePrecompileEthereumCall(String functionName, Object... params) {
+        final var abi = getABIForExchangeRatePrecompiledContract(functionName);
+        return new HapiEthereumCall(abi, EXHANGE_RATE_CONTRACT_ID, params);
+    }
+
+    private static String getABIForExchangeRatePrecompiledContract(final String functionName) {
+        return getABIFor(FUNCTION, functionName, "IExchangeRate");
+    }
+
+    /**
+     * This method allows the developer to invoke a prng precompile directly via a ContractCall,
+     * giving the function name and (possibly) arguments.
+     *
+     * @param functionName the name of the function
+     * @param params the arguments (if any) passed to the contract's function
+     */
+    public static HapiContractCall directPrngPrecompileContractCall(String functionName, Object... params) {
+        final var abi = getABIForPrngPrecompiledContract(functionName);
+        return new HapiContractCall(abi, PRNG_CONTRACT_ID, params);
+    }
+
+    /**
+     * This method allows the developer to invoke a prng precompile contract function directly via a EthereumCall,
+     * giving the function name and (possibly) arguments.
+     *
+     * @param functionName the name of the function
+     * @param params the arguments (if any) passed to the contract's function
+     */
+    public static HapiEthereumCall directPrngPrecompileEthereumCall(String functionName, Object... params) {
+        final var abi = getABIForPrngPrecompiledContract(functionName);
+        return new HapiEthereumCall(abi, PRNG_CONTRACT_ID, params);
+    }
+
+    private static String getABIForPrngPrecompiledContract(final String functionName) {
+        return getABIFor(FUNCTION, functionName, "IPrngSystemContract");
     }
 
     /**

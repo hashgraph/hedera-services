@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
 
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -28,6 +29,13 @@ public abstract class HapiBaseCall<T extends HapiTxnOp<T>> extends HapiTxnOp<T> 
 
     public static final int HEXED_EVM_ADDRESS_LEN = 40;
     public static final String FALLBACK_ABI = "<empty>";
+    public static final ContractID HTS_PRECOMPILED_CONTRACT_ID =
+            ContractID.newBuilder().setContractNum(359L).build();
+    public static final ContractID EXHANGE_RATE_CONTRACT_ID =
+            ContractID.newBuilder().setContractNum(360L).build();
+    public static final ContractID PRNG_CONTRACT_ID =
+            ContractID.newBuilder().setContractNum(361L).build();
+
     protected boolean tryAsHexedAddressIfLenMatches = true;
     protected Object[] params;
     protected String abi;
@@ -35,6 +43,7 @@ public abstract class HapiBaseCall<T extends HapiTxnOp<T>> extends HapiTxnOp<T> 
     protected Optional<Long> gas = Optional.empty();
     protected Optional<Supplier<String>> explicitHexedParams = Optional.empty();
     protected String privateKeyRef = SECP_256K1_SOURCE_KEY;
+    protected Optional<ContractID> explicitContractId = Optional.empty();
 
     protected byte[] initializeCallData() {
         byte[] callData;

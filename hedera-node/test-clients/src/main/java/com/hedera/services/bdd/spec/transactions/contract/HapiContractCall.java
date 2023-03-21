@@ -30,6 +30,7 @@ import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -91,6 +92,12 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
         this.abi = abi;
         this.params = params;
         this.contract = contract;
+    }
+
+    public HapiContractCall(String abi, ContractID explicitContractId, Object... params) {
+        this.abi = abi;
+        this.params = params;
+        this.explicitContractId = Optional.of(explicitContractId);
     }
 
     public HapiContractCall(String abi, String contract, Function<HapiSpec, Object[]> fn) {
@@ -272,10 +279,14 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
         ContractCallTransactionBody opBody = spec.txns()
                 .<ContractCallTransactionBody, ContractCallTransactionBody.Builder>body(
                         ContractCallTransactionBody.class, builder -> {
-                            if (!tryAsHexedAddressIfLenMatches) {
-                                builder.setContractID(spec.registry().getContractId(contract));
+                            if (explicitContractId.isPresent()) {
+                                builder.setContractID(explicitContractId.get());
                             } else {
-                                builder.setContractID(TxnUtils.asContractId(contract, spec));
+                                if (!tryAsHexedAddressIfLenMatches) {
+                                    builder.setContractID(spec.registry().getContractId(contract));
+                                } else {
+                                    builder.setContractID(TxnUtils.asContractId(contract, spec));
+                                }
                             }
                             builder.setFunctionParameters(ByteString.copyFrom(callData));
                             valueSent.ifPresent(builder::setAmount);
