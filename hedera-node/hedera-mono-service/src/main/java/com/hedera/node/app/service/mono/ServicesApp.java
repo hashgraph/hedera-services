@@ -51,6 +51,7 @@ import com.hedera.node.app.service.mono.state.exports.AccountsExporter;
 import com.hedera.node.app.service.mono.state.exports.BalancesExporter;
 import com.hedera.node.app.service.mono.state.forensics.HashLogger;
 import com.hedera.node.app.service.mono.state.initialization.SystemAccountsCreator;
+import com.hedera.node.app.service.mono.state.initialization.SystemContractsCreator;
 import com.hedera.node.app.service.mono.state.initialization.SystemFilesManager;
 import com.hedera.node.app.service.mono.state.initialization.TreasuryCloner;
 import com.hedera.node.app.service.mono.state.logic.LastStepModule;
@@ -207,6 +208,8 @@ public interface ServicesApp {
     Supplier<NotificationEngine> notificationEngine();
 
     BackingStore<AccountID, HederaAccount> backingAccounts();
+
+    SystemContractsCreator systemContractsCreator();
 
     @BootstrapProps
     PropertySource bootstrapProps();

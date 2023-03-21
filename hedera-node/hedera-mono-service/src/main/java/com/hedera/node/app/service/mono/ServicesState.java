@@ -610,6 +610,10 @@ public class ServicesState extends PartialNaryMerkleInternal
         // Keep the MutableStateChildren up-to-date (no harm done if they are already are)
         final var app = getMetadata().app();
         app.workingState().updatePrimitiveChildrenFrom(this);
+        if (app.bootstrapProps().getBooleanProperty(PropertyNames.CONTRACTS_CREATE_SYSTEM_CONTRACTS)
+                && SEMANTIC_VERSIONS.deployedSoftwareVersion().hasMigrationRecordsFrom(deserializedVersion)) {
+            app.systemContractsCreator().ensureSystemContractsExist();
+        }
         log.info("Finished migrations needed for deserialized version {}", deserializedVersion);
         logStateChildrenSizes();
         networkCtx().markPostUpgradeScanStatus();
