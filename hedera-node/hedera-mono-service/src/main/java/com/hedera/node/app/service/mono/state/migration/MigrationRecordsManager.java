@@ -21,10 +21,13 @@ import static com.hedera.node.app.service.mono.records.TxnAwareRecordsHistorian.
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.state.EntityCreator.NO_CUSTOM_FEES;
 import static com.hedera.node.app.service.mono.state.initialization.BackedSystemAccountsCreator.FUNDING_ACCOUNT_EXPIRY;
+import static com.hedera.node.app.service.mono.state.initialization.SystemContractsCreator.SYSTEM_CONTRACT_BYTECODE;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.node.app.spi.config.PropertyNames.AUTO_RENEW_GRANT_FREE_RENEWALS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_CREATE_SYSTEM_CONTRACTS;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
@@ -40,6 +43,7 @@ import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
+import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
@@ -72,6 +76,7 @@ public class MigrationRecordsManager {
     private static final String STAKING_MEMO = "Release 0.24.1 migration record";
     private static final String TREASURY_CLONE_MEMO = "Synthetic zero-balance treasury clone";
     private static final String SYSTEM_ACCOUNT_CREATION_MEMO = "Synthetic system creation";
+    private static final String SYSTEM_CONTRACT_CREATION_MEMO = "Synthetic system contract creation";
 
     private final EntityCreator creator;
     private final BackedSystemAccountsCreator systemAccountsCreator;
@@ -138,6 +143,10 @@ public class MigrationRecordsManager {
         // Always publish records for any system accounts created at genesis start up
         publishAccountsCreated(
                 systemAccountsCreator.getSystemAccountsCreated(), now, SYSTEM_ACCOUNT_CREATION_MEMO, "system creation");
+
+        if (bootstrapProperties.getBooleanProperty(CONTRACTS_CREATE_SYSTEM_CONTRACTS)) {
+            publishContractsCreated(systemAccountsCreator.getSystemContractsCreated(), now);
+        }
 
         curNetworkCtx.markMigrationRecordsStreamed();
         systemAccountsCreator.forgetCreations();
@@ -218,6 +227,56 @@ public class MigrationRecordsManager {
                 .setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
                 .build();
         return TransactionBody.newBuilder().setCryptoCreateAccount(txnBody);
+    }
+
+    private void publishContractsCreated(final List<HederaAccount> createdContracts, final Instant now) {
+        createdContracts.forEach(account -> publishSyntheticContractCreation(
+                EntityNum.fromInt(account.number()),
+                account.getExpiry() - now.getEpochSecond(),
+                account.isDeclinedReward(),
+                asKeyUnchecked(account.getAccountKey()),
+                account.getMemo(),
+                account.getBalance()));
+    }
+
+    @SuppressWarnings("java:S107")
+    private void publishSyntheticContractCreation(
+            final EntityNum num,
+            final long autoRenewPeriod,
+            final boolean receiverSigRequired,
+            final Key key,
+            final String accountMemo,
+            final long balance) {
+        final var tracker = sideEffectsFactory.get();
+        tracker.trackAutoCreation(num.toGrpcAccountId());
+        final var synthBody = synthContractCreation(autoRenewPeriod, key, accountMemo, receiverSigRequired, balance);
+        final var synthRecord =
+                creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker, SYSTEM_CONTRACT_CREATION_MEMO);
+
+        recordsHistorian.trackPrecedingChildRecord(DEFAULT_SOURCE_ID, synthBody, synthRecord);
+        sigImpactHistorian.markEntityChanged(num.longValue());
+        log.info(
+                "Published synthetic ContractCreate for {} account 0.0.{}",
+                "system contract creation",
+                num.longValue());
+    }
+
+    private TransactionBody.Builder synthContractCreation(
+            final long autoRenewPeriod,
+            final Key key,
+            final String memo,
+            final boolean declineReward,
+            final long balance) {
+        final var txnBody = ContractCreateTransactionBody.newBuilder()
+                .setAdminKey(key)
+                .setMemo(memo)
+                .setAutoRenewPeriod(
+                        Duration.newBuilder().setSeconds(autoRenewPeriod).build())
+                .setDeclineReward(declineReward)
+                .setInitialBalance(balance)
+                .setInitcode(ByteStringUtils.wrapUnsafely(SYSTEM_CONTRACT_BYTECODE.toArrayUnsafe()))
+                .build();
+        return TransactionBody.newBuilder().setContractCreateInstance(txnBody);
     }
 
     private void publishContractFreeAutoRenewalRecords() {
