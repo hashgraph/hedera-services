@@ -104,7 +104,8 @@ public class FeesAndRatesProvider {
 
     public void updateRateSet(ExchangeRateSet newSet) {
         rateSet = newSet;
-        String message = String.format("Updating rates! Now :: %s", rateSetAsString(newSet));
+        String newSetAsString = rateSetAsString(newSet);
+        String message = String.format("Updating rates! Now :: %s", newSetAsString);
         log.info(message);
     }
 
@@ -122,9 +123,11 @@ public class FeesAndRatesProvider {
     private void readRateSet() throws Throwable {
         File f = new File(setup.clientExchangeRatesPath());
         byte[] bytes = Files.readAllBytes(f.toPath());
-        final String message = String.format(
-                "The exchange rates from '%s' are :: %s",
-                f.getAbsolutePath(), rateSetAsString(ExchangeRateSet.parseFrom(bytes)));
+        rateSet = ExchangeRateSet.parseFrom(bytes);
+        String newSetAsString = rateSetAsString(rateSet);
+
+        final String message =
+                String.format("The exchange rates from '%s' are :: %s", f.getAbsolutePath(), newSetAsString);
         log.info(message);
     }
 
@@ -136,8 +139,10 @@ public class FeesAndRatesProvider {
         long queryFee = lookupDownloadFee(setup.exchangeRatesId());
         FileGetContentsResponse response = downloadWith(queryFee, false, setup.exchangeRatesId());
         byte[] bytes = response.getFileContents().getContents().toByteArray();
-        final String message =
-                String.format("The exchange rates are :: %s", rateSetAsString(ExchangeRateSet.parseFrom(bytes)));
+        rateSet = ExchangeRateSet.parseFrom(bytes);
+        String newSetAsString = rateSetAsString(rateSet);
+
+        final String message = String.format("The exchange rates are :: %s", newSetAsString);
         log.info(message);
     }
 
