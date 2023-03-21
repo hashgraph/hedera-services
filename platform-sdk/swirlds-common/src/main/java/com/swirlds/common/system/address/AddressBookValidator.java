@@ -19,6 +19,7 @@ package com.swirlds.common.system.address;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -154,31 +155,37 @@ public final class AddressBookValidator {
      */
     public static boolean sameExceptForStake(
             @NonNull final AddressBook addressBook1, @NonNull final AddressBook addressBook2) {
+        Objects.requireNonNull(addressBook1, "addressBook1 must not be null");
+        Objects.requireNonNull(addressBook2, "addressBook2 must not be null");
         final int addressBookSize = addressBook1.getSize();
-        return addressBookSize == addressBook2.getSize()
-                && IntStream.range(0, addressBookSize)
-                        .mapToObj(i -> {
-                            final long nodeId1 = addressBook1.getId(i);
-                            final long nodeId2 = addressBook2.getId(i);
-                            final Address address1 = addressBook1.getAddress(nodeId1);
-                            final Address address2 = addressBook2.getAddress(nodeId2);
-                            if (address1 == null || address2 == null) {
-                                logger.error(
-                                        EXCEPTION.getMarker(),
-                                        "Address at index {} is null when accessed in order.",
-                                        i);
-                                throw new IllegalStateException("Address at index " + i + " is null.");
-                            }
-                            final boolean equal = address1.equalsWithoutStake(address2);
-                            if (!equal) {
-                                logger.error(
-                                        EXCEPTION.getMarker(),
-                                        "Address at position {} is not the same between the two address books.",
-                                        i);
-                            }
-                            return equal;
-                        })
-                        .reduce((left, right) -> left && right)
-                        .orElse(false);
+        if (addressBookSize != addressBook2.getSize()) {
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "Address books have different sizes. Address book 1 has size {}, address book 2 has size {}.",
+                    addressBookSize,
+                    addressBook2.getSize());
+            return false;
+        }
+        return IntStream.range(0, addressBookSize)
+                .mapToObj(i -> {
+                    final long nodeId1 = addressBook1.getId(i);
+                    final long nodeId2 = addressBook2.getId(i);
+                    final Address address1 = addressBook1.getAddress(nodeId1);
+                    final Address address2 = addressBook2.getAddress(nodeId2);
+                    if (address1 == null || address2 == null) {
+                        logger.error(EXCEPTION.getMarker(), "Address at index {} is null when accessed in order.", i);
+                        throw new IllegalStateException("Address at index " + i + " is null.");
+                    }
+                    final boolean equal = address1.equalsWithoutStake(address2);
+                    if (!equal) {
+                        logger.error(
+                                EXCEPTION.getMarker(),
+                                "Address at position {} is not the same between the two address books.",
+                                i);
+                    }
+                    return equal;
+                })
+                .reduce((left, right) -> left && right)
+                .orElse(false);
     }
 }

@@ -21,7 +21,9 @@ import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * A Swirld app is defined by creating two classes, one implementing {@link SwirldMain}, and the other
@@ -114,7 +116,9 @@ public interface SwirldState extends MerkleNode {
      *                          present in the stateAddressBook. Must not be null.
      * @return a copy of the configuration address book with updated stake.
      */
-    default AddressBook updateStake(final AddressBook configAddressBook) {
+    @NonNull
+    default AddressBook updateStake(@NonNull final AddressBook configAddressBook) {
+        Objects.requireNonNull(configAddressBook, "configAddressBook must not be null");
         return configAddressBook;
     }
 
