@@ -99,6 +99,11 @@ public record SavedStateMetadata(
      */
     public static final String FILE_NAME = "stateMetadata.txt";
 
+    /**
+     * Use this constant for the node ID if the thing writing the state is not a node.
+     */
+    public static final long NO_NODE_ID = -1;
+
     private static final Logger logger = LogManager.getLogger(SavedStateMetadata.class);
 
     /**
@@ -319,10 +324,13 @@ public record SavedStateMetadata(
         final String value = data.get(field);
         final String[] parts = value.split(",");
         final List<Long> list = new ArrayList<>();
+
+        if (parts.length == 1 && parts[0].isBlank()) {
+            logInvalidField(field, value, new IllegalArgumentException("List is empty"));
+            return null;
+        }
+
         for (final String part : parts) {
-            if (part.isBlank()) {
-                continue;
-            }
             try {
                 list.add(Long.parseLong(part.strip()));
             } catch (final NumberFormatException e) {

@@ -23,30 +23,30 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class JHollowKeyTest {
-    JHollowKey subject;
+class JWildcardECDSAKeyTest {
+    JWildcardECDSAKey subject;
     byte[] bytes;
 
     @BeforeEach
     void setUp() {
         bytes = new byte[20];
-        subject = new JHollowKey(bytes);
+        subject = new JWildcardECDSAKey(bytes, true);
     }
 
     @Test
     void emptyJHollowKeyTest() {
-        var key1 = new JHollowKey(null);
+        var key1 = new JWildcardECDSAKey(null, true);
         assertTrue(key1.isEmpty());
         assertFalse(key1.isValid());
 
-        var key2 = new JHollowKey(new byte[0]);
+        var key2 = new JWildcardECDSAKey(new byte[0], true);
         assertTrue(key2.isEmpty());
         assertFalse(key2.isValid());
     }
 
     @Test
     void nonEmptyInvalidLengthJHollowKeyTest() {
-        var key = new JHollowKey(new byte[1]);
+        var key = new JWildcardECDSAKey(new byte[1], true);
         assertFalse(key.isEmpty());
         assertFalse(key.isValid());
     }
@@ -54,15 +54,15 @@ class JHollowKeyTest {
     @Test
     void constructorWorks() {
         var bytes = new byte[20];
-        var subject = new JHollowKey(bytes);
+        var subject = new JWildcardECDSAKey(bytes, true);
 
         assertTrue(subject.isValid());
-        assertTrue(subject.hasHollowKey());
-        assertEquals(bytes, subject.getHollowKey().getEvmAddress());
+        assertTrue(subject.hasWildcardECDSAKey());
+        assertEquals(bytes, subject.getWildcardECDSAKey().getEvmAddress());
     }
 
     @Test
     void getterWorks() {
-        assertEquals(bytes, subject.getHollowKey().getEvmAddress());
+        assertEquals(bytes, subject.getWildcardECDSAKey().getEvmAddress());
     }
 }

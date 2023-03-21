@@ -63,7 +63,7 @@ public class RandomSignedStateGenerator {
     private Map<Long, Signature> signatures;
     private boolean protectionEnabled = false;
     private Hash stateHash = null;
-    private Long minimumGenerationNonAncient = null;
+    private Integer roundsNonAncient = null;
 
     /**
      * Create a new signed state generator with a random seed.
@@ -160,9 +160,19 @@ public class RandomSignedStateGenerator {
             freezeStateInstance = freezeState;
         }
 
+        final int roundsNonAncientInstance;
+        if (roundsNonAncient == null) {
+            roundsNonAncientInstance = 26;
+        } else {
+            roundsNonAncientInstance = roundsNonAncient;
+        }
+
         final List<MinGenInfo> minGenInfoInstance;
         if (minGenInfo == null) {
-            minGenInfoInstance = List.of();
+            minGenInfoInstance = new ArrayList<>();
+            for (int i = 0; i < roundsNonAncientInstance; i++) {
+                minGenInfoInstance.add(new MinGenInfo(roundInstance - i, -1L)); // TODO
+            }
         } else {
             minGenInfoInstance = minGenInfo;
         }
@@ -172,13 +182,6 @@ public class RandomSignedStateGenerator {
             softwareVersionInstance = new BasicSoftwareVersion(Math.abs(random.nextLong()));
         } else {
             softwareVersionInstance = softwareVersion;
-        }
-
-        final long minimumGenerationNonAncientInstance;
-        if (minimumGenerationNonAncient == null) {
-            minimumGenerationNonAncientInstance = Math.abs(random.nextLong());
-        } else {
-            minimumGenerationNonAncientInstance = minimumGenerationNonAncient;
         }
 
         stateInstance.getPlatformState().setAddressBook(addressBookInstance);
@@ -192,7 +195,7 @@ public class RandomSignedStateGenerator {
                 .setConsensusTimestamp(consensusTimestampInstance)
                 .setMinGenInfo(minGenInfoInstance)
                 .setCreationSoftwareVersion(softwareVersionInstance)
-                .setMinimumGenerationNonAncient(minimumGenerationNonAncientInstance);
+                .setRoundsNonAncient(roundsNonAncientInstance);
 
         final SignedState signedState = new SignedState(stateInstance, freezeStateInstance);
 
@@ -405,12 +408,12 @@ public class RandomSignedStateGenerator {
     }
 
     /**
-     * Set the minimum generation for non-ancient events.
+     * Set the number of non-ancient rounds.
      *
      * @return this object
      */
-    public RandomSignedStateGenerator setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
-        this.minimumGenerationNonAncient = minimumGenerationNonAncient;
+    public RandomSignedStateGenerator setRoundsNonAncient(final int roundsNonAncient) {
+        this.roundsNonAncient = roundsNonAncient;
         return this;
     }
 }

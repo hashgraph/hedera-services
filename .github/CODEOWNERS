@@ -41,24 +41,25 @@
 #########################
 
 # Platform SDK Root Protections
-/platform-sdk/                                  @hashgraph/platform-base @hashgraph/platform-hashgraph @hashgraph/platform-data
-/platform-sdk/README.md                         @hashgraph/platform-base @hashgraph/release-engineering @hashgraph/release-engineering-managers
+/platform-sdk/                                  @hashgraph/platform-hashgraph @hashgraph/platform-data @hashgraph/platform-base @hashgraph/platform-architects
+/platform-sdk/README.md                         @hashgraph/platform-hashgraph @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 # Platform SDK Modules
-/platform-sdk/swirlds-cli/                      @hashgraph/platform-base @hashgraph/platform-hashgraph
-/platform-sdk/swirlds-common/                   @hashgraph/platform-base @hashgraph/platform-hashgraph
+/platform-sdk/platform-apps/                    @hashgraph/platform-hashgraph
+/platform-sdk/swirlds-cli/                      @hashgraph/platform-hashgraph
+/platform-sdk/swirlds-common/                   @hashgraph/platform-hashgraph @hashgraph/platform-base @hashgraph/platform-data
 /platform-sdk/swirlds-config-*/                 @hashgraph/platform-base
-/platform-sdk/swirlds-fchashmap/                @hashgraph/platform-data
-/platform-sdk/swirlds-fcqueue/                  @hashgraph/platform-data
-/platform-sdk/swirlds-jasperdb/                 @hashgraph/platform-data
-/platform-sdk/swirlds-logging/                  @hashgraph/platform-base
-/platform-sdk/swirlds-merkle/                   @hashgraph/platform-data
+/platform-sdk/swirlds-fchashmap/                @hashgraph/platform-data @hashgraph/platform-architects
+/platform-sdk/swirlds-fcqueue/                  @hashgraph/platform-data @hashgraph/platform-architects
+/platform-sdk/swirlds-jasperdb/                 @hashgraph/platform-data @hashgraph/platform-architects
+/platform-sdk/swirlds-logging/                  @hashgraph/platform-hashgraph
+/platform-sdk/swirlds-merkle/                   @hashgraph/platform-data @hashgraph/platform-architects
 /platform-sdk/swirlds-platform-core/            @hashgraph/platform-hashgraph
-/platform-sdk/swirlds-unit-tests/common/        @hashgraph/platform-base
+/platform-sdk/swirlds-unit-tests/common/        @hashgraph/platform-hashgraph @hashgraph/platform-base
 /platform-sdk/swirlds-unit-tests/core/          @hashgraph/platform-hashgraph
-/platform-sdk/swirlds-unit-tests/structures/    @hashgraph/platform-data
-/platform-sdk/swirlds-virtualmap/               @hashgraph/platform-data
-/platform-sdk/**/module-info.java               @hashgraph/platform-base @hashgraph/release-engineering @hashgraph/release-engineering-managers
+/platform-sdk/swirlds-unit-tests/structures/    @hashgraph/platform-data @hashgraph/platform-architects
+/platform-sdk/swirlds-virtualmap/               @hashgraph/platform-data @hashgraph/platform-architects
+/platform-sdk/**/module-info.java               @hashgraph/platform-hashgraph @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 #########################
 #####  Core Files  ######

@@ -47,9 +47,6 @@ public class ConsensusRound implements Round {
     /** The number of application transactions in this round */
     private int numAppTransactions = 0;
 
-    /** The minimum generation of the non-ancient events in this round */
-    private final long minimumGenerationNonAncient;
-
     /**
      * The event that, when added to the hashgraph, caused this round to reach consensus.
      */
@@ -60,19 +57,14 @@ public class ConsensusRound implements Round {
      *
      * @param consensusEvents the events in the round, in consensus order
      * @param keystoneEvent   the event that, when added to the hashgraph, caused this round to reach consensus
-     * @param minimumGenerationNonAncient the minimum generation of the non-ancient events in this round
      * @param generations     the consensus generations for this round
      */
     public ConsensusRound(
-            final List<EventImpl> consensusEvents,
-            final EventImpl keystoneEvent,
-            final GraphGenerations generations,
-            final long minimumGenerationNonAncient) {
+            final List<EventImpl> consensusEvents, final EventImpl keystoneEvent, final GraphGenerations generations) {
 
         this.consensusEvents = Collections.unmodifiableList(consensusEvents);
         this.keystoneEvent = keystoneEvent;
         this.generations = generations;
-        this.minimumGenerationNonAncient = minimumGenerationNonAncient;
 
         for (final EventImpl e : consensusEvents) {
             numAppTransactions += e.getNumAppTransactions();
@@ -109,13 +101,6 @@ public class ConsensusRound implements Round {
      */
     public GraphGenerations getGenerations() {
         return generations;
-    }
-
-    /**
-     * @return the minimum generation of the non-ancient events in this round
-     */
-    public long getMinimumGenerationNonAncient() {
-        return minimumGenerationNonAncient;
     }
 
     /**

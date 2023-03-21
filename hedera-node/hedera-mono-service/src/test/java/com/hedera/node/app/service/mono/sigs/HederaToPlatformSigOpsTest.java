@@ -36,6 +36,7 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.node.app.service.mono.sigs.factories.PlatformSigFactory;
@@ -66,6 +67,7 @@ class HederaToPlatformSigOpsTest {
     private PubKeyToSigBytes allSigBytes;
     private PlatformTxnAccessor platformTxn;
     private SigRequirements keyOrdering;
+    private AliasManager aliasManager;
 
     @BeforeAll
     static void setupAll() throws Throwable {
@@ -81,6 +83,7 @@ class HederaToPlatformSigOpsTest {
         allSigBytes = mock(PubKeyToSigBytes.class);
         keyOrdering = mock(SigRequirements.class);
         platformTxn = PlatformTxnAccessor.from(newSignedSystemDelete().get());
+        aliasManager = mock(AliasManager.class);
     }
 
     @SuppressWarnings("unchecked")
@@ -109,7 +112,7 @@ class HederaToPlatformSigOpsTest {
     void includesSuccessfulExpansions() throws Exception {
         wellBehavedOrdersAndSigSources();
 
-        expandIn(platformTxn, keyOrdering, allSigBytes);
+        expandIn(platformTxn, keyOrdering, allSigBytes, aliasManager);
 
         assertEquals(expectedSigsWithNoErrors(), platformTxn.getCryptoSigs());
         assertEquals(OK, platformTxn.getExpandedSigStatus());
@@ -121,7 +124,7 @@ class HederaToPlatformSigOpsTest {
                         eq(platformTxn.getTxn()), eq(CODE_ORDER_RESULT_FACTORY), any(), eq(DEFAULT_PAYER)))
                 .willReturn(new SigningOrderResult<>(INVALID_ACCOUNT_ID));
 
-        expandIn(platformTxn, keyOrdering, allSigBytes);
+        expandIn(platformTxn, keyOrdering, allSigBytes, aliasManager);
 
         assertEquals(INVALID_ACCOUNT_ID, platformTxn.getExpandedSigStatus());
     }
@@ -139,7 +142,7 @@ class HederaToPlatformSigOpsTest {
                 .willReturn("2".getBytes())
                 .willThrow(KeyPrefixMismatchException.class);
 
-        expandIn(platformTxn, keyOrdering, allSigBytes);
+        expandIn(platformTxn, keyOrdering, allSigBytes, aliasManager);
 
         assertEquals(KEY_PREFIX_MISMATCH, platformTxn.getExpandedSigStatus());
         assertEquals(expectedSigsWithOtherPartiesCreationError(), platformTxn.getCryptoSigs());

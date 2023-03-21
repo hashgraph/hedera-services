@@ -46,4 +46,16 @@ class MiscCryptoUtilsTest {
 
         assertArrayEquals(Arrays.copyOfRange(uncompressed, 1, 65), MiscCryptoUtils.decompressSecp256k1(compressed));
     }
+
+    @Test
+    void extractsCorrectEvmAddress() {
+        final var key = "dd7da872d68c71d055940129e19181eb2b9bc2c3eaa329934827722e86250037".getBytes();
+        final var keccak256DigestOf = MiscCryptoUtils.keccak256DigestOf(key);
+        final var expectedAddress =
+                Arrays.copyOfRange(keccak256DigestOf, keccak256DigestOf.length - 20, keccak256DigestOf.length);
+
+        final var actualAddress = MiscCryptoUtils.extractEvmAddressFromDecompressedECDSAKey(key);
+
+        assertArrayEquals(expectedAddress, actualAddress);
+    }
 }

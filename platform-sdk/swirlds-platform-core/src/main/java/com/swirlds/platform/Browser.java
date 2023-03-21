@@ -115,6 +115,9 @@ import javax.swing.UIManager;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.impl.Log4jContextFactory;
+import org.apache.logging.log4j.core.util.DefaultShutdownCallbackRegistry;
+import org.apache.logging.log4j.spi.LoggerContextFactory;
 
 /**
  * The Browser that launches the Platforms that run the apps.
@@ -146,10 +149,17 @@ public class Browser {
 
     private final Configuration configuration;
 
+    private static final String STARTUP_MESSAGE =
+            """
+              //////////////////////
+             // Node is Starting //
+            //////////////////////""";
+
     /**
      * Prevent this class from being instantiated.
      */
     private Browser(final Set<Integer> localNodesToStart) throws IOException {
+        logger.info(STARTUP.getMarker(), "\n\n" + STARTUP_MESSAGE + "\n");
         logger.debug(STARTUP.getMarker(), () -> new NodeStartPayload().toString());
 
         // The properties from the config.txt
@@ -400,6 +410,23 @@ public class Browser {
                 Log4jSetup.startLoggingFramework(log4jPath);
             }
             logger = LogManager.getLogger(Browser.class);
+
+            final LoggerContextFactory factory = LogManager.getFactory();
+            if (factory instanceof final Log4jContextFactory contextFactory) {
+                // Do not allow log4j to use its own shutdown hook. Use our own shutdown
+                // hook to stop log4j. This allows us to write a final log message before
+                // the logger is shut down.
+                ((DefaultShutdownCallbackRegistry) contextFactory.getShutdownCallbackRegistry()).stop();
+                Runtime.getRuntime()
+                        .addShutdownHook(new ThreadConfiguration(getStaticThreadManager())
+                                .setComponent("browser")
+                                .setThreadName("shutdown-hook")
+                                .setRunnable(() -> {
+                                    logger.info(STARTUP.getMarker(), "JVM is shutting down.");
+                                    LogManager.shutdown();
+                                })
+                                .build());
+            }
         } catch (final Exception e) {
             LogManager.getLogger(Browser.class).fatal("Unable to load log context", e);
             System.err.println("FATAL Unable to load log context: " + e);
