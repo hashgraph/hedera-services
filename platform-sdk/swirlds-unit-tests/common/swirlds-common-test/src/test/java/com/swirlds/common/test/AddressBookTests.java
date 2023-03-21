@@ -126,7 +126,9 @@ class AddressBookTests {
         final Address address = addressBook.getAddress(addressBook.getId(0));
         final long totalStake = addressBook.getTotalStake();
         final long newStake = address.getStake() + 1;
+
         addressBook.updateStake(address.getId(), newStake);
+
         final Address updatedAddress = addressBook.getAddress(addressBook.getId(0));
         assertEquals(newStake, updatedAddress.getStake(), "stake should be updated");
         assertEquals(totalStake + 1, addressBook.getTotalStake(), "total stake should be updated by 1");
