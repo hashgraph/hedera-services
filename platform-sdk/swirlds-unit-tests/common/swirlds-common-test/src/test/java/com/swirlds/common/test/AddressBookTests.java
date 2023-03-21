@@ -119,6 +119,22 @@ class AddressBookTests {
     }
 
     @Test
+    @DisplayName("Address Book Update Stake Test")
+    void validateAddressBookUpdateStakeTest() {
+        final RandomAddressBookGenerator generator = new RandomAddressBookGenerator(getRandomPrintSeed()).setSize(10);
+        final AddressBook addressBook = generator.build();
+        final Address address = addressBook.getAddress(addressBook.getId(0));
+        final long totalStake = addressBook.getTotalStake();
+        final long newStake = address.getStake() + 1;
+        addressBook.updateStake(address.getId(), newStake);
+        final Address updatedAddress = addressBook.getAddress(addressBook.getId(0));
+        assertEquals(newStake, updatedAddress.getStake(), "stake should be updated");
+        assertEquals(totalStake + 1, addressBook.getTotalStake(), "total stake should be updated by 1");
+        final Address reverted = updatedAddress.copySetStake(newStake - 1);
+        assertEquals(address, reverted, "reverted address should be equal to original");
+    }
+
+    @Test
     @DisplayName("Copy Mutable Test")
     void copyMutableTest() {
         final RandomAddressBookGenerator generator = new RandomAddressBookGenerator(getRandomPrintSeed()).setSize(100);
