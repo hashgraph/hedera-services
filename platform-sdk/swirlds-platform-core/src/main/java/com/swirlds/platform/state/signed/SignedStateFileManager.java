@@ -151,6 +151,8 @@ public class SignedStateFileManager implements Startable {
                     savedStates[savedStates.length - 1].getMetadata().minimumGenerationNonAncient();
             if (generationNonAncient != null) {
                 minimumGenerationNonAncientForOldestState = generationNonAncient;
+                minimumGenerationNonAncientConsumer.newMinimumGenerationNonAncient(
+                        minimumGenerationNonAncientForOldestState);
             }
         }
     }

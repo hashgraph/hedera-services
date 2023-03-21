@@ -39,6 +39,7 @@ import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.test.TransactionGenerator;
+import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.common.test.io.FileManipulation;
 import com.swirlds.common.test.metrics.NoOpMetrics;
 import com.swirlds.common.time.OSTime;
@@ -348,8 +349,9 @@ class AsyncPreConsensusEventWriterTests {
 
         final PlatformContext platformContext = buildContext();
 
-        final PreConsensusEventFileManager fileManager =
-                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
+        final FakeTime time = new FakeTime(Duration.ofMillis(1));
+
+        final PreConsensusEventFileManager fileManager = new PreConsensusEventFileManager(platformContext, time, 0);
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreConsensusEventWriter writer = new AsyncPreConsensusEventWriter(
@@ -367,6 +369,8 @@ class AsyncPreConsensusEventWriterTests {
             sequencer.assignStreamSequenceNumber(event);
             assertFalse(writer.isEventDurable(event));
             writer.writeEvent(event);
+
+            time.tick(Duration.ofSeconds(1));
 
             if (event.getGeneration() < minimumGenerationNonAncient) {
                 // This event is ancient and will have been rejected.
@@ -400,6 +404,9 @@ class AsyncPreConsensusEventWriterTests {
         }
 
         verifyStream(events, platformContext, 0);
+
+        // Advance the time so that all files are GC eligible according to the clock.
+        time.tick(Duration.ofDays(1));
 
         // Prune old files.
         final long minimumGenerationToStore = events.get(events.size() - 1).getGeneration() / 2;

@@ -155,24 +155,30 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
     }
 
     /**
-     * Flush the stream if needed. Should be called after each event is written.
+     * Flush the stream if needed.
      */
-    private void flushIfNeeded() {
-        // Remove all events that have already been flushed. This scenario is relevant after a file is closed.
-        while (!flushableEvents.isEmpty() && flushableEvents.peek() < lastWrittenEvent) {
-            flushableEvents.remove();
-        }
-        if (!flushableEvents.isEmpty()) {
+    private synchronized void flushIfNeeded() {
+        while (!flushableEvents.isEmpty()) {
             final long nextFlushableEvent = flushableEvents.peek();
-            if (nextFlushableEvent == lastWrittenEvent) {
-                try {
-                    currentMutableFile.flush();
-                } catch (final IOException e) {
-                    throw new UncheckedIOException("unable to flush", e);
-                }
-                markEventsAsFlushed();
-                flushableEvents.remove();
+
+            if (nextFlushableEvent > lastWrittenEvent) {
+                // We can't flush this until it gets written
+                break;
             }
+
+            flushableEvents.remove();
+
+            if (nextFlushableEvent <= lastFlushedEvent.getCount()) {
+                // This is already flushed
+                continue;
+            }
+
+            try {
+                currentMutableFile.flush();
+            } catch (final IOException e) {
+                throw new UncheckedIOException("unable to flush", e);
+            }
+            markEventsAsFlushed();
         }
     }
 
@@ -233,7 +239,7 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
         if (event.getStreamSequenceNumber() == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
             throw new IllegalStateException("Event is stale and will never be durable");
         }
-
+        flushIfNeeded();
         lastFlushedEvent.await(event.getStreamSequenceNumber());
     }
 
@@ -245,7 +251,7 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
         if (event.getStreamSequenceNumber() == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
             throw new IllegalStateException("Event is stale and will never be durable");
         }
-
+        flushIfNeeded();
         return lastFlushedEvent.await(event.getStreamSequenceNumber(), timeToWait);
     }
 
@@ -283,19 +289,7 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
             return;
         }
 
-        if (lastWrittenEvent < eventSequenceNumber) {
-            // We haven't yet written this event, event will be flushed as soon as it is written.
-            flushableEvents.add(eventSequenceNumber);
-            return;
-        }
-
-        // We have written the event to the stream, flush immediately
-        try {
-            currentMutableFile.flush();
-        } catch (final IOException e) {
-            throw new UncheckedIOException(e);
-        }
-        markEventsAsFlushed();
+        flushableEvents.add(eventSequenceNumber);
     }
 
     /**

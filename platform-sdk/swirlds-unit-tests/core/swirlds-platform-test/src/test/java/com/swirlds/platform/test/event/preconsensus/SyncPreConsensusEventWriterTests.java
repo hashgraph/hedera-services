@@ -45,6 +45,7 @@ import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -145,7 +146,7 @@ class SyncPreConsensusEventWriterTests {
 
         writer.requestFlush(events.get(events.size() - 1));
 
-        // Since we are not using threads, the stream should be flushed when we reach this point
+        assertTrue(writer.waitUntilDurable(events.get(events.size() - 1), Duration.ofSeconds(1)));
         assertTrue(writer.isEventDurable(events.get(events.size() - 1)));
 
         verifyStream(events, platformContext, 0);
@@ -209,6 +210,7 @@ class SyncPreConsensusEventWriterTests {
         }
 
         writer.requestFlush(events.get(events.size() - 1));
+        assertTrue(writer.waitUntilDurable(events.get(events.size() - 1), Duration.ofSeconds(1)));
         assertTrue(writer.isEventDurable(events.get(events.size() - 1)));
 
         verifyStream(events, platformContext, 0);
@@ -274,6 +276,7 @@ class SyncPreConsensusEventWriterTests {
         }
 
         writer.requestFlush(events.get(events.size() - 1));
+        assertTrue(writer.waitUntilDurable(events.get(events.size() - 1), Duration.ofSeconds(1)));
         assertTrue(writer.isEventDurable(events.get(events.size() - 1)));
 
         verifyStream(events, platformContext, 0);
@@ -392,7 +395,7 @@ class SyncPreConsensusEventWriterTests {
 
         writer.requestFlush(events.get(events.size() - 1));
 
-        // Since we are not using threads, the stream should be flushed when we reach this point
+        assertTrue(writer.waitUntilDurable(events.get(events.size() - 1), Duration.ofSeconds(1)));
         assertTrue(writer.isEventDurable(events.get(events.size() - 1)));
 
         verifyStream(events, platformContext, 0);
