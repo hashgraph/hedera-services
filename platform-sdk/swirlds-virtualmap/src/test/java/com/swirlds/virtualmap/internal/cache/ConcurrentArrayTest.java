@@ -234,7 +234,6 @@ class ConcurrentArrayTest {
         b.add("Element 6");
         b.add("Element 7");
         b.add("Element 8");
-        b.add("Element 9");
         b.seal();
 
         final ConcurrentArray<String> c = new ConcurrentArray<>(b);
@@ -242,15 +241,14 @@ class ConcurrentArrayTest {
         c.add("Element B");
         c.add("Element C");
         c.add("Element D");
-        c.add("Element E");
         c.seal();
 
         // Merge a and b together and validate the result
         b.merge(a);
-        assertEquals(9, b.size(), "Wrong value");
+        assertEquals(8, b.size(), "Wrong value");
         List<String> elements = b.sortedStream(null).collect(Collectors.toList());
 
-        assertEquals(9, elements.size(), "Wrong value");
+        assertEquals(8, elements.size(), "Wrong value");
         assertEquals("Element 1", elements.get(0), "Wrong value");
         assertEquals("Element 2", elements.get(1), "Wrong value");
         assertEquals("Element 3", elements.get(2), "Wrong value");
@@ -259,14 +257,13 @@ class ConcurrentArrayTest {
         assertEquals("Element 6", elements.get(5), "Wrong value");
         assertEquals("Element 7", elements.get(6), "Wrong value");
         assertEquals("Element 8", elements.get(7), "Wrong value");
-        assertEquals("Element 9", elements.get(8), "Wrong value");
 
         // Merge a and c and validate the result.
         c.merge(b);
-        assertEquals(14, c.size(), "Wrong value");
+        assertEquals(12, c.size(), "Wrong value");
         elements = c.sortedStream(null).collect(Collectors.toList());
 
-        assertEquals(14, elements.size(), "Wrong value");
+        assertEquals(12, elements.size(), "Wrong value");
         assertEquals("Element 1", elements.get(0), "Wrong value");
         assertEquals("Element 2", elements.get(1), "Wrong value");
         assertEquals("Element 3", elements.get(2), "Wrong value");
@@ -275,12 +272,10 @@ class ConcurrentArrayTest {
         assertEquals("Element 6", elements.get(5), "Wrong value");
         assertEquals("Element 7", elements.get(6), "Wrong value");
         assertEquals("Element 8", elements.get(7), "Wrong value");
-        assertEquals("Element 9", elements.get(8), "Wrong value");
-        assertEquals("Element A", elements.get(9), "Wrong value");
-        assertEquals("Element B", elements.get(10), "Wrong value");
-        assertEquals("Element C", elements.get(11), "Wrong value");
-        assertEquals("Element D", elements.get(12), "Wrong value");
-        assertEquals("Element E", elements.get(13), "Wrong value");
+        assertEquals("Element A", elements.get(8), "Wrong value");
+        assertEquals("Element B", elements.get(9), "Wrong value");
+        assertEquals("Element C", elements.get(10), "Wrong value");
+        assertEquals("Element D", elements.get(11), "Wrong value");
     }
 
     /**

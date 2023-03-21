@@ -64,7 +64,7 @@ final class ConcurrentArray<T> {
     private static final int DEFAULT_ELEMENT_ARRAY_LENGTH = 1024;
 
     /**
-     * A concurrent linked deque of arrays. Initially, the {@link ConcurrentArray} has a single
+     * A linked list of arrays. Initially, the {@link ConcurrentArray} has a single
      * sub-array sized to either the capacity provided in the constructor or {@link #DEFAULT_ELEMENT_ARRAY_LENGTH}.
      * As elements are added, they eventually fill up the sub-array, and it becomes necessary to create
      * a new sub-array and add it to the list.
@@ -74,15 +74,24 @@ final class ConcurrentArray<T> {
      * First, it required a rather coarse-grained lock which was bad for performance. Second, it required large
      * array copies, which hurt performance.
      * <p>
-     * Instead, we have a concurrent linked dequeue of smaller "sub" arrays. Whenever we need to grow capacity,
+     * Instead, we have a linked list of smaller "sub" arrays. Whenever we need to grow capacity,
      * rather than creating a new larger array and copying all the elements out of the old array into the new one,
-     * we simply create a new array. Whenever we need to "add all" from another {@link ConcurrentArray} into this
-     * one, we just add a few pointers to the concurrent linked dequeue and avoid all array copies.
+     * we simply create a new array. Whenever we need to "merge" another adjacent {@link ConcurrentArray} with this
+     * one, we just move the head pointer of the current {@link ConcurrentArray} and avoid all array copies.
      * <p>
      * To make this safe, it is imperative that <strong>only</strong> an immutable {@link ConcurrentArray} is the
      * source of a copy, so that the destination array can safely refer to the sub-arrays of the source.
+     * <p>
+     * Multiple copies of {@link ConcurrentArray}s can share the same linked list. A copy is defined by {@code head}
+     * and {@code elementCount}. An empty copy has {@code head == null} and {@code elementCount == 0}.
+     * Non-empty copies never share the same sub-array.
      */
     private volatile SubArray<T> head;
+
+    /**
+     * A reference to the last {@link SubArray}. It is shared between all copies in a family. It needs to be a reference
+     * so that {@code head} of a new copy could be set lazily.
+     */
     private final AtomicReference<SubArray<T>> current;
 
     /**
@@ -134,28 +143,38 @@ final class ConcurrentArray<T> {
         }
 
         // Add the first array, so we are primed and ready to go. This also saves on a check later for an empty
-        // concurrent linked dequeue (we always know there is at least one sub-array).
+        // linked list (we always know there is at least one sub-array).
         this.subarrayCapacity = capacity;
         current = new AtomicReference<>();
         current.set(new SubArray<>(capacity));
     }
 
+    /**
+     * Create a new copy from the current one. We can't set {@code head} in the constructor.
+     * @param other
+     *      The previous copy sharing the linked list of {@link SubArray}s.
+     */
     ConcurrentArray(final ConcurrentArray<T> other) {
         this.subarrayCapacity = other.subarrayCapacity;
         this.current = other.current;
         this.head = null;
     }
 
+    /**
+     * Effectively add all {@link SubArray}s from the previous copy.
+     * @param other
+     *      The previous copy from the same family.
+     */
     void merge(final ConcurrentArray<T> other) {
         Objects.requireNonNull(other);
 
         // We don't allow either to be mutable
         if (!this.isImmutable() || !other.isImmutable()) {
-            throw new IllegalArgumentException("The source arrays *must* be immutable");
+            throw new IllegalArgumentException("Both arrays *must* be immutable");
         }
 
         if (other == this) {
-            throw new IllegalArgumentException("Both arguments should be distinct instances");
+            throw new IllegalArgumentException("Can not merge with itself");
         }
 
         if (this.current != other.current) {
@@ -239,6 +258,7 @@ final class ConcurrentArray<T> {
             throw new IllegalStateException("You can not call add on a immutable ConcurrentArray");
         }
 
+        // Lazily initialize the head of this copy.
         if (head == null) {
             synchronized (this) {
                 if (head == null) {
@@ -253,7 +273,7 @@ final class ConcurrentArray<T> {
             }
         }
 
-        // The sub-arrays in the dequeue all considered full except for the very last one. If the very last one is
+        // The sub-arrays in the list are all considered full except for the very last one. If the very last one is
         // also full, then add a new sub-array. We want to avoid locking for normal operations, and only
         // do so if the sub-array is full. So we will get the last sub-array, try to add to it, and if we fail
         // to do so, then we will acquire the lock to create a new sub-array.
@@ -262,7 +282,7 @@ final class ConcurrentArray<T> {
             synchronized (this) {
                 // Within this lock we need to create a new sub-array. Unless in a race another thread has already
                 // entered this critical section and created the sub array. So we will once again get the last
-                // sub-array from the dequeue, try to add to it, and determine if we need to add a new sub-array.
+                // sub-array from the list, try to add to it, and determine if we need to add a new sub-array.
                 success = current.get().add(element);
                 if (!success) {
                     // Create the sub-array
@@ -272,9 +292,9 @@ final class ConcurrentArray<T> {
                     // This must always be true! Capacity is always strictly greater than zero, and
                     // we hold the lock, so the above add operation should always succeed.
                     assert success;
-                    // Now, and only now, can we add the array to the dequeue. As soon as we add it,
+                    // Now, and only now, can we add the sub-array to the list. As soon as we add it,
                     // other threads can come along and add items to the array. If we were to put this
-                    // into the dequeue too soon, then the array could be filled up before our thread
+                    // into the list too soon, then the array could be filled up before our thread
                     // has a chance, causing the above assertion to fail.
                     current.get().next = newArray;
                     current.set(newArray);
@@ -313,9 +333,7 @@ final class ConcurrentArray<T> {
         // Copy the sub-arrays into a single array and sort it.
         T[] sortedArray = (T[]) new Object[numberOfElements];
         int nextIndex = 0;
-        for (SubArray<T> array = head;
-                array != null && nextIndex < numberOfElements;
-                array = array.next) {
+        for (SubArray<T> array = head; array != null && nextIndex < numberOfElements; array = array.next) {
             final int arraySize = array.size.get();
             System.arraycopy(array.array, 0, sortedArray, nextIndex, arraySize);
             nextIndex += arraySize;
