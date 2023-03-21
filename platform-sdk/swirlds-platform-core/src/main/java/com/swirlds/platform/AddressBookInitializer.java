@@ -84,7 +84,7 @@ public class AddressBookInitializer {
     @NonNull
     private final AddressBook initialAddressBook;
     /** The path to the directory for writing address books. */
-    @NonNull
+    @Nullable
     private final Path pathToAddressBookDirectory;
     /** Indicate that the unmodified config address book must be used. */
     private final boolean useConfigAddressBook;

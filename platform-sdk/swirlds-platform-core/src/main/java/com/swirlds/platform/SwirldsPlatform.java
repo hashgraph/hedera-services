@@ -444,7 +444,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             @NonNull final String swirldName,
             @NonNull final SoftwareVersion appVersion,
             @NonNull final Supplier<SwirldState> genesisStateBuilder,
-            @NonNull final SignedState loadedSignedState,
+            @Nullable final SignedState loadedSignedState,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
 
         this.platformContext = CommonUtils.throwArgNull(platformContext, "platformContext");
