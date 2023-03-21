@@ -195,19 +195,22 @@ public final class CommonUtils {
             case SCHEDULEDELETE -> ScheduleDelete;
             case SCHEDULESIGN -> ScheduleSign;
             case UTIL_PRNG -> UtilPrng;
+                //          case NODE_STAKE_UPDATE is not handled here, it's handled in functionNodeStakeUpdateOf
             default -> throw new UnknownHederaFunctionality("Unknown HederaFunctionality for " + txn);
         };
     }
 
     /**
-     * check TransactionBody and return the NodeStakeUpdate HederaFunctionality
+     * check TransactionBody and return the NodeStakeUpdate HederaFunctionality,
+     * which was added for the node software to use to export stake info to mirror nodes in the record stream.
+     * It is not a valid type of transaction for a user to submit via HAPI.
      *
      * @param txn the {@code TransactionBody}
      * @return one of HederaFunctionality
      * @throws UnknownHederaFunctionality if it's not a NodeStakeUpdate HederaFunctionality
      */
     @NonNull
-    public static HederaFunctionality functionOrStakeUpdateOf(@NonNull final TransactionBody txn)
+    public static HederaFunctionality functionNodeStakeUpdateOf(@NonNull final TransactionBody txn)
             throws UnknownHederaFunctionality {
         DataCase dataCase = txn.getDataCase();
         if (dataCase.equals(NODE_STAKE_UPDATE)) {

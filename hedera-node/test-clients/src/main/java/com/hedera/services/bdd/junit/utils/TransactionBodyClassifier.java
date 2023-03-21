@@ -16,8 +16,8 @@
 
 package com.hedera.services.bdd.junit.utils;
 
+import static com.hedera.node.app.hapi.utils.CommonUtils.functionNodeStakeUpdateOf;
 import static com.hedera.node.app.hapi.utils.CommonUtils.functionOf;
-import static com.hedera.node.app.hapi.utils.CommonUtils.functionOrStakeUpdateOf;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -37,7 +37,7 @@ public class TransactionBodyClassifier {
         TransactionBody txnBody = CommonUtils.extractTransactionBody(item.getTransaction());
 
         try {
-            txnType = functionOrStakeUpdateOf(txnBody);
+            txnType = functionNodeStakeUpdateOf(txnBody);
             transactionType.add(txnType);
         } catch (UnknownHederaFunctionality e) {
             checkFunctionOf(txnBody);
