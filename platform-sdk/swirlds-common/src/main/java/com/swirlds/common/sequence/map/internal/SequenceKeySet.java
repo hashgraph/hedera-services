@@ -16,8 +16,11 @@
 
 package com.swirlds.common.sequence.map.internal;
 
+import static org.apache.commons.lang3.builder.ToStringStyle.JSON_STYLE;
+
 import java.util.HashSet;
 import java.util.Set;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * A set of keys with a particular sequence number. This object is designed to be reused as the allowable
@@ -71,6 +74,9 @@ public class SequenceKeySet<K> {
 
     @Override
     public String toString() {
-        return "(sequence number = " + sequenceNumber + ", size = " + keys.size() + ")";
+        return new ToStringBuilder(this, JSON_STYLE)
+                .append("sequence number", sequenceNumber)
+                .append("size", keys.size())
+                .toString();
     }
 }

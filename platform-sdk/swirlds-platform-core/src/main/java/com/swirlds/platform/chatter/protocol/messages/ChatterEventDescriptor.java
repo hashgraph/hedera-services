@@ -157,6 +157,6 @@ public class ChatterEventDescriptor implements SelfSerializable {
 
     @Override
     public String toString() {
-        return String.format("GossipEventDescriptor(%d,%d,%s)", creator, generation, CommonUtils.hex(hash.getValue()));
+        return "GossipEventDescriptor(%d,%d,%s)".formatted(creator, generation, CommonUtils.hex(hash.getValue()));
     }
 }

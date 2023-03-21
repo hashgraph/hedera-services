@@ -17,6 +17,7 @@
 package com.swirlds.common.system.address;
 
 import static com.swirlds.common.utility.NonCryptographicHashing.hash32;
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.crypto.SerializablePublicKey;
 import com.swirlds.common.io.SelfSerializable;
@@ -27,6 +28,7 @@ import java.io.IOException;
 import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.Objects;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * One address in an address book, including all the info about a member. It is immutable. Each getter for a byte array
@@ -859,23 +861,24 @@ public class Address implements SelfSerializable {
      */
     @Override
     public String toString() {
-        return "Address{" + "id="
-                + id + ", nickname='"
-                + nickname + '\'' + ", selfName='"
-                + selfName + '\'' + ", ownHost="
-                + ownHost + ", stake="
-                + stake + ", addressInternalIpv4="
-                + Arrays.toString(addressInternalIpv4) + ", portInternalIpv4="
-                + portInternalIpv4 + ", addressExternalIpv4="
-                + Arrays.toString(addressExternalIpv4) + ", portExternalIpv4="
-                + portExternalIpv4 + ", addressInternalIpv6="
-                + Arrays.toString(addressInternalIpv6) + ", portInternalIpv6="
-                + portInternalIpv6 + ", portExternalIpv6="
-                + portExternalIpv6 + ", addressExternalIpv6="
-                + Arrays.toString(addressExternalIpv6) + ", sigPublicKey="
-                + sigPublicKey + ", encPublicKey="
-                + encPublicKey + ", agreePublicKey="
-                + agreePublicKey + ", memo='"
-                + memo + '\'' + '}';
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+                .append("id", id)
+                .append("nickname", nickname)
+                .append("selfName", selfName)
+                .append("ownHost", ownHost)
+                .append("stake", stake)
+                .append("addressInternalIpv4", Arrays.toString(addressInternalIpv4))
+                .append("portInternalIpv4", portInternalIpv4)
+                .append("addressExternalIpv4", Arrays.toString(addressExternalIpv4))
+                .append("portExternalIpv4", portExternalIpv4)
+                .append("addressInternalIpv6", Arrays.toString(addressInternalIpv6))
+                .append("portInternalIpv6", portInternalIpv6)
+                .append("portExternalIpv6", portExternalIpv6)
+                .append("addressExternalIpv6", Arrays.toString(addressExternalIpv6))
+                .append("sigPublicKey", sigPublicKey)
+                .append("encPublicKey", encPublicKey)
+                .append("agreePublicKey", agreePublicKey)
+                .append("memo", memo)
+                .toString();
     }
 }
