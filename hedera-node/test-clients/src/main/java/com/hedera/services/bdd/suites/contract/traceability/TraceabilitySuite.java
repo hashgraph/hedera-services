@@ -4197,7 +4197,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                     .setRecipientContract(
                                                             spec.registry().getContractId(PRECOMPILE_CALLER))
                                                     .setGas(197000)
-                                                    .setGasUsed(942)
+                                                    .setGasUsed(857)
                                                     .setOutput(EMPTY)
                                                     .build())));
                         }),
@@ -4224,7 +4224,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                     .setGas(79000)
                                                     .setRecipientContract(
                                                             spec.registry().getContractId(PRECOMPILE_CALLER))
-                                                    .setGasUsed(5232)
+                                                    .setGasUsed(6661)
                                                     .setInput(encodeFunctionCall(
                                                             PRECOMPILE_CALLER,
                                                             "callSha256AndIsToken",
@@ -4240,7 +4240,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                     .setCallOperationType(CallOperationType.OP_STATICCALL)
                                                     .setCallingContract(
                                                             spec.registry().getContractId(PRECOMPILE_CALLER))
-                                                    .setGas(76587)
+                                                    .setGas(76038)
                                                     // SHA 256 precompile address is
                                                     // 0x02
                                                     .setRecipientContract(ContractID.newBuilder()
@@ -4256,7 +4256,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                     .setCallOperationType(CallOperationType.OP_CALL)
                                                     .setCallingContract(
                                                             spec.registry().getContractId(PRECOMPILE_CALLER))
-                                                    .setGas(73240)
+                                                    .setGas(72229)
                                                     // HTS precompile address is
                                                     // 0x167
                                                     .setRecipientContract(ContractID.newBuilder()
@@ -5160,12 +5160,10 @@ public class TraceabilitySuite extends HapiSuite {
                 ? HapiSpec.ciPropOverrides().get(RECORD_STREAM_FOLDER_PATH_PROPERTY_KEY)
                 : HapiSpecSetup.getDefaultPropertySource().get(RECORD_STREAM_FOLDER_PATH_PROPERTY_KEY);
 
-        {
-            final var absolutePath =
-                    Paths.get(recordStreamFolderPath).toAbsolutePath().toString();
-            log.info("recordStreamFolderPath from config %s: %s (absolute %s)"
-                    .formatted(HapiSpec.isRunningInCi() ? "CI" : "not CI", recordStreamFolderPath, absolutePath));
-        }
+        final var absolutePath =
+                Paths.get(recordStreamFolderPath).toAbsolutePath().toString();
+        log.info("recordStreamFolderPath from config %s: %s (absolute %s)"
+                .formatted(HapiSpec.isRunningInCi() ? "CI" : "not CI", recordStreamFolderPath, absolutePath));
 
         sidecarWatcher = new SidecarWatcher(Paths.get(recordStreamFolderPath));
         sidecarWatcher.watch();
