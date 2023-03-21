@@ -247,7 +247,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                 .when(
                         newKeyNamed(DELEGATE_KEY).shape(delegateContractKeyShape.signedWith(sigs(ON, BURN_TOKEN))),
                         tokenUpdate(TOKEN_USAGE).supplyKey(DELEGATE_KEY),
-                        contractCall(BURN_TOKEN, BURN_TOKEN_METHOD, BigInteger.ONE, new long[0])
+                        contractCall(BURN_TOKEN, BURN_TOKEN_METHOD, 1L, new long[0])
                                 .via("burn with delegate contract key")
                                 .gas(GAS_TO_OFFER),
                         childRecordsCheck(
@@ -267,7 +267,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                 .then(
                         newKeyNamed(CONTRACT_KEY).shape(contractKeyShape.signedWith(sigs(ON, BURN_TOKEN))),
                         tokenUpdate(TOKEN_USAGE).supplyKey(CONTRACT_KEY),
-                        contractCall(BURN_TOKEN, BURN_TOKEN_METHOD, BigInteger.ONE, new long[0])
+                        contractCall(BURN_TOKEN, BURN_TOKEN_METHOD, 1L, new long[0])
                                 .via(BURN_WITH_CONTRACT_KEY)
                                 .gas(GAS_TO_OFFER),
                         childRecordsCheck(
@@ -427,7 +427,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                         OUTER_CONTRACT,
                                         "burnDelegateCall",
                                         HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
-                                        BigInteger.ZERO,
+                                        0L,
                                         new long[] {1L})
                                 .payingWith(GENESIS)
                                 .via(DELEGATE_BURN_CALL_WITH_CONTRACT_KEY_TXN)
@@ -472,7 +472,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                         OUTER_CONTRACT,
                                         "mintDelegateCall",
                                         HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
-                                        BigInteger.ONE)
+                                        1L)
                                 .payingWith(GENESIS)
                                 .via(DELEGATE_BURN_CALL_WITH_CONTRACT_KEY_TXN)
                                 .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
@@ -838,7 +838,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                         "mintTokenCall",
                                         HapiParserUtil.asHeadlongAddress(
                                                 asAddress(spec.registry().getTokenID(TYPE_OF_TOKEN))),
-                                        BigInteger.valueOf(amount),
+                                        amount,
                                         new byte[][] {})
                                 .via(firstMintTxn)
                                 .payingWith(ACCOUNT_NAME))))
@@ -891,7 +891,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                         "mintTokenCall",
                                         HapiParserUtil.asHeadlongAddress(
                                                 asAddress(spec.registry().getTokenID(TYPE_OF_TOKEN))),
-                                        BigInteger.valueOf(amount),
+                                        amount,
                                         new byte[][] {})
                                 .via(firstMintTxn)
                                 .payingWith(ACCOUNT_NAME))))
@@ -1260,7 +1260,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                 .when(
                         newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, BURN_TOKEN))),
                         tokenUpdate(TOKEN_USAGE).supplyKey(DELEGATE_KEY),
-                        contractCall(BURN_TOKEN, BURN_TOKEN_METHOD, BigInteger.ONE, new long[0])
+                        contractCall(BURN_TOKEN, BURN_TOKEN_METHOD, 1L, new long[0])
                                 .via(BURN_WITH_CONTRACT_KEY)
                                 .gas(GAS_TO_OFFER),
                         childRecordsCheck(
@@ -2391,7 +2391,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                 .when(
                         newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, BURN_TOKEN))),
                         tokenUpdate(TOKEN_USAGE).supplyKey(CONTRACT_KEY),
-                        contractCall(BURN_TOKEN, BURN_TOKEN_METHOD, BigInteger.ONE, new long[0])
+                        contractCall(BURN_TOKEN, BURN_TOKEN_METHOD, 1L, new long[0])
                                 .via(BURN_WITH_CONTRACT_KEY)
                                 .gas(GAS_TO_OFFER),
                         childRecordsCheck(
@@ -2437,7 +2437,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                         "burnTokenCall",
                                         HapiParserUtil.asHeadlongAddress(
                                                 asAddress(spec.registry().getTokenID(TYPE_OF_TOKEN))),
-                                        BigInteger.ONE,
+                                        1L,
                                         new long[0])
                                 .via(firstBurnTxn)
                                 .payingWith(ACCOUNT_NAME)
@@ -2449,7 +2449,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                         "burnTokenCall",
                                         HapiParserUtil.asHeadlongAddress(
                                                 asAddress(spec.registry().getTokenID(TYPE_OF_TOKEN))),
-                                        BigInteger.ONE,
+                                        1L,
                                         new long[0])
                                 .via(secondBurnTxn)
                                 .payingWith(ACCOUNT_NAME)

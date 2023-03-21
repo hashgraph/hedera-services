@@ -3,7 +3,8 @@ pragma solidity >=0.5.0 <0.9.0;
 pragma experimental ABIEncoderV2;
 
 import "./KeyHelper.sol";
-import "./HederaTokenService.sol";
+import "./IHederaTokenService.sol";
+import "./HederaResponseCodes.sol";
 
 contract MinimalTokenCreations is KeyHelper {
     IHederaTokenService HTS = IHederaTokenService(address(0x167));
@@ -21,7 +22,7 @@ contract MinimalTokenCreations is KeyHelper {
 
         int rc = HTS.updateTokenInfo(tokenAddress, token);
 
-        require(rc == 22);
+        require(rc == HederaResponseCodes.SUCCESS);
     }
 
     function updateTokenWithNewAutoRenewInfo(
@@ -35,7 +36,7 @@ contract MinimalTokenCreations is KeyHelper {
 
         int rc = HTS.updateTokenExpiryInfo(tokenAddress, expiry);
 
-        require(rc == 22);
+        require(rc == HederaResponseCodes.SUCCESS);
     }
 
     function makeRenewableToken(
@@ -44,8 +45,8 @@ contract MinimalTokenCreations is KeyHelper {
     ) public payable returns (address tokenAddress) {
         IHederaTokenService.HederaToken memory token = buildDefaultStructFrom(autoRenewAccount, autoRenewPeriod);
 
-        (int64 rc, address createdAddress) = HTS.createFungibleToken(token, initialTotalSupply, decimals);
-        require(rc == 22);
+        (int64 rc, address createdAddress) = HTS.createFungibleToken{value : msg.value}(token, initialTotalSupply, decimals);
+        require(rc == HederaResponseCodes.SUCCESS);
 
         tokenAddress = createdAddress;
     }
@@ -69,9 +70,9 @@ contract MinimalTokenCreations is KeyHelper {
         IHederaTokenService.FixedFee[] memory fixedFees = new IHederaTokenService.FixedFee[](0);
 
         (int rc, address createdAddress) =
-        HTS.createFungibleTokenWithCustomFees(
+        HTS.createFungibleTokenWithCustomFees{value : msg.value}(
             token, initialTotalSupply, decimals, fixedFees, fractionalFees);
-        require(rc == 22);
+        require(rc == HederaResponseCodes.SUCCESS);
 
         tokenAddress = createdAddress;
     }
@@ -103,9 +104,9 @@ contract MinimalTokenCreations is KeyHelper {
         fixedFees[0] = createFixedSelfDenominatedFee(10, feeCollector);
 
         (int rc, address createdAddress) =
-        HTS.createFungibleTokenWithCustomFees(token, initialTotalSupply, decimals, fixedFees, fractionalFees);
+        HTS.createFungibleTokenWithCustomFees{value : msg.value}(token, initialTotalSupply, decimals, fixedFees, fractionalFees);
 
-        require(rc == 22);
+        require(rc == HederaResponseCodes.SUCCESS);
 
         tokenAddress = createdAddress;
     }
@@ -161,8 +162,8 @@ contract CreationHelper is HederaTokenService {
         token.expiry = expiry;
         token.memo = "MEMO";
 
-        (int rc, address createdAddress) = HTS.createFungibleToken(token, int64(10000), int32(1));
-        require(rc == 22);
+        (int rc, address createdAddress) = HTS.createFungibleToken{value : msg.value}(token, int64(10000), int32(1));
+        require(rc == HederaResponseCodes.SUCCESS);
 
         tokenAddress = createdAddress;
     }

@@ -28,7 +28,7 @@ contract UpdateTokenInfoContract is HederaTokenService, FeeHelper {
         keys[1] = getSingleKey(KeyType.FREEZE, KeyType.WIPE, KeyValueType.SECP256K1, ecdsa); //freeze 12
         keys[2] = getSingleKey(KeyType.SUPPLY, KeyValueType.CONTRACT_ID, contractID); //supply 16
         keys[3] = getSingleKey(KeyType.PAUSE, KeyValueType.CONTRACT_ID, contractID); //pause 64
-        keys[4] = getSingleKey(KeyType.FREEZE, KeyValueType.DELEGETABLE_CONTRACT_ID, contractID); //schedule 32
+        keys[4] = getSingleKey(KeyType.FEE, KeyValueType.DELEGETABLE_CONTRACT_ID, contractID); //schedule 32
 
         name = _name;
         symbol = _symbol;
@@ -93,7 +93,7 @@ contract UpdateTokenInfoContract is HederaTokenService, FeeHelper {
         IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](5);
         keys[0] = getSingleKey(KeyType.ADMIN, KeyType.KYC, KeyValueType.ED25519, ed25519);
         keys[1] = getSingleKey(KeyType.FREEZE, KeyType.WIPE, KeyValueType.SECP256K1, ecdsa);
-        keys[2] = getSingleKey(KeyType.WIPE, KeyValueType.CONTRACT_ID, contractID);
+        keys[2] = getSingleKey(KeyType.SUPPLY, KeyValueType.CONTRACT_ID, contractID);
         keys[3] = getSingleKey(KeyType.PAUSE, KeyValueType.CONTRACT_ID, contractID);
         keys[4] = getSingleKey(KeyType.FEE, KeyValueType.DELEGETABLE_CONTRACT_ID, contractID);
 
@@ -148,7 +148,7 @@ contract UpdateTokenInfoContract is HederaTokenService, FeeHelper {
         IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](5);
         keys[0] = getSingleKey(KeyType.ADMIN, KeyType.KYC, KeyValueType.ED25519, ed25519);
         keys[1] = getSingleKey(KeyType.FREEZE, KeyType.WIPE, KeyValueType.SECP256K1, ecdsa);
-        keys[2] = getSingleKey(KeyType.WIPE, KeyValueType.CONTRACT_ID, contractID);
+        keys[2] = getSingleKey(KeyType.SUPPLY, KeyValueType.CONTRACT_ID, contractID);
         keys[3] = getSingleKey(KeyType.PAUSE, KeyValueType.CONTRACT_ID, contractID);
         keys[4] = getSingleKey(KeyType.FEE, KeyValueType.DELEGETABLE_CONTRACT_ID, contractID);
 

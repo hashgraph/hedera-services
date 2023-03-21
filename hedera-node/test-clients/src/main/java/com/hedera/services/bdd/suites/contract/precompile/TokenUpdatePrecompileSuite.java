@@ -84,7 +84,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(TokenUpdatePrecompileSuite.class);
 
-    private static final long GAS_TO_OFFER = 4_000_000L;
+    private static final long GAS_TO_OFFER = 400_000L;
     private static final long AUTO_RENEW_PERIOD = 8_000_000L;
     private static final String ACCOUNT = "account";
     private static final String VANILLA_TOKEN = "TokenD";
@@ -168,7 +168,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(MULTI_KEY),
                         cryptoCreate(ACCOUNT_TO_ASSOCIATE).key(ACCOUNT_TO_ASSOCIATE_KEY),
                         uploadInitCode(TOKEN_UPDATE_CONTRACT),
-                        contractCreate(TOKEN_UPDATE_CONTRACT),
+                        contractCreate(TOKEN_UPDATE_CONTRACT).gas(500_000),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
                                 .treasury(TOKEN_TREASURY)
@@ -278,7 +278,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         newKeyNamed(MULTI_KEY).shape(ED25519_ON),
                         cryptoCreate(ACCOUNT).key(MULTI_KEY).balance(ONE_MILLION_HBARS),
                         uploadInitCode(TOKEN_UPDATE_CONTRACT),
-                        contractCreate(TOKEN_UPDATE_CONTRACT),
+                        contractCreate(TOKEN_UPDATE_CONTRACT).gas(500_000),
                         tokenCreate(NO_ADMIN_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                                 .treasury(TOKEN_TREASURY)
@@ -350,7 +350,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         newKeyNamed(MULTI_KEY).shape(ED25519_ON),
                         cryptoCreate(ACCOUNT).key(MULTI_KEY).balance(ONE_MILLION_HBARS),
                         uploadInitCode(TOKEN_UPDATE_CONTRACT),
-                        contractCreate(TOKEN_UPDATE_CONTRACT),
+                        contractCreate(TOKEN_UPDATE_CONTRACT).gas(500_000),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
                                 .treasury(TOKEN_TREASURY)
@@ -423,7 +423,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .maxAutomaticTokenAssociations(100),
                         cryptoCreate(ACCOUNT_TO_ASSOCIATE).key(ACCOUNT_TO_ASSOCIATE_KEY),
                         uploadInitCode(TOKEN_UPDATE_CONTRACT),
-                        contractCreate(TOKEN_UPDATE_CONTRACT),
+                        contractCreate(TOKEN_UPDATE_CONTRACT).gas(500_000),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
                                 .treasury(TOKEN_TREASURY)
@@ -642,7 +642,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(MULTI_KEY),
                         cryptoCreate(ACCOUNT_TO_ASSOCIATE).key(ACCOUNT_TO_ASSOCIATE_KEY),
                         uploadInitCode(TOKEN_UPDATE_CONTRACT),
-                        contractCreate(TOKEN_UPDATE_CONTRACT),
+                        contractCreate(TOKEN_UPDATE_CONTRACT).gas(500_000),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
                                 .treasury(TOKEN_TREASURY)
@@ -690,7 +690,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(MULTI_KEY),
                         cryptoCreate(ACCOUNT_TO_ASSOCIATE).key(ACCOUNT_TO_ASSOCIATE_KEY),
                         uploadInitCode(TOKEN_UPDATE_CONTRACT),
-                        contractCreate(TOKEN_UPDATE_CONTRACT),
+                        contractCreate(TOKEN_UPDATE_CONTRACT).gas(500_000),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
                                 .treasury(TOKEN_TREASURY)
@@ -880,7 +880,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         cryptoCreate(ACCOUNT).key(MULTI_KEY).balance(ONE_MILLION_HBARS),
                         cryptoCreate(ACCOUNT_TO_ASSOCIATE).key(ACCOUNT_TO_ASSOCIATE_KEY),
                         uploadInitCode(TOKEN_UPDATE_CONTRACT),
-                        contractCreate(TOKEN_UPDATE_CONTRACT),
+                        contractCreate(TOKEN_UPDATE_CONTRACT).gas(500_000),
                         tokenCreate(NFT_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                                 .treasury(TOKEN_TREASURY)
@@ -946,7 +946,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         cryptoCreate(ACCOUNT).key(MULTI_KEY).balance(ONE_MILLION_HBARS),
                         cryptoCreate(ACCOUNT_TO_ASSOCIATE).key(ACCOUNT_TO_ASSOCIATE_KEY),
                         uploadInitCode(TOKEN_UPDATE_CONTRACT),
-                        contractCreate(TOKEN_UPDATE_CONTRACT),
+                        contractCreate(TOKEN_UPDATE_CONTRACT).gas(500_000),
                         tokenCreate(NFT_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                                 .treasury(TOKEN_TREASURY)
@@ -1020,7 +1020,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         newKeyNamed(MULTI_KEY).shape(ED25519_ON),
                         cryptoCreate(ACCOUNT).key(MULTI_KEY).balance(ONE_MILLION_HBARS),
                         uploadInitCode(TOKEN_UPDATE_CONTRACT),
-                        contractCreate(TOKEN_UPDATE_CONTRACT),
+                        contractCreate(TOKEN_UPDATE_CONTRACT).gas(500_000),
                         tokenCreate(NFT_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                                 .treasury(TOKEN_TREASURY)

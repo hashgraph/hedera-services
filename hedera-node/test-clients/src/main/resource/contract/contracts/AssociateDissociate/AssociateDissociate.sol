@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.12;
 
-import "./HederaTokenService.sol";
+import "./HederaResponseCodes.sol";
+import "./IHederaTokenService.sol";
 
-contract AssociateDissociateContract is HederaTokenService {
+contract AssociateDissociateContract {
+
+    IHederaTokenService HederaTokenService = IHederaTokenService(address(0x167));
 
     function tokenAssociate(address sender, address tokenAddress) external {
         int response = HederaTokenService.associateToken(sender, tokenAddress);

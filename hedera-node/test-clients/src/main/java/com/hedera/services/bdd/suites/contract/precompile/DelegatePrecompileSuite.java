@@ -55,7 +55,6 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
-import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
@@ -178,7 +177,7 @@ public class DelegatePrecompileSuite extends HapiSuite {
                                         OUTER_CONTRACT,
                                         "burnDelegateCall",
                                         HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
-                                        BigInteger.ZERO,
+                                        0L,
                                         new long[] {1L})
                                 .payingWith(GENESIS)
                                 .via(DELEGATE_BURN_CALL_WITH_DELEGATE_CONTRACT_KEY_TXN)
@@ -224,7 +223,7 @@ public class DelegatePrecompileSuite extends HapiSuite {
                                         OUTER_CONTRACT,
                                         "mintDelegateCall",
                                         HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())),
-                                        BigInteger.ONE)
+                                        1L)
                                 .payingWith(GENESIS)
                                 .via(DELEGATE_BURN_CALL_WITH_DELEGATE_CONTRACT_KEY_TXN)
                                 .gas(GAS_TO_OFFER))))

@@ -31,8 +31,9 @@ public class FunctionParameters {
         return new FunctionParameters();
     }
 
-    private static final int ABI_ID_MINT_TOKEN = 0x278e0b88;
-    private static final TupleType mintTokenType = TupleType.parse("(address,uint64,bytes[])");
+    // mintToken(address token, int64 amount, bytes[] memory metadata)
+    private static final int ABI_ID_MINT_TOKEN = 0xe0f4059a;
+    private static final TupleType mintTokenType = TupleType.parse("(address,int64,bytes[])");
 
     public enum PrecompileFunction {
         MINT
@@ -70,10 +71,10 @@ public class FunctionParameters {
         var functionParams = Bytes.EMPTY;
 
         if (MINT.equals(precompileFunction)) {
-            functionHash = Bytes.ofUnsignedInt(ABI_ID_MINT_TOKEN);
+            functionHash = Bytes.ofUnsignedInt(ABI_ID_MINT_TOKEN & 0xffffffffL);
             final var result = Tuple.of(
                     convertBesuAddressToHeadlongAddress(tokenAddress),
-                    BigInteger.valueOf(amount),
+                    amount,
                     metadata.stream().map(String::getBytes).toArray(byte[][]::new));
             functionParams = Bytes.wrap(mintTokenType.encode(result).array());
         }

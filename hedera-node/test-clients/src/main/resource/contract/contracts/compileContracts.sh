@@ -13,6 +13,8 @@ compileContract() {
 # should be kept up to date with HederaTokenService
 
 compileContract AssociateDissociate
+# the ABI json file is hand crafted for a specific test
+git checkout -- AssociateDissociate/AssociateDissociate.json
 
 compileContract AssociateTryCatch  --include-path ./CalledContract
 
@@ -123,6 +125,8 @@ compileContract ServiceContract
 compileContract SomeERC20Scenarios --include-path ../solidity
 
 compileContract SomeERC721Scenarios --include-path ../solidity
+# the ABI json file is hand crafted for a specific test
+git checkout -- SomeERC721Scenarios/SomeERC721Scenarios.json
 
 compileContract StaticContract  --include-path ServiceContract
 
