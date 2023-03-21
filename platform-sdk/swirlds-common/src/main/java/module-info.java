@@ -154,6 +154,7 @@ module com.swirlds.common {
 
     exports com.swirlds.common.metrics.extensions;
 
+    requires com.swirlds.base;
     requires com.swirlds.config;
     requires com.swirlds.logging;
     requires java.desktop;
@@ -181,4 +182,5 @@ module com.swirlds.common {
     /* Prometheus Java client */
     requires io.prometheus.simpleclient;
     requires io.prometheus.simpleclient.httpserver;
+    requires static com.github.spotbugs.annotations;
 }

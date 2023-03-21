@@ -16,14 +16,16 @@
 
 package com.hedera.node.app.service.consensus.impl.handlers;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
-import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
+import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusDeleteTopicRecordBuilder;
-import com.hedera.node.app.service.consensus.impl.records.ConsensusUpdateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.DeleteTopicRecordBuilder;
-import com.hedera.node.app.spi.meta.HandleContext;
+import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
@@ -74,20 +76,43 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
     /**
      * Given the appropriate context, deletes a topic.
      *
-     * TODO: Provide access to writable topic store.
-     *
-     * @param handleContext the {@link HandleContext} for the active transaction
-     * @param topicDeletion the {@link ConsensusDeleteTopicTransactionBody} of the active transaction
-     * @param consensusServiceConfig the {@link ConsensusServiceConfig} for the active transaction
-     * @param recordBuilder the {@link ConsensusUpdateTopicRecordBuilder} for the active transaction
+     * @param op the {@link ConsensusDeleteTopicTransactionBody} of the active transaction
+     * @param topicStore the {@link WritableTopicStore} to use to delete the topic
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void handle(
-            @NonNull final HandleContext handleContext,
-            @NonNull final ConsensusDeleteTopicTransactionBody topicDeletion,
-            @NonNull final ConsensusServiceConfig consensusServiceConfig,
-            @NonNull final ConsensusDeleteTopicRecordBuilder recordBuilder) {
-        throw new UnsupportedOperationException("Not implemented");
+            @NonNull final ConsensusDeleteTopicTransactionBody op, @NonNull final WritableTopicStore topicStore) {
+        var topicId = op.getTopicID();
+
+        var optionalTopic = topicStore.get(topicId.getTopicNum());
+
+        /* If the topic doesn't exist, return INVALID_TOPIC_ID */
+        if (optionalTopic.isEmpty()) {
+            throw new HandleStatusException(INVALID_TOPIC_ID);
+        }
+        final var topic = optionalTopic.get();
+
+        /* Topics without adminKeys can't be deleted.*/
+        if (topic.adminKey() == null) {
+            throw new HandleStatusException(UNAUTHORIZED);
+        }
+
+        /* Copy all the fields from existing topic and change deleted flag */
+        final var topicBuilder = new Topic.Builder()
+                .topicNumber(topic.topicNumber())
+                .adminKey(topic.adminKey())
+                .submitKey(topic.submitKey())
+                .autoRenewAccountNumber(topic.autoRenewAccountNumber())
+                .autoRenewPeriod(topic.autoRenewPeriod())
+                .expiry(topic.expiry())
+                .memo(topic.memo())
+                .runningHash(topic.runningHash())
+                .sequenceNumber(topic.sequenceNumber());
+        topicBuilder.deleted(true);
+
+        /* --- Put the modified topic. It will be in underlying state's modifications map.
+        It will not be committed to state until commit is called on the state.--- */
+        topicStore.put(topicBuilder.build());
     }
 
     /**

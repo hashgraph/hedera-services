@@ -16,14 +16,16 @@
 
 package com.hedera.node.app.service.consensus.impl;
 
+import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.hapi.node.state.consensus.parser.TopicProtoParser;
+import com.hedera.hapi.node.state.consensus.writer.TopicWriter;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.serdes.EntityNumSerdes;
-import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.app.spi.state.serdes.MonoMapSerdesAdapter;
+import com.hedera.node.app.spi.state.serdes.SerdesFactory;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
@@ -35,6 +37,7 @@ public final class ConsensusServiceImpl implements ConsensusService {
     private static final SemanticVersion CURRENT_VERSION =
             SemanticVersion.newBuilder().setMinor(34).build();
     public static final long RUNNING_HASH_VERSION = 3L;
+    public static final int RUNNING_HASH_BYTE_ARRAY_SIZE = 48;
     public static final String TOPICS_KEY = "TOPICS";
 
     @Override
@@ -52,10 +55,11 @@ public final class ConsensusServiceImpl implements ConsensusService {
         };
     }
 
-    private StateDefinition<EntityNum, MerkleTopic> topicsDef() {
+    private StateDefinition<EntityNum, Topic> topicsDef() {
         final var keySerdes = new EntityNumSerdes();
-        final var valueSerdes =
-                MonoMapSerdesAdapter.serdesForSelfSerializable(MerkleTopic.CURRENT_VERSION, MerkleTopic::new);
+
+        final var valueSerdes = SerdesFactory.newInMemorySerdes(TopicProtoParser::parse, TopicWriter::write);
+
         return StateDefinition.inMemory(TOPICS_KEY, keySerdes, valueSerdes);
     }
 }

@@ -98,11 +98,12 @@ import com.swirlds.platform.components.EventIntake;
 import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.EventTaskCreator;
 import com.swirlds.platform.components.EventTaskDispatcher;
-import com.swirlds.platform.components.SystemTransactionHandlerImpl;
-import com.swirlds.platform.components.TransThrottleSyncAndCreateRules;
-import com.swirlds.platform.components.TransactionTracker;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
 import com.swirlds.platform.components.state.StateManagementComponent;
+import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManagerFactory;
+import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManagerFactory;
 import com.swirlds.platform.components.wiring.ManualWiring;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.crypto.CryptoStatic;
@@ -205,7 +206,6 @@ import com.swirlds.platform.util.PlatformComponents;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -261,8 +261,10 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private final int instanceNumber;
     /** parameters given to the app when it starts */
     private final String[] parameters;
-    /** Handles all system transactions */
-    private final SystemTransactionHandlerImpl systemTransactionHandler;
+    /** Handles all system transactions pre-consensus */
+    private final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager;
+    /** Handles all system transactions post-consensus */
+    private final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager;
     /** The platforms freeze manager */
     private final FreezeManager freezeManager;
     /** is used for pausing event creation for a while at start up */
@@ -339,8 +341,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private final StateManagementComponent stateManagementComponent;
     /** last time stamp when pause check timer is active */
     private long pauseCheckTimeStamp;
-    /** Tracks user transactions in the hashgraph */
-    private TransactionTracker transactionTracker;
     /** Tracks recent events created in the network */
     private CriticalQuorum criticalQuorum;
 
@@ -549,7 +549,13 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             new BackgroundHashChecker(threadManager, stateManagementComponent::getLatestSignedState);
         }
 
-        systemTransactionHandler = new SystemTransactionHandlerImpl(stateManagementComponent::handleStateSignature);
+        preConsensusSystemTransactionManager = new PreConsensusSystemTransactionManagerFactory()
+                .addHandlers(stateManagementComponent.getPreConsensusHandleMethods())
+                .build();
+
+        postConsensusSystemTransactionManager = new PostConsensusSystemTransactionManagerFactory()
+                .addHandlers(stateManagementComponent.getPostConsensusHandleMethods())
+                .build();
 
         consensusRef = new AtomicReference<>();
 
@@ -826,8 +832,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             chatterCore.loadFromSignedState(signedState);
         }
 
-        transactionTracker.reset();
-
         logger.info(
                 STARTUP.getMarker(),
                 "Last known events after restart are {}",
@@ -950,8 +954,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 swirldStateManager::submitTransaction,
                 new TransactionMetrics(metrics));
 
-        this.transactionTracker = new TransactionTracker();
-
         if (loadedState.signedStateFromDisk != null) {
             loadIntoConsensusAndEventMapper(loadedState.signedStateFromDisk);
         } else {
@@ -1013,7 +1015,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 preConsensusEventHandler,
                 eventMapper,
                 addedEventMetrics,
-                transactionTracker,
                 criticalQuorum,
                 eventIntakeMetrics);
         if (settings.getChatter().isChatterUsed()) {
@@ -1064,7 +1065,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     eventIntake::addEvent,
                     eventMapper,
                     eventMapper,
-                    transactionTracker,
                     swirldStateManager.getTransactionPool(),
                     freezeManager::isFreezeStarted,
                     new EventCreationRules(List.of()));
@@ -1148,12 +1148,11 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             final State state, final QueueThread<SignedState> stateHashSignQueueThread) {
 
         swirldStateManager = PlatformConstructor.swirldStateManager(
-                threadManager,
                 selfId,
-                systemTransactionHandler,
+                preConsensusSystemTransactionManager,
+                postConsensusSystemTransactionManager,
                 metrics,
                 PlatformConstructor.settingsProvider(),
-                this::estimateTime,
                 freezeManager::isFreezeStarted,
                 state);
 
@@ -1168,7 +1167,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 selfId.getId(),
                 PlatformConstructor.settingsProvider(),
                 swirldStateManager,
-                new ConsensusHandlingMetrics(metrics),
+                new ConsensusHandlingMetrics(metrics, time),
                 eventStreamManager,
                 stateHashSignQueueThread,
                 freezeManager::freezeStarted,
@@ -1187,12 +1186,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 selfId,
                 new EventCreationRules(List.of(
                         selfId, swirldStateManager.getTransactionPool(), startUpEventFrozenManager, freezeManager)),
-                List.of(freezeManager, startUpEventFrozenManager),
-                new TransThrottleSyncAndCreateRules(
-                        List.of(swirldStateManager.getTransactionPool(), swirldStateManager)),
-                stateManagementComponent::getLastRoundSavedToDisk,
-                stateManagementComponent::getLastCompleteRound,
-                transactionTracker,
                 criticalQuorum,
                 initialAddressBook,
                 fallenBehindManager));
@@ -1657,13 +1650,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     }
 
     /**
-     * @return the object that tracks user transactions in the hashgraph
-     */
-    TransactionTracker getTransactionTracker() {
-        return transactionTracker;
-    }
-
-    /**
      * Checks the status of the platform and notifies the SwirldMain if there is a change in status
      */
     void checkPlatformStatus() {
@@ -1712,7 +1698,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * {@inheritDoc}
      */
     @Override
-    public void connectionClosed(final boolean outbound) {
+    public void connectionClosed(final boolean outbound, final Connection conn) {
         final int connectionNumber = activeConnectionNumber.decrementAndGet();
         if (connectionNumber < 0) {
             logger.error(EXCEPTION.getMarker(), "activeConnectionNumber is {}, this is a bug!", connectionNumber);
@@ -1724,6 +1710,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         } else {
             platformMetrics.incrementInterruptedRecSyncs();
         }
+        networkMetrics.recordDisconnect(conn);
     }
 
     /**
@@ -1753,46 +1740,40 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         return transactionSubmitter.submitTransaction(new SwirldTransaction(trans));
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public Instant estimateTime() {
-        // Estimated consensus times are predicted only here and in Event.estimateTime().
-
-        /* seconds from self creating an event to self creating the next event */
-        double c2c = 1.0 / Math.max(0.5, addedEventMetrics.getEventsCreatedPerSecond());
-        /* seconds from self creating an event to the consensus timestamp that event receives */
-        double c2t = consensusMetrics.getAvgSelfCreatedTimestamp();
-
-        // for now, just use 0. A more sophisticated formula could be used
-        c2c = 0;
-        c2t = 0;
-
-        return Instant.now().plus((long) ((c2c / 2.0 + c2t) * 1_000_000_000.0), ChronoUnit.NANOS);
-    }
-
     /**
      * {@inheritDoc}
      */
     @Override
     public PlatformEvent[] getAllEvents() {
-        final EventImpl[] allEvents = shadowGraph.getAllEvents();
-        Arrays.sort(allEvents, (o1, o2) -> {
-            if (o1.getConsensusOrder() != -1 && o2.getConsensusOrder() != -1) {
-                // both are consensus
-                return Long.compare(o1.getConsensusOrder(), o2.getConsensusOrder());
-            } else if (o1.getConsensusTimestamp() == null && o2.getConsensusTimestamp() == null) {
-                // neither are consensus
-                return o1.getTimeReceived().compareTo(o2.getTimeReceived());
-            } else {
-                // one is consensus, the other is not
-                if (o1.getConsensusTimestamp() == null) {
-                    return 1;
-                } else {
-                    return -1;
-                }
+        // There is currently a race condition that can cause an exception if event order changes at
+        // just the right moment. Since this is just a testing utility method and not used in production
+        // environments, we can just retry until we succeed.
+        int maxRetries = 100;
+        while (maxRetries-- > 0) {
+            try {
+                final EventImpl[] allEvents = shadowGraph.getAllEvents();
+                Arrays.sort(allEvents, (o1, o2) -> {
+                    if (o1.getConsensusOrder() != -1 && o2.getConsensusOrder() != -1) {
+                        // both are consensus
+                        return Long.compare(o1.getConsensusOrder(), o2.getConsensusOrder());
+                    } else if (o1.getConsensusTimestamp() == null && o2.getConsensusTimestamp() == null) {
+                        // neither are consensus
+                        return o1.getTimeReceived().compareTo(o2.getTimeReceived());
+                    } else {
+                        // one is consensus, the other is not
+                        if (o1.getConsensusTimestamp() == null) {
+                            return 1;
+                        } else {
+                            return -1;
+                        }
+                    }
+                });
+                return allEvents;
+            } catch (final IllegalArgumentException e) {
+                logger.error(EXCEPTION.getMarker(), "Exception while sorting events", e);
             }
-        });
-        return allEvents;
+        }
+        throw new IllegalStateException("Unable to sort events after 100 retries");
     }
 
     /**
@@ -1967,15 +1948,13 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     }
 
     /**
-     * check whether the given event is the last event in its round, and the platform enters freeze period, or whether
-     * this event is the last event before shutdown
+     * check whether the given event is the last event in its round, and the platform enters freeze period
      *
      * @param event a consensus event
      * @return whether this event is the last event to be added before restart
      */
     private boolean isLastEventBeforeRestart(final EventImpl event) {
-        return (event.isLastInRoundReceived() && swirldStateManager.isInFreezePeriod(event.getConsensusTimestamp()))
-                || event.isLastOneBeforeShutdown();
+        return event.isLastInRoundReceived() && swirldStateManager.isInFreezePeriod(event.getConsensusTimestamp());
     }
 
     /**

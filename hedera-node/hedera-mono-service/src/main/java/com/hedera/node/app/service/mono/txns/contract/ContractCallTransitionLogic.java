@@ -21,7 +21,6 @@ import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.E
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -126,7 +125,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
                 && properties.isLazyCreationEnabled()) {
             // allow Ethereum transactions to lazy create a hollow account
             // if `to` is non-existent and `value` is non-zero
-            validateTrue(op.getAmount() > 0, INVALID_ACCOUNT_ID);
+            validateTrue(op.getAmount() > 0, INVALID_CONTRACT_ID);
             final var evmAddress = op.getContractID().getEvmAddress();
             validateTrue(evmAddress.size() == EVM_ADDRESS_SIZE, INVALID_CONTRACT_ID);
             receiver = new Account(evmAddress);

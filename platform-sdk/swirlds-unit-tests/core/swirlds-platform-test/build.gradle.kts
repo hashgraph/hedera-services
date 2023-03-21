@@ -26,6 +26,7 @@ extraJavaModuleInfo { failOnMissingModuleInfo.set(false) }
 dependencies {
   // Individual Dependencies
   implementation(project(":swirlds-platform-core"))
+  compileOnly(libs.spotbugs.annotations)
 
   // Test Dependencies
 
