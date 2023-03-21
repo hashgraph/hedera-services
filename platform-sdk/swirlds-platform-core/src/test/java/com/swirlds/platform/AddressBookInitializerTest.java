@@ -365,18 +365,12 @@ class AddressBookInitializerTest {
     private Supplier<SwirldState> getMockSwirldStateSupplier(int scenario) {
 
         final AtomicReference<AddressBook> configAddressBook = new AtomicReference<>();
-        final AtomicReference<AddressBook> stateAddressBook = new AtomicReference<>();
         final SwirldState swirldState = mock(SwirldState.class);
 
-        final OngoingStubbing<AddressBook> stub = when(swirldState.updateStake(
-                argThat(confAB -> {
-                    configAddressBook.set(confAB);
-                    return true;
-                }),
-                argThat(stateAB -> {
-                    stateAddressBook.set(stateAB);
-                    return true;
-                })));
+        final OngoingStubbing<AddressBook> stub = when(swirldState.updateStake(argThat(confAB -> {
+            configAddressBook.set(confAB);
+            return true;
+        })));
 
         switch (scenario) {
             case 0:
@@ -452,25 +446,42 @@ class AddressBookInitializerTest {
         Objects.requireNonNull(configAddressBook, "The initializedAddressBook must not be null.");
         final Path addressBookDirectory = initializer.getPathToAddressBookDirectory();
         assertEquals(
-                1,
+                2,
                 Arrays.stream(addressBookDirectory.toFile().listFiles()).count(),
                 "There should be exactly one file in the test directory.");
-        final File file = addressBookDirectory.toFile().listFiles()[0];
-        final String fileContent = Files.readString(file.toPath());
+        final File[] files = addressBookDirectory.toFile().listFiles();
+        final File debugFile;
+        final File usedFile;
+        if (files[0].toString().contains("debug")) {
+            debugFile = files[0];
+            usedFile = files[1];
+        } else {
+            debugFile = files[1];
+            usedFile = files[0];
+        }
+        final String debugFileContent = Files.readString(debugFile.toPath());
+        final String usedFileContent = Files.readString(usedFile.toPath());
 
-        // check configAddressBook content
+        // check used AddressBook content
+        final String usedAddressBookText = usedAddressBook.toConfigText();
+        assertEquals(
+                usedAddressBookText,
+                usedFileContent,
+                "The used file content is not the same as the used address book.");
+
+        // check debug AddressBook content
         final String configText = CONFIG_ADDRESS_BOOK_HEADER + "\n" + configAddressBook.toConfigText();
         assertTrue(
-                fileContent.contains(configText),
-                "The configAddressBook content is not:\n" + configText + "\n\n fileContent:\n" + fileContent);
+                debugFileContent.contains(configText),
+                "The configAddressBook content is not:\n" + configText + "\n\n debugFileContent:\n" + debugFileContent);
 
         // check stateAddressBook content
         final String stateText = stateAddressBook == null
                 ? STATE_ADDRESS_BOOK_HEADER + "\n" + STATE_ADDRESS_BOOK_NULL
                 : STATE_ADDRESS_BOOK_HEADER + "\n" + stateAddressBook.toConfigText();
         assertTrue(
-                fileContent.contains(stateText),
-                "The stateAddressBook content is not:\n" + stateText + "\n\n fileContent:\n" + fileContent);
+                debugFileContent.contains(stateText),
+                "The stateAddressBook content is not:\n" + stateText + "\n\n debugFileContent:\n" + debugFileContent);
 
         // check usedAddressBook content
         String usedText = USED_ADDRESS_BOOK_HEADER + "\n";
@@ -482,7 +493,7 @@ class AddressBookInitializerTest {
             usedText += usedAddressBook.toConfigText();
         }
         assertTrue(
-                fileContent.contains(usedText),
-                "The usedAddressBook content is not:\n" + usedText + "\n\n fileContent:\n" + fileContent);
+                debugFileContent.contains(usedText),
+                "The usedAddressBook content is not:\n" + usedText + "\n\n debugFileContent:\n" + debugFileContent);
     }
 }

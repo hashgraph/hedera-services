@@ -112,11 +112,9 @@ public interface SwirldState extends MerkleNode {
      *
      * @param configAddressBook the address book as loaded from config.txt. This address book may contain new nodes not
      *                          present in the stateAddressBook. Must not be null.
-     * @param stateAddressBook  the address book loaded from the latest state on disk, or null if starting from genesis.
-     *                          May be null.
      * @return a copy of the configuration address book with updated stake.
      */
-    default AddressBook updateStake(final AddressBook configAddressBook, final AddressBook stateAddressBook) {
+    default AddressBook updateStake(final AddressBook configAddressBook) {
         return configAddressBook;
     }
 

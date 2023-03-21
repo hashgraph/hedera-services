@@ -160,7 +160,7 @@ public class AddressBookInitializer {
                             + "genesisSwirldState.updateStake(configAddressBook, null).");
             final SwirldState genesisState = genesisSupplier.get();
             candidateAddressBook =
-                    genesisState.updateStake(configAddressBook.copy(), null).copy();
+                    genesisState.updateStake(configAddressBook.copy()).copy();
             genesisState.release();
         } else {
             final SoftwareVersion loadedSoftwareVersion = loadedSignedState
@@ -188,7 +188,7 @@ public class AddressBookInitializer {
                         currentVersion);
                 candidateAddressBook = loadedSignedState
                         .getSwirldState()
-                        .updateStake(configAddressBook.copy(), loadedAddressBook.copy())
+                        .updateStake(configAddressBook.copy())
                         .copy();
             }
         }
@@ -232,12 +232,13 @@ public class AddressBookInitializer {
      * @param usedAddressBook the address book to be returned from the AddressBookInitializer.
      */
     private void recordAddressBooks(@NonNull final AddressBook usedAddressBook) {
-        final String addressBookFileName =
-                ADDRESS_BOOK_FILE_PREFIX + "_" + currentVersion + "_" + DATE_TIME_FORMAT.format(Instant.now()) + ".txt";
+        final String date = DATE_TIME_FORMAT.format(Instant.now());
+        final String addressBookFileName = ADDRESS_BOOK_FILE_PREFIX + "_v" + currentVersion + "_" + date + ".txt";
+        final String addressBookDebugFileName = addressBookFileName + ".debug";
         try {
-            final File file = Path.of(this.pathToAddressBookDirectory.toString(), addressBookFileName)
+            final File debugFile = Path.of(this.pathToAddressBookDirectory.toString(), addressBookDebugFileName)
                     .toFile();
-            try (final FileWriter out = new FileWriter(file)) {
+            try (final FileWriter out = new FileWriter(debugFile)) {
                 out.write(CONFIG_ADDRESS_BOOK_HEADER + "\n");
                 out.write(configAddressBook.toConfigText() + "\n\n");
                 out.write(STATE_ADDRESS_BOOK_HEADER + "\n");
@@ -253,6 +254,11 @@ public class AddressBookInitializer {
                     out.write(usedAddressBook.toConfigText());
                 }
                 out.write("\n\n");
+            }
+            final File usedFile = Path.of(this.pathToAddressBookDirectory.toString(), addressBookFileName)
+                    .toFile();
+            try (final FileWriter out = new FileWriter(usedFile)) {
+                out.write(usedAddressBook.toConfigText());
             }
         } catch (final IOException e) {
             logger.error(EXCEPTION.getMarker(), "Not able to write address book to file. ", e);
