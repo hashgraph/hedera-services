@@ -504,6 +504,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
 
     private HapiSpec whitelistNegativeCases() {
         final AtomicLong unlistedCalleeMirrorNum = new AtomicLong();
+        final AtomicLong whitelistedCalleeMirrorNum = new AtomicLong();
         final AtomicReference<TokenID> tokenID = new AtomicReference<>();
         final AtomicReference<String> attackerMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> unListedCalleeMirrorAddr = new AtomicReference<>();
@@ -523,6 +524,12 @@ public class ApproveAllowanceSuite extends HapiSuite {
                         uploadInitCode(PRETEND_PAIR),
                         contractCreate(PRETEND_PAIR).adminKey(DEFAULT_PAYER),
                         uploadInitCode(DELEGATE_ERC_CALLEE),
+                        contractCreate(DELEGATE_ERC_CALLEE)
+                                .adminKey(DEFAULT_PAYER)
+                                .exposingNumTo(num -> {
+                                    whitelistedCalleeMirrorNum.set(num);
+                                    whitelistedCalleeMirrorAddr.set(asHexedSolidityAddress(0, 0, num));
+                                }),
                         uploadInitCode(DELEGATE_PRECOMPILE_CALLEE),
                         contractCreate(DELEGATE_PRECOMPILE_CALLEE)
                                 .adminKey(DEFAULT_PAYER)
@@ -534,6 +541,8 @@ public class ApproveAllowanceSuite extends HapiSuite {
                         tokenAssociate(DELEGATE_ERC_CALLEE, FUNGIBLE_TOKEN),
                         tokenAssociate(DELEGATE_PRECOMPILE_CALLEE, FUNGIBLE_TOKEN))
                 .when(
+                        sourcing(() -> overriding(
+                                CONTRACTS_PERMITTED_DELEGATE_CALLERS, "" + whitelistedCalleeMirrorNum.get())),
                         sourcing(() -> contractCall(
                                         PRETEND_PAIR,
                                         CALL_TO,
