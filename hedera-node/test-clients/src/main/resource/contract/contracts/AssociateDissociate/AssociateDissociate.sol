@@ -6,7 +6,7 @@ import "./IHederaTokenService.sol";
 
 contract AssociateDissociateContract {
 
-    IHederaTokenService HederaTokenService = IHederaTokenService(address(0x167));
+    IHederaTokenService constant HederaTokenService = IHederaTokenService(address(0x167));
 
     function tokenAssociate(address sender, address tokenAddress) external {
         int response = HederaTokenService.associateToken(sender, tokenAddress);

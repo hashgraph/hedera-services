@@ -6,7 +6,7 @@ import "./IHederaTokenService.sol";
 import "./FeeHelper.sol";
 
 contract BadRelayClient is FeeHelper {
-    IHederaTokenService HTS = IHederaTokenService(address(0x167));
+    IHederaTokenService constant HTS = IHederaTokenService(address(0x167));
 
     function stealFrom(address haplessRelayer, address exploitTokenAddress) public payable {
         int rc = HTS.associateToken(haplessRelayer, exploitTokenAddress);

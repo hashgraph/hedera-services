@@ -6,7 +6,7 @@ import "./IHederaTokenService.sol";
 import "./HederaResponseCodes.sol";
 
 contract CryptoTransfer {
-    IHederaTokenService HTS = IHederaTokenService(address(0x167));
+    IHederaTokenService constant HTS = IHederaTokenService(address(0x167));
 
     constructor() public {
     }

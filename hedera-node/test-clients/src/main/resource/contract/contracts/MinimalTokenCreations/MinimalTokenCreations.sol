@@ -7,7 +7,7 @@ import "./IHederaTokenService.sol";
 import "./HederaResponseCodes.sol";
 
 contract MinimalTokenCreations is KeyHelper {
-    IHederaTokenService HTS = IHederaTokenService(address(0x167));
+    IHederaTokenService constant HTS = IHederaTokenService(address(0x167));
 
     int32 decimals = 1;
     int64 initialTotalSupply = 10000;
@@ -142,7 +142,7 @@ contract MinimalTokenCreations is KeyHelper {
 }
 
 contract CreationHelper is HederaTokenService {
-    IHederaTokenService HTS = IHederaTokenService(address(0x167));
+    IHederaTokenService constant HTS = IHederaTokenService(address(0x167));
 
     function makeRenewableToken(
         address autoRenewAccount,

@@ -5,7 +5,7 @@ import "./HederaTokenService.sol";
 import "./HederaResponseCodes.sol";
 
 contract HtsTransferFrom is HederaTokenService {
-    IHederaTokenService HTS = IHederaTokenService(address(0x167));
+    IHederaTokenService constant HTS = IHederaTokenService(address(0x167));
 
     function htsTransferFrom(address token, address from, address to, uint256 amount) public  {
         (int statusCode) = HTS.transferFrom(token, from, to, amount);

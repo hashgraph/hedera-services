@@ -6,7 +6,7 @@ import "./IERC721.sol";
 import "./HederaTokenService.sol";
 
 contract SomeERC721Scenarios {
-    IHederaTokenService HederaTokenService = IHederaTokenService(address(0x167));
+    IHederaTokenService constant HederaTokenService = IHederaTokenService(address(0x167));
 
     function iMustOwnAfterReceiving(
         address token, 
