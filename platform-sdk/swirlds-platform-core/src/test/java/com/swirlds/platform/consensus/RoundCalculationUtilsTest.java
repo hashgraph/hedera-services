@@ -77,7 +77,6 @@ class RoundCalculationUtilsTest {
         when(state.getPlatformState()).thenReturn(platformState);
         when(platformState.getPlatformData()).thenReturn(platformData);
 
-
         final AtomicLong lastRoundDecided = new AtomicLong();
         when(signedState.getRound()).thenAnswer(a -> lastRoundDecided.get());
         when(signedState.getMinGen(Mockito.anyLong())).thenAnswer(a -> map.get(a.getArgument(0, Long.class)));

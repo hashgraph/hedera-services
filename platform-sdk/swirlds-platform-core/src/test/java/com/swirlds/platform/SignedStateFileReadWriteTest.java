@@ -287,7 +287,7 @@ class SignedStateFileReadWriteTest {
         final int rounds = 3;
 
         // Save a few states to the directory
-        for (int round = 0; round < rounds; round++) {
+        for (int round = 1; round <= rounds; round++) {
             final SignedState signedState =
                     new RandomSignedStateGenerator().setRound(round).build();
 
@@ -297,7 +297,7 @@ class SignedStateFileReadWriteTest {
         // The states should have been written by now
         AssertionUtils.assertEventuallyDoesNotThrow(
                 () -> {
-                    for (int round = 0; round < rounds; round++) {
+                    for (int round = 1; round <= rounds; round++) {
                         final Path stateFile = getSignedStateDirectory(MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME, round)
                                 .resolve("SignedState.swh");
                         assertTrue(Files.exists(stateFile), "Signed state file " + stateFile + " does not exist");
@@ -337,7 +337,7 @@ class SignedStateFileReadWriteTest {
         assertEquals(2, Files.walk(getSignedStatesBaseDirectory(), 1).count(), "too many files in directory");
 
         // Each of the states should still be present
-        for (int round = 0; round < rounds; round++) {
+        for (int round = 1; round <= rounds; round++) {
             final Path stateFile = getSignedStateDirectory(MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME, round)
                     .resolve("SignedState.swh");
             assertTrue(Files.exists(stateFile), "Signed state file " + stateFile + " does not exist");
