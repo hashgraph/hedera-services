@@ -84,7 +84,7 @@ public class AddressBookInitializer {
     @NonNull
     private final AddressBook initialAddressBook;
     /** The path to the directory for writing address books. */
-    @Nullable
+    @NonNull
     private final Path pathToAddressBookDirectory;
     /** Indicate that the unmodified config address book must be used. */
     private final boolean useConfigAddressBook;
@@ -106,23 +106,22 @@ public class AddressBookInitializer {
             @NonNull final Supplier<SwirldState> genesisSupplier,
             @NonNull final AddressBook configAddressBook,
             @NonNull final String parentDirectory,
-            @NonNull final boolean useConfigAddressBook) {
+            final boolean useConfigAddressBook) {
         this.currentVersion = Objects.requireNonNull(currentVersion, "The currentVersion must not be null.");
         this.genesisSupplier =
                 Objects.requireNonNull(genesisSupplier, "The genesis swirldState supplier must not be null.");
         this.configAddressBook = Objects.requireNonNull(configAddressBook, "The configAddressBook must not be null.");
         Objects.requireNonNull(parentDirectory, "The parentDirectory must not be null.");
-        this.useConfigAddressBook = useConfigAddressBook;
-        Path addressBookDirectoryPath = Path.of(parentDirectory, ADDRESS_BOOK_DIRECTORY_NAME);
+        this.pathToAddressBookDirectory = Path.of(parentDirectory, ADDRESS_BOOK_DIRECTORY_NAME);
         try {
-            Files.createDirectories(addressBookDirectoryPath);
+            Files.createDirectories(pathToAddressBookDirectory);
         } catch (final IOException e) {
-            logger.error(EXCEPTION.getMarker(), "Not able to create directory: {}", addressBookDirectoryPath, e);
-            addressBookDirectoryPath = null;
+            logger.error(EXCEPTION.getMarker(), "Not able to create directory: {}", pathToAddressBookDirectory, e);
+            throw new IllegalStateException("Not able to create directory: " + pathToAddressBookDirectory, e);
         }
-        this.pathToAddressBookDirectory = addressBookDirectoryPath;
         this.loadedSignedState = signedState;
         this.loadedAddressBook = loadedSignedState == null ? null : loadedSignedState.getAddressBook();
+        this.useConfigAddressBook = useConfigAddressBook;
 
         initialAddressBook = initialize();
     }
@@ -150,11 +149,11 @@ public class AddressBookInitializer {
      */
     @NonNull
     private AddressBook initialize() {
-        AddressBook candidateAddressBook = null;
+        AddressBook candidateAddressBook;
         if (useConfigAddressBook) {
             // configuration is overriding to force use of configuration address book.
             candidateAddressBook = configAddressBook;
-        } else if (loadedSignedState == null) {
+        } else if (loadedSignedState == null || loadedAddressBook == null) {
             logger.info(
                     STARTUP.getMarker(),
                     "The loaded signed state is null. The candidateAddressBook is set to "
@@ -236,26 +235,24 @@ public class AddressBookInitializer {
         final String addressBookFileName =
                 ADDRESS_BOOK_FILE_PREFIX + "_" + currentVersion + "_" + DATE_TIME_FORMAT.format(Instant.now()) + ".txt";
         try {
-            if (pathToAddressBookDirectory != null) {
-                final File file = Path.of(this.pathToAddressBookDirectory.toString(), addressBookFileName)
-                        .toFile();
-                try (final FileWriter out = new FileWriter(file)) {
-                    out.write(CONFIG_ADDRESS_BOOK_HEADER + "\n");
-                    out.write(configAddressBook.toConfigText() + "\n\n");
-                    out.write(STATE_ADDRESS_BOOK_HEADER + "\n");
-                    final String text =
-                            loadedAddressBook == null ? STATE_ADDRESS_BOOK_NULL : loadedAddressBook.toConfigText();
-                    out.write(text + "\n\n");
-                    out.write(USED_ADDRESS_BOOK_HEADER + "\n");
-                    if (usedAddressBook == configAddressBook) {
-                        out.write(CONFIG_ADDRESS_BOOK_USED);
-                    } else if (usedAddressBook == loadedAddressBook) {
-                        out.write(STATE_ADDRESS_BOOK_USED);
-                    } else {
-                        out.write(usedAddressBook.toConfigText());
-                    }
-                    out.write("\n\n");
+            final File file = Path.of(this.pathToAddressBookDirectory.toString(), addressBookFileName)
+                    .toFile();
+            try (final FileWriter out = new FileWriter(file)) {
+                out.write(CONFIG_ADDRESS_BOOK_HEADER + "\n");
+                out.write(configAddressBook.toConfigText() + "\n\n");
+                out.write(STATE_ADDRESS_BOOK_HEADER + "\n");
+                final String text =
+                        loadedAddressBook == null ? STATE_ADDRESS_BOOK_NULL : loadedAddressBook.toConfigText();
+                out.write(text + "\n\n");
+                out.write(USED_ADDRESS_BOOK_HEADER + "\n");
+                if (usedAddressBook == configAddressBook) {
+                    out.write(CONFIG_ADDRESS_BOOK_USED);
+                } else if (usedAddressBook == loadedAddressBook) {
+                    out.write(STATE_ADDRESS_BOOK_USED);
+                } else {
+                    out.write(usedAddressBook.toConfigText());
                 }
+                out.write("\n\n");
             }
         } catch (final IOException e) {
             logger.error(EXCEPTION.getMarker(), "Not able to write address book to file. ", e);
