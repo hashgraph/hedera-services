@@ -42,6 +42,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionResponse;
@@ -49,8 +50,8 @@ import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.NodeInfo;
-import com.hedera.node.app.service.token.entity.Account;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
+import com.hedera.node.app.spi.accounts.Account;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
@@ -58,7 +59,7 @@ import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.onset.OnsetResult;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
-import com.hedera.pbj.runtime.io.buffer.RandomAccessData;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.PlatformStatus;
@@ -89,10 +90,10 @@ class IngestWorkflowImplTest extends AppTestBase {
      * The request. For testing purposes, the bytes in this buffer are not important. The {@link WorkflowOnset} is
      * stubbed to always return a valid parsed object.
      */
-    private BufferedData requestBuffer;
+    private Bytes requestBuffer;
 
     /** The buffer to write responses into. */
-    private BufferedData responseBuffer = BufferedData.allocate(1024 * 6);
+    private final BufferedData responseBuffer = BufferedData.allocate(1024 * 6);
 
     /** The actual bytes inside the requestBuffer */
     private byte[] requestBytes;
@@ -140,12 +141,11 @@ class IngestWorkflowImplTest extends AppTestBase {
     @Mock(strictness = LENIENT)
     Counter countSubmitted;
 
-    @SuppressWarnings("unchecked")
     @BeforeEach
     void setup() throws PreCheckException {
         // The request buffer, with basically random bytes
         requestBytes = randomBytes(10);
-        requestBuffer = BufferedData.wrap(requestBytes);
+        requestBuffer = Bytes.wrap(requestBytes);
         ctx = new SessionContext();
         transactionBody = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder()
@@ -162,13 +162,17 @@ class IngestWorkflowImplTest extends AppTestBase {
         when(stateAccessor.get()).thenReturn(new AutoCloseableWrapper<>(state, () -> {}));
         // The account store will always return the same mocked account.
         // TODO I don't like this, because we should test flows where the account doesn't exist, etc.
-        when(accountStore.getAccount(any())).thenReturn(Optional.of(account));
+        when(accountStore.getAccountById(any())).thenReturn(Optional.of(account));
         // TODO Mock out the metrics to return objects we can inspect later
         when(metrics.getOrCreate(any())).thenReturn(countSubmitted);
 
         // Mock out the onset to always return a valid parsed object
         final var onsetResult = new OnsetResult(
-                transactionBody, OK, SignatureMap.newBuilder().build(), HederaFunctionality.CONSENSUS_CREATE_TOPIC);
+                Transaction.newBuilder().body(transactionBody).build(),
+                transactionBody,
+                OK,
+                SignatureMap.newBuilder().build(),
+                HederaFunctionality.CONSENSUS_CREATE_TOPIC);
         when(onset.parseAndCheck(ctx, requestBuffer)).thenReturn(onsetResult);
 
         // Create the workflow we are going to test with
@@ -349,8 +353,7 @@ class IngestWorkflowImplTest extends AppTestBase {
         @DisplayName("If the transaction fails WorkflowOnset, a failure response is returned with the right error")
         void onsetFailsWithPreCheckException(ResponseCodeEnum failureReason) throws PreCheckException, IOException {
             // Given a WorkflowOnset that will throw a PreCheckException with the given failure reason
-            when(onset.parseAndCheck(any(), any(RandomAccessData.class)))
-                    .thenThrow(new PreCheckException(failureReason));
+            when(onset.parseAndCheck(any(), any(Bytes.class))).thenThrow(new PreCheckException(failureReason));
 
             // When the transaction is submitted
             workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
@@ -370,7 +373,7 @@ class IngestWorkflowImplTest extends AppTestBase {
         @DisplayName("If some random exception is thrown from WorkflowOnset, the exception is bubbled up")
         void randomException() throws PreCheckException {
             // Given a WorkflowOnset that will throw a RuntimeException
-            when(onset.parseAndCheck(any(), any(RandomAccessData.class)))
+            when(onset.parseAndCheck(any(), any(Bytes.class)))
                     .thenThrow(new RuntimeException("parseAndCheck exception"));
 
             // When the transaction is submitted, then the exception is bubbled up
@@ -391,8 +394,7 @@ class IngestWorkflowImplTest extends AppTestBase {
         @DisplayName("When the transaction is throttled, the transaction should be rejected")
         void testThrottleFails() throws PreCheckException, IOException {
             // Given a throttle on CONSENSUS_CREATE_TOPIC transactions (i.e. it is time to throttle)
-            when(throttleAccumulator.shouldThrottle(HederaFunctionality.CONSENSUS_CREATE_TOPIC))
-                    .thenReturn(true);
+            when(throttleAccumulator.shouldThrottle(transactionBody)).thenReturn(true);
 
             // When the transaction is submitted
             workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
@@ -412,7 +414,7 @@ class IngestWorkflowImplTest extends AppTestBase {
         @DisplayName("If some random exception is thrown from ThrottleAccumulator, the exception is bubbled up")
         void randomException() throws PreCheckException {
             // Given a ThrottleAccumulator that will throw a RuntimeException
-            when(throttleAccumulator.shouldThrottle(HederaFunctionality.CONSENSUS_CREATE_TOPIC))
+            when(throttleAccumulator.shouldThrottle(transactionBody))
                     .thenThrow(new RuntimeException("shouldThrottle exception"));
 
             // When the transaction is submitted, then the exception is bubbled up
@@ -456,7 +458,7 @@ class IngestWorkflowImplTest extends AppTestBase {
         @DisplayName("If the payer account is not found, the transaction should be rejected")
         void noSuchPayerAccount() throws PreCheckException, IOException {
             // Given an account store that is not able to find the account
-            when(accountStore.getAccount(any())).thenReturn(Optional.empty());
+            when(accountStore.getAccountById(any())).thenReturn(Optional.empty());
 
             // When we submit a transaction
             workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
@@ -482,7 +484,7 @@ class IngestWorkflowImplTest extends AppTestBase {
             // Given a checker that will fail the payer signature check
             doThrow(new PreCheckException(INVALID_PAYER_SIGNATURE))
                     .when(checker)
-                    .checkPayerSignature(any(), any(), any());
+                    .checkPayerSignature(any(), any(), any(), any());
 
             // When we submit a transaction
             workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
@@ -504,7 +506,7 @@ class IngestWorkflowImplTest extends AppTestBase {
             // Given an IngestChecker that will throw a RuntimeException from checkPayerSignature
             doThrow(new RuntimeException("checkPayerSignature exception"))
                     .when(checker)
-                    .checkPayerSignature(any(), any(), any());
+                    .checkPayerSignature(any(), any(), any(), any());
 
             // When the transaction is submitted, then the exception is bubbled up
             assertThatThrownBy(() -> workflow.submitTransaction(ctx, requestBuffer, responseBuffer))
@@ -527,7 +529,7 @@ class IngestWorkflowImplTest extends AppTestBase {
             // Given a checker that will fail the payer solvency check
             doThrow(new InsufficientBalanceException(INSUFFICIENT_ACCOUNT_BALANCE, 42L))
                     .when(checker)
-                    .checkSolvency(any(), any(), any());
+                    .checkSolvency(any());
 
             // When we submit a transaction
             workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
@@ -549,7 +551,7 @@ class IngestWorkflowImplTest extends AppTestBase {
             // Given an IngestChecker that will throw a RuntimeException from checkSolvency
             doThrow(new RuntimeException("checkSolvency exception"))
                     .when(checker)
-                    .checkSolvency(any(), any(), any());
+                    .checkSolvency(any());
 
             // When the transaction is submitted, then the exception is bubbled up
             assertThatThrownBy(() -> workflow.submitTransaction(ctx, requestBuffer, responseBuffer))

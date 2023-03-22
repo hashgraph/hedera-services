@@ -22,10 +22,12 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionResponse;
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.NodeInfo;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
@@ -34,7 +36,7 @@ import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
-import com.hedera.pbj.runtime.io.buffer.RandomAccessData;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.utility.AutoCloseableWrapper;
@@ -101,7 +103,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
     @Override
     public void submitTransaction(
             @NonNull final SessionContext ctx,
-            @NonNull final RandomAccessData requestBuffer,
+            @NonNull final Bytes requestBuffer,
             @NonNull final BufferedData responseBuffer) {
         submitTransaction(ctx, requestBuffer, responseBuffer, ReadableAccountStore::new);
     }
@@ -109,7 +111,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
     // Package-private for testing
     void submitTransaction(
             @NonNull final SessionContext ctx,
-            @NonNull final RandomAccessData requestBuffer,
+            @NonNull final Bytes requestBuffer,
             @NonNull final BufferedData responseBuffer,
             @NonNull final Function<ReadableStates, ReadableAccountStore> storeSupplier) {
         requireNonNull(ctx);
@@ -156,7 +158,8 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
                 checker.checkTransactionSemantics(txBody, functionality);
 
                 // 4. Get payer account
-                final AccountID payerID = txBody.transactionID().accountID();
+                final AccountID payerID =
+                        txBody.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT);
 
                 // 5. Check payer's signature
                 checker.checkPayerSignature(state, onsetResult.transaction(), signatureMap, payerID);
@@ -165,18 +168,13 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
                 checker.checkSolvency(onsetResult.transaction());
 
                 // 7. Submit to platform
-                requestBuffer.resetPosition();
-                final byte[] byteArray = new byte[(int) requestBuffer.limit()];
-                requestBuffer.readBytes(byteArray);
-                submissionManager.submit(txBody, byteArray);
+                submissionManager.submit(txBody, PbjConverter.asBytes(requestBuffer));
                 counters.get(functionality).increment();
             } catch (final InsufficientBalanceException e) {
                 estimatedFee = e.getEstimatedFee();
                 result = e.responseCode();
             } catch (final PreCheckException e) {
                 result = e.responseCode();
-            } catch (IOException ex) {
-                throw new RuntimeException("Failed to read bytes from request buffer", ex);
             }
         }
 

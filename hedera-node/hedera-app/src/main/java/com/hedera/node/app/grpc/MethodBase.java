@@ -17,6 +17,7 @@
 package com.hedera.node.app.grpc;
 
 import com.hedera.node.app.SessionContext;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.Counter;
@@ -116,7 +117,8 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData, Buffe
             responseBuffer.reset();
 
             // Call the workflow
-            handle(session, requestBuffer, responseBuffer);
+            final var requestBytes = PbjConverter.asBytes(requestBuffer);
+            handle(session, Bytes.wrap(requestBytes), responseBuffer);
 
             // Respond to the client
             responseBuffer.flip();

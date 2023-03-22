@@ -28,8 +28,8 @@ import com.hedera.node.app.state.merkle.memory.InMemoryKey;
 import com.hedera.node.app.state.merkle.memory.InMemoryValue;
 import com.hedera.node.app.state.merkle.singleton.SingletonNode;
 import com.hedera.pbj.runtime.Codec;
-import com.hedera.pbj.runtime.io.DataInput;
-import com.hedera.pbj.runtime.io.DataOutput;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.DigestType;
@@ -300,31 +300,32 @@ public class MerkleTestBase extends StateTestBase {
 
     /** An implementation of {@link Codec} for String types */
     private static final class StringCodec implements Codec<String> {
+
         @NonNull
         @Override
-        public String parse(@NonNull DataInput input) throws IOException {
+        public String parse(@NonNull ReadableSequentialData input) {
             final var len = input.readInt();
             final var bytes = new byte[len];
             input.readBytes(bytes);
             return len == 0 ? "" : new String(bytes, StandardCharsets.UTF_8);
         }
 
+        @NonNull
         @Override
-        public void write(@NonNull String value, @NonNull DataOutput output) throws IOException {
-            final var bytes = value.getBytes(StandardCharsets.UTF_8);
+        public String parseStrict(@NonNull ReadableSequentialData input) {
+            return parse(input);
+        }
+
+        @Override
+        public void write(@NonNull String s, @NonNull WritableSequentialData output) {
+            final var bytes = s.getBytes(StandardCharsets.UTF_8);
             output.writeInt(bytes.length);
             output.writeBytes(bytes);
         }
 
         @Override
-        public int measure(@NonNull DataInput input) throws IOException {
+        public int measure(@NonNull ReadableSequentialData input) {
             return input.readInt();
-        }
-
-        @NonNull
-        @Override
-        public String parseStrict(@NonNull DataInput dataInput) throws IOException {
-            return parse(dataInput);
         }
 
         @Override
@@ -333,38 +334,34 @@ public class MerkleTestBase extends StateTestBase {
         }
 
         @Override
-        public boolean fastEquals(@NonNull String value, @NonNull DataInput input) {
-            try {
-                return value.equals(parse(input));
-            } catch (IOException e) {
-                e.printStackTrace();
-                return false;
-            }
+        public boolean fastEquals(@NonNull String value, @NonNull ReadableSequentialData input) {
+            return value.equals(parse(input));
         }
     }
 
     /** An implementation of {@link Codec} for Long types */
     private static final class LongCodec implements Codec<Long> {
+
         @NonNull
         @Override
-        public Long parse(@NonNull DataInput input) throws IOException {
+        public Long parse(@NonNull ReadableSequentialData input) {
             return input.readLong();
         }
 
+        @NonNull
         @Override
-        public void write(@NonNull Long value, @NonNull DataOutput output) throws IOException {
+        public Long parseStrict(@NonNull ReadableSequentialData input) {
+            return parse(input);
+        }
+
+        @Override
+        public void write(@NonNull Long value, @NonNull WritableSequentialData output) {
             output.writeLong(value);
         }
 
         @Override
-        public int measure(@NonNull DataInput input) throws IOException {
+        public int measure(@NonNull ReadableSequentialData input) {
             return 8;
-        }
-
-        @NonNull
-        @Override
-        public Long parseStrict(@NonNull DataInput dataInput) throws IOException {
-            return parse(dataInput);
         }
 
         @Override
@@ -373,13 +370,8 @@ public class MerkleTestBase extends StateTestBase {
         }
 
         @Override
-        public boolean fastEquals(@NonNull Long value, @NonNull DataInput input) {
-            try {
-                return value.equals(parse(input));
-            } catch (IOException e) {
-                e.printStackTrace();
-                return false;
-            }
+        public boolean fastEquals(@NonNull Long value, @NonNull ReadableSequentialData input) {
+            return value.equals(parse(input));
         }
     }
 }
