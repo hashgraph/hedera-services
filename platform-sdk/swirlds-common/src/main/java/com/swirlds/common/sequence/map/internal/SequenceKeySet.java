@@ -16,7 +16,7 @@
 
 package com.swirlds.common.sequence.map.internal;
 
-import static org.apache.commons.lang3.builder.ToStringStyle.JSON_STYLE;
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -74,7 +74,7 @@ public class SequenceKeySet<K> {
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this, JSON_STYLE)
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
                 .append("sequence number", sequenceNumber)
                 .append("size", keys.size())
                 .toString();

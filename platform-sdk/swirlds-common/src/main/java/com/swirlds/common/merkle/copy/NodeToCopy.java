@@ -16,7 +16,7 @@
 
 package com.swirlds.common.merkle.copy;
 
-import static org.apache.commons.lang3.builder.ToStringStyle.JSON_STYLE;
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
@@ -104,7 +104,7 @@ class NodeToCopy {
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this, JSON_STYLE)
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
                 .append("parent", newParent)
                 .append("index", indexInParent)
                 .append("node to copy", nodeToCopy)
