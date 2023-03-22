@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.cli;
+package com.swirlds.platform.util;
 
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.computeEntireHash;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.computeMetaHash;
@@ -27,7 +27,6 @@ import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.stream.StreamType;
 import com.swirlds.common.stream.internal.InvalidStreamFileException;
 import com.swirlds.common.utility.ByteUtils;
-import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
@@ -55,11 +54,11 @@ import java.util.Objects;
  * <p>
  * It can be used to sign version 5 stream files in particular, or to sign any arbitrary file
  */
-public final class FileSignUtility {
+public final class FileSigningUtils {
     /**
      * Hidden constructor for utility class
      */
-    private FileSignUtility() {}
+    private FileSigningUtils() {}
 
     /**
      * The suffix to append to file name when generating corresponding signature file
@@ -336,7 +335,7 @@ public final class FileSignUtility {
 
         final Collection<String> sanitizedExtensionTypes = extensionTypes.stream()
                 .filter(Objects::nonNull)
-                .map(FileSignUtility::sanitizeExtension)
+                .map(FileSigningUtils::sanitizeExtension)
                 .toList();
 
         final File[] sourceFiles = sourceDirectory.listFiles(
