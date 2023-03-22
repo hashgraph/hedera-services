@@ -178,15 +178,10 @@ public class EventIntake {
                     consensus().getMinGenerationNonAncient(),
                     "Interrupted while attempting to enqueue change in minimum generation non-ancient");
 
-            // TODO this needs a metric
             // All rounds that reach consensus at the same time will have the same keystone event,
-            // so we only need to wait for it to become flushed once.
+            // so we only need to request that it be flushed once.
             final EventImpl keystoneEvent = consRounds.get(0).getKeystoneEvent();
             preConsensusEventWriter.requestFlush(keystoneEvent);
-            abortAndLogIfInterrupted(
-                    preConsensusEventWriter::waitUntilDurable,
-                    keystoneEvent,
-                    "Interrupted while waiting for keystone event to become durable");
 
             consRounds.forEach(this::handleConsensus);
             stats.dispatchedRound();

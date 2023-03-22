@@ -1220,6 +1220,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 new ConsensusHandlingMetrics(metrics),
                 eventStreamManager,
                 stateHashSignQueueThread,
+                preConsensusEventWriter::waitUntilDurable,
                 freezeManager::freezeStarted,
                 stateManagementComponent::roundAppliedToState,
                 appVersion));
