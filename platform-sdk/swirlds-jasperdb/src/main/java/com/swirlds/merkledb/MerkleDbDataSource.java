@@ -1203,7 +1203,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
         }
 
         if (hasDiskStoreForInternalHashes) {
-            internalHashStoreDisk.startWriting();
+            internalHashStoreDisk.startWriting(0);
         }
 
         final AtomicLong lastPath = new AtomicLong(INVALID_PATH);
@@ -1240,7 +1240,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
         }
 
         // start writing
-        pathToHashKeyValue.startWriting();
+        pathToHashKeyValue.startWriting(firstLeafPath);
         if (!isLongKeyMode) {
             objectKeyToPath.startWriting();
         }

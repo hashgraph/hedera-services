@@ -86,6 +86,7 @@ public class HederaCallCodeOperation extends CallCodeOperation {
                 () -> cost(frame),
                 () -> super.execute(frame, evm),
                 addressValidator,
-                precompiledContractMap);
+                precompiledContractMap,
+                () -> isStatic(frame));
     }
 }

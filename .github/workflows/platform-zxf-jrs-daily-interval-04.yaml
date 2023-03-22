@@ -49,7 +49,7 @@ concurrency:
 jobs:
   vmerkle:
     name: VMerkle
-    uses: ./.github/workflows/platform-zxc-jrs-regression.yaml
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
@@ -63,7 +63,7 @@ jobs:
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
   vmerkle2:
     name: VMerkle2
-    uses: ./.github/workflows/platform-zxc-jrs-regression.yaml
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
@@ -78,7 +78,7 @@ jobs:
     if: ${{ !cancelled() && always() }}
   vmerkle-long:
     name: VMerkleLong
-    uses: ./.github/workflows/platform-zxc-jrs-regression.yaml
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
@@ -93,7 +93,7 @@ jobs:
     if: ${{ !cancelled() && always() }}
   vmerkle-sc:
     name: VMerkleSC
-    uses: ./.github/workflows/platform-zxc-jrs-regression.yaml
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
@@ -110,7 +110,7 @@ jobs:
     if: ${{ !cancelled() && always() }}
   vmerkle-sc2:
     name: VMerkleSC2
-    uses: ./.github/workflows/platform-zxc-jrs-regression.yaml
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       ref: ${{ github.event.inputs.ref }}
       branch-name: ${{ github.event.inputs.branch-name }}
@@ -125,7 +125,7 @@ jobs:
     if: ${{ !cancelled() && always() }}
 #  vmerkle-recovery:
 #    name: VMerkle-Recovery
-#    uses: ./.github/workflows/platform-zxc-jrs-regression.yaml
+#    uses: ./.github/workflows/zxc-jrs-regression.yaml
 #    with:
 #      ref: ${{ github.event.inputs.ref }}
 #      branch-name: ${{ github.event.inputs.branch-name }}
