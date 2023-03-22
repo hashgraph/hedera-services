@@ -19,6 +19,7 @@ package com.swirlds.common.system.address;
 import static com.swirlds.common.system.address.Address.ipString;
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
+import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -347,16 +348,18 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
 
     /**
      * Updates the stake on the address with the given ID. If the address does not exist, a NoSuchElementException is
-     * thrown. If the stake value is negative, an illegal argument exception is thrown.  This method does not validate
-     * the address book is valid after updating the address.  When the user is finished with making incremental changes,
-     * the final address book should be validated.
+     * thrown. If the stake value is negative, an illegal argument exception is thrown.  If the address book is
+     * immutable, a MutabilityException is thrown. This method does not validate the address book after updating the
+     * address.  When the user is finished with making incremental changes, the final address book should be validated.
      *
      * @param id    the ID of the address to update.
      * @param stake the new stake value.  The stake must be nonnegative.
      * @throws NoSuchElementException   if the address does not exist.
      * @throws IllegalArgumentException if the stake is negative.
+     * @throws MutabilityException      if the address book is immutable.
      */
     public void updateStake(final long id, final long stake) {
+        throwIfImmutable();
         final Address address = getAddress(id);
         if (address == null) {
             throw new NoSuchElementException("no address with ID " + id + " exists");
