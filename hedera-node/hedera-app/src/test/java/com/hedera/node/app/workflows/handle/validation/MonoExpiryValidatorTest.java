@@ -118,8 +118,7 @@ class MonoExpiryValidatorTest {
         given(validator.isValidExpiry(aTime)).willReturn(false);
         assertFailsWith(
                 ResponseCodeEnum.INVALID_EXPIRATION_TIME,
-                () -> subject.resolveCreationAttempt(false,
-                        new ExpiryMeta(aTime, NA, anAutoRenewNum)));
+                () -> subject.resolveCreationAttempt(false, new ExpiryMeta(aTime, NA, anAutoRenewNum)));
     }
 
     @Test
