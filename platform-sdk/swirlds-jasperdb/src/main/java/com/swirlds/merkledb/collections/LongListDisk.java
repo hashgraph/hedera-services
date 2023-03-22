@@ -16,6 +16,8 @@
 
 package com.swirlds.merkledb.collections;
 
+import static java.lang.Math.toIntExact;
+
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -141,8 +143,8 @@ public class LongListDisk extends AbstractLongList<Long> {
             FileChannel tempFileCHannel = rf.getChannel();
 
             final int totalNumberOfChunks = calculateNumberOfChunks(size());
-            final int firstChunkWithDataIndex = (int) (minValidIndex.get() / numLongsPerChunk);
-            final int minValidIndexInChunk = (int) (minValidIndex.get() % numLongsPerChunk);
+            final int firstChunkWithDataIndex = toIntExact(minValidIndex.get() / numLongsPerChunk);
+            final int minValidIndexInChunk = toIntExact(minValidIndex.get() % numLongsPerChunk);
 
             // copy the first chunk
             final ByteBuffer transferBuffer = initOrGetTransferBuffer();
@@ -249,7 +251,7 @@ public class LongListDisk extends AbstractLongList<Long> {
         final ByteBuffer transferBuffer = initOrGetTransferBuffer();
         final int totalNumOfChunks = calculateNumberOfChunks(size());
         final long currentMinValidIndex = minValidIndex.get();
-        final int firstChunkWithDataIndex = (int) (currentMinValidIndex / numLongsPerChunk);
+        final int firstChunkWithDataIndex = toIntExact(currentMinValidIndex / numLongsPerChunk);
 
         // The following logic sequentially processes chunks. This kind of processing allows to get rid of
         // non-contiguous memory allocation and gaps that may be present in the current file.
@@ -262,7 +264,7 @@ public class LongListDisk extends AbstractLongList<Long> {
                 final long chunkOffset;
                 if (i == firstChunkWithDataIndex) {
                     // writing starts from the first valid index in the first valid chunk
-                    final int firstValidIndexInChunk = (int) (currentMinValidIndex % numLongsPerChunk);
+                    final int firstValidIndexInChunk = toIntExact(currentMinValidIndex % numLongsPerChunk);
                     transferBuffer.position(firstValidIndexInChunk * Long.BYTES);
                     chunkOffset = currentChunkStartOffset + calculateOffsetInChunk(currentMinValidIndex);
                 } else {
@@ -274,7 +276,7 @@ public class LongListDisk extends AbstractLongList<Long> {
                     // the last array, so set limit to only the data needed
                     final long bytesWrittenSoFar = (long) memoryChunkSize * (long) i;
                     final long remainingBytes = (size() * Long.BYTES) - bytesWrittenSoFar;
-                    transferBuffer.limit((int) remainingBytes);
+                    transferBuffer.limit(toIntExact(remainingBytes));
                 } else {
                     transferBuffer.limit(transferBuffer.capacity());
                 }
@@ -346,7 +348,7 @@ public class LongListDisk extends AbstractLongList<Long> {
             @NonNull final Long chunkOffset, final boolean leftSide, final long entriesToCleanUp) {
         final ByteBuffer transferBuffer = initOrGetTransferBuffer();
         fillBufferWithZeroes(transferBuffer);
-        transferBuffer.limit((int) (entriesToCleanUp * Long.BYTES));
+        transferBuffer.limit(toIntExact(entriesToCleanUp * Long.BYTES));
         if (leftSide) {
             try {
                 currentFileChannel.write(transferBuffer, chunkOffset);

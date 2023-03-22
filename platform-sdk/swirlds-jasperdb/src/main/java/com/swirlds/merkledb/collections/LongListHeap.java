@@ -16,6 +16,7 @@
 
 package com.swirlds.merkledb.collections;
 
+import static java.lang.Math.toIntExact;
 import static java.nio.ByteBuffer.allocateDirect;
 
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
@@ -87,7 +88,7 @@ public final class LongListHeap extends AbstractLongList<AtomicLongArray> {
     @Override
     protected void readBodyFromFileChannelOnInit(String sourceFileName, FileChannel fileChannel) throws IOException {
         // read data
-        final int numOfArrays = (int) Math.ceil((double) size() / (double) numLongsPerChunk);
+        final int numOfArrays = calculateNumberOfChunks(size());
         final ByteBuffer buffer = allocateDirect(memoryChunkSize);
         buffer.order(ByteOrder.nativeOrder());
         for (int i = 0; i < numOfArrays; i++) {
@@ -155,7 +156,7 @@ public final class LongListHeap extends AbstractLongList<AtomicLongArray> {
      */
     @Override
     protected long lookupInChunk(@NonNull final AtomicLongArray chunk, final long subIndex) {
-        return chunk.get((int) subIndex);
+        return chunk.get(toIntExact(subIndex));
     }
 
     /** {@inheritDoc} */
@@ -173,7 +174,7 @@ public final class LongListHeap extends AbstractLongList<AtomicLongArray> {
                 atomicLongArray.set(i, IMPERMISSIBLE_VALUE);
             }
         } else {
-            for (int i = (int) (atomicLongArray.length() - entriesToCleanUp); i < atomicLongArray.length(); i++) {
+            for (int i = toIntExact(atomicLongArray.length() - entriesToCleanUp); i < atomicLongArray.length(); i++) {
                 atomicLongArray.set(i, IMPERMISSIBLE_VALUE);
             }
         }

@@ -17,6 +17,7 @@
 package com.swirlds.merkledb.collections;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static java.lang.Math.toIntExact;
 import static java.util.Objects.requireNonNullElse;
 
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
@@ -97,8 +98,8 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> {
     @Override
     protected void readBodyFromFileChannelOnInit(String sourceFileName, FileChannel fileChannel) throws IOException {
         final int totalNumberOfChunks = calculateNumberOfChunks(size());
-        final int firstChunkWithDataIndex = (int) (minValidIndex.get() / numLongsPerChunk);
-        final int minValidIndexInChunk = (int) (minValidIndex.get() % numLongsPerChunk);
+        final int firstChunkWithDataIndex = toIntExact(minValidIndex.get() / numLongsPerChunk);
+        final int minValidIndexInChunk = toIntExact(minValidIndex.get() % numLongsPerChunk);
         // read the first chunk
         final ByteBuffer firstBuffer = createChunk();
         firstBuffer.position(minValidIndexInChunk * Long.BYTES).limit(firstBuffer.capacity());
@@ -161,7 +162,7 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> {
     protected void writeLongsData(final FileChannel fc) throws IOException {
         final int totalNumOfChunks = calculateNumberOfChunks(size());
         final long currentMinValidIndex = minValidIndex.get();
-        final int firstChunkWithDataIndex = (int) (currentMinValidIndex / numLongsPerChunk);
+        final int firstChunkWithDataIndex = toIntExact(currentMinValidIndex / numLongsPerChunk);
         // write data
         final ByteBuffer emptyBuffer = createChunk();
         try {
@@ -171,7 +172,7 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> {
                 final ByteBuffer buf = nonNullBuffer.slice(); // slice so we don't mess with state
                 if (i == firstChunkWithDataIndex) {
                     // writing starts from the first valid index in the first valid chunk
-                    final int firstValidIndexInChunk = (int) (currentMinValidIndex % numLongsPerChunk);
+                    final int firstValidIndexInChunk = toIntExact(currentMinValidIndex % numLongsPerChunk);
                     buf.position(firstValidIndexInChunk * Long.BYTES);
                 } else {
                     buf.position(0);
@@ -180,7 +181,7 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> {
                     // last array, so set limit to only the data needed
                     final long bytesWrittenSoFar = (long) memoryChunkSize * (long) i;
                     final long remainingBytes = (size() * Long.BYTES) - bytesWrittenSoFar;
-                    buf.limit((int) remainingBytes);
+                    buf.limit(toIntExact(remainingBytes));
                 } else {
                     buf.limit(buf.capacity());
                 }
@@ -204,7 +205,7 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> {
         try {
             /* Do a volatile memory read from off-heap memory */
             final long chunkPointer = address(chunk);
-            final int subIndexOffset = (int) (subIndex * Long.BYTES);
+            final int subIndexOffset = toIntExact(subIndex * Long.BYTES);
             return UNSAFE.getLongVolatile(null, chunkPointer + subIndexOffset);
         } catch (final IndexOutOfBoundsException e) {
             logger.error(
