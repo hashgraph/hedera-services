@@ -29,6 +29,7 @@ import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
@@ -174,8 +175,9 @@ class ExpandHandleHollowScreeningTest {
 
         final var finalKey = new JECDSASecp256k1Key(decompressedKeyBytes);
         final var allPretendCompletions = List.of(new PendingCompletion(num, finalKey));
-        verify(txnAccessor).setPendingCompletions(pendingCompletionCaptor.capture());
-        assertEquals(allPretendCompletions, pendingCompletionCaptor.getValue());
+        verify(txnAccessor, times(2)).setPendingCompletions(pendingCompletionCaptor.capture());
+        assertEquals(
+                allPretendCompletions, pendingCompletionCaptor.getAllValues().get(1));
         assertEquals(finalKey, txnAccessor.getSigMeta().payerKey());
     }
 
@@ -207,8 +209,9 @@ class ExpandHandleHollowScreeningTest {
 
         final var finalKey = new JECDSASecp256k1Key(decompressedKeyBytes);
         final var allPretendCompletions = List.of(new PendingCompletion(num, finalKey));
-        verify(txnAccessor).setPendingCompletions(pendingCompletionCaptor.capture());
-        assertEquals(allPretendCompletions, pendingCompletionCaptor.getValue());
+        verify(txnAccessor, times(2)).setPendingCompletions(pendingCompletionCaptor.capture());
+        assertEquals(
+                allPretendCompletions, pendingCompletionCaptor.getAllValues().get(1));
         assertEquals(finalKey, txnAccessor.getSigMeta().othersReqSigs().get(0));
     }
 
@@ -230,7 +233,7 @@ class ExpandHandleHollowScreeningTest {
                 new Rationalization(syncVerifier, sigImpactHistorian, sigReqs, handleSigFactory, aliasManager);
         subject.performFor(txnAccessor);
 
-        verify(txnAccessor, never()).setPendingCompletions(any());
+        verify(txnAccessor, times(1)).setPendingCompletions(any());
     }
 
     @Test
@@ -415,7 +418,7 @@ class ExpandHandleHollowScreeningTest {
                 new Rationalization(syncVerifier, sigImpactHistorian, sigReqs, handleSigFactory, aliasManager);
         subject.performFor(txnAccessor);
 
-        verify(txnAccessor, never()).setPendingCompletions(any());
+        verify(txnAccessor, times(1)).setPendingCompletions(any());
         screeningMockedStatic.verify(() -> HollowScreening.performFor(any(), any(), any(), any(), notNull()), never());
         screeningMockedStatic.close();
     }
