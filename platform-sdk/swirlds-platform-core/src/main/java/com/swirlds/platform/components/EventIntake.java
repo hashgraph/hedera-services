@@ -134,7 +134,6 @@ public class EventIntake {
             return;
         }
 
-        // TODO we should be able to disable this via a setting
         // Enqueue the event to be written to disk as early as possible in this process to minimize latency
         // when it comes to handling transactions that may be gated by this event's durability.
         sequencer.assignStreamSequenceNumber(event);

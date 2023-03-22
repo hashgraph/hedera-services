@@ -113,7 +113,6 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
 
     private final RoundAppliedToStateConsumer roundAppliedToStateConsumer;
 
-    // TODO test that this is invoked
     /**
      * A method that blocks until an event becomes durable.
      */

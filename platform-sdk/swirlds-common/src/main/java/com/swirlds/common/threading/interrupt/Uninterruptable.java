@@ -144,9 +144,6 @@ public final class Uninterruptable {
         }
     }
 
-    // TODO test
-    // TODO perhaps create variations for the other methods, e.g. abort and throw
-
     /**
      * <p>
      * Pass an object to a consumer that may throw an {@link InterruptedException}. If the thread is interrupted, the
