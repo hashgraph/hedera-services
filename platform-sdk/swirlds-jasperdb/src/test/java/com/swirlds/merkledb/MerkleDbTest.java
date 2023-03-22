@@ -261,7 +261,7 @@ public class MerkleDbTest {
 
     @Test
     @DisplayName("Test snapshot with data source copied")
-    public void testSnapshotCopiedTables() throws IOException {
+    void testSnapshotCopiedTables() throws IOException {
         final MerkleDb instance = MerkleDb.getDefaultInstance();
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
         final String tableName1 = "tablee3";
@@ -390,7 +390,7 @@ public class MerkleDbTest {
 
     @Test
     @DisplayName("Test copied data sources are auto deleted on close")
-    public void testCopiedDataSourceAutoDeleted() throws IOException {
+    void testCopiedDataSourceAutoDeleted() throws IOException {
         final MerkleDb instance = MerkleDb.getDefaultInstance();
         final String tableName1 = "tablej1";
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig1 = fixedConfig();

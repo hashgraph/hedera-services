@@ -219,17 +219,13 @@ public final class MerkleDb {
      * @return The next available table ID
      */
     private int getNextTableId() {
-        int tablesCount = 0;
-        while (true) {
+        for (int tablesCount = 0; tablesCount < MAX_TABLES; tablesCount++) {
             final int id = Math.abs(nextTableId.getAndIncrement() % MAX_TABLES);
             if (tableConfigs.get(id) == null) {
                 return id;
             }
-            tablesCount++;
-            if (tablesCount == MAX_TABLES) {
-                throw new IllegalStateException("Tables limit is reached");
-            }
         }
+        throw new IllegalStateException("Tables limit is reached");
     }
 
     /**
@@ -419,7 +415,6 @@ public final class MerkleDb {
         if (this != dataSource.getDatabase()) {
             throw new IllegalStateException("Can't close table in a different database");
         }
-        final String label = dataSource.getTableName();
         final int tableId = dataSource.getTableId();
         assert dataSources.get(tableId) != null;
         dataSources.set(tableId, null);
@@ -436,7 +431,7 @@ public final class MerkleDb {
      *
      * @param tableId ID of the table to remove
      */
-    <K extends VirtualKey<? super K>, V extends VirtualValue> void removeTable(final int tableId) {
+    void removeTable(final int tableId) {
         final TableMetadata metadata = tableConfigs.get(tableId);
         if (metadata == null) {
             throw new IllegalArgumentException("Unknown table ID: " + tableId);

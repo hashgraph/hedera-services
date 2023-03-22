@@ -121,7 +121,6 @@ public class MerkleDbDataSourceBuilder<K extends VirtualKey<? super K>, V extend
         if (!(snapshotMe instanceof MerkleDbDataSource<K, V> source)) {
             throw new IllegalArgumentException("The datasource must be compatible with the MerkleDb");
         }
-        final String name = source.getTableName();
         try {
             return source.getDatabase().copyDataSource(source, makeCopyActive);
         } catch (final IOException z) {
