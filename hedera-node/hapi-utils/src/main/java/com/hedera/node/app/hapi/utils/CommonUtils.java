@@ -39,7 +39,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.NodeStakeUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleSign;
@@ -62,7 +61,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpaus
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
-import static com.hederahashgraph.api.proto.java.TransactionBody.DataCase.NODE_STAKE_UPDATE;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
@@ -140,7 +138,8 @@ public final class CommonUtils {
     }
 
     /**
-     * check TransactionBody and return the HederaFunctionality
+     * check TransactionBody and return the HederaFunctionality. This method was moved from MiscUtils.
+     * NODE_STAKE_UPDATE is not checked in this method, since it is not a user transaction.
      *
      * @param txn the {@code TransactionBody}
      * @return one of HederaFunctionality
@@ -195,28 +194,7 @@ public final class CommonUtils {
             case SCHEDULEDELETE -> ScheduleDelete;
             case SCHEDULESIGN -> ScheduleSign;
             case UTIL_PRNG -> UtilPrng;
-                //          case NODE_STAKE_UPDATE is not handled here, it's handled in functionNodeStakeUpdateOf
             default -> throw new UnknownHederaFunctionality("Unknown HederaFunctionality for " + txn);
         };
-    }
-
-    /**
-     * check TransactionBody and return the NodeStakeUpdate HederaFunctionality,
-     * which was added for the node software to use to export stake info to mirror nodes in the record stream.
-     * It is not a valid type of transaction for a user to submit via HAPI.
-     *
-     * @param txn the {@code TransactionBody}
-     * @return one of HederaFunctionality
-     * @throws UnknownHederaFunctionality if it's not a NodeStakeUpdate HederaFunctionality
-     */
-    @NonNull
-    public static HederaFunctionality functionNodeStakeUpdateOf(@NonNull final TransactionBody txn)
-            throws UnknownHederaFunctionality {
-        DataCase dataCase = txn.getDataCase();
-        if (dataCase.equals(NODE_STAKE_UPDATE)) {
-            return NodeStakeUpdate;
-        } else {
-            throw new UnknownHederaFunctionality("Not NodeStakeUpdate HederaFunctionality");
-        }
     }
 }

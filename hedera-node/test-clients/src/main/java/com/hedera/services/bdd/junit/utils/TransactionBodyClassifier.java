@@ -16,9 +16,10 @@
 
 package com.hedera.services.bdd.junit.utils;
 
-import static com.hedera.node.app.hapi.utils.CommonUtils.functionNodeStakeUpdateOf;
 import static com.hedera.node.app.hapi.utils.CommonUtils.functionOf;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NodeStakeUpdate;
+import static com.hederahashgraph.api.proto.java.TransactionBody.DataCase.NODE_STAKE_UPDATE;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.utils.CommonUtils;
@@ -26,6 +27,7 @@ import com.hedera.node.app.hapi.utils.exception.UnknownHederaFunctionality;
 import com.hedera.services.stream.proto.RecordStreamItem;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody.DataCase;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -37,21 +39,16 @@ public class TransactionBodyClassifier {
         TransactionBody txnBody = CommonUtils.extractTransactionBody(item.getTransaction());
 
         try {
-            txnType = functionNodeStakeUpdateOf(txnBody);
-            transactionType.add(txnType);
-        } catch (UnknownHederaFunctionality e) {
-            checkFunctionOf(txnBody);
+            txnType = functionOf(txnBody);
+        } catch (UnknownHederaFunctionality ex) {
+            txnType = checkNodeStakeUpdate(txnBody);
         }
+        transactionType.add(txnType);
     }
 
-    private void checkFunctionOf(final TransactionBody txnBody) {
-        var txnType = NONE;
-        try {
-            txnType = functionOf(txnBody);
-            transactionType.add(txnType);
-        } catch (UnknownHederaFunctionality ex) {
-            transactionType.add(txnType);
-        }
+    private HederaFunctionality checkNodeStakeUpdate(final TransactionBody txn) {
+        DataCase dataCase = txn.getDataCase();
+        return dataCase.equals(NODE_STAKE_UPDATE) ? NodeStakeUpdate : NONE;
     }
 
     public boolean isInvalid() {
