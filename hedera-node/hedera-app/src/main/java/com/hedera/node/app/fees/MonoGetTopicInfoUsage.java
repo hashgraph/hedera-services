@@ -17,8 +17,6 @@
 package com.hedera.node.app.fees;
 
 import static com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter.fromPbjKey;
-import static com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter.unwrapPbj;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjKey;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbjTopicId;
 
 import com.hedera.hapi.node.base.Key;
@@ -34,7 +32,9 @@ import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoQuery;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
 

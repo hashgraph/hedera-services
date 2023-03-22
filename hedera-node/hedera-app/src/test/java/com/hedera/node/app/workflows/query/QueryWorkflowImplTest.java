@@ -26,6 +26,7 @@ import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
+
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -68,10 +69,10 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hederahashgraph.api.proto.java.NetworkGetExecutionTimeQuery;
 import com.swirlds.common.system.PlatformStatus;
 import com.swirlds.common.utility.AutoCloseableWrapper;
+
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-import java.io.IOException;
-import java.util.function.Function;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -79,16 +80,17 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
+import java.io.IOException;
+import java.util.function.Function;
+
 @ExtendWith(MockitoExtension.class)
 class QueryWorkflowImplTest extends AppTestBase {
 
     private static final int BUFFER_SIZE = 1024 * 6;
 
-    @Mock
-    private HederaState state;
+    @Mock private HederaState state;
 
-    @Mock
-    private NodeInfo nodeInfo;
+    @Mock private NodeInfo nodeInfo;
 
     @Mock(strictness = LENIENT)
     private CurrentPlatformStatus currentPlatformStatus;
@@ -340,7 +342,8 @@ class QueryWorkflowImplTest extends AppTestBase {
 
     @Test
     void testSuccessIfPaymentRequired() throws PreCheckException, IOException {
-        given(feeAccumulator.computePayment(any(), any(), any(), any())).willReturn(new FeeObject(100L, 0L, 100L));
+        given(feeAccumulator.computePayment(any(), any(), any(), any(), any()))
+                .willReturn(new FeeObject(100L, 0L, 100L));
         given(handler.requiresNodePayment(any())).willReturn(true);
         given(dispatcher.validate(any(), any())).willReturn(OK);
         given(dispatcher.getResponse(any(), any(), any(), any()))
@@ -361,8 +364,35 @@ class QueryWorkflowImplTest extends AppTestBase {
     }
 
     @Test
-    void testSuccessIfAnswerOnlyCostRequired() throws InvalidProtocolBufferException, PreCheckException {
-        given(feeAccumulator.computePayment(any(), any(), any(), any())).willReturn(new FeeObject(100L, 0L, 100L));
+    void testSuccessIfAnswerOnlyCostRequired()
+            throws InvalidProtocolBufferException, PreCheckException {
+        given(feeAccumulator.computePayment(any(), any(), any(), any()))
+                .willReturn(new FeeObject(100L, 0L, 100L));
+        given(handler.needsAnswerOnlyCost(any())).willReturn(true);
+        given(dispatcher.validate(any(), any())).willReturn(OK);
+        given(dispatcher.getResponse(any(), any(), any(), any()))
+                .willReturn(Response.newBuilder().build());
+        // given
+        final var responseBuffer = ByteBuffer.allocate(BUFFER_SIZE);
+        // when
+        workflow.handleQuery(ctx, requestBuffer, responseBuffer);
+
+        // then
+        final var response = parseResponse(responseBuffer);
+        assertThat(response.getFileGetInfo()).isNotNull();
+        final var header = response.getFileGetInfo().getHeader();
+        assertThat(header.getNodeTransactionPrecheckCode()).isEqualTo(OK);
+        assertThat(header.getResponseType()).isEqualTo(ANSWER_ONLY);
+        assertThat(header.getCost()).isEqualTo(200);
+        verify(opCounters).countReceived(FileGetInfo);
+        verify(opCounters).countAnswered(FileGetInfo);
+    }
+
+    @Test
+    void testSuccessIfAnswerOnlyCostRequired()
+            throws InvalidProtocolBufferException, PreCheckException {
+        given(feeAccumulator.computePayment(any(), any(), any(), any()))
+                .willReturn(new FeeObject(100L, 0L, 100L));
         given(handler.needsAnswerOnlyCost(any())).willReturn(true);
         given(dispatcher.validate(any(), any())).willReturn(OK);
         given(dispatcher.getResponse(any(), any(), any(), any()))

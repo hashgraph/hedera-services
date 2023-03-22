@@ -16,12 +16,13 @@
 
 package com.hedera.node.app.spi.state.serdes;
 
-import com.hedera.hashgraph.pbj.runtime.io.DataInputStream;
-import com.hedera.hashgraph.pbj.runtime.io.DataOutputStream;
-import com.hedera.node.app.spi.state.Serdes;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.io.DataOutputStream;
 import java.io.IOException;
 
 /**
@@ -41,18 +42,21 @@ public final class SerdesFactory {
             @Override
             public T parse(final @NonNull java.io.DataInput input) throws IOException {
                 if (input instanceof SerializableDataInputStream in) {
-                    return parser.parse(new DataInputStream(in));
+                    return parser.parse(new ReadableSequentialData(in));
                 } else {
-                    throw new IllegalArgumentException("Unsupported input type: " + input.getClass());
+                    throw new IllegalArgumentException(
+                            "Unsupported input type: " + input.getClass());
                 }
             }
 
             @Override
-            public void write(final @NonNull T item, final @NonNull java.io.DataOutput output) throws IOException {
+            public void write(final @NonNull T item, final @NonNull java.io.DataOutput output)
+                    throws IOException {
                 if (output instanceof SerializableDataOutputStream out) {
                     writer.write(item, new DataOutputStream(out));
                 } else {
-                    throw new IllegalArgumentException("Unsupported output type: " + output.getClass());
+                    throw new IllegalArgumentException(
+                            "Unsupported output type: " + output.getClass());
                 }
             }
 

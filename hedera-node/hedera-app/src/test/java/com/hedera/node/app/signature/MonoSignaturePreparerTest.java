@@ -17,6 +17,7 @@
 package com.hedera.node.app.signature;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -37,32 +38,33 @@ import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.TransactionSignature;
-import java.util.List;
-import java.util.function.Function;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
+import java.util.function.Function;
+
 @ExtendWith(MockitoExtension.class)
 class MonoSignaturePreparerTest {
     private static final Transaction MOCK_TXN = Transaction.getDefaultInstance();
 
-    private static final JKey PAYER_KEY = new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
-    private static final List<HederaKey> OTHER_PARTY_KEYS = List.of(
-            new JEd25519Key("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".getBytes()),
-            new JEd25519Key("cccccccccccccccccccccccccccccccc".getBytes()));
+    private static final JKey PAYER_KEY =
+            new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
+    private static final List<HederaKey> OTHER_PARTY_KEYS =
+            List.of(
+                    new JEd25519Key("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".getBytes()),
+                    new JEd25519Key("cccccccccccccccccccccccccccccccc".getBytes()));
     private static final Transaction MOCK_TRANSACTION = Transaction.getDefaultInstance();
 
-    @Mock
-    private PrecheckVerifier precheckVerifier;
+    @Mock private PrecheckVerifier precheckVerifier;
 
-    @Mock
-    private Expansion.CryptoSigsCreation cryptoSigsCreation;
+    @Mock private Expansion.CryptoSigsCreation cryptoSigsCreation;
 
-    @Mock
-    private PubKeyToSigBytes keyToSigBytes;
+    @Mock private PubKeyToSigBytes keyToSigBytes;
 
     @Mock
     private Function<SignatureMap, PubKeyToSigBytes> keyToSigFactory;
@@ -163,9 +165,23 @@ class MonoSignaturePreparerTest {
 
     @Test
     void translatesUnrecognizedFailure() throws Exception {
-        given(precheckVerifier.hasNecessarySignatures(any())).willThrow(IllegalArgumentException.class);
+        given(precheckVerifier.hasNecessarySignatures(any()))
+                .willThrow(IllegalArgumentException.class);
         final var status = subject.syncGetPayerSigStatus(PbjConverter.toPbj(MOCK_TXN));
         assertEquals(ResponseCodeEnum.INVALID_SIGNATURE, status);
+    }
+
+    private void givenHappy(final PlatformSigsCreationResult result) {
+        given(result.getPlatformSigs()).willReturn(List.of(mockSig));
+    }
+
+    private void givenHappyTwo(final PlatformSigsCreationResult result) {
+        given(result.getPlatformSigs()).willReturn(List.of(mockSig, mockSig));
+    }
+
+    private void givenUnhappy(final PlatformSigsCreationResult result) {
+        given(result.asCode()).willReturn(KEY_PREFIX_MISMATCH);
+        given(result.hasFailed()).willReturn(true);
     }
 
     private void givenHappy(final PlatformSigsCreationResult result) {

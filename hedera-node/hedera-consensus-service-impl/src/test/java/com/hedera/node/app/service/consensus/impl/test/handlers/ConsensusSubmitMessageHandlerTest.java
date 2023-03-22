@@ -30,6 +30,7 @@ import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.CONSENSUS_SUBMIT_MESSAGE_MISSING_TOPIC_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.CONSENSUS_SUBMIT_MESSAGE_SCENARIO;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -65,15 +66,7 @@ import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.test.utils.TxnUtils;
-import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
-import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TopicID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import java.time.Instant;
-import java.util.List;
+
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -83,13 +76,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
+import java.util.List;
+
 @ExtendWith(MockitoExtension.class)
 class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
-    @Mock
-    private AccountAccess keyLookup;
+    @Mock private AccountAccess keyLookup;
 
-    @Mock
-    private HandleContext handleContext;
+    @Mock private HandleContext handleContext;
 
     private ConsensusServiceConfig config;
     private ConsensusSubmitMessageRecordBuilder recordBuilder;

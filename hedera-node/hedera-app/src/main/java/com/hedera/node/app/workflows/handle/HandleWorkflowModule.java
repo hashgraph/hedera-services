@@ -25,6 +25,8 @@ import com.hedera.node.app.service.mono.sigs.Expansion;
 import com.hedera.node.app.service.mono.sigs.PlatformSigOps;
 import com.hedera.node.app.service.mono.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.node.app.service.mono.sigs.factories.TxnScopedPlatformSigFactory;
+import com.hedera.node.app.service.mono.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
+import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.node.app.service.mono.txns.TransactionLastStep;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.node.app.service.network.impl.components.NetworkComponent;
@@ -36,14 +38,19 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.dispatcher.TransactionHandlers;
 import com.hedera.node.app.workflows.handle.validation.MonoExpiryValidator;
+import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.AutoCloseableWrapper;
+
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.function.Function;
 import java.util.function.Supplier;
+
 import javax.inject.Singleton;
 
 @Module
@@ -51,6 +58,11 @@ public interface HandleWorkflowModule {
     @Provides
     static Expansion.CryptoSigsCreation provideCryptoSigsCreation() {
         return PlatformSigOps::createCryptoSigsFrom;
+    }
+
+    @Provides
+    static Function<SignatureMap, PubKeyToSigBytes> provideKeyToSigFactory() {
+        return PojoSigMapPubKeyToSigBytes::new;
     }
 
     @Provides

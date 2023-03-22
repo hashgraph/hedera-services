@@ -21,11 +21,13 @@ import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusUpdateTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.hashgraph.pbj.runtime.io.Bytes;
 import com.hedera.node.app.fees.MonoGetTopicInfoUsage;
 import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
@@ -57,29 +59,32 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.utility.AutoCloseableWrapper;
-import java.time.Instant;
-import java.util.Collections;
-import java.util.Map;
-import java.util.function.Supplier;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
+import java.util.Collections;
+import java.util.Map;
+import java.util.function.Supplier;
+
 @ExtendWith(MockitoExtension.class)
 class AdaptedMonoFeeCalculatorTest {
-    private static final JKey PAYER_KEY = new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
+    private static final JKey PAYER_KEY =
+            new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
     private static final Query MOCK_QUERY = Query.getDefaultInstance();
     private static final Instant NOW = Instant.ofEpochSecond(1_234_567L);
-    private static final Timestamp AT =
-            Timestamp.newBuilder().setSeconds(1_234_567).build();
+    private static final Timestamp AT = Timestamp.newBuilder().setSeconds(1_234_567).build();
     private static final FeeData MOCK_USAGE = FeeData.getDefaultInstance();
     private static final FeeData MOCK_PRICES = FeeData.getDefaultInstance();
     private static final FeeObject MOCK_FEES = new FeeObject(1, 2, 3);
     private static final SigValueObj MOCK_SIG_USAGE = new SigValueObj(1, 2, 3);
     private static final ExchangeRate MOCK_RATE = ExchangeRate.getDefaultInstance();
-    private static final Map<SubType, FeeData> TYPED_PRICES = Map.of(SubType.DEFAULT, FeeData.getDefaultInstance());
+    private static final Map<SubType, FeeData> TYPED_PRICES =
+            Map.of(SubType.DEFAULT, FeeData.getDefaultInstance());
 
     private static final Topic MOCK_TOPIC = new Topic(
             1L,

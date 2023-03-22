@@ -146,6 +146,6 @@ public class TestFixturesKeyLookup implements AccountAccess {
                 return EntityNumVirtualKey.fromLong(value != null ? value : 0L);
             }
         }
-        return EntityNumVirtualKey.fromLong(id.accountNumOrElse(0L));
+        return EntityNumVirtualKey.fromLong(id.accountNumOrElse(0L)));
     }
 }

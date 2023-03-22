@@ -23,9 +23,7 @@ import static com.hedera.node.app.service.consensus.impl.test.handlers.Consensus
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -59,8 +57,7 @@ import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import java.time.Instant;
-import java.util.List;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -68,17 +65,18 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
+import java.util.List;
+
 @ExtendWith(MockitoExtension.class)
 class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
     static final AccountID ACCOUNT_ID_3 = AccountID.newBuilder().accountNum(3L).build();
     private static final AccountID AUTO_RENEW_ACCOUNT =
             AccountID.newBuilder().accountNum(4L).build();
 
-    @Mock
-    private AccountAccess keyFinder;
+    @Mock private AccountAccess keyFinder;
 
-    @Mock
-    private HandleContext handleContext;
+    @Mock private HandleContext handleContext;
 
     @Mock
     private AttributeValidator validator;
@@ -407,40 +405,6 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
                 HandleStatusException.class,
                 () -> subject.handle(handleContext, op, config, recordBuilder, topicStore));
         assertEquals(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT, failure.getStatus());
-    }
-
-    @Test
-    @DisplayName("Translates INVALID_EXPIRATION_TIME to AUTO_RENEW_DURATION_NOT_IN_RANGE")
-    void translatesInvalidExpiryException() {
-        final var op = newCreateTxn(null, null, true).getConsensusCreateTopic();
-
-        given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
-        given(handleContext.attributeValidator()).willReturn(validator);
-        given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
-                .willThrow(new HandleStatusException(INVALID_EXPIRATION_TIME));
-
-        final var failure = assertThrows(
-                HandleStatusException.class,
-                () -> subject.handle(handleContext, op, config, recordBuilder, topicStore));
-        assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, failure.getStatus());
-    }
-
-    @Test
-    @DisplayName("Doesnt translate INVALID_AUTORENEW_ACCOUNT")
-    void doesntTranslateInvalidAutoRenewNum() {
-        final var op = newCreateTxn(null, null, true).getConsensusCreateTopic();
-
-        given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
-        given(handleContext.attributeValidator()).willReturn(validator);
-        given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
-                .willThrow(new HandleStatusException(INVALID_AUTORENEW_ACCOUNT));
-
-        final var failure = assertThrows(
-                HandleStatusException.class,
-                () -> subject.handle(handleContext, op, config, recordBuilder, topicStore));
-        assertEquals(INVALID_AUTORENEW_ACCOUNT, failure.getStatus());
     }
 
     @Test

@@ -25,23 +25,28 @@ import static org.mockito.Mockito.verify;
 import com.hedera.node.app.service.token.impl.serdes.StringCodec;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
-import java.io.IOException;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.IOException;
+
 @ExtendWith(MockitoExtension.class)
 class StringSerdesTest {
     private static final String SOME_STRING = "TestString";
 
-    @Mock
-    private ReadableSequentialData in;
+    @Mock private ReadableSequentialData in;
 
-    @Mock
-    private WritableSequentialData out;
+    @Mock private WritableSequentialData out;
 
     final StringCodec subject = new StringCodec();
+
+    @Test
+    void givesTypicalSize() {
+        assertEquals(255, subject.typicalSize());
+    }
 
     @Test
     void providesFastEquals() throws IOException {

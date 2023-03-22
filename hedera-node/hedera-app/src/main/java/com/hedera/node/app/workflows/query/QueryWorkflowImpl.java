@@ -26,6 +26,7 @@ import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER_STATE_PROOF;
 import static com.hedera.node.app.spi.HapiUtils.asTimestamp;
 import static com.swirlds.common.system.PlatformStatus.ACTIVE;
+
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -56,9 +57,15 @@ import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.utility.AutoCloseableWrapper;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Instant;
@@ -67,9 +74,8 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+
 import javax.inject.Inject;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /** Implementation of {@link QueryWorkflow} */
 public final class QueryWorkflowImpl implements QueryWorkflow {
@@ -173,6 +179,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         }
         final ResponseType responseType = queryHeader.responseType();
         LOGGER.info("Started answering a {} query of type {}", functionality, responseType);
+        LOGGER.info("Started answering a {} query of type {}", function, responseType);
         LOGGER.info("Started answering a {} query of type {}", function, responseType);
 
         Response response;
