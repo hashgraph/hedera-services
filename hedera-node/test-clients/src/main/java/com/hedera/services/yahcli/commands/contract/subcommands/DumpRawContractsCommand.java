@@ -133,13 +133,13 @@ public class DumpRawContractsCommand implements Callable<Integer> {
         final var ids = contract.ids();
         if (withIds && !ids.isEmpty()) {
             // Output canonical id - we choose the minimum id (so it is deterministic)
+            final var sortedIds = ids.stream().sorted().toList();
             sb.append('\t');
-            sb.append(ids.stream().mapToInt(i -> i).min().getAsInt());
+            sb.append(sortedIds.get(0));
 
             // Now output _all_ ids
             sb.append('\t');
-
-            sb.append(String.join(",", ids.stream().map(Object::toString).toList()));
+            sb.append(String.join(",", sortedIds.stream().map(Object::toString).toList()));
         }
 
         return sb.toString();

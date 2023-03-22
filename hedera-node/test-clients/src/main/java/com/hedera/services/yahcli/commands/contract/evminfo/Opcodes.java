@@ -24,10 +24,12 @@ import com.google.common.collect.ImmutableSortedMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -41,12 +43,48 @@ public class Opcodes {
 
     /** Properties associated with EVM opcodes, categorizing them */
     public enum Properties {
+        // Blocks
         CALL,
         RETURN,
         JUMP1WAY,
         JUMP2WAY,
         JUMPDEST,
         TERMINAL,
+
+        // Stack manipulation: consumers
+        VOID,
+        EATS1,
+        EATS2,
+        EATS3,
+        EATS4,
+        EATS5,
+        EATS6,
+
+        // Stack manipulation: functions
+        NULLARY,
+        UNARY,
+        BINARY,
+        TERNARY,
+        QUATERNARY,
+        QUINARY,
+        SENARY,
+        SEPTENARY,
+        OCTARY,
+        NONARY,
+
+        // Stack manipulation: special
+        STACK_FIDDLE,
+
+        // Opcodes with variants
+        PUSH,
+        DUP,
+        SWAP,
+        LOG,
+
+        // Specific return types pushed on stack
+        ADDRESS_RETURNED,
+        BOOL_RETURNED,
+
         UNASSIGNED;
 
         @NonNull
@@ -64,25 +102,34 @@ public class Opcodes {
      * Describes an EVM opcode
      *
      * @param opcode - value of the opcode, e.g., 0x62 for a "push 2 bytes" instruction
+     * @param variant - the nth opcode of a set, like 2 for "PUSH2" or 3 for "LOG3"
      * @param extraBytes - how many extra bytes go with this opcode, e.g., 2 for "push 2 bytes"
      * @param mnemonic - mnemonic for this opcode, e.g., "PUSH2" for "push 2 bytes" instruction
      */
-    public record Descr(int opcode, int extraBytes, String mnemonic, Set<Properties> properties) {
+    public record Descr(int opcode, int variant, int extraBytes, String mnemonic, Set<Properties> properties) {
 
         public Descr {
             properties = null != properties ? properties : EnumSet.noneOf(Properties.class);
         }
 
-        public Descr(int opcode, final @NonNull String mnemonic) {
-            this(opcode, 0, mnemonic, null);
+        public Descr(final int opcode, final @NonNull String mnemonic) {
+            this(opcode, 0, 0, mnemonic, null);
         }
 
-        public Descr(int opcode, final @NonNull String mnemonic, @NonNull Set<Properties> properties) {
-            this(opcode, 0, mnemonic, properties);
+        public Descr(final int opcode, final @NonNull String mnemonic, @NonNull Set<Properties> properties) {
+            this(opcode, 0, 0, mnemonic, properties);
         }
 
-        public Descr(int opcode, int extraBytes, final @NonNull String mnemonic) {
-            this(opcode, extraBytes, mnemonic, null);
+        public Descr(
+                final int opcode,
+                final @NonNull String mnemonic,
+                @NonNull Set<Properties> properties,
+                final int variant) {
+            this(opcode, variant, 0, mnemonic, properties);
+        }
+
+        public Descr(final int opcode, final int extraBytes, final @NonNull String mnemonic) {
+            this(opcode, 0, extraBytes, mnemonic, null);
         }
 
         public boolean isAssigned() {
@@ -142,107 +189,109 @@ public class Opcodes {
     }
 
     static {
-        // Create the opcode tables ... see https://ethereum.org/en/developers/docs/evm/opcodes/
+        // Create the opcode tables ... see https://ethereum.org/en/developers/docs/evm/opcodes/ or https://evm.codes
 
         final var descrs = new ArrayList<Descr>(256);
 
         // Start with all the unique/ordinary opcodes
         """
-          00 STOP           TERMINAL
-          01 ADD
-          02 MUL
-          03 SUB
-          04 DIV
-          05 SDIV
-          06 MOD
-          07 SMOD
-          08 ADDMOD
-          09 MULMOD
-          0A EXP
-          0B SIGNEXTEND
-          10 LT
-          11 GT
-          12 SLT
-          13 SGT
-          14 EQ
-          15 ISZERO
-          16 AND
-          17 OR
-          18 XOR
-          19 NOT
-          1A BYTE
-          1B SHL
-          1C SHR
-          1D SAR
-          20 KECCAK256
-          30 ADDRESS
-          31 BALANCE
-          32 ORIGIN
-          33 CALLER
-          34 CALLVALUE
-          35 CALLDATALOAD
-          36 CALLDATASIZE
-          37 CALLDATACOPY
-          38 CODESIZE
-          39 CODECOPY
-          3A GASPRICE
-          3B EXTCODESIZE
-          3C EXTCODECOPY
-          3D RETURNDATASIZE
-          3E RETURNDATACOPY
-          3F EXTCODEHASH
-          40 BLOCKHASH
-          41 COINBASE
-          42 TIMESTAMP
-          43 NUMBER
-          44 PREVRANDAO
-          45 GASLIMIT
-          46 CHAIND
-          47 SELFBALANCE
-          48 BASEFEE
-          50 POP
-          51 MLOAD
-          52 MSTORE
-          53 MSTORE8
-          54 SLOAD
-          55 SSTORE
-          56 JUMP           JUMP1WAY
-          57 JUMPI          JUMP2WAY
-          58 PC
-          59 MSIZE
-          5A GAS
-          5B JUMPDEST       JUMPDEST
-          F0 CREATE
-          F1 CALL           CALL
-          F2 CALLCODE       CALL
-          F3 RETURN         RETURN
-          F4 DELEGATECALL   CALL
-          F5 CREATE2
-          FA STATICCALL     CALL
-          FD REVERT         TERMINAL
-          FE INVALID        TERMINAL
-          FF SELFDESTRUCT   TERMINAL
+          00 STOP           VOID                         TERMINAL
+          01 ADD            BINARY
+          02 MUL            BINARY
+          03 SUB            BINARY
+          04 DIV            BINARY
+          05 SDIV           BINARY
+          06 MOD            BINARY
+          07 SMOD           BINARY
+          08 ADDMOD         BINARY
+          09 MULMOD         BINARY
+          0A EXP            BINARY
+          0B SIGNEXTEND     BINARY
+          10 LT             BINARY     BOOL_RETURNED
+          11 GT             BINARY     BOOL_RETURNED
+          12 SLT            BINARY     BOOL_RETURNED
+          13 SGT            BINARY     BOOL_RETURNED
+          14 EQ             BINARY     BOOL_RETURNED
+          15 ISZERO         UNARY      BOOL_RETURNED
+          16 AND            BINARY
+          17 OR             BINARY
+          18 XOR            BINARY
+          19 NOT            UNARY
+          1A BYTE           BINARY
+          1B SHL            BINARY
+          1C SHR            BINARY
+          1D SAR            BINARY
+          20 KECCAK256      BINARY
+          30 ADDRESS        NULLARY    ADDRESS_RETURNED
+          31 BALANCE        UNARY
+          32 ORIGIN         NULLARY    ADDRESS_RETURNED
+          33 CALLER         NULLARY    ADDRESS_RETURNED
+          34 CALLVALUE      NULLARY
+          35 CALLDATALOAD   UNARY
+          36 CALLDATASIZE   NULLARY
+          37 CALLDATACOPY   EATS3
+          38 CODESIZE       NULLARY
+          39 CODECOPY       EATS3
+          3A GASPRICE       NULLARY
+          3B EXTCODESIZE    UNARY
+          3C EXTCODECOPY    EATS4
+          3D RETURNDATASIZE UNARY
+          3E RETURNDATACOPY EATS3
+          3F EXTCODEHASH    UNARY
+          40 BLOCKHASH      UNARY
+          41 COINBASE       NULLARY    ADDRESS_RETURNED
+          42 TIMESTAMP      NULLARY
+          43 NUMBER         NULLARY
+          44 PREVRANDAO     NULLARY
+          45 GASLIMIT       NULLARY
+          46 CHAIND         NULLARY
+          47 SELFBALANCE    NULLARY
+          48 BASEFEE        NULLARY
+          50 POP            EATS1
+          51 MLOAD          UNARY
+          52 MSTORE         EATS2
+          53 MSTORE8        EATS2
+          54 SLOAD          UNARY
+          55 SSTORE         EATS2
+          56 JUMP           EATS1                        JUMP1WAY
+          57 JUMPI          EATS2                        JUMP2WAY
+          58 PC             NULLARY
+          59 MSIZE          NULLARY
+          5A GAS            NULLARY
+          5B JUMPDEST       VOID                         JUMPDEST
+          F0 CREATE         TERNARY    ADDRESS_RETURNED
+          F1 CALL           SEPTENARY  BOOL_RETURNED     CALL
+          F2 CALLCODE       SEPTENARY  BOOL_RETURNED     CALL
+          F3 RETURN         EATS2                        RETURN
+          F4 DELEGATECALL   SENARY     BOOL_RETURNED     CALL
+          F5 CREATE2        QUATERNARY ADDRESS_RETURNED
+          FA STATICCALL     SENARY     BOOL_RETURNED     CALL
+          FD REVERT         EATS2                        TERMINAL
+          FE INVALID        VOID                         TERMINAL
+          FF SELFDESTRUCT   UNARY                        TERMINAL
           """
                 .lines()
                 .forEach(line -> {
                     final var no = line.split(" +");
                     final var op = Integer.parseUnsignedInt(no[0], 16);
-                    final var properties = Properties.parse(no.length > 2 ? no[2] : "");
+                    final var properties = Properties.parse(
+                            no.length > 2 ? Arrays.stream(no, 2, no.length).collect(Collectors.joining(",")) : "");
                     descrs.add(new Descr(op, no[1], properties));
                 });
 
         // Add all the "multiple" opcodes
         for (int i = 1; i <= 32; i++) {
-            descrs.add(new Descr(0x60 + i - 1, i, "PUSH" + i));
+            descrs.add(new Descr(0x60 + i - 1, i, i, "PUSH" + i, EnumSet.of(Properties.PUSH, Properties.NULLARY)));
         }
         for (int i = 1; i <= 16; i++) {
-            descrs.add(new Descr(0x80 + i - 1, "DUP" + i));
+            descrs.add(new Descr(0x80 + i - 1, "DUP" + i, EnumSet.of(Properties.DUP, Properties.STACK_FIDDLE), i));
         }
         for (int i = 1; i <= 16; i++) {
-            descrs.add(new Descr(0x90 + i - 1, "SWAP" + i));
+            descrs.add(new Descr(0x90 + i - 1, "SWAP" + i, EnumSet.of(Properties.SWAP, Properties.STACK_FIDDLE), i));
         }
         for (int i = 0; i <= 4; i++) {
-            descrs.add(new Descr(0xA0 + i, "LOG" + i));
+            descrs.add(new Descr(
+                    0xA0 + i, "LOG" + i, EnumSet.of(Properties.LOG, Properties.valueOf("EATS" + (i + 2))), i));
         }
         // Add all the unassigned (thus invalid) opcodes
         concatStreams(
@@ -305,7 +354,7 @@ public class Opcodes {
     @NonNull
     public static String formatOpcodeTable() {
         final var LARGE_BLUE_CIRCLE = "\uD83D\uDD35";
-        final var sb = new StringBuilder(/*TODO capacity*/ );
+        final var sb = new StringBuilder(25000);
         for (int i = 0; i < 256; i++) {
             final var opcode = getOpcode(i);
             final var bbstart = opcode.isBasicBlockStart();
@@ -315,7 +364,7 @@ public class Opcodes {
             sb.append(opcode);
             if (bbstart || bbend) {
                 sb.append("                                        ");
-                sb.setLength(lineStart + 40);
+                sb.setLength(lineStart + 60);
                 sb.append(LARGE_BLUE_CIRCLE + " basic block");
                 if (bbstart) sb.append(" START");
                 if (bbend) sb.append(" END");

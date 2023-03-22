@@ -171,6 +171,9 @@ public class SignedStateHolder {
         return new SignedStateHolder(inputFile).dumpContractStorage(operation);
     }
 
+    @SuppressWarnings("java:S3864") // `Stream.peek` should be used with caution - yes, and I've been careful
+    //                                 Plus, IntelliJ suggested replacing a `map` with this `peek`: Two "inspections"
+    //                                 disagreeing with each other: nice.
     @NonNull
     public String dumpContractStorage(@NonNull DumpOperation operation) {
         final var contractKeys = new ConcurrentLinkedQueue<ContractKeyLocal>();
@@ -194,12 +197,12 @@ public class SignedStateHolder {
                     .mapToInt(ConcurrentLinkedQueue::size)
                     .sum();
 
+            System.out.println("****** %d contract stores found, %d k/v pairs"
+                    .formatted(nDistinctContractIds, nContractStateValues));
+
             final var contractStates = contractState.entrySet().stream()
                     .map(entry -> Pair.of(entry.getKey(), new ArrayList<>(entry.getValue())))
-                    .map(entry -> {
-                        entry.getRight().sort(naturalOrder());
-                        return entry;
-                    })
+                    .peek(entry -> entry.getRight().sort(naturalOrder()))
                     .sorted(comparingByKey())
                     .toList();
 
