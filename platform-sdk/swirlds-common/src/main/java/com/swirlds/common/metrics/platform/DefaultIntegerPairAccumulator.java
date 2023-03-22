@@ -16,17 +16,17 @@
 
 package com.swirlds.common.metrics.platform;
 
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
-
 import com.swirlds.common.metrics.IntegerPairAccumulator;
 import com.swirlds.common.metrics.MetricConfig;
 import com.swirlds.common.metrics.MetricType;
 import com.swirlds.common.metrics.atomic.AtomicIntPair;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+
 import java.util.List;
 import java.util.function.BiFunction;
-import java.util.function.IntSupplier;
-import org.apache.commons.lang3.builder.ToStringBuilder;
+
+import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 
 /**
  * Platform-implementation of {@link IntegerPairAccumulator}
@@ -36,18 +36,17 @@ public class DefaultIntegerPairAccumulator<T> extends DefaultMetric implements I
     private final DataType dataType;
     private final AtomicIntPair container;
     private final BiFunction<Integer, Integer, T> resultFunction;
-    private final IntSupplier leftInitializer;
-    private final IntSupplier rightInitializer;
 
     public DefaultIntegerPairAccumulator(final Config<T> config) {
         super(config);
         this.dataType = MetricConfig.mapDataType(config.getType());
-        this.container = new AtomicIntPair(config.getLeftAccumulator(), config.getRightAccumulator());
+        this.container = new AtomicIntPair(
+                config.getLeftAccumulator(),
+                config.getRightAccumulator(),
+                config.getLeftReset(),
+                config.getRightReset()
+        );
         this.resultFunction = config.getResultFunction();
-        this.leftInitializer = config.getLeftInitializer();
-        this.rightInitializer = config.getRightInitializer();
-
-        this.container.set(leftInitializer.getAsInt(), rightInitializer.getAsInt());
     }
 
     @Override
@@ -69,7 +68,7 @@ public class DefaultIntegerPairAccumulator<T> extends DefaultMetric implements I
     @Override
     public List<SnapshotEntry> takeSnapshot() {
         final T result =
-                container.computeAndSet(resultFunction, leftInitializer.getAsInt(), rightInitializer.getAsInt());
+                container.computeAndReset(resultFunction);
         return List.of(new SnapshotEntry(VALUE, result));
     }
 
@@ -86,7 +85,7 @@ public class DefaultIntegerPairAccumulator<T> extends DefaultMetric implements I
      */
     @Override
     public void reset() {
-        container.set(leftInitializer.getAsInt(), rightInitializer.getAsInt());
+        container.reset();
     }
 
     /**

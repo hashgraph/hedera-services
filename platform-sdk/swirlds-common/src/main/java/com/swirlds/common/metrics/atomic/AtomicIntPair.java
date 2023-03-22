@@ -19,7 +19,9 @@ package com.swirlds.common.metrics.atomic;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 import java.util.function.IntBinaryOperator;
+import java.util.function.IntUnaryOperator;
 import java.util.function.LongBinaryOperator;
+import java.util.function.LongUnaryOperator;
 import java.util.function.ToDoubleBiFunction;
 
 /**
@@ -30,6 +32,7 @@ public class AtomicIntPair {
     private static final int RESET_VALUE = 0;
     private final AtomicLong container;
     private final LongBinaryOperator operator;
+    private final LongUnaryOperator reset;
 
     /**
      * Uses default accumulator method {@link Integer#sum(int, int)}
@@ -45,12 +48,58 @@ public class AtomicIntPair {
      *                         {@link #accumulate(int, int)} is called
      */
     public AtomicIntPair(final IntBinaryOperator leftAccumulator, final IntBinaryOperator rightAccumulator) {
-        operator = (current, supplied) -> {
+        this(
+                createAccumulator(leftAccumulator, rightAccumulator),
+                (current) -> RESET_VALUE
+        );
+    }
+
+    /**
+     * @param leftAccumulator  the method that will be used to calculate the new value for the left integer when
+     *                         {@link #accumulate(int, int)} is called
+     * @param rightAccumulator the method that will be used to calculate the new value for the right integer when
+     *                         {@link #accumulate(int, int)} is called
+     * @param leftReset        the method that will be used to calculate the new value for the left integer when it is being reset
+     * @param rightReset      the method that will be used to calculate the new value for the right integer when it is being reset
+     */
+    public AtomicIntPair(
+            final IntBinaryOperator leftAccumulator,
+            final IntBinaryOperator rightAccumulator,
+            final IntUnaryOperator leftReset,
+            final IntUnaryOperator rightReset) {
+        this(
+                createAccumulator(leftAccumulator, rightAccumulator),
+                (current) -> {
+                    final int left = leftReset.applyAsInt(extractLeft(current));
+                    final int right = rightReset.applyAsInt(extractRight(current));
+                    return combine(left, right);
+                }
+        );
+    }
+
+    private AtomicIntPair(
+            final LongBinaryOperator accumulator,
+            final LongUnaryOperator reset) {
+        operator = accumulator;
+        this.container = new AtomicLong(RESET_VALUE);
+        this.reset = reset;
+        reset();
+    }
+
+    /**
+     * Combines the two int accumulators into a single method
+     * @param leftAccumulator the accumulator used to update the left integer
+     * @param rightAccumulator the accumulator used to update the right integer
+     * @return a method that will update both integers
+     */
+    private static LongBinaryOperator createAccumulator(
+            final IntBinaryOperator leftAccumulator,
+            final IntBinaryOperator rightAccumulator) {
+        return (current, supplied) -> {
             final int left = leftAccumulator.applyAsInt(extractLeft(current), extractLeft(supplied));
             final int right = rightAccumulator.applyAsInt(extractRight(current), extractRight(supplied));
             return combine(left, right);
         };
-        this.container = new AtomicLong(RESET_VALUE);
     }
 
     /**
@@ -93,20 +142,7 @@ public class AtomicIntPair {
      * Same as {@link #computeDouble(ToDoubleBiFunction)} but also atomically resets the integers to the initial value
      */
     public double computeDoubleAndReset(final ToDoubleBiFunction<Integer, Integer> compute) {
-        return computeDoubleAndSet(compute, RESET_VALUE, RESET_VALUE);
-    }
-
-    /**
-     * Atomically computes a double using the provided function and sets the values to the ones provided
-     *
-     * @param compute the compute function
-     * @param left    the left value to set
-     * @param right   the right value to set
-     * @return the double computed
-     */
-    public double computeDoubleAndSet(
-            final ToDoubleBiFunction<Integer, Integer> compute, final int left, final int right) {
-        final long twoInts = container.getAndSet(combine(left, right));
+        final long twoInts = container.getAndUpdate(reset);
         return compute.applyAsDouble(extractLeft(twoInts), extractRight(twoInts));
     }
 
@@ -136,7 +172,7 @@ public class AtomicIntPair {
      * Same as {@link #compute(BiFunction)} but also atomically resets the integers to {@code 0}
      */
     public <T> T computeAndReset(final BiFunction<Integer, Integer, T> compute) {
-        final long twoInts = container.getAndSet(RESET_VALUE);
+        final long twoInts = container.getAndUpdate(reset);
         return compute.apply(extractLeft(twoInts), extractRight(twoInts));
     }
 
@@ -152,7 +188,7 @@ public class AtomicIntPair {
      * Resets the integers to the initial value
      */
     public void reset() {
-        container.getAndSet(RESET_VALUE);
+        container.getAndUpdate(reset);
     }
 
     private static int extractLeft(final long pair) {

@@ -16,26 +16,26 @@
 
 package com.swirlds.common.metrics.platform;
 
-import static com.swirlds.common.metrics.IntegerPairAccumulator.AVERAGE;
-import static com.swirlds.common.metrics.Metric.DataType.STRING;
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.common.statistics.StatsBuffered;
-import java.util.List;
-import java.util.function.BiFunction;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
+import java.util.function.BiFunction;
+
+import static com.swirlds.common.metrics.IntegerPairAccumulator.AVERAGE;
+import static com.swirlds.common.metrics.Metric.DataType.STRING;
+import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class DefaultIntegerPairAccumulatorTest {
 
@@ -206,8 +206,45 @@ class DefaultIntegerPairAccumulatorTest {
                 new IntegerPairAccumulator.Config<>(CATEGORY, NAME, Double.class, AVERAGE);
         final IntegerPairAccumulator<Double> accumulator = new DefaultIntegerPairAccumulator<>(config);
 
+        // when
+        accumulator.update(10, 10);
+        accumulator.update(5, 5);
+
         // then
-        assertThatCode(accumulator::reset).doesNotThrowAnyException();
+        assertEquals(1.0, accumulator.get());
+
+        // when
+        accumulator.reset();
+
+        // then
+        assertEquals(0.0, accumulator.get());
+    }
+
+    @Test
+    void testCustomReset() {
+        // given
+        final int leftDefault = 10;
+        final int rightDefault = 5;
+        final IntegerPairAccumulator.Config<Integer> config =
+                new IntegerPairAccumulator.Config<>(CATEGORY, NAME, Integer.class, Integer::sum)
+                        .withLeftReset(i->leftDefault)
+                        .withRightReset(i->rightDefault);
+        final IntegerPairAccumulator<Integer> accumulator = new DefaultIntegerPairAccumulator<>(config);
+
+        // then
+        assertEquals(15, accumulator.get());
+
+        // when
+        accumulator.update(1, 2);
+
+        // then
+        assertEquals(18, accumulator.get());
+
+        // when
+        accumulator.reset();
+
+        // then
+        assertEquals(15, accumulator.get());
     }
 
     @SuppressWarnings("removal")
