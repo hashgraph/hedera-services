@@ -24,7 +24,6 @@ import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -76,23 +75,16 @@ final class ConcurrentArray<T> {
      * <p>
      * Instead, we have a linked list of smaller "sub" arrays. Whenever we need to grow capacity,
      * rather than creating a new larger array and copying all the elements out of the old array into the new one,
-     * we simply create a new array. Whenever we need to "merge" another adjacent {@link ConcurrentArray} with this
-     * one, we just move the head pointer of the current {@link ConcurrentArray} and avoid all array copies.
+     * we simply create a new array. Whenever we need to "merge" another {@link ConcurrentArray} with this
+     * one, we just link them together and avoid all array copies.
      * <p>
      * To make this safe, it is imperative that <strong>only</strong> an immutable {@link ConcurrentArray} is the
      * source of a copy, so that the destination array can safely refer to the sub-arrays of the source.
      * <p>
-     * Multiple copies of {@link ConcurrentArray}s can share the same linked list. A copy is defined by {@code head}
-     * and {@code elementCount}. An empty copy has {@code head == null} and {@code elementCount == 0}.
-     * Non-empty copies never share the same sub-array.
      */
-    private volatile SubArray<T> head;
+    private SubArray<T> head;
 
-    /**
-     * A reference to the last {@link SubArray}. It is shared between all copies in a family. It needs to be a reference
-     * so that {@code head} of a new copy could be set lazily.
-     */
-    private final AtomicReference<SubArray<T>> current;
+    private SubArray<T> tail;
 
     /**
      * A thread-safe field holding the number of elements (that is, the number of actual elements in all sub-arrays).
@@ -145,25 +137,14 @@ final class ConcurrentArray<T> {
         // Add the first array, so we are primed and ready to go. This also saves on a check later for an empty
         // linked list (we always know there is at least one sub-array).
         this.subarrayCapacity = capacity;
-        current = new AtomicReference<>();
-        current.set(new SubArray<>(capacity));
+        head = new SubArray<>(capacity);
+        tail = head;
     }
 
     /**
-     * Create a new copy from the current one. We can't set {@code head} in the constructor.
+     * Effectively adds all {@link SubArray}s from another {@link ConcurrentArray}.
      * @param other
-     *      The previous copy sharing the linked list of {@link SubArray}s.
-     */
-    ConcurrentArray(final ConcurrentArray<T> other) {
-        this.subarrayCapacity = other.subarrayCapacity;
-        this.current = other.current;
-        this.head = null;
-    }
-
-    /**
-     * Effectively add all {@link SubArray}s from the previous copy.
-     * @param other
-     *      The previous copy from the same family.
+     *      {@link ConcurrentArray} to be merged.
      */
     void merge(final ConcurrentArray<T> other) {
         Objects.requireNonNull(other);
@@ -177,12 +158,12 @@ final class ConcurrentArray<T> {
             throw new IllegalArgumentException("Can not merge with itself");
         }
 
-        if (this.current != other.current) {
-            throw new IllegalArgumentException("Arrays are not from the same family");
-        }
-
-        if (other.head != null) {
+        if (elementCount.get() == 0) {
             head = other.head;
+            tail = other.tail;
+        }
+        else if (other.elementCount.get() > 0) {
+            tail.next = other.head;
             elementCount.addAndGet(other.size());
         }
     }
@@ -258,32 +239,17 @@ final class ConcurrentArray<T> {
             throw new IllegalStateException("You can not call add on a immutable ConcurrentArray");
         }
 
-        // Lazily initialize the head of this copy.
-        if (head == null) {
-            synchronized (this) {
-                if (head == null) {
-                    SubArray<T> cur = current.get();
-                    if (cur.size.get() > 0) {
-                        cur.next = new SubArray<>(subarrayCapacity);
-                        cur = cur.next;
-                        current.set(cur);
-                    }
-                    head = cur;
-                }
-            }
-        }
-
         // The sub-arrays in the list are all considered full except for the very last one. If the very last one is
         // also full, then add a new sub-array. We want to avoid locking for normal operations, and only
         // do so if the sub-array is full. So we will get the last sub-array, try to add to it, and if we fail
         // to do so, then we will acquire the lock to create a new sub-array.
-        boolean success = current.get().add(element);
+        boolean success = tail.add(element);
         if (!success) {
             synchronized (this) {
                 // Within this lock we need to create a new sub-array. Unless in a race another thread has already
                 // entered this critical section and created the sub array. So we will once again get the last
                 // sub-array from the list, try to add to it, and determine if we need to add a new sub-array.
-                success = current.get().add(element);
+                success = tail.add(element);
                 if (!success) {
                     // Create the sub-array
                     final SubArray<T> newArray = new SubArray<>(subarrayCapacity);
@@ -296,8 +262,7 @@ final class ConcurrentArray<T> {
                     // other threads can come along and add items to the array. If we were to put this
                     // into the list too soon, then the array could be filled up before our thread
                     // has a chance, causing the above assertion to fail.
-                    current.get().next = newArray;
-                    current.set(newArray);
+                    tail = tail.next = newArray;
                 }
             }
         }

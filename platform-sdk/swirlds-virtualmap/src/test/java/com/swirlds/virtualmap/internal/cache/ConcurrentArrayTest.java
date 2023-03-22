@@ -109,9 +109,9 @@ class ConcurrentArrayTest {
     @DisplayName("ConcurrentArrays must be immutable when merged")
     void mergeConstructorCannotTakeMutableSources() {
         final ConcurrentArray<String> mutableSource1 = new ConcurrentArray<>(10);
-        final ConcurrentArray<String> immutableSource = new ConcurrentArray<>(mutableSource1);
+        final ConcurrentArray<String> immutableSource = new ConcurrentArray<>(10);
         immutableSource.seal();
-        final ConcurrentArray<String> mutableSource2 = new ConcurrentArray<>(immutableSource);
+        final ConcurrentArray<String> mutableSource2 = new ConcurrentArray<>(10);
 
         assertThrows(
                 IllegalArgumentException.class,
@@ -156,7 +156,7 @@ class ConcurrentArrayTest {
         // Let 5 be left off
         a.seal();
 
-        final ConcurrentArray<String> b = new ConcurrentArray<>(a);
+        final ConcurrentArray<String> b = new ConcurrentArray<>(10);
         b.add("Element F");
         b.add("Element 2");
         b.add("Element 7");
@@ -204,7 +204,7 @@ class ConcurrentArrayTest {
         a.seal();
 
         // Make sure there is an empty space in this array for the test to be valid
-        final ConcurrentArray<String> b = new ConcurrentArray<>(a);
+        final ConcurrentArray<String> b = new ConcurrentArray<>(5);
         b.add("Element 5");
         b.add("Element 6");
         b.seal();
@@ -213,14 +213,9 @@ class ConcurrentArrayTest {
         assertTrue(b.isImmutable(), "Expected array to be immutable");
     }
 
-    /**
-     * Although this is NOT A REQUIREMENT for our implementation (at least, at the time
-     * this comment was written), it should be possible to use a ConcurrentArray as the source
-     * of more than one merged ConcurrentArray.
-     */
     @Test
     @Tags({@Tag("VirtualMerkle"), @Tag("VirtualNodeCache")})
-    @DisplayName("Reusing the same ConcurrentArray source should be permitted")
+    @DisplayName("Multiple merge")
     void reusingTheSameSourceArrayIsOK() {
         final ConcurrentArray<String> a = new ConcurrentArray<>(5);
         a.add("Element 1");
@@ -229,14 +224,14 @@ class ConcurrentArrayTest {
         a.add("Element 4");
         a.seal();
 
-        final ConcurrentArray<String> b = new ConcurrentArray<>(a);
+        final ConcurrentArray<String> b = new ConcurrentArray<>(5);
         b.add("Element 5");
         b.add("Element 6");
         b.add("Element 7");
         b.add("Element 8");
         b.seal();
 
-        final ConcurrentArray<String> c = new ConcurrentArray<>(b);
+        final ConcurrentArray<String> c = new ConcurrentArray<>(5);
         c.add("Element A");
         c.add("Element B");
         c.add("Element C");

@@ -263,7 +263,7 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * <p>
      * <strong>ONE PER CACHE INSTANCE</strong>.
      */
-    private ConcurrentArray<Mutation<VirtualLeafRecord<K, V>>> dirtyLeaves;
+    private ConcurrentArray<Mutation<VirtualLeafRecord<K, V>>> dirtyLeaves = new ConcurrentArray<>();
 
     /**
      * A set of leaf path changes that occurred in this version of the cache. This is separate
@@ -273,7 +273,7 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * <p>
      * <strong>ONE PER CACHE INSTANCE</strong>.
      */
-    private ConcurrentArray<Mutation<K>> dirtyLeafPaths;
+    private ConcurrentArray<Mutation<K>> dirtyLeafPaths = new ConcurrentArray<>();
 
     /**
      * A set of all modifications to internal nodes that occurred in this version of the cache.
@@ -283,7 +283,7 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
      * <p>
      * <strong>ONE PER CACHE INSTANCE</strong>.
      */
-    private ConcurrentArray<Mutation<VirtualInternalRecord>> dirtyInternals;
+    private ConcurrentArray<Mutation<VirtualInternalRecord>> dirtyInternals = new ConcurrentArray<>();
 
     /**
      * A shared lock that prevents two copies from being merged/released at the same time. For example,
@@ -318,9 +318,6 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
         this.keyToDirtyLeafIndex = new ConcurrentHashMap<>();
         this.pathToDirtyLeafIndex = new ConcurrentHashMap<>();
         this.pathToDirtyInternalIndex = new ConcurrentHashMap<>();
-        this.dirtyLeaves = new ConcurrentArray<>();
-        this.dirtyLeafPaths = new ConcurrentArray<>();
-        this.dirtyInternals = new ConcurrentArray<>();
         this.releaseLock = new ReentrantLock();
         this.lastReleased = new AtomicLong(-1L);
     }
@@ -343,9 +340,6 @@ public final class VirtualNodeCache<K extends VirtualKey<? super K>, V extends V
         this.keyToDirtyLeafIndex = source.keyToDirtyLeafIndex;
         this.pathToDirtyLeafIndex = source.pathToDirtyLeafIndex;
         this.pathToDirtyInternalIndex = source.pathToDirtyInternalIndex;
-        this.dirtyLeaves = new ConcurrentArray<>(source.dirtyLeaves);
-        this.dirtyLeafPaths = new ConcurrentArray<>(source.dirtyLeafPaths);
-        this.dirtyInternals = new ConcurrentArray<>(source.dirtyInternals);
         this.releaseLock = source.releaseLock;
         this.lastReleased = source.lastReleased;
 
