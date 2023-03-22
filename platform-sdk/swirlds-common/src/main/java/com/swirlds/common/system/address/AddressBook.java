@@ -346,16 +346,23 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
     }
 
     /**
-     * Updates the stake on the address with the given ID. If the address does not exist, a NoSuchElementException is thrown.
+     * Updates the stake on the address with the given ID. If the address does not exist, a NoSuchElementException is
+     * thrown. If the stake value is negative, an illegal argument exception is thrown.  This method does not validate
+     * the address book is valid after updating the address.  When the user is finished with making incremental changes,
+     * the final address book should be validated.
      *
-     * @param id the ID of the address to update.
-     * @param stake the new stake value.
-     * @throws NoSuchElementException if the address does not exist.
+     * @param id    the ID of the address to update.
+     * @param stake the new stake value.  The stake must be nonnegative.
+     * @throws NoSuchElementException   if the address does not exist.
+     * @throws IllegalArgumentException if the stake is negative.
      */
     public void updateStake(final long id, final long stake) {
         final Address address = getAddress(id);
         if (address == null) {
             throw new NoSuchElementException("no address with ID " + id + " exists");
+        }
+        if (stake < 0) {
+            throw new IllegalArgumentException("stake must be nonnegative");
         }
         updateAddress(address.copySetStake(stake));
     }

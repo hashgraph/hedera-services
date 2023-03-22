@@ -42,6 +42,7 @@ import java.text.ParseException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
@@ -134,6 +135,14 @@ class AddressBookTests {
         assertEquals(totalStake + 1, addressBook.getTotalStake(), "total stake should be updated by 1");
         final Address reverted = updatedAddress.copySetStake(newStake - 1);
         assertEquals(address, reverted, "reverted address should be equal to original");
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> addressBook.updateStake(address.getId(), -1),
+                "should not be able to set negative stake");
+        assertThrows(
+                NoSuchElementException.class,
+                () -> addressBook.updateStake(addressBook.getNextNodeId(), 1),
+                "should not be able to set stake for non-existent node");
     }
 
     @Test
