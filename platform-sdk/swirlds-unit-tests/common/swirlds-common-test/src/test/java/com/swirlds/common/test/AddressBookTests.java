@@ -42,6 +42,7 @@ import java.text.ParseException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
@@ -116,6 +117,32 @@ class AddressBookTests {
             assertTrue(addressBook.contains(nodeId), "address book does not have address for node");
             assertEquals(expectedAddresses.get(nodeId), addressBook.getAddress(nodeId), "address should match");
         }
+    }
+
+    @Test
+    @DisplayName("Address Book Update Stake Test")
+    void validateAddressBookUpdateStakeTest() {
+        final RandomAddressBookGenerator generator = new RandomAddressBookGenerator(getRandomPrintSeed()).setSize(10);
+        final AddressBook addressBook = generator.build();
+        final Address address = addressBook.getAddress(addressBook.getId(0));
+        final long totalStake = addressBook.getTotalStake();
+        final long newStake = address.getStake() + 1;
+
+        addressBook.updateStake(address.getId(), newStake);
+
+        final Address updatedAddress = addressBook.getAddress(addressBook.getId(0));
+        assertEquals(newStake, updatedAddress.getStake(), "stake should be updated");
+        assertEquals(totalStake + 1, addressBook.getTotalStake(), "total stake should be updated by 1");
+        final Address reverted = updatedAddress.copySetStake(newStake - 1);
+        assertEquals(address, reverted, "reverted address should be equal to original");
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> addressBook.updateStake(address.getId(), -1),
+                "should not be able to set negative stake");
+        assertThrows(
+                NoSuchElementException.class,
+                () -> addressBook.updateStake(addressBook.getNextNodeId(), 1),
+                "should not be able to set stake for non-existent node");
     }
 
     @Test
