@@ -52,7 +52,6 @@ import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.hedera.pbj.runtime.io.buffer.RandomAccessData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
@@ -164,10 +163,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
         }
 
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Received query: {}", query);
-        }
-
         final var functionality = functionOf(query);
         received.get(functionality).increment();
 
@@ -178,6 +173,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         }
         final ResponseType responseType = queryHeader.responseType();
         LOGGER.info("Started answering a {} query of type {}", functionality, responseType);
+        LOGGER.info("Started answering a {} query of type {}", function, responseType);
 
         Response response;
         long fee = 0L;
@@ -267,7 +263,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
 
         try {
             Response.PROTOBUF.write(response, responseBuffer);
-            LOGGER.debug("Finished handling a query request in Query workflow");
+            LOGGER.debug("Finished answering a {} query of type {}", function, responseType);
         } catch (IOException e) {
             e.printStackTrace();
             throw new StatusRuntimeException(Status.INTERNAL);

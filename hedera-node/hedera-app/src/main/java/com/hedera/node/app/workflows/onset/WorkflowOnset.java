@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BOD
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
-
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -42,15 +41,12 @@ import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.buffer.RandomAccessData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
-
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * This class does some pre-processing before each workflow. It parses the provided {@link
@@ -178,7 +174,8 @@ public class WorkflowOnset {
     }
 
     public static <T extends Record> T parse(
-            @NonNull ReadableSequentialData data, Codec<T> codec, ResponseCodeEnum parseErrorCode) throws PreCheckException {
+            @NonNull ReadableSequentialData data, Codec<T> codec, ResponseCodeEnum parseErrorCode)
+            throws PreCheckException {
 
         try {
             return codec.parseStrict(data);

@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.fees;
 
+import static com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter.fromPbjKey;
+import static com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter.unwrapPbj;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjKey;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbjTopicId;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.unwrapPbj;

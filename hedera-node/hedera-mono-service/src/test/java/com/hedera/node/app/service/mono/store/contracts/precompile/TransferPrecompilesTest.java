@@ -57,6 +57,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTes
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.nftsTransferList;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.nftsTransferListAliasReceiver;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.receiver;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.recipientAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.sender;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.timestamp;
@@ -161,6 +162,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Deque;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -169,6 +172,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -184,6 +188,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TransferPrecompilesTest {
+    @Mock
+    private Account acc;
+
+    @Mock
+    private Deque<MessageFrame> stack;
+
+    @Mock
+    private Iterator<MessageFrame> dequeIterator;
+
     @Mock
     private HederaTokenStore hederaTokenStore;
 
@@ -319,13 +332,13 @@ class TransferPrecompilesTest {
     private static final Bytes TRANSFER_TOKEN_INPUT = Bytes.fromHexString(
             "0xeca3691700000000000000000000000000000000000000000000000000000000000004380000000000000000000000000000000000000000000000000000000000000435000000000000000000000000000000000000000000000000000000000000043a0000000000000000000000000000000000000000000000000000000000000014");
     private static final Bytes POSITIVE_AMOUNTS_TRANSFER_TOKENS_INPUT = Bytes.fromHexString(
-            "0x82bba4930000000000000000000000000000000000000000000000000000000000000444000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000044100000000000000000000000000000000000000000000000000000000000004410000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000014");
+            "0x82bba4930000000000000000000000000000000000000000000000000000000000000444000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000044100000000000000000000000000000000000000000010000000000000000004410000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000014");
     private static final Bytes POSITIVE_NEGATIVE_AMOUNT_TRANSFER_TOKENS_INPUT = Bytes.fromHexString(
             "0x82bba49300000000000000000000000000000000000000000000000000000000000004d8000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000004d500000000000000000000000000000000000000000000000000000000000004d500000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000014ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffec");
     private static final Bytes TRANSFER_NFT_INPUT = Bytes.fromHexString(
             "0x5cfc901100000000000000000000000000000000000000000000000000000000000004680000000000000000000000000000000000000000000000000000000000000465000000000000000000000000000000000000000000000000000000000000046a0000000000000000000000000000000000000000000000000000000000000065");
     private static final Bytes TRANSFER_NFTS_INPUT = Bytes.fromHexString(
-            "0x2c4ba191000000000000000000000000000000000000000000000000000000000000047a000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000e000000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000047700000000000000000000000000000000000000000000000000000000000004770000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000047c000000000000000000000000000000000000000000000000000000000000047c0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000007b00000000000000000000000000000000000000000000000000000000000000ea");
+            "0x2c4ba191000000000000000000000000000000000000000000000000000000000000047a000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000e000000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000047700000000000000000000000000000000000000000000000000000000000004770000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000047c000000000000000000000000000000000000000000000010000000000000047c0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000007b00000000000000000000000000000000000000000000000000000000000000ea");
 
     private HTSPrecompiledContract subject;
     private MockedStatic<TransferPrecompile> transferPrecompile;
@@ -1684,6 +1697,7 @@ class TransferPrecompilesTest {
                 .when(() -> decodeTransferToken(eq(pretendArguments), any(), any()))
                 .thenThrow(new IndexOutOfBoundsException());
 
+        givenIfDelegateCall();
         subject.prepareFields(frame);
         final var result = subject.computePrecompile(pretendArguments, frame);
 
@@ -2234,13 +2248,18 @@ class TransferPrecompilesTest {
         final var fungibleTransfers =
                 decodedInput.tokenTransferWrappers().get(0).fungibleTransfers();
 
+        final var nonLongZeroAlias = ByteStringUtils.wrapUnsafely(
+                java.util.HexFormat.of().parseHex("0000000000000000001000000000000000000441"));
+
         assertEquals(2, fungibleTransfers.size());
         assertTrue(fungibleTransfers.get(0).getDenomination().getTokenNum() > 0);
         assertTrue(fungibleTransfers.get(1).getDenomination().getTokenNum() > 0);
         assertNull(fungibleTransfers.get(0).sender());
         assertNull(fungibleTransfers.get(1).sender());
         assertTrue(fungibleTransfers.get(0).receiver().getAccountNum() > 0);
-        assertTrue(fungibleTransfers.get(1).receiver().getAccountNum() > 0);
+        assertEquals(
+                AccountID.newBuilder().setAlias(nonLongZeroAlias).build(),
+                fungibleTransfers.get(1).receiver());
         assertEquals(10, fungibleTransfers.get(0).amount());
         assertEquals(20, fungibleTransfers.get(1).amount());
         assertEquals(0, hbarTransfers.size());
@@ -2259,19 +2278,23 @@ class TransferPrecompilesTest {
         final var fungibleTransfers =
                 decodedInput.tokenTransferWrappers().get(0).fungibleTransfers();
 
-        final var alias = ByteStringUtils.wrapUnsafely(EntityIdUtils.asTypedEvmAddress(
+        final var longZeroAlias = ByteStringUtils.wrapUnsafely(EntityIdUtils.asTypedEvmAddress(
                         AccountID.newBuilder().setAccountNum(1089).build())
                 .toArrayUnsafe());
+
+        final var nonLongZeroAlias = ByteStringUtils.wrapUnsafely(
+                java.util.HexFormat.of().parseHex("0000000000000000001000000000000000000441"));
+
         assertEquals(2, fungibleTransfers.size());
         assertTrue(fungibleTransfers.get(0).getDenomination().getTokenNum() > 0);
         assertTrue(fungibleTransfers.get(1).getDenomination().getTokenNum() > 0);
         assertNull(fungibleTransfers.get(0).sender());
         assertNull(fungibleTransfers.get(1).sender());
         assertEquals(
-                AccountID.newBuilder().setAlias(alias).build(),
+                AccountID.newBuilder().setAlias(longZeroAlias).build(),
                 fungibleTransfers.get(0).receiver());
         assertEquals(
-                AccountID.newBuilder().setAlias(alias).build(),
+                AccountID.newBuilder().setAlias(nonLongZeroAlias).build(),
                 fungibleTransfers.get(1).receiver());
         assertEquals(10, fungibleTransfers.get(0).amount());
         assertEquals(20, fungibleTransfers.get(1).amount());
@@ -2335,11 +2358,16 @@ class TransferPrecompilesTest {
         final var nonFungibleTransfers =
                 decodedInput.tokenTransferWrappers().get(0).nftExchanges();
 
+        final var nonLongZeroAlias = ByteStringUtils.wrapUnsafely(
+                java.util.HexFormat.of().parseHex("000000000000000000000010000000000000047c"));
+        final var expectedReceiver =
+                AccountID.newBuilder().setAlias(nonLongZeroAlias).build();
+
         assertEquals(2, nonFungibleTransfers.size());
         assertTrue(nonFungibleTransfers.get(0).asGrpc().getSenderAccountID().getAccountNum() > 0);
         assertTrue(nonFungibleTransfers.get(1).asGrpc().getSenderAccountID().getAccountNum() > 0);
         assertTrue(nonFungibleTransfers.get(0).asGrpc().getReceiverAccountID().getAccountNum() > 0);
-        assertTrue(nonFungibleTransfers.get(1).asGrpc().getReceiverAccountID().getAccountNum() > 0);
+        assertEquals(expectedReceiver, nonFungibleTransfers.get(1).asGrpc().getReceiverAccountID());
         assertTrue(nonFungibleTransfers.get(0).getTokenType().getTokenNum() > 0);
         assertTrue(nonFungibleTransfers.get(1).getTokenType().getTokenNum() > 0);
         assertEquals(123, nonFungibleTransfers.get(0).asGrpc().getSerialNumber());
@@ -2367,12 +2395,18 @@ class TransferPrecompilesTest {
         final var alias = ByteStringUtils.wrapUnsafely(EntityIdUtils.asTypedEvmAddress(
                         AccountID.newBuilder().setAccountNum(1148).build())
                 .toArrayUnsafe());
+        final var nonLongZeroAlias = ByteStringUtils.wrapUnsafely(
+                java.util.HexFormat.of().parseHex("000000000000000000000010000000000000047c"));
+
         assertEquals(2, nonFungibleTransfers.size());
         assertTrue(nonFungibleTransfers.get(0).asGrpc().getSenderAccountID().getAccountNum() > 0);
         assertTrue(nonFungibleTransfers.get(1).asGrpc().getSenderAccountID().getAccountNum() > 0);
         final var expectedReceiver = AccountID.newBuilder().setAlias(alias).build();
+        final var secondExpectedReceiver =
+                AccountID.newBuilder().setAlias(nonLongZeroAlias).build();
         assertEquals(expectedReceiver, nonFungibleTransfers.get(0).asGrpc().getReceiverAccountID());
-        assertEquals(expectedReceiver, nonFungibleTransfers.get(1).asGrpc().getReceiverAccountID());
+        assertEquals(
+                secondExpectedReceiver, nonFungibleTransfers.get(1).asGrpc().getReceiverAccountID());
         assertTrue(nonFungibleTransfers.get(0).getTokenType().getTokenNum() > 0);
         assertTrue(nonFungibleTransfers.get(1).getTokenType().getTokenNum() > 0);
         assertEquals(123, nonFungibleTransfers.get(0).asGrpc().getSerialNumber());
@@ -2593,5 +2627,14 @@ class TransferPrecompilesTest {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         given(wrappedLedgers.accounts()).willReturn(accounts);
+    }
+
+    private void givenIfDelegateCall() {
+        given(frame.getContractAddress()).willReturn(contractAddress);
+        given(frame.getRecipientAddress()).willReturn(recipientAddress);
+        given(worldUpdater.get(recipientAddress)).willReturn(acc);
+        given(acc.getNonce()).willReturn(-1L);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(frame.getMessageFrameStack().iterator()).willReturn(dequeIterator);
     }
 }

@@ -65,6 +65,13 @@ import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.test.utils.TxnUtils;
+import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
+import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TopicID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import java.time.Instant;
 import java.util.List;
 import org.assertj.core.api.Assertions;
@@ -85,6 +92,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
     private HandleContext handleContext;
 
     private ConsensusServiceConfig config;
+    private ConsensusSubmitMessageRecordBuilder recordBuilder;
 
     private ConsensusSubmitMessageHandler subject;
 
@@ -93,6 +101,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         commonSetUp();
         subject = new ConsensusSubmitMessageHandler();
         config = new ConsensusServiceConfig(10L, 100);
+        recordBuilder = subject.newRecordBuilder();
 
         writableTopicState = writableTopicStateWithOneKey();
         given(readableStates.<EntityNum, Topic>get(TOPICS)).willReturn(readableTopicState);

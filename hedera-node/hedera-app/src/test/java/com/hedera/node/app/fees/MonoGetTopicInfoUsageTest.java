@@ -17,7 +17,6 @@
 package com.hedera.node.app.fees;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.toProtoQuery;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.junit.jupiter.api.Assertions.*;
@@ -114,7 +113,7 @@ class MonoGetTopicInfoUsageTest {
         given(delegate.usageGivenTypeAndTopic(adapterTopic, ResponseType.ANSWER_STATE_PROOF))
                 .willReturn(mockUsage);
 
-        final var usage = subject.computeUsage(toProtoQuery(query), topicStore);
+        final var usage = subject.computeUsage(query, topicStore);
 
         assertSame(mockUsage, usage);
     }

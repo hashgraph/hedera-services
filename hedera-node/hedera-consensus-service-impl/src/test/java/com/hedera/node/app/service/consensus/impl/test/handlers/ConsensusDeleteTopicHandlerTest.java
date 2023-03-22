@@ -45,6 +45,7 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hashgraph.pbj.runtime.io.Bytes;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
@@ -57,6 +58,11 @@ import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -175,6 +181,62 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
         // then:
         assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.UNAUTHORIZED);
         assertThat(context.failed()).isTrue();
+    }
+
+    @Test
+    @DisplayName("Fails handle if topic doesn't exist")
+    void topicDoesntExist() {
+        final var txn = newDeleteTxn().getConsensusDeleteTopic();
+
+        writableTopicState = emptyWritableTopicState();
+        given(writableStates.<EntityNum, Topic>get(TOPICS)).willReturn(writableTopicState);
+        writableStore = new WritableTopicStore(writableStates);
+
+        final var msg = assertThrows(HandleStatusException.class, () -> subject.handle(txn, writableStore));
+        assertEquals(ResponseCodeEnum.INVALID_TOPIC_ID, msg.getStatus());
+    }
+
+    @Test
+    @DisplayName("Fails handle if admin key doesn't exist on topic to be deleted")
+    void adminKeyDoesntExist() {
+        final var txn = newDeleteTxn().getConsensusDeleteTopic();
+
+        topic = new Topic(
+                topicId.getTopicNum(),
+                sequenceNumber,
+                expirationTime,
+                autoRenewSecs,
+                10L,
+                false,
+                Bytes.wrap(runningHash),
+                memo,
+                null,
+                null);
+
+        writableTopicState = writableTopicStateWithOneKey();
+        given(writableStates.<EntityNum, Topic>get(TOPICS)).willReturn(writableTopicState);
+        writableStore = new WritableTopicStore(writableStates);
+
+        final var msg = assertThrows(HandleStatusException.class, () -> subject.handle(txn, writableStore));
+
+        assertEquals(ResponseCodeEnum.UNAUTHORIZED, msg.getStatus());
+    }
+
+    @Test
+    @DisplayName("Handle works as expected")
+    void handleWorksAsExpected() {
+        final var txn = newDeleteTxn().getConsensusDeleteTopic();
+
+        final var existingTopic = writableStore.get(topicEntityNum.longValue());
+        assertTrue(existingTopic.isPresent());
+        assertFalse(existingTopic.get().deleted());
+
+        subject.handle(txn, writableStore);
+
+        final var changedTopic = writableStore.get(topicEntityNum.longValue());
+
+        assertTrue(changedTopic.isPresent());
+        assertTrue(changedTopic.get().deleted());
     }
 
     @Test

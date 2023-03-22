@@ -37,6 +37,12 @@ import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
+import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.TopicID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -129,7 +135,7 @@ public class TransactionDispatcher {
         final var txBody = context.getTxn();
         switch (txBody.data().kind()) {
             case CONSENSUS_CREATE_TOPIC -> handlers.consensusCreateTopicHandler()
-                    .preHandle(context);
+                    .preHandle(context, storeFactory.createTopicStore());
             case CONSENSUS_UPDATE_TOPIC -> handlers.consensusUpdateTopicHandler()
                     .preHandle(context, storeFactory.createTopicStore());
             case CONSENSUS_DELETE_TOPIC -> handlers.consensusDeleteTopicHandler()

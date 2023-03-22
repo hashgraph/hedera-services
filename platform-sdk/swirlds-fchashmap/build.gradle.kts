@@ -24,6 +24,7 @@ dependencies {
   // Individual Dependencies
   api(project(":swirlds-common"))
   api(project(":swirlds-config-api"))
+  compileOnly(libs.spotbugs.annotations)
 
   // Test Dependencies
   testImplementation(project(":swirlds-config-impl"))

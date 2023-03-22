@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.prehandle;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -71,6 +72,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class PreHandleWorkflowImplTest extends AppTestBase {
+
+    @Mock(strictness = LENIENT)
+    private TransactionSignature cryptoSig;
+
+    @Mock(strictness = LENIENT)
+    private HederaKey payerKey;
+
+    @Mock(strictness = LENIENT)
+    private ReadableStoreFactory storeFactory;
 
     @Mock(strictness = LENIENT)
     private TransactionSignature cryptoSig;

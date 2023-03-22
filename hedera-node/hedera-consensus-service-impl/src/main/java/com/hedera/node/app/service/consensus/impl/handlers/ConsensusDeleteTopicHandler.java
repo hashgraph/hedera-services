@@ -18,6 +18,8 @@ package com.hedera.node.app.service.consensus.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;

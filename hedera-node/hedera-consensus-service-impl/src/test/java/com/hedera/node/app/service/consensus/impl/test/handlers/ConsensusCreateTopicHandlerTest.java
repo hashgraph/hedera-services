@@ -16,12 +16,16 @@
 
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
+import static com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter.fromGrpcKey;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_A;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_B;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertOkResponse;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -275,6 +279,39 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var op = newCreateTxn(adminKey, submitKey, true).consensusCreateTopicOrThrow();
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
+        given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
+        given(handleContext.attributeValidator()).willReturn(validator);
+        given(handleContext.expiryValidator()).willReturn(expiryValidator);
+        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
+                .willReturn(new ExpiryMeta(
+                        1_234_567L + op.getAutoRenewPeriod().getSeconds(),
+                        op.getAutoRenewPeriod().getSeconds(),
+                        op.getAutoRenewAccount().getAccountNum()));
+        given(handleContext.newEntityNumSupplier()).willReturn(() -> 1_234L);
+
+        subject.handle(handleContext, op, config, recordBuilder, topicStore);
+
+        final var createdTopic = topicStore.get(1_234L);
+        assertTrue(createdTopic.isPresent());
+
+        final var actualTopic = createdTopic.get();
+        assertEquals(0L, actualTopic.sequenceNumber());
+        assertEquals("memo", actualTopic.memo());
+        assertEquals(fromGrpcKey(adminKey), actualTopic.adminKey());
+        assertEquals(fromGrpcKey(submitKey), actualTopic.submitKey());
+        assertEquals(1244567, actualTopic.expiry());
+        assertEquals(10000, actualTopic.autoRenewPeriod());
+        assertEquals(AUTO_RENEW_ACCOUNT.getAccountNum(), actualTopic.autoRenewAccountNumber());
+        assertEquals(1_234L, recordBuilder.getCreatedTopic());
+        assertTrue(topicStore.get(1234L).isPresent());
+    }
+
+    @Test
+    @DisplayName("Handle works as expected without keys")
+    void handleDoesntRequireKeys() {
+        final var op = newCreateTxn(null, null, true).getConsensusCreateTopic();
+
+        given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
@@ -292,6 +329,11 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var actualTopic = createdTopic.get();
         assertEquals(0L, actualTopic.sequenceNumber());
         assertEquals("memo", actualTopic.memo());
+        assertNull(actualTopic.adminKey());
+        assertNull(actualTopic.submitKey());
+        assertEquals(1244567, actualTopic.expiry());
+        assertEquals(10000, actualTopic.autoRenewPeriod());
+        assertEquals(AUTO_RENEW_ACCOUNT.getAccountNum(), actualTopic.autoRenewAccountNumber());
         assertEquals(adminKey, actualTopic.adminKey());
         assertEquals(submitKey, actualTopic.submitKey());
         assertEquals(1234667, actualTopic.expiry());
@@ -365,6 +407,40 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
                 HandleStatusException.class,
                 () -> subject.handle(handleContext, op, config, recordBuilder, topicStore));
         assertEquals(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT, failure.getStatus());
+    }
+
+    @Test
+    @DisplayName("Translates INVALID_EXPIRATION_TIME to AUTO_RENEW_DURATION_NOT_IN_RANGE")
+    void translatesInvalidExpiryException() {
+        final var op = newCreateTxn(null, null, true).getConsensusCreateTopic();
+
+        given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
+        given(handleContext.attributeValidator()).willReturn(validator);
+        given(handleContext.expiryValidator()).willReturn(expiryValidator);
+        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
+                .willThrow(new HandleStatusException(INVALID_EXPIRATION_TIME));
+
+        final var failure = assertThrows(
+                HandleStatusException.class,
+                () -> subject.handle(handleContext, op, config, recordBuilder, topicStore));
+        assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, failure.getStatus());
+    }
+
+    @Test
+    @DisplayName("Doesnt translate INVALID_AUTORENEW_ACCOUNT")
+    void doesntTranslateInvalidAutoRenewNum() {
+        final var op = newCreateTxn(null, null, true).getConsensusCreateTopic();
+
+        given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
+        given(handleContext.attributeValidator()).willReturn(validator);
+        given(handleContext.expiryValidator()).willReturn(expiryValidator);
+        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
+                .willThrow(new HandleStatusException(INVALID_AUTORENEW_ACCOUNT));
+
+        final var failure = assertThrows(
+                HandleStatusException.class,
+                () -> subject.handle(handleContext, op, config, recordBuilder, topicStore));
+        assertEquals(INVALID_AUTORENEW_ACCOUNT, failure.getStatus());
     }
 
     @Test

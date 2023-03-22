@@ -979,8 +979,7 @@ public final class MiscUtils {
         return csvStream(propertyValue, parser).collect(Collectors.toCollection(() -> EnumSet.noneOf(type)));
     }
 
-    private static <T extends Enum<T>> Stream<T> csvStream(
-            final String propertyValue, final Function<String, T> parser) {
+    public static <T> Stream<T> csvStream(final String propertyValue, final Function<String, T> parser) {
         return Arrays.stream(propertyValue.split(","))
                 .map(String::strip)
                 .filter(desc -> desc.length() > 0)

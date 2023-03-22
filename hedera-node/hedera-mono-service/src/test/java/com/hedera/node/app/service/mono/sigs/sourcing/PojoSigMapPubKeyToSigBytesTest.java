@@ -64,9 +64,11 @@ class PojoSigMapPubKeyToSigBytesTest {
         doCallRealMethod().when(subject).forEachUnusedSigWithFullPrefix(any());
         doCallRealMethod().when(subject).resetAllSigsToUnused();
         doCallRealMethod().when(subject).hasAtLeastOneUnusedSigWithFullPrefix();
+        doCallRealMethod().when(subject).hasAtLeastOneEcdsaSig();
         assertDoesNotThrow(() -> subject.forEachUnusedSigWithFullPrefix(null));
         assertDoesNotThrow(subject::resetAllSigsToUnused);
         assertFalse(subject::hasAtLeastOneUnusedSigWithFullPrefix);
+        assertFalse(subject::hasAtLeastOneEcdsaSig);
     }
 
     @Test
@@ -86,6 +88,7 @@ class PojoSigMapPubKeyToSigBytesTest {
             numUnusedFullPrefixSigs.getAndIncrement();
         });
         assertEquals(2, numUnusedFullPrefixSigs.get());
+        assertTrue(subject.hasAtLeastOneEcdsaSig());
     }
 
     @Test
@@ -148,6 +151,19 @@ class PojoSigMapPubKeyToSigBytesTest {
                 "Source signature map with prefix 544553545f535452494e47 is ambiguous for given"
                         + " public key! (544553545f535452494e47)",
                 exception.getMessage());
+    }
+
+    @Test
+    void hasAtLeastOneEcdsaSigReturnsFalseWhenNoneHaveSigned() throws Throwable {
+        final var signedTxn = newSignedSystemDelete()
+                .payerKt(KeyTree.withRoot(ed25519()))
+                .sigMapGen(withAlternatingUniqueAndFullPrefixes())
+                .get();
+
+        final var subject = new PojoSigMapPubKeyToSigBytes(
+                SignedTxnAccessor.uncheckedFrom(signedTxn).getSigMap());
+
+        assertFalse(subject.hasAtLeastOneEcdsaSig());
     }
 
     private void lookupsMatch(

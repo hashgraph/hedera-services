@@ -47,6 +47,7 @@ class StringSerdesTest {
     void providesFastEquals() throws IOException {
         given(in.readInt()).willReturn(SOME_STRING.getBytes().length);
         subject.fastEquals(SOME_STRING, in);
+        assertEquals(255, subject.typicalSize());
     }
 
     @Test

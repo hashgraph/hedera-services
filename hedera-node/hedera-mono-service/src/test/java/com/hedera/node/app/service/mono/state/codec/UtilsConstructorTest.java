@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.state.codec;
 
+import com.hedera.node.app.spi.state.serdes.SerdesFactory;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -25,7 +26,7 @@ import org.junit.jupiter.api.Test;
 
 class UtilsConstructorTest {
     private static final Set<Class<?>> toBeTested =
-            new HashSet<>(Arrays.asList(MonoMapCodecAdapter.class, CodecFactory.class));
+            new HashSet<>(Arrays.asList(MonoMapCodecAdapter.class, CodecFactory.class, SerdesFactory.class));
 
     @Test
     void throwsInConstructor() {

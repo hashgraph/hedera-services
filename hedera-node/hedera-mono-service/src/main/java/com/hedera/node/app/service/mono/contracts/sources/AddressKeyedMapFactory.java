@@ -73,7 +73,7 @@ public final class AddressKeyedMapFactory {
             final var matcher = legacyPathPattern.matcher(key);
             assert matcher.matches();
 
-            return asEvmAddress(0, parseLong(matcher.group(1)), parseLong(matcher.group(2)));
+            return asEvmAddress(parseLong(matcher.group(2)));
         };
     }
 }
