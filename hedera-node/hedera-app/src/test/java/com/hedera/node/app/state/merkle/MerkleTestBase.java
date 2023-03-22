@@ -317,7 +317,11 @@ public class MerkleTestBase extends StateTestBase {
         }
 
         @Override
-        public void write(@NonNull String s, @NonNull WritableSequentialData output) {}
+        public void write(@NonNull String s, @NonNull WritableSequentialData output) {
+            final var bytes = s.getBytes(StandardCharsets.UTF_8);
+            output.writeInt(bytes.length);
+            output.writeBytes(bytes);
+        }
 
         @Override
         public int measure(@NonNull ReadableSequentialData input) {
