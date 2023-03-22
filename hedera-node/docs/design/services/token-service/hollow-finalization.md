@@ -134,7 +134,4 @@ After we have collected all required keys and expanded the sigs:
 * Verify that a submitted transaction with a hollow payer and **another required** hollow signature, and corresponding `ECDSA` signatures for both accounts, completes both accounts and exports child records
 * Verify that a valid `EthereumTransaction`, whose wrapped sender is a hollow account, completes the wrapped sender's account 
 * Verify that a submitted transaction with more hollow account completions than current max preceding child record limit fails
-* Verify that an `ECDSA` signature in the sig map that does not relate to any required signature for the transaction does not complete a linked hollow account  
-
-## Possible additions
- - we may
+* Verify that an `ECDSA` signature in the sig map that does not relate to any required signature for the transaction does not complete a linked hollow account
