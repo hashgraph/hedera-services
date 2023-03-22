@@ -150,7 +150,7 @@ final class ConcurrentArray<T> {
         Objects.requireNonNull(other);
 
         // We don't allow either to be mutable
-        if (!this.isImmutable() || !other.isImmutable()) {
+        if (!(this.isImmutable() && other.isImmutable())) {
             throw new IllegalArgumentException("Both arrays *must* be immutable");
         }
 
@@ -161,8 +161,7 @@ final class ConcurrentArray<T> {
         if (elementCount.get() == 0) {
             head = other.head;
             tail = other.tail;
-        }
-        else if (other.elementCount.get() > 0) {
+        } else if (other.elementCount.get() > 0) {
             tail.next = other.head;
             elementCount.addAndGet(other.size());
         }
