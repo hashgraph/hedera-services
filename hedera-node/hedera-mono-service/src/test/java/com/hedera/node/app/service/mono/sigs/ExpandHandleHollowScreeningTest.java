@@ -18,9 +18,11 @@ package com.hedera.node.app.service.mono.sigs;
 
 import static com.hedera.node.app.service.mono.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.BDDMockito.willCallRealMethod;
@@ -57,6 +59,7 @@ import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.crypto.TransactionSignature;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import org.bouncycastle.util.Arrays;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -142,6 +145,10 @@ class ExpandHandleHollowScreeningTest {
         // verify pending completions in txn accessor
         final var expectedPendingCompletions = List.of(new PendingCompletion(num, expectedFinalKey));
         assertEquals(expectedPendingCompletions, pendingCompletionCaptor.getValue());
+
+        final var linkedRefs = subject.getLinkedRefs();
+        assertTrue(linkedRefs.linkedAliases().contains(ByteString.copyFrom(evmAddressForKey1)));
+        assertTrue(Arrays.contains(linkedRefs.linkedNumbers(), num.longValue()));
     }
 
     @Test
@@ -389,7 +396,7 @@ class ExpandHandleHollowScreeningTest {
         subject.execute();
 
         verify(txnAccessor, never()).setPendingCompletions(any());
-        screeningMockedStatic.verify(() -> HollowScreening.performFor(any(), any(), any(), any()), never());
+        screeningMockedStatic.verify(() -> HollowScreening.performFor(any(), any(), any(), any(), notNull()), never());
         screeningMockedStatic.close();
     }
 
@@ -409,7 +416,7 @@ class ExpandHandleHollowScreeningTest {
         subject.performFor(txnAccessor);
 
         verify(txnAccessor, never()).setPendingCompletions(any());
-        screeningMockedStatic.verify(() -> HollowScreening.performFor(any(), any(), any(), any()), never());
+        screeningMockedStatic.verify(() -> HollowScreening.performFor(any(), any(), any(), any(), notNull()), never());
         screeningMockedStatic.close();
     }
 

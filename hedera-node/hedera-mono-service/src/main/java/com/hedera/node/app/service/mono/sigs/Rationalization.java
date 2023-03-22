@@ -215,7 +215,7 @@ public class Rationalization {
         if (HollowScreening.atLeastOneWildcardECDSAKeyIn(reqPayerSig, reqOthersSigs)
                 && pkToSigFn.hasAtLeastOneEcdsaSig()) {
             final var hollowScreenResult =
-                    HollowScreening.performFor(txnSigs, reqPayerSig, reqOthersSigs, aliasManager);
+                    HollowScreening.performFor(txnSigs, reqPayerSig, reqOthersSigs, aliasManager, null);
             if (hollowScreenResult.pendingCompletions() != null) {
                 txnAccessor.setPendingCompletions(hollowScreenResult.pendingCompletions());
             }
