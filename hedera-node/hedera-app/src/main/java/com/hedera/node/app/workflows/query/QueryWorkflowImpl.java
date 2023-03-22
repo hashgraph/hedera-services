@@ -28,11 +28,13 @@ import static com.hedera.node.app.spi.HapiUtils.asTimestamp;
 import static com.swirlds.common.system.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.ResponseType;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -50,6 +52,7 @@ import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
+import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
@@ -96,6 +99,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
 
     private final FeeAccumulator feeAccumulator;
     private final QueryContext queryContext;
+    private final Codec<Query> queryParser;
 
     /**
      * Constructor of {@code QueryWorkflowImpl}
@@ -122,7 +126,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             @NonNull final QueryDispatcher dispatcher,
             @NonNull final Metrics metrics,
             @NonNull final FeeAccumulator feeAccumulator,
-            @NonNull final QueryContextImpl queryContext) {
+            @NonNull final QueryContextImpl queryContext,
+            @NonNull final Codec<Query> queryParser) {
         this.nodeInfo = requireNonNull(nodeInfo);
         this.currentPlatformStatus = requireNonNull(currentPlatformStatus);
         this.stateAccessor = requireNonNull(stateAccessor);
@@ -132,6 +137,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         this.dispatcher = requireNonNull(dispatcher);
         this.feeAccumulator = requireNonNull(feeAccumulator);
         this.queryContext = requireNonNull(queryContext);
+        this.queryParser = requireNonNull(queryParser);
 
         // Create metrics for tracking each query received and answered per query type
         for (var function : HederaFunctionality.values()) {
@@ -157,7 +163,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         // 1. Parse and check header
         final Query query;
         try {
-            query = Query.PROTOBUF.parse(requestBuffer.toReadableSequentialData());
+            query = queryParser.parse(requestBuffer.toReadableSequentialData());
         } catch (IOException e) {
             // TODO there may be other types of errors here. Please cross check with ingest parsing
             throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
@@ -206,9 +212,10 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             TransactionBody txBody = null;
             if (paymentRequired) {
                 // 3.i Validate CryptoTransfer
-                allegedPayment = queryHeader.payment();
+                allegedPayment = queryHeader.paymentOrElse(Transaction.DEFAULT);
                 txBody = checker.validateCryptoTransfer(session, allegedPayment);
-                final var payer = txBody.transactionID().accountID();
+                final var payer =
+                        txBody.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT);
 
                 // 3.ii Check permissions
                 checker.checkPermissions(payer, function);
