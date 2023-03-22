@@ -17,10 +17,11 @@
 package com.hedera.node.app.workflows.prehandle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.any;
@@ -30,18 +31,20 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.AppTestBase;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
-import com.hedera.node.app.signature.SigExpansionResult;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.signature.SignaturePreparer;
-import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.fixtures.state.MapReadableStates;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.state.HederaState;
@@ -50,10 +53,12 @@ import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.onset.OnsetResult;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
+import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import java.util.Collections;
 import java.util.Iterator;
@@ -77,7 +82,7 @@ class PreHandleWorkflowImplTest extends AppTestBase {
     private TransactionSignature cryptoSig;
 
     @Mock(strictness = LENIENT)
-    private HederaKey payerKey;
+    private JKey payerKey;
 
     @Mock(strictness = LENIENT)
     private ReadableStoreFactory storeFactory;
@@ -105,6 +110,18 @@ class PreHandleWorkflowImplTest extends AppTestBase {
 
     @Mock(strictness = LENIENT)
     private Event event;
+
+    @Mock(strictness = LENIENT)
+    private MapReadableStates readableStates;
+
+    @Mock
+    private ReadableKVState accountState;
+
+    @Mock
+    private MerkleAccount payerAccount;
+
+    @Mock
+    private ConsensusTransactionImpl workflowTxn;
 
     private PreHandleWorkflowImpl workflow;
 
@@ -140,64 +157,31 @@ class PreHandleWorkflowImplTest extends AppTestBase {
     }
 
     @Test
-    void resetsDuplicateClassification() {
+    void verifiesExpandedSigsAsync() throws PreCheckException {
+        final AccountID payerID = AccountID.newBuilder().accountNum(1000L).build();
+        final TransactionID transactionID =
+                TransactionID.newBuilder().accountID(payerID).build();
         final var onsetResult = new OnsetResult(
                 com.hedera.hapi.node.base.Transaction.newBuilder().build(),
-                TransactionBody.newBuilder().build(),
+                TransactionBody.newBuilder().transactionID(transactionID).build(),
                 DUPLICATE_TRANSACTION,
                 SignatureMap.newBuilder().build(),
                 HederaFunctionality.CRYPTO_TRANSFER);
-        given(context.getStatus()).willReturn(DUPLICATE_TRANSACTION);
-
-        // ???
-        //                final var meta = workflow.dispatchForMetadata(onsetResult, context, storeFactory);
-        //
-        //        assertNotNull(meta);
-        //        verify(context).status(OK);
-        //        verifyNoInteractions(signaturePreparer);
-    }
-
-    @Test
-    void verifiesExpandedSigsAsync() {
-        final var onsetResult = new OnsetResult(
-                com.hedera.hapi.node.base.Transaction.newBuilder().build(),
-                TransactionBody.newBuilder().build(),
-                DUPLICATE_TRANSACTION,
-                SignatureMap.newBuilder().build(),
-                HederaFunctionality.CRYPTO_TRANSFER);
+        given(onset.parseAndCheck(any(), any(Bytes.class))).willReturn(onsetResult);
         given(context.getStatus()).willReturn(DUPLICATE_TRANSACTION);
         given(context.getPayerKey()).willReturn(payerKey);
         given(context.getRequiredNonPayerKeys()).willReturn(Collections.emptyList());
-        given(signaturePreparer.expandedSigsFor(onsetResult.transaction(), payerKey, Collections.emptyList()))
-                .willReturn(new SigExpansionResult(List.of(cryptoSig), OK));
+        given(signaturePreparer.prepareSignature(any(), any(), any(), any())).willReturn(cryptoSig);
+        given(workflowTxn.getContents()).willReturn(cryptoTransferContents());
+        given(state.createReadableStates(TokenService.NAME)).willReturn(readableStates);
+        given(readableStates.get("ACCOUNTS")).willReturn(accountState);
+        given(accountState.get(any())).willReturn(payerAccount);
+        given(payerAccount.getAccountKey()).willReturn(payerKey);
 
-        // ???
-        //        final var meta = workflow.dispatchForMetadata(onsetResult, context, storeFactory);
-        //
-        //        assertNotNull(meta);
-        //        verify(cryptography).verifyAsync(List.of(cryptoSig));
-    }
+        final var meta = workflow.preHandle(state, workflowTxn);
 
-    @Test
-    void shortCircuitsIfExpandedSigsFail() {
-        final var onsetResult = new OnsetResult(
-                com.hedera.hapi.node.base.Transaction.newBuilder().build(),
-                TransactionBody.newBuilder().build(),
-                DUPLICATE_TRANSACTION,
-                SignatureMap.newBuilder().build(),
-                HederaFunctionality.CRYPTO_TRANSFER);
-        given(context.getStatus()).willReturn(DUPLICATE_TRANSACTION);
-        given(context.getPayerKey()).willReturn(payerKey);
-        given(context.getRequiredNonPayerKeys()).willReturn(Collections.emptyList());
-        given(signaturePreparer.expandedSigsFor(onsetResult.transaction(), payerKey, Collections.emptyList()))
-                .willReturn(new SigExpansionResult(List.of(), INVALID_TOKEN_ID));
-
-        // ???
-        //        final var meta = workflow.dispatchForMetadata(onsetResult, context, storeFactory);
-        //
-        //        assertNotNull(meta);
-        //        verify(context).status(INVALID_TOKEN_ID);
-        //        verifyNoInteractions(cryptography);
+        assertNotNull(meta);
+        verify(cryptography).verifyAsync(cryptoSig);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -266,21 +250,17 @@ class PreHandleWorkflowImplTest extends AppTestBase {
     @Test
     void testPreHandleOnsetCatastrophicFail(@Mock WorkflowOnset localOnset) throws PreCheckException {
         // given
-        when(localOnset.parseAndCheck(any(), any(Bytes.class)))
-                .thenThrow(new PreCheckException(ResponseCodeEnum.INVALID_TRANSACTION));
+        when(localOnset.parseAndCheck(any(), any(Bytes.class))).thenThrow(new PreCheckException(INVALID_TRANSACTION));
         workflow = new PreHandleWorkflowImpl(dispatcher, localOnset, signaturePreparer, cryptography, RUN_INSTANTLY);
 
         // when
         workflow.start(state, event);
 
         // then
-        final ArgumentCaptor<Future<TransactionMetadata>> captor = ArgumentCaptor.forClass(Future.class);
+        final ArgumentCaptor<TransactionMetadata> captor = ArgumentCaptor.forClass(TransactionMetadata.class);
         verify(transaction).setMetadata(captor.capture());
-        //                ???
-        //                assertThat(captor.getValue())
-        //                        .succeedsWithin(Duration.ofMillis(100))
-        //                        .isInstanceOf(ErrorTransactionMetadata.class)
-        //                        .hasFieldOrPropertyWithValue("status", ResponseCodeEnum.INVALID_TRANSACTION);
+        AssertionsForClassTypes.assertThat(captor.getValue())
+                .hasFieldOrPropertyWithValue("status", INVALID_TRANSACTION);
         verify(dispatcher, never()).dispatchPreHandle(any(), any());
     }
 
@@ -309,14 +289,34 @@ class PreHandleWorkflowImplTest extends AppTestBase {
                 new OnsetResult(txn, txBody, DUPLICATE_TRANSACTION, signatureMap, functionality);
         when(localOnset.parseAndCheck(any(), any(Bytes.class))).thenReturn(onsetResult);
 
+        given(onset.parseAndCheck(any(), any(Bytes.class))).willReturn(onsetResult);
+        given(context.getStatus()).willReturn(DUPLICATE_TRANSACTION);
+        given(context.getPayerKey()).willReturn(payerKey);
+        given(context.getRequiredNonPayerKeys()).willReturn(Collections.emptyList());
+        given(signaturePreparer.prepareSignature(any(), any(), any(), any())).willReturn(cryptoSig);
+        given(state.createReadableStates(TokenService.NAME)).willReturn(readableStates);
+        given(readableStates.get("ACCOUNTS")).willReturn(accountState);
+        given(accountState.get(any())).willReturn(payerAccount);
+        given(payerAccount.getAccountKey()).willReturn(payerKey);
+
         workflow = new PreHandleWorkflowImpl(dispatcher, localOnset, signaturePreparer, cryptography, RUN_INSTANTLY);
 
         // when
         workflow.start(state, event);
 
-        // then
-        // ???
+        verify(dispatcher).dispatchPreHandle(any(), any());
+    }
 
-        //        verify(dispatcher).dispatchPreHandle(eq(txBody), any());
+    private byte[] cryptoTransferContents() {
+        return com.hederahashgraph.api.proto.java.Transaction.newBuilder()
+                .setSignedTransactionBytes(com.hederahashgraph.api.proto.java.SignedTransaction.newBuilder()
+                        .setBodyBytes(com.hederahashgraph.api.proto.java.TransactionBody.newBuilder()
+                                .setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
+                                .build()
+                                .toByteString())
+                        .build()
+                        .toByteString())
+                .build()
+                .toByteArray();
     }
 }
