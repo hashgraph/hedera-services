@@ -104,6 +104,7 @@ import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -421,7 +422,9 @@ public class Browser {
                                 .setThreadName("shutdown-hook")
                                 .setRunnable(() -> {
                                     logger.info(STARTUP.getMarker(), "JVM is shutting down.");
-                                    LogManager.shutdown();
+                                    System.out.println("JVM is shutting down. Time = " + Instant.now());
+                                    System.out.flush();
+                                    LogManager.shutdown(true, true);
                                 })
                                 .build());
             }
