@@ -43,205 +43,204 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class MonoExpiryValidatorTest {
-        private static final long now = 1_234_567;
-        private static final long aTime = 666_666_666L;
-        private static final long bTime = 777_777_777L;
-        private static final long aPeriod = 666_666L;
-        private static final long bPeriod = 777_777L;
-        private static final long anAutoRenewNum = 888;
+    private static final long now = 1_234_567;
+    private static final long aTime = 666_666_666L;
+    private static final long bTime = 777_777_777L;
+    private static final long aPeriod = 666_666L;
+    private static final long bPeriod = 777_777L;
+    private static final long anAutoRenewNum = 888;
 
-        @Mock
-        private OptionValidator validator;
+    @Mock
+    private OptionValidator validator;
 
-        @Mock
-        private AccountStore accountStore;
+    @Mock
+    private AccountStore accountStore;
 
-        @Mock
-        private TransactionContext txnCtx;
+    @Mock
+    private TransactionContext txnCtx;
 
-        @Mock
-        private HederaNumbers numbers;
+    @Mock
+    private HederaNumbers numbers;
 
-        private MonoExpiryValidator subject;
+    private MonoExpiryValidator subject;
 
-        @BeforeEach
-        void setUp() {
-            subject = new MonoExpiryValidator(accountStore, validator, txnCtx, numbers);
-        }
+    @BeforeEach
+    void setUp() {
+        subject = new MonoExpiryValidator(accountStore, validator, txnCtx, numbers);
+    }
 
-        @Test
-        void onCreationRequiresEitherExplicitValueOrFullAutoRenewMetaIfNotSelfFunding() {
-            given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(now));
+    @Test
+    void onCreationRequiresEitherExplicitValueOrFullAutoRenewMetaIfNotSelfFunding() {
+        given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(now));
 
-            assertFailsWith(
-                    INVALID_EXPIRATION_TIME,
-                    () -> subject.resolveCreationAttempt(false, new ExpiryMeta(NA, NA, anAutoRenewNum)));
-            assertFailsWith(
-                    INVALID_EXPIRATION_TIME, () -> subject.resolveCreationAttempt(false, new ExpiryMeta(NA, aPeriod,
-     NA)));
-        }
+        assertFailsWith(
+                INVALID_EXPIRATION_TIME,
+                () -> subject.resolveCreationAttempt(false, new ExpiryMeta(NA, NA, anAutoRenewNum)));
+        assertFailsWith(
+                INVALID_EXPIRATION_TIME, () -> subject.resolveCreationAttempt(false, new ExpiryMeta(NA, aPeriod, NA)));
+    }
 
-        @Test
-        void onCreationRequiresValidExpiryIfExplicit() {
-            given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(now));
+    @Test
+    void onCreationRequiresValidExpiryIfExplicit() {
+        given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(now));
 
-            given(validator.isValidExpiry(aTime)).willReturn(false);
-            assertFailsWith(
-                    INVALID_EXPIRATION_TIME,
-                    () -> subject.resolveCreationAttempt(false, new ExpiryMeta(aTime, NA, anAutoRenewNum)));
-        }
+        given(validator.isValidExpiry(aTime)).willReturn(false);
+        assertFailsWith(
+                INVALID_EXPIRATION_TIME,
+                () -> subject.resolveCreationAttempt(false, new ExpiryMeta(aTime, NA, anAutoRenewNum)));
+    }
 
-        @Test
-        void translatesFailureOnExplicitAutoRenewAccount() {
-            given(accountStore.loadAccountOrFailWith(new Id(0, 0, anAutoRenewNum), INVALID_AUTORENEW_ACCOUNT))
-                    .willThrow(new InvalidTransactionException(INVALID_AUTORENEW_ACCOUNT));
+    @Test
+    void translatesFailureOnExplicitAutoRenewAccount() {
+        given(accountStore.loadAccountOrFailWith(new Id(0, 0, anAutoRenewNum), INVALID_AUTORENEW_ACCOUNT))
+                .willThrow(new InvalidTransactionException(INVALID_AUTORENEW_ACCOUNT));
 
-            assertFailsWith(
-                    com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT,
-                    () -> subject.resolveCreationAttempt(false, new ExpiryMeta(aTime, aPeriod, anAutoRenewNum)));
-        }
+        assertFailsWith(
+                com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT,
+                () -> subject.resolveCreationAttempt(false, new ExpiryMeta(aTime, aPeriod, anAutoRenewNum)));
+    }
 
-        @Test
-        void onCreationUsesAutoRenewPeriodEvenWithoutFullSpecIfSelfFunding() {
-            given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(now));
+    @Test
+    void onCreationUsesAutoRenewPeriodEvenWithoutFullSpecIfSelfFunding() {
+        given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(now));
 
-            given(validator.isValidExpiry(now + aPeriod)).willReturn(true);
-            given(validator.isValidAutoRenewPeriod(aPeriod)).willReturn(true);
-            assertDoesNotThrow(() -> subject.resolveCreationAttempt(true, new ExpiryMeta(NA, aPeriod, NA)));
-        }
+        given(validator.isValidExpiry(now + aPeriod)).willReturn(true);
+        given(validator.isValidAutoRenewPeriod(aPeriod)).willReturn(true);
+        assertDoesNotThrow(() -> subject.resolveCreationAttempt(true, new ExpiryMeta(NA, aPeriod, NA)));
+    }
 
-        @Test
-        void onCreationRequiresValidExpiryIfImplicit() {
-            given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(now));
+    @Test
+    void onCreationRequiresValidExpiryIfImplicit() {
+        given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(now));
 
-            given(validator.isValidExpiry(now + aPeriod)).willReturn(false);
-            assertFailsWith(
-                    INVALID_EXPIRATION_TIME,
-                    () -> subject.resolveCreationAttempt(false, new ExpiryMeta(NA, aPeriod, anAutoRenewNum)));
-        }
+        given(validator.isValidExpiry(now + aPeriod)).willReturn(false);
+        assertFailsWith(
+                INVALID_EXPIRATION_TIME,
+                () -> subject.resolveCreationAttempt(false, new ExpiryMeta(NA, aPeriod, anAutoRenewNum)));
+    }
 
-        @Test
-        void validatesAutoRenewPeriodIfSet() {
-            given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(now));
+    @Test
+    void validatesAutoRenewPeriodIfSet() {
+        given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(now));
 
-            given(validator.isValidExpiry(aTime)).willReturn(true);
-            assertFailsWith(
-                    AUTORENEW_DURATION_NOT_IN_RANGE,
-                    () -> subject.resolveCreationAttempt(false, new ExpiryMeta(aTime, aPeriod, NA)));
-        }
+        given(validator.isValidExpiry(aTime)).willReturn(true);
+        assertFailsWith(
+                AUTORENEW_DURATION_NOT_IN_RANGE,
+                () -> subject.resolveCreationAttempt(false, new ExpiryMeta(aTime, aPeriod, NA)));
+    }
 
-        @Test
-        void validatesImpliedExpiry() {
-            given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(now));
+    @Test
+    void validatesImpliedExpiry() {
+        given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(now));
 
-            given(validator.isValidExpiry(aTime)).willReturn(true);
-            assertFailsWith(
-                    AUTORENEW_DURATION_NOT_IN_RANGE,
-                    () -> subject.resolveCreationAttempt(false, new ExpiryMeta(aTime, aPeriod, NA)));
-        }
+        given(validator.isValidExpiry(aTime)).willReturn(true);
+        assertFailsWith(
+                AUTORENEW_DURATION_NOT_IN_RANGE,
+                () -> subject.resolveCreationAttempt(false, new ExpiryMeta(aTime, aPeriod, NA)));
+    }
 
-        @Test
-        void summarizesExpiryOnlyCase() {
-            given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(now));
+    @Test
+    void summarizesExpiryOnlyCase() {
+        given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(now));
 
-            given(validator.isValidExpiry(aTime)).willReturn(true);
-            assertDoesNotThrow(() -> subject.resolveCreationAttempt(false, new ExpiryMeta(aTime, NA, NA)));
-        }
+        given(validator.isValidExpiry(aTime)).willReturn(true);
+        assertDoesNotThrow(() -> subject.resolveCreationAttempt(false, new ExpiryMeta(aTime, NA, NA)));
+    }
 
-        @Test
-        void summarizesExpiryAndAutoRenewNumCase() {
-            given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(now));
+    @Test
+    void summarizesExpiryAndAutoRenewNumCase() {
+        given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(now));
 
-            given(validator.isValidExpiry(aTime)).willReturn(true);
+        given(validator.isValidExpiry(aTime)).willReturn(true);
 
-            assertDoesNotThrow(() -> subject.resolveCreationAttempt(false, new ExpiryMeta(aTime, NA,
-     anAutoRenewNum)));
-        }
+        assertDoesNotThrow(() -> subject.resolveCreationAttempt(false, new ExpiryMeta(aTime, NA, anAutoRenewNum)));
+    }
 
-        @Test
-        void summarizesExpiryAndValidAutoRenewPeriodCase() {
-            given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(now));
-            given(validator.isValidExpiry(aTime)).willReturn(true);
-            given(validator.isValidAutoRenewPeriod(aPeriod)).willReturn(true);
+    @Test
+    void summarizesExpiryAndValidAutoRenewPeriodCase() {
+        given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(now));
+        given(validator.isValidExpiry(aTime)).willReturn(true);
+        given(validator.isValidAutoRenewPeriod(aPeriod)).willReturn(true);
 
-            assertDoesNotThrow(() -> subject.resolveCreationAttempt(false, new ExpiryMeta(aTime, aPeriod, NA)));
-        }
+        assertDoesNotThrow(() -> subject.resolveCreationAttempt(false, new ExpiryMeta(aTime, aPeriod, NA)));
+    }
 
-        @Test
-        void summarizesFullAutoRenewSpecPeriodCase() {
-            given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(now));
-            given(validator.isValidAutoRenewPeriod(aPeriod)).willReturn(true);
-            given(validator.isValidExpiry(now + aPeriod)).willReturn(true);
+    @Test
+    void summarizesFullAutoRenewSpecPeriodCase() {
+        given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(now));
+        given(validator.isValidAutoRenewPeriod(aPeriod)).willReturn(true);
+        given(validator.isValidExpiry(now + aPeriod)).willReturn(true);
 
-            assertDoesNotThrow(
-                    () -> subject.resolveCreationAttempt(false, new ExpiryMeta(now + aPeriod, aPeriod,
-     anAutoRenewNum)));
-        }
+        assertDoesNotThrow(
+                () -> subject.resolveCreationAttempt(false, new ExpiryMeta(now + aPeriod, aPeriod, anAutoRenewNum)));
+    }
 
-        @Test
-        void updateCannotExplicitlyReduceExpiry() {
-            final var current = new ExpiryMeta(aTime, NA, NA);
-            final var update = new ExpiryMeta(aTime - 1, NA, NA);
+    @Test
+    void updateCannotExplicitlyReduceExpiry() {
+        final var current = new ExpiryMeta(aTime, NA, NA);
+        final var update = new ExpiryMeta(aTime - 1, NA, NA);
 
-            assertFailsWith(EXPIRATION_REDUCTION_NOT_ALLOWED, () -> subject.resolveUpdateAttempt(current, update));
-        }
+        assertFailsWith(EXPIRATION_REDUCTION_NOT_ALLOWED, () -> subject.resolveUpdateAttempt(current, update));
+    }
 
-        @Test
-        void explicitExpiryExtensionMustBeValid() {
-            final var current = new ExpiryMeta(aTime, NA, NA);
-            final var update = new ExpiryMeta(aTime - 1, NA, NA);
+    @Test
+    void explicitExpiryExtensionMustBeValid() {
+        final var current = new ExpiryMeta(aTime, NA, NA);
+        final var update = new ExpiryMeta(aTime - 1, NA, NA);
 
-            assertFailsWith(EXPIRATION_REDUCTION_NOT_ALLOWED, () -> subject.resolveUpdateAttempt(current, update));
-        }
+        assertFailsWith(EXPIRATION_REDUCTION_NOT_ALLOWED, () -> subject.resolveUpdateAttempt(current, update));
+    }
 
-        @Test
-        void ifJustSettingAutoRenewAccountThenNetPeriodMustBeValid() {
-            final var current = new ExpiryMeta(aTime, 0, NA);
-            final var update = new ExpiryMeta(NA, NA, anAutoRenewNum);
+    @Test
+    void ifJustSettingAutoRenewAccountThenNetPeriodMustBeValid() {
+        final var current = new ExpiryMeta(aTime, 0, NA);
+        final var update = new ExpiryMeta(NA, NA, anAutoRenewNum);
 
-            assertFailsWith(AUTORENEW_DURATION_NOT_IN_RANGE, () -> subject.resolveUpdateAttempt(current, update));
-        }
+        assertFailsWith(AUTORENEW_DURATION_NOT_IN_RANGE, () -> subject.resolveUpdateAttempt(current, update));
+    }
 
-        @Test
-        void ifSettingAutoRenewPeriodThenMustBeValid() {
-            final var current = new ExpiryMeta(aTime, 0, NA);
-            final var update = new ExpiryMeta(NA, bPeriod, anAutoRenewNum);
+    @Test
+    void ifSettingAutoRenewPeriodThenMustBeValid() {
+        final var current = new ExpiryMeta(aTime, 0, NA);
+        final var update = new ExpiryMeta(NA, bPeriod, anAutoRenewNum);
 
-            assertFailsWith(AUTORENEW_DURATION_NOT_IN_RANGE, () -> subject.resolveUpdateAttempt(current, update));
-        }
+        assertFailsWith(AUTORENEW_DURATION_NOT_IN_RANGE, () -> subject.resolveUpdateAttempt(current, update));
+    }
 
-        @Test
-        void ifUpdatingAutoRenewNumMustBeValid() {
-            final var current = new ExpiryMeta(aTime, 0, NA);
-            final var update = new ExpiryMeta(NA, bPeriod, anAutoRenewNum);
+    @Test
+    void ifUpdatingAutoRenewNumMustBeValid() {
+        final var current = new ExpiryMeta(aTime, 0, NA);
+        final var update = new ExpiryMeta(NA, bPeriod, anAutoRenewNum);
 
-            given(accountStore.loadAccountOrFailWith(new Id(0, 0, anAutoRenewNum), INVALID_AUTORENEW_ACCOUNT))
-                    .willThrow(new InvalidTransactionException(INVALID_AUTORENEW_ACCOUNT));
+        given(accountStore.loadAccountOrFailWith(new Id(0, 0, anAutoRenewNum), INVALID_AUTORENEW_ACCOUNT))
+                .willThrow(new InvalidTransactionException(INVALID_AUTORENEW_ACCOUNT));
 
-            assertFailsWith(com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT, () -> subject.resolveUpdateAttempt(current, update));
-        }
+        assertFailsWith(
+                com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT,
+                () -> subject.resolveUpdateAttempt(current, update));
+    }
 
-        @Test
-        void ifUpdatingExpiryMustBeValid() {
-            final var current = new ExpiryMeta(aTime, 0, NA);
-            final var update = new ExpiryMeta(bTime, bPeriod, anAutoRenewNum);
+    @Test
+    void ifUpdatingExpiryMustBeValid() {
+        final var current = new ExpiryMeta(aTime, 0, NA);
+        final var update = new ExpiryMeta(bTime, bPeriod, anAutoRenewNum);
 
-            assertFailsWith(INVALID_EXPIRATION_TIME, () -> subject.resolveUpdateAttempt(current, update));
-        }
+        assertFailsWith(INVALID_EXPIRATION_TIME, () -> subject.resolveUpdateAttempt(current, update));
+    }
 
-        @Test
-        void canSetEverythingValidly() {
-            final var current = new ExpiryMeta(aTime, 0, NA);
-            final var update = new ExpiryMeta(bTime, bPeriod, anAutoRenewNum);
+    @Test
+    void canSetEverythingValidly() {
+        final var current = new ExpiryMeta(aTime, 0, NA);
+        final var update = new ExpiryMeta(bTime, bPeriod, anAutoRenewNum);
 
-            given(validator.isValidExpiry(bTime)).willReturn(true);
-            given(validator.isValidAutoRenewPeriod(bPeriod)).willReturn(true);
+        given(validator.isValidExpiry(bTime)).willReturn(true);
+        given(validator.isValidAutoRenewPeriod(bPeriod)).willReturn(true);
 
-            assertEquals(update, subject.resolveUpdateAttempt(current, update));
-        }
+        assertEquals(update, subject.resolveUpdateAttempt(current, update));
+    }
 
-        private static void assertFailsWith(final ResponseCodeEnum expected, final Runnable runnable) {
-            final var e = assertThrows(HandleStatusException.class, runnable::run);
-            assertEquals(expected, e.getStatus());
-        }
+    private static void assertFailsWith(final ResponseCodeEnum expected, final Runnable runnable) {
+        final var e = assertThrows(HandleStatusException.class, runnable::run);
+        assertEquals(expected, e.getStatus());
+    }
 }

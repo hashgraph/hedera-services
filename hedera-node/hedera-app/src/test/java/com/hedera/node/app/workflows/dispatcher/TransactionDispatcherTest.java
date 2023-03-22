@@ -29,17 +29,55 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TopicID;
+import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
+import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
+import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
+import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
+import com.hedera.hapi.node.contract.ContractCallTransactionBody;
+import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractDeleteTransactionBody;
+import com.hedera.hapi.node.contract.ContractUpdateTransactionBody;
 import com.hedera.hapi.node.contract.EthereumTransactionBody;
+import com.hedera.hapi.node.file.FileAppendTransactionBody;
 import com.hedera.hapi.node.file.FileCreateTransactionBody;
+import com.hedera.hapi.node.file.FileDeleteTransactionBody;
+import com.hedera.hapi.node.file.FileUpdateTransactionBody;
 import com.hedera.hapi.node.file.SystemDeleteTransactionBody;
 import com.hedera.hapi.node.file.SystemUndeleteTransactionBody;
+import com.hedera.hapi.node.freeze.FreezeTransactionBody;
+import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
+import com.hedera.hapi.node.scheduled.ScheduleSignTransactionBody;
+import com.hedera.hapi.node.token.CryptoAddLiveHashTransactionBody;
+import com.hedera.hapi.node.token.CryptoApproveAllowanceTransactionBody;
+import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
+import com.hedera.hapi.node.token.CryptoDeleteAllowanceTransactionBody;
+import com.hedera.hapi.node.token.CryptoDeleteLiveHashTransactionBody;
 import com.hedera.hapi.node.token.CryptoDeleteTransactionBody;
+import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
+import com.hedera.hapi.node.token.TokenAssociateTransactionBody;
+import com.hedera.hapi.node.token.TokenBurnTransactionBody;
+import com.hedera.hapi.node.token.TokenCreateTransactionBody;
+import com.hedera.hapi.node.token.TokenDeleteTransactionBody;
+import com.hedera.hapi.node.token.TokenDissociateTransactionBody;
+import com.hedera.hapi.node.token.TokenFeeScheduleUpdateTransactionBody;
+import com.hedera.hapi.node.token.TokenFreezeAccountTransactionBody;
+import com.hedera.hapi.node.token.TokenGrantKycTransactionBody;
+import com.hedera.hapi.node.token.TokenMintTransactionBody;
 import com.hedera.hapi.node.token.TokenPauseTransactionBody;
+import com.hedera.hapi.node.token.TokenRevokeKycTransactionBody;
+import com.hedera.hapi.node.token.TokenUnfreezeAccountTransactionBody;
+import com.hedera.hapi.node.token.TokenUnpauseTransactionBody;
+import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
+import com.hedera.hapi.node.token.TokenWipeAccountTransactionBody;
 import com.hedera.hapi.node.transaction.NodeStakeUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
+import com.hedera.hapi.node.util.UtilPrngTransactionBody;
 import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
@@ -48,7 +86,6 @@ import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicH
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusUpdateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
-import com.hedera.node.app.service.consensus.impl.records.ConsensusDeleteTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.SubmitMessageRecordBuilder;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
@@ -103,48 +140,8 @@ import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.hapi.node.token.CryptoAddLiveHashTransactionBody;
-import com.hedera.hapi.node.token.CryptoDeleteAllowanceTransactionBody;
-import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
-import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
-import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
-import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
-import com.hedera.hapi.node.contract.ContractCallTransactionBody;
-import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
-import com.hedera.hapi.node.base.ContractID;
-import com.hedera.hapi.node.contract.ContractUpdateTransactionBody;
-import com.hedera.hapi.node.token.CryptoApproveAllowanceTransactionBody;
-import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
-import com.hedera.hapi.node.token.CryptoDeleteLiveHashTransactionBody;
-import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
-import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
-import com.hedera.hapi.node.file.FileAppendTransactionBody;
-import com.hedera.hapi.node.file.FileDeleteTransactionBody;
-import com.hedera.hapi.node.base.FileID;
-import com.hedera.hapi.node.file.FileUpdateTransactionBody;
-import com.hedera.hapi.node.freeze.FreezeTransactionBody;
-import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
-import com.hedera.hapi.node.scheduled.ScheduleDeleteTransactionBody;
-import com.hedera.hapi.node.scheduled.ScheduleSignTransactionBody;
-import com.hedera.hapi.node.token.TokenAssociateTransactionBody;
-import com.hedera.hapi.node.token.TokenBurnTransactionBody;
-import com.hedera.hapi.node.token.TokenCreateTransactionBody;
-import com.hedera.hapi.node.token.TokenDeleteTransactionBody;
-import com.hedera.hapi.node.token.TokenDissociateTransactionBody;
-import com.hedera.hapi.node.token.TokenFeeScheduleUpdateTransactionBody;
-import com.hedera.hapi.node.token.TokenFreezeAccountTransactionBody;
-import com.hedera.hapi.node.token.TokenGrantKycTransactionBody;
-import com.hedera.hapi.node.token.TokenMintTransactionBody;
-import com.hedera.hapi.node.token.TokenRevokeKycTransactionBody;
-import com.hedera.hapi.node.token.TokenUnfreezeAccountTransactionBody;
-import com.hedera.hapi.node.token.TokenUnpauseTransactionBody;
-import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
-import com.hedera.hapi.node.token.TokenWipeAccountTransactionBody;
-import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
-import com.hedera.hapi.node.util.UtilPrngTransactionBody;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -321,6 +318,7 @@ class TransactionDispatcherTest {
 
     @Mock
     private UsageLimits usageLimits;
+
     @Mock
     private TransactionBody transactionBody;
 
@@ -574,16 +572,14 @@ class TransactionDispatcherTest {
                                 verify(handlers.consensusUpdateTopicHandler()).preHandle(eq(meta), any()),
                         Arguments.of(
                                 TransactionBody.newBuilder()
-                                        .consensusDeleteTopic(
-                                                ConsensusDeleteTopicTransactionBody.DEFAULT)
+                                        .consensusDeleteTopic(ConsensusDeleteTopicTransactionBody.DEFAULT)
                                         .build(),
                                 (BiConsumer<TransactionHandlers, PreHandleContext>)
                                         (handlers, meta) -> verify(handlers.consensusDeleteTopicHandler())
                                                 .preHandle(eq(meta), any())),
                         Arguments.of(
                                 TransactionBody.newBuilder()
-                                        .consensusSubmitMessage(
-                                                ConsensusSubmitMessageTransactionBody.DEFAULT)
+                                        .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
                                         .build(),
                                 (BiConsumer<TransactionHandlers, PreHandleContext>)
                                         (handlers, meta) -> verify(handlers.consensusSubmitMessageHandler())
@@ -649,16 +645,14 @@ class TransactionDispatcherTest {
                                         verify(handlers.cryptoDeleteHandler()).preHandle(meta)),
                         Arguments.of(
                                 TransactionBody.newBuilder()
-                                        .cryptoApproveAllowance(
-                                                CryptoApproveAllowanceTransactionBody.DEFAULT)
+                                        .cryptoApproveAllowance(CryptoApproveAllowanceTransactionBody.DEFAULT)
                                         .build(),
                                 (BiConsumer<TransactionHandlers, PreHandleContext>)
                                         (handlers, meta) -> verify(handlers.cryptoApproveAllowanceHandler())
                                                 .preHandle(meta)),
                         Arguments.of(
                                 TransactionBody.newBuilder()
-                                        .cryptoDeleteAllowance(
-                                                CryptoDeleteAllowanceTransactionBody.DEFAULT)
+                                        .cryptoDeleteAllowance(CryptoDeleteAllowanceTransactionBody.DEFAULT)
                                         .build(),
                                 (BiConsumer<TransactionHandlers, PreHandleContext>)
                                         (handlers, meta) -> verify(handlers.cryptoDeleteAllowanceHandler())
@@ -672,8 +666,7 @@ class TransactionDispatcherTest {
                                                 .preHandle(meta)),
                         Arguments.of(
                                 TransactionBody.newBuilder()
-                                        .cryptoDeleteLiveHash(
-                                                CryptoDeleteLiveHashTransactionBody.DEFAULT)
+                                        .cryptoDeleteLiveHash(CryptoDeleteLiveHashTransactionBody.DEFAULT)
                                         .build(),
                                 (BiConsumer<TransactionHandlers, PreHandleContext>)
                                         (handlers, meta) -> verify(handlers.cryptoDeleteLiveHashHandler())
@@ -824,8 +817,7 @@ class TransactionDispatcherTest {
                                                 .preHandle(meta)),
                         Arguments.of(
                                 TransactionBody.newBuilder()
-                                        .tokenFeeScheduleUpdate(
-                                                TokenFeeScheduleUpdateTransactionBody.DEFAULT)
+                                        .tokenFeeScheduleUpdate(TokenFeeScheduleUpdateTransactionBody.DEFAULT)
                                         .build(),
                                 (BiConsumer<TransactionHandlers, PreHandleContext>)
                                         (handlers, meta) -> verify(handlers.tokenFeeScheduleUpdateHandler())
