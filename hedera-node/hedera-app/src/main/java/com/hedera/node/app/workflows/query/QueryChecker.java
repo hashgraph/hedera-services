@@ -121,9 +121,9 @@ public class QueryChecker {
             throw new InsufficientBalanceException(xfersStatus, fee);
         }
 
-        // A super-user cannot use an alias. Sorry, Clark Kent. TODO Verify we have a test for this
-        final var accountOpt = payer.accountNumOrElse(AccountID.DEFAULT.accountNumOrThrow());
-        if (accountNumbers.isSuperuser(accountOpt)) {
+        // A super-user cannot use an alias. Sorry, Clark Kent.
+        final var accountNum = payer.accountNumOrElse(-1L);
+        if (accountNumbers.isSuperuser(accountNum)) {
             return;
         }
 
