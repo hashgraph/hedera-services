@@ -19,17 +19,25 @@ package com.hedera.node.app.workflows.dispatcher;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.file.FileCreateTransactionBody;
 import com.hedera.hapi.node.file.SystemDeleteTransactionBody;
 import com.hedera.hapi.node.file.SystemUndeleteTransactionBody;
 import com.hedera.hapi.node.transaction.NodeStakeUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
+import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
+import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
@@ -50,6 +58,10 @@ import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemUndeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
+import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.network.impl.handlers.NetworkUncheckedSubmitHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleCreateHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
@@ -81,12 +93,14 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.state.HederaState;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -246,6 +260,27 @@ class TransactionDispatcherTest {
     @Mock
     private HederaAccountNumbers accountNumbers;
 
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private WritableStoreFactory writableStoreFactory;
+
+    @Mock
+    private WritableTopicStore writableTopicStore;
+
+    @Mock
+    private UsageLimits usageLimits;
+
+    @Mock
+    private HandleContext handleContext;
+
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private TransactionBody transactionBody;
+
     private TransactionHandlers handlers;
     private TransactionDispatcher dispatcher;
 
@@ -302,15 +337,31 @@ class TransactionDispatcherTest {
                 tokenUnpauseHandler,
                 utilPrngHandler);
 
-        dispatcher = new TransactionDispatcher(handlers, accountNumbers);
+        dispatcher = new TransactionDispatcher(
+                handleContext, txnCtx, handlers, accountNumbers, dynamicProperties, usageLimits);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(() -> new TransactionDispatcher(null, accountNumbers))
+        assertThatThrownBy(() -> new TransactionDispatcher(
+                        null, txnCtx, handlers, accountNumbers, dynamicProperties, usageLimits))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new TransactionDispatcher(handlers, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new TransactionDispatcher(
+                        handleContext, null, handlers, accountNumbers, dynamicProperties, usageLimits))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new TransactionDispatcher(
+                        handleContext, txnCtx, null, accountNumbers, dynamicProperties, usageLimits))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new TransactionDispatcher(
+                        handleContext, txnCtx, handlers, null, dynamicProperties, usageLimits))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() ->
+                        new TransactionDispatcher(handleContext, txnCtx, handlers, accountNumbers, null, usageLimits))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new TransactionDispatcher(
+                        handleContext, txnCtx, handlers, accountNumbers, dynamicProperties, null))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -318,7 +369,7 @@ class TransactionDispatcherTest {
     void testDispatchWithIllegalParameters() {
         // given
         final var payer = AccountID.newBuilder().build();
-        final var tracker = new StoreFactory(state);
+        final var tracker = new ReadableStoreFactory(state);
         final var validContext = new PreHandleContext(
                 accountStore,
                 TransactionBody.newBuilder()
@@ -355,7 +406,7 @@ class TransactionDispatcherTest {
         // given
         final var txBody = TransactionBody.newBuilder().build();
         final var payer = AccountID.newBuilder().build();
-        final var tracker = new StoreFactory(state);
+        final var tracker = new ReadableStoreFactory(state);
         final var context = new PreHandleContext(accountStore, txBody, payer);
 
         // then
@@ -370,7 +421,7 @@ class TransactionDispatcherTest {
                 .nodeStakeUpdate(NodeStakeUpdateTransactionBody.newBuilder().build())
                 .build();
         final var payer = AccountID.newBuilder().build();
-        final var tracker = new StoreFactory(state);
+        final var tracker = new ReadableStoreFactory(state);
         final var context = new PreHandleContext(accountStore, txBody, payer);
 
         // then
@@ -397,14 +448,16 @@ class TransactionDispatcherTest {
                 .when(consensusCreateTopicHandler)
                 .handle(
                         eq(handleContext),
-                        eq(transactionBody.getConsensusCreateTopic()),
+                        eq(transactionBody.consensusCreateTopicOrThrow()),
                         eq(expectedConfig),
                         any(),
                         any());
 
-        dispatcher.dispatchHandle(ConsensusCreateTopic, transactionBody, writableStoreFactory);
+        dispatcher.dispatchHandle(HederaFunctionality.CONSENSUS_CREATE_TOPIC, transactionBody, writableStoreFactory);
 
-        verify(txnCtx).setCreated(TopicID.newBuilder().setTopicNum(666L).build());
+        verify(txnCtx)
+                .setCreated(
+                        PbjConverter.fromPbj(TopicID.newBuilder().topicNum(666L).build()));
         verify(writableTopicStore).commit();
     }
 
@@ -417,9 +470,9 @@ class TransactionDispatcherTest {
                     return null;
                 })
                 .when(consensusUpdateTopicHandler)
-                .handle(eq(handleContext), eq(transactionBody.getConsensusUpdateTopic()), any());
+                .handle(eq(handleContext), eq(transactionBody.consensusUpdateTopicOrThrow()), any());
 
-        dispatcher.dispatchHandle(ConsensusUpdateTopic, transactionBody, writableStoreFactory);
+        dispatcher.dispatchHandle(HederaFunctionality.CONSENSUS_UPDATE_TOPIC, transactionBody, writableStoreFactory);
 
         verifyNoInteractions(txnCtx);
     }
@@ -435,9 +488,9 @@ class TransactionDispatcherTest {
                     return null;
                 })
                 .when(consensusDeleteTopicHandler)
-                .handle(eq(transactionBody.getConsensusDeleteTopic()), any());
+                .handle(eq(transactionBody.consensusDeleteTopicOrThrow()), any());
 
-        dispatcher.dispatchHandle(ConsensusDeleteTopic, transactionBody, writableStoreFactory);
+        dispatcher.dispatchHandle(HederaFunctionality.CONSENSUS_DELETE_TOPIC, transactionBody, writableStoreFactory);
 
         verifyNoInteractions(txnCtx);
     }
@@ -463,7 +516,7 @@ class TransactionDispatcherTest {
                 .when(consensusSubmitMessageHandler)
                 .handle(eq(handleContext), eq(transactionBody), eq(expectedConfig), any(), any());
 
-        dispatcher.dispatchHandle(ConsensusSubmitMessage, transactionBody, writableStoreFactory);
+        dispatcher.dispatchHandle(HederaFunctionality.CONSENSUS_SUBMIT_MESSAGE, transactionBody, writableStoreFactory);
 
         verify(txnCtx).setTopicRunningHash(newRunningHash, 2);
     }
@@ -472,7 +525,8 @@ class TransactionDispatcherTest {
     void cannotDispatchUnsupportedOperations() {
         Assertions.assertThrows(
                 IllegalArgumentException.class,
-                () -> dispatcher.dispatchHandle(CryptoTransfer, transactionBody, writableStoreFactory));
+                () -> dispatcher.dispatchHandle(
+                        HederaFunctionality.CRYPTO_TRANSFER, transactionBody, writableStoreFactory));
     }
 
     @ParameterizedTest
@@ -481,7 +535,7 @@ class TransactionDispatcherTest {
             final TransactionBody txBody, final BiConsumer<TransactionHandlers, PreHandleContext> verification) {
         // given
         final var payer = AccountID.newBuilder().build();
-        final var tracker = new StoreFactory(state);
+        final var tracker = new ReadableStoreFactory(state);
         final var context = new PreHandleContext(accountStore, txBody, payer);
 
         // when

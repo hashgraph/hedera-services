@@ -27,13 +27,6 @@ public class MonoSchedulingStateAdapterCodec implements Codec<MerkleScheduledTra
 
     @NonNull
     @Override
-    public MerkleScheduledTransactionsState parseStrict(@NonNull final ReadableSequentialData readableSequentialData)
-            throws IOException {
-        throw new AssertionError("Not implemented");
-    }
-
-    @NonNull
-    @Override
     public MerkleScheduledTransactionsState parse(final @NonNull ReadableSequentialData input) throws IOException {
         return new MerkleScheduledTransactionsState(input.readLong());
     }
@@ -59,12 +52,14 @@ public class MonoSchedulingStateAdapterCodec implements Codec<MerkleScheduledTra
     }
 
     @Override
-    public int measureRecord(final @NonNull MerkleScheduledTransactionsState merkleScheduledTransactionsState) {
-        throw new UnsupportedOperationException();
+    public int measureRecord(MerkleScheduledTransactionsState merkleScheduledTransactionsState) {
+        return 0;
     }
 
     @Override
-    public int measureRecord(MerkleScheduledTransactionsState merkleScheduledTransactionsState) {
-        return 0;
+    public boolean fastEquals(
+            @NonNull MerkleScheduledTransactionsState merkleScheduledTransactionsState,
+            @NonNull ReadableSequentialData readableSequentialData) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 }

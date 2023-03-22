@@ -28,14 +28,15 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.SignatureMap;
-import com.hedera.hapi.node.base.SignaturePair;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.network.NetworkGetExecutionTimeQuery;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
@@ -1231,19 +1232,6 @@ public final class PbjConverter {
     }
 
     /**
-     * Convenience method to do an unchecked conversion from a PBJ {@link Bytes} to a byte array.
-     *
-     * @param bytes the PBJ {@link Bytes} to convert
-     * @return the byte array
-     * @throws IllegalStateException if the conversion fails
-     */
-    public static @NonNull byte[] unwrapPbj(@NonNull final Bytes bytes) {
-        final var ret = new byte[Math.toIntExact(Objects.requireNonNull(bytes).length())];
-        bytes.getBytes(0, ret);
-        return ret;
-    }
-
-    /**
      * Converts a gRPC {@link com.hederahashgraph.api.proto.java.Key} to a PBJ {@link Key}.
      * (We will encounter gRPC keys until the handle workflow is using PBJ objects.)
      *
@@ -1285,7 +1273,15 @@ public final class PbjConverter {
         }
     }
 
+    // Note: this method will throw an exception if <code>b</code>'s length is not representable as an int
     public static @NonNull byte[] asBytes(@NonNull Bytes b) {
+        final var buf = new byte[Math.toIntExact(b.length())];
+        b.getBytes(0, buf);
+        return buf;
+    }
+
+    // Note: this method will throw an exception if <code>b</code>'s length is not representable as an int
+    public static @NonNull byte[] asBytes(@NonNull BufferedData b) {
         final var buf = new byte[Math.toIntExact(b.length())];
         b.getBytes(0, buf);
         return buf;
@@ -1321,5 +1317,15 @@ public final class PbjConverter {
             SignatureMap signatureMap) {
         return pbjToProto(signatureMap, SignatureMap.class,
                 com.hederahashgraph.api.proto.java.SignatureMap.class);
+    }
+
+    public static com.hederahashgraph.api.proto.java.QueryHeader fromPbj(QueryHeader queryHeader) {
+        return pbjToProto(queryHeader, QueryHeader.class,
+                com.hederahashgraph.api.proto.java.QueryHeader.class);
+    }
+
+    public static NetworkGetExecutionTimeQuery toPbj(
+            com.hederahashgraph.api.proto.java.NetworkGetExecutionTimeQuery query) {
+        return protoToPbj(query, NetworkGetExecutionTimeQuery.class);
     }
 }

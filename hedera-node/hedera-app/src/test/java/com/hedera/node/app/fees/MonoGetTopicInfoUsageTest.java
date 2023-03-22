@@ -35,7 +35,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.pbj.runtime.io.Bytes;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Key;
@@ -59,7 +59,7 @@ class MonoGetTopicInfoUsageTest {
     private final AccountID autoRenewId = asAccount("0.0.4");
     private final byte[] runningHash = "runningHash".getBytes();
 
-    private final Key key = A_COMPLEX_KEY;
+    private final Key key = PbjConverter.fromPbj(A_COMPLEX_KEY);
     private final EntityNum topicEntityNum = EntityNum.fromLong(1L);
     private final TopicID topicId =
             TopicID.newBuilder().topicNum(topicEntityNum.longValue()).build();
@@ -83,8 +83,8 @@ class MonoGetTopicInfoUsageTest {
 
     private final MerkleTopic adapterTopic = new MerkleTopic(
             memo,
-            (JKey) asHederaKey(key).get(),
-            (JKey) asHederaKey(key).get(),
+            (JKey) asHederaKey(key).orElseThrow(),
+            (JKey) asHederaKey(key).orElseThrow(),
             autoRenewSecs,
             new EntityId(0, 0, autoRenewId.getAccountNum()),
             new RichInstant(expirationTime, 0));

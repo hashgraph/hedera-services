@@ -16,13 +16,15 @@
 
 package com.hedera.node.app.grpc;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.metrics.Metrics;
 import io.grpc.stub.StreamObserver;
-import java.awt.image.DataBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -66,11 +68,11 @@ class TransactionMethodTest {
     }
 
     @Test
-    void handleDelegatesToWorkflow(@Mock final StreamObserver<DataBuffer> streamObserver) {
+    void handleDelegatesToWorkflow(@Mock final StreamObserver<BufferedData> streamObserver) {
         final var requestBuffer = BufferedData.allocate(100);
         final AtomicBoolean called = new AtomicBoolean(false);
         final IngestWorkflow w = (s, r1, r2) -> {
-            assertEquals(requestBuffer, r1);
+            assertEquals(PbjConverter.asBytes(requestBuffer), PbjConverter.asBytes(r1));
             called.set(true);
         };
 
@@ -80,7 +82,7 @@ class TransactionMethodTest {
     }
 
     @Test
-    void unexpectedExceptionFromHandler(@Mock final StreamObserver<DataBuffer> streamObserver) {
+    void unexpectedExceptionFromHandler(@Mock final StreamObserver<BufferedData> streamObserver) {
         final var requestBuffer = BufferedData.allocate(100);
         final IngestWorkflow w = (s, r1, r2) -> {
             throw new RuntimeException("Unexpected!");

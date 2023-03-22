@@ -41,7 +41,5 @@ public interface IngestWorkflow {
      * @param responseBuffer The raw protobuf response bytes.
      */
     void submitTransaction(
-            @NonNull SessionContext session,
-            @NonNull Bytes requestBuffer,
-            @NonNull BufferedData responseBuffer);
+            @NonNull SessionContext session, @NonNull Bytes requestBuffer, @NonNull BufferedData responseBuffer);
 }
