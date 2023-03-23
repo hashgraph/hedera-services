@@ -151,6 +151,7 @@ public class AddressBookInitializer {
     private AddressBook initialize() {
         AddressBook candidateAddressBook;
         if (useConfigAddressBook) {
+            logger.info(STARTUP.getMarker(), "A setting has forced the use of the configuration address.");
             // configuration is overriding to force use of configuration address book.
             candidateAddressBook = configAddressBook;
         } else if (loadedSignedState == null || loadedAddressBook == null) {
