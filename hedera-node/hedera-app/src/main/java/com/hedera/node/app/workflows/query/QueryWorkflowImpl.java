@@ -163,7 +163,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         // 1. Parse and check header
         final Query query;
         try {
-            query = queryParser.parse(requestBuffer.toReadableSequentialData());
+            query = queryParser.parseStrict(requestBuffer.toReadableSequentialData());
         } catch (IOException e) {
             // TODO there may be other types of errors here. Please cross check with ingest parsing
             throw new StatusRuntimeException(Status.INVALID_ARGUMENT);

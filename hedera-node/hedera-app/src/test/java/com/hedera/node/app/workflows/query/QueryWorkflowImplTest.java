@@ -149,7 +149,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         query = Query.newBuilder()
                 .fileGetInfo(FileGetInfoQuery.newBuilder().header(queryHeader))
                 .build();
-        when(queryParser.parse(notNull())).thenReturn(query);
+        when(queryParser.parseStrict(notNull())).thenReturn(query);
         ctx = new SessionContext();
 
         payer = AccountID.newBuilder().accountNum(42L).build();
@@ -403,7 +403,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     @Test
     void testParsingFails() throws IOException {
         // given
-        lenient().when(queryParser.parse(notNull())).thenThrow(new IOException("Expected failure"));
+        lenient().when(queryParser.parseStrict(notNull())).thenThrow(new IOException("Expected failure"));
         final var responseBuffer = newEmptyBuffer();
 
         // then
@@ -418,7 +418,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     void testUnrecognizableQueryTypeFails() throws IOException {
         // given
         final var query = Query.newBuilder().build();
-        lenient().when(queryParser.parse(notNull())).thenReturn(query);
+        lenient().when(queryParser.parseStrict(notNull())).thenReturn(query);
         final var responseBuffer = newEmptyBuffer();
 
         // then
@@ -544,7 +544,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         final var query = Query.newBuilder()
                 .fileGetInfo(FileGetInfoQuery.newBuilder().header(queryHeader).build())
                 .build();
-        when(queryParser.parse(notNull())).thenReturn(query);
+        when(queryParser.parseStrict(notNull())).thenReturn(query);
 
         final var requestBytes = PbjConverter.asBytes(localRequestBuffer);
         when(handler.extractHeader(query)).thenReturn(queryHeader);
@@ -577,7 +577,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                 .build();
 
         final var requestBytes = PbjConverter.asBytes(localRequestBuffer);
-        when(queryParser.parse(notNull())).thenReturn(localQuery);
+        when(queryParser.parseStrict(notNull())).thenReturn(localQuery);
         when(networkHandler.extractHeader(localQuery)).thenReturn(localQueryHeader);
         when(dispatcher.getHandler(localQuery)).thenReturn(networkHandler);
 
@@ -759,7 +759,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         final byte[] bytes = new byte[Math.toIntExact(responseBuffer.position())];
         responseBuffer.resetPosition();
         responseBuffer.readBytes(bytes);
-        return Response.PROTOBUF.parse(BufferedData.wrap(bytes));
+        return Response.PROTOBUF.parseStrict(BufferedData.wrap(bytes));
     }
 
     private static BufferedData newEmptyBuffer() {
