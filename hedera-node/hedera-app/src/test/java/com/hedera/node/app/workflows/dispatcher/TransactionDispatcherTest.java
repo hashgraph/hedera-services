@@ -17,7 +17,6 @@
 package com.hedera.node.app.workflows.dispatcher;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -451,7 +450,8 @@ class TransactionDispatcherTest {
         final var context = new PreHandleContext(accountStore, txBody, payer);
 
         // then
-        assertThrows(UnsupportedOperationException.class, () -> dispatcher.dispatchPreHandle(tracker, context));
+        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(tracker, context))
+                .isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
@@ -533,10 +533,10 @@ class TransactionDispatcherTest {
 
     @Test
     void cannotDispatchUnsupportedOperations() {
-        assertThrows(
-                IllegalArgumentException.class,
+        assertThatThrownBy(
                 () -> dispatcher.dispatchHandle(
-                        HederaFunctionality.CRYPTO_TRANSFER, transactionBody, writableStoreFactory));
+                        HederaFunctionality.CRYPTO_TRANSFER, transactionBody, writableStoreFactory))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @ParameterizedTest
