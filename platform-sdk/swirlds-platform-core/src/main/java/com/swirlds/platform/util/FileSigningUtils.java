@@ -163,7 +163,7 @@ public final class FileSigningUtils {
      * Creates the needed directories if they don't already exist
      *
      * @param destinationDirectory the directory to which the signature file is saved
-     * @param sourceFile           stream file to be signed
+     * @param sourceFile           file to be signed
      * @return signature file path
      */
     @NonNull

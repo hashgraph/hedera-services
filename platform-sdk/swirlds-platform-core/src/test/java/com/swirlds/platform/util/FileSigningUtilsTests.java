@@ -1,11 +1,19 @@
 package com.swirlds.platform.util;
 
+import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.platform.recovery.RecoveryTestUtils.generateRandomEvents;
+import static com.swirlds.platform.recovery.RecoveryTestUtils.writeRandomEventStream;
 import static com.swirlds.platform.util.FileSigningUtils.signStandardFile;
 import static com.swirlds.platform.util.FileSigningUtils.signStandardFilesInDirectory;
+import static com.swirlds.platform.util.FileSigningUtils.signStreamFile;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.stream.EventStreamType;
+import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.recovery.RecoveryTestUtils;
 import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -14,9 +22,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyPair;
+import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -31,11 +42,6 @@ class FileSigningUtilsTests {
      */
     @TempDir
     private Path testDirectoryPath;
-
-    /**
-     * The directory containing files to sign
-     */
-    private Path toSignDirectoryPath;
 
     /**
      * The directory where the signature files will be written
@@ -56,6 +62,11 @@ class FileSigningUtilsTests {
      * The alias used when generating the test keystore
      */
     private final String keyAlias = "testKey";
+
+    /**
+     * Source of randomness for the tests
+     */
+    private Random random;
 
     /**
      * Creates a file with string contents
@@ -86,23 +97,31 @@ class FileSigningUtilsTests {
     }
 
     /**
+     * Create some event stream files in the toSignDirectory
+     */
+    private void createStreamFiles() {
+        final List<EventImpl> events = generateRandomEvents(random, 100L, Duration.ofSeconds(10), 1, 5);
+
+        try {
+            writeRandomEventStream(random, testDirectoryPath, 2, events);
+        } catch (final NoSuchAlgorithmException | IOException e) {
+            throw new RuntimeException("failed to write event stream files", e);
+        }
+    }
+
+    /**
      * Sets up for each test
      */
     @BeforeEach
     void setup() {
         destinationDirectory = testDirectoryPath.resolve("signatureFiles").toFile();
-
-        try {
-            toSignDirectoryPath = Files.createDirectories(testDirectoryPath.resolve("dirToSign"));
-        } catch (final IOException e) {
-            throw new RuntimeException("unable to create toSign directory", e);
-        }
+        random = getRandomPrintSeed();
     }
 
     @Test
     @DisplayName("Sign arbitrary file")
     void signArbitraryFile() {
-        final File fileToSign = toSignDirectoryPath.resolve("fileToSign.txt").toFile();
+        final File fileToSign = testDirectoryPath.resolve("fileToSign.txt").toFile();
         final String fileContents = "Hello there";
 
         createStandardFile(fileToSign, fileContents);
@@ -122,6 +141,14 @@ class FileSigningUtilsTests {
     @Test
     @DisplayName("Sign arbitrary files in directory")
     void signArbitraryFilesInDirectory() {
+        // the directory where we will place files we want to sign
+        final Path toSignDirectoryPath = testDirectoryPath.resolve("dirToSign");
+        try {
+            Files.createDirectories(toSignDirectoryPath).toFile();
+        } catch (final IOException e) {
+            throw new RuntimeException("unable to create toSign directory", e);
+        }
+
         final Collection<String> filesNamesToSign = List.of(
                 "fileToSign1.txt",
                 "fileToSign2.TXT",
@@ -162,5 +189,42 @@ class FileSigningUtilsTests {
 
             // TODO read sig file and verify it has correct contents
         }
+    }
+
+    @Test
+    @DisplayName("Sign stream file")
+    void signSingleStreamFile() {
+        createStreamFiles();
+
+        // the utility method being leveraged saves stream files to a directory "events_test"
+        final Path toSignDirectoryPath = testDirectoryPath.resolve("events_test");
+        final Collection<File> toSignFiles = Arrays.stream(toSignDirectoryPath.toFile().listFiles()).toList();
+
+        assertNotNull(toSignFiles, "Expected to find files to sign");
+        assertFalse(toSignFiles.isEmpty(), "Expected to find files to sign");
+
+        final Path fileToSignPath;
+        try {
+            // since we are only signing 1 file, just grab the middle one
+            fileToSignPath = RecoveryTestUtils.getMiddleEventStreamFile(toSignDirectoryPath);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        final File fileToSign = fileToSignPath.toFile();
+
+        assertNotNull(fileToSign, "Expected to find a file to sign");
+
+        signStreamFile(destinationDirectory, EventStreamType.getInstance(), fileToSign,
+                loadKey(keyStoreFileName, password, keyAlias));
+
+        final File[] destinationDirectoryFiles = destinationDirectory.listFiles();
+
+        assertNotNull(destinationDirectoryFiles, "Expected signature file to be created");
+        assertEquals(1, destinationDirectoryFiles.length, "Expected one signature file to be created");
+        assertEquals(fileToSign.getName() + "_sig", destinationDirectoryFiles[0].getName(),
+                "Expected signature file to have the same name as the file to sign, with _sig appended");
+
+        // TODO read sig file and verify it has correct contents
     }
 }
