@@ -3,6 +3,7 @@ package com.swirlds.platform.util;
 import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.generateRandomEvents;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.writeRandomEventStream;
+import static com.swirlds.platform.util.FileSigningUtils.SIGNATURE_FILE_NAME_SUFFIX;
 import static com.swirlds.platform.util.FileSigningUtils.initializeSystem;
 import static com.swirlds.platform.util.FileSigningUtils.signStandardFile;
 import static com.swirlds.platform.util.FileSigningUtils.signStandardFilesInDirectory;
@@ -138,7 +139,7 @@ class FileSigningUtilsTests {
 
         assertNotNull(destinationDirectoryFiles, "Expected signature file to be created");
         assertEquals(1, destinationDirectoryFiles.length, "Expected one signature file to be created");
-        assertEquals(fileToSign.getName() + "_sig", destinationDirectoryFiles[0].getName(),
+        assertEquals(fileToSign.getName() + SIGNATURE_FILE_NAME_SUFFIX, destinationDirectoryFiles[0].getName(),
                 "Expected signature file to have the same name as the file to sign, with _sig appended");
 
         // TODO read sig file and verify it has correct contents
@@ -224,7 +225,7 @@ class FileSigningUtilsTests {
 
         assertNotNull(destinationDirectoryFiles, "Expected signature file to be created");
         assertEquals(1, destinationDirectoryFiles.length, "Expected one signature file to be created");
-        assertEquals(fileToSign.getName() + "_sig", destinationDirectoryFiles[0].getName(),
+        assertEquals(fileToSign.getName() + SIGNATURE_FILE_NAME_SUFFIX, destinationDirectoryFiles[0].getName(),
                 "Expected signature file to have the same name as the file to sign, with _sig appended");
 
         // TODO read sig file and verify it has correct contents
@@ -238,22 +239,31 @@ class FileSigningUtilsTests {
         // the utility method being leveraged saves stream files to a directory "events_test"
         final Path toSignDirectoryPath = testDirectoryPath.resolve("events_test");
 
-        // find out how many event stream files were written in the createStreamFiles method
-        final int numFilesToSign = Objects.requireNonNull(toSignDirectoryPath.toFile()
-                .listFiles((directory, fileName) -> fileName.endsWith(".evts"))).length;
+        // find out which files have been created that will be signed
+        final Collection<File> filesToSign = Arrays.stream(Objects.requireNonNull(toSignDirectoryPath.toFile()
+                .listFiles((directory, fileName) -> fileName.endsWith(".evts")))).toList();
 
         // pass in stream types EventStreamType and TestStreamType. There aren't any TestStream files in the directory,
-        // so this covers that edge case
+        // so this covers the edge case of trying to sign a stream type that doesn't exist in the directory
         FileSigningUtils.signStreamFilesInDirectory(toSignDirectoryPath.toFile(), destinationDirectory,
                 List.of(EventStreamType.getInstance(), TestStreamType.TEST_STREAM),
                 loadKey(keyStoreFileName, password, keyAlias));
 
-        final File[] destinationDirectoryFiles = destinationDirectory.listFiles();
+        final Collection<File> destinationDirectoryFiles = Arrays.stream(
+                Objects.requireNonNull(destinationDirectory.listFiles())).toList();
 
         assertNotNull(destinationDirectoryFiles, "Expected signature file to be created");
-        assertEquals(numFilesToSign, destinationDirectoryFiles.length,
+        assertEquals(filesToSign.size(), destinationDirectoryFiles.size(),
                 "Expected correct number of signature files to be created");
 
-        // TODO read sig file and verify it has correct contents
+        for (final File originalFile : filesToSign) {
+            final File expectedFile = destinationDirectory.toPath()
+                    .resolve(originalFile.getName() + SIGNATURE_FILE_NAME_SUFFIX).toFile();
+
+            assertTrue(destinationDirectoryFiles.contains(expectedFile),
+                    "Expected signature file to be created for " + originalFile.getName());
+
+            // TODO read sig file and verify it has correct contents
+        }
     }
 }
