@@ -34,7 +34,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyStore;
@@ -159,7 +158,9 @@ public final class FileSigningUtils {
     }
 
     /**
-     * Builds a signature file path from a destination directory and file name
+     * Builds a signature file path from a destination directory and file name.
+     * <p>
+     * Creates the needed directories if they don't already exist
      *
      * @param destinationDirectory the directory to which the signature file is saved
      * @param sourceFile           stream file to be signed
@@ -170,7 +171,25 @@ public final class FileSigningUtils {
             @NonNull final File destinationDirectory,
             @NonNull final File sourceFile) {
 
-        return new File(destinationDirectory, sourceFile.getName() + SIGNATURE_FILE_NAME_SUFFIX).getPath();
+        return new File(createDirectory(destinationDirectory),
+                sourceFile.getName() + SIGNATURE_FILE_NAME_SUFFIX).getPath();
+    }
+
+    /**
+     * Creates a directory, if it doesn't already exist
+     *
+     * @param directory the desired destination directory
+     * @return a File object representing the destination directory
+     */
+    @NonNull
+    private static File createDirectory(@NonNull final File directory) {
+        try {
+            Files.createDirectories(directory.toPath());
+
+            return directory;
+        } catch (final IOException e) {
+            throw new RuntimeException("Failed to create destination directory", e);
+        }
     }
 
     /**
@@ -214,6 +233,11 @@ public final class FileSigningUtils {
             @NonNull final File streamFileToSign,
             @NonNull final KeyPair keyPair) {
 
+        Objects.requireNonNull(destinationDirectory, "destinationDirectory must not be null");
+        Objects.requireNonNull(streamType, "streamType must not be null");
+        Objects.requireNonNull(streamFileToSign, "streamFileToSign must not be null");
+        Objects.requireNonNull(keyPair, "keyPair must not be null");
+
         final String signatureFilePath = buildSignatureFilePath(destinationDirectory, streamFileToSign);
 
         if (!streamType.isStreamFile(streamFileToSign)) {
@@ -256,7 +280,8 @@ public final class FileSigningUtils {
     /**
      * Generates a signature file for the given file
      * <p>
-     * File types known to be signed via this method are: event stream v3, record stream v2, and account balance files
+     * File types known to be signed via this method are: event stream v3, record stream v2, and account balance files.
+     * However, any arbitrary file can be signed with this method
      * <p>
      * The written signature file contains the hash of the file to be signed, and a signature
      *
@@ -268,6 +293,10 @@ public final class FileSigningUtils {
             @NonNull final File destinationDirectory,
             @NonNull final File fileToSign,
             @NonNull final KeyPair keyPair) {
+
+        Objects.requireNonNull(destinationDirectory, "destinationDirectory");
+        Objects.requireNonNull(fileToSign, "fileToSign");
+        Objects.requireNonNull(keyPair, "keyPair");
 
         final String signatureFilePath = buildSignatureFilePath(destinationDirectory, fileToSign);
 
@@ -304,6 +333,11 @@ public final class FileSigningUtils {
             @NonNull final Collection<StreamType> streamTypes,
             @NonNull final KeyPair keyPair) {
 
+        Objects.requireNonNull(sourceDirectory, "sourceDirectory");
+        Objects.requireNonNull(destinationDirectory, "destinationDirectory");
+        Objects.requireNonNull(streamTypes, "streamTypes");
+        Objects.requireNonNull(keyPair, "keyPair");
+
         for (final StreamType streamType : streamTypes) {
             final File[] sourceFiles = sourceDirectory.listFiles(
                     (directory, fileName) -> streamType.isStreamFile(fileName)
@@ -333,6 +367,11 @@ public final class FileSigningUtils {
             @NonNull final Collection<String> extensionTypes,
             @NonNull final KeyPair keyPair) {
 
+        Objects.requireNonNull(sourceDirectory, "sourceDirectory");
+        Objects.requireNonNull(destinationDirectory, "destinationDirectory");
+        Objects.requireNonNull(extensionTypes, "extensionTypes");
+        Objects.requireNonNull(keyPair, "keyPair");
+
         final Collection<String> sanitizedExtensionTypes = extensionTypes.stream()
                 .filter(Objects::nonNull)
                 .map(FileSigningUtils::sanitizeExtension)
@@ -356,21 +395,6 @@ public final class FileSigningUtils {
 
         for (final File file : sourceFiles) {
             signStandardFile(destinationDirectory, file, keyPair);
-        }
-    }
-
-    /**
-     * Creates the destination directory, if it doesn't already exist
-     *
-     * @param destinationDirectory the name of the desired destination directory
-     * @return a File object representing the destination directory
-     */
-    @NonNull
-    public static File createDestinationDirectory(@NonNull final String destinationDirectory) {
-        try {
-            return new File(Files.createDirectories(Paths.get(destinationDirectory)).toUri());
-        } catch (final IOException e) {
-            throw new RuntimeException("Failed to create destination directory", e);
         }
     }
 }
