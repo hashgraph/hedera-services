@@ -100,13 +100,13 @@ public final class FileSigningUtils {
             final KeyStore keyStore = KeyStore.getInstance(KEYSTORE_TYPE);
             keyStore.load(inputStream, password.toCharArray());
 
-            return new KeyPair(keyStore.getCertificate(alias).getPublicKey(),
-                    (PrivateKey) keyStore.getKey(alias, password.toCharArray()));
+            return new KeyPair(keyStore.getCertificate(alias).getPublicKey(), (PrivateKey)
+                    keyStore.getKey(alias, password.toCharArray()));
         } catch (final NoSuchAlgorithmException
-                       | KeyStoreException
-                       | UnrecoverableKeyException
-                       | IOException
-                       | CertificateException e) {
+                | KeyStoreException
+                | UnrecoverableKeyException
+                | IOException
+                | CertificateException e) {
 
             throw new RuntimeException("Unable to load Pfx key from file: " + keyFileName, e);
         }
@@ -134,7 +134,9 @@ public final class FileSigningUtils {
     @NonNull
     private static String sanitizeExtension(@NonNull final String originalExtension) {
         if (originalExtension.contains(".")) {
-            return originalExtension.substring(originalExtension.lastIndexOf(".") + 1).toLowerCase();
+            return originalExtension
+                    .substring(originalExtension.lastIndexOf(".") + 1)
+                    .toLowerCase();
         } else {
             return originalExtension.toLowerCase();
         }
@@ -168,11 +170,10 @@ public final class FileSigningUtils {
      */
     @NonNull
     private static String buildSignatureFilePath(
-            @NonNull final File destinationDirectory,
-            @NonNull final File sourceFile) {
+            @NonNull final File destinationDirectory, @NonNull final File sourceFile) {
 
-        return new File(createDirectory(destinationDirectory),
-                sourceFile.getName() + SIGNATURE_FILE_NAME_SUFFIX).getPath();
+        return new File(createDirectory(destinationDirectory), sourceFile.getName() + SIGNATURE_FILE_NAME_SUFFIX)
+                .getPath();
     }
 
     /**
@@ -194,8 +195,6 @@ public final class FileSigningUtils {
 
     /**
      * Sign a byte array with a private key
-     * <p>
-     * The returned signature will be at most SIG_SIZE_BYTES bytes, which is 104 for the CNSA suite parameters.
      *
      * @param data    the data to be signed
      * @param keyPair the keyPair used for signing
@@ -210,8 +209,8 @@ public final class FileSigningUtils {
     private static byte[] signData(@NonNull final byte[] data, @NonNull final KeyPair keyPair)
             throws NoSuchAlgorithmException, NoSuchProviderException, InvalidKeyException, SignatureException {
 
-        final Signature signature = Signature.getInstance(
-                SignatureType.RSA.signingAlgorithm(), SignatureType.RSA.provider());
+        final Signature signature =
+                Signature.getInstance(SignatureType.RSA.signingAlgorithm(), SignatureType.RSA.provider());
 
         signature.initSign(keyPair.getPrivate());
         signature.update(data);
@@ -248,7 +247,8 @@ public final class FileSigningUtils {
         try {
             final int version = readFirstIntFromFile(streamFileToSign);
             if (version != SUPPORTED_STREAM_FILE_VERSION) {
-                System.err.printf("Failed to sign file [%s] with unsupported version [%s]%n",
+                System.err.printf(
+                        "Failed to sign file [%s] with unsupported version [%s]%n",
                         streamFileToSign.getName(), version);
                 return;
             }
@@ -263,8 +263,8 @@ public final class FileSigningUtils {
                     SignatureType.RSA, signData(entireHash.getValue(), keyPair));
 
             final Hash metaHash = computeMetaHash(streamFileToSign, streamType);
-            final com.swirlds.common.crypto.Signature metaHashSignature = new com.swirlds.common.crypto.Signature(
-                    SignatureType.RSA, signData(metaHash.getValue(), keyPair));
+            final com.swirlds.common.crypto.Signature metaHashSignature =
+                    new com.swirlds.common.crypto.Signature(SignatureType.RSA, signData(metaHash.getValue(), keyPair));
 
             writeSignatureFile(
                     entireHash, entireHashSignature, metaHash, metaHashSignature, signatureFilePath, streamType);
@@ -290,9 +290,7 @@ public final class FileSigningUtils {
      * @param keyPair              the key pair used for signing
      */
     public static void signStandardFile(
-            @NonNull final File destinationDirectory,
-            @NonNull final File fileToSign,
-            @NonNull final KeyPair keyPair) {
+            @NonNull final File destinationDirectory, @NonNull final File fileToSign, @NonNull final KeyPair keyPair) {
 
         Objects.requireNonNull(destinationDirectory, "destinationDirectory");
         Objects.requireNonNull(fileToSign, "fileToSign");
@@ -339,9 +337,8 @@ public final class FileSigningUtils {
         Objects.requireNonNull(keyPair, "keyPair");
 
         for (final StreamType streamType : streamTypes) {
-            final File[] sourceFiles = sourceDirectory.listFiles(
-                    (directory, fileName) -> streamType.isStreamFile(fileName)
-            );
+            final File[] sourceFiles =
+                    sourceDirectory.listFiles((directory, fileName) -> streamType.isStreamFile(fileName));
 
             if (sourceFiles == null) {
                 throw new RuntimeException("Failed to list files in directory: " + sourceDirectory);
@@ -377,17 +374,15 @@ public final class FileSigningUtils {
                 .map(FileSigningUtils::sanitizeExtension)
                 .toList();
 
-        final File[] sourceFiles = sourceDirectory.listFiles(
-                (directory, fileName) -> {
-                    final String fileExtension = getFileExtension(fileName);
+        final File[] sourceFiles = sourceDirectory.listFiles((directory, fileName) -> {
+            final String fileExtension = getFileExtension(fileName);
 
-                    if (fileExtension == null) {
-                        return false;
-                    }
+            if (fileExtension == null) {
+                return false;
+            }
 
-                    return sanitizedExtensionTypes.contains(fileExtension);
-                }
-        );
+            return sanitizedExtensionTypes.contains(fileExtension);
+        });
 
         if (sourceFiles == null) {
             throw new RuntimeException("Failed to list files in directory: " + sourceDirectory);
