@@ -53,7 +53,7 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
      * exceeds this threshold, a new file channel is open, unless there are {@link #MAX_FILE_CHANNELS}
      * channels are already opened.
      */
-    private static final int THREADS_PER_FILECHANNEL = 3;
+    private static final int THREADS_PER_FILECHANNEL = 8;
     /**
      * A single data file reader may use multiple file channels. Previously, a single file channel
      * was used, and it resulted in unnecessary locking in FileChannelImpl.readInternal(), when
