@@ -31,8 +31,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
+import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
@@ -144,9 +146,8 @@ class HollowAccountFinalizationLogicTest {
 
     @Test
     void finalizesHollowAccountPresentInPendingFinalizations() {
-        final var keyBytes = "dksoa".getBytes();
+        final var keyBytes = "dksoadksoadksoadksoadksoadksoa123".getBytes();
         final var key = new JECDSASecp256k1Key(keyBytes);
-        final var evmAddress = "addres".getBytes();
         final var hollowNum = EntityNum.fromLong(5L);
 
         given(swirldsTxnAccessor.getPendingCompletions()).willReturn(List.of(new PendingCompletion(hollowNum, key)));
@@ -165,6 +166,8 @@ class HollowAccountFinalizationLogicTest {
         verify(hederaAccount).setAccountKey(key);
         verify(creator).createSuccessfulSyntheticRecord(any(), any(), any());
         verify(sigImpactHistorian).markEntityChanged(hollowNum.longValue());
+        final var evmAddress = EthSigsUtils.recoverAddressFromPubKey(keyBytes);
+        verify(sigImpactHistorian).markAliasChanged(ByteString.copyFrom(evmAddress));
         verify(recordsHistorian)
                 .trackPrecedingChildRecord(DEFAULT_SOURCE_ID, txnBodyBuilder, expirableTxnRecordBuilder);
     }

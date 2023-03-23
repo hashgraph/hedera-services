@@ -53,10 +53,8 @@ public class ConsensusRound implements Round {
     /**
      * Create a new instance with the provided consensus events.
      *
-     * @param consensusEvents
-     * 		the events in the round, in consensus order
-     * @param generations
-     * 		the consensus generations for this round
+     * @param consensusEvents             the events in the round, in consensus order
+     * @param generations                 the consensus generations for this round
      */
     public ConsensusRound(final List<EventImpl> consensusEvents, final GraphGenerations generations) {
         this.consensusEvents = Collections.unmodifiableList(consensusEvents);
@@ -147,9 +145,13 @@ public class ConsensusRound implements Round {
 
     @Override
     public boolean equals(final Object o) {
-        if (this == o) return true;
+        if (this == o) {
+            return true;
+        }
 
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         final ConsensusRound round = (ConsensusRound) o;
 
