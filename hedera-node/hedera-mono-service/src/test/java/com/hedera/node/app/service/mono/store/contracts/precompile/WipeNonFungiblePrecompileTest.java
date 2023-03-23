@@ -25,7 +25,6 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTes
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.nonFungibleId;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.nonFungibleTokenAddr;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.nonFungibleWipe;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.recipientAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.targetSerialNos;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.timestamp;
@@ -89,15 +88,12 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Collections;
-import java.util.Deque;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -114,10 +110,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class WipeNonFungiblePrecompileTest {
 
     private final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_WIPE_TOKEN_ACCOUNT_NFT));
-    @Mock private Account acc;
-    @Mock private Deque<MessageFrame> stack;
-    @Mock private Iterator<MessageFrame> dequeIterator;
-
     @Mock private AccountStore accountStore;
     @Mock private TypedTokenStore tokenStore;
     @Mock private GlobalDynamicProperties dynamicProperties;
@@ -280,13 +272,6 @@ class WipeNonFungiblePrecompileTest {
                 .willReturn(mockRecordBuilder);
         given(wipeLogic.validateSyntax(any())).willReturn(OK);
 
-        given(frame.getContractAddress()).willReturn(contractAddress);
-        given(frame.getRecipientAddress()).willReturn(recipientAddress);
-        given(worldUpdater.get(recipientAddress)).willReturn(acc);
-        given(acc.getNonce()).willReturn(-1L);
-        given(frame.getMessageFrameStack()).willReturn(stack);
-        given(frame.getMessageFrameStack().iterator()).willReturn(dequeIterator);
-
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
@@ -332,14 +317,8 @@ class WipeNonFungiblePrecompileTest {
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
         given(wipeLogic.validateSyntax(any())).willReturn(INVALID_TOKEN_ID);
-        given(frame.getContractAddress()).willReturn(contractAddress);
-        given(frame.getRecipientAddress()).willReturn(recipientAddress);
-        given(worldUpdater.get(recipientAddress)).willReturn(acc);
-        given(acc.getNonce()).willReturn(-1L);
         given(creator.createUnsuccessfulSyntheticRecord(INVALID_TOKEN_ID))
                 .willReturn(mockRecordBuilder);
-        given(frame.getMessageFrameStack()).willReturn(stack);
-        given(frame.getMessageFrameStack().iterator()).willReturn(dequeIterator);
 
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, а -> а);
