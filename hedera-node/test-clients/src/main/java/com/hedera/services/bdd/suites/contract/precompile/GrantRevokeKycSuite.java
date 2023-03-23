@@ -299,7 +299,8 @@ public class GrantRevokeKycSuite extends HapiSuite {
                                         TOKEN_GRANT_KYC,
                                         HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
                                         HapiParserUtil.asHeadlongAddress(asAddress(secondAccountID.get())))
-                                .payingWith(ACCOUNT)
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
                                 .via("GrantKycTx")
                                 .gas(GAS_TO_OFFER),
                         getAccountDetails(SECOND_ACCOUNT)
@@ -315,7 +316,8 @@ public class GrantRevokeKycSuite extends HapiSuite {
                                         TOKEN_REVOKE_KYC,
                                         HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
                                         HapiParserUtil.asHeadlongAddress(asAddress(secondAccountID.get())))
-                                .payingWith(ACCOUNT)
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
                                 .via("RevokeKycTx")
                                 .gas(GAS_TO_OFFER),
                         contractCall(
@@ -323,7 +325,8 @@ public class GrantRevokeKycSuite extends HapiSuite {
                                         IS_KYC_GRANTED,
                                         HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
                                         HapiParserUtil.asHeadlongAddress(asAddress(secondAccountID.get())))
-                                .payingWith(ACCOUNT)
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
                                 .via("IsKycTx")
                                 .gas(GAS_TO_OFFER))))
                 .then(

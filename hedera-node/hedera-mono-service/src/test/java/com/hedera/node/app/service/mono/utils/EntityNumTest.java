@@ -66,8 +66,7 @@ class EntityNumTest {
         assertEquals(expected, EntityNum.fromTopicId(IdUtils.asTopic("0.0.123")));
         assertEquals(expected, EntityNum.fromContractId(IdUtils.asContract("0.0.123")));
         assertEquals(expected, EntityNum.fromModel(new Id(0, 0, 123)));
-        assertEquals(
-                expected, EntityNum.fromEvmAddress(Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(0, 0, 123)))));
+        assertEquals(expected, EntityNum.fromEvmAddress(Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(123)))));
     }
 
     @Test
@@ -79,7 +78,8 @@ class EntityNumTest {
         assertEquals(MISSING_NUM, EntityNum.fromContractId(IdUtils.asContract("1.0.123")));
         assertEquals(MISSING_NUM, EntityNum.fromModel(new Id(1, 0, 123)));
         assertEquals(
-                MISSING_NUM, EntityNum.fromEvmAddress(Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(1, 0, 123)))));
+                new EntityNum(123),
+                EntityNum.fromEvmAddress(Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(123)))));
     }
 
     @Test
@@ -91,7 +91,8 @@ class EntityNumTest {
         assertEquals(MISSING_NUM, EntityNum.fromContractId(IdUtils.asContract("0.1.123")));
         assertEquals(MISSING_NUM, EntityNum.fromModel(new Id(0, 1, 123)));
         assertEquals(
-                MISSING_NUM, EntityNum.fromEvmAddress(Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(0, 1, 123)))));
+                new EntityNum(123),
+                EntityNum.fromEvmAddress(Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(123)))));
     }
 
     @Test

@@ -95,6 +95,11 @@ public class SignedStateFileManager implements Startable {
     private final Time time;
 
     /**
+     * The minimum generation of non-ancient events for the oldest state snapshot on disk.
+     */
+    private long minimumGenerationNonAncientForOldestState = -1;
+
+    /**
      * Creates a new instance.
      *
      * @param threadManager responsible for creating and managing threads
@@ -131,6 +136,15 @@ public class SignedStateFileManager implements Startable {
                 .setThreadName("signed-state-file-manager")
                 .setHandler(Runnable::run)
                 .build();
+
+        final SavedStateInfo[] savedStates = getSavedStateFiles(mainClassName, selfId, swirldName);
+        if (savedStates.length > 0) {
+            final Long generationNonAncient =
+                    savedStates[savedStates.length - 1].getMetadata().minimumGenerationNonAncient();
+            if (generationNonAncient != null) {
+                minimumGenerationNonAncientForOldestState = generationNonAncient;
+            }
+        }
     }
 
     /**
@@ -187,7 +201,7 @@ public class SignedStateFileManager implements Startable {
             final long start = time.nanoTime();
             boolean success = false;
             try {
-                writeSignedStateToDisk(directory, signedState, taskDescription);
+                writeSignedStateToDisk(selfId.getId(), directory, signedState, taskDescription);
                 metrics.getWriteStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
 
                 success = true;
@@ -339,7 +353,8 @@ public class SignedStateFileManager implements Startable {
         final SavedStateInfo[] savedStates = getSavedStateFiles(mainClassName, selfId, swirldName);
 
         // States are returned newest to oldest. So delete from the end of the list to delete the oldest states.
-        for (int index = savedStates.length - 1; index >= stateConfig.signedStateDisk(); index--) {
+        int index = savedStates.length - 1;
+        for (; index >= stateConfig.signedStateDisk(); index--) {
 
             final SavedStateInfo savedStateInfo = savedStates[index];
             try {
@@ -348,5 +363,24 @@ public class SignedStateFileManager implements Startable {
                 // Intentionally ignored, deleteDirectoryAndLog will log any exceptions that happen
             }
         }
+
+        // Keep the minimum generation non-ancient for the oldest state up to date
+        if (index >= 0) {
+            final SavedStateMetadata oldestStateMetadata = savedStates[index].getMetadata();
+            final long minimumGeneration = oldestStateMetadata.minimumGenerationNonAncient() == null
+                    ? -1L
+                    : oldestStateMetadata.minimumGenerationNonAncient();
+            minimumGenerationNonAncientForOldestState =
+                    Math.max(minimumGenerationNonAncientForOldestState, minimumGeneration);
+        }
+    }
+
+    /**
+     * Get the minimum generation non-ancient for the oldest state on disk.
+     *
+     * @return the minimum generation non-ancient for the oldest state on disk
+     */
+    public synchronized long getMinimumGenerationNonAncientForOldestState() {
+        return minimumGenerationNonAncientForOldestState;
     }
 }
