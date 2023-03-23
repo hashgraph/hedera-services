@@ -215,7 +215,7 @@ class ConcurrentArrayTest {
 
     @Test
     @Tags({@Tag("VirtualMerkle"), @Tag("VirtualNodeCache")})
-    @DisplayName("Multiple merge")
+    @DisplayName("Reusing the same ConcurrentArray source should be permitted")
     void reusingTheSameSourceArrayIsOK() {
         final ConcurrentArray<String> a = new ConcurrentArray<>(5);
         a.add("Element 1");
@@ -236,6 +236,7 @@ class ConcurrentArrayTest {
         c.add("Element B");
         c.add("Element C");
         c.add("Element D");
+        c.add("Element E");
         c.seal();
 
         // Merge a and b together and validate the result
@@ -254,23 +255,20 @@ class ConcurrentArrayTest {
         assertEquals("Element 8", elements.get(7), "Wrong value");
 
         // Merge a and c and validate the result.
-        c.merge(b);
-        assertEquals(12, c.size(), "Wrong value");
+        c.merge(a);
+        assertEquals(9, c.size(), "Wrong value");
         elements = c.sortedStream(null).collect(Collectors.toList());
 
-        assertEquals(12, elements.size(), "Wrong value");
+        assertEquals(9, elements.size(), "Wrong value");
         assertEquals("Element 1", elements.get(0), "Wrong value");
         assertEquals("Element 2", elements.get(1), "Wrong value");
         assertEquals("Element 3", elements.get(2), "Wrong value");
         assertEquals("Element 4", elements.get(3), "Wrong value");
-        assertEquals("Element 5", elements.get(4), "Wrong value");
-        assertEquals("Element 6", elements.get(5), "Wrong value");
-        assertEquals("Element 7", elements.get(6), "Wrong value");
-        assertEquals("Element 8", elements.get(7), "Wrong value");
-        assertEquals("Element A", elements.get(8), "Wrong value");
-        assertEquals("Element B", elements.get(9), "Wrong value");
-        assertEquals("Element C", elements.get(10), "Wrong value");
-        assertEquals("Element D", elements.get(11), "Wrong value");
+        assertEquals("Element A", elements.get(4), "Wrong value");
+        assertEquals("Element B", elements.get(5), "Wrong value");
+        assertEquals("Element C", elements.get(6), "Wrong value");
+        assertEquals("Element D", elements.get(7), "Wrong value");
+        assertEquals("Element E", elements.get(8), "Wrong value");
     }
 
     /**
