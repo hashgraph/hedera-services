@@ -193,6 +193,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                 getErc20TotalSupply(),
                 getErc20BalanceOfAccount(),
                 transferErc20Token(),
+                transferErc20TokenFailWithAccount(),
                 erc20Allowance(),
                 erc20Approve(),
                 someERC20ApproveAllowanceScenariosPass(),
@@ -583,6 +584,63 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                 BALANCE_OF,
                                                 asHeadlongAddress(tokenAddr.get()),
                                                 asHeadlongAddress(accountAddr.get()))));
+    }
+
+    private HapiSpec transferErc20TokenFailWithAccount() {
+        final AtomicReference<String> tokenAddr = new AtomicReference<>();
+        final AtomicReference<String> accountAddr = new AtomicReference<>();
+
+        return defaultHapiSpec("ERC_20_TRANSFER")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(ACCOUNT)
+                                .balance(100 * ONE_HUNDRED_HBARS)
+                                .exposingCreatedIdTo(
+                                        id -> accountAddr.set(asHexedSolidityAddress(id))),
+                        cryptoCreate(RECIPIENT),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(5)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY)
+                                .exposingCreatedIdTo(
+                                        id ->
+                                                tokenAddr.set(
+                                                        HapiPropertySource.asHexedSolidityAddress(
+                                                                HapiPropertySource.asToken(id)))),
+                        uploadInitCode(ERC_20_CONTRACT),
+                        contractCreate(ERC_20_CONTRACT),
+                        tokenAssociate(ACCOUNT, List.of(FUNGIBLE_TOKEN)),
+                        tokenAssociate(RECIPIENT, List.of(FUNGIBLE_TOKEN)),
+                        tokenAssociate(ERC_20_CONTRACT, List.of(FUNGIBLE_TOKEN)),
+                        cryptoTransfer(moving(5, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, ACCOUNT)))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCall(
+                                                                ERC_20_CONTRACT,
+                                                                TRANSFER,
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECIPIENT))),
+                                                                BigInteger.TWO)
+                                                        .via(TRANSFER_TXN)
+                                                        .gas(GAS_TO_OFFER)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .then(
+                        getContractInfo(ERC_20_CONTRACT).saveToRegistry(ERC_20_CONTRACT),
+                        childRecordsCheck(TRANSFER_TXN, CONTRACT_REVERT_EXECUTED));
     }
 
     private HapiSpec transferErc20Token() {
