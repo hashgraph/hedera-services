@@ -34,6 +34,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
@@ -60,6 +61,8 @@ public class AddressBookInitializer {
     private static final String ADDRESS_BOOK_DIRECTORY_NAME = "address_book";
     /** The file name prefix to use when creating address book files. */
     private static final String ADDRESS_BOOK_FILE_PREFIX = "usedAddressBook";
+    /** The maximum number of address book files to keep in the address book directory. */
+    private static final int MAX_ADDRESS_BOOK_FILES = 50;
     /** The format of date and time to use when creating address book files. */
     private static final DateTimeFormatter DATE_TIME_FORMAT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-m-ss").withZone(ZoneId.systemDefault());
@@ -231,7 +234,8 @@ public class AddressBookInitializer {
      *
      * @param usedAddressBook the address book to be returned from the AddressBookInitializer.
      */
-    private void recordAddressBooks(@NonNull final AddressBook usedAddressBook) {
+    synchronized private void recordAddressBooks(@NonNull final AddressBook usedAddressBook) {
+        cleanAddressBookDirectory();
         final String date = DATE_TIME_FORMAT.format(Instant.now());
         final String addressBookFileName = ADDRESS_BOOK_FILE_PREFIX + "_v" + currentVersion + "_" + date + ".txt";
         final String addressBookDebugFileName = addressBookFileName + ".debug";
@@ -262,6 +266,22 @@ public class AddressBookInitializer {
             }
         } catch (final IOException e) {
             logger.error(EXCEPTION.getMarker(), "Not able to write address book to file. ", e);
+        }
+    }
+
+    /**
+     * Deletes the oldest address book files if there are more than the maximum number of address book files.
+     */
+    synchronized private void cleanAddressBookDirectory() {
+        try {
+            List<Path> files = Files.list(pathToAddressBookDirectory).sorted().toList();
+            if (files.size() > MAX_ADDRESS_BOOK_FILES) {
+                for (int i = 0; i < files.size() - MAX_ADDRESS_BOOK_FILES; i++) {
+                    Files.delete(files.get(i));
+                }
+            }
+        } catch (IOException e) {
+            logger.info(EXCEPTION.getMarker(), "Unable to list files in address book directory. ", e);
         }
     }
 
