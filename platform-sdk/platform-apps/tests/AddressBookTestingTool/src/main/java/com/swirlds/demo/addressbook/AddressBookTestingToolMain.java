@@ -24,7 +24,7 @@ import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.PlatformWithDeprecatedMethods;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
-import java.util.Random;
+import java.security.SecureRandom;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -49,9 +49,11 @@ public class AddressBookTestingToolMain implements SwirldMain {
 
     private Platform platform;
 
-    private final int transactionsPerSecond = 100;
+    private static final int transactionsPerSecond = 100;
 
-    public AddressBookTestingToolMain() {}
+    public AddressBookTestingToolMain() {
+        // default constructor, does nothing
+    }
 
     /**
      * {@inheritDoc}
@@ -76,7 +78,7 @@ public class AddressBookTestingToolMain implements SwirldMain {
     @Override
     public void run() {
         logger.info(STARTUP.getMarker(), "run called in Main.");
-        new TransactionGenerator(new Random(), platform, transactionsPerSecond).start();
+        new TransactionGenerator(new SecureRandom(), platform, transactionsPerSecond).start();
     }
 
     /**
