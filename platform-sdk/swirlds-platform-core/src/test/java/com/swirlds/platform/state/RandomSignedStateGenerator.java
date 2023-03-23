@@ -171,7 +171,7 @@ public class RandomSignedStateGenerator {
         if (minGenInfo == null) {
             minGenInfoInstance = new ArrayList<>();
             for (int i = 0; i < roundsNonAncientInstance; i++) {
-                minGenInfoInstance.add(new MinGenInfo(roundInstance - i, -1L)); // TODO
+                minGenInfoInstance.add(new MinGenInfo(roundInstance - i, 0L));
             }
         } else {
             minGenInfoInstance = minGenInfo;
