@@ -30,6 +30,7 @@ import static com.swirlds.platform.gui.internal.BrowserWindowManager.setInsets;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.setStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
 import static com.swirlds.platform.state.address.AddressBookUtils.getOwnHostCount;
+import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
 import static com.swirlds.platform.system.SystemExitReason.NODE_ADDRESS_MISMATCH;
 
 import com.swirlds.common.StartupTime;
@@ -59,6 +60,7 @@ import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
@@ -87,12 +89,19 @@ import com.swirlds.platform.gui.internal.InfoApp;
 import com.swirlds.platform.gui.internal.InfoMember;
 import com.swirlds.platform.gui.internal.InfoSwirld;
 import com.swirlds.platform.gui.internal.StateHierarchy;
+import com.swirlds.platform.reconnect.emergency.EmergencySignedStateValidator;
+import com.swirlds.platform.state.EmergencyRecoveryManager;
+import com.swirlds.platform.state.signed.SavedStateInfo;
+import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileUtils;
 import com.swirlds.platform.swirldapp.AppLoaderException;
 import com.swirlds.platform.swirldapp.SwirldAppLoader;
+import com.swirlds.platform.system.Shutdown;
+import com.swirlds.platform.system.SystemExitReason;
 import com.swirlds.platform.system.SystemUtils;
 import com.swirlds.platform.util.MetricsDocUtils;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.GraphicsEnvironment;
@@ -114,6 +123,9 @@ import javax.swing.UIManager;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.impl.Log4jContextFactory;
+import org.apache.logging.log4j.core.util.DefaultShutdownCallbackRegistry;
+import org.apache.logging.log4j.spi.LoggerContextFactory;
 
 /**
  * The Browser that launches the Platforms that run the apps.
@@ -145,10 +157,17 @@ public class Browser {
 
     private final Configuration configuration;
 
+    private static final String STARTUP_MESSAGE =
+            """
+              //////////////////////
+             // Node is Starting //
+            //////////////////////""";
+
     /**
      * Prevent this class from being instantiated.
      */
     private Browser(final Set<Integer> localNodesToStart) throws IOException {
+        logger.info(STARTUP.getMarker(), "\n\n" + STARTUP_MESSAGE + "\n");
         logger.debug(STARTUP.getMarker(), () -> new NodeStartPayload().toString());
 
         // The properties from the config.txt
@@ -398,6 +417,23 @@ public class Browser {
                 Log4jSetup.startLoggingFramework(log4jPath);
             }
             logger = LogManager.getLogger(Browser.class);
+
+            final LoggerContextFactory factory = LogManager.getFactory();
+            if (factory instanceof final Log4jContextFactory contextFactory) {
+                // Do not allow log4j to use its own shutdown hook. Use our own shutdown
+                // hook to stop log4j. This allows us to write a final log message before
+                // the logger is shut down.
+                ((DefaultShutdownCallbackRegistry) contextFactory.getShutdownCallbackRegistry()).stop();
+                Runtime.getRuntime()
+                        .addShutdownHook(new ThreadConfiguration(getStaticThreadManager())
+                                .setComponent("browser")
+                                .setThreadName("shutdown-hook")
+                                .setRunnable(() -> {
+                                    logger.info(STARTUP.getMarker(), "JVM is shutting down.");
+                                    LogManager.shutdown();
+                                })
+                                .build());
+            }
         } catch (final Exception e) {
             LogManager.getLogger(Browser.class).fatal("Unable to load log context", e);
             System.err.println("FATAL Unable to load log context: " + e);
@@ -496,6 +532,33 @@ public class Browser {
                 final SwirldMain appMain = buildAppMain(appDefinition, appLoader);
                 appMain.setConfiguration(configuration);
 
+                // name of the app's SwirldMain class
+                final String mainClassName = appDefinition.getMainClassName();
+                // the name of this swirld
+                final String swirldName = appDefinition.getSwirldName();
+                final SoftwareVersion appVersion = appMain.getSoftwareVersion();
+                // We can't send a "real" dispatch, since the dispatcher will not have been started by the
+                // time this class is used.
+                final EmergencyRecoveryManager emergencyRecoveryManager = new EmergencyRecoveryManager(
+                        Shutdown::immediateShutDown, Settings.getInstance().getEmergencyRecoveryFileLoadDir());
+
+                final SignedState loadedSignedState = getUnmodifiedSignedStateFromDisk(
+                        mainClassName, swirldName, nodeId, appVersion, addressBook.copy(), emergencyRecoveryManager);
+
+                final StateConfig stateConfig =
+                        platformContext.getConfiguration().getConfigData(StateConfig.class);
+
+                // Initialize the address book from the configuration and platform saved state.
+                final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
+                        appVersion,
+                        loadedSignedState,
+                        appMain::newState,
+                        addressBook.copy(),
+                        stateConfig.savedStateDirectory(),
+                        stateConfig.forceUseOfConfigAddressBook());
+                // set here, then given to the state in run(). A copy of it is given to hashgraph.
+                final AddressBook initialAddressBook = addressBookInitializer.getInitialAddressBook();
+
                 final SwirldsPlatform platform = new SwirldsPlatform(
                         // window index
                         ownHostIndex,
@@ -508,15 +571,15 @@ public class Browser {
                         // address book index, which is the member ID
                         nodeId,
                         // copy of the address book,
-                        addressBook.copy(),
+                        initialAddressBook,
                         platformContext,
                         platformName,
-                        // name of the app's SwirldMain class
-                        appDefinition.getMainClassName(),
-                        // the name of this swirld
-                        appDefinition.getSwirldName(),
-                        appMain.getSoftwareVersion(),
-                        appMain::newState);
+                        mainClassName,
+                        swirldName,
+                        appVersion,
+                        appMain::newState,
+                        loadedSignedState,
+                        emergencyRecoveryManager);
 
                 new InfoMember(infoSwirld, i, platform);
 
@@ -550,6 +613,45 @@ public class Browser {
                 }
             }
         }
+    }
+
+    /**
+     * Load the signed state from the disk if it is present.
+     *
+     * @param mainClassName the name of the app's SwirldMain class.
+     * @param swirldName the name of the swirld to load the state for.
+     * @param selfId the ID of the node to load the state for.
+     * @param appVersion the version of the app to use for emergency recovery.
+     * @param configAddressBook the address book to use for emergency recovery.
+     * @param emergencyRecoveryManager the emergency recovery manager to use for emergency recovery.
+     * @return  the signed state loaded from disk.
+     */
+    private SignedState getUnmodifiedSignedStateFromDisk(
+            @NonNull final String mainClassName,
+            @NonNull final String swirldName,
+            @NonNull final NodeId selfId,
+            @NonNull final SoftwareVersion appVersion,
+            @NonNull final AddressBook configAddressBook,
+            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
+        final SavedStateInfo[] savedStateFiles = getSavedStateFiles(mainClassName, selfId, swirldName);
+        // We can't send a "real" dispatcher for shutdown, since the dispatcher will not have been started by the
+        // time this class is used.
+        final SavedStateLoader savedStateLoader = new SavedStateLoader(
+                Shutdown::immediateShutDown,
+                configAddressBook,
+                savedStateFiles,
+                appVersion,
+                () -> new EmergencySignedStateValidator(emergencyRecoveryManager.getEmergencyRecoveryFile()),
+                emergencyRecoveryManager);
+        try {
+            return savedStateLoader.getSavedStateToLoad();
+        } catch (final Exception e) {
+            logger.error(EXCEPTION.getMarker(), "Signed state not loaded from disk:", e);
+            if (Settings.getInstance().isRequireStateLoad()) {
+                SystemUtils.exitSystem(SystemExitReason.SAVED_STATE_NOT_LOADED);
+            }
+        }
+        return null;
     }
 
     /**

@@ -2089,10 +2089,12 @@ public class ContractCallSuite extends HapiSuite {
                         tokenAssociate(dev, sauce),
                         sourcing(
                                 () -> contractCallWithFunctionAbi(farm, setSauceAbi, asHeadlongAddress(sauceAddr.get()))
-                                        .gas(gasToOffer)),
+                                        .gas(gasToOffer)
+                                        .refusingEthConversion()),
                         sourcing(
                                 () -> contractCallWithFunctionAbi(farm, transferAbi, asHeadlongAddress(ownerAddr.get()))
-                                        .gas(gasToOffer)))
+                                        .gas(gasToOffer)
+                                        .refusingEthConversion()))
                 .when(
                         sourcing(() -> contractCallWithFunctionAbi(
                                         farm,
@@ -2101,26 +2103,30 @@ public class ContractCallSuite extends HapiSuite {
                                         asHeadlongAddress(lpTokenAddr.get()))
                                 .via("add")
                                 .payingWith(OWNER)
-                                .gas(gasToOffer)),
+                                .gas(gasToOffer)
+                                .refusingEthConversion()),
                         newKeyNamed("contractControl").shape(KeyShape.CONTRACT.signedWith(farm)),
                         tokenUpdate(sauce).supplyKey("contractControl"),
                         sourcing(() -> contractCallWithFunctionAbi(
                                         farm, depositAbi, BigInteger.ZERO, BigInteger.valueOf(100_000))
                                 .sending(ONE_HUNDRED_HBARS)
                                 .payingWith(dev)
-                                .gas(gasToOffer)),
+                                .gas(gasToOffer)
+                                .refusingEthConversion()),
                         sleepFor(1000),
                         sourcing(() -> contractCallWithFunctionAbi(
                                         farm, depositAbi, BigInteger.ZERO, BigInteger.valueOf(100_000))
                                 .sending(ONE_HUNDRED_HBARS)
                                 .payingWith(dev)
                                 .gas(gasToOffer)
-                                .via("second")),
+                                .via("second")
+                                .refusingEthConversion()),
                         getTxnRecord("second").andAllChildRecords().logged())
                 .then(sourcing(() -> contractCallWithFunctionAbi(
                                 farm, withdrawAbi, BigInteger.ZERO, BigInteger.valueOf(200_000))
                         .payingWith(dev)
-                        .gas(gasToOffer)));
+                        .gas(gasToOffer)
+                        .refusingEthConversion()));
     }
 
     private HapiSpec consTimeManagementWorksWithRevertedInternalCreations() {
