@@ -819,7 +819,7 @@ public class Address implements SelfSerializable {
         }
 
         Address address = (Address) o;
-        return equalsWithoutStake(address) && stake == address.stake;
+        return equalsWithoutStake(address) && stake == address.stake && ownHost == address.ownHost;
     }
 
     /**
@@ -831,7 +831,6 @@ public class Address implements SelfSerializable {
      */
     public boolean equalsWithoutStake(@NonNull final Address address) {
         return id == address.id
-                && ownHost == address.ownHost
                 && portInternalIpv4 == address.portInternalIpv4
                 && portExternalIpv4 == address.portExternalIpv4
                 && portInternalIpv6 == address.portInternalIpv6
@@ -842,9 +841,15 @@ public class Address implements SelfSerializable {
                 && Arrays.equals(addressExternalIpv4, address.addressExternalIpv4)
                 && Arrays.equals(addressInternalIpv6, address.addressInternalIpv6)
                 && Arrays.equals(addressExternalIpv6, address.addressExternalIpv6)
-                && Objects.equals(sigPublicKey, address.sigPublicKey)
-                && Objects.equals(encPublicKey, address.encPublicKey)
-                && Objects.equals(agreePublicKey, address.agreePublicKey)
+                && Arrays.equals(
+                        sigPublicKey.getPublicKey().getEncoded(),
+                        address.sigPublicKey.getPublicKey().getEncoded())
+                && Arrays.equals(
+                        encPublicKey.getPublicKey().getEncoded(),
+                        address.encPublicKey.getPublicKey().getEncoded())
+                && Arrays.equals(
+                        agreePublicKey.getPublicKey().getEncoded(),
+                        address.agreePublicKey.getPublicKey().getEncoded())
                 && Objects.equals(memo, address.memo);
     }
 
