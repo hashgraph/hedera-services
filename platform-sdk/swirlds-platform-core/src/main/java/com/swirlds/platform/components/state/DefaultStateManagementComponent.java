@@ -377,6 +377,9 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     public void stateToLoad(final SignedState signedState, final SourceOfSignedState sourceOfSignedState) {
         signedState.setGarbageCollector(signedStateGarbageCollector);
         newSignedStateBeingTracked(signedState, sourceOfSignedState);
+        final Signature signature = signer.sign(signedState.getState().getHash());
+        signatureTransmitter.transmitSignature(
+                signedState.getRound(), signature, signedState.getState().getHash());
         signedStateManager.addCompleteSignedState(signedState);
     }
 
