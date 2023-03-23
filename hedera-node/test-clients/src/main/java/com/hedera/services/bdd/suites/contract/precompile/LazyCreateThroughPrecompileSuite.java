@@ -450,7 +450,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                 "createSeveralDirectly",
                                 headlongFromHexed(nftMirrorAddr.get()),
                                 nCopiesOfSender(n, mirrorAddrWith(civilianId.get())),
-                                nNonMirrorAddressFrom(n, civilianId.get() + 1),
+                                nNonMirrorAddressFrom(n, civilianId.get() + 1_234_567_890L),
                                 LongStream.iterate(1L, l -> l + 1).limit(n).toArray())
                         .via(creationAttempt)
                         .gas(GAS_TO_OFFER)
