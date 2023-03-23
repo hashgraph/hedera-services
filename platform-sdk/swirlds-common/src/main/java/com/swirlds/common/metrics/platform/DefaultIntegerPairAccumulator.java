@@ -25,6 +25,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.util.List;
 import java.util.function.BiFunction;
+import java.util.function.LongBinaryOperator;
 
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 
@@ -40,11 +41,17 @@ public class DefaultIntegerPairAccumulator<T> extends DefaultMetric implements I
     public DefaultIntegerPairAccumulator(final Config<T> config) {
         super(config);
         this.dataType = MetricConfig.mapDataType(config.getType());
+        final LongBinaryOperator accumulator = config.getCombinedAccumulator() != null
+                ? config.getCombinedAccumulator()
+                : AtomicIntPair.createAccumulator(
+                    config.getLeftAccumulator(),
+                    config.getRightAccumulator());
         this.container = new AtomicIntPair(
-                config.getLeftAccumulator(),
-                config.getRightAccumulator(),
-                config.getLeftReset(),
-                config.getRightReset()
+                accumulator,
+                AtomicIntPair.createCombinedReset(
+                        config.getLeftReset(),
+                        config.getRightReset()
+                )
         );
         this.resultFunction = config.getResultFunction();
     }

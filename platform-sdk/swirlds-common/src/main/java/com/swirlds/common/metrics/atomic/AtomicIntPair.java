@@ -54,30 +54,7 @@ public class AtomicIntPair {
         );
     }
 
-    /**
-     * @param leftAccumulator  the method that will be used to calculate the new value for the left integer when
-     *                         {@link #accumulate(int, int)} is called
-     * @param rightAccumulator the method that will be used to calculate the new value for the right integer when
-     *                         {@link #accumulate(int, int)} is called
-     * @param leftReset        the method that will be used to calculate the new value for the left integer when it is being reset
-     * @param rightReset      the method that will be used to calculate the new value for the right integer when it is being reset
-     */
     public AtomicIntPair(
-            final IntBinaryOperator leftAccumulator,
-            final IntBinaryOperator rightAccumulator,
-            final IntUnaryOperator leftReset,
-            final IntUnaryOperator rightReset) {
-        this(
-                createAccumulator(leftAccumulator, rightAccumulator),
-                (current) -> {
-                    final int left = leftReset.applyAsInt(extractLeft(current));
-                    final int right = rightReset.applyAsInt(extractRight(current));
-                    return combine(left, right);
-                }
-        );
-    }
-
-    private AtomicIntPair(
             final LongBinaryOperator accumulator,
             final LongUnaryOperator reset) {
         operator = accumulator;
@@ -92,12 +69,26 @@ public class AtomicIntPair {
      * @param rightAccumulator the accumulator used to update the right integer
      * @return a method that will update both integers
      */
-    private static LongBinaryOperator createAccumulator(
+    public static LongBinaryOperator createAccumulator(
             final IntBinaryOperator leftAccumulator,
             final IntBinaryOperator rightAccumulator) {
         return (current, supplied) -> {
             final int left = leftAccumulator.applyAsInt(extractLeft(current), extractLeft(supplied));
             final int right = rightAccumulator.applyAsInt(extractRight(current), extractRight(supplied));
+            return combine(left, right);
+        };
+    }
+
+    /**
+     * @param leftReset        the method that will be used to calculate the new value for the left integer when it is being reset
+     * @param rightReset      the method that will be used to calculate the new value for the right integer when it is being reset
+     */
+    public static LongUnaryOperator createCombinedReset(
+            final IntUnaryOperator leftReset,
+            final IntUnaryOperator rightReset) {
+        return (current) -> {
+            final int left = leftReset.applyAsInt(extractLeft(current));
+            final int right = rightReset.applyAsInt(extractRight(current));
             return combine(left, right);
         };
     }
@@ -177,29 +168,21 @@ public class AtomicIntPair {
     }
 
     /**
-     * Same as {@link #compute(BiFunction)} but also atomically sets the integers to the provided values.
-     */
-    public <T> T computeAndSet(final BiFunction<Integer, Integer, T> compute, final int left, final int right) {
-        final long twoInts = container.getAndSet(combine(left, right));
-        return compute.apply(extractLeft(twoInts), extractRight(twoInts));
-    }
-
-    /**
      * Resets the integers to the initial value
      */
     public void reset() {
         container.getAndUpdate(reset);
     }
 
-    private static int extractLeft(final long pair) {
+    public static int extractLeft(final long pair) {
         return (int) (pair >> INT_BITS);
     }
 
-    private static int extractRight(final long pair) {
+    public static int extractRight(final long pair) {
         return (int) pair;
     }
 
-    private static long combine(final int left, final int right) {
+    public static long combine(final int left, final int right) {
         return (((long) left) << INT_BITS) | (right & 0xffffffffL);
     }
 }

@@ -23,6 +23,7 @@ import java.util.function.BiFunction;
 import java.util.function.IntBinaryOperator;
 import java.util.function.IntSupplier;
 import java.util.function.IntUnaryOperator;
+import java.util.function.LongBinaryOperator;
 
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 import static com.swirlds.base.ArgumentUtils.throwArgNull;
@@ -110,6 +111,8 @@ public interface IntegerPairAccumulator<T> extends Metric {
 
         private final IntBinaryOperator leftAccumulator;
         private final IntBinaryOperator rightAccumulator;
+        private final LongBinaryOperator combinedAccumulator;
+
 
         private final IntUnaryOperator leftReset;
         private final IntUnaryOperator rightReset;
@@ -140,6 +143,7 @@ public interface IntegerPairAccumulator<T> extends Metric {
             this.rightAccumulator = Integer::sum;
             this.leftReset = DEFAULT_INITIALIZER;
             this.rightReset = DEFAULT_INITIALIZER;
+            this.combinedAccumulator = null;
         }
 
         private Config(
@@ -152,14 +156,21 @@ public interface IntegerPairAccumulator<T> extends Metric {
                 final BiFunction<Integer, Integer, T> resultFunction,
                 final IntBinaryOperator leftAccumulator,
                 final IntBinaryOperator rightAccumulator,
+                final LongBinaryOperator combinedAccumulator,
                 final IntUnaryOperator leftReset,
                 final IntUnaryOperator rightReset) {
 
             super(category, name, description, unit, format);
             this.type = throwArgNull(type, "type");
             this.resultFunction = throwArgNull(resultFunction, "resultFunction");
-            this.leftAccumulator = throwArgNull(leftAccumulator, "leftAccumulator");
-            this.rightAccumulator = throwArgNull(rightAccumulator, "rightAccumulator");
+            if (combinedAccumulator == null) {
+                this.leftAccumulator = throwArgNull(leftAccumulator, "leftAccumulator");
+                this.rightAccumulator = throwArgNull(rightAccumulator, "rightAccumulator");
+            } else {
+                this.leftAccumulator = null;
+                this.rightAccumulator = null;
+            }
+            this.combinedAccumulator = combinedAccumulator;
             this.leftReset = throwArgNull(leftReset, "leftInitializer");
             this.rightReset = throwArgNull(rightReset, "rightInitializer");
         }
@@ -179,6 +190,7 @@ public interface IntegerPairAccumulator<T> extends Metric {
                     getResultFunction(),
                     getLeftAccumulator(),
                     getRightAccumulator(),
+                    getCombinedAccumulator(),
                     getLeftReset(),
                     getRightReset());
         }
@@ -198,6 +210,7 @@ public interface IntegerPairAccumulator<T> extends Metric {
                     getResultFunction(),
                     getLeftAccumulator(),
                     getRightAccumulator(),
+                    getCombinedAccumulator(),
                     getLeftReset(),
                     getRightReset());
         }
@@ -220,6 +233,7 @@ public interface IntegerPairAccumulator<T> extends Metric {
                     getResultFunction(),
                     getLeftAccumulator(),
                     getRightAccumulator(),
+                    getCombinedAccumulator(),
                     getLeftReset(),
                     getRightReset());
         }
@@ -258,6 +272,9 @@ public interface IntegerPairAccumulator<T> extends Metric {
          * @return a new configuration-object with updated {@code leftAccumulator}
          */
         public IntegerPairAccumulator.Config<T> withLeftAccumulator(final IntBinaryOperator leftAccumulator) {
+            if(combinedAccumulator != null){
+                throw new IllegalStateException("Cannot set leftAccumulator when combinedAccumulator is set");
+            }
             return new IntegerPairAccumulator.Config<>(
                     getCategory(),
                     getName(),
@@ -268,6 +285,7 @@ public interface IntegerPairAccumulator<T> extends Metric {
                     getResultFunction(),
                     leftAccumulator,
                     getRightAccumulator(),
+                    null,
                     getLeftReset(),
                     getRightReset());
         }
@@ -288,6 +306,9 @@ public interface IntegerPairAccumulator<T> extends Metric {
          * @return a new configuration-object with updated {@code rightAccumulator}
          */
         public IntegerPairAccumulator.Config<T> withRightAccumulator(final IntBinaryOperator rightAccumulator) {
+            if(combinedAccumulator != null){
+                throw new IllegalStateException("Cannot set rightAccumulator when combinedAccumulator is set");
+            }
             return new IntegerPairAccumulator.Config<>(
                     getCategory(),
                     getName(),
@@ -298,6 +319,27 @@ public interface IntegerPairAccumulator<T> extends Metric {
                     getResultFunction(),
                     getLeftAccumulator(),
                     rightAccumulator,
+                    null,
+                    getLeftReset(),
+                    getRightReset());
+        }
+
+        public LongBinaryOperator getCombinedAccumulator() {
+            return combinedAccumulator;
+        }
+
+        public IntegerPairAccumulator.Config<T> withCombinedAccumulator(final LongBinaryOperator combinedAccumulator) {
+            return new IntegerPairAccumulator.Config<>(
+                    getCategory(),
+                    getName(),
+                    getDescription(),
+                    getUnit(),
+                    getFormat(),
+                    getType(),
+                    getResultFunction(),
+                    null,
+                    null,
+                    combinedAccumulator,
                     getLeftReset(),
                     getRightReset());
         }
@@ -328,6 +370,7 @@ public interface IntegerPairAccumulator<T> extends Metric {
                     getResultFunction(),
                     getLeftAccumulator(),
                     getRightAccumulator(),
+                    getCombinedAccumulator(),
                     (i)->leftInitializer.getAsInt(),
                     getRightReset());
         }
@@ -349,6 +392,7 @@ public interface IntegerPairAccumulator<T> extends Metric {
                     getResultFunction(),
                     getLeftAccumulator(),
                     getRightAccumulator(),
+                    getCombinedAccumulator(),
                     leftInitialValue == 0 ? DEFAULT_INITIALIZER : (i) -> leftInitialValue,
                     getRightReset());
         }
@@ -370,6 +414,7 @@ public interface IntegerPairAccumulator<T> extends Metric {
                     getResultFunction(),
                     getLeftAccumulator(),
                     getRightAccumulator(),
+                    getCombinedAccumulator(),
                     leftReset,
                     getRightReset());
         }
@@ -400,6 +445,7 @@ public interface IntegerPairAccumulator<T> extends Metric {
                     getResultFunction(),
                     getLeftAccumulator(),
                     getRightAccumulator(),
+                    getCombinedAccumulator(),
                     getLeftReset(),
                     (i)->rightInitializer.getAsInt());
         }
@@ -421,6 +467,7 @@ public interface IntegerPairAccumulator<T> extends Metric {
                     getResultFunction(),
                     getLeftAccumulator(),
                     getRightAccumulator(),
+                    getCombinedAccumulator(),
                     getLeftReset(),
                     rightInitialValue == 0 ? DEFAULT_INITIALIZER : (i) -> rightInitialValue);
         }
@@ -442,6 +489,7 @@ public interface IntegerPairAccumulator<T> extends Metric {
                     getResultFunction(),
                     getLeftAccumulator(),
                     getRightAccumulator(),
+                    getCombinedAccumulator(),
                     getLeftReset(),
                     rightReset);
         }
