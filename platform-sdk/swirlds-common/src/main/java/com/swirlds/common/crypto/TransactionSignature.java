@@ -16,6 +16,8 @@
 
 package com.swirlds.common.crypto;
 
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
+
 import com.swirlds.common.internal.HashUtils;
 import com.swirlds.common.io.exceptions.BadIOException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -28,6 +30,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.concurrent.Future;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * Encapsulates a cryptographic signature along with the public key to use during verification. In order to maintain the
@@ -977,17 +980,18 @@ public class TransactionSignature implements Comparable<TransactionSignature> {
 
     @Override
     public String toString() {
-        return "TransactionSignature{" + "contents="
-                + Arrays.toString(contents) + ", expandedPublicKey="
-                + Arrays.toString(expandedPublicKey) + ", messageOffset="
-                + messageOffset + ", messageLength="
-                + messageLength + ", publicKeyOffset="
-                + publicKeyOffset + ", publicKeyLength="
-                + publicKeyLength + ", signatureOffset="
-                + signatureOffset + ", signatureLength="
-                + signatureLength + ", signatureType="
-                + signatureType + ", signatureStatus="
-                + signatureStatus + ", future="
-                + future + '}';
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+                .append("contents", Arrays.toString(contents))
+                .append("expandedPublicKey", Arrays.toString(expandedPublicKey))
+                .append("messageOffset", messageOffset)
+                .append("messageLength", messageLength)
+                .append("publicKeyOffset", publicKeyOffset)
+                .append("publicKeyLength", publicKeyLength)
+                .append("signatureOffset", signatureOffset)
+                .append("signatureLength", signatureLength)
+                .append("signatureType", signatureType)
+                .append("signatureStatus", signatureStatus)
+                .append("future", future)
+                .toString();
     }
 }
