@@ -21,6 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.threading.locks.locked.MaybeLocked;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 public class SyncPermitTest {
@@ -54,35 +56,36 @@ public class SyncPermitTest {
      */
     @Test
     void testAllPermitsAcquired() {
-        final int numPermits = 2;
+        final int numPermits = 9;
         final SyncPermit syncPermit = new SyncPermit(numPermits);
 
         assertEquals(numPermits, syncPermit.getNumAvailable(), "all permits should be available");
 
-        try (final MaybeLocked maybeLocked1 = syncPermit.tryAcquire()) {
-            assertTrue(maybeLocked1.isLockAcquired(), "first acquire should succeed");
+        final List<MaybeLocked> permits = new ArrayList<>(numPermits);
+
+        // Acquire all the permits
+        for (int i = 0; i < numPermits; i++) {
+            final MaybeLocked maybeLocked = syncPermit.tryAcquire();
+            permits.add(maybeLocked);
+            assertTrue(maybeLocked.isLockAcquired(), "first acquire should succeed");
             assertEquals(
-                    numPermits - 1,
+                    numPermits - i - 1,
                     syncPermit.getNumAvailable(),
                     "one less permit should be available when a permit is acquired");
-
-            try (final MaybeLocked maybeLocked2 = syncPermit.tryAcquire()) {
-                assertTrue(maybeLocked2.isLockAcquired(), "first acquire should succeed");
-                assertEquals(
-                        numPermits - 2,
-                        syncPermit.getNumAvailable(),
-                        "two less permits should be available when a permit is acquired");
-
-                try (final MaybeLocked maybeLocked3 = syncPermit.tryAcquire()) {
-                    assertFalse(maybeLocked3.isLockAcquired(), "no further permits should be able to be acquired");
-                }
-
-                assertEquals(numPermits - 2, syncPermit.getNumAvailable(), "incorrect number of permits remaining");
-            }
-
-            assertEquals(numPermits - 1, syncPermit.getNumAvailable(), "incorrect number of permits remaining");
         }
 
-        assertEquals(numPermits, syncPermit.getNumAvailable(), "incorrect number of permits remaining");
+        // Attempts to acquire more permits should fail
+        final MaybeLocked shouldNotAcquire = syncPermit.tryAcquire();
+        assertFalse(shouldNotAcquire.isLockAcquired(), "no further permits should be able to be acquired");
+
+        // Releasing permits should result in more permits being available
+        for (int i = 0; i < numPermits; i++) {
+            final MaybeLocked maybeLocked = permits.get(i);
+            maybeLocked.close();
+            assertEquals(
+                    i + 1,
+                    syncPermit.getNumAvailable(),
+                    "one less permit should be available when a permit is acquired");
+        }
     }
 }
