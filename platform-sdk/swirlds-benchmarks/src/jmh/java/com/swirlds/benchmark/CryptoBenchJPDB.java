@@ -17,7 +17,6 @@
 package com.swirlds.benchmark;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.jasperdb.VirtualInternalRecordSerializer;
 import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
@@ -35,8 +34,6 @@ public class CryptoBenchJPDB extends CryptoBench {
     protected VirtualMap<BenchmarkKey, BenchmarkValue> createEmptyMap() {
         final VirtualLeafRecordSerializer<BenchmarkKey, BenchmarkValue> virtualLeafRecordSerializer =
                 new VirtualLeafRecordSerializer<>(
-                        (short) 1,
-                        DigestType.SHA_384,
                         (short) 1,
                         BenchmarkKey.getSerializedSize(),
                         new BenchmarkKeySupplier(),

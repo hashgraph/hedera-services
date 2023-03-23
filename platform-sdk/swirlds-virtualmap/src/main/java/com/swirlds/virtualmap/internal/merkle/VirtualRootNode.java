@@ -475,10 +475,9 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
         final long path = index + 1L;
         final T node;
         if (path < state.getFirstLeafPath()) {
-            VirtualInternalRecord internalRecord = records.findInternalRecord(path);
-            if (internalRecord == null) {
-                internalRecord = new VirtualInternalRecord(path);
-            }
+            final Hash hash = records.findHash(path);
+            final VirtualInternalRecord internalRecord =
+                    new VirtualInternalRecord(path, hash != VirtualNodeCache.DELETED_HASH ? hash : null);
             //noinspection unchecked
             node = (T) (new VirtualInternalNode<>(this, internalRecord));
         } else if (path <= state.getLastLeafPath()) {
@@ -488,8 +487,9 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
                         + path + "). First leaf path = " + state.getFirstLeafPath() + ", last leaf path = "
                         + state.getLastLeafPath() + ".");
             }
+            final Hash hash = records.findHash(path);
             //noinspection unchecked
-            node = (T) (new VirtualLeafNode<>(leafRecord));
+            node = (T) (new VirtualLeafNode<>(leafRecord, hash != VirtualNodeCache.DELETED_HASH ? hash : null));
         } else {
             // The index is out of bounds. Maybe we have a root node with one leaf and somebody has asked
             // for the second leaf, in which case it would be null.
@@ -665,8 +665,8 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
             return;
         }
 
-        final VirtualLeafRecord<K, V> rec = new VirtualLeafRecord<>(path, null, key, value);
-        markDirty(rec);
+        final VirtualLeafRecord<K, V> leaf = new VirtualLeafRecord<>(path, key, value);
+        cache.putLeaf(leaf);
         super.setHash(null);
     }
 
@@ -730,7 +730,6 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
             assert lastLeaf != null;
             cache.clearLeafPath(lastLeafPath);
             lastLeaf.setPath(leafToDeletePath);
-            markDirty(lastLeaf);
             // NOTE: at this point, if leafToDelete was in the cache at some "path" index, it isn't anymore!
             // The lastLeaf has taken its place in the path index.
         }
@@ -753,9 +752,8 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
             final VirtualLeafRecord<K, V> sibling = records.findLeafRecord(lastLeafSibling, true);
             assert sibling != null;
             cache.clearLeafPath(lastLeafSibling);
-            cache.deleteInternal(lastLeafParent);
             sibling.setPath(lastLeafParent);
-            markDirty(sibling);
+            cache.putLeaf(sibling);
 
             // Update the first & last leaf paths
             state.setFirstLeafPath(lastLeafParent); // replaced by the sibling, it is now first
@@ -922,7 +920,7 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
 
             // Save the dirty internals
             final Stream<VirtualInternalRecord> sortedDirtyInternals =
-                    cacheToFlush.dirtyInternals(stateToUse.getFirstLeafPath());
+                    cacheToFlush.dirtyHashes(stateToUse.getFirstLeafPath(), stateToUse.getLastLeafPath());
 
             ds.saveRecords(
                     stateToUse.getFirstLeafPath(),
@@ -1034,13 +1032,12 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
         // Compute the root hash of the virtual tree
         final VirtualHashListener<K, V> hashListener = new VirtualHashListener<>() {
             @Override
-            public void onInternalHashed(VirtualInternalRecord internal) {
-                cache.putInternal(internal);
+            public void onNodeHashed(final long path, final Hash hash) {
+                cache.putHash(path, hash);
             }
         };
         Hash virtualHash = hasher.hash(
-                path -> records.findLeafRecord(path, false),
-                records::findInternalRecord,
+                records::findHash,
                 cache.dirtyLeaves(state.getFirstLeafPath(), state.getLastLeafPath())
                         .iterator(),
                 state.getFirstLeafPath(),
@@ -1048,12 +1045,8 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
                 hashListener);
 
         if (virtualHash == null) {
-            final VirtualInternalRecord rootRecord = state.size() == 0 ? null : records.findInternalRecord(0);
-            if (rootRecord != null) {
-                virtualHash = rootRecord.getHash();
-            } else {
-                virtualHash = hasher.emptyRootHash();
-            }
+            final Hash rootHash = (state.size() == 0) ? null : records.findHash(0);
+            virtualHash = (rootHash != null) ? rootHash : hasher.emptyRootHash();
         }
 
         super.setHash(virtualHash);
@@ -1236,12 +1229,7 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
                 .setComponent("virtualmap")
                 .setThreadName("hasher")
                 .setRunnable(() -> reconnectHashingFuture.complete(hasher.hash(
-                        path -> reconnectRecords.findLeafRecord(path, false),
-                        reconnectRecords::findInternalRecord,
-                        reconnectIterator,
-                        firstLeafPath,
-                        lastLeafPath,
-                        hashListener)))
+                        reconnectRecords::findHash, reconnectIterator, firstLeafPath, lastLeafPath, hashListener)))
                 .setExceptionHandler((thread, exception) -> {
                     // Shut down the iterator. This will cause reconnect to terminate.
                     reconnectIterator.close();
@@ -1317,7 +1305,8 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
             siblingPath = getSiblingPath(path);
 
             if (siblingPath != INVALID_PATH) {
-                records.warmInternalRecord(siblingPath);
+                // Pre-load sibling node hash
+                records.findHash(siblingPath);
             }
         }
     }
@@ -1395,7 +1384,7 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
             Objects.requireNonNull(oldLeaf);
             cache.clearLeafPath(firstLeafPath);
             oldLeaf.setPath(getLeftChildPath(firstLeafPath));
-            markDirty(oldLeaf);
+            cache.putLeaf(oldLeaf);
 
             // Create a new internal node that is in the position of the old leaf and attach it to the parent
             // on the left side. Put the new item on the right side of the new parent.
@@ -1409,8 +1398,8 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
             statistics.setSize(state.size());
         }
 
-        final VirtualLeafRecord<K, V> newLeaf = new VirtualLeafRecord<>(leafPath, null, key, value);
-        markDirty(newLeaf);
+        final VirtualLeafRecord<K, V> newLeaf = new VirtualLeafRecord<>(leafPath, key, value);
+        cache.putLeaf(newLeaf);
         super.setHash(null); // Make sure VirtualMap has an invalid hash, so it will be recomputed later
     }
 
@@ -1433,16 +1422,5 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
         }
 
         return false;
-    }
-
-    /*
-     * Private Implementation Details
-     **/
-
-    private void markDirty(VirtualLeafRecord<K, V> leaf) {
-        // Keep track of this as a dirty leaf (even though we don't *really* know if the value
-        // will change, the contract of the API is that the caller expects to change it, which
-        // is good enough for us).
-        cache.putLeaf(leaf);
     }
 }

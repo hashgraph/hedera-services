@@ -16,12 +16,11 @@
 
 package com.swirlds.virtualmap.internal;
 
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
-import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
-import com.swirlds.virtualmap.datasource.VirtualRecord;
 import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
 import java.io.UncheckedIOException;
 
@@ -35,40 +34,18 @@ import java.io.UncheckedIOException;
 public interface RecordAccessor<K extends VirtualKey<? super K>, V extends VirtualValue> {
 
     /**
-     * Gets the {@link VirtualRecord} at a given path. If there is no record at tht path, null is returned.
+     * Gets the {@link Hash} at a given path. If there is no record at the path, null is returned.
      *
      * @param path
-     * 		The path of the node.
+     * 		Virtual node path
      * @return
-     * 		Null if the record doesn't exist. Either the path is bad, or the record has been deleted,
+     * 		Null if the virtual record doesn't exist. Either the path is bad, or the record has been deleted,
      * 		or the record has never been created.
      * @throws UncheckedIOException
      * 		If we fail to access the data store, then a catastrophic error occurred and
      * 		an UncheckedIOException is thrown.
      */
-    VirtualRecord findRecord(final long path);
-
-    /**
-     * Gets the {@link VirtualInternalRecord} at a given path. If there is no
-     * record at tht path, null is returned.
-     *
-     * @param path
-     * 		The path of the internal node.
-     * @return
-     * 		Null if the internal record doesn't exist. Either the path is bad, or the record has been deleted,
-     * 		or the record has never been created.
-     * @throws UncheckedIOException
-     * 		If we fail to access the data store, then a catastrophic error occurred and
-     * 		an UncheckedIOException is thrown.
-     */
-    VirtualInternalRecord findInternalRecord(final long path);
-
-    /**
-     * Reads the internal record at {@code path} into OS file cache (warms it), but don't deserialize it into Java heap.
-     * This gives us a free cache at the OS level without storing anything into Java heap.
-     * @param path
-     */
-    void warmInternalRecord(final long path);
+    Hash findHash(long path);
 
     /**
      * Locates and returns a leaf node based on the given key. If the leaf

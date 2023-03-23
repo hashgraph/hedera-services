@@ -26,8 +26,8 @@ public class JasperDbPaths {
     public final Path metadataFile;
     public final Path pathToDiskLocationInternalNodesFile;
     public final Path pathToDiskLocationLeafNodesFile;
-    public final Path internalHashStoreRamFile;
-    public final Path internalHashStoreDiskDirectory;
+    public final Path hashStoreRamFile;
+    public final Path hashStoreDiskDirectory;
     public final Path longKeyToPathFile;
     public final Path objectKeyToPathDirectory;
     public final Path pathToHashKeyValueDirectory;
@@ -43,8 +43,8 @@ public class JasperDbPaths {
         metadataFile = storageDir.resolve("metadata.jdbm");
         pathToDiskLocationInternalNodesFile = storageDir.resolve("pathToDiskLocationInternalNodes.ll");
         pathToDiskLocationLeafNodesFile = storageDir.resolve("pathToDiskLocationLeafNodes.ll");
-        internalHashStoreRamFile = storageDir.resolve("internalHashStoreRam.hl");
-        internalHashStoreDiskDirectory = storageDir.resolve("internalHashStoreDisk");
+        hashStoreRamFile = storageDir.resolve("internalHashStoreRam.hl");
+        hashStoreDiskDirectory = storageDir.resolve("internalHashStoreDisk");
         longKeyToPathFile = storageDir.resolve("longKeyToPath.ll");
         objectKeyToPathDirectory = storageDir.resolve("objectKeyToPath");
         pathToHashKeyValueDirectory = storageDir.resolve("pathToHashKeyValue");

@@ -115,7 +115,7 @@ class DataFileCollectionTest {
             checkDataItem(testType, valueAddition, dataItem2, i);
             try {
                 assertNull(
-                        fileCollection.readDataItemUsingIndex(storedOffsets, fi, false),
+                        fileCollection.readDataItemUsingIndex(storedOffsets, fi),
                         "A null should be returned with deserialize=false");
             } catch (IOException e) {
                 e.printStackTrace();

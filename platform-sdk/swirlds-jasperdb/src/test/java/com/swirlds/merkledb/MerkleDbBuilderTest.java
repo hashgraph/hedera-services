@@ -109,8 +109,7 @@ class MerkleDbBuilderTest {
             assertFalse(merkleDbDataSource.isPreferDiskBasedIndexes());
             assertEquals(settings.getMaxNumOfKeys(), merkleDbDataSource.getMaxNumberOfKeys());
             assertEquals(
-                    settings.getInternalHashesRamToDiskThreshold(),
-                    merkleDbDataSource.getInternalHashesRamToDiskThreshold());
+                    settings.getHashesRamToDiskThreshold(), merkleDbDataSource.getInternalHashesRamToDiskThreshold());
             // set explicitly above
             assertFalse(merkleDbDataSource.isCompactionEnabled());
         } finally {

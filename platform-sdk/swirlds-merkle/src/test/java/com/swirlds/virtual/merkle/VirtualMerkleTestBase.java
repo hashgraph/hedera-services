@@ -16,7 +16,6 @@
 
 package com.swirlds.virtual.merkle;
 
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
 import com.swirlds.jasperdb.files.DataFileCommon;
@@ -29,8 +28,6 @@ public abstract class VirtualMerkleTestBase {
         return new JasperDbBuilder<TestKey, TestValue>()
                 .keySerializer(new TestKeySerializer())
                 .virtualLeafRecordSerializer(new VirtualLeafRecordSerializer<>(
-                        (short) 1,
-                        DigestType.SHA_384,
                         (short) 1,
                         TestKey.BYTES,
                         new TestKeySerializer(),

@@ -25,6 +25,12 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  * Represents a virtual internal node. An internal node is essentially just a path, and a hash.
  */
 public final class VirtualInternalRecord extends VirtualRecord {
+
+    /**
+     * The hash for this record. May be null if the record is dirty.
+     */
+    private volatile Hash hash = null;
+
     /**
      * Create a new {@link VirtualInternalRecord} with a null hash.
      *
@@ -32,7 +38,7 @@ public final class VirtualInternalRecord extends VirtualRecord {
      *		must be non-negative
      */
     public VirtualInternalRecord(long path) {
-        super(path, null);
+        super(path);
     }
 
     /**
@@ -44,7 +50,22 @@ public final class VirtualInternalRecord extends VirtualRecord {
      *      The hash, which may be null.
      */
     public VirtualInternalRecord(long path, Hash hash) {
-        super(path, hash);
+        super(path);
+        this.hash = hash;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Hash getHash() {
+        return hash;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void setHash(Hash hash) {
+        this.hash = hash;
     }
 
     /**

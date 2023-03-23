@@ -19,12 +19,11 @@ package com.swirlds.virtualmap.internal.merkle;
 import static com.swirlds.virtualmap.internal.Path.INVALID_PATH;
 import static com.swirlds.virtualmap.internal.Path.ROOT_PATH;
 
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
-import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
-import com.swirlds.virtualmap.datasource.VirtualRecord;
 import com.swirlds.virtualmap.internal.RecordAccessor;
 import com.swirlds.virtualmap.internal.VirtualStateAccessor;
 import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
@@ -93,49 +92,19 @@ public class RecordAccessorImpl<K extends VirtualKey<? super K>, V extends Virtu
      * {@inheritDoc}
      */
     @Override
-    public VirtualRecord findRecord(final long path) {
-        assert path != INVALID_PATH;
-        if (path >= ROOT_PATH && path < state.getFirstLeafPath()) {
-            return findInternalRecord(path);
-        } else {
-            assert path >= state.getFirstLeafPath();
-            return findLeafRecord(path, false);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public VirtualInternalRecord findInternalRecord(final long path) {
+    public Hash findHash(final long path) {
         assert path >= 0;
-
-        VirtualInternalRecord node = cache.lookupInternalByPath(path, false);
-        if (node == null) {
-            try {
-                node = dataSource.loadInternalRecord(path);
-            } catch (final IOException e) {
-                throw new UncheckedIOException("Failed to read an internal node record from the data source", e);
-            }
+        final Hash hash = cache.lookupHashByPath(path, false);
+        if (hash == VirtualNodeCache.DELETED_HASH) {
+            return null;
         }
-
-        return node == VirtualNodeCache.DELETED_INTERNAL_RECORD ? null : node;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void warmInternalRecord(long path) {
-        assert path >= 0;
-
-        VirtualInternalRecord node = cache.lookupInternalByPath(path, false);
-        if (node == null) {
-            try {
-                dataSource.warmInternalRecord(path);
-            } catch (final IOException e) {
-                throw new UncheckedIOException("Failed to read an internal node record from the data source", e);
-            }
+        if (hash != null) {
+            return hash;
+        }
+        try {
+            return dataSource.loadHash(path);
+        } catch (final IOException e) {
+            throw new UncheckedIOException("Failed to read node hash from data source by path", e);
         }
     }
 
@@ -151,7 +120,7 @@ public class RecordAccessorImpl<K extends VirtualKey<? super K>, V extends Virtu
                 if (rec != null && copy) {
                     assert rec.getKey().equals(key)
                             : "The key we found from the DB does not match the one we were looking for! key=" + key;
-                    rec = cache.putLeaf(rec);
+                    cache.putLeaf(rec);
                 }
             } catch (final IOException ex) {
                 throw new UncheckedIOException("Failed to read a leaf record from the data source by key", ex);
@@ -178,7 +147,7 @@ public class RecordAccessorImpl<K extends VirtualKey<? super K>, V extends Virtu
             try {
                 rec = dataSource.loadLeafRecord(path);
                 if (rec != null && copy) {
-                    rec = cache.putLeaf(rec);
+                    cache.putLeaf(rec);
                 }
             } catch (final IOException ex) {
                 throw new UncheckedIOException("Failed to read a leaf record from the data source by path", ex);

@@ -23,14 +23,11 @@ import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashBuilder;
-import com.swirlds.common.crypto.Hashable;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
-import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.merkle.VirtualInternalNode;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
-import java.util.Objects;
 
 /**
  * A POJO containing the information needed by a future thread to be able to create a hash for some leaf
@@ -46,7 +43,8 @@ import java.util.Objects;
  * @param <V>
  * 		The value type
  */
-final class HashJob<K extends VirtualKey<? super K>, V extends VirtualValue> implements Hashable {
+final class HashJob<K extends VirtualKey<? super K>, V extends VirtualValue> {
+
     /**
      * A singleton reference to the Cryptography libraries. Used for hashing.
      */
@@ -54,11 +52,15 @@ final class HashJob<K extends VirtualKey<? super K>, V extends VirtualValue> imp
 
     private static final Hash NULL_HASH = CRYPTO.getNullHash();
 
+    // Node path to compute hash for
     private long path;
+
+    // For each hash job, either leaf and right are set, or leaf is set, but not both
     private Hash left;
     private Hash right;
     private VirtualLeafRecord<K, V> leaf;
-    private VirtualInternalRecord internal;
+
+    // Computed hash
     private volatile Hash hash;
 
     HashJob() {}
@@ -68,9 +70,8 @@ final class HashJob<K extends VirtualKey<? super K>, V extends VirtualValue> imp
         this.leaf = leaf;
     }
 
-    void dirtyInternal(final long path, final VirtualInternalRecord internal, final Hash left, final Hash right) {
+    void dirtyInternal(final long path, final Hash left, final Hash right) {
         this.path = path;
-        this.internal = internal;
         this.left = left;
         this.right = right;
     }
@@ -80,7 +81,6 @@ final class HashJob<K extends VirtualKey<? super K>, V extends VirtualValue> imp
         this.left = other.left;
         this.right = other.right;
         this.leaf = other.leaf;
-        this.internal = other.internal;
         this.hash = other.hash;
     }
 
@@ -89,16 +89,12 @@ final class HashJob<K extends VirtualKey<? super K>, V extends VirtualValue> imp
         this.left = this.right = null;
         this.hash = null;
         this.leaf = null;
-        this.internal = null;
     }
 
     void hash(final HashBuilder builder) {
         if (leaf != null) {
             hash = CRYPTO.digestSync(leaf);
-            leaf.setHash(hash);
         } else {
-            Objects.requireNonNull(internal);
-
             final long classId = path == ROOT_PATH ? VirtualRootNode.CLASS_ID : VirtualInternalNode.CLASS_ID;
 
             final int serId = path == ROOT_PATH
@@ -114,22 +110,11 @@ final class HashJob<K extends VirtualKey<? super K>, V extends VirtualValue> imp
             builder.update(leftHash);
             builder.update(rightHash);
             hash = builder.build();
-            internal.setHash(hash);
         }
     }
 
-    @Override
     public Hash getHash() {
         return hash;
-    }
-
-    @Override
-    public void setHash(final Hash hash) {
-        this.hash = hash;
-    }
-
-    VirtualInternalRecord getInternal() {
-        return internal;
     }
 
     long getPath() {

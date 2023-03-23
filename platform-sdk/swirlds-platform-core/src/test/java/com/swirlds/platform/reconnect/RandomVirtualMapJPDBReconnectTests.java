@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleInternal;
@@ -106,8 +105,6 @@ class RandomVirtualMapJPDBReconnectTests extends VirtualMapReconnectTestBase {
                 .storageDir(storageDir)
                 .keySerializer(new TestKeySerializer())
                 .virtualLeafRecordSerializer(new VirtualLeafRecordSerializer<>(
-                        (short) 1,
-                        DigestType.SHA_384,
                         (short) 1,
                         TestKey.BYTES,
                         new TestKeySerializer(),

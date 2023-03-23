@@ -40,7 +40,7 @@ public class DefaultMerkleDbSettings implements MerkleDbSettings {
      */
     public static final int DEFAULT_MAX_NUM_OF_KEYS = 500_000_000;
     /** Default to 100% on disk */
-    public static final int DEFAULT_INTERNAL_HASHES_RAM_TO_DISK_THRESHOLD = 0;
+    public static final int DEFAULT_HASHES_RAM_TO_DISK_THRESHOLD = 0;
 
     public static final int DEFAULT_MAX_GB_RAM_FOR_MERGING = 10;
     public static final int DEFAULT_SMALL_MERGE_CUTOFF_MB = 3 * 1024;
@@ -75,8 +75,8 @@ public class DefaultMerkleDbSettings implements MerkleDbSettings {
 
     /** {@inheritDoc} */
     @Override
-    public long getInternalHashesRamToDiskThreshold() {
-        return DEFAULT_INTERNAL_HASHES_RAM_TO_DISK_THRESHOLD;
+    public long getHashesRamToDiskThreshold() {
+        return DEFAULT_HASHES_RAM_TO_DISK_THRESHOLD;
     }
 
     /** {@inheritDoc} */

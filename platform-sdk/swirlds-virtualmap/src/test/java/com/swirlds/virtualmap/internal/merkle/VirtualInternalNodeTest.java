@@ -31,6 +31,7 @@ import com.swirlds.virtualmap.VirtualTestBase;
 import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.IOException;
+import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -141,21 +142,15 @@ class VirtualInternalNodeTest extends VirtualTestBase {
         final VirtualRootNode<TestKey, TestValue> root = createRoot();
         root.getState().setFirstLeafPath(6);
         root.getState().setLastLeafPath(12);
-        root.getDataSource()
-                .saveRecords(
-                        6,
-                        12,
-                        Stream.empty(),
-                        Stream.of(
-                                        new VirtualLeafRecord<>(6, null, D_KEY, DATE),
-                                        new VirtualLeafRecord<>(7, null, A_KEY, APPLE),
-                                        new VirtualLeafRecord<>(8, null, E_KEY, EGGPLANT),
-                                        new VirtualLeafRecord<>(9, null, C_KEY, CHERRY),
-                                        new VirtualLeafRecord<>(10, null, F_KEY, FIG),
-                                        new VirtualLeafRecord<>(11, null, G_KEY, GRAPE),
-                                        new VirtualLeafRecord<>(12, null, B_KEY, BANANA))
-                                .map(this::hash),
-                        Stream.empty());
+        final List<VirtualLeafRecord<TestKey, TestValue>> leaves = List.of(
+                new VirtualLeafRecord<>(6, D_KEY, DATE),
+                new VirtualLeafRecord<>(7, A_KEY, APPLE),
+                new VirtualLeafRecord<>(8, E_KEY, EGGPLANT),
+                new VirtualLeafRecord<>(9, C_KEY, CHERRY),
+                new VirtualLeafRecord<>(10, F_KEY, FIG),
+                new VirtualLeafRecord<>(11, G_KEY, GRAPE),
+                new VirtualLeafRecord<>(12, B_KEY, BANANA));
+        root.getDataSource().saveRecords(6, 12, leaves.stream().map(this::hash), leaves.stream(), Stream.empty());
 
         VirtualInternalRecord internalRecord = new VirtualInternalRecord(2, null);
         VirtualInternalNode<TestKey, TestValue> internalNode = new VirtualInternalNode<>(root, internalRecord);

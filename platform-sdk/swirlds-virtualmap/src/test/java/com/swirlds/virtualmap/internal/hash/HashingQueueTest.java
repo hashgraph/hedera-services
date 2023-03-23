@@ -26,7 +26,6 @@ import com.swirlds.virtualmap.TestValue;
 import com.swirlds.virtualmap.VirtualTestBase;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -99,7 +98,7 @@ abstract class HashingQueueTest extends VirtualTestBase {
         final HashingQueue<TestKey, TestValue> q = queue();
         q.addHashJob(1).dirtyLeaf(1, appleLeaf(1));
         q.addHashJob(0).dirtyLeaf(2, bananaLeaf(2));
-        q.addHashJob(2).dirtyInternal(0, rootInternal(), null, null);
+        q.addHashJob(2).dirtyInternal(0, null, null);
 
         assertEquals(3, q.size(), "The size should be 3");
         assertEquals(2, q.get(0).getPath(), "Banana should be first with index 2");
@@ -108,7 +107,7 @@ abstract class HashingQueueTest extends VirtualTestBase {
 
         assertNotNull(q.stream(), "Stream should exist and not be null");
 
-        final List<HashJob<TestKey, TestValue>> streamContents = q.stream().collect(Collectors.toList());
+        final List<HashJob<TestKey, TestValue>> streamContents = q.stream().toList();
         assertEquals(3, streamContents.size(), "Stream should have three elements");
         assertSame(q.get(0), streamContents.get(0), "First element should be Banana");
         assertSame(q.get(1), streamContents.get(1), "Second element should be Apple");
@@ -121,7 +120,7 @@ abstract class HashingQueueTest extends VirtualTestBase {
         final HashingQueue<TestKey, TestValue> q = queue();
         q.appendHashJob().dirtyLeaf(2, bananaLeaf(2));
         q.appendHashJob().dirtyLeaf(1, appleLeaf(1));
-        q.appendHashJob().dirtyInternal(0, rootInternal(), null, null);
+        q.appendHashJob().dirtyInternal(0, null, null);
 
         assertEquals(3, q.size(), "The size should be 3");
         assertEquals(2, q.get(0).getPath(), "Banana should be first with index 2");
@@ -130,7 +129,7 @@ abstract class HashingQueueTest extends VirtualTestBase {
 
         assertNotNull(q.stream(), "Stream should exist and not be null");
 
-        final List<HashJob<TestKey, TestValue>> streamContents = q.stream().collect(Collectors.toList());
+        final List<HashJob<TestKey, TestValue>> streamContents = q.stream().toList();
         assertEquals(3, streamContents.size(), "Stream should have three elements");
         assertSame(q.get(0), streamContents.get(0), "First element should be Banana");
         assertSame(q.get(1), streamContents.get(1), "Second element should be Apple");
@@ -152,13 +151,13 @@ abstract class HashingQueueTest extends VirtualTestBase {
         final HashingQueue<TestKey, TestValue> dest = queue();
 
         for (int i = 0; i < 10; i++) {
-            source.appendHashJob().dirtyLeaf(i, new VirtualLeafRecord<>(i, null, new TestKey(i), new TestValue(i)));
+            source.appendHashJob().dirtyLeaf(i, new VirtualLeafRecord<>(i, new TestKey(i), new TestValue(i)));
         }
 
         dest.copyFrom(source);
         for (int i = 0; i < 10; i++) {
             assertEquals(
-                    new VirtualLeafRecord<>(i, null, new TestKey(i), new TestValue(i)),
+                    new VirtualLeafRecord<>(i, new TestKey(i), new TestValue(i)),
                     dest.get(i).getLeaf(),
                     "Different at index " + i);
         }
@@ -171,7 +170,7 @@ abstract class HashingQueueTest extends VirtualTestBase {
         final HashingQueue<TestKey, TestValue> dest = queue();
 
         for (int i = 0; i < 10; i++) {
-            dest.appendHashJob().dirtyLeaf(i, new VirtualLeafRecord<>(i, null, new TestKey(i), new TestValue(i)));
+            dest.appendHashJob().dirtyLeaf(i, new VirtualLeafRecord<>(i, new TestKey(i), new TestValue(i)));
         }
 
         dest.copyFrom(source);
@@ -196,15 +195,15 @@ abstract class HashingQueueTest extends VirtualTestBase {
 
         for (int i = 0; i < 10; i++) {
             final int j = i + 100;
-            source.appendHashJob().dirtyLeaf(i, new VirtualLeafRecord<>(i, null, new TestKey(i), new TestValue(i)));
-            dest.appendHashJob().dirtyLeaf(j, new VirtualLeafRecord<>(j, null, new TestKey(j), new TestValue(j)));
+            source.appendHashJob().dirtyLeaf(i, new VirtualLeafRecord<>(i, new TestKey(i), new TestValue(i)));
+            dest.appendHashJob().dirtyLeaf(j, new VirtualLeafRecord<>(j, new TestKey(j), new TestValue(j)));
         }
 
         dest.copyFrom(source);
 
         for (int i = 0; i < 10; i++) {
             assertEquals(
-                    new VirtualLeafRecord<>(i, null, new TestKey(i), new TestValue(i)),
+                    new VirtualLeafRecord<>(i, new TestKey(i), new TestValue(i)),
                     dest.get(i).getLeaf(),
                     "Different at index " + i);
         }

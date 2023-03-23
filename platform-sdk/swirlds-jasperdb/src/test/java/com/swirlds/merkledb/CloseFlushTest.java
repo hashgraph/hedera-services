@@ -175,14 +175,8 @@ public class CloseFlushTest {
                 }
 
                 @Override
-                public VirtualInternalRecord loadInternalRecord(final long path, final boolean deserialize)
-                        throws IOException {
-                    return delegate.loadInternalRecord(path);
-                }
-
-                @Override
-                public Hash loadLeafHash(final long path) throws IOException {
-                    return delegate.loadLeafHash(path);
+                public Hash loadHash(final long path) throws IOException {
+                    return delegate.loadHash(path);
                 }
 
                 @Override

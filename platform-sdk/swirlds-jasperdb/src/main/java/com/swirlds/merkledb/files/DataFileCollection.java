@@ -662,24 +662,6 @@ public class DataFileCollection<D> implements Snapshotable {
      *
      * @param dataLocation the location of the data item to read. This contains both the file and
      *     the location within the file.
-     * @return Data item if the data location was found in files or null if not found
-     * @throws IOException If there was a problem reading the data item.
-     * @throws ClosedChannelException In the very rare case merging closed the file between us
-     *     checking if file is open and reading
-     */
-    protected D readDataItem(final long dataLocation) throws IOException {
-        return readDataItem(dataLocation, true);
-    }
-
-    /**
-     * Read a data item from any file that has finished being written. This is not 100% thread safe
-     * with concurrent merging, it is possible it will throw a ClosedChannelException or return
-     * null. So it should be retried if those happen.
-     *
-     * @param dataLocation the location of the data item to read. This contains both the file and
-     *     the location within the file.
-     * @param deserialize flag to prevent deserialization, introduced for use when warming the OS
-     *     cache
      * @return Data item if the data location was found in files. <br>
      *     <br>
      *     A null is returned :
@@ -692,7 +674,7 @@ public class DataFileCollection<D> implements Snapshotable {
      * @throws ClosedChannelException In the very rare case merging closed the file between us
      *     checking if file is open and reading
      */
-    protected D readDataItem(final long dataLocation, final boolean deserialize) throws IOException {
+    protected D readDataItem(final long dataLocation) throws IOException {
         // check if found
         if (dataLocation == 0) {
             return null;
@@ -715,7 +697,7 @@ public class DataFileCollection<D> implements Snapshotable {
         }
         // read data, check at last second that file is not closed
         if (file.isOpen()) {
-            return file.readDataItem(dataLocation, deserialize);
+            return file.readDataItem(dataLocation);
         } else {
             // Let's log this as it should happen very rarely but if we see it a lot then we should
             // have a rethink.
@@ -735,39 +717,13 @@ public class DataFileCollection<D> implements Snapshotable {
      *
      * @param index key-&gt;dataLocation index
      * @param keyIntoIndex The key to lookup in index
-     * @return Data item if the data location was found in files or null if not found in index. If
-     *     contained in the index but not in files after a number of retries then an exception is
-     *     thrown.
+     * @return Data item if the data location was found in files. If contained in the index but not
+     *     in files after a number of retries then an exception is thrown. <br>
+     *     A null is returned if not found in index
+     *
      * @throws IOException If there was a problem reading the data item.
      */
     public D readDataItemUsingIndex(final LongList index, final long keyIntoIndex) throws IOException {
-        return readDataItemUsingIndex(index, keyIntoIndex, true);
-    }
-
-    /**
-     * Read a data item from any file that has finished being written. Uses a LongList that maps
-     * key-&gt;dataLocation, this allows for multiple retries going back to the index each time. The
-     * allows us to cover the cracks where threads can slip though.
-     *
-     * This depends on the fact that LongList has a nominal value of
-     * LongList.IMPERMISSIBLE_VALUE=0 for non-existent values.
-     *
-     * @param index key-&gt;dataLocation index
-     * @param keyIntoIndex The key to lookup in index
-     * @param deserialize A flag to prevent deserialization, introduced for use when warming the OS
-     *     cache
-     * @return Data item if the data location was found in files. If contained in the index but not
-     *     in files after a number of retries then an exception is thrown. <br>
-     *     A null is returned :
-     *     <ol>
-     *       <li>if not found in index
-     *       <li>if deserialize flag is false
-     *     </ol>
-     *
-     * @throws IOException If there was a problem reading the data item.
-     */
-    public D readDataItemUsingIndex(final LongList index, final long keyIntoIndex, final boolean deserialize)
-            throws IOException {
         // Try reading up to 5 times, 99.999% should work first try but there is a small chance the
         // file was closed by
         // merging when we are half way though reading, and we will see  file.isOpen() = false or a
@@ -783,10 +739,10 @@ public class DataFileCollection<D> implements Snapshotable {
             }
             // read data
             try {
-                final D readData = readDataItem(dataLocation, deserialize);
+                final D readData = readDataItem(dataLocation);
                 // check we actually read data, this could be null if the file was closed half way
                 // though us reading
-                if ((readData != null) || !deserialize) {
+                if ((readData != null)) {
                     return readData;
                 }
             } catch (final IOException e) {

@@ -119,60 +119,17 @@ public interface VirtualDataSource<K extends VirtualKey<? super K>, V extends Vi
     long findKey(final K key) throws IOException;
 
     /**
-     * Load the record for an internal node by path.
-     *
-     * @param path
-     * 		The path for an internal node
-     * @return
-     * 		The internal node's record if one was stored for the given path or null if not stored
-     * @throws IOException
-     * 		If there was a problem reading the internal record
-     */
-    default VirtualInternalRecord loadInternalRecord(final long path) throws IOException {
-        return loadInternalRecord(path, true);
-    }
-
-    /**
-     * Load the record for an internal node by path and deserialize it from bytes, if requested.
-     *
-     * @param path
-     * 		The path for an internal node
-     * @param deserialize
-     * 		When set to false, a Java object is not deserialized but the OS still loads it
-     *      and the OS file cache is populated. This may speed up subsequent reads
-     * @return
-     * 		The internal node's record if one was stored for the given path; {@code null} if not stored or
-     * 		deserialization is not requested
-     * @throws IOException
-     * 		If there was a problem reading the internal record
-     */
-    VirtualInternalRecord loadInternalRecord(final long path, final boolean deserialize) throws IOException;
-
-    /**
-     * Reads the internal record at {@code path} into OS file cache, but don't deserialize it into Java heap.
-     * This gives us a free cache at the OS level without storing anything into Java heap.
-     *
-     * @param path
-     * 		The path for an internal node
-     * @throws IOException
-     * 		If there was a problem reading the internal record
-     */
-    default void warmInternalRecord(final long path) throws IOException {
-        loadInternalRecord(path, false);
-    }
-
-    /**
-     * Load the hash for a leaf
+     * Load a virtual node hash by path.
      *
      * NOTE: Called during the hashing phase ONLY. Never called on non-existent nodes.
      *
-     * @param path
-     * 		the path to the leaf
-     * @return leaf's hash or null if no leaf hash is stored for the given path
+     * @param path virtual node path
+     * @return The node's record if one was stored for the given path; {@code null} if not stored or
+     * 	  		deserialization is not requested
      * @throws IOException
      * 		If there was a problem loading the leaf's hash from data source
      */
-    Hash loadLeafHash(final long path) throws IOException;
+    Hash loadHash(final long path) throws IOException;
 
     /**
      * Write a snapshot of the current state of the database at this moment in time. This will need to be called between

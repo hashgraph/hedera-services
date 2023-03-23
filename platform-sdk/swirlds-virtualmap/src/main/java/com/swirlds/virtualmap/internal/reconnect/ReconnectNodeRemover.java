@@ -235,7 +235,7 @@ public class ReconnectNodeRemover<K extends VirtualKey<? super K>, V extends Vir
         workQueue.pause();
         final Stream<VirtualLeafRecord<K, V>> stream = keysToBeRemoved.entrySet().stream()
                 .map((final Map.Entry<K, Long> entry) ->
-                        new VirtualLeafRecord<>(entry.getValue(), null, entry.getKey(), null));
+                        new VirtualLeafRecord<>(entry.getValue(), entry.getKey(), null));
 
         // We can't just clear the map, as doing so will disrupt the stream constructed above.
         keysToBeRemoved = new HashMap<>();

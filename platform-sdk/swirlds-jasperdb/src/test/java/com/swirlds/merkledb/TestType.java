@@ -16,8 +16,6 @@
 
 package com.swirlds.merkledb;
 
-import static com.swirlds.merkledb.MerkleDbTestUtils.hash;
-
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.merkledb.serialize.ValueSerializer;
@@ -193,13 +191,13 @@ public enum TestType {
                 case variable_fixed:
                 case variableComplex_fixed:
                     return new VirtualLeafRecord<>(
-                            path, hash(i), createVirtualLongKey(i), new ExampleFixedSizeVirtualValue(valueIndex));
+                            path, createVirtualLongKey(i), new ExampleFixedSizeVirtualValue(valueIndex));
                 case fixed_variable:
                 case fixedComplex_variable:
                 case variable_variable:
                 case variableComplex_variable:
                     return new VirtualLeafRecord<>(
-                            path, hash(i), createVirtualLongKey(i), new ExampleVariableSizeVirtualValue(valueIndex));
+                            path, createVirtualLongKey(i), new ExampleVariableSizeVirtualValue(valueIndex));
             }
         }
     }

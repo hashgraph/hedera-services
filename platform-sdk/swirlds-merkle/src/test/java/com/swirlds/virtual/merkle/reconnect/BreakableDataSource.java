@@ -87,13 +87,8 @@ public abstract class BreakableDataSource implements VirtualDataSource<TestKey, 
     }
 
     @Override
-    public VirtualInternalRecord loadInternalRecord(final long path, final boolean deserialize) throws IOException {
-        return delegate.loadInternalRecord(path, deserialize);
-    }
-
-    @Override
-    public Hash loadLeafHash(final long path) throws IOException {
-        return delegate.loadLeafHash(path);
+    public Hash loadHash(final long path) throws IOException {
+        return delegate.loadHash(path);
     }
 
     @Override

@@ -19,6 +19,7 @@ package com.swirlds.virtualmap.internal.merkle;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.constructable.ConstructableIgnored;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
@@ -52,9 +53,9 @@ public final class VirtualLeafNode<K extends VirtualKey<? super K>, V extends Vi
      */
     private final VirtualLeafRecord<K, V> virtualRecord;
 
-    public VirtualLeafNode(final VirtualLeafRecord<K, V> virtualRecord) {
+    public VirtualLeafNode(final VirtualLeafRecord<K, V> virtualRecord, final Hash hash) {
         this.virtualRecord = Objects.requireNonNull(virtualRecord);
-        setHash(virtualRecord.getHash());
+        setHash(hash);
     }
 
     /**

@@ -106,12 +106,12 @@ public class RecordAccessorImplTest {
 
         cache.putLeaf(sixthLeafMoved);
         cache.deleteLeaf(seventhLeafGone);
-        cache.deleteInternal(DELETED_INTERNAL_PATH);
-        cache.deleteInternal(OLD_DELETED_INTERNAL_PATH);
+        cache.deleteHash(DELETED_INTERNAL_PATH);
+        cache.deleteHash(OLD_DELETED_INTERNAL_PATH);
         mutableRecords = new RecordAccessorImpl<>(state, cache.copy(), dataSource);
         cache.prepareForHashing();
-        cache.putInternal(rootChanged);
-        cache.putInternal(rightChanged);
+        cache.putHash(rootChanged);
+        cache.putHash(rightChanged);
 
         // Set up the state for a 6 leaf in memory tree
         state.setFirstLeafPath(5);
@@ -119,132 +119,55 @@ public class RecordAccessorImplTest {
     }
 
     @Test
-    @DisplayName("findRecord of bad path throws")
-    void findRecordInvalidPathThrows() {
-        assertThrows(AssertionError.class, () -> records.findRecord(INVALID_PATH), "Should have thrown");
+    @DisplayName("findHash of invalid path throws")
+    void findHashInvalidPathThrows() {
+        assertThrows(AssertionError.class, () -> records.findHash(INVALID_PATH), "Should throw");
     }
 
     @Test
-    @DisplayName("findRecord of bad path returns null")
-    void findRecordBadPath() {
-        assertNull(records.findRecord(MAX_PATH + 1), "Should be null");
+    @DisplayName("findHash of bad path returns null")
+    void findHashBadPath() {
+        assertNull(records.findHash(MAX_PATH + 1), "Should have been null");
     }
 
     @Test
-    @DisplayName("findRecord in cache returns same instance")
-    void findRecordInCacheReturnsSameInstance() {
-        // As a control, make sure if we look up one on the data source it is NOT the same instance
-        assertNotSame(
-                records.findRecord(UNCHANGED_INTERNAL_PATH),
-                records.findRecord(UNCHANGED_INTERNAL_PATH),
-                "Should be different instances");
-
-        // Look for an internal record that we *KNOW* is in the in memory cache
-        final var internal = records.findRecord(CHANGED_INTERNAL_PATH);
-        assertNotNull(internal, "Did not find record");
-        assertEquals(CHANGED_INTERNAL_PATH, internal.getPath(), "Unexpected path in record");
-        assertSame(internal, records.findRecord(CHANGED_INTERNAL_PATH), "Did not find the same in memory instance!");
-
-        // Look for a leaf record that we *KNOW* is in the in memory cache
-        final var leaf = records.findRecord(CHANGED_LEAF_PATH);
-        assertNotNull(leaf, "Did not find record");
-        assertEquals(CHANGED_LEAF_PATH, leaf.getPath(), "Unexpected path in record");
-        assertSame(leaf, records.findRecord(CHANGED_LEAF_PATH), "Did not find the same in memory instance!");
+    @DisplayName("findHash in cache returns same instance")
+    void findHashInCacheReturnsSameInstance() {
+        final var hash = records.findHash(CHANGED_INTERNAL_PATH);
+        assertNotNull(hash, "Did not find record");
+        assertSame(hash, records.findHash(CHANGED_INTERNAL_PATH), "Did not find the same in memory instance!");
     }
 
     @Test
-    @DisplayName("findRecord of record on disk works")
-    void findRecordOnDiskReturns() {
-        // Look for an internal record that we *KNOW* is on disk
-        final var internal = records.findRecord(UNCHANGED_INTERNAL_PATH);
-        assertNotNull(internal, "Did not find record");
-        assertEquals(UNCHANGED_INTERNAL_PATH, internal.getPath(), "Unexpected path in record");
-        assertNotSame(
-                internal,
-                records.findRecord(UNCHANGED_INTERNAL_PATH),
-                "Found the same instance on disk? Shouldn't happen!");
-
-        // Look for a leaf record that we *KNOW* is on disk
-        final var leaf = records.findRecord(UNCHANGED_LEAF_PATH);
-        assertNotNull(leaf, "Did not find record");
-        assertEquals(UNCHANGED_LEAF_PATH, leaf.getPath(), "Unexpected path in record");
-        assertNotSame(
-                leaf, records.findRecord(UNCHANGED_LEAF_PATH), "Found the same instance on disk? Shouldn't happen!");
-    }
-
-    @Test
-    @DisplayName("findRecord of record with broken data source throws")
-    void findRecordOnDiskWhenBrokenThrows() {
-        dataSource.throwExceptionOnLoadInternalRecordByPath = true;
-        assertThrows(
-                UncheckedIOException.class,
-                () -> records.findRecord(UNCHANGED_INTERNAL_PATH),
-                " Should have thrown UncheckedIOException");
-
-        dataSource.throwExceptionOnLoadLeafRecordByPath = true;
-        assertThrows(
-                UncheckedIOException.class,
-                () -> records.findRecord(UNCHANGED_LEAF_PATH),
-                " Should have thrown UncheckedIOException");
-    }
-
-    @Test
-    @DisplayName("findRecord of deleted record returns null")
-    void findRecordWhenDeletedIsNull() {
-        assertNull(records.findRecord(OLD_DELETED_INTERNAL_PATH), "Deleted records should be null");
-        assertNull(records.findRecord(DELETED_LEAF_PATH), "Deleted records should be null");
-    }
-
-    @Test
-    @DisplayName("findInternalRecord of invalid path throws")
-    void findInternalRecordInvalidPathThrows() {
-        assertThrows(AssertionError.class, () -> records.findInternalRecord(INVALID_PATH), "Should throw");
-    }
-
-    @Test
-    @DisplayName("findInternalRecord of bad path returns null")
-    void findInternalRecordBadPath() {
-        assertNull(records.findInternalRecord(MAX_PATH + 1), "Should have been null");
-    }
-
-    @Test
-    @DisplayName("findInternalRecord in cache returns same instance")
-    void findInternalRecordInCacheReturnsSameInstance() {
-        final var internal = records.findInternalRecord(CHANGED_INTERNAL_PATH);
-        assertNotNull(internal, "Did not find record");
-        assertEquals(CHANGED_INTERNAL_PATH, internal.getPath(), "Unexpected path in record");
+    @DisplayName("findHash of record on disk works")
+    void findHashOnDiskReturns() {
+        final var hash = records.findHash(UNCHANGED_INTERNAL_PATH);
+        assertNotNull(hash, "Did not find record");
         assertSame(
-                internal,
-                records.findInternalRecord(CHANGED_INTERNAL_PATH),
-                "Did not find the same in memory instance!");
+                hash, records.findHash(UNCHANGED_INTERNAL_PATH), "Found the same instance on disk? Shouldn't happen!");
     }
 
     @Test
-    @DisplayName("findInternalRecord of record on disk works")
-    void findInternalRecordOnDiskReturns() {
-        final var internal = records.findInternalRecord(UNCHANGED_INTERNAL_PATH);
-        assertNotNull(internal, "Did not find record");
-        assertEquals(UNCHANGED_INTERNAL_PATH, internal.getPath(), "Unexpected path in record");
-        assertNotSame(
-                internal,
-                records.findInternalRecord(UNCHANGED_INTERNAL_PATH),
-                "Found the same instance on disk? Shouldn't happen!");
-    }
-
-    @Test
-    @DisplayName("findInternalRecord of record with broken data source throws")
-    void findInternalRecordOnDiskWhenBrokenThrows() {
-        dataSource.throwExceptionOnLoadInternalRecordByPath = true;
+    @DisplayName("findHash of record with broken data source throws")
+    void findHashOnDiskWhenBrokenThrows() {
+        dataSource.throwExceptionOnLoadHashByPath = true;
         assertThrows(
                 UncheckedIOException.class,
-                () -> records.findInternalRecord(UNCHANGED_INTERNAL_PATH),
+                () -> records.findHash(UNCHANGED_INTERNAL_PATH),
                 " Should have thrown UncheckedIOException");
     }
 
     @Test
-    @DisplayName("findInternalRecord of deleted record returns null")
-    void findInternalRecordWhenDeletedIsNull() {
-        assertNull(records.findInternalRecord(OLD_DELETED_INTERNAL_PATH), "Deleted records should be null");
+    @DisplayName("findHash of deleted record returns null")
+    void findHashWhenDeletedIsNull() {
+        assertNull(records.findHash(OLD_DELETED_INTERNAL_PATH), "Deleted records should be null");
+    }
+
+    @Test
+    @DisplayName("findLeafRecord of invalid path throws")
+    void findLeafRecordInvalidPathThrows() {
+        assertThrows(AssertionError.class, () -> records.findLeafRecord(INVALID_PATH, false), "Should throw");
+        assertThrows(AssertionError.class, () -> records.findLeafRecord(INVALID_PATH, true), "Should throw");
     }
 
     // findLeafRecord by key with "true" puts it in the cache
@@ -375,8 +298,7 @@ public class RecordAccessorImplTest {
         private final InMemoryDataSource<TestKey, TestValue> delegate = new InMemoryBuilder().build("delegate", true);
         boolean throwExceptionOnLoadLeafRecordByKey = false;
         boolean throwExceptionOnLoadLeafRecordByPath = false;
-        boolean throwExceptionOnLoadInternalRecordByPath = false;
-        boolean throwExceptionOnLoadLeafHash = false;
+        boolean throwExceptionOnLoadHashByPath = false;
 
         @Override
         public VirtualLeafRecord<TestKey, TestValue> loadLeafRecord(final TestKey key) throws IOException {
@@ -400,20 +322,11 @@ public class RecordAccessorImplTest {
         }
 
         @Override
-        public VirtualInternalRecord loadInternalRecord(final long path, final boolean deserialize) throws IOException {
-            if (throwExceptionOnLoadInternalRecordByPath) {
+        public Hash loadHash(final long path) throws IOException {
+            if (throwExceptionOnLoadHashByPath) {
                 throw new IOException("Thrown by loadInternalRecord");
             }
-            return delegate.loadInternalRecord(path, deserialize);
-        }
-
-        @Override
-        public Hash loadLeafHash(final long path) throws IOException {
-            if (throwExceptionOnLoadLeafHash) {
-                throw new IOException("Thrown by loadLeafHash");
-            }
-
-            return delegate.loadLeafHash(path);
+            return delegate.loadHash(path);
         }
 
         @Override
@@ -468,10 +381,6 @@ public class RecordAccessorImplTest {
     }
 
     private static VirtualLeafRecord<TestKey, TestValue> leaf(long num) {
-        return new VirtualLeafRecord<>(
-                num,
-                CRYPTO.digestSync(("" + num).getBytes(StandardCharsets.UTF_8)),
-                new TestKey(num),
-                new TestValue(num));
+        return new VirtualLeafRecord<>(num, new TestKey(num), new TestValue(num));
     }
 }

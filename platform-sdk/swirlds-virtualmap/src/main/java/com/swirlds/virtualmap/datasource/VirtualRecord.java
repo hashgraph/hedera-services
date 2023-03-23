@@ -16,8 +16,6 @@
 
 package com.swirlds.virtualmap.datasource;
 
-import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.Hashable;
 import com.swirlds.virtualmap.internal.Path;
 import java.util.Objects;
 
@@ -29,16 +27,11 @@ import java.util.Objects;
  *
  * The class is sealed, and can only be extended by {@link VirtualInternalRecord} and {@link VirtualLeafRecord}.
  */
-public abstract sealed class VirtualRecord implements Hashable permits VirtualInternalRecord, VirtualLeafRecord {
+public abstract sealed class VirtualRecord permits VirtualInternalRecord, VirtualLeafRecord {
     /**
      * The path for this record. The path can change over time as nodes are added or removed.
      */
     private volatile long path;
-
-    /**
-     * The hash for this record. May be null if the record is dirty.
-     */
-    private volatile Hash hash;
 
     /**
      * Create a new VirtualRecord.
@@ -46,26 +39,9 @@ public abstract sealed class VirtualRecord implements Hashable permits VirtualIn
      * @param path
      * 		Must be non-negative, or {@link Path#INVALID_PATH}.
      */
-    protected VirtualRecord(long path, Hash hash) {
+    protected VirtualRecord(long path) {
         assert path == Path.INVALID_PATH || path >= 0;
         this.path = path;
-        this.hash = hash;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public final void setHash(Hash hash) {
-        this.hash = hash;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public final Hash getHash() {
-        return hash;
     }
 
     /**
@@ -94,16 +70,15 @@ public abstract sealed class VirtualRecord implements Hashable permits VirtualIn
             return true;
         }
 
-        if (!(o instanceof VirtualRecord)) {
+        if (!(o instanceof final VirtualRecord that)) {
             return false;
         }
 
-        final VirtualRecord that = (VirtualRecord) o;
-        return path == that.path && Objects.equals(hash, that.hash);
+        return path == that.path;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(path, hash);
+        return Objects.hash(path);
     }
 }

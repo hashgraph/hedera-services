@@ -309,10 +309,8 @@ class MerkleDbDataSourceSnapshotMergeTest {
                 + ((count * 2) - 1));
         // check all the node hashes
         for (int i = 0; i < count; i++) {
-            assertEquals(
-                    hash(i),
-                    dataSource.loadInternalRecord(i).getHash(),
-                    "The hash should not have changed since it was created");
+            final var hash = dataSource.loadHash(i);
+            assertEquals(hash(i), hash, "The hash for [" + i + "] should not have changed since it was created");
         }
         // check all the leaf data
         for (int i = count; i < (count * 2); i++) {

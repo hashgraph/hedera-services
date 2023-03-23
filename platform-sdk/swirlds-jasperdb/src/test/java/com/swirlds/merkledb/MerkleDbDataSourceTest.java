@@ -25,7 +25,6 @@ import static com.swirlds.merkledb.MerkleDbTestUtils.shuffle;
 import static com.swirlds.virtualmap.datasource.VirtualDataSource.INVALID_PATH;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -127,18 +126,13 @@ class MerkleDbDataSourceTest {
 
         // check all the node hashes
         for (int i = 0; i < count; i++) {
-            final var record = dataSource.loadInternalRecord(i);
-            assertEquals(
-                    hash(i),
-                    record == null ? null : record.getHash(),
-                    "The hash for [" + i + "] should not have changed since it was created");
-            final var recordNotDeserialized = dataSource.loadInternalRecord(i, false);
-            assertNull(recordNotDeserialized, "with deserialize=false null record should be returned");
+            final var hash = dataSource.loadHash(i);
+            assertEquals(hash(i), hash, "The hash for [" + i + "] should not have changed since it was created");
         }
 
         final IllegalArgumentException e = assertThrows(
                 IllegalArgumentException.class,
-                () -> dataSource.loadInternalRecord(-1),
+                () -> dataSource.loadHash(-1),
                 "loadInternalRecord should throw IAE on invalid path");
         assertEquals("path is less than 0", e.getMessage(), "Detail message should capture the failure");
 
@@ -200,7 +194,7 @@ class MerkleDbDataSourceTest {
                 try {
                     assertEquals(
                             hash(i * 10),
-                            dataSource.loadInternalRecord(i).getHash(),
+                            dataSource.loadHash(i),
                             "Internal hashes should not have changed since they were created");
                 } catch (final IOException e) {
                     throw new RuntimeException(e);
@@ -242,7 +236,7 @@ class MerkleDbDataSourceTest {
 
         final IllegalArgumentException e = assertThrows(
                 IllegalArgumentException.class,
-                () -> dataSource.loadLeafHash(-1),
+                () -> dataSource.loadHash(-1),
                 "Loading a negative leaf path should fail");
         assertEquals("path is less than 0", e.getMessage(), "Detail message should capture the failure");
 
@@ -555,7 +549,7 @@ class MerkleDbDataSourceTest {
             // things that should have changed
             assertEqualsAndPrint(expectedRecord, dataSource.loadLeafRecord(key));
             assertEqualsAndPrint(expectedRecord, dataSource.loadLeafRecord(path));
-            assertEquals(hash(i), dataSource.loadLeafHash(path), "unexpected Hash value");
+            assertEquals(hash(i), dataSource.loadHash(path), "unexpected Hash value");
         } catch (final Exception e) {
             e.printStackTrace();
             fail("Exception should not have been thrown here!");

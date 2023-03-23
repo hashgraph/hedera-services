@@ -16,7 +16,6 @@
 
 package com.swirlds.demo.virtualmerkle.state;
 
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.PlatformWithDeprecatedMethods;
 import com.swirlds.demo.platform.PlatformTestingToolState;
@@ -79,8 +78,6 @@ public final class VirtualMerkleStateInitializer {
             final VirtualLeafRecordSerializer<AccountVirtualMapKey, AccountVirtualMapValue> leafRecordSerializer =
                     new VirtualLeafRecordSerializer<>(
                             (short) 1,
-                            DigestType.SHA_384,
-                            (short) 1,
                             keySerializer.getSerializedSize(),
                             new AccountVirtualMapKeyBuilder(),
                             (short) 1,
@@ -114,8 +111,6 @@ public final class VirtualMerkleStateInitializer {
             final VirtualLeafRecordSerializer<SmartContractMapKey, SmartContractMapValue> leafRecordSerializer =
                     new VirtualLeafRecordSerializer<>(
                             (short) 1,
-                            DigestType.SHA_384,
-                            (short) 1,
                             keySerializer.getSerializedSize(),
                             new SmartContractMapKeyBuilder(),
                             (short) 1,
@@ -146,8 +141,6 @@ public final class VirtualMerkleStateInitializer {
             final SmartContractByteCodeMapKeySerializer keySerializer = new SmartContractByteCodeMapKeySerializer();
             final VirtualLeafRecordSerializer<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue>
                     leafRecordSerializer = new VirtualLeafRecordSerializer<>(
-                            (short) 1,
-                            DigestType.SHA_384,
                             (short) 1,
                             keySerializer.getSerializedSize(),
                             new SmartContractByteCodeMapKeyBuilder(),

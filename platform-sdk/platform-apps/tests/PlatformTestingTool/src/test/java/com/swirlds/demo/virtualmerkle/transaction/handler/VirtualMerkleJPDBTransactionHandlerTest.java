@@ -16,7 +16,6 @@
 
 package com.swirlds.demo.virtualmerkle.transaction.handler;
 
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.demo.platform.fs.stresstest.proto.CreateSmartContract;
 import com.swirlds.demo.platform.fs.stresstest.proto.VirtualMerkleTransaction;
 import com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode.SmartContractByteCodeMapKey;
@@ -54,8 +53,6 @@ public class VirtualMerkleJPDBTransactionHandlerTest {
         final VirtualLeafRecordSerializer<SmartContractMapKey, SmartContractMapValue> leafRecordSerializer =
                 new VirtualLeafRecordSerializer<>(
                         (short) 1,
-                        DigestType.SHA_384,
-                        (short) 1,
                         keySerializer.getSerializedSize(),
                         new SmartContractMapKeyBuilder(),
                         (short) 1,
@@ -80,8 +77,6 @@ public class VirtualMerkleJPDBTransactionHandlerTest {
         final SmartContractByteCodeMapKeySerializer keySerializer2 = new SmartContractByteCodeMapKeySerializer();
         final VirtualLeafRecordSerializer<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue>
                 leafRecordSerializer2 = new VirtualLeafRecordSerializer<>(
-                        (short) 1,
-                        DigestType.SHA_384,
                         (short) 1,
                         keySerializer2.getSerializedSize(),
                         new SmartContractByteCodeMapKeyBuilder(),

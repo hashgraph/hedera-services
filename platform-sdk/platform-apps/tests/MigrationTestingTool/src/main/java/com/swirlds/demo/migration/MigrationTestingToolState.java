@@ -18,7 +18,6 @@ package com.swirlds.demo.migration;
 
 import static com.swirlds.demo.migration.MigrationTestingToolMain.MARKER;
 
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
@@ -201,8 +200,6 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
         final AccountVirtualMapKeySerializer keySerializer = new AccountVirtualMapKeySerializer();
         final VirtualLeafRecordSerializer<AccountVirtualMapKey, AccountVirtualMapValue> leafRecordSerializer =
                 new VirtualLeafRecordSerializer<>(
-                        (short) 1,
-                        DigestType.SHA_384,
                         (short) 1,
                         keySerializer.getSerializedSize(),
                         new AccountVirtualMapKeyBuilder(),

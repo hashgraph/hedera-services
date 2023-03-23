@@ -83,7 +83,7 @@ class MemoryIndexDiskKeyValueStoreTest {
             // read
             final var dataItem = store.get(i);
             assertNotNull(dataItem, "dataItem unexpectedly null");
-            assertNull(store.get(i, false), "dataItem should be null if deserialize=false");
+            assertNull(store.get(i), "dataItem should be null if deserialize=false");
             //noinspection EnhancedSwitchMigration
             switch (testType) {
                 default:

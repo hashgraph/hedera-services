@@ -23,6 +23,7 @@ import static com.swirlds.virtualmap.internal.Path.getRightChildPath;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.constructable.ConstructableIgnored;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialBinaryMerkleInternal;
@@ -33,6 +34,7 @@ import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.Path;
+import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
@@ -167,18 +169,17 @@ public final class VirtualInternalNode<K extends VirtualKey<? super K>, V extend
         assert path != INVALID_PATH : "Cannot happen. Path will be a child of virtual record path every time.";
 
         assert path < root.getState().getFirstLeafPath();
-        VirtualInternalRecord rec = root.getCache().lookupInternalByPath(path, false);
-        if (rec == null) {
+        Hash hash = root.getCache().lookupHashByPath(path, false);
+        if (hash == null) {
             try {
-                rec = root.getDataSource().loadInternalRecord(path);
-                if (rec == null) {
-                    return new VirtualInternalNode<>(root, new VirtualInternalRecord(path));
-                }
+                hash = root.getDataSource().loadHash(path);
             } catch (final IOException ex) {
                 throw new RuntimeException("Failed to read a internal record from the data source", ex);
             }
         }
 
+        final VirtualInternalRecord rec =
+                new VirtualInternalRecord(path, hash != VirtualNodeCache.DELETED_HASH ? hash : null);
         return new VirtualInternalNode<>(root, rec);
     }
 
@@ -211,14 +212,23 @@ public final class VirtualInternalNode<K extends VirtualKey<? super K>, V extend
                 // within the firstLeafPath and lastLeafPath, and we already failed to find the leaf
                 // in the cache. It **MUST** be on disk, or we have a broken system.
                 if (rec == null) {
-                    throw new IllegalStateException("Attempted to read from disk but couldn't find the leaf.");
+                    throw new IllegalStateException("Attempted to read from disk but couldn't find the leaf");
                 }
             } catch (final IOException ex) {
                 throw new RuntimeException("Failed to read a leaf record from the data source", ex);
             }
         }
 
-        return new VirtualLeafNode<>(rec);
+        Hash hash = root.getCache().lookupHashByPath(path, false);
+        if (hash == null) {
+            try {
+                hash = root.getDataSource().loadHash(path);
+            } catch (final IOException ex) {
+                throw new RuntimeException("Failed to read a hash from the data source", ex);
+            }
+        }
+
+        return new VirtualLeafNode<>(rec, hash);
     }
 
     /**

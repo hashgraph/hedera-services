@@ -295,7 +295,7 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
             return null;
         }
         // read from files via index lookup
-        return fileCollection.readDataItemUsingIndex(index, key, deserialize);
+        return fileCollection.readDataItemUsingIndex(index, key);
     }
 
     /**

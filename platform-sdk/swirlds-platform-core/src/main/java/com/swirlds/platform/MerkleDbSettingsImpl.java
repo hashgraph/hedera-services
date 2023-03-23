@@ -18,8 +18,8 @@ package com.swirlds.platform;
 
 import static com.swirlds.merkledb.collections.LongListOffHeap.DEFAULT_RESERVED_BUFFER_LENGTH;
 import static com.swirlds.merkledb.settings.DefaultMerkleDbSettings.DEFAULT_FULL_MERGE_PERIOD;
+import static com.swirlds.merkledb.settings.DefaultMerkleDbSettings.DEFAULT_HASHES_RAM_TO_DISK_THRESHOLD;
 import static com.swirlds.merkledb.settings.DefaultMerkleDbSettings.DEFAULT_INDEX_REBUILDING_ENFORCED;
-import static com.swirlds.merkledb.settings.DefaultMerkleDbSettings.DEFAULT_INTERNAL_HASHES_RAM_TO_DISK_THRESHOLD;
 import static com.swirlds.merkledb.settings.DefaultMerkleDbSettings.DEFAULT_ITERATOR_INPUT_BUFFER_BYTES;
 import static com.swirlds.merkledb.settings.DefaultMerkleDbSettings.DEFAULT_KEY_SET_BLOOM_FILTER_HASH_COUNT;
 import static com.swirlds.merkledb.settings.DefaultMerkleDbSettings.DEFAULT_KEY_SET_BLOOM_FILTER_SIZE_IN_BYTES;
@@ -54,7 +54,7 @@ public class MerkleDbSettingsImpl extends SubSetting implements MerkleDbSettings
     public static final int MAX_NUMBER_OF_SAVES_BEFORE_MERGE = 100;
 
     public int maxNumOfKeys = DEFAULT_MAX_NUM_OF_KEYS;
-    public int internalHashesRamToDiskThreshold = DEFAULT_INTERNAL_HASHES_RAM_TO_DISK_THRESHOLD;
+    public int internalHashesRamToDiskThreshold = DEFAULT_HASHES_RAM_TO_DISK_THRESHOLD;
     public int smallMergeCutoffMb = DEFAULT_SMALL_MERGE_CUTOFF_MB;
     public int mediumMergeCutoffMb = DEFAULT_MEDIUM_MERGE_CUTOFF_MB;
     public int moveListChunkSize = DEFAULT_MOVE_LIST_CHUNK_SIZE;
@@ -92,7 +92,7 @@ public class MerkleDbSettingsImpl extends SubSetting implements MerkleDbSettings
 
     /** {@inheritDoc} */
     @Override
-    public long getInternalHashesRamToDiskThreshold() {
+    public long getHashesRamToDiskThreshold() {
         return internalHashesRamToDiskThreshold;
     }
 

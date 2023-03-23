@@ -19,7 +19,6 @@ package com.swirlds.demo.virtualmerkle;
 import static com.swirlds.demo.virtualmerkle.VirtualMerkleLeafHasher.hashOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode.SmartContractByteCodeMapKey;
 import com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode.SmartContractByteCodeMapKeyBuilder;
@@ -56,8 +55,6 @@ class VirtualMerkleJPDBLeafHasherTest {
 
         keySerializer = new SmartContractByteCodeMapKeySerializer();
         leafRecordSerializer = new VirtualLeafRecordSerializer<>(
-                (short) 1,
-                DigestType.SHA_384,
                 (short) 1,
                 keySerializer.getSerializedSize(),
                 new SmartContractByteCodeMapKeyBuilder(),

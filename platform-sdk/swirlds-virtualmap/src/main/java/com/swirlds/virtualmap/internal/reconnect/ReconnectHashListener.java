@@ -16,6 +16,7 @@
 
 package com.swirlds.virtualmap.internal.reconnect;
 
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
@@ -67,9 +68,9 @@ public class ReconnectHashListener<K extends VirtualKey<? super K>, V extends Vi
     private final long firstLeafPath;
     private final long lastLeafPath;
     private final List<List<VirtualLeafRecord<K, V>>> batchLeaves = new ArrayList<>();
-    private final List<List<VirtualInternalRecord>> batchInternals = new ArrayList<>();
+    private final List<List<VirtualInternalRecord>> batchNodes = new ArrayList<>();
     private List<VirtualLeafRecord<K, V>> rankLeaves;
-    private List<VirtualInternalRecord> rankInternals;
+    private List<VirtualInternalRecord> rankNodes;
 
     /**
      * Create a new {@link ReconnectHashListener}.
@@ -109,7 +110,7 @@ public class ReconnectHashListener<K extends VirtualKey<? super K>, V extends Vi
     @Override
     public void onBatchStarted() {
         batchLeaves.clear();
-        batchInternals.clear();
+        batchNodes.clear();
     }
 
     /**
@@ -118,15 +119,15 @@ public class ReconnectHashListener<K extends VirtualKey<? super K>, V extends Vi
     @Override
     public void onRankStarted() {
         rankLeaves = new ArrayList<>(INITIAL_BATCH_ARRAY_SIZE);
-        rankInternals = new ArrayList<>(INITIAL_BATCH_ARRAY_SIZE);
+        rankNodes = new ArrayList<>(INITIAL_BATCH_ARRAY_SIZE);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void onInternalHashed(VirtualInternalRecord internal) {
-        rankInternals.add(internal);
+    public void onNodeHashed(final long path, final Hash hash) {
+        rankNodes.add(new VirtualInternalRecord(path, hash));
     }
 
     /**
@@ -143,7 +144,7 @@ public class ReconnectHashListener<K extends VirtualKey<? super K>, V extends Vi
     @Override
     public void onRankCompleted() {
         batchLeaves.add(rankLeaves);
-        batchInternals.add(rankInternals);
+        batchNodes.add(rankNodes);
     }
 
     /**
@@ -154,8 +155,8 @@ public class ReconnectHashListener<K extends VirtualKey<? super K>, V extends Vi
         long maxPath = -1;
 
         Stream<VirtualInternalRecord> sortedDirtyInternals = Stream.of();
-        for (int i = batchInternals.size() - 1; i >= 0; i--) {
-            final List<VirtualInternalRecord> batch = batchInternals.get(i);
+        for (int i = batchNodes.size() - 1; i >= 0; i--) {
+            final List<VirtualInternalRecord> batch = batchNodes.get(i);
             if (!batch.isEmpty()) {
                 sortedDirtyInternals = Stream.concat(sortedDirtyInternals, batch.stream());
                 maxPath = Math.max(maxPath, batch.get(batch.size() - 1).getPath());

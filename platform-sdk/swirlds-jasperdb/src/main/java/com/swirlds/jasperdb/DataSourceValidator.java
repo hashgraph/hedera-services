@@ -19,7 +19,6 @@ package com.swirlds.jasperdb;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
-import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.util.ArrayList;
 import java.util.List;
@@ -63,12 +62,8 @@ public class DataSourceValidator<K extends VirtualKey<? super K>, V extends Virt
             System.out.printf("Validating %,d internal node hashes...%n", firstLeafPath);
             progressPercentage = 0;
             for (long path = 0; path < firstLeafPath; path++) {
-                final VirtualInternalRecord internalRecord = dataSource.loadInternalRecord(path);
-                assertTrue(internalRecord != null, "internal record for path [" + path + "] was null");
-                assertTrue(
-                        internalRecord.getPath() == path,
-                        "internal record for path [" + path + "] had a bad path [" + internalRecord.getPath() + "]");
-                assertTrue(internalRecord.getHash() != null, "internal record's hash for path [" + path + "] was null");
+                final Hash hash = dataSource.loadHash(path);
+                assertTrue(hash != null, "internal record's hash for path [" + path + "] was null");
                 printProgress(path, firstLeafPath);
             }
             System.out.println("All internal node hashes are valid :-)" + WHITESPACE);
@@ -76,7 +71,7 @@ public class DataSourceValidator<K extends VirtualKey<? super K>, V extends Virt
             System.out.printf("Validating %,d leaf hashes...%n", firstLeafPath);
             progressPercentage = 0;
             for (long path = firstLeafPath; path <= lastLeafPath; path++) {
-                Hash leafHash = dataSource.loadLeafHash(path);
+                Hash leafHash = dataSource.loadHash(path);
                 assertTrue(leafHash != null, "leaf record's hash for path [" + path + "] was null");
                 printProgress(path - firstLeafPath, leafCount);
             }
@@ -90,7 +85,6 @@ public class DataSourceValidator<K extends VirtualKey<? super K>, V extends Virt
                 assertTrue(
                         leaf.getPath() == path,
                         "leaf record for path [" + path + "] had a bad path [" + leaf.getPath() + "]");
-                assertTrue(leaf.getHash() != null, "leaf record's hash for path [" + path + "] was null");
                 assertTrue(leaf.getKey() != null, "leaf record's key for path [" + path + "] was null");
                 keys.add(leaf.getKey());
                 printProgress(path - firstLeafPath, leafCount);
@@ -101,7 +95,6 @@ public class DataSourceValidator<K extends VirtualKey<? super K>, V extends Virt
             for (int i = 0; i < keys.size(); i++) {
                 VirtualLeafRecord<K, V> leaf = dataSource.loadLeafRecord(keys.get(i));
                 assertTrue(leaf != null, "leaf record for key [" + keys.get(i) + "] was null");
-                assertTrue(leaf.getHash() != null, "leaf record's hash for key [" + keys.get(i) + "] was null");
                 assertTrue(leaf.getKey() != null, "leaf record's key for key [" + keys.get(i) + "] was null");
                 assertTrue(
                         leaf.getKey().equals(keys.get(i)),

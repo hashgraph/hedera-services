@@ -81,7 +81,7 @@ public class DataFileReaderHammerTest {
                     for (int j = 0; j < readIterations; j++) {
                         try {
                             final int start = rand.nextInt(itemCount) * itemSize;
-                            final byte[] data = dataReader.readDataItem(start, true);
+                            final byte[] data = dataReader.readDataItem(start);
                             Assertions.assertNotNull(data);
                             for (int k = 0; k < itemSize; k++) {
                                 Assertions.assertEquals(k % 100, data[k]);

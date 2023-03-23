@@ -18,7 +18,6 @@ package com.swirlds.virtualmap.datasource;
 
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -36,7 +35,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  * to take leaf records from caches that are not yet flushed to disk and write them to the stream.
  * We never send hashes in the stream.
  */
-public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValue> extends VirtualRecord
+public final class VirtualLeafRecord<K extends VirtualKey<? super K>, V extends VirtualValue> extends VirtualRecord
         implements SelfSerializable {
 
     private static final long CLASS_ID = 0x410f45f0acd3264L;
@@ -53,7 +52,7 @@ public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValu
      * It creates a leaf with a totally invalid leaf path.
      */
     public VirtualLeafRecord() {
-        super(-1, null);
+        super(-1);
     }
 
     /**
@@ -62,8 +61,6 @@ public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValu
      * @param path
      * 		The path. Must be positive (since 0 represents a root node, which is never a leaf),
      * 		or {@link Path#INVALID_PATH}.
-     * @param hash
-     * 		The hash. May be null.
      * @param key
      * 		The key for this record. This should normally never be null, but may be for
      * 		{@link VirtualNodeCache#DELETED_LEAF_RECORD}
@@ -71,15 +68,15 @@ public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValu
      * @param value
      * 		The value for this record, which can be null.
      */
-    public VirtualLeafRecord(final long path, final Hash hash, final K key, final V value) {
-        super(path, hash);
+    public VirtualLeafRecord(final long path, final K key, final V value) {
+        super(path);
         this.key = key;
         this.value = value;
     }
 
     @SuppressWarnings("unchecked")
     public VirtualLeafRecord<K, V> copy() {
-        return new VirtualLeafRecord<>(getPath(), getHash(), key, (V) value.copy());
+        return new VirtualLeafRecord<>(getPath(), key, (V) value.copy());
     }
 
     /**
@@ -111,7 +108,6 @@ public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValu
     public void setValue(final V value) {
         if (this.value != value) {
             this.value = value;
-            this.setHash(null);
         }
     }
 
@@ -189,7 +185,6 @@ public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValu
                 .append("key", key)
                 .append("value", value)
                 .append("path", getPath())
-                .append("hash", getHash())
                 .toString();
     }
 }

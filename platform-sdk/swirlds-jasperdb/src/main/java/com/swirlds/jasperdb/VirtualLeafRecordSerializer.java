@@ -19,8 +19,6 @@ package com.swirlds.jasperdb;
 import static com.swirlds.jasperdb.files.DataFileCommon.VARIABLE_DATA_SIZE;
 import static com.swirlds.jasperdb.utilities.HashTools.byteBufferToHash;
 
-import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -51,6 +49,7 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey<? super K>, V exte
 
     private static final class ClassVersion {
         public static final int ORIGINAL = 1;
+        public static final int NO_HASHES = 2;
     }
 
     private static final int DEFAULT_TYPICAL_VARIABLE_SIZE = 1024;
@@ -78,10 +77,6 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey<? super K>, V exte
     /**
      * Construct a new VirtualLeafRecordSerializer
      *
-     * @param hashSerializationVersion
-     * 		The serialization version for hash, less than 65,536
-     * @param hashDigest
-     * 		The digest uses for hashes
      * @param keySerializationVersion
      * 		The serialization version for key, less than 65,536
      * @param keySizeBytes
@@ -98,8 +93,6 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey<? super K>, V exte
      * 		Is max size of serialized key and value is less than (255-(1+8+48)) = 198
      */
     public VirtualLeafRecordSerializer(
-            final short hashSerializationVersion,
-            final DigestType hashDigest,
             final short keySerializationVersion,
             final int keySizeBytes,
             final SelfSerializableSupplier<K> keyConstructor,
@@ -108,16 +101,14 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey<? super K>, V exte
             final SelfSerializableSupplier<V> valueConstructor,
             final boolean maxKeyValueSizeLessThan198) {
         /* FUTURE WORK - https://github.com/swirlds/swirlds-platform/issues/3941 */
-        this.currentVersion = (0x000000000000FFFFL & hashSerializationVersion)
-                | ((0x000000000000FFFFL & keySerializationVersion) << 16)
+        this.currentVersion = ((0x000000000000FFFFL & keySerializationVersion) << 16)
                 | ((0x000000000000FFFFL & valueSerializationVersion) << 32);
         this.keyConstructor = keyConstructor;
         this.valueConstructor = valueConstructor;
         this.byteMaxSize = maxKeyValueSizeLessThan198;
         this.hasVariableDataSize = keySizeBytes == VARIABLE_DATA_SIZE || valueSizeBytes == VARIABLE_DATA_SIZE;
-        this.totalSerializedSize = hasVariableDataSize
-                ? VARIABLE_DATA_SIZE
-                : (Long.BYTES + hashDigest.digestLength() + keySizeBytes + valueSizeBytes);
+        this.totalSerializedSize =
+                hasVariableDataSize ? VARIABLE_DATA_SIZE : (Long.BYTES + keySizeBytes + valueSizeBytes);
         this.headerSize = Long.BYTES; // key
         if (hasVariableDataSize) {
             this.headerSize += (byteMaxSize ? 1 : Integer.BYTES); // size
@@ -137,7 +128,7 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey<? super K>, V exte
      */
     @Override
     public int getVersion() {
-        return ClassVersion.ORIGINAL;
+        return ClassVersion.NO_HASHES;
     }
 
     /**
@@ -229,8 +220,9 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey<? super K>, V exte
         final DataItemHeader dataItemHeader = deserializeHeader(buffer);
         // deserialize path
         final long path = dataItemHeader.getKey();
-        // deserialize hash
-        final Hash hash = byteBufferToHash(buffer, hashSerializationVersion);
+        if (hashSerializationVersion != 0) {
+            byteBufferToHash(buffer, hashSerializationVersion);
+        }
         // deserialize key
         final K key = keyConstructor.get();
         key.deserialize(buffer, keySerializationVersion);
@@ -238,7 +230,7 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey<? super K>, V exte
         final V value = valueConstructor.get();
         value.deserialize(buffer, valueSerializationVersion);
         // return new VirtualLeafRecord
-        return new VirtualLeafRecord<>(path, hash, key, value);
+        return new VirtualLeafRecord<>(path, key, value);
     }
 
     /**
@@ -256,8 +248,6 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey<? super K>, V exte
                 hasVariableDataSize ? DATA_FILE_OUTPUT_STREAM_THREAD_LOCAL.get().reset() : outputStream;
         // put path (data item key)
         serializableDataOutputStream.writeLong(leafRecord.getPath());
-        // put hash
-        serializableDataOutputStream.write(leafRecord.getHash().getValue());
         // put key
         leafRecord.getKey().serialize(serializableDataOutputStream);
         // put value

@@ -31,7 +31,6 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
-import com.swirlds.virtualmap.datasource.VirtualRecord;
 import com.swirlds.virtualmap.internal.ConcurrentNodeStatusTracker;
 import com.swirlds.virtualmap.internal.RecordAccessor;
 import com.swirlds.virtualmap.internal.VirtualStateAccessor;
@@ -236,20 +235,17 @@ public final class VirtualTeacherTreeView<K extends VirtualKey<? super K>, V ext
         if (parent > ROOT_PATH || (parent == ROOT_PATH && reconnectState.getLastLeafPath() > 1)) {
             final long leftPath = getLeftChildPath(parent);
             final long rightPath = getRightChildPath(parent);
-            final VirtualRecord leftLeaf = records.findRecord(leftPath);
-            final VirtualRecord rightLeaf = records.findRecord(rightPath);
-            final Hash leftHash = leftLeaf == null ? null : leftLeaf.getHash();
-            final Hash rightHash = rightLeaf == null ? null : rightLeaf.getHash();
+            final Hash leftHash = records.findHash(leftPath);
+            final Hash rightHash = records.findHash(rightPath);
             if (leftHash == null && rightHash == null) {
                 throw new MerkleSynchronizationException("Both children had null hashes at paths " + leftPath + " and "
                         + rightPath + " for parent " + parent);
             }
             return Arrays.asList(leftHash, rightHash);
         } else if (parent == ROOT_PATH && reconnectState.getLastLeafPath() == 1) {
-            final VirtualLeafRecord<K, V> leaf = records.findLeafRecord(1, false);
-            final Hash leafHash = leaf == null ? null : leaf.getHash();
+            final Hash leafHash = records.findHash(1);
             if (leafHash == null) {
-                throw new MerkleSynchronizationException("Null leaf hash for path = 1");
+                throw new MerkleSynchronizationException("Null hash for path = 1");
             }
             return List.of(leafHash);
         } else if (parent == ROOT_PATH && reconnectState.getLastLeafPath() == INVALID_PATH) {

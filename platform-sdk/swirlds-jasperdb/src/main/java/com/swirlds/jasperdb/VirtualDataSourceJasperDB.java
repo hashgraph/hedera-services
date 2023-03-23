@@ -22,6 +22,7 @@ import static com.swirlds.jasperdb.KeyRange.INVALID_KEY_RANGE;
 import static com.swirlds.logging.LogMarker.ERROR;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.JASPER_DB;
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.FunctionGauge;
@@ -80,6 +81,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -153,23 +155,23 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
     private final boolean isLongKeyMode;
 
     /** In memory off-heap store for path to disk location, this is used for both internal hashes store. */
-    private final LongList pathToDiskLocationInternalNodes;
+    private final LongList hashPathToDiskLocation;
 
     /** In memory off-heap store for path to disk location, this is used by leave store. */
-    private final LongList pathToDiskLocationLeafNodes;
+    private final LongList leafPathToDiskLocation;
 
     /**
      * In memory off-heap store for internal node hashes. This data is never stored on disk so on load from disk, this
      * will be empty. That should cause all internal node hashes to have to be computed on the first round which will be
      * expensive.
      */
-    private final HashList internalHashStoreRam;
+    private final HashList hashStoreRam;
 
     /**
      * On disk store for internal hashes. Can be null if all hashes are being stored in ram by setting
-     * internalHashesRamToDiskThreshold to Long.MAX_VALUE.
+     * hashesRamToDiskThreshold to Long.MAX_VALUE.
      */
-    private final MemoryIndexDiskKeyValueStore<VirtualInternalRecord> internalHashStoreDisk;
+    private final MemoryIndexDiskKeyValueStore<VirtualInternalRecord> hashStoreDisk;
 
     /**
      * Threshold where we switch from storing internal hashes in ram to storing them on disk. If it is 0 then everything
@@ -177,12 +179,12 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
      * we swap from ram to disk. This allows a tree where the lower levels of the tree nodes hashes are in ram and the
      * upper larger less changing layers are on disk.
      */
-    private final long internalHashesRamToDiskThreshold;
+    private final long hashesRamToDiskThreshold;
 
     /**
      * True when internalHashesRamToDiskThreshold is less than Long.MAX_VALUE
      */
-    private final boolean hasDiskStoreForInternalHashes;
+    private final boolean hasDiskStoreForHashes;
 
     /**
      * In memory off-heap store for key to path map, this is used when isLongKeyMode=true and keys are longs
@@ -326,7 +328,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
      * 		<b>IMPORTANT, Only changeable for first database creation today.</b>
      * @param mergingEnabled
      * 		When true a background thread is starting for merging
-     * @param internalHashesRamToDiskThreshold
+     * @param hashesRamToDiskThreshold
      * 		When path value at which we switch from hashes in ram to stored on disk
      * 		<b>IMPORTANT, Only changeable for first database creation today.</b>
      * @param preferDiskBasedIndexes
@@ -343,7 +345,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
             final String label,
             final long maxNumOfKeys,
             final boolean mergingEnabled,
-            final long internalHashesRamToDiskThreshold,
+            final long hashesRamToDiskThreshold,
             final boolean preferDiskBasedIndexes)
             throws IOException {
 
@@ -398,7 +400,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
                         throw new IOException("Tried to read a file with incompatible file format version ["
                                 + fileVersion + "], expected [" + METADATA_FILE_FORMAT_VERSION + "].");
                     }
-                    this.internalHashesRamToDiskThreshold = metaIn.readLong();
+                    this.hashesRamToDiskThreshold = metaIn.readLong();
                     this.validLeafPathRange = new KeyRange(metaIn.readLong(), metaIn.readLong());
                 }
             } else {
@@ -412,47 +414,47 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
             }
         } else {
             Files.createDirectories(storageDir);
-            this.internalHashesRamToDiskThreshold = internalHashesRamToDiskThreshold;
+            this.hashesRamToDiskThreshold = hashesRamToDiskThreshold;
         }
 
         // create path to disk location index
         final boolean forceIndexRebuilding = settings.isIndexRebuildingEnforced();
         if (preferDiskBasedIndexes) {
-            this.pathToDiskLocationInternalNodes = new LongListDisk(dbPaths.pathToDiskLocationInternalNodesFile);
+            this.hashPathToDiskLocation = new LongListDisk(dbPaths.pathToDiskLocationInternalNodesFile);
         } else if (Files.exists(dbPaths.pathToDiskLocationInternalNodesFile) && !forceIndexRebuilding) {
-            this.pathToDiskLocationInternalNodes = new LongListOffHeap(dbPaths.pathToDiskLocationInternalNodesFile);
+            this.hashPathToDiskLocation = new LongListOffHeap(dbPaths.pathToDiskLocationInternalNodesFile);
         } else {
-            this.pathToDiskLocationInternalNodes = new LongListOffHeap();
+            this.hashPathToDiskLocation = new LongListOffHeap();
         }
         if (preferDiskBasedIndexes) {
-            this.pathToDiskLocationLeafNodes = new LongListDisk(dbPaths.pathToDiskLocationLeafNodesFile);
+            this.leafPathToDiskLocation = new LongListDisk(dbPaths.pathToDiskLocationLeafNodesFile);
         } else if (Files.exists(dbPaths.pathToDiskLocationLeafNodesFile) && !forceIndexRebuilding) {
-            this.pathToDiskLocationLeafNodes = new LongListOffHeap(dbPaths.pathToDiskLocationLeafNodesFile);
+            this.leafPathToDiskLocation = new LongListOffHeap(dbPaths.pathToDiskLocationLeafNodesFile);
         } else {
-            this.pathToDiskLocationLeafNodes = new LongListOffHeap();
+            this.leafPathToDiskLocation = new LongListOffHeap();
         }
 
         // Create hash stores, they will
-        this.hasDiskStoreForInternalHashes = this.internalHashesRamToDiskThreshold < Long.MAX_VALUE;
+        this.hasDiskStoreForHashes = this.hashesRamToDiskThreshold < Long.MAX_VALUE;
 
-        if (this.internalHashesRamToDiskThreshold > 0) {
-            if (Files.exists(dbPaths.internalHashStoreRamFile)) {
-                this.internalHashStoreRam = new HashListByteBuffer(dbPaths.internalHashStoreRamFile);
+        if (this.hashesRamToDiskThreshold > 0) {
+            if (Files.exists(dbPaths.hashStoreRamFile)) {
+                this.hashStoreRam = new HashListByteBuffer(dbPaths.hashStoreRamFile);
             } else {
-                this.internalHashStoreRam = new HashListByteBuffer();
+                this.hashStoreRam = new HashListByteBuffer();
             }
         } else {
-            this.internalHashStoreRam = null;
+            this.hashStoreRam = null;
         }
 
-        this.internalHashStoreDisk = hasDiskStoreForInternalHashes
+        this.hashStoreDisk = hasDiskStoreForHashes
                 ? new MemoryIndexDiskKeyValueStore<>(
-                        dbPaths.internalHashStoreDiskDirectory,
+                        dbPaths.hashStoreDiskDirectory,
                         label + "_internalhashes",
                         label + ":internalHashes",
                         virtualInternalRecordSerializer,
                         null,
-                        pathToDiskLocationInternalNodes)
+                        hashPathToDiskLocation)
                 : null;
         // Create Key to Path store
         final LoadedDataCallback loadedDataCallback;
@@ -493,7 +495,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
                 label + ":pathToHashKeyValue",
                 virtualLeafRecordSerializer,
                 loadedDataCallback,
-                pathToDiskLocationLeafNodes);
+                leafPathToDiskLocation);
 
         // Leaf records cache
         leafRecordCacheSize = settings.getLeafRecordCacheSize();
@@ -520,7 +522,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
                 label,
                 storageDir,
                 maxNumOfKeys,
-                internalHashesRamToDiskThreshold);
+                hashesRamToDiskThreshold);
     }
 
     // ==================================================================================================================
@@ -639,13 +641,13 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
             throws IOException {
         try {
             this.validLeafPathRange = new KeyRange(firstLeafPath, lastLeafPath);
-            final CountDownLatch countDownLatch = new CountDownLatch(firstLeafPath > 0 ? 1 : 0);
+            final CountDownLatch countDownLatch = new CountDownLatch(lastLeafPath > 0 ? 1 : 0);
 
             // might as well write to the 3 data stores in parallel, so lets fork 2 threads for the easy stuff
-            if (firstLeafPath > 0) {
+            if (lastLeafPath > 0) {
                 storeInternalExecutor.execute(() -> {
                     try {
-                        writeInternalRecords(firstLeafPath, internalRecords);
+                        writeHashes(lastLeafPath, internalRecords);
                     } catch (IOException e) {
                         logger.error(ERROR.getMarker(), "[{}] Failed to store internal records", label, e);
                         throw new UncheckedIOException(e);
@@ -720,7 +722,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
         if (path == INVALID_PATH) {
             // Cache the result if not already cached
             if (leafRecordCache != null && cached == null) {
-                leafRecordCache[cacheIndex] = new VirtualLeafRecord<K, V>(path, null, key, null);
+                leafRecordCache[cacheIndex] = new VirtualLeafRecord<K, V>(path, key, null);
             }
             return null;
         }
@@ -807,86 +809,45 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
 
         if (leafRecordCache != null) {
             // Path may be INVALID_PATH here. Still needs to be cached (negative result)
-            leafRecordCache[cacheIndex] = new VirtualLeafRecord<K, V>(path, null, key, null);
+            leafRecordCache[cacheIndex] = new VirtualLeafRecord<K, V>(path, key, null);
         }
 
         return path;
     }
 
     /**
-     * Load hash for a leaf node with given path
+     * Load the hash for a node by path.
      *
      * @param path
-     * 		the path to get hash for
-     * @return loaded hash or null if hash is not stored
+     * 		Node path
+     * @return
+     * 		Node hash if the node was stored for the given path or null if not stored
      * @throws IOException
-     * 		if there was a problem loading hash
+     * 		If there was an I/O problem
      */
     @Override
-    public Hash loadLeafHash(final long path) throws IOException {
-        if (path < 0) {
-            throw new IllegalArgumentException("path is less than 0");
-        }
-        final KeyRange leafPathRange = this.validLeafPathRange;
-        if (!leafPathRange.withinRange(path)) {
-            throw new IllegalArgumentException("path (" + path + ") is not valid; must be in range " + leafPathRange);
-        }
-
-        statistics.cycleLeafByPathReadsPerSecond();
-        // read value
-        /* FUTURE WORK - https://github.com/swirlds/swirlds-platform/issues/3937 */
-        final VirtualLeafRecord<K, V> leafRecord = pathToHashKeyValue.get(path);
-        return leafRecord == null ? null : leafRecord.getHash();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public VirtualInternalRecord loadInternalRecord(long path) throws IOException {
-        return loadInternalRecord(path, true);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public VirtualInternalRecord loadInternalRecord(final long path, final boolean deserialize) throws IOException {
+    public Hash loadHash(final long path) throws IOException {
         if (path < 0) {
             throw new IllegalArgumentException("path is less than 0");
         }
 
-        // It is possible that the caller will ask for an internal node that the database doesn't
+        // It is possible that the caller will ask for a node that the database doesn't
         // know about. This can happen if some leaves have been added to the tree, but we haven't
-        // hashed yet, so the cache doesn't have any internal records for it, and somebody
+        // hashed yet, so the cache doesn't have any records for it, and somebody
         // tries to iterate over the nodes in the tree.
-        long firstLeaf = validLeafPathRange.getMinValidKey();
-        if (path >= firstLeaf) {
+        long lastLeaf = validLeafPathRange.getMaxValidKey();
+        if (path > lastLeaf) {
             return null;
         }
-
-        VirtualInternalRecord record = null;
-        if (path < internalHashesRamToDiskThreshold) {
-            if (deserialize) {
-                final Hash hash = internalHashStoreRam.get(path);
-                if (hash != null) {
-                    statistics.cycleInternalNodeReadsPerSecond();
-                    record = new VirtualInternalRecord(path, hash);
-                }
-            }
+        final Hash hash;
+        if (path < hashesRamToDiskThreshold) {
+            hash = hashStoreRam.get(path);
         } else {
-            record = internalHashStoreDisk.get(path, deserialize);
-            statistics.cycleInternalNodeReadsPerSecond();
+            final VirtualInternalRecord record = hashStoreDisk.get(path);
+            hash = record == null ? null : record.getHash();
         }
-
-        return record;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void warmInternalRecord(long path) throws IOException {
-        loadInternalRecord(path, false);
+        statistics.cycleInternalNodeReadsPerSecond();
+        return hash;
     }
 
     /**
@@ -947,14 +908,14 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
             } finally {
                 // close all closable data stores
                 logger.info(JASPER_DB.getMarker(), "Closing Data Source [{}]", label);
-                if (internalHashStoreRam != null) {
-                    internalHashStoreRam.close();
+                if (hashStoreRam != null) {
+                    hashStoreRam.close();
                 }
-                if (internalHashStoreDisk != null) {
-                    internalHashStoreDisk.close();
+                if (hashStoreDisk != null) {
+                    hashStoreDisk.close();
                 }
-                pathToDiskLocationInternalNodes.close();
-                pathToDiskLocationLeafNodes.close();
+                hashPathToDiskLocation.close();
+                leafPathToDiskLocation.close();
                 if (longKeyToPath != null) {
                     longKeyToPath.close();
                 }
@@ -1007,20 +968,20 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
             try {
                 final CountDownLatch countDownLatch = new CountDownLatch(8);
                 // write all data stores
-                runWithSnapshotExecutor(true, countDownLatch, "pathToDiskLocationInternalNodes", () -> {
-                    pathToDiskLocationInternalNodes.writeToFile(snapshotDbPaths.pathToDiskLocationInternalNodesFile);
+                runWithSnapshotExecutor(true, countDownLatch, "hashPathToDiskLocation", () -> {
+                    hashPathToDiskLocation.writeToFile(snapshotDbPaths.pathToDiskLocationInternalNodesFile);
                     return true;
                 });
-                runWithSnapshotExecutor(true, countDownLatch, "pathToDiskLocationLeafNodes", () -> {
-                    pathToDiskLocationLeafNodes.writeToFile(snapshotDbPaths.pathToDiskLocationLeafNodesFile);
+                runWithSnapshotExecutor(true, countDownLatch, "leafPathToDiskLocation", () -> {
+                    leafPathToDiskLocation.writeToFile(snapshotDbPaths.pathToDiskLocationLeafNodesFile);
                     return true;
                 });
-                runWithSnapshotExecutor(internalHashStoreRam != null, countDownLatch, "internalHashStoreRam", () -> {
-                    internalHashStoreRam.writeToFile(snapshotDbPaths.internalHashStoreRamFile);
+                runWithSnapshotExecutor(hashStoreRam != null, countDownLatch, "hashStoreRam", () -> {
+                    hashStoreRam.writeToFile(snapshotDbPaths.hashStoreRamFile);
                     return true;
                 });
-                runWithSnapshotExecutor(internalHashStoreDisk != null, countDownLatch, "internalHashStoreDisk", () -> {
-                    internalHashStoreDisk.snapshot(snapshotDbPaths.internalHashStoreDiskDirectory);
+                runWithSnapshotExecutor(hashStoreDisk != null, countDownLatch, "hashStoreDisk", () -> {
+                    hashStoreDisk.snapshot(snapshotDbPaths.hashStoreDiskDirectory);
                     return true;
                 });
                 runWithSnapshotExecutor(longKeyToPath != null, countDownLatch, "longKeyToPath", () -> {
@@ -1039,7 +1000,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
                     try (DataOutputStream metaOut = new DataOutputStream(Files.newOutputStream(
                             snapshotDbPaths.metadataFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE))) {
                         metaOut.writeInt(METADATA_FILE_FORMAT_VERSION); // serialization version
-                        metaOut.writeLong(internalHashesRamToDiskThreshold);
+                        metaOut.writeLong(hashesRamToDiskThreshold);
                         metaOut.writeLong(leafRange.getMinValidKey());
                         metaOut.writeLong(leafRange.getMaxValidKey());
                         metaOut.flush();
@@ -1073,18 +1034,19 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
      */
     @Override
     public String toString() {
-        return "VirtualDataSourceJasperDB{" + "isLongKeyMode="
-                + isLongKeyMode + ", pathToDiskLocationInternalNodes.size="
-                + pathToDiskLocationInternalNodes.size() + ", pathToDiskLocationLeafNodes.size="
-                + pathToDiskLocationLeafNodes.size() + ", internalHashStoreRam.size="
-                + (internalHashStoreRam == null ? null : internalHashStoreRam.size()) + ", internalHashStoreDisk="
-                + internalHashStoreDisk + ", internalHashesRamToDiskThreshold="
-                + internalHashesRamToDiskThreshold + ", hasDiskStoreForInternalHashes="
-                + hasDiskStoreForInternalHashes + ", longKeyToPath.size="
-                + (longKeyToPath == null ? null : longKeyToPath.size()) + ", objectKeyToPath="
-                + objectKeyToPath + ", pathToHashKeyValue="
-                + pathToHashKeyValue + ", snapshotInProgress="
-                + snapshotInProgress.get() + '}';
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+                .append("isLongKeyMode", isLongKeyMode)
+                .append("pathToDiskLocationInternalNodes.size", hashPathToDiskLocation.size())
+                .append("pathToDiskLocationLeafNodes.size", leafPathToDiskLocation.size())
+                .append("internalHashStoreRam.size", hashStoreRam == null ? null : hashStoreRam.size())
+                .append("internalHashStoreDisk", hashStoreDisk)
+                .append("internalHashesRamToDiskThreshold", hashesRamToDiskThreshold)
+                .append("hasDiskStoreForInternalHashes", hasDiskStoreForHashes)
+                .append("longKeyToPath.size", longKeyToPath == null ? null : longKeyToPath.size())
+                .append("objectKeyToPath", objectKeyToPath)
+                .append("pathToHashKeyValue", pathToHashKeyValue)
+                .append("snapshotInProgress", snapshotInProgress.get())
+                .toString();
     }
 
     /**
@@ -1122,8 +1084,8 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
      * files are added or removed.
      */
     private void updateFileStats() {
-        if (internalHashStoreDisk != null) {
-            final LongSummaryStatistics internalHashesFileSizeStats = internalHashStoreDisk.getFilesSizeStatistics();
+        if (hashStoreDisk != null) {
+            final LongSummaryStatistics internalHashesFileSizeStats = hashStoreDisk.getFilesSizeStatistics();
             statistics.setInternalHashesStoreFileCount((int) internalHashesFileSizeStats.getCount());
             statistics.setInternalHashesStoreTotalFileSizeInMB(
                     internalHashesFileSizeStats.getSum() * Units.BYTES_TO_MEBIBYTES);
@@ -1204,25 +1166,24 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
     /**
      * Write all internal records hashes to internalHashStore
      */
-    private void writeInternalRecords(final long firstLeafPath, final Stream<VirtualInternalRecord> internalRecords)
-            throws IOException {
-        if (internalRecords != null && firstLeafPath > 0) {
+    private void writeHashes(final long maxValidPath, final Stream<VirtualInternalRecord> records) throws IOException {
+        if (records != null && maxValidPath > 0) {
             // use an iterator rather than stream.forEach so that exceptions are propagated properly
 
-            if (hasDiskStoreForInternalHashes) {
-                internalHashStoreDisk.startWriting();
+            if (hasDiskStoreForHashes) {
+                hashStoreDisk.startWriting();
             }
 
             final AtomicLong lastPath = new AtomicLong(INVALID_PATH);
-            internalRecords.forEach(rec -> {
+            records.forEach(rec -> {
                 assert rec.getPath() > lastPath.getAndSet(rec.getPath()) : "Path should be in ascending order!";
                 statistics.cycleInternalNodeWritesPerSecond();
 
-                if (rec.getPath() < internalHashesRamToDiskThreshold) {
-                    internalHashStoreRam.put(rec.getPath(), rec.getHash());
+                if (rec.getPath() < hashesRamToDiskThreshold) {
+                    hashStoreRam.put(rec.getPath(), rec.getHash());
                 } else {
                     try {
-                        internalHashStoreDisk.put(rec.getPath(), rec);
+                        hashStoreDisk.put(rec.getPath(), rec);
                     } catch (IOException e) {
                         logger.error(EXCEPTION.getMarker(), "[{}] IOException writing internal records", label, e);
                         throw new UncheckedIOException(e);
@@ -1230,8 +1191,8 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
                 }
             });
 
-            if (hasDiskStoreForInternalHashes) {
-                internalHashStoreDisk.endWriting(0, firstLeafPath - 1);
+            if (hasDiskStoreForHashes) {
+                hashStoreDisk.endWriting(0, maxValidPath);
             }
         }
     }
@@ -1375,12 +1336,11 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
             }
 
             // we need to merge disk files for internal hashes if they exist and pathToHashKeyValue store
-            if (hasDiskStoreForInternalHashes) {
+            if (hasDiskStoreForHashes) {
                 // horrible hack to get around generics because file filters work on any type of DataFileReader
                 final UnaryOperator<List<DataFileReader<VirtualInternalRecord>>> internalRecordFileFilter =
                         (UnaryOperator<List<DataFileReader<VirtualInternalRecord>>>) ((Object) filesToMergeFilter);
-                internalHashStoreDisk.merge(
-                        internalRecordFileFilter, mergingPaused, settings.getMinNumberOfFilesInMerge());
+                hashStoreDisk.merge(internalRecordFileFilter, mergingPaused, settings.getMinNumberOfFilesInMerge());
                 afterInternalHashStoreDiskMerge = Instant.now(clock);
             } else {
                 afterInternalHashStoreDiskMerge = now; // zero elapsed time
@@ -1414,7 +1374,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
 
             // update the 3 appropriate "Merge" statistics, based on isSmallMerge/isMediumMerge/isLargeMerge
             if (isSmallMerge) {
-                if (hasDiskStoreForInternalHashes) {
+                if (hasDiskStoreForHashes) {
                     statistics.setInternalHashesStoreSmallMergeTime(firstMergeDuration.toSeconds()
                             + firstMergeDuration.getNano() * Units.NANOSECONDS_TO_SECONDS);
                 }
@@ -1425,7 +1385,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
                 statistics.setLeafPathToHashKeyValueStoreSmallMergeTime(
                         thirdMergeDuration.toSeconds() + thirdMergeDuration.getNano() * Units.NANOSECONDS_TO_SECONDS);
             } else if (isMediumMerge) {
-                if (hasDiskStoreForInternalHashes) {
+                if (hasDiskStoreForHashes) {
                     statistics.setInternalHashesStoreMediumMergeTime(firstMergeDuration.toSeconds()
                             + firstMergeDuration.getNano() * Units.NANOSECONDS_TO_SECONDS);
                 }
@@ -1436,7 +1396,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
                 statistics.setLeafPathToHashKeyValueStoreMediumMergeTime(
                         thirdMergeDuration.toSeconds() + thirdMergeDuration.getNano() * Units.NANOSECONDS_TO_SECONDS);
             } else if (isLargeMerge) {
-                if (hasDiskStoreForInternalHashes) {
+                if (hasDiskStoreForHashes) {
                     statistics.setInternalHashesStoreLargeMergeTime(firstMergeDuration.toSeconds()
                             + firstMergeDuration.getNano() * Units.NANOSECONDS_TO_SECONDS);
                 }

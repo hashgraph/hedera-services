@@ -16,9 +16,9 @@
 
 package com.swirlds.virtualmap.internal.hash;
 
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
-import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 
 /**
@@ -48,15 +48,17 @@ public interface VirtualHashListener<K extends VirtualKey<? super K>, V extends 
     default void onRankStarted() {}
 
     /**
-     * Called after each internal node on a rank is hashed. This is called between
+     * Called after each node on a rank is hashed, internals and leaves. This is called between
      * {@link #onRankStarted()} and {@link #onRankCompleted()}. Each call within the rank
-     * will send internal nodes in <strong>ascending path order</strong>.  There is no guarantee
-     * 	 * on the relative order between batches.
+     * will send nodes in <strong>ascending path order</strong>.  There is no guarantee
+     * on the relative order between batches.
      *
-     * @param internal
-     * 		A non-null internal record representing the hashed internal node.
+     * @param path
+     * 		Node path
+     * @param hash
+     * 		A non-null node hash
      */
-    default void onInternalHashed(VirtualInternalRecord internal) {}
+    default void onNodeHashed(final long path, final Hash hash) {}
 
     /**
      * Called after each leaf node on a rank is hashed. This is called between

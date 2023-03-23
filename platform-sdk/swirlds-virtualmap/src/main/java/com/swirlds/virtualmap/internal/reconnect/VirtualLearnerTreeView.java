@@ -34,7 +34,6 @@ import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
-import com.swirlds.virtualmap.datasource.VirtualRecord;
 import com.swirlds.virtualmap.internal.RecordAccessor;
 import com.swirlds.virtualmap.internal.VirtualStateAccessor;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
@@ -169,17 +168,11 @@ public final class VirtualLearnerTreeView<K extends VirtualKey<? super K>, V ext
         // Get the original record (which may be in cache or on disk) to get the hash. We should look at optimizing
         // this in the future, so we don't read the whole record if we don't have to (for example, we could use
         // the loadLeafHash method).
-        final VirtualRecord node = originalRecords.findRecord(originalChild);
-
-        // We absolutely should have found the record.
-        if (node == null) {
-            throw new MerkleSynchronizationException("Could not find node for path " + originalChild);
-        }
+        final Hash hash = originalRecords.findHash(originalChild);
 
         // The hash must have been specified by this point. The original tree was hashed before
         // we started running on the learner, so either the hash is in cache or on disk, but it
         // definitely exists at this point. If it is null, something bad happened elsewhere.
-        final Hash hash = node.getHash();
         if (hash == null) {
             throw new MerkleSynchronizationException("Node found, but hash was null. path=" + originalChild);
         }
