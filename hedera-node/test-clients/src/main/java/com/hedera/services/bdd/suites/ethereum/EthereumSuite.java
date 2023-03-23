@@ -44,6 +44,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
@@ -56,7 +57,10 @@ import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
+import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.TOKEN_NAME;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
+import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
+import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -81,6 +85,7 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.io.File;
 import java.math.BigInteger;
@@ -142,7 +147,8 @@ public class EthereumSuite extends HapiSuite {
                                 etx031InvalidNonceEthereumTxFailsAndChargesRelayer(),
                                 etxSvc003ContractGetBytecodeQueryReturnsDeployedCode(),
                                 sendingLargerBalanceThanAvailableFailsGracefully(),
-                                setApproveForAllUsingLocalNodeSetupPasses()))
+                                setApproveForAllUsingLocalNodeSetupPasses(),
+                                directTransferWorksForERC20()))
                 .toList();
     }
 
@@ -996,6 +1002,59 @@ public class EthereumSuite extends HapiSuite {
                     final var expectedBytecode = Arrays.copyOfRange(originalBytecode, 29, originalBytecode.length);
                     Assertions.assertArrayEquals(expectedBytecode, actualBytecode);
                 }));
+    }
+
+    private HapiSpec directTransferWorksForERC20() {
+        final var tokenSymbol = "FDFGF";
+        final var tokenTotalSupply = 5;
+        final var tokenTransferAmount = 3;
+        final var transferTxn = "decimalsTxn";
+        return defaultHapiSpec("directTransferWorksForERC20")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .supplyType(TokenSupplyType.INFINITE)
+                                .initialSupply(tokenTotalSupply)
+                                .name(TOKEN_NAME)
+                                .symbol(tokenSymbol)
+                                .treasury(TOKEN_TREASURY),
+                        tokenAssociate(ACCOUNT, FUNGIBLE_TOKEN),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoTransfer(moving(tokenTransferAmount, FUNGIBLE_TOKEN)
+                                        .between(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY))
+                                .via(AUTO_ACCOUNT_TRANSACTION_NAME))
+                .when(withOpContext((spec, ignore) -> allRunFor(
+                        spec,
+                        ethereumCallWithFunctionAbi(
+                                        true,
+                                        FUNGIBLE_TOKEN,
+                                        getABIFor(Utils.FunctionType.FUNCTION, "transfer", "ERC20ABI"),
+                                        asHeadlongAddress(asHexedSolidityAddress(
+                                                spec.registry().getAccountID(ACCOUNT))),
+                                        BigInteger.valueOf(tokenTransferAmount))
+                                .signingWith(SECP_256K1_SOURCE_KEY)
+                                .nonce(0)
+                                .gasPrice(50L)
+                                .via(transferTxn)
+                                .gasLimit(1_000_000)
+                                .maxFeePerGas(0)
+                                .type(EthTransactionType.EIP1559)
+                                .maxGasAllowance(ONE_HBAR * 5)
+                                .payingWith(ACCOUNT))))
+                .then(withOpContext((spec, ignore) -> allRunFor(
+                        spec,
+                        childRecordsCheck(
+                                transferTxn,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .forFunction(FunctionType.ERC_TRANSFER)
+                                                        .withErcFungibleTransferStatus(true)))))));
     }
 
     @Override
