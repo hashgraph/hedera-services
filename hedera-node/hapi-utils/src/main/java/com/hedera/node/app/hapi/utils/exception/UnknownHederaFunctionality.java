@@ -21,10 +21,6 @@ package com.hedera.node.app.hapi.utils.exception;
  *
  */
 public class UnknownHederaFunctionality extends Exception {
-    /** this is for backward compatibility as some current code also uses this exception*/
-    public UnknownHederaFunctionality() {
-        super();
-    }
 
     /**
      * Constructs a new exception with the specified detail message.
