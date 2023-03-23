@@ -243,14 +243,14 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
                 accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation(),
                 createMaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
-                requiresTopLevelSignatureOrApprovalDependingOnControllingProperty(),
                 lazyCreateThroughPrecompileNotSupportedWhenFlagDisabled(),
                 evmLazyCreateViaSolidityCall(),
-                transferWorksWithTopLevelSignatures(),
-                transferDontWorkWithoutTopLevelSignatures(),
                 evmLazyCreateViaSolidityCallTooManyCreatesFails(),
                 erc20TransferFromDoesNotWorkIfFlagIsDisabled(),
-                rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled());
+                rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled(),
+                requiresTopLevelSignatureOrApprovalDependingOnControllingProperty(),
+                transferWorksWithTopLevelSignatures(),
+                transferDontWorkWithoutTopLevelSignatures());
     }
 
     private HapiSpec transferDontWorkWithoutTopLevelSignatures() {
