@@ -71,6 +71,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -452,6 +453,20 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         final var amounts = (long[]) decodedArguments.get(2);
 
         final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
+        addSignedAdjustments(fungibleTransfers, accountIDs, exists, tokenType, amounts);
+
+        final var tokenTransferWrappers =
+                Collections.singletonList(new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
+
+        return new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), tokenTransferWrappers);
+    }
+
+    public static void addSignedAdjustments(
+            final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers,
+            final List<AccountID> accountIDs,
+            final Predicate<AccountID> exists,
+            final TokenID tokenType,
+            final long[] amounts) {
         for (int i = 0; i < accountIDs.size(); i++) {
             final var amount = amounts[i];
 
@@ -462,11 +477,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
             DecodingFacade.addSignedAdjustment(fungibleTransfers, tokenType, accountID, amount, false);
         }
-
-        final var tokenTransferWrappers =
-                Collections.singletonList(new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
-
-        return new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), tokenTransferWrappers);
     }
 
     public static CryptoTransferWrapper decodeTransferToken(
@@ -496,6 +506,20 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         final var serialNumbers = ((long[]) decodedArguments.get(3));
 
         final List<SyntheticTxnFactory.NftExchange> nftExchanges = new ArrayList<>();
+        addNftExchanges(nftExchanges, senders, receivers, serialNumbers, tokenID, exists);
+
+        final var tokenTransferWrappers =
+                Collections.singletonList(new TokenTransferWrapper(nftExchanges, NO_FUNGIBLE_TRANSFERS));
+        return new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), tokenTransferWrappers);
+    }
+
+    public static void addNftExchanges(
+            final List<SyntheticTxnFactory.NftExchange> nftExchanges,
+            final List<AccountID> senders,
+            final List<AccountID> receivers,
+            final long[] serialNumbers,
+            final TokenID tokenID,
+            final Predicate<AccountID> exists) {
         for (var i = 0; i < senders.size(); i++) {
             var receiver = receivers.get(i);
             if (!exists.test(receiver) && !receiver.hasAlias()) {
@@ -505,10 +529,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                     new SyntheticTxnFactory.NftExchange(serialNumbers[i], tokenID, senders.get(i), receiver);
             nftExchanges.add(nftExchange);
         }
-
-        final var tokenTransferWrappers =
-                Collections.singletonList(new TokenTransferWrapper(nftExchanges, NO_FUNGIBLE_TRANSFERS));
-        return new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), tokenTransferWrappers);
     }
 
     public static CryptoTransferWrapper decodeTransferNFT(

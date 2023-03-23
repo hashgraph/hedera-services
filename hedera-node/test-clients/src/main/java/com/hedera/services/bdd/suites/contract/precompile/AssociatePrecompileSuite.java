@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
+import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -38,6 +39,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
@@ -119,7 +121,10 @@ public class AssociatePrecompileSuite extends HapiSuite {
     }
 
     List<HapiSpec> positiveSpecs() {
-        return List.of(nestedAssociateWorksAsExpected(), multipleAssociatePrecompileWithSignatureWorksForFungible());
+        return List.of(
+                nestedAssociateWorksAsExpected(),
+                multipleAssociatePrecompileWithSignatureWorksForFungible(),
+                associateWithMissingEvmAddressHasSaneTxnAndRecord());
     }
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
@@ -394,6 +399,29 @@ public class AssociatePrecompileSuite extends HapiSuite {
                                                 .contractCallResult(
                                                         htsPrecompileResult().withStatus(SUCCESS)))),
                         getAccountInfo(ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN));
+    }
+
+    private HapiSpec associateWithMissingEvmAddressHasSaneTxnAndRecord() {
+        final AtomicReference<Address> tokenAddress = new AtomicReference<>();
+        final var missingAddress =
+                Address.wrap(Address.toChecksumAddress("0xabababababababababababababababababababab"));
+        final var txn = "txn";
+
+        return defaultHapiSpec("AssociateWithMissingEvmAddressHasSaneTxnAndRecord")
+                .given(
+                        cryptoCreate(TOKEN_TREASURY),
+                        uploadInitCode(INNER_CONTRACT),
+                        contractCreate(INNER_CONTRACT),
+                        tokenCreate(VANILLA_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .exposingCreatedIdTo(idLit ->
+                                        tokenAddress.set(idAsHeadlongAddress(HapiPropertySource.asToken(idLit)))))
+                .when(sourcing(() -> contractCall(INNER_CONTRACT, "tokenAssociate", missingAddress, tokenAddress.get())
+                        .via(txn)
+                        .gas(GAS_TO_OFFER)
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
+                .then(getTxnRecord(txn).andAllChildRecords().logged());
     }
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */

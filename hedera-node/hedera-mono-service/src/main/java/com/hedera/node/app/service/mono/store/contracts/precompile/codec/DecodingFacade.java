@@ -141,13 +141,13 @@ public class DecodingFacade {
     public static AccountID convertLeftPaddedAddressToAccountId(
             final byte[] leftPaddedAddress, @NonNull final UnaryOperator<byte[]> aliasResolver) {
         final var addressOrAlias = Arrays.copyOfRange(leftPaddedAddress, ADDRESS_SKIP_BYTES_LENGTH, WORD_LENGTH);
-        final var resolved = aliasResolver.apply(addressOrAlias);
-        if (!isMirror(resolved)) {
+        final var resolvedAddress = aliasResolver.apply(addressOrAlias);
+        if (!isMirror(resolvedAddress)) {
             return AccountID.newBuilder()
                     .setAlias(ByteStringUtils.wrapUnsafely(addressOrAlias))
                     .build();
         }
-        return accountIdFromEvmAddress(resolved);
+        return accountIdFromEvmAddress(resolvedAddress);
     }
 
     /**
