@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.stream.EventStreamType;
+import com.swirlds.common.stream.internal.LinkedObjectStreamValidateUtils;
 import com.swirlds.common.test.stream.TestStreamType;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.RecoveryTestUtils;
@@ -52,21 +53,6 @@ class FileSigningUtilsTests {
     private File destinationDirectory;
 
     /**
-     * The name of the test keystore in the test resources
-     */
-    private final String keyStoreFileName = "testKeyStore.p12";
-
-    /**
-     * The password used when generating the test keystore
-     */
-    private final String password = "123456";
-
-    /**
-     * The alias used when generating the test keystore
-     */
-    private final String keyAlias = "testKey";
-
-    /**
      * Source of randomness for the tests
      */
     private Random random;
@@ -89,16 +75,13 @@ class FileSigningUtilsTests {
     /**
      * Loads a key from a keystore in the test resources
      *
-     * @param keyStoreFileName the name of the keystore file
-     * @param password         the password for the keystore
-     * @param alias            the alias of the key to load
      * @return the key
      */
-    private static KeyPair loadKey(final String keyStoreFileName, final String password, final String alias) {
+    private KeyPair loadKey() {
         return FileSigningUtils.loadPfxKey(
-                Objects.requireNonNull(FileSigningUtilsTests.class.getResource(keyStoreFileName)).getFile(),
-                password,
-                alias);
+                Objects.requireNonNull(FileSigningUtilsTests.class.getResource("testKeyStore.p12")).getFile(),
+                "123456",
+                "testKey");
     }
 
     /**
@@ -133,7 +116,7 @@ class FileSigningUtilsTests {
 
         createStandardFile(fileToSign, fileContents);
 
-        signStandardFile(destinationDirectory, fileToSign, loadKey(keyStoreFileName, password, keyAlias));
+        signStandardFile(destinationDirectory, fileToSign, loadKey());
 
         final File[] destinationDirectoryFiles = destinationDirectory.listFiles();
 
@@ -181,7 +164,7 @@ class FileSigningUtilsTests {
         }
 
         signStandardFilesInDirectory(toSignDirectoryPath.toFile(), destinationDirectory,
-                List.of(".txt", "arbitrary", ".Z"), loadKey(keyStoreFileName, password, keyAlias));
+                List.of(".txt", "arbitrary", ".Z"), loadKey());
 
         final Collection<File> destinationDirectoryFiles = Arrays.stream(
                 Objects.requireNonNull(destinationDirectory.listFiles())).toList();
@@ -218,8 +201,9 @@ class FileSigningUtilsTests {
         final File fileToSign = fileToSignPath.toFile();
         assertNotNull(fileToSign, "Expected to find a file to sign");
 
-        signStreamFile(destinationDirectory, EventStreamType.getInstance(), fileToSign,
-                loadKey(keyStoreFileName, password, keyAlias));
+        final KeyPair keyPair = loadKey();
+
+        signStreamFile(destinationDirectory, EventStreamType.getInstance(), fileToSign, keyPair);
 
         final File[] destinationDirectoryFiles = destinationDirectory.listFiles();
 
@@ -228,7 +212,9 @@ class FileSigningUtilsTests {
         assertEquals(fileToSign.getName() + SIGNATURE_FILE_NAME_SUFFIX, destinationDirectoryFiles[0].getName(),
                 "Expected signature file to have the same name as the file to sign, with _sig appended");
 
-        // TODO read sig file and verify it has correct contents
+        // validate the stream file and sig file via the standard method
+        LinkedObjectStreamValidateUtils.validateFileAndSignature(fileToSign, destinationDirectoryFiles[0],
+                keyPair.getPublic(), EventStreamType.getInstance());
     }
 
     @Test
@@ -243,11 +229,12 @@ class FileSigningUtilsTests {
         final Collection<File> filesToSign = Arrays.stream(Objects.requireNonNull(toSignDirectoryPath.toFile()
                 .listFiles((directory, fileName) -> fileName.endsWith(".evts")))).toList();
 
+        final KeyPair keyPair = loadKey();
+
         // pass in stream types EventStreamType and TestStreamType. There aren't any TestStream files in the directory,
         // so this covers the edge case of trying to sign a stream type that doesn't exist in the directory
         FileSigningUtils.signStreamFilesInDirectory(toSignDirectoryPath.toFile(), destinationDirectory,
-                List.of(EventStreamType.getInstance(), TestStreamType.TEST_STREAM),
-                loadKey(keyStoreFileName, password, keyAlias));
+                List.of(EventStreamType.getInstance(), TestStreamType.TEST_STREAM), keyPair);
 
         final Collection<File> destinationDirectoryFiles = Arrays.stream(
                 Objects.requireNonNull(destinationDirectory.listFiles())).toList();
@@ -263,7 +250,9 @@ class FileSigningUtilsTests {
             assertTrue(destinationDirectoryFiles.contains(expectedFile),
                     "Expected signature file to be created for " + originalFile.getName());
 
-            // TODO read sig file and verify it has correct contents
+            // validate the stream file and sig file via the standard method
+            LinkedObjectStreamValidateUtils.validateFileAndSignature(originalFile, expectedFile, keyPair.getPublic(),
+                    EventStreamType.getInstance());
         }
     }
 }
