@@ -78,11 +78,6 @@ class FileSigningUtilsTests {
     private File destinationDirectory;
 
     /**
-     * Source of randomness for the tests
-     */
-    private Random random;
-
-    /**
      * Creates a file with string contents
      *
      * @param file    the file to create
@@ -116,6 +111,8 @@ class FileSigningUtilsTests {
     private void createStreamFiles() {
         initializeSystem();
 
+        final Random random = getRandomPrintSeed();
+
         final List<EventImpl> events = generateRandomEvents(random, 100L, Duration.ofSeconds(10), 1, 5);
 
         try {
@@ -136,7 +133,6 @@ class FileSigningUtilsTests {
             final File originalFile, final File signatureFile, final KeyPair keyPair) {
 
         try (FileInputStream signatureFileInputStream = new FileInputStream(signatureFile)) {
-
             assertEquals(
                     FileSigningUtils.TYPE_FILE_HASH,
                     signatureFileInputStream.read(),
@@ -176,10 +172,12 @@ class FileSigningUtilsTests {
                     0,
                     signatureFileInputStream.readAllBytes().length,
                     "signature file contains unexpected extra bytes");
-        } catch (final IOException | NoSuchAlgorithmException | NoSuchProviderException e) {
-            throw new RuntimeException("test failure", e);
-        } catch (final SignatureException | InvalidKeyException e) {
-            throw new RuntimeException("signing failure during sig file verification", e);
+        } catch (final IOException
+                | NoSuchAlgorithmException
+                | NoSuchProviderException
+                | SignatureException
+                | InvalidKeyException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -189,16 +187,13 @@ class FileSigningUtilsTests {
     @BeforeEach
     void setup() {
         destinationDirectory = testDirectoryPath.resolve("signatureFiles").toFile();
-        random = getRandomPrintSeed();
     }
 
     @Test
     @DisplayName("Sign arbitrary file")
     void signArbitraryFile() {
         final File fileToSign = testDirectoryPath.resolve("fileToSign.txt").toFile();
-        final String fileContents = "Hello there";
-
-        createStandardFile(fileToSign, fileContents);
+        createStandardFile(fileToSign, "Hello there");
 
         final KeyPair keyPair = loadKey();
 
@@ -224,7 +219,7 @@ class FileSigningUtilsTests {
         try {
             Files.createDirectories(toSignDirectoryPath);
         } catch (final IOException e) {
-            throw new RuntimeException("unable to create toSign directory", e);
+            throw new RuntimeException("unable to create dirToSign directory", e);
         }
 
         final Collection<String> filesNamesToSign =
@@ -287,7 +282,7 @@ class FileSigningUtilsTests {
         try {
             // since we are only signing 1 file, just grab the middle one
             fileToSignPath = RecoveryTestUtils.getMiddleEventStreamFile(toSignDirectoryPath);
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new RuntimeException(e);
         }
 
