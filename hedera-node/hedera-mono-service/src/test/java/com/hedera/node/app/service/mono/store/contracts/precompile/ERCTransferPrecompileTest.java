@@ -143,7 +143,7 @@ class ERCTransferPrecompileTest {
     }
 
     @Test
-    void decodeTransferFromFungibleInputDoesntUseApprovalIfFromIsOperator() {
+    void decodeTransferFromFungibleInputStillUsesApprovalIfFromIsOperator() {
         final var fromOp = new EntityId(0, 0, 1450);
 
         final var decodedInput =
@@ -160,12 +160,12 @@ class ERCTransferPrecompileTest {
 
         assertTrue(fungibleTransfer.get(0).receiver().getAccountNum() > 0);
         assertTrue(fungibleTransfer.get(1).sender().getAccountNum() > 0);
-        assertFalse(fungibleTransfer.get(1).isApproval());
+        assertTrue(fungibleTransfer.get(1).isApproval());
         assertEquals(5, fungibleTransfer.get(0).amount());
     }
 
     @Test
-    void decodeHapiTransferFromFungibleInputDoesntUseApprovalIfFromIsOperator() {
+    void decodeHapiTransferFromFungibleInputStillUsesApprovalIfFromIsOperator() {
         final var fromOp = new EntityId(0, 0, 1450);
 
         final var decodedInput =
@@ -182,7 +182,7 @@ class ERCTransferPrecompileTest {
 
         assertEquals(IdUtils.asToken("0.0.1"), fungibleTransfer.get(0).getDenomination());
         assertEquals(fungibleTransfer.get(1).sender(), IdUtils.asAccount("0.0.1450"));
-        assertFalse(fungibleTransfer.get(1).isApproval());
+        assertTrue(fungibleTransfer.get(1).isApproval());
         assertEquals(fungibleTransfer.get(0).receiver(), IdUtils.asAccount("0.0.1451"));
         assertEquals(5, fungibleTransfer.get(0).amount());
     }

@@ -91,7 +91,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     private static final String MULTI_KEY = "multiKey";
     private static final String UPDATE_KEY_FUNC = "tokenUpdateKeys";
     private static final String GET_KEY_FUNC = "getKeyFromToken";
-    private static final String TOKEN_UPDATE_CONTRACT = "UpdateTokenInfoContract";
+    public static final String TOKEN_UPDATE_CONTRACT = "UpdateTokenInfoContract";
     private static final String UPDATE_TXN = "updateTxn";
     private static final String GET_KYC_KEY_TXN = "getKycTokenKeyTxn";
     private static final String GET_ADMIN_KEY_TXN = "getAdminTokenKeyTxn";
@@ -104,13 +104,13 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     private static final long DEFAULT_AMOUNT_TO_SEND = 20 * ONE_HBAR;
     private static final String ED25519KEY = "ed25519key";
     private static final String ECDSA_KEY = "ecdsa";
-    private static final String TOKEN_UPDATE_AS_KEY = "tokenCreateContractAsKey";
+    public static final String TOKEN_UPDATE_AS_KEY = "tokenCreateContractAsKey";
     private static final String DELEGATE_KEY = "tokenUpdateAsKeyDelegate";
     private static final String ACCOUNT_TO_ASSOCIATE = "account3";
     private static final String ACCOUNT_TO_ASSOCIATE_KEY = "associateKey";
-    private static final String CUSTOM_NAME = "customName";
-    private static final String CUSTOM_SYMBOL = "Ω";
-    private static final String CUSTOM_MEMO = "Omega";
+    public static final String CUSTOM_NAME = "customName";
+    public static final String CUSTOM_SYMBOL = "Ω";
+    public static final String CUSTOM_MEMO = "Omega";
     private static final long ADMIN_KEY_TYPE = 1L;
     private static final long KYC_KEY_TYPE = 2L;
     private static final long FREEZE_KEY_TYPE = 4L;

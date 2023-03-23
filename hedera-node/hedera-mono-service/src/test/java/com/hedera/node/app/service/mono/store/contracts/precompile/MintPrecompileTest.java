@@ -55,6 +55,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.never;
@@ -253,7 +254,11 @@ class MintPrecompileTest {
 
         given(
                         sigsVerifier.hasActiveSupplyKey(
-                                true, nonFungibleTokenAddr, recipientAddr, wrappedLedgers))
+                                true,
+                                nonFungibleTokenAddr,
+                                recipientAddr,
+                                wrappedLedgers,
+                                HederaFunctionality.TokenMint))
                 .willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
         given(
                         feeCalculator.estimatedGasPriceInTinybars(
@@ -292,7 +297,13 @@ class MintPrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        given(sigsVerifier.hasActiveSupplyKey(Mockito.anyBoolean(), any(), any(), any()))
+        given(
+                        sigsVerifier.hasActiveSupplyKey(
+                                Mockito.anyBoolean(),
+                                any(),
+                                any(),
+                                any(),
+                                eq(HederaFunctionality.TokenMint)))
                 .willThrow(new IllegalArgumentException("random error"));
         given(
                         feeCalculator.estimatedGasPriceInTinybars(
@@ -331,7 +342,11 @@ class MintPrecompileTest {
 
         given(
                         sigsVerifier.hasActiveSupplyKey(
-                                true, nonFungibleTokenAddr, recipientAddr, wrappedLedgers))
+                                true,
+                                nonFungibleTokenAddr,
+                                recipientAddr,
+                                wrappedLedgers,
+                                HederaFunctionality.TokenMint))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(
@@ -391,7 +406,11 @@ class MintPrecompileTest {
 
         given(
                         sigsVerifier.hasActiveSupplyKey(
-                                true, nonFungibleTokenAddr, recipientAddr, wrappedLedgers))
+                                true,
+                                nonFungibleTokenAddr,
+                                recipientAddr,
+                                wrappedLedgers,
+                                HederaFunctionality.TokenMint))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(
@@ -703,7 +722,11 @@ class MintPrecompileTest {
     private void givenFungibleCollaborators() {
         given(
                         sigsVerifier.hasActiveSupplyKey(
-                                true, fungibleTokenAddr, recipientAddr, wrappedLedgers))
+                                true,
+                                fungibleTokenAddr,
+                                recipientAddr,
+                                wrappedLedgers,
+                                HederaFunctionality.TokenMint))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(

@@ -278,7 +278,11 @@ class FreezeTokenPrecompileTest {
                                         TokenUnfreezeAccountTransactionBody.newBuilder()));
         given(
                         sigsVerifier.hasActiveFreezeKey(
-                                true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
+                                true,
+                                fungibleTokenAddr,
+                                fungibleTokenAddr,
+                                wrappedLedgers,
+                                HederaFunctionality.TokenFreezeAccount))
                 .willReturn(true);
     }
 

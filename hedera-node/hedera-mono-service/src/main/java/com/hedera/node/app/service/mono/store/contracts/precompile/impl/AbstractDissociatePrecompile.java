@@ -17,6 +17,7 @@ package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.DISSOCIATE;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -83,7 +84,8 @@ public abstract class AbstractDissociatePrecompile implements Precompile {
                         accountId.asEvmAddress(),
                         sigsVerifier::hasActiveKey,
                         ledgers,
-                        aliases);
+                        aliases,
+                        TokenDissociateFromAccount);
         validateTrue(
                 hasRequiredSigs,
                 INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE,

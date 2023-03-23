@@ -97,8 +97,9 @@ public class ContractMintHTSSuite extends HapiSuite {
     private static final String DELEGATE_KEY = "DelegateKey";
     private static final String CONTRACT_KEY = "ContractKey";
     private static final String MULTI_KEY = "purpose";
+    private static final String SUPPLY_KEY = "SupplyKey";
 
-    private static final String MINT_CONTRACT = "MintContract";
+    public static final String MINT_CONTRACT = "MintContract";
     private static final String MINT_NFT_CONTRACT = "MintNFTContract";
     private static final String NESTED_MINT_CONTRACT = "NestedMint";
     private static final String HELLO_WORLD_MINT = "HelloWorldMint";
@@ -112,6 +113,7 @@ public class ContractMintHTSSuite extends HapiSuite {
     private static final String TEST_METADATA_2 = "Test metadata 2";
     private static final String RECIPIENT = "recipient";
     private static final String MINT_FUNGIBLE_TOKEN = "mintFungibleToken";
+    public static final String MINT_FUNGIBLE_TOKEN_WITH_EVENT = "mintFungibleTokenWithEvent";
 
     public static void main(final String... args) {
         new ContractMintHTSSuite().runSuiteAsync();
@@ -171,7 +173,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                 .when(
                         contractCall(
                                         MINT_CONTRACT,
-                                        "mintFungibleTokenWithEvent",
+                                        MINT_FUNGIBLE_TOKEN_WITH_EVENT,
                                         BigInteger.valueOf(amount))
                                 .via(FIRST_MINT_TXN)
                                 .payingWith(ACCOUNT)
@@ -359,7 +361,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                 .when(
                         contractCall(
                                         MINT_CONTRACT,
-                                        "mintFungibleTokenWithEvent",
+                                        MINT_FUNGIBLE_TOKEN_WITH_EVENT,
                                         BigInteger.valueOf(10))
                                 .via(FIRST_MINT_TXN)
                                 .gas(GAS_TO_OFFER)

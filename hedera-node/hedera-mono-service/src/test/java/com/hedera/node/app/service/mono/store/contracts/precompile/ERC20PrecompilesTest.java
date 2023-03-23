@@ -62,6 +62,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTes
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.tokenAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.tokenTransferChanges;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.tokensTransferList;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -73,6 +74,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -109,6 +111,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.migration.HederaTokenRel;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenAdapter;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.EvmFnResult;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
@@ -125,6 +128,7 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.impl.Allowanc
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.ApprovePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.BalanceOfPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.ERCTransferPrecompile;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TransferPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.Account;
 import com.hedera.node.app.service.mono.store.models.NftId;
@@ -158,6 +162,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -186,7 +191,10 @@ class ERC20PrecompilesTest {
     @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private GasCalculator gasCalculator;
     @Mock private MessageFrame frame;
-    @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
+
+    @Mock(strictness = LENIENT)
+    private TxnAwareEvmSigsVerifier sigsVerifier;
+
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private EncodingFacade encoder;
     @Mock private EvmEncodingFacade evmEncoder;
@@ -523,8 +531,11 @@ class ERC20PrecompilesTest {
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
         given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody))
                 .willReturn(OK);
-        given(sigsVerifier.hasActiveKey(anyBoolean(), any(), any(), any())).willReturn(true);
-        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(anyBoolean(), any(), any(), any()))
+        given(sigsVerifier.hasActiveKey(anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
+                .willReturn(true);
+        given(
+                        sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                                anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(true, true);
         given(infrastructureFactory.newImpliedTransfersMarshal(any()))
                 .willReturn(impliedTransfersMarshal);
@@ -925,7 +936,7 @@ class ERC20PrecompilesTest {
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
 
-        given(syntheticTxnFactory.createFungibleApproval(APPROVE_WRAPPER))
+        given(syntheticTxnFactory.createFungibleApproval(APPROVE_WRAPPER, new EntityId(0, 0, 7)))
                 .willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
@@ -980,7 +991,7 @@ class ERC20PrecompilesTest {
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
 
-        given(syntheticTxnFactory.createFungibleApproval(APPROVE_WRAPPER))
+        given(syntheticTxnFactory.createFungibleApproval(eq(APPROVE_WRAPPER), any()))
                 .willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
@@ -1062,7 +1073,7 @@ class ERC20PrecompilesTest {
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
 
-        given(syntheticTxnFactory.createFungibleApproval(APPROVE_WRAPPER))
+        given(syntheticTxnFactory.createFungibleApproval(eq(APPROVE_WRAPPER), any()))
                 .willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
@@ -1220,6 +1231,10 @@ class ERC20PrecompilesTest {
         final Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         givenLedgers();
         givenPricingUtilsContext();
+        final var special = Address.fromHexString("0x0000000000000000000000000000000000000007");
+        given(dynamicProperties.contractsWithSpecialHapiSigsAccess()).willReturn(Set.of(special));
+        given(dynamicProperties.systemContractsWithTopLevelSigsAccess())
+                .willReturn(Set.of(CryptoTransfer));
 
         given(frame.getContractAddress()).willReturn(contractAddr);
         given(
@@ -1229,8 +1244,11 @@ class ERC20PrecompilesTest {
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
         given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody))
                 .willReturn(OK);
-        given(sigsVerifier.hasActiveKey(anyBoolean(), any(), any(), any())).willReturn(true);
-        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(anyBoolean(), any(), any(), any()))
+        given(sigsVerifier.hasActiveKey(anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
+                .willReturn(true);
+        given(
+                        sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                                anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(true, true);
         given(infrastructureFactory.newImpliedTransfersMarshal(any()))
                 .willReturn(impliedTransfersMarshal);
@@ -1320,8 +1338,11 @@ class ERC20PrecompilesTest {
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
         given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody))
                 .willReturn(OK);
-        given(sigsVerifier.hasActiveKey(anyBoolean(), any(), any(), any())).willReturn(true);
-        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(anyBoolean(), any(), any(), any()))
+        given(sigsVerifier.hasActiveKey(anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
+                .willReturn(true);
+        given(
+                        sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                                anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(true, true);
 
         given(infrastructureFactory.newImpliedTransfersMarshal(any()))
@@ -1400,6 +1421,9 @@ class ERC20PrecompilesTest {
         givenMinimalFrameContext(Bytes.EMPTY);
         givenLedgers();
         givenPricingUtilsContext();
+        given(dynamicProperties.maxNumWithHapiSigsAccess()).willReturn(Long.MAX_VALUE);
+        given(dynamicProperties.systemContractsWithTopLevelSigsAccess())
+                .willReturn(Set.of(CryptoTransfer));
 
         given(frame.getContractAddress()).willReturn(contractAddr);
         given(
@@ -1409,8 +1433,11 @@ class ERC20PrecompilesTest {
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
         given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody))
                 .willReturn(OK);
-        given(sigsVerifier.hasActiveKey(anyBoolean(), any(), any(), any())).willReturn(true);
-        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(anyBoolean(), any(), any(), any()))
+        given(sigsVerifier.hasActiveKey(anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
+                .willReturn(true);
+        given(
+                        sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                                anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(true, true);
         given(infrastructureFactory.newImpliedTransfersMarshal(any()))
                 .willReturn(impliedTransfersMarshal);
@@ -1492,6 +1519,9 @@ class ERC20PrecompilesTest {
     @Test
     void transferFromNFTHapi() throws InvalidProtocolBufferException {
         final var pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_FROM_NFT));
+        given(dynamicProperties.maxNumWithHapiSigsAccess()).willReturn(Long.MAX_VALUE);
+        given(dynamicProperties.systemContractsWithTopLevelSigsAccess())
+                .willReturn(Set.of(CryptoTransfer));
         givenMinimalFrameContext(Bytes.EMPTY);
         givenLedgers();
         givenPricingUtilsContext();
@@ -1504,8 +1534,11 @@ class ERC20PrecompilesTest {
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
         given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody))
                 .willReturn(OK);
-        given(sigsVerifier.hasActiveKey(anyBoolean(), any(), any(), any())).willReturn(true);
-        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(anyBoolean(), any(), any(), any()))
+        given(sigsVerifier.hasActiveKey(anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
+                .willReturn(true);
+        given(
+                        sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                                anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(true);
         given(infrastructureFactory.newImpliedTransfersMarshal(any()))
                 .willReturn(impliedTransfersMarshal);
@@ -1601,7 +1634,8 @@ class ERC20PrecompilesTest {
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
         given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody))
                 .willReturn(OK);
-        given(sigsVerifier.hasActiveKey(anyBoolean(), any(), any(), any())).willReturn(false);
+        given(sigsVerifier.hasActiveKey(anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
+                .willReturn(false);
         given(infrastructureFactory.newImpliedTransfersMarshal(any()))
                 .willReturn(impliedTransfersMarshal);
         given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
@@ -1652,6 +1686,179 @@ class ERC20PrecompilesTest {
 
         // then:
         assertEquals(invalidFullPrefix, result);
+    }
+
+    @Test
+    void onlyFallsBackToApprovalWithoutTopLevelSigs() throws InvalidProtocolBufferException {
+        final Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TRANSFER));
+        final Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
+        given(dynamicProperties.maxNumWithHapiSigsAccess()).willReturn(Long.MAX_VALUE);
+        given(dynamicProperties.systemContractsWithTopLevelSigsAccess())
+                .willReturn(Set.of(CryptoTransfer));
+        givenLedgers();
+        givenPricingUtilsContext();
+
+        given(frame.getContractAddress()).willReturn(contractAddr);
+        given(
+                        syntheticTxnFactory.createCryptoTransfer(
+                                Collections.singletonList(tokensTransferList)))
+                .willReturn(mockSynthBodyBuilder);
+        given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
+        given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody))
+                .willReturn(OK);
+        given(sigsVerifier.hasActiveKey(anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
+                .willReturn(false);
+        given(infrastructureFactory.newImpliedTransfersMarshal(any()))
+                .willReturn(impliedTransfersMarshal);
+        given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
+                .willReturn(hederaTokenStore);
+
+        given(
+                        creator.createUnsuccessfulSyntheticRecord(
+                                INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE))
+                .willReturn(mockRecordBuilder);
+        given(
+                        feeCalculator.estimatedGasPriceInTinybars(
+                                HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
+        given(mockSynthBodyBuilder.build())
+                .willReturn(
+                        TransactionBody.newBuilder()
+                                .setCryptoTransfer(cryptoTransferTransactionBody)
+                                .build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+                .willReturn(mockSynthBodyBuilder);
+        given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(
+                        impliedTransfersMarshal.assessCustomFeesAndValidate(
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
+                .willReturn(impliedTransfers);
+        given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
+        given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
+        given(impliedTransfersMeta.code()).willReturn(OK);
+        ercTransferPrecompile
+                .when(
+                        () ->
+                                ERCTransferPrecompile.decodeERCTransfer(
+                                        eq(nestedPretendArguments), any(), any(), any(), any()))
+                .thenReturn(CRYPTO_TRANSFER_FUNGIBLE_WRAPPER);
+
+        given(aliases.resolveForEvm(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(worldUpdater.aliases()).willReturn(aliases);
+        given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
+        when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
+        when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        assertEquals(invalidFullPrefix, result);
+    }
+
+    @Test
+    void withoutTopLevelSigsOrActiveSigFallsBackToApproval() throws InvalidProtocolBufferException {
+        final var pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_FROM_NFT));
+        givenMinimalFrameContext(Bytes.EMPTY);
+        givenLedgers();
+        givenPricingUtilsContext();
+
+        given(frame.getContractAddress()).willReturn(contractAddr);
+        given(
+                        syntheticTxnFactory.createCryptoTransfer(
+                                Collections.singletonList(TOKEN_TRANSFER_FROM_NFT_WRAPPER)))
+                .willReturn(mockSynthBodyBuilder);
+        given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
+        given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody))
+                .willReturn(OK);
+        given(sigsVerifier.hasActiveKey(anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
+                .willReturn(false);
+        given(
+                        sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                                anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
+                .willReturn(true);
+        given(infrastructureFactory.newImpliedTransfersMarshal(any()))
+                .willReturn(impliedTransfersMarshal);
+        given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
+                .willReturn(hederaTokenStore);
+
+        given(
+                        infrastructureFactory.newTransferLogic(
+                                hederaTokenStore, sideEffects, nfts, accounts, tokenRels))
+                .willReturn(transferLogic);
+        given(
+                        feeCalculator.estimatedGasPriceInTinybars(
+                                HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
+        given(mockSynthBodyBuilder.build())
+                .willReturn(
+                        TransactionBody.newBuilder()
+                                .setCryptoTransfer(cryptoTransferTransactionBody)
+                                .build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+                .willReturn(mockSynthBodyBuilder);
+        given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(
+                        creator.createSuccessfulSyntheticRecord(
+                                Collections.emptyList(), sideEffects, EMPTY_MEMO))
+                .willReturn(mockRecordBuilder);
+        given(
+                        impliedTransfersMarshal.assessCustomFeesAndValidate(
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
+                .willReturn(impliedTransfers);
+        given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
+        given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
+        given(impliedTransfersMeta.code()).willReturn(OK);
+        given(wrappedLedgers.nfts()).willReturn(nfts);
+        given(nfts.contains(NftId.fromGrpc(token, serialNumber))).willReturn(true);
+
+        ercTransferPrecompile
+                .when(
+                        () ->
+                                ERCTransferPrecompile.decodeERCTransferFrom(
+                                        eq(pretendArguments),
+                                        eq(null),
+                                        eq(false),
+                                        any(),
+                                        any(),
+                                        any(),
+                                        any()))
+                .thenReturn(CRYPTO_TRANSFER_TOKEN_FROM_NFT_WRAPPER);
+
+        given(aliases.resolveForEvm(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(worldUpdater.aliases()).willReturn(aliases);
+        given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
+        when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
+        when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        ((TransferPrecompile) subject.getPrecompile()).setCanFallbackToApprovals(true);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        assertEquals(successResult, result);
+        // and:
+        verify(transferLogic).doZeroSum(tokenTransferChanges);
+        verify(wrappedLedgers).commit();
+        verify(worldUpdater)
+                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        verify(frame)
+                .addLog(
+                        EncodingFacade.LogBuilder.logBuilder()
+                                .forLogger(EntityIdUtils.asTypedEvmAddress(token))
+                                .forEventSignature(AbiConstants.TRANSFER_EVENT)
+                                .forIndexedArgument(sender)
+                                .forIndexedArgument(receiver)
+                                .forIndexedArgument(serialNumber)
+                                .build());
     }
 
     @Test

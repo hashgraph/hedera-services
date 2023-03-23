@@ -234,7 +234,11 @@ class WipeFungiblePrecompileTest {
 
         given(
                         sigsVerifier.hasActiveWipeKey(
-                                true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
+                                true,
+                                fungibleTokenAddr,
+                                fungibleTokenAddr,
+                                wrappedLedgers,
+                                HederaFunctionality.TokenAccountWipe))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(
@@ -349,7 +353,11 @@ class WipeFungiblePrecompileTest {
                 .willReturn(mockSynthBodyBuilder);
         given(
                         sigsVerifier.hasActiveWipeKey(
-                                true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
+                                true,
+                                fungibleTokenAddr,
+                                fungibleTokenAddr,
+                                wrappedLedgers,
+                                HederaFunctionality.TokenAccountWipe))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(

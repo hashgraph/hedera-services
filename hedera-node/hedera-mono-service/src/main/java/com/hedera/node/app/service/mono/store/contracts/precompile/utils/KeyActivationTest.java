@@ -16,6 +16,7 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile.utils;
 
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.hyperledger.besu.datatypes.Address;
 
 @FunctionalInterface
@@ -40,11 +41,13 @@ public interface KeyActivationTest {
      * @param activeContract the contract address that can activate a contract or delegatable
      *     contract key
      * @param worldLedgers the worldLedgers representing current state
+     * @param function
      * @return whether the implicit key has an active signature in this context
      */
     boolean apply(
             boolean isDelegateCall,
             Address target,
             Address activeContract,
-            WorldLedgers worldLedgers);
+            WorldLedgers worldLedgers,
+            HederaFunctionality function);
 }

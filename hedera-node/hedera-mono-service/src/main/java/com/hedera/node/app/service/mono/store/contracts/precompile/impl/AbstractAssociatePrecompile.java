@@ -17,6 +17,7 @@ package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.ASSOCIATE;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -82,7 +83,8 @@ public abstract class AbstractAssociatePrecompile implements Precompile {
                         accountId.asEvmAddress(),
                         sigsVerifier::hasActiveKey,
                         ledgers,
-                        aliases);
+                        aliases,
+                        TokenAssociateToAccount);
         validateTrue(
                 hasRequiredSigs,
                 INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE,

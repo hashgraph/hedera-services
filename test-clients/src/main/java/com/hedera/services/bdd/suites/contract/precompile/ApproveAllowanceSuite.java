@@ -103,6 +103,8 @@ public class ApproveAllowanceSuite extends HapiSuite {
         return List.of(
                 tokenAllowance(),
                 tokenApprove(),
+                tokenApproveToInnerContract(),
+                nftApprove(),
                 nftIsApprovedForAll(),
                 nftGetApproved(),
                 nftSetApprovalForAll(),
@@ -196,6 +198,100 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                                                         .withAllowance(2)))));
     }
 
+    private HapiSpec tokenApproveToInnerContract() {
+        final var approveTxn = "NestedChildren";
+        final var nestedContract = DIRECT_ERC_CALLEE;
+        final var theSpender = SPENDER;
+
+        return defaultHapiSpec("HTS_TOKEN_APPROVE")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(theSpender),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .initialSupply(10L)
+                                .maxSupply(1000L)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY),
+                        uploadInitCode(HTS_APPROVE_ALLOWANCE_CONTRACT),
+                        contractCreate(HTS_APPROVE_ALLOWANCE_CONTRACT),
+                        uploadInitCode(nestedContract),
+                        contractCreate(nestedContract).adminKey(MULTI_KEY),
+                        tokenAssociate(OWNER, FUNGIBLE_TOKEN),
+                        tokenAssociate(HTS_APPROVE_ALLOWANCE_CONTRACT, FUNGIBLE_TOKEN),
+                        tokenAssociate(nestedContract, FUNGIBLE_TOKEN))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCall(
+                                                                HTS_APPROVE_ALLOWANCE_CONTRACT,
+                                                                "htsApprove",
+                                                                asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))),
+                                                                asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                nestedContract))),
+                                                                BigInteger.valueOf(10))
+                                                        .payingWith(OWNER)
+                                                        .gas(4_000_000L)
+                                                        .via(approveTxn)
+                                                        .hasKnownStatus(SUCCESS))))
+                .then(
+                        childRecordsCheck(approveTxn, SUCCESS, recordWith().status(SUCCESS)),
+                        getTxnRecord(approveTxn).andAllChildRecords().logged(),
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var sender =
+                                            spec.registry()
+                                                    .getContractId(HTS_APPROVE_ALLOWANCE_CONTRACT);
+                                    final var receiver =
+                                            spec.registry().getContractId(nestedContract);
+                                    final var idOfToken =
+                                            "0.0."
+                                                    + (spec.registry()
+                                                            .getTokenID(FUNGIBLE_TOKEN)
+                                                            .getTokenNum());
+                                    var txnRecord =
+                                            getTxnRecord(approveTxn)
+                                                    .hasPriority(
+                                                            recordWith()
+                                                                    .contractCallResult(
+                                                                            resultWith()
+                                                                                    .logs(
+                                                                                            inOrder(
+                                                                                                    logWith()
+                                                                                                            .contract(
+                                                                                                                    idOfToken)
+                                                                                                            .withTopicsInOrder(
+                                                                                                                    List
+                                                                                                                            .of(
+                                                                                                                                    eventSignatureOf(
+                                                                                                                                            APPROVE_SIGNATURE),
+                                                                                                                                    parsedToByteString(
+                                                                                                                                            sender
+                                                                                                                                                    .getContractNum()),
+                                                                                                                                    parsedToByteString(
+                                                                                                                                            receiver
+                                                                                                                                                    .getContractNum())))
+                                                                                                            .longValue(
+                                                                                                                    10)))))
+                                                    .andAllChildRecords()
+                                                    .logged();
+                                    allRunFor(spec, txnRecord);
+                                }));
+    }
+
     private HapiSpec tokenApprove() {
         final var approveTxn = "approveTxn";
         final var theSpender = SPENDER;
@@ -281,6 +377,63 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                                     .andAllChildRecords();
                                     allRunFor(spec, txnRecord);
                                 }));
+    }
+
+    private HapiSpec nftApprove() {
+        final var approveTxn = "approveTxn";
+        final var theSpender = SPENDER;
+
+        return defaultHapiSpec("HTS_NFT_APPROVE")
+                .given(
+                        overriding("hedera.allowances.isEnabled", "true"),
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(theSpender),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY),
+                        mintToken(
+                                NON_FUNGIBLE_TOKEN,
+                                List.of(
+                                        ByteString.copyFromUtf8("A"),
+                                        ByteString.copyFromUtf8("B"))),
+                        uploadInitCode(HTS_APPROVE_ALLOWANCE_CONTRACT),
+                        contractCreate(HTS_APPROVE_ALLOWANCE_CONTRACT),
+                        tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
+                        tokenAssociate(HTS_APPROVE_ALLOWANCE_CONTRACT, NON_FUNGIBLE_TOKEN),
+                        cryptoTransfer(
+                                movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L)
+                                        .between(TOKEN_TREASURY, OWNER)))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCall(
+                                                                HTS_APPROVE_ALLOWANCE_CONTRACT,
+                                                                "htsApproveNFT",
+                                                                asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN))),
+                                                                asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                theSpender))),
+                                                                BigInteger.valueOf(2L))
+                                                        .payingWith(OWNER)
+                                                        .gas(4_000_000L)
+                                                        .via(approveTxn))))
+                .then(
+                        getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasNoSpender(),
+                        getTokenNftInfo(NON_FUNGIBLE_TOKEN, 2L).hasNoSpender(),
+                        getTxnRecord(approveTxn).andAllChildRecords().logged());
     }
 
     private HapiSpec nftIsApprovedForAll() {

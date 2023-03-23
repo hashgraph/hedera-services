@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.UPDATE;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -91,7 +92,8 @@ public abstract class AbstractTokenUpdatePrecompile extends AbstractWritePrecomp
                         tokenId.asEvmAddress(),
                         sigsVerifier::hasActiveAdminKey,
                         ledgers,
-                        aliases);
+                        aliases,
+                        TokenUpdate);
         validateTrue(hasAdminSig, INVALID_SIGNATURE);
         if (updateOp.hasTreasury()) {
             validateTreasurySig(frame, updateOp);
@@ -135,7 +137,8 @@ public abstract class AbstractTokenUpdatePrecompile extends AbstractWritePrecomp
                         asTypedEvmAddress(id),
                         sigsVerifier::hasLegacyActiveKey,
                         ledgers,
-                        aliases);
+                        aliases,
+                        TokenUpdate);
         validateTrue(hasSig, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE);
     }
 

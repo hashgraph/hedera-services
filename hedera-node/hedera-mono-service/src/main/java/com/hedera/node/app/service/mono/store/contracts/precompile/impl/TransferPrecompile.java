@@ -31,6 +31,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.generateAccountIDWithAliasCalculatedFrom;
 import static com.hedera.node.app.service.mono.txns.span.SpanMapManager.reCalculateXferMeta;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -133,12 +134,16 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     private final Address senderAddress;
     private final ImpliedTransfersMarshal impliedTransfersMarshal;
     private final boolean isLazyCreationEnabled;
+    private final boolean topLevelSigsAreEnabled;
     private ResponseCodeEnum impliedValidity;
     private ImpliedTransfers impliedTransfers;
     private HederaTokenStore hederaTokenStore;
     protected CryptoTransferWrapper transferOp;
     private AbstractAutoCreationLogic autoCreationLogic;
     private int numLazyCreates;
+
+    // Non-final for testing purposes
+    private boolean canFallbackToApprovals;
 
     public TransferPrecompile(
             final WorldLedgers ledgers,
@@ -150,7 +155,9 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final PrecompilePricingUtils pricingUtils,
             final int functionId,
             final Address senderAddress,
-            final boolean isLazyCreationEnabled) {
+            final boolean isLazyCreationEnabled,
+            final boolean topLevelSigsAreEnabled,
+            final boolean canFallbackToApprovals) {
         super(ledgers, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils);
         this.updater = updater;
         this.sigsVerifier = sigsVerifier;
@@ -159,6 +166,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         this.impliedTransfersMarshal =
                 infrastructureFactory.newImpliedTransfersMarshal(ledgers.customFeeSchedules());
         this.isLazyCreationEnabled = isLazyCreationEnabled;
+        this.topLevelSigsAreEnabled = topLevelSigsAreEnabled;
+        this.canFallbackToApprovals = canFallbackToApprovals;
     }
 
     protected void initializeHederaTokenStore() {
@@ -250,14 +259,29 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                     // allowance
                     continue;
                 }
-                final var hasSenderSig =
+                final var senderHasSignedOrIsMsgSenderInFrame =
                         KeyActivationUtils.validateKey(
                                 frame,
                                 change.getAccount().asEvmAddress(),
                                 sigsVerifier::hasActiveKey,
                                 ledgers,
-                                updater.aliases());
-                validateTrue(hasSenderSig, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, TRANSFER);
+                                updater.aliases(),
+                                CryptoTransfer);
+                // If the transfer doesn't have explicit sender authorization via msg.sender,
+                // AND cannot use top-level signatures, then even if it did not claim to have
+                // an approval, let it try to succeed via an approval IF this precompile is
+                // one of the HAPI-style transfer precompiles
+                if (!senderHasSignedOrIsMsgSenderInFrame
+                        && !topLevelSigsAreEnabled
+                        && canFallbackToApprovals) {
+                    change.switchToApproved();
+                    continue;
+                } else {
+                    validateTrue(
+                            senderHasSignedOrIsMsgSenderInFrame,
+                            INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE,
+                            TRANSFER);
+                }
             }
             if (!change.isForCustomFee()) {
                 /* Only process receiver sig requirements for that are not custom fee payments (custom fees are never
@@ -272,7 +296,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                                     counterPartyAddress,
                                     sigsVerifier::hasActiveKeyOrNoReceiverSigReq,
                                     ledgers,
-                                    updater.aliases());
+                                    updater.aliases(),
+                                    CryptoTransfer);
                 } else if (units > 0) {
                     hasReceiverSigIfReq =
                             KeyActivationUtils.validateKey(
@@ -280,7 +305,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                                     change.getAccount().asEvmAddress(),
                                     sigsVerifier::hasActiveKeyOrNoReceiverSigReq,
                                     ledgers,
-                                    updater.aliases());
+                                    updater.aliases(),
+                                    CryptoTransfer);
                 }
                 validateTrue(
                         hasReceiverSigIfReq,
@@ -714,5 +740,9 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                 .setAmount(amount)
                 .setIsApproval(isApproval)
                 .build();
+    }
+
+    public void setCanFallbackToApprovals(final boolean canFallbackToApprovals) {
+        this.canFallbackToApprovals = canFallbackToApprovals;
     }
 }

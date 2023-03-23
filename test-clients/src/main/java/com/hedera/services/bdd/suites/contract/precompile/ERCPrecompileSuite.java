@@ -206,7 +206,8 @@ public class ERCPrecompileSuite extends HapiSuite {
                 erc20TransferFrom(),
                 erc20TransferFromSelf(),
                 getErc20TokenNameExceedingLimits(),
-                transferErc20TokenFromContract());
+                transferErc20TokenFromContractWithNoApproval(),
+                transferErc20TokenFromContractWithApproval());
     }
 
     List<HapiSpec> erc721() {
@@ -927,12 +928,12 @@ public class ERCPrecompileSuite extends HapiSuite {
                         getAccountBalance(ACCOUNT_A).hasTokenBalance(TOKEN_NAME, 8500));
     }
 
-    private HapiSpec transferErc20TokenFromContract() {
+    private HapiSpec transferErc20TokenFromContractWithNoApproval() {
         final var transferFromOtherContractWithSignaturesTxn =
                 "transferFromOtherContractWithSignaturesTxn";
         final var nestedContract = "NestedERC20Contract";
 
-        return defaultHapiSpec("ERC_20_TRANSFER_FROM_CONTRACT")
+        return defaultHapiSpec("ERC_20_TRANSFER_FROM_CONTRACT_WITH_NO_APPROVAL")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(10 * ONE_MILLION_HBARS),
@@ -986,7 +987,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                                                                 nestedContract))),
                                                                 BigInteger.valueOf(5))
                                                         .via(TRANSFER_TXN)
-                                                        .hasKnownStatus(SUCCESS),
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 contractCall(
                                                                 ERC_20_CONTRACT,
                                                                 TRANSFER_FROM,
@@ -1007,6 +1008,125 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                                                                 nestedContract))),
                                                                 BigInteger.valueOf(5))
                                                         .payingWith(GENESIS)
+                                                        .alsoSigningWithFullPrefix(
+                                                                TRANSFER_SIG_NAME)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                                        .via(
+                                                                transferFromOtherContractWithSignaturesTxn))))
+                .then(
+                        getContractInfo(ERC_20_CONTRACT).saveToRegistry(ERC_20_CONTRACT),
+                        getContractInfo(nestedContract).saveToRegistry(nestedContract),
+                        childRecordsCheck(
+                                TRANSFER_TXN,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(SPENDER_DOES_NOT_HAVE_ALLOWANCE)),
+                        childRecordsCheck(
+                                transferFromOtherContractWithSignaturesTxn,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(SPENDER_DOES_NOT_HAVE_ALLOWANCE)));
+    }
+
+    private HapiSpec transferErc20TokenFromContractWithApproval() {
+        final var transferFromOtherContractWithSignaturesTxn =
+                "transferFromOtherContractWithSignaturesTxn";
+        final var nestedContract = "NestedERC20Contract";
+
+        return defaultHapiSpec("ERC_20_TRANSFER_FROM_CONTRACT_WITH_APPROVAL")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(ACCOUNT).balance(10 * ONE_MILLION_HBARS),
+                        cryptoCreate(RECIPIENT),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(35)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY),
+                        uploadInitCode(ERC_20_CONTRACT, nestedContract),
+                        newKeyNamed(TRANSFER_SIG_NAME).shape(SIMPLE.signedWith(ON)),
+                        contractCreate(ERC_20_CONTRACT).adminKey(TRANSFER_SIG_NAME),
+                        contractCreate(nestedContract).adminKey(TRANSFER_SIG_NAME),
+                        overriding("contracts.allowSystemUseOfHapiSigs", "CryptoTransfer"))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                tokenAssociate(ACCOUNT, List.of(FUNGIBLE_TOKEN)),
+                                                tokenAssociate(RECIPIENT, List.of(FUNGIBLE_TOKEN)),
+                                                tokenAssociate(
+                                                        ERC_20_CONTRACT, List.of(FUNGIBLE_TOKEN)),
+                                                tokenAssociate(
+                                                        nestedContract, List.of(FUNGIBLE_TOKEN)),
+                                                cryptoTransfer(
+                                                                TokenMovement.moving(
+                                                                                20, FUNGIBLE_TOKEN)
+                                                                        .between(
+                                                                                TOKEN_TREASURY,
+                                                                                ERC_20_CONTRACT))
+                                                        .payingWith(ACCOUNT),
+                                                contractCall(
+                                                                ERC_20_CONTRACT,
+                                                                APPROVE,
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                ERC_20_CONTRACT))),
+                                                                BigInteger.valueOf(20))
+                                                        .gas(1_000_000)
+                                                        .payingWith(ACCOUNT)
+                                                        .alsoSigningWithFullPrefix(
+                                                                TRANSFER_SIG_NAME),
+                                                contractCall(
+                                                                ERC_20_CONTRACT,
+                                                                TRANSFER_FROM,
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                ERC_20_CONTRACT))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                nestedContract))),
+                                                                BigInteger.valueOf(5))
+                                                        .via(TRANSFER_TXN)
+                                                        .alsoSigningWithFullPrefix(
+                                                                TRANSFER_SIG_NAME)
+                                                        .hasKnownStatus(SUCCESS),
+                                                contractCall(
+                                                                ERC_20_CONTRACT,
+                                                                TRANSFER_FROM,
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                ERC_20_CONTRACT))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                nestedContract))),
+                                                                BigInteger.valueOf(5))
+                                                        .payingWith(ACCOUNT)
                                                         .alsoSigningWithFullPrefix(
                                                                 TRANSFER_SIG_NAME)
                                                         .via(

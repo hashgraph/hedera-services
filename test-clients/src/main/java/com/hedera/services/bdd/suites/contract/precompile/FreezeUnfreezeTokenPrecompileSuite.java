@@ -70,10 +70,10 @@ import org.apache.logging.log4j.Logger;
 public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
     private static final Logger log =
             LogManager.getLogger(FreezeUnfreezeTokenPrecompileSuite.class);
-    private static final String FREEZE_CONTRACT = "FreezeUnfreezeContract";
+    public static final String FREEZE_CONTRACT = "FreezeUnfreezeContract";
     private static final String IS_FROZEN_FUNC = "isTokenFrozen";
-    private static final String TOKEN_FREEZE_FUNC = "tokenFreeze";
-    private static final String TOKEN_UNFREEZE_FUNC = "tokenUnfreeze";
+    public static final String TOKEN_FREEZE_FUNC = "tokenFreeze";
+    public static final String TOKEN_UNFREEZE_FUNC = "tokenUnfreeze";
     private static final String IS_FROZEN_TXN = "isFrozenTxn";
     private static final String ACCOUNT_HAS_NO_KEY_TXN = "accountHasNoFreezeKey";
     private static final String NO_KEY_FREEZE_TXN = "noKeyFreezeTxn";

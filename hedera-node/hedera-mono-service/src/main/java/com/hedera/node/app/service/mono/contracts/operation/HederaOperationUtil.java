@@ -37,6 +37,8 @@ package com.hedera.node.app.service.mono.contracts.operation;
  *
  */
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
@@ -111,14 +113,16 @@ public final class HederaOperationUtil {
                             true,
                             account.getAddress(),
                             frame.getRecipientAddress(),
-                            updater.trackingLedgers());
+                            updater.trackingLedgers(),
+                            ContractCall);
         } else {
             sigReqIsMet =
                     sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
                             false,
                             account.getAddress(),
                             frame.getContractAddress(),
-                            updater.trackingLedgers());
+                            updater.trackingLedgers(),
+                            ContractCall);
         }
         if (!sigReqIsMet) {
             return new Operation.OperationResult(

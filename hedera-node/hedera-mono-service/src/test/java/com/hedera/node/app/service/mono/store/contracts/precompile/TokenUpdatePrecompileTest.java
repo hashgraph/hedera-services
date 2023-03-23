@@ -71,6 +71,7 @@ import com.hedera.node.app.service.mono.store.tokens.HederaTokenStore;
 import com.hedera.node.app.service.mono.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
@@ -381,7 +382,11 @@ class TokenUpdatePrecompileTest {
     private void givenUpdateTokenContext() {
         given(
                         sigsVerifier.hasActiveAdminKey(
-                                true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
+                                true,
+                                fungibleTokenAddr,
+                                fungibleTokenAddr,
+                                wrappedLedgers,
+                                HederaFunctionality.TokenUpdate))
                 .willReturn(true);
         given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
                 .willReturn(hederaTokenStore);
@@ -401,7 +406,11 @@ class TokenUpdatePrecompileTest {
     private void givenUpdateTokenContextV2() {
         given(
                         sigsVerifier.hasActiveAdminKey(
-                                true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
+                                true,
+                                fungibleTokenAddr,
+                                fungibleTokenAddr,
+                                wrappedLedgers,
+                                HederaFunctionality.TokenUpdate))
                 .willReturn(true);
         given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
                 .willReturn(hederaTokenStore);
@@ -421,7 +430,11 @@ class TokenUpdatePrecompileTest {
     private void givenUpdateTokenContextV3() {
         given(
                         sigsVerifier.hasActiveAdminKey(
-                                true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
+                                true,
+                                fungibleTokenAddr,
+                                fungibleTokenAddr,
+                                wrappedLedgers,
+                                HederaFunctionality.TokenUpdate))
                 .willReturn(true);
         given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
                 .willReturn(hederaTokenStore);

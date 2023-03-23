@@ -1379,6 +1379,11 @@ public class UtilVerbs {
             return this;
         }
 
+        public TokenTransferListBuilder forTokenAddress(final Address token) {
+            this.token = token;
+            return this;
+        }
+
         public TokenTransferListBuilder withAccountAmounts(final Tuple... accountAmounts) {
             this.tokenTransferList = Tuple.of(token, accountAmounts, new Tuple[] {});
             return this;
@@ -1409,6 +1414,10 @@ public class UtilVerbs {
 
     public static Tuple accountAmount(final AccountID account, final Long amount) {
         return Tuple.of(HapiParserUtil.asHeadlongAddress(asAddress(account)), amount);
+    }
+
+    public static Tuple addressedAccountAmount(final Address address, final Long amount) {
+        return Tuple.of(address, amount);
     }
 
     public static Tuple accountAmount(
