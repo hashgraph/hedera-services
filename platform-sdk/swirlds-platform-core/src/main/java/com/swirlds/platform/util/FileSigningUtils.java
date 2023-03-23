@@ -51,7 +51,7 @@ import java.util.Objects;
 /**
  * This is a utility class to generate signature files
  * <p>
- * It can be used to sign version 5 stream files in particular, or to sign any arbitrary file
+ * It can be used to sign v5 stream files in particular, or generally to sign any arbitrary file
  */
 public final class FileSigningUtils {
     /**
@@ -65,7 +65,7 @@ public final class FileSigningUtils {
     public static final String SIGNATURE_FILE_NAME_SUFFIX = "_sig";
 
     /**
-     * Byte code indicating that the next bytes are signature length, and then a signature
+     * Byte code indicating that the next 4 bytes are a signature length int, followed by a signature of that length
      */
     public static final byte TYPE_SIGNATURE = 3;
 
@@ -83,47 +83,6 @@ public final class FileSigningUtils {
      * Type of the keyStore
      */
     private static final String KEYSTORE_TYPE = "pkcs12";
-
-    /**
-     * Loads a pfx key from file and returns the key pair
-     *
-     * @param keyFileName a pfx key file
-     * @param password    the password for the key file
-     * @param alias       alias of the key
-     * @return a KeyPair
-     */
-    @NonNull
-    public static KeyPair loadPfxKey(
-            @NonNull final String keyFileName, @NonNull final String password, @NonNull final String alias) {
-
-        try (final FileInputStream inputStream = new FileInputStream(keyFileName)) {
-            final KeyStore keyStore = KeyStore.getInstance(KEYSTORE_TYPE);
-            keyStore.load(inputStream, password.toCharArray());
-
-            return new KeyPair(keyStore.getCertificate(alias).getPublicKey(), (PrivateKey)
-                    keyStore.getKey(alias, password.toCharArray()));
-        } catch (final NoSuchAlgorithmException
-                | KeyStoreException
-                | UnrecoverableKeyException
-                | IOException
-                | CertificateException e) {
-
-            throw new RuntimeException("Unable to load Pfx key from file: " + keyFileName, e);
-        }
-    }
-
-    /**
-     * Sets up the constructable registry, and configures {@link SettingsCommon}
-     */
-    public static void initializeSystem() {
-        BootstrapUtils.setupConstructableRegistry();
-
-        // we don't want deserialization to fail based on any of these settings
-        SettingsCommon.maxTransactionCountPerEvent = Integer.MAX_VALUE;
-        SettingsCommon.maxTransactionBytesPerEvent = Integer.MAX_VALUE;
-        SettingsCommon.transactionMaxBytes = Integer.MAX_VALUE;
-        SettingsCommon.maxAddressSizeAllowed = Integer.MAX_VALUE;
-    }
 
     /**
      * Accepts a file extension, and returns an all lower-case version of it, without a `.`
@@ -219,6 +178,53 @@ public final class FileSigningUtils {
     }
 
     /**
+     * Loads a pfx key from file and returns the key pair
+     *
+     * @param keyFileName a pfx key file
+     * @param password    the password for the key file
+     * @param alias       alias of the key
+     * @return a KeyPair
+     */
+    @NonNull
+    public static KeyPair loadPfxKey(
+            @NonNull final String keyFileName, @NonNull final String password, @NonNull final String alias) {
+
+        Objects.requireNonNull(keyFileName, "keyFileName");
+        Objects.requireNonNull(password, "password");
+        Objects.requireNonNull(alias, "alias");
+
+        try (final FileInputStream inputStream = new FileInputStream(keyFileName)) {
+            final KeyStore keyStore = KeyStore.getInstance(KEYSTORE_TYPE);
+            keyStore.load(inputStream, password.toCharArray());
+
+            return new KeyPair(keyStore.getCertificate(alias).getPublicKey(), (PrivateKey)
+                    keyStore.getKey(alias, password.toCharArray()));
+        } catch (final NoSuchAlgorithmException
+                | KeyStoreException
+                | UnrecoverableKeyException
+                | IOException
+                | CertificateException e) {
+
+            throw new RuntimeException("Unable to load Pfx key from file: " + keyFileName, e);
+        }
+    }
+
+    /**
+     * Sets up the constructable registry, and configures {@link SettingsCommon}
+     * <p>
+     * Should be called before using stream utilities
+     */
+    public static void initializeSystem() {
+        BootstrapUtils.setupConstructableRegistry();
+
+        // we don't want deserialization to fail based on any of these settings
+        SettingsCommon.maxTransactionCountPerEvent = Integer.MAX_VALUE;
+        SettingsCommon.maxTransactionBytesPerEvent = Integer.MAX_VALUE;
+        SettingsCommon.transactionMaxBytes = Integer.MAX_VALUE;
+        SettingsCommon.maxAddressSizeAllowed = Integer.MAX_VALUE;
+    }
+
+    /**
      * Generates a signature file for the given stream file
      *
      * @param destinationDirectory the directory to which the signature file will be saved
@@ -240,8 +246,8 @@ public final class FileSigningUtils {
         final String signatureFilePath = buildSignatureFilePath(destinationDirectory, streamFileToSign);
 
         if (!streamType.isStreamFile(streamFileToSign)) {
-            throw new IllegalArgumentException(
-                    "File " + streamFileToSign + " is not a " + streamType + " file. This should not be possible");
+            System.err.println("File " + streamFileToSign + " is not a " + streamType);
+            return;
         }
 
         try {
@@ -252,12 +258,7 @@ public final class FileSigningUtils {
                         streamFileToSign.getName(), version);
                 return;
             }
-        } catch (final IOException e) {
-            System.err.println("Failed to read from file: " + streamFileToSign.getName());
-            return;
-        }
 
-        try {
             final Hash entireHash = computeEntireHash(streamFileToSign);
             final com.swirlds.common.crypto.Signature entireHashSignature = new com.swirlds.common.crypto.Signature(
                     SignatureType.RSA, signData(entireHash.getValue(), keyPair));
@@ -271,7 +272,7 @@ public final class FileSigningUtils {
 
             System.out.println("Generated signature file: " + signatureFilePath);
         } catch (final SignatureException | InvalidStreamFileException | IOException e) {
-            System.err.println("Failed to sign file [" + streamFileToSign.getName() + "]. Exception: " + e);
+            System.err.println("Failed to sign file " + streamFileToSign.getName() + ". Exception: " + e);
         } catch (final InvalidKeyException | NoSuchAlgorithmException | NoSuchProviderException e) {
             throw new RuntimeException("Irrecoverable error encountered", e);
         }
@@ -311,7 +312,7 @@ public final class FileSigningUtils {
 
             System.out.println("Generated signature file: " + signatureFilePath);
         } catch (final SignatureException | IOException e) {
-            System.err.println("Failed to sign file [" + fileToSign.getName() + "]. Exception: " + e);
+            System.err.println("Failed to sign file " + fileToSign.getName() + ". Exception: " + e);
         } catch (final InvalidKeyException | NoSuchAlgorithmException | NoSuchProviderException e) {
             throw new RuntimeException("Irrecoverable error encountered", e);
         }
@@ -319,6 +320,9 @@ public final class FileSigningUtils {
 
     /**
      * Signs all stream files of specified types in a directory
+     * <p>
+     * If a recoverable error is encountered while signing an individual file in the directory, an error will be logged,
+     * and signing of remaining files will continue
      *
      * @param sourceDirectory      the source directory
      * @param destinationDirectory the destination directory
@@ -352,6 +356,9 @@ public final class FileSigningUtils {
 
     /**
      * Signs all files of specified extension types in a directory
+     * <p>
+     * If a recoverable error is encountered while signing an individual file in the directory, an error will be logged,
+     * and signing of remaining files will continue
      *
      * @param sourceDirectory      the source directory
      * @param destinationDirectory the destination directory
