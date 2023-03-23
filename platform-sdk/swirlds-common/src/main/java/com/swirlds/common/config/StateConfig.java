@@ -116,7 +116,7 @@ public record StateConfig(
         @ConfigProperty(defaultValue = "5") int debugHashDepth,
         @ConfigProperty(defaultValue = "1000") int maxAgeOfFutureStateSignatures,
         @ConfigProperty(defaultValue = "26") int roundsToKeepForSigning,
-        @ConfigProperty(defaultValue = "false") boolean signedStateSentinelEnabled,
+        @ConfigProperty(defaultValue = "true") boolean signedStateSentinelEnabled,
         @ConfigProperty(defaultValue = "true") boolean forceUseOfConfigAddressBook) {
 
     /**
