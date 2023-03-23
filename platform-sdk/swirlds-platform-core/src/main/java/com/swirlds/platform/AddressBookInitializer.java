@@ -234,7 +234,7 @@ public class AddressBookInitializer {
      *
      * @param usedAddressBook the address book to be returned from the AddressBookInitializer.
      */
-    synchronized private void recordAddressBooks(@NonNull final AddressBook usedAddressBook) {
+    private synchronized void recordAddressBooks(@NonNull final AddressBook usedAddressBook) {
         cleanAddressBookDirectory();
         final String date = DATE_TIME_FORMAT.format(Instant.now());
         final String addressBookFileName = ADDRESS_BOOK_FILE_PREFIX + "_v" + currentVersion + "_" + date + ".txt";
@@ -272,7 +272,7 @@ public class AddressBookInitializer {
     /**
      * Deletes the oldest address book files if there are more than the maximum number of address book files.
      */
-    synchronized private void cleanAddressBookDirectory() {
+    private synchronized void cleanAddressBookDirectory() {
         try {
             List<Path> files = Files.list(pathToAddressBookDirectory).sorted().toList();
             if (files.size() > MAX_ADDRESS_BOOK_FILES) {
