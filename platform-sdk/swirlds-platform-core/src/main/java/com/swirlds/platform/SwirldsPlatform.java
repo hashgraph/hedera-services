@@ -992,9 +992,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             return new NoOpPreConsensusEventWriter();
         }
 
-        final PreconsensusEventMetrics preconsensusEventMetrics =
-                new PreconsensusEventMetrics(platformContext.getMetrics());
-
         final PreConsensusEventFileManager fileManager;
         try {
             fileManager = new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), selfId.getId());

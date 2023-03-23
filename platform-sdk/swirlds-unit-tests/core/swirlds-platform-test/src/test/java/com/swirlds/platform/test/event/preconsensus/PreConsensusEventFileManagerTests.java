@@ -63,10 +63,12 @@ class PreConsensusEventFileManagerTests {
      */
     @TempDir
     Path testDirectory;
-
+    private Path fileDirectory = null;
+    
     @BeforeEach
     void beforeEach() throws IOException {
         FileUtils.deleteDirectory(testDirectory);
+        fileDirectory = testDirectory.resolve("0");
     }
 
     @AfterEach
@@ -75,9 +77,14 @@ class PreConsensusEventFileManagerTests {
     }
 
     private PlatformContext buildContext() {
+        return buildContext(false);
+    }
+
+    private PlatformContext buildContext(final boolean permitGaps) {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue("event.preconsensus.databaseDirectory", testDirectory)
                 .withValue("event.preconsensus.preferredFileSizeMegabytes", 5)
+                .withValue("event.preconsensus.permitGaps", permitGaps)
                 .getOrCreateConfig();
 
         final Metrics metrics = new NoOpMetrics();
@@ -106,11 +113,11 @@ class PreConsensusEventFileManagerTests {
     @DisplayName("Maximum Less Than Minimum Test")
     void maximumLessThanMinimumTest() throws IOException {
 
-        createDummyFile(PreConsensusEventFile.of(0, 0, 1, Instant.now(), testDirectory));
+        createDummyFile(PreConsensusEventFile.of(0, 0, 1, Instant.now(), fileDirectory));
 
-        createDummyFile(PreConsensusEventFile.of(1, 10, 5, Instant.now(), testDirectory));
+        createDummyFile(PreConsensusEventFile.of(1, 10, 5, Instant.now(), fileDirectory));
 
-        createDummyFile(PreConsensusEventFile.of(2, 10, 20, Instant.now(), testDirectory));
+        createDummyFile(PreConsensusEventFile.of(2, 10, 20, Instant.now(), fileDirectory));
 
         final PlatformContext platformContext = buildContext();
 
@@ -123,11 +130,11 @@ class PreConsensusEventFileManagerTests {
     @DisplayName("Minimum Decreases Test")
     void minimumDecreasesTest() throws IOException {
 
-        createDummyFile(PreConsensusEventFile.of(0, 5, 10, Instant.now(), testDirectory));
+        createDummyFile(PreConsensusEventFile.of(0, 5, 10, Instant.now(), fileDirectory));
 
-        createDummyFile(PreConsensusEventFile.of(1, 4, 11, Instant.now(), testDirectory));
+        createDummyFile(PreConsensusEventFile.of(1, 4, 11, Instant.now(), fileDirectory));
 
-        createDummyFile(PreConsensusEventFile.of(2, 10, 20, Instant.now(), testDirectory));
+        createDummyFile(PreConsensusEventFile.of(2, 10, 20, Instant.now(), fileDirectory));
 
         final PlatformContext platformContext = buildContext();
 
@@ -140,11 +147,11 @@ class PreConsensusEventFileManagerTests {
     @DisplayName("Maximum Decreases Test")
     void maximumDecreasesTest() throws IOException {
 
-        createDummyFile(PreConsensusEventFile.of(0, 5, 10, Instant.now(), testDirectory));
+        createDummyFile(PreConsensusEventFile.of(0, 5, 10, Instant.now(), fileDirectory));
 
-        createDummyFile(PreConsensusEventFile.of(1, 6, 9, Instant.now(), testDirectory));
+        createDummyFile(PreConsensusEventFile.of(1, 6, 9, Instant.now(), fileDirectory));
 
-        createDummyFile(PreConsensusEventFile.of(2, 10, 20, Instant.now(), testDirectory));
+        createDummyFile(PreConsensusEventFile.of(2, 10, 20, Instant.now(), fileDirectory));
 
         final PlatformContext platformContext = buildContext();
 
@@ -157,11 +164,11 @@ class PreConsensusEventFileManagerTests {
     @DisplayName("Timestamp Decreases Test")
     void timestampDecreasesTest() throws IOException {
 
-        createDummyFile(PreConsensusEventFile.of(0, 5, 10, Instant.ofEpochMilli(1000), testDirectory));
+        createDummyFile(PreConsensusEventFile.of(0, 5, 10, Instant.ofEpochMilli(1000), fileDirectory));
 
-        createDummyFile(PreConsensusEventFile.of(1, 6, 11, Instant.ofEpochMilli(500), testDirectory));
+        createDummyFile(PreConsensusEventFile.of(1, 6, 11, Instant.ofEpochMilli(500), fileDirectory));
 
-        createDummyFile(PreConsensusEventFile.of(2, 7, 12, Instant.ofEpochMilli(2000), testDirectory));
+        createDummyFile(PreConsensusEventFile.of(2, 7, 12, Instant.ofEpochMilli(2000), fileDirectory));
 
         final PlatformContext platformContext = buildContext();
 
@@ -195,7 +202,7 @@ class PreConsensusEventFileManagerTests {
                 sequenceNumber++) {
 
             final PreConsensusEventFile file = PreConsensusEventFile.of(
-                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, testDirectory);
+                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory);
 
             minimumGeneration = random.nextLong(minimumGeneration, maximumGeneration + 1);
             maximumGeneration =
@@ -251,7 +258,7 @@ class PreConsensusEventFileManagerTests {
                 sequenceNumber++) {
 
             final PreConsensusEventFile file = PreConsensusEventFile.of(
-                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, testDirectory);
+                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory);
 
             minimumGeneration = random.nextLong(minimumGeneration, maximumGeneration + 1);
             maximumGeneration =
@@ -267,7 +274,7 @@ class PreConsensusEventFileManagerTests {
             createDummyFile(file);
         }
 
-        final PlatformContext platformContext = buildContext();
+        final PlatformContext platformContext = buildContext(permitGaps);
 
         if (permitGaps) {
             // Gaps are allowed. We should see all files except for the one that was skipped.
@@ -308,7 +315,7 @@ class PreConsensusEventFileManagerTests {
                 sequenceNumber++) {
 
             final PreConsensusEventFile file = PreConsensusEventFile.of(
-                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, testDirectory);
+                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory);
 
             minimumGeneration = random.nextLong(minimumGeneration, maximumGeneration + 1);
             maximumGeneration =
@@ -385,7 +392,7 @@ class PreConsensusEventFileManagerTests {
                 sequenceNumber++) {
 
             final PreConsensusEventFile file = PreConsensusEventFile.of(
-                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, testDirectory);
+                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory);
 
             // Advance the generation bounds only 10% of the time
             if (random.nextLong() < 0.1) {
@@ -459,7 +466,7 @@ class PreConsensusEventFileManagerTests {
                 sequenceNumber++) {
 
             final PreConsensusEventFile file = PreConsensusEventFile.of(
-                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, testDirectory);
+                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory);
 
             minimumGeneration = random.nextLong(minimumGeneration, maximumGeneration + 1);
             maximumGeneration =
@@ -549,7 +556,7 @@ class PreConsensusEventFileManagerTests {
                 sequenceNumber++) {
 
             final PreConsensusEventFile file = PreConsensusEventFile.of(
-                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, testDirectory);
+                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory);
 
             minimumGeneration = random.nextLong(minimumGeneration, maximumGeneration + 1);
             maximumGeneration =
@@ -670,7 +677,7 @@ class PreConsensusEventFileManagerTests {
                 sequenceNumber++) {
 
             final PreConsensusEventFile file = PreConsensusEventFile.of(
-                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, testDirectory);
+                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory);
 
             minimumGeneration = random.nextLong(minimumGeneration, maximumGeneration + 1);
             maximumGeneration =
