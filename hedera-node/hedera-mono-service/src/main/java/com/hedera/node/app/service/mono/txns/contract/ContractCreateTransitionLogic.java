@@ -179,16 +179,15 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 
         final Address newContractAddress;
 
+        final var mirrorAddress = worldState.newContractAddress(sender.getId().asEvmAddress());
         if (relayerId == null) {
-            newContractAddress = worldState.newContractAddress(sender.getId().asEvmAddress());
+            newContractAddress = mirrorAddress;
         } else {
             // Since there is an Ethereum origin, set the contract address as the CREATE format
             // specified in the Yellow Paper
             final var create1ContractAddress =
                     Address.contractAddress(sender.canonicalAddress(), sender.getEthereumNonce());
-            aliasManager.link(
-                    create1ContractAddress,
-                    worldState.newContractAddress(sender.getId().asEvmAddress()));
+            aliasManager.link(create1ContractAddress, mirrorAddress);
             newContractAddress = create1ContractAddress;
         }
 
@@ -242,8 +241,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
         }
         if (result.isSuccessful()) {
             final var newEvmAddress = newContractAddress.toArrayUnsafe();
-            final var newEvmAddressResolved = aliasManager.resolveForEvm(newContractAddress);
-            final var newContractId = contractIdFromEvmAddress(newEvmAddressResolved);
+            final var newContractId = contractIdFromEvmAddress(mirrorAddress);
             final var contractBytecodeSidecar = op.getInitcodeSourceCase() != INITCODE
                     ? SidecarUtils.createContractBytecodeSidecarFrom(
                             newContractId,
