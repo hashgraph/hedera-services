@@ -83,7 +83,7 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
             for (int i = 0; i < getSampleSize(); i++) {
                 list.put(i, i + 1);
             }
-            final Path file = testDirectory.resolve("LongListOffHeapCustomLongCount.hl");
+            final Path file = testDirectory.resolve("LongListOffHeapCustomLongCount.ll");
             // write longList data
             list.writeToFile(file);
 
@@ -115,9 +115,33 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
                 list.put(i, i);
             }
 
-            list.updateMinValidIndex(getSampleSize() / 2 + chunkOffset);
+            list.updateValidRange(getSampleSize() / 2 + chunkOffset, list.size() - 1);
 
-            final Path file = testDirectory.resolve("LongListOffHeapHalfEmpty.hl");
+            final Path file = testDirectory.resolve("LongListOffHeapHalfEmpty.ll");
+            // write longList data
+            list.writeToFile(file);
+
+            final LongListOffHeap longListFromFile = createLongListFromFile(file);
+
+            for (int i = 0; i < longListFromFile.size(); i++) {
+                assertEquals(list.get(i), longListFromFile.get(i));
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1, 5000, 9999, 10000}) // chunk size is 10K longs
+    void testPersistShrunkList(final int chunkOffset) throws IOException {
+        try (final LongListOffHeap list = createFullyParameterizedLongListWith(
+                getSampleSize() / 100, // 100 chunks
+                getSampleSize())) {
+            for (int i = 1; i < getSampleSize(); i++) {
+                list.put(i, i);
+            }
+
+            list.updateValidRange(0, getSampleSize() / 2 + chunkOffset);
+
+            final Path file = testDirectory.resolve("LongListOffHeapHalfEmpty.ll");
             // write longList data
             list.writeToFile(file);
 
@@ -140,7 +164,7 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
                 list.put(i, i + 1);
             }
             final long minIndex = sampleSize / countDivider;
-            list.updateMinValidIndex(minIndex);
+            list.updateValidRange(minIndex, list.size() - 1);
             final AtomicLong count = new AtomicLong(0);
             final Set<Long> keysInForEach = new HashSet<>();
             list.forEach((path, location) -> {
@@ -177,5 +201,21 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
                 // no op
             }
         });
+    }
+
+    @Test
+    void testBigIndex() throws IOException {
+        try (LongListOffHeap list = new LongListOffHeap()) {
+            long bigIndex = Integer.MAX_VALUE + 1L;
+            list.updateValidRange(bigIndex, bigIndex);
+            list.put(bigIndex, 1);
+
+            assertEquals(1, list.get(bigIndex));
+            final Path file = testDirectory.resolve("LongListLargeIndex.ll");
+            list.writeToFile(file);
+            try (LongListOffHeap listFromFile = new LongListOffHeap(file)) {
+                assertEquals(1, listFromFile.get(bigIndex));
+            }
+        }
     }
 }

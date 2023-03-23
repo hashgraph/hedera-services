@@ -96,7 +96,7 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
     /**
      * The root of the merkle state.
      */
-    private State state;
+    private final State state;
 
     /**
      * The timestamp of when this object was created.
@@ -342,12 +342,12 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
      */
     @Override
     public String toString() {
-        return String.format(
-                "SS(round: %d, sigs: %d/%s, hash: %s)",
-                getRound(),
-                signingStake,
-                (getAddressBook() == null ? "?" : getAddressBook().getTotalStake()),
-                state.getHash());
+        return "SS(round: %d, sigs: %d/%s, hash: %s)"
+                .formatted(
+                        getRound(),
+                        signingStake,
+                        (getAddressBook() == null ? "?" : getAddressBook().getTotalStake()),
+                        state.getHash());
     }
 
     /**

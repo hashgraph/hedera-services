@@ -334,6 +334,11 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
 
         propagateConsensusData(round);
 
+        if (round.getEventCount() > 0) {
+            consensusHandlingMetrics.recordConsensusTime(round.getLastEvent().getLastTransTime());
+        }
+        swirldStateManager.handleConsensusRound(round);
+
         consensusTimingStat.setTimePoint(2);
 
         swirldStateManager.handleConsensusRound(round);

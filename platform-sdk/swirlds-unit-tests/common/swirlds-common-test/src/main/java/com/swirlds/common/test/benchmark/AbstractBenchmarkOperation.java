@@ -47,7 +47,7 @@ public abstract class AbstractBenchmarkOperation<S extends MerkleNode, M extends
      */
     @Override
     public String toString() {
-        return String.format("Operation %s (%.3f)", getName(), weight);
+        return "Operation %s (%.3f)".formatted(getName(), weight);
     }
 
     /**

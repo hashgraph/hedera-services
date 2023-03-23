@@ -16,7 +16,10 @@
 
 package com.swirlds.virtualmap.datasource;
 
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
+
 import com.swirlds.common.crypto.Hash;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * Represents a virtual internal node. An internal node is essentially just a path, and a hash.
@@ -49,6 +52,9 @@ public final class VirtualInternalRecord extends VirtualRecord {
      */
     @Override
     public String toString() {
-        return "VirtualInternalRecord{path=" + getPath() + ", hash=" + getHash() + "}";
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+                .append("path", getPath())
+                .append("hash", getHash())
+                .toString();
     }
 }
