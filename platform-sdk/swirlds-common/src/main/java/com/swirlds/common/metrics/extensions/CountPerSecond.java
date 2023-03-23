@@ -18,7 +18,7 @@ package com.swirlds.common.metrics.extensions;
 
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_2;
 import static com.swirlds.common.utility.CommonUtils.throwArgBlank;
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
+import static com.swirlds.base.ArgumentUtils.throwArgNull;
 
 import com.swirlds.common.metrics.IntegerPairAccumulator;
 import com.swirlds.common.metrics.LongAccumulator;
@@ -36,7 +36,7 @@ import com.swirlds.common.utility.Units;
  */
 public class CountPerSecond {
     /** An instance that provides the current time */
-    private final Time time;
+    private final IntegerEpochTime time;
 
     /** Used to atomically update and reset the time and count */
     private final IntegerPairAccumulator<Double> accumulator;
@@ -48,7 +48,7 @@ public class CountPerSecond {
      * 		the configuration for this metric
      */
     public CountPerSecond(final Metrics metrics, final CountPerSecond.Config config) {
-        this(metrics, config, OSTime.getInstance());
+        this(metrics, config, new IntegerEpochTime(OSTime.getInstance()));
     }
 
     /**
@@ -59,24 +59,17 @@ public class CountPerSecond {
      * @param time
      * 		provides the current time
      */
-    public CountPerSecond(final Metrics metrics, final CountPerSecond.Config config, final Time time) {
+    public CountPerSecond(final Metrics metrics, final CountPerSecond.Config config, final IntegerEpochTime time) {
         this.time = time;
         this.accumulator = metrics.getOrCreate(new IntegerPairAccumulator.Config<>(
-                        config.getCategory(), config.getName(), Double.class, this::perSecond)
+                config.getCategory(), config.getName(), Double.class, this::perSecond)
                 .withDescription(config.getDescription())
                 .withUnit(config.getUnit())
                 .withFormat(config.getFormat())
-                .withLeftAccumulator(CountPerSecond::noChangeAccumulator)
+                .withLeftAccumulator(ExtensionUtils::noChangeAccumulator)
                 .withRightAccumulator(Integer::sum)
-                .withLeftInitializer(this::getMilliTime)
+                .withLeftInitializer(this.time::getMilliTime)
                 .withRightInitialValue(0));
-    }
-
-    /**
-     * @return the lower 32 bits of the current millisecond epoch according to the clock stored in this instance
-     */
-    public int getMilliTime() {
-        return (int) (time.currentTimeMillis() % Integer.MAX_VALUE);
     }
 
     /**
@@ -106,27 +99,13 @@ public class CountPerSecond {
      * @return the count per second
      */
     private double perSecond(final int startTime, final int count) {
-        final int currentTime = getMilliTime();
-        final int millisElapsed;
-        if (currentTime == startTime) {
-            // theoretically this is infinity, but we will say that 1 millisecond passed because some time has to have
-            // passed
+        int millisElapsed = time.millisElapsed(startTime);
+        if (millisElapsed == 0) {
+            // theoretically this is infinity, but we will say that 1 millisecond of time passed because some time has
+            // to have passed
             millisElapsed = 1;
-        } else if (currentTime > startTime) {
-            millisElapsed = currentTime - startTime;
-        } else {
-            // if the lower 31 bits of the milli epoch has rolled over, the start time will be bigger than current time
-            millisElapsed = Integer.MAX_VALUE - startTime + currentTime;
         }
-
         return count / (millisElapsed * Units.MILLISECONDS_TO_SECONDS);
-    }
-
-    /**
-     * An implementation of a {@link com.swirlds.common.metrics.IntegerAccumulator} that does not change the value
-     */
-    private static int noChangeAccumulator(final int currentValue, final int toUpdate) {
-        return currentValue;
     }
 
     /**

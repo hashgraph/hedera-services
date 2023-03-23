@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
+import com.swirlds.common.metrics.extensions.IntegerEpochTime;
 import com.swirlds.common.metrics.platform.DefaultIntegerPairAccumulator;
 import com.swirlds.common.test.fixtures.FakeTime;
 import java.time.Duration;
@@ -35,6 +36,7 @@ import org.mockito.stubbing.Answer;
 
 class CountPerSecondTest {
     private final FakeTime clock = new FakeTime(Instant.EPOCH, Duration.ZERO);
+    private final IntegerEpochTime epochClock = new IntegerEpochTime(clock);
     private CountPerSecond metric;
 
     @BeforeEach
@@ -47,14 +49,14 @@ class CountPerSecondTest {
         metric = new CountPerSecond(
                 metrics,
                 new CountPerSecond.Config("a", "b").withDescription("c").withUnit("d"),
-                clock);
+                epochClock);
+        clock.reset();
     }
 
     @Test
     void basic() {
-        clock.set(Duration.ZERO);
         metric.count();
-        clock.set(Duration.ofMillis(500));
+        clock.tick(Duration.ofMillis(500));
         metric.count();
 
         assertEquals(4.0, metric.get(), "2 counts in half a second should be 4/second");
@@ -65,11 +67,11 @@ class CountPerSecondTest {
         // set the clock so that the milli epoch is just before the int overflow
         clock.set(Duration.ofMillis(Integer.MAX_VALUE - 1));
         metric.reset();
-        assertEquals(Integer.MAX_VALUE - 1, metric.getMilliTime(), "the metric clock should be just below max int");
+        assertEquals(Integer.MAX_VALUE - 1, epochClock.getMilliTime(), "the metric clock should be just below max int");
         metric.count(1);
         clock.tick(Duration.ofMillis(1));
         assertEquals(1000.0, metric.get(), "1 count in 1 millisecond should be 1000/second");
-        assertEquals(0, metric.getMilliTime(), "the clock should have overflown and should now be 0");
+        assertEquals(0, epochClock.getMilliTime(), "the clock should have overflown and should now be 0");
     }
 
     @Test
