@@ -188,7 +188,7 @@ public final class FileSigningUtils {
 
             return directory;
         } catch (final IOException e) {
-            throw new RuntimeException("Failed to create destination directory", e);
+            throw new RuntimeException("Failed to create directory", e);
         }
     }
 
