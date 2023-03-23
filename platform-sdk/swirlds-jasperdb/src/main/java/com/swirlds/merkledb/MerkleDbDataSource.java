@@ -1203,7 +1203,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
         }
 
         if (hasDiskStoreForInternalHashes) {
-            internalHashStoreDisk.startWriting(0);
+            internalHashStoreDisk.startWriting(0, firstLeafPath - 1);
         }
 
         final AtomicLong lastPath = new AtomicLong(INVALID_PATH);
@@ -1223,7 +1223,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
         });
 
         if (hasDiskStoreForInternalHashes) {
-            internalHashStoreDisk.endWriting(0, firstLeafPath - 1);
+            internalHashStoreDisk.endWriting();
         }
     }
 
@@ -1240,7 +1240,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
         }
 
         // start writing
-        pathToHashKeyValue.startWriting(firstLeafPath);
+        pathToHashKeyValue.startWriting(firstLeafPath, lastLeafPath);
         if (!isLongKeyMode) {
             objectKeyToPath.startWriting();
         }
@@ -1291,7 +1291,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
         });
 
         // end writing
-        pathToHashKeyValue.endWriting(firstLeafPath, lastLeafPath);
+        pathToHashKeyValue.endWriting();
         if (!isLongKeyMode) {
             objectKeyToPath.endWriting();
         }

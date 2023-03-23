@@ -16,9 +16,11 @@
 
 package com.swirlds.merkledb.collections;
 
+import static java.lang.Math.toIntExact;
 import static java.nio.ByteBuffer.allocateDirect;
 
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -75,20 +77,18 @@ public final class LongListHeap extends AbstractLongList<AtomicLongArray> {
     /**
      * Create a {@link LongListHeap} from a file that was saved.
      *
+     * @param file the file to read from
      * @throws IOException If there was a problem reading the file
      */
     public LongListHeap(final Path file) throws IOException {
-        super(file, DEFAULT_RESERVED_BUFFER_LENGTH);
+        super(file, 0);
     }
 
-    public LongListHeap(final Path file, final long reservedBufferLength) throws IOException {
-        super(file, reservedBufferLength);
-    }
-
+    /** {@inheritDoc} */
     @Override
     protected void readBodyFromFileChannelOnInit(String sourceFileName, FileChannel fileChannel) throws IOException {
         // read data
-        final int numOfArrays = (int) Math.ceil((double) size() / (double) numLongsPerChunk);
+        final int numOfArrays = calculateNumberOfChunks(size());
         final ByteBuffer buffer = allocateDirect(memoryChunkSize);
         buffer.order(ByteOrder.nativeOrder());
         for (int i = 0; i < numOfArrays; i++) {
@@ -116,9 +116,6 @@ public final class LongListHeap extends AbstractLongList<AtomicLongArray> {
     protected boolean putIfEqual(AtomicLongArray chunk, int subIndex, long oldValue, long newValue) {
         return chunk.compareAndSet(subIndex, oldValue, newValue);
     }
-
-    // =================================================================================================================
-    // Protected methods
 
     /**
      * Write the long data to file, This it is expected to be in one simple block of raw longs.
@@ -158,27 +155,32 @@ public final class LongListHeap extends AbstractLongList<AtomicLongArray> {
      * @return The stored long value at given index
      */
     @Override
-    protected long lookupInChunk(final AtomicLongArray chunk, final long subIndex) {
-        return chunk.get((int) subIndex);
+    protected long lookupInChunk(@NonNull final AtomicLongArray chunk, final long subIndex) {
+        return chunk.get(toIntExact(subIndex));
     }
 
+    /** {@inheritDoc} */
     @Override
-    protected void releaseChunk(AtomicLongArray chunk) {
+    protected void releaseChunk(@NonNull AtomicLongArray chunk) {
         // no action needed, the array will be collected by GC
     }
 
+    /** {@inheritDoc} */
     @Override
-    protected void partialChunkCleanup(final int chunkIndex, final long entriesToCleanUp) {
-        AtomicLongArray atomicLongArray = chunkList.get(chunkIndex);
-        if (atomicLongArray == null) {
-            // nothing to clean up
-            return;
-        }
-        for (int i = 0; i < entriesToCleanUp; i++) {
-            atomicLongArray.set(i, IMPERMISSIBLE_VALUE);
+    protected void partialChunkCleanup(
+            @NonNull final AtomicLongArray atomicLongArray, final boolean leftSide, final long entriesToCleanUp) {
+        if (leftSide) {
+            for (int i = 0; i < entriesToCleanUp; i++) {
+                atomicLongArray.set(i, IMPERMISSIBLE_VALUE);
+            }
+        } else {
+            for (int i = toIntExact(atomicLongArray.length() - entriesToCleanUp); i < atomicLongArray.length(); i++) {
+                atomicLongArray.set(i, IMPERMISSIBLE_VALUE);
+            }
         }
     }
 
+    /** {@inheritDoc} */
     @Override
     protected AtomicLongArray createChunk() {
         return new AtomicLongArray(numLongsPerChunk);

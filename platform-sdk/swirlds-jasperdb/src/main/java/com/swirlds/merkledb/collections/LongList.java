@@ -75,19 +75,65 @@ public interface LongList extends CASableLongIndex, Closeable {
     @Override
     boolean putIfEqual(long index, long oldValue, long newValue);
 
+    /**
+     * Get the maximum capacity of this LongList; that is, one greater than the maximum legal value
+     * of an {@code index} parameter used in a {@code put()} call.
+     */
     long capacity();
 
+    /**
+     * Get the maximum number of indices in this LongList that may be non-zero. (That is, one more
+     * than the largest {@code index} used in a call to {@code put()}.
+     * <p> This value is eventually consistent with {@code maxValidIndex} returned
+     * provided in {@link LongList#updateValidRange}. That is, once {@link LongList#updateValidRange} call is complete
+     * the value returned by this method will be not more than {@code maxValidIndex} provided in the call.
+     * If {@code maxValidIndex} is greater than the current size, the size remains unchanged.
+     * <p>Bounded above by {@link AbstractLongList#capacity()}.
+     */
     long size();
 
+    /**
+     * Create a stream over the data in this LongList. This is designed for testing and may be
+     * inconsistent under current modifications.
+     */
     LongStream stream();
 
+    /**
+     * Write all longs in this LongList into a file
+     * <p>
+     * <b> It is not guaranteed what version of data will be written if the LongList is changed
+     * via put methods while this LongList is being written to a file. If you need consistency while
+     * calling put concurrently then use a BufferedLongListWrapper. </b>
+     *
+     * @param file The file to write into, it should not exist but its parent directory should exist
+     *             and be writable.
+     * @throws IOException If there was a problem creating or writing to the file.
+     */
     void writeToFile(Path file) throws IOException;
 
-    void updateMinValidIndex(long newMinValidIndex);
+    /**
+     * After invocation of this method, {@link LongList#get(long)}) calls
+     * will return {@link LongList#IMPERMISSIBLE_VALUE} for indices that
+     * are before {@code newMinValidIndex} and after {@code newMaxValidIndex}
+     * Also, a call to this method releases memory taken by unused chunks.
+     * For in-memory implementation it means the chunk clean up and memory release,
+     * while file-based reuse the file space in further writes.
+     * <p>
+     * Note that {@code newMinValidIndex} is allowed to exceed the current size of the list.
+     * If {@code newMaxValidIndex} exceeds the current size of the list, there will be no effect.
+     *
+     * @param newMinValidIndex minimal valid index of the list
+     * @param newMaxValidIndex maximal valid index of the list
+     * @throws IndexOutOfBoundsException if {@code newMinValidIndex} is negative or
+     * {@code newMaxValidIndex} exceeds max number of chunks allowed.
+     */
+    void updateValidRange(long newMinValidIndex, long newMaxValidIndex);
 
+    /** {@inheritDoc} */
     @Override
     <T extends Throwable> void forEach(LongAction<T> action) throws InterruptedException, T;
 
+    /** {@inheritDoc} */
     @Override
     void close();
 }
