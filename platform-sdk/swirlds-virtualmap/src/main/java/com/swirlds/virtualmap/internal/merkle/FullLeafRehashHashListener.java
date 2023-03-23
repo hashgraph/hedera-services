@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-package com.swirlds.virtualmap.internal.reconnect;
+package com.swirlds.virtualmap.internal.merkle;
 
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.hash.VirtualHashListener;
-import com.swirlds.virtualmap.internal.merkle.AbstractHashListener;
 import java.util.stream.Stream;
 
 /**
- * A {@link VirtualHashListener} implementation used by the learner during reconnect. During reconnect, the dirty
- * leaves will be sent from the teacher to the learner in a breadth-first order. The hashing algorithm in the
+ * A {@link VirtualHashListener} implementation used by {@link VirtualRootNode} on start if {@code fullRehashOnLoad}
+ * setting is enabled. On start, all the leaves will be rehashed in ascending order. The hashing algorithm in the
  * {@link com.swirlds.virtualmap.internal.hash.VirtualHasher} is setup to hash enormous trees in breadth-first order.
  * As the hasher hashes, it notifies this listener which then stores up the changes into different sorted lists.
  * Then, when the "batch" is completed, it flushes the data in the proper order to the data source. This process
@@ -51,12 +50,10 @@ import java.util.stream.Stream;
  * @param <V>
  * 		The value
  */
-public class ReconnectHashListener<K extends VirtualKey<? super K>, V extends VirtualValue>
+public class FullLeafRehashHashListener<K extends VirtualKey<? super K>, V extends VirtualValue>
         extends AbstractHashListener<K, V> {
-    private final ReconnectNodeRemover<K, V> nodeRemover;
-
     /**
-     * Create a new {@link ReconnectHashListener}.
+     * Create a new {@link FullLeafRehashHashListener}.
      *
      * @param firstLeafPath
      * 		The first leaf path. Must be a valid path.
@@ -65,20 +62,16 @@ public class ReconnectHashListener<K extends VirtualKey<? super K>, V extends Vi
      * @param dataSource
      * 		The data source. Cannot be null.
      */
-    public ReconnectHashListener(
-            final long firstLeafPath,
-            final long lastLeafPath,
-            final VirtualDataSource<K, V> dataSource,
-            final ReconnectNodeRemover<K, V> nodeRemover) {
+    public FullLeafRehashHashListener(
+            final long firstLeafPath, final long lastLeafPath, final VirtualDataSource<K, V> dataSource) {
         super(firstLeafPath, lastLeafPath, dataSource);
-        this.nodeRemover = nodeRemover;
     }
 
     /**
-     * {@inheritDoc}
+     * This implementation doesn't need to remove any leaves.
      */
     @Override
     protected Stream<VirtualLeafRecord<K, V>> findLeavesToRemove(long maxPath) {
-        return nodeRemover.getRecordsToDelete(maxPath);
+        return Stream.empty();
     }
 }

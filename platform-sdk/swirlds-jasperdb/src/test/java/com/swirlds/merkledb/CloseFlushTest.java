@@ -24,9 +24,9 @@ import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualLongKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
+import com.swirlds.virtualmap.datasource.PathHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
-import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
 import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
@@ -145,15 +145,14 @@ public class CloseFlushTest {
                 public void saveRecords(
                         final long firstLeafPath,
                         final long lastLeafPath,
-                        final Stream<VirtualInternalRecord> internalRecords,
+                        final Stream<PathHashRecord> pathHashRecordsToUpdate,
                         final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
-                        final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete)
-                        throws IOException {
+                        final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete) {
                     try {
                         delegate.saveRecords(
                                 firstLeafPath,
                                 lastLeafPath,
-                                internalRecords,
+                                pathHashRecordsToUpdate,
                                 leafRecordsToAddOrUpdate,
                                 leafRecordsToDelete);
                     } catch (final Exception e) {
@@ -177,14 +176,8 @@ public class CloseFlushTest {
                 }
 
                 @Override
-                public VirtualInternalRecord loadInternalRecord(final long path, final boolean deserialize)
-                        throws IOException {
-                    return delegate.loadInternalRecord(path);
-                }
-
-                @Override
-                public Hash loadLeafHash(final long path) throws IOException {
-                    return delegate.loadLeafHash(path);
+                public Hash loadHash(final long path) throws IOException {
+                    return delegate.loadHash(path);
                 }
 
                 @Override
@@ -210,6 +203,14 @@ public class CloseFlushTest {
                 @Override
                 public long estimatedSize(final long dirtyInternals, final long dirtyLeaves) {
                     return delegate.estimatedSize(dirtyInternals, dirtyLeaves);
+                }
+
+                public long getFirstLeafPath() {
+                    return delegate.getFirstLeafPath();
+                }
+
+                public long getLastLeafPath() {
+                    return delegate.getLastLeafPath();
                 }
             };
         }

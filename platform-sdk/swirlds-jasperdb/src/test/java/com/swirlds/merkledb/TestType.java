@@ -24,6 +24,7 @@ import com.swirlds.merkledb.serialize.ValueSerializer;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualLongKey;
 import com.swirlds.virtualmap.VirtualValue;
+import com.swirlds.virtualmap.datasource.PathHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -157,7 +158,7 @@ public enum TestType {
                 final Path dbPath,
                 final String name,
                 final int size,
-                final long internalHashesRamToDiskThreshold,
+                final long hashesRamToDiskThreshold,
                 final boolean enableMerging,
                 boolean preferDiskBasedIndexes)
                 throws IOException {
@@ -169,7 +170,7 @@ public enum TestType {
                                     (short) valueSerializer.getCurrentDataVersion(), valueSerializer)
                             .preferDiskIndices(preferDiskBasedIndexes)
                             .maxNumberOfKeys(size * 10L)
-                            .internalHashesRamToDiskThreshold(internalHashesRamToDiskThreshold);
+                            .hashesRamToDiskThreshold(hashesRamToDiskThreshold);
             return database.createDataSource(name, (MerkleDbTableConfig) tableConfig, enableMerging);
         }
 
@@ -177,6 +178,10 @@ public enum TestType {
                 final Path dbPath, final String name, final boolean enableMerging) throws IOException {
             final MerkleDb database = MerkleDb.getInstance(dbPath);
             return database.getDataSource(name, enableMerging);
+        }
+
+        public PathHashRecord createVirtualInternalRecord(final int i) {
+            return new PathHashRecord(i, hash(i));
         }
 
         public VirtualLeafRecord<VirtualLongKey, ExampleByteArrayVirtualValue> createVirtualLeafRecord(final int i) {
@@ -193,13 +198,13 @@ public enum TestType {
                 case variable_fixed:
                 case variableComplex_fixed:
                     return new VirtualLeafRecord<>(
-                            path, hash(i), createVirtualLongKey(i), new ExampleFixedSizeVirtualValue(valueIndex));
+                            path, createVirtualLongKey(i), new ExampleFixedSizeVirtualValue(valueIndex));
                 case fixed_variable:
                 case fixedComplex_variable:
                 case variable_variable:
                 case variableComplex_variable:
                     return new VirtualLeafRecord<>(
-                            path, hash(i), createVirtualLongKey(i), new ExampleVariableSizeVirtualValue(valueIndex));
+                            path, createVirtualLongKey(i), new ExampleVariableSizeVirtualValue(valueIndex));
             }
         }
     }

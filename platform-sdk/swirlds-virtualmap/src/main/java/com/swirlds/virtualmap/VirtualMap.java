@@ -223,6 +223,10 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
         return root;
     }
 
+    public void fullLeafRehash() {
+        root.fullLeafRehash();
+    }
+
     /**
      * Register all statistics with a registry. If not called then no statistics will be captured for this map.
      *
@@ -352,7 +356,6 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
      * 		For problems.
      */
     public void loadFromFile(final Path inputFile) throws IOException {
-
         final ValueReference<VirtualMapState> virtualMapState = new ValueReference<>();
         final ValueReference<VirtualRootNode<K, V>> virtualRootNode = new ValueReference<>();
 

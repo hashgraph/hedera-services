@@ -154,4 +154,9 @@ public interface VirtualMapSettings {
      * @return the maximum flush throttle for any individual fast copy operation
      */
     Duration getMaximumFlushThrottlePeriod();
+
+    /**
+     * @return if true, then the virtual map will be rehashed when it is loaded from disk
+     */
+    boolean getFullRehashOnLoad();
 }

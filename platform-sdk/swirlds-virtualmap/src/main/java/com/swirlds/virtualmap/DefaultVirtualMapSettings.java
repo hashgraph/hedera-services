@@ -40,6 +40,7 @@ public final class DefaultVirtualMapSettings implements VirtualMapSettings {
     public static final int DEFAULT_PREFERRED_FLUSH_QUEUE_SIZE = 2;
     public static final Duration DEFAULT_FLUSH_THROTTLE_STEP_SIZE = Duration.ofMillis(200);
     public static final Duration DEFAULT_MAXIMUM_FLUSH_THROTTLE_PERIOD = Duration.ofSeconds(5);
+    public static final boolean DEFAULT_FULL_REHASH_ON_LOAD = false;
 
     /**
      * {@inheritDoc}
@@ -144,5 +145,10 @@ public final class DefaultVirtualMapSettings implements VirtualMapSettings {
     @Override
     public Duration getMaximumFlushThrottlePeriod() {
         return DEFAULT_MAXIMUM_FLUSH_THROTTLE_PERIOD;
+    }
+
+    @Override
+    public boolean getFullRehashOnLoad() {
+        return DEFAULT_FULL_REHASH_ON_LOAD;
     }
 }

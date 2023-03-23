@@ -37,9 +37,9 @@ import com.swirlds.virtualmap.TestKey;
 import com.swirlds.virtualmap.TestValue;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.datasource.InMemoryKeySet;
+import com.swirlds.virtualmap.datasource.PathHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
-import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
 import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
@@ -241,7 +241,7 @@ public abstract class VirtualMapReconnectTestBase {
         public void saveRecords(
                 final long firstLeafPath,
                 final long lastLeafPath,
-                final Stream<VirtualInternalRecord> internalRecords,
+                final Stream<PathHashRecord> pathHashRecordsToUpdate,
                 final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
                 final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete)
                 throws IOException {
@@ -259,7 +259,8 @@ public abstract class VirtualMapReconnectTestBase {
                 }
             }
 
-            delegate.saveRecords(firstLeafPath, lastLeafPath, internalRecords, leaves.stream(), leafRecordsToDelete);
+            delegate.saveRecords(
+                    firstLeafPath, lastLeafPath, pathHashRecordsToUpdate, leaves.stream(), leafRecordsToDelete);
         }
 
         @Override
@@ -278,18 +279,13 @@ public abstract class VirtualMapReconnectTestBase {
         }
 
         @Override
-        public VirtualInternalRecord loadInternalRecord(final long path, final boolean deserialize) throws IOException {
-            return delegate.loadInternalRecord(path, deserialize);
-        }
-
-        @Override
         public long findKey(final TestKey key) throws IOException {
             return delegate.findKey(key);
         }
 
         @Override
-        public Hash loadLeafHash(final long path) throws IOException {
-            return delegate.loadLeafHash(path);
+        public Hash loadHash(final long path) throws IOException {
+            return delegate.loadHash(path);
         }
 
         @Override
@@ -315,6 +311,16 @@ public abstract class VirtualMapReconnectTestBase {
         @Override
         public long estimatedSize(final long dirtyInternals, final long dirtyLeaves) {
             return delegate.estimatedSize(dirtyInternals, dirtyLeaves);
+        }
+
+        @Override
+        public long getFirstLeafPath() {
+            return delegate.getFirstLeafPath();
+        }
+
+        @Override
+        public long getLastLeafPath() {
+            return delegate.getLastLeafPath();
         }
     }
 }

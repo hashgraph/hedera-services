@@ -29,13 +29,11 @@ import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.virtualmap.TestKey;
 import com.swirlds.virtualmap.TestValue;
 import com.swirlds.virtualmap.VirtualTestBase;
-import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
+import com.swirlds.virtualmap.datasource.PathHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
-import com.swirlds.virtualmap.datasource.VirtualRecord;
 import com.swirlds.virtualmap.internal.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -69,7 +67,7 @@ class VirtualHasherTest extends VirtualHasherTestBase {
         final VirtualHasher<TestKey, TestValue> hasher = new VirtualHasher<>();
         assertThrows(
                 NullPointerException.class,
-                () -> hasher.hash(ds::getLeaf, ds::getInternal, null, 1, 2),
+                () -> hasher.hash(ds::loadHash, null, 1, 2),
                 "Call should have produced an NPE");
     }
 
@@ -85,9 +83,7 @@ class VirtualHasherTest extends VirtualHasherTestBase {
         final TestDataSource ds = new TestDataSource(1, 2);
         final VirtualHasher<TestKey, TestValue> hasher = new VirtualHasher<>();
         final List<VirtualLeafRecord<TestKey, TestValue>> leaves = new ArrayList<>();
-        assertNull(
-                hasher.hash(ds::getLeaf, ds::getInternal, leaves.iterator(), 1, 2),
-                "Call should have returned a null hash");
+        assertNull(hasher.hash(ds::loadHash, leaves.iterator(), 1, 2), "Call should have returned a null hash");
     }
 
     /**
@@ -103,15 +99,11 @@ class VirtualHasherTest extends VirtualHasherTestBase {
         final List<VirtualLeafRecord<TestKey, TestValue>> leaves = new ArrayList<>();
         leaves.add(appleLeaf(VirtualTestBase.A_PATH));
         assertNull(
-                hasher.hash(ds::getLeaf, ds::getInternal, leaves.iterator(), Path.INVALID_PATH, 2),
-                "Call should have produced null");
+                hasher.hash(ds::loadHash, leaves.iterator(), Path.INVALID_PATH, 2), "Call should have produced null");
         assertNull(
-                hasher.hash(ds::getLeaf, ds::getInternal, leaves.iterator(), 1, Path.INVALID_PATH),
-                "Call should have produced null");
-        assertNull(
-                hasher.hash(ds::getLeaf, ds::getInternal, leaves.iterator(), 0, 2), "Call should have produced null");
-        assertNull(
-                hasher.hash(ds::getLeaf, ds::getInternal, leaves.iterator(), 1, 0), "Call should have produced null");
+                hasher.hash(ds::loadHash, leaves.iterator(), 1, Path.INVALID_PATH), "Call should have produced null");
+        assertNull(hasher.hash(ds::loadHash, leaves.iterator(), 0, 2), "Call should have produced null");
+        assertNull(hasher.hash(ds::loadHash, leaves.iterator(), 1, 0), "Call should have produced null");
     }
 
     /**
@@ -136,28 +128,19 @@ class VirtualHasherTest extends VirtualHasherTestBase {
         final VirtualHasher<TestKey, TestValue> hasher = new VirtualHasher<>();
         final Hash expected = hashTree(ds);
         final List<VirtualLeafRecord<TestKey, TestValue>> leaves = invalidateNodes(ds, dirtyPaths.stream());
-        final Hash rootHash =
-                hasher.hash(ds::getLeaf, ds::getInternal, leaves.iterator(), firstLeafPath, lastLeafPath, listener);
+        final Hash rootHash = hasher.hash(ds::loadHash, leaves.iterator(), firstLeafPath, lastLeafPath, listener);
         assertEquals(expected, rootHash, "Hash value does not match expected");
 
-        // Make sure the saver saw each dirty leaf exactly once.
-        final List<VirtualLeafRecord<TestKey, TestValue>> sortedLeaves = listener.sortedLeaves();
-        assertEquals(dirtyPaths.size(), sortedLeaves.size(), "Unexpected size");
-        for (int i = 0; i < sortedLeaves.size(); i++) {
-            assertEquals(dirtyPaths.get(i), sortedLeaves.get(i).getPath(), "Paths did not match");
-        }
-
-        // Make sure the saver saw each dirty internal exactly once.
-        final Set<Long> savedInternals = listener.unsortedInternals().stream()
-                .map(VirtualRecord::getPath)
-                .collect(Collectors.toSet());
-        final Set<VirtualInternalRecord> seenInternals = new HashSet<>();
+        // Make sure the saver saw each dirty node exactly once.
+        final Set<Long> savedInternals =
+                listener.unsortedInternals().stream().map(PathHashRecord::path).collect(Collectors.toSet());
+        final Set<PathHashRecord> seenInternals = new HashSet<>();
         for (final Long dirtyPath : dirtyPaths) {
-            VirtualInternalRecord internal = ds.getInternal(Path.getParentPath(dirtyPath));
-            while (internal != null && internal.getPath() > 0) {
-                assertTrue(savedInternals.contains(internal.getPath()), "Expected true");
+            PathHashRecord internal = ds.getInternal(dirtyPath);
+            while (internal != null && internal.path() > 0) {
+                assertTrue(savedInternals.contains(internal.path()), "Expected true");
                 seenInternals.add(internal);
-                internal = ds.getInternal(Path.getParentPath(internal.getPath()));
+                internal = ds.getInternal(Path.getParentPath(internal.path()));
             }
         }
         assertTrue(savedInternals.contains(0L), "Expected true");
@@ -301,7 +284,7 @@ class VirtualHasherTest extends VirtualHasherTestBase {
         // this will *likely* find it.
         for (int i = 0; i < 1000; i++) {
             final List<VirtualLeafRecord<TestKey, TestValue>> leaves = invalidateNodes(ds, dirtyLeafPaths.stream());
-            final Hash rootHash = hasher.hash(ds::getLeaf, ds::getInternal, leaves.iterator(), 52L, 104L);
+            final Hash rootHash = hasher.hash(ds::loadHash, leaves.iterator(), 52L, 104L);
             assertEquals(expected, rootHash, "Expected equals");
         }
     }
@@ -324,14 +307,13 @@ class VirtualHasherTest extends VirtualHasherTestBase {
                 53L, 56L, 59L, 63L, 66L, 72L, 76L, 77L, 80L, 81L, 82L, 83L, 85L, 87L, 88L, 94L, 96L, 100L, 104L);
 
         final List<VirtualLeafRecord<TestKey, TestValue>> leaves = invalidateNodes(ds, dirtyLeafPaths.stream());
-        hasher.hash(ds::getLeaf, ds::getInternal, leaves.iterator(), 52L, 104L, listener);
+        hasher.hash(ds::loadHash, leaves.iterator(), 52L, 104L, listener);
 
         // Check the different callbacks were called the correct number of times
         assertEquals(1, listener.onHashingStartedCallCount, "Unexpected count");
         assertEquals(3, listener.onBatchStartedCallCount, "Unexpected count");
         assertEquals(12, listener.onRankStartedCallCount, "Unexpected count");
-        assertEquals(42, listener.onInternalHashedCallCount, "Unexpected count");
-        assertEquals(19, listener.onLeafHashedCallCount, "Unexpected count");
+        assertEquals(61, listener.onNodeHashedCallCount, "Unexpected count");
         assertEquals(12, listener.onRankCompletedCallCount, "Unexpected count");
         assertEquals(3, listener.onBatchCompletedCallCount, "Unexpected count");
         assertEquals(1, listener.onHashingCompletedCallCount, "Unexpected count");
@@ -342,7 +324,7 @@ class VirtualHasherTest extends VirtualHasherTestBase {
 
     /**
      * We found a bug while doing large reconnect tests where the VirtualHasher was asking for
-     * {@link VirtualInternalRecord}s before they had been written (#4251). In reality, the
+     * {@link PathHashRecord}s before they had been written (#4251). In reality, the
      * hasher never should have been asking for those records in the first place (this was a
      * needless performance problem). This test covers that specific case.
      */
@@ -361,20 +343,16 @@ class VirtualHasherTest extends VirtualHasherTestBase {
         final long lastLeafPath = 211L;
         final Iterator<VirtualLeafRecord<TestKey, TestValue>> dirtyLeaves = LongStream.range(
                         firstLeafPath, lastLeafPath)
-                .mapToObj(path -> new VirtualLeafRecord<>(path, null, new TestKey(path), new TestValue(path)))
+                .mapToObj(path -> new VirtualLeafRecord<>(path, new TestKey(path), new TestValue(path)))
                 .iterator();
 
-        final LongFunction<VirtualLeafRecord<TestKey, TestValue>> leafReader = path -> {
-            throw new AssertionError("Leaves should not be queried");
-        };
-
-        final LongFunction<VirtualInternalRecord> internalReader = path -> {
-            throw new AssertionError("Internals should not be queried");
+        final LongFunction<Hash> hashReader = path -> {
+            throw new AssertionError("Hashes not be queried");
         };
 
         assertDoesNotThrow(
                 () -> {
-                    hasher.hash(leafReader, internalReader, dirtyLeaves, firstLeafPath, lastLeafPath, listener);
+                    hasher.hash(hashReader, dirtyLeaves, firstLeafPath, lastLeafPath, listener);
                 },
                 "Hashing should not throw an exception");
     }
@@ -394,7 +372,6 @@ class VirtualHasherTest extends VirtualHasherTestBase {
                     tokenStack.push(token);
                     break;
                 case HashingListener.ON_INTERNAL_SYMBOL:
-                case HashingListener.ON_LEAF_SYMBOL:
                     break;
                 case HashingListener.ON_RANK_COMPLETED_SYMBOL:
                     assertEquals(
@@ -421,13 +398,13 @@ class VirtualHasherTest extends VirtualHasherTestBase {
     }
 
     private static void assertRecordsInRankAreAscendingPathOrder(final HashingListener listener) {
-        for (final List<VirtualRecord> rank : listener.ranks) {
+        for (final List<PathHashRecord> rank : listener.ranks) {
             long prevPath = Path.INVALID_PATH;
-            for (final VirtualRecord r : rank) {
+            for (final PathHashRecord r : rank) {
                 assertTrue(
-                        prevPath < r.getPath(),
-                        "Path not in ascending path order. prevPath=" + prevPath + ", path=" + r.getPath());
-                prevPath = r.getPath();
+                        prevPath < r.path(),
+                        "Path not in ascending path order. prevPath=" + prevPath + ", path=" + r.path());
+                prevPath = r.path();
             }
         }
     }
@@ -445,36 +422,24 @@ class VirtualHasherTest extends VirtualHasherTestBase {
         static final char ON_RANK_STARTED_SYMBOL = '<';
         static final char ON_RANK_COMPLETED_SYMBOL = '>';
         static final char ON_INTERNAL_SYMBOL = 'I';
-        static final char ON_LEAF_SYMBOL = 'L';
 
         private int onHashingStartedCallCount = 0;
         private int onBatchStartedCallCount = 0;
         private int onRankStartedCallCount = 0;
-        private int onInternalHashedCallCount = 0;
-        private int onLeafHashedCallCount = 0;
+        private int onNodeHashedCallCount = 0;
         private int onRankCompletedCallCount = 0;
         private int onBatchCompletedCallCount = 0;
         private int onHashingCompletedCallCount = 0;
         private final StringBuilder callHistory = new StringBuilder();
 
-        private final Deque<List<VirtualRecord>> ranks = new ArrayDeque<>();
-        private final Deque<List<VirtualInternalRecord>> internalBatches = new ArrayDeque<>();
-        private final Deque<List<VirtualLeafRecord<TestKey, TestValue>>> leafBatches = new ArrayDeque<>();
+        private final Deque<List<PathHashRecord>> ranks = new ArrayDeque<>();
+        private final Deque<List<PathHashRecord>> internalBatches = new ArrayDeque<>();
 
-        List<VirtualInternalRecord> unsortedInternals() {
-            List<VirtualInternalRecord> records = new ArrayList<>();
-            for (List<VirtualInternalRecord> list : internalBatches) {
+        List<PathHashRecord> unsortedInternals() {
+            List<PathHashRecord> records = new ArrayList<>();
+            for (List<PathHashRecord> list : internalBatches) {
                 records.addAll(list);
             }
-            return records;
-        }
-
-        List<VirtualLeafRecord<TestKey, TestValue>> sortedLeaves() {
-            List<VirtualLeafRecord<TestKey, TestValue>> records = new ArrayList<>();
-            for (List<VirtualLeafRecord<TestKey, TestValue>> list : leafBatches) {
-                records.addAll(list);
-            }
-            records.sort(Comparator.comparingLong(VirtualRecord::getPath));
             return records;
         }
 
@@ -483,14 +448,12 @@ class VirtualHasherTest extends VirtualHasherTestBase {
             onHashingStartedCallCount++;
             callHistory.append(ON_HASHING_STARTED_SYMBOL);
             internalBatches.clear();
-            leafBatches.clear();
         }
 
         @Override
         public void onBatchStarted() {
             onBatchStartedCallCount++;
             callHistory.append(ON_BATCH_STARTED_SYMBOL);
-            leafBatches.add(new ArrayList<>());
             internalBatches.add(new ArrayList<>());
         }
 
@@ -502,19 +465,12 @@ class VirtualHasherTest extends VirtualHasherTestBase {
         }
 
         @Override
-        public void onInternalHashed(VirtualInternalRecord internal) {
-            onInternalHashedCallCount++;
+        public void onNodeHashed(final long path, final Hash hash) {
+            onNodeHashedCallCount++;
             callHistory.append(ON_INTERNAL_SYMBOL);
-            internalBatches.getLast().add(internal);
-            ranks.getLast().add(internal);
-        }
-
-        @Override
-        public void onLeafHashed(VirtualLeafRecord<TestKey, TestValue> leaf) {
-            onLeafHashedCallCount++;
-            callHistory.append(ON_LEAF_SYMBOL);
-            leafBatches.getLast().add(leaf);
-            ranks.getLast().add(leaf);
+            final PathHashRecord rec = new PathHashRecord(path, hash);
+            internalBatches.getLast().add(rec);
+            ranks.getLast().add(rec);
         }
 
         @Override

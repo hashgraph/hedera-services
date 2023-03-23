@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package com.swirlds.virtualmap.internal.merkle;
+package com.swirlds.virtualmap.datasource;
 
-import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.crypto.Hash;
 
 /**
- * A base interface for both {@link VirtualInternalNode} and {@link VirtualLeafNode}.
+ * A record that contains a path and a hash. It serves for both node types, internal and leaf.
+ * @param path the path of the node
+ * @param hash the hash of the node
  */
-public sealed interface VirtualNode extends MerkleNode permits VirtualInternalNode, VirtualLeafNode {
-
-    /**
-     * Get the path for this node.
-     */
-    long getPath();
+public record PathHashRecord(long path, Hash hash) {
+    public PathHashRecord(long path) {
+        this(path, null);
+    }
 }

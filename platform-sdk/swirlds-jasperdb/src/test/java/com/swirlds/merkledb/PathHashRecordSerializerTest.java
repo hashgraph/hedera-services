@@ -24,19 +24,19 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.merkledb.files.VirtualInternalRecordSerializer;
+import com.swirlds.merkledb.files.PathHashRecordSerializer;
 import com.swirlds.merkledb.serialize.DataItemHeader;
-import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
+import com.swirlds.virtualmap.datasource.PathHashRecord;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.junit.jupiter.api.Test;
 
-class VirtualInternalRecordSerializerTest {
+class PathHashRecordSerializerTest {
 
     @Test
     void deserializeEnforcesCurrentVersion() {
         final ByteBuffer someBuffer = ByteBuffer.allocate(1);
-        final VirtualInternalRecordSerializer subject = new VirtualInternalRecordSerializer();
+        final PathHashRecordSerializer subject = new PathHashRecordSerializer();
 
         assertThrows(
                 IllegalArgumentException.class,
@@ -48,8 +48,8 @@ class VirtualInternalRecordSerializerTest {
     void serializeEnforcesDefaultDigest() {
         final ByteBuffer bbuf = mock(ByteBuffer.class);
         final Hash nonDefaultHash = new Hash(DigestType.SHA_512);
-        final VirtualInternalRecordSerializer subject = new VirtualInternalRecordSerializer();
-        final VirtualInternalRecord data = new VirtualInternalRecord(1L, nonDefaultHash);
+        final PathHashRecordSerializer subject = new PathHashRecordSerializer();
+        final PathHashRecord data = new PathHashRecord(1L, nonDefaultHash);
         assertEquals(Long.BYTES, subject.getHeaderSize(), "Header size should be 8 bytes");
         assertEquals(
                 56, subject.getSerializedSize(), "Serialized size should be 8 bytes for header + 48 bytes for digest");
@@ -65,8 +65,8 @@ class VirtualInternalRecordSerializerTest {
     void deserializeHappyPath() throws IOException {
         final ByteBuffer bb = mock(ByteBuffer.class);
         final Hash validHash = new Hash(DigestType.SHA_384);
-        final VirtualInternalRecord expectedData = new VirtualInternalRecord(42L, validHash);
-        final VirtualInternalRecordSerializer subject = new VirtualInternalRecordSerializer();
+        final PathHashRecord expectedData = new PathHashRecord(42L, validHash);
+        final PathHashRecordSerializer subject = new PathHashRecordSerializer();
         when(bb.getLong()).thenReturn(42L);
         when(bb.get(any())).thenReturn(bb);
         final DataItemHeader expectedHeader = new DataItemHeader(56, 42L);

@@ -215,6 +215,7 @@ public class MerkleTestBase extends StateTestBase {
         final var builder = new JasperDbBuilder<OnDiskKey<String>, OnDiskValue<String>>()
                 // Force all hashes to disk, to make sure we're going through all the
                 // serialization paths we can
+                // use hashesRamToDiskThreshold after migration to 0.37-SNAPSHOT
                 .internalHashesRamToDiskThreshold(0)
                 .maxNumOfKeys(100)
                 .preferDiskBasedIndexes(true)

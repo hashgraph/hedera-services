@@ -85,7 +85,7 @@ public class JasperDbBuilder<K extends VirtualKey, V extends VirtualValue> imple
      */
     private long maxNumOfKeys = settings.getMaxNumOfKeys();
     /**
-     * Threshold where we switch from storing internal hashes in ram to storing them on disk. If it is 0 then everything
+     * Threshold where we switch from storing node hashes in ram to storing them on disk. If it is 0 then everything
      * is on disk, if it is Long.MAX_VALUE then everything is in ram. Any value in the middle is the path value at which
      * we swap from ram to disk. This allows a tree where the lower levels of the tree nodes hashes are in ram and the
      * upper larger less changing layers are on disk.
@@ -93,7 +93,7 @@ public class JasperDbBuilder<K extends VirtualKey, V extends VirtualValue> imple
      * <p><b>IMPORTANT: This can only be set before a new database is created, changing on an existing database will
      * break it.</b></p>
      */
-    private long internalHashesRamToDiskThreshold = settings.getInternalHashesRamToDiskThreshold();
+    private long hashesRamToDiskThreshold = settings.getHashesRamToDiskThreshold();
     /**
      * Serializer for converting raw data to/from VirtualLeafRecords
      * <p><b>IMPORTANT: This can only be set before a new database is created, changing on an existing database will
@@ -107,7 +107,7 @@ public class JasperDbBuilder<K extends VirtualKey, V extends VirtualValue> imple
      * break it.</b></p>
      * <p><b>must be specified</b></p>
      */
-    private VirtualInternalRecordSerializer virtualInternalRecordSerializer = new VirtualInternalRecordSerializer();
+    private PathHashRecordSerializer pathHashRecordSerializer = new PathHashRecordSerializer();
     /**
      * Serializer for converting raw data to/from keys.
      * <p><b>IMPORTANT: This can only be set before a new database is created, changing on an existing database will
@@ -149,8 +149,8 @@ public class JasperDbBuilder<K extends VirtualKey, V extends VirtualValue> imple
      * break it.</b></p>
      * <p><b>must be specified</b></p>
      */
-    public JasperDbBuilder<K, V> virtualInternalRecordSerializer(final VirtualInternalRecordSerializer serializer) {
-        this.virtualInternalRecordSerializer = Objects.requireNonNull(serializer);
+    public JasperDbBuilder<K, V> virtualInternalRecordSerializer(final PathHashRecordSerializer serializer) {
+        this.pathHashRecordSerializer = Objects.requireNonNull(serializer);
         return this;
     }
 
@@ -203,12 +203,12 @@ public class JasperDbBuilder<K extends VirtualKey, V extends VirtualValue> imple
      * <p><b>IMPORTANT: This can only be set before a new database is created, changing on an existing database will
      * break it.</b></p>
      */
-    public JasperDbBuilder<K, V> internalHashesRamToDiskThreshold(final long value) {
+    public JasperDbBuilder<K, V> hashesRamToDiskThreshold(final long value) {
         if (value < 0) {
-            throw new IllegalArgumentException("internalHashesRamToDiskThreshold should be >= 0");
+            throw new IllegalArgumentException("hashesRamToDiskThreshold should be >= 0");
         }
 
-        this.internalHashesRamToDiskThreshold = value;
+        this.hashesRamToDiskThreshold = value;
         return this;
     }
 
@@ -233,13 +233,13 @@ public class JasperDbBuilder<K extends VirtualKey, V extends VirtualValue> imple
         try {
             return createDataSource(
                     virtualLeafRecordSerializer,
-                    virtualInternalRecordSerializer,
+                    pathHashRecordSerializer,
                     keySerializer,
                     getStorageDir(label),
                     label,
                     maxNumOfKeys,
                     withDbCompactionEnabled,
-                    internalHashesRamToDiskThreshold,
+                    hashesRamToDiskThreshold,
                     preferDiskBasedIndexes);
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);
@@ -262,13 +262,13 @@ public class JasperDbBuilder<K extends VirtualKey, V extends VirtualValue> imple
             snapshotMeJasperDB.snapshot(to);
             return createDataSource(
                     virtualLeafRecordSerializer,
-                    virtualInternalRecordSerializer,
+                    pathHashRecordSerializer,
                     keySerializer,
                     to,
                     label,
                     maxNumOfKeys,
                     false,
-                    internalHashesRamToDiskThreshold,
+                    hashesRamToDiskThreshold,
                     preferDiskBasedIndexes);
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);
@@ -304,13 +304,13 @@ public class JasperDbBuilder<K extends VirtualKey, V extends VirtualValue> imple
         try {
             return createDataSource(
                     virtualLeafRecordSerializer,
-                    virtualInternalRecordSerializer,
+                    pathHashRecordSerializer,
                     keySerializer,
                     to,
                     label,
                     maxNumOfKeys,
                     true,
-                    internalHashesRamToDiskThreshold,
+                    hashesRamToDiskThreshold,
                     preferDiskBasedIndexes);
         } catch (final IOException ex) {
             throw new UncheckedIOException(ex);
@@ -349,25 +349,25 @@ public class JasperDbBuilder<K extends VirtualKey, V extends VirtualValue> imple
      */
     VirtualDataSourceJasperDB<K, V> createDataSource(
             final VirtualLeafRecordSerializer<K, V> virtualLeafRecordSerializer,
-            final VirtualInternalRecordSerializer virtualInternalRecordSerializer,
+            final PathHashRecordSerializer pathHashRecordSerializer,
             final KeySerializer<K> keySerializer,
             final Path storageDir,
             final String label,
             final long maxNumOfKeys,
             final boolean mergingEnabled,
-            final long internalHashesRamToDiskThreshold,
+            final long hashesRamToDiskThreshold,
             final boolean preferDiskBasedIndexes)
             throws IOException {
 
         return new VirtualDataSourceJasperDB<>(
                 virtualLeafRecordSerializer,
-                virtualInternalRecordSerializer,
+                pathHashRecordSerializer,
                 keySerializer,
                 storageDir,
                 label,
                 maxNumOfKeys,
                 mergingEnabled,
-                internalHashesRamToDiskThreshold,
+                hashesRamToDiskThreshold,
                 preferDiskBasedIndexes);
     }
 
@@ -378,9 +378,9 @@ public class JasperDbBuilder<K extends VirtualKey, V extends VirtualValue> imple
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeBoolean(preferDiskBasedIndexes);
         out.writeLong(maxNumOfKeys);
-        out.writeLong(internalHashesRamToDiskThreshold);
+        out.writeLong(hashesRamToDiskThreshold);
         out.writeSerializable(virtualLeafRecordSerializer, false);
-        out.writeSerializable(virtualInternalRecordSerializer, false);
+        out.writeSerializable(pathHashRecordSerializer, false);
         out.writeSerializable(keySerializer, true);
     }
 
@@ -394,9 +394,9 @@ public class JasperDbBuilder<K extends VirtualKey, V extends VirtualValue> imple
         }
         preferDiskBasedIndexes = in.readBoolean();
         maxNumOfKeys = in.readLong();
-        internalHashesRamToDiskThreshold = in.readLong();
+        hashesRamToDiskThreshold = in.readLong();
         virtualLeafRecordSerializer = in.readSerializable(false, VirtualLeafRecordSerializer::new);
-        virtualInternalRecordSerializer = in.readSerializable(false, VirtualInternalRecordSerializer::new);
+        pathHashRecordSerializer = in.readSerializable(false, PathHashRecordSerializer::new);
         keySerializer = in.readSerializable();
     }
 
@@ -416,9 +416,9 @@ public class JasperDbBuilder<K extends VirtualKey, V extends VirtualValue> imple
         // Storage dir is intentionally omitted
         return preferDiskBasedIndexes == that.preferDiskBasedIndexes
                 && maxNumOfKeys == that.maxNumOfKeys
-                && internalHashesRamToDiskThreshold == that.internalHashesRamToDiskThreshold
+                && hashesRamToDiskThreshold == that.hashesRamToDiskThreshold
                 && Objects.equals(virtualLeafRecordSerializer, that.virtualLeafRecordSerializer)
-                && Objects.equals(virtualInternalRecordSerializer, that.virtualInternalRecordSerializer)
+                && Objects.equals(pathHashRecordSerializer, that.pathHashRecordSerializer)
                 && Objects.equals(keySerializer, that.keySerializer);
     }
 
@@ -431,9 +431,9 @@ public class JasperDbBuilder<K extends VirtualKey, V extends VirtualValue> imple
                 storageDir,
                 preferDiskBasedIndexes,
                 maxNumOfKeys,
-                internalHashesRamToDiskThreshold,
+                hashesRamToDiskThreshold,
                 virtualLeafRecordSerializer,
-                virtualInternalRecordSerializer,
+                pathHashRecordSerializer,
                 keySerializer);
     }
 

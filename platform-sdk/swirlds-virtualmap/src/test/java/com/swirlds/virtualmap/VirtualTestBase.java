@@ -26,7 +26,7 @@ import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialBinaryMerkleInternal;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
-import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
+import com.swirlds.virtualmap.datasource.PathHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
 import java.io.IOException;
@@ -106,12 +106,12 @@ public class VirtualTestBase {
     protected VirtualNodeCache<TestKey, TestValue> cache;
     private VirtualNodeCache<TestKey, TestValue> lastCache;
 
-    private VirtualInternalRecord rootInternal;
-    private VirtualInternalRecord leftInternal;
-    private VirtualInternalRecord rightInternal;
-    private VirtualInternalRecord leftLeftInternal;
-    private VirtualInternalRecord leftRightInternal;
-    private VirtualInternalRecord rightLeftInternal;
+    private PathHashRecord rootInternal;
+    private PathHashRecord leftInternal;
+    private PathHashRecord rightInternal;
+    private PathHashRecord leftLeftInternal;
+    private PathHashRecord leftRightInternal;
+    private PathHashRecord rightLeftInternal;
     private VirtualLeafRecord<TestKey, TestValue> lastALeaf;
     private VirtualLeafRecord<TestKey, TestValue> lastBLeaf;
     private VirtualLeafRecord<TestKey, TestValue> lastCLeaf;
@@ -149,153 +149,136 @@ public class VirtualTestBase {
         rounds.add(cache);
     }
 
-    protected VirtualInternalRecord rootInternal() {
-        rootInternal = rootInternal == null ? new VirtualInternalRecord(ROOT_PATH) : copy(rootInternal);
+    protected PathHashRecord rootInternal() {
+        rootInternal = rootInternal == null ? new PathHashRecord(ROOT_PATH) : copy(rootInternal);
         return rootInternal;
     }
 
-    protected VirtualInternalRecord leftInternal() {
-        leftInternal = leftInternal == null ? new VirtualInternalRecord(LEFT_PATH) : copy(leftInternal);
+    protected PathHashRecord leftInternal() {
+        leftInternal = leftInternal == null ? new PathHashRecord(LEFT_PATH) : copy(leftInternal);
         return leftInternal;
     }
 
-    protected VirtualInternalRecord rightInternal() {
-        rightInternal = rightInternal == null ? new VirtualInternalRecord(RIGHT_PATH) : copy(rightInternal);
+    protected PathHashRecord rightInternal() {
+        rightInternal = rightInternal == null ? new PathHashRecord(RIGHT_PATH) : copy(rightInternal);
         return rightInternal;
     }
 
-    protected VirtualInternalRecord leftLeftInternal() {
-        leftLeftInternal =
-                leftLeftInternal == null ? new VirtualInternalRecord(LEFT_LEFT_PATH) : copy(leftLeftInternal);
+    protected PathHashRecord leftLeftInternal() {
+        leftLeftInternal = leftLeftInternal == null ? new PathHashRecord(LEFT_LEFT_PATH) : copy(leftLeftInternal);
         return leftLeftInternal;
     }
 
-    protected VirtualInternalRecord leftRightInternal() {
-        leftRightInternal =
-                leftRightInternal == null ? new VirtualInternalRecord(LEFT_RIGHT_PATH) : copy(leftRightInternal);
+    protected PathHashRecord leftRightInternal() {
+        leftRightInternal = leftRightInternal == null ? new PathHashRecord(LEFT_RIGHT_PATH) : copy(leftRightInternal);
         return leftRightInternal;
     }
 
-    protected VirtualInternalRecord rightLeftInternal() {
-        rightLeftInternal =
-                rightLeftInternal == null ? new VirtualInternalRecord(RIGHT_LEFT_PATH) : copy(rightLeftInternal);
+    protected PathHashRecord rightLeftInternal() {
+        rightLeftInternal = rightLeftInternal == null ? new PathHashRecord(RIGHT_LEFT_PATH) : copy(rightLeftInternal);
         return rightLeftInternal;
     }
 
     protected VirtualLeafRecord<TestKey, TestValue> leaf(long path, long key, long value) {
-        return new VirtualLeafRecord<>(path, null, new TestKey(key), new TestValue(value));
+        return new VirtualLeafRecord<>(path, new TestKey(key), new TestValue(value));
     }
 
     protected VirtualLeafRecord<TestKey, TestValue> appleLeaf(long path) {
-        lastALeaf = lastALeaf == null
-                ? new VirtualLeafRecord<>(path, null, A_KEY, APPLE)
-                : copyWithPath(lastALeaf, APPLE, path);
+        lastALeaf =
+                lastALeaf == null ? new VirtualLeafRecord<>(path, A_KEY, APPLE) : copyWithPath(lastALeaf, APPLE, path);
         return lastALeaf;
     }
 
     protected VirtualLeafRecord<TestKey, TestValue> bananaLeaf(long path) {
         lastBLeaf = lastBLeaf == null
-                ? new VirtualLeafRecord<>(path, null, B_KEY, BANANA)
+                ? new VirtualLeafRecord<>(path, B_KEY, BANANA)
                 : copyWithPath(lastBLeaf, BANANA, path);
         return lastBLeaf;
     }
 
     protected VirtualLeafRecord<TestKey, TestValue> cherryLeaf(long path) {
         lastCLeaf = lastCLeaf == null
-                ? new VirtualLeafRecord<>(path, null, C_KEY, CHERRY)
+                ? new VirtualLeafRecord<>(path, C_KEY, CHERRY)
                 : copyWithPath(lastCLeaf, CHERRY, path);
         return lastCLeaf;
     }
 
     protected VirtualLeafRecord<TestKey, TestValue> dateLeaf(long path) {
-        lastDLeaf = lastDLeaf == null
-                ? new VirtualLeafRecord<>(path, null, D_KEY, DATE)
-                : copyWithPath(lastDLeaf, DATE, path);
+        lastDLeaf =
+                lastDLeaf == null ? new VirtualLeafRecord<>(path, D_KEY, DATE) : copyWithPath(lastDLeaf, DATE, path);
         return lastDLeaf;
     }
 
     protected VirtualLeafRecord<TestKey, TestValue> eggplantLeaf(long path) {
         lastELeaf = lastELeaf == null
-                ? new VirtualLeafRecord<>(path, null, E_KEY, EGGPLANT)
+                ? new VirtualLeafRecord<>(path, E_KEY, EGGPLANT)
                 : copyWithPath(lastELeaf, EGGPLANT, path);
         return lastELeaf;
     }
 
     protected VirtualLeafRecord<TestKey, TestValue> figLeaf(long path) {
-        lastFLeaf = lastFLeaf == null
-                ? new VirtualLeafRecord<>(path, null, F_KEY, FIG)
-                : copyWithPath(lastFLeaf, FIG, path);
+        lastFLeaf = lastFLeaf == null ? new VirtualLeafRecord<>(path, F_KEY, FIG) : copyWithPath(lastFLeaf, FIG, path);
         return lastFLeaf;
     }
 
     protected VirtualLeafRecord<TestKey, TestValue> grapeLeaf(long path) {
-        lastGLeaf = lastGLeaf == null
-                ? new VirtualLeafRecord<>(path, null, G_KEY, GRAPE)
-                : copyWithPath(lastGLeaf, GRAPE, path);
+        lastGLeaf =
+                lastGLeaf == null ? new VirtualLeafRecord<>(path, G_KEY, GRAPE) : copyWithPath(lastGLeaf, GRAPE, path);
         return lastGLeaf;
     }
 
     protected VirtualLeafRecord<TestKey, TestValue> aardvarkLeaf(long path) {
         lastALeaf = lastALeaf == null
-                ? new VirtualLeafRecord<>(path, null, A_KEY, AARDVARK)
+                ? new VirtualLeafRecord<>(path, A_KEY, AARDVARK)
                 : copyWithPath(lastALeaf, AARDVARK, path);
         return lastALeaf;
     }
 
     protected VirtualLeafRecord<TestKey, TestValue> bearLeaf(long path) {
-        lastBLeaf = lastBLeaf == null
-                ? new VirtualLeafRecord<>(path, null, B_KEY, BEAR)
-                : copyWithPath(lastBLeaf, BEAR, path);
+        lastBLeaf =
+                lastBLeaf == null ? new VirtualLeafRecord<>(path, B_KEY, BEAR) : copyWithPath(lastBLeaf, BEAR, path);
         return lastBLeaf;
     }
 
     protected VirtualLeafRecord<TestKey, TestValue> cuttlefishLeaf(long path) {
         lastCLeaf = lastCLeaf == null
-                ? new VirtualLeafRecord<>(path, null, C_KEY, CUTTLEFISH)
+                ? new VirtualLeafRecord<>(path, C_KEY, CUTTLEFISH)
                 : copyWithPath(lastCLeaf, CUTTLEFISH, path);
         return lastCLeaf;
     }
 
     protected VirtualLeafRecord<TestKey, TestValue> dogLeaf(long path) {
-        lastDLeaf = lastDLeaf == null
-                ? new VirtualLeafRecord<>(path, null, D_KEY, DOG)
-                : copyWithPath(lastDLeaf, DOG, path);
+        lastDLeaf = lastDLeaf == null ? new VirtualLeafRecord<>(path, D_KEY, DOG) : copyWithPath(lastDLeaf, DOG, path);
         return lastDLeaf;
     }
 
     protected VirtualLeafRecord<TestKey, TestValue> emuLeaf(long path) {
-        lastELeaf = lastELeaf == null
-                ? new VirtualLeafRecord<>(path, null, E_KEY, EMU)
-                : copyWithPath(lastELeaf, EMU, path);
+        lastELeaf = lastELeaf == null ? new VirtualLeafRecord<>(path, E_KEY, EMU) : copyWithPath(lastELeaf, EMU, path);
         return lastELeaf;
     }
 
     protected VirtualLeafRecord<TestKey, TestValue> foxLeaf(long path) {
-        lastFLeaf = lastFLeaf == null
-                ? new VirtualLeafRecord<>(path, null, F_KEY, FOX)
-                : copyWithPath(lastFLeaf, FOX, path);
+        lastFLeaf = lastFLeaf == null ? new VirtualLeafRecord<>(path, F_KEY, FOX) : copyWithPath(lastFLeaf, FOX, path);
         return lastFLeaf;
     }
 
     protected VirtualLeafRecord<TestKey, TestValue> gooseLeaf(long path) {
-        lastGLeaf = lastGLeaf == null
-                ? new VirtualLeafRecord<>(path, null, G_KEY, GOOSE)
-                : copyWithPath(lastGLeaf, GOOSE, path);
+        lastGLeaf =
+                lastGLeaf == null ? new VirtualLeafRecord<>(path, G_KEY, GOOSE) : copyWithPath(lastGLeaf, GOOSE, path);
         return lastGLeaf;
     }
 
-    protected VirtualLeafRecord<TestKey, TestValue> hash(VirtualLeafRecord<TestKey, TestValue> rec) {
-        rec.setHash(CRYPTO.digestSync(rec));
-        return rec;
+    protected PathHashRecord hash(VirtualLeafRecord<TestKey, TestValue> rec) {
+        return new PathHashRecord(rec.getPath(), CRYPTO.digestSync(rec));
     }
 
     private VirtualLeafRecord<TestKey, TestValue> copyWithPath(
             VirtualLeafRecord<TestKey, TestValue> leaf, TestValue value, long path) {
-        return new VirtualLeafRecord<>(path, leaf.getHash(), leaf.getKey(), value);
+        return new VirtualLeafRecord<>(path, leaf.getKey(), value);
     }
 
-    private VirtualInternalRecord copy(VirtualInternalRecord rec) {
-        return new VirtualInternalRecord(rec.getPath(), rec.getHash());
+    private PathHashRecord copy(PathHashRecord rec) {
+        return new PathHashRecord(rec.path(), rec.hash());
     }
 
     public static final class TestInternal extends PartialBinaryMerkleInternal implements MerkleInternal {

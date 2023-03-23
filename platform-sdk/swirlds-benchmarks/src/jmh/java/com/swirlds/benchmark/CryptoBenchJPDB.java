@@ -17,9 +17,8 @@
 package com.swirlds.benchmark;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.jasperdb.JasperDbBuilder;
-import com.swirlds.jasperdb.VirtualInternalRecordSerializer;
+import com.swirlds.jasperdb.PathHashRecordSerializer;
 import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
 import com.swirlds.virtualmap.VirtualMap;
 import org.openjdk.jmh.annotations.Setup;
@@ -36,8 +35,6 @@ public class CryptoBenchJPDB extends CryptoBench {
         final VirtualLeafRecordSerializer<BenchmarkKey, BenchmarkValue> virtualLeafRecordSerializer =
                 new VirtualLeafRecordSerializer<>(
                         (short) 1,
-                        DigestType.SHA_384,
-                        (short) 1,
                         BenchmarkKey.getSerializedSize(),
                         new BenchmarkKeySupplier(),
                         (short) 1,
@@ -47,10 +44,27 @@ public class CryptoBenchJPDB extends CryptoBench {
         final JasperDbBuilder<BenchmarkKey, BenchmarkValue> diskDbBuilder = new JasperDbBuilder<>();
         diskDbBuilder
                 .virtualLeafRecordSerializer(virtualLeafRecordSerializer)
-                .virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
+                .virtualInternalRecordSerializer(new PathHashRecordSerializer())
                 .keySerializer(new BenchmarkKeySerializer())
                 .storageDir(getTestDir().resolve("jasperdb"))
                 .preferDiskBasedIndexes(false);
         return new VirtualMap<>(LABEL, diskDbBuilder);
+    }
+
+    public static void main(final String[] args) throws Exception {
+        final CryptoBenchJPDB bench = new CryptoBenchJPDB();
+        bench.numFiles = 10;
+        bench.numRecords = 100000;
+        bench.maxKey = 1000000;
+        bench.keySize = 8;
+        bench.recordSize = 24;
+        bench.setup();
+        bench.setupJasperDB();
+        for (int i = 0; i < 1; i++) {
+            bench.beforeTest();
+            bench.transferSerial();
+            bench.afterTest();
+        }
+        bench.destroy();
     }
 }
