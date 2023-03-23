@@ -19,7 +19,6 @@ package com.hedera.services.bdd.suites.contract.precompile;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -43,7 +42,6 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
@@ -64,7 +62,6 @@ import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.math.BigInteger;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -72,9 +69,9 @@ import org.apache.logging.log4j.Logger;
 public class ApproveAllowanceSuite extends HapiSuite {
     public static final String CONTRACTS_PERMITTED_DELEGATE_CALLERS = "contracts.permittedDelegateCallers";
     private static final Logger log = LogManager.getLogger(ApproveAllowanceSuite.class);
-    private static final String ATTACK_CALL = "attackCall";
-    private static final String PRETEND_PAIR = "PretendPair";
-    private static final String PRETEND_ATTACKER = "PretendAttacker";
+    public static final String ATTACK_CALL = "attackCall";
+    public static final String PRETEND_PAIR = "PretendPair";
+    public static final String PRETEND_ATTACKER = "PretendAttacker";
     private static final long GAS_TO_OFFER = 4_000_000L;
     private static final String FUNGIBLE_TOKEN = "fungibleToken";
     private static final String NON_FUNGIBLE_TOKEN = "nonFungibleToken";
@@ -106,17 +103,15 @@ public class ApproveAllowanceSuite extends HapiSuite {
                 nftIsApprovedForAll(),
                 nftGetApproved(),
                 nftSetApprovalForAll(),
-                whitelistPositiveCase(),
-                whitelistNegativeCases(),
                 testIndirectApprovalWith(DELEGATE_PRECOMPILE_CALLEE, false),
                 testIndirectApprovalWith(DIRECT_PRECOMPILE_CALLEE, true),
                 testIndirectApprovalWith(DELEGATE_ERC_CALLEE, false),
                 testIndirectApprovalWith(DIRECT_ERC_CALLEE, true));
     }
 
-    private static final String DELEGATE_PRECOMPILE_CALLEE = "PretendCallee";
+    public static final String DELEGATE_PRECOMPILE_CALLEE = "PretendCallee";
     private static final String DIRECT_PRECOMPILE_CALLEE = "DirectPrecompileCallee";
-    private static final String DELEGATE_ERC_CALLEE = "ERC20DelegateCallee";
+    public static final String DELEGATE_ERC_CALLEE = "ERC20DelegateCallee";
     private static final String DIRECT_ERC_CALLEE = "NonDelegateCallee";
 
     @Override
@@ -500,127 +495,5 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                 : getAccountDetails(callee)
                                         .has(accountDetailsWith().tokenAllowancesCount(0))
                                         .logged());
-    }
-
-    private HapiSpec whitelistNegativeCases() {
-        final AtomicLong unlistedCalleeMirrorNum = new AtomicLong();
-        final AtomicLong whitelistedCalleeMirrorNum = new AtomicLong();
-        final AtomicReference<TokenID> tokenID = new AtomicReference<>();
-        final AtomicReference<String> attackerMirrorAddr = new AtomicReference<>();
-        final AtomicReference<String> unListedCalleeMirrorAddr = new AtomicReference<>();
-        final AtomicReference<String> whitelistedCalleeMirrorAddr = new AtomicReference<>();
-
-        return propertyPreservingHapiSpec("WhitelistNegativeCases")
-                .preserving(CONTRACTS_PERMITTED_DELEGATE_CALLERS)
-                .given(
-                        cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(PRETEND_ATTACKER)
-                                .exposingCreatedIdTo(id -> attackerMirrorAddr.set(asHexedSolidityAddress(id))),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .initialSupply(Long.MAX_VALUE)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .treasury(TOKEN_TREASURY)
-                                .exposingCreatedIdTo(id -> tokenID.set(asToken(id))),
-                        uploadInitCode(PRETEND_PAIR),
-                        contractCreate(PRETEND_PAIR).adminKey(DEFAULT_PAYER),
-                        uploadInitCode(DELEGATE_ERC_CALLEE),
-                        contractCreate(DELEGATE_ERC_CALLEE)
-                                .adminKey(DEFAULT_PAYER)
-                                .exposingNumTo(num -> {
-                                    whitelistedCalleeMirrorNum.set(num);
-                                    whitelistedCalleeMirrorAddr.set(asHexedSolidityAddress(0, 0, num));
-                                }),
-                        uploadInitCode(DELEGATE_PRECOMPILE_CALLEE),
-                        contractCreate(DELEGATE_PRECOMPILE_CALLEE)
-                                .adminKey(DEFAULT_PAYER)
-                                .exposingNumTo(num -> {
-                                    unlistedCalleeMirrorNum.set(num);
-                                    unListedCalleeMirrorAddr.set(asHexedSolidityAddress(0, 0, num));
-                                }),
-                        tokenAssociate(PRETEND_PAIR, FUNGIBLE_TOKEN),
-                        tokenAssociate(DELEGATE_ERC_CALLEE, FUNGIBLE_TOKEN),
-                        tokenAssociate(DELEGATE_PRECOMPILE_CALLEE, FUNGIBLE_TOKEN))
-                .when(
-                        sourcing(() -> overriding(
-                                CONTRACTS_PERMITTED_DELEGATE_CALLERS, "" + whitelistedCalleeMirrorNum.get())),
-                        sourcing(() -> contractCall(
-                                        PRETEND_PAIR,
-                                        CALL_TO,
-                                        asHeadlongAddress(unListedCalleeMirrorAddr.get()),
-                                        asHeadlongAddress(asSolidityAddress(tokenID.get())),
-                                        asHeadlongAddress(attackerMirrorAddr.get()))
-                                .gas(5_000_000L)
-                                .hasKnownStatus(SUCCESS)),
-                        // Because this callee isn't on the whitelist, the pair won't have an
-                        // allowance here
-                        getAccountDetails(PRETEND_PAIR).has(accountDetailsWith().tokenAllowancesCount(0)),
-                        // Instead nobody gets an allowance
-                        getAccountDetails(DELEGATE_PRECOMPILE_CALLEE)
-                                .has(accountDetailsWith().tokenAllowancesCount(0)),
-                        sourcing(() -> contractCall(
-                                        PRETEND_PAIR,
-                                        CALL_TO,
-                                        asHeadlongAddress(whitelistedCalleeMirrorAddr.get()),
-                                        asHeadlongAddress(asSolidityAddress(tokenID.get())),
-                                        asHeadlongAddress(attackerMirrorAddr.get()))
-                                .gas(5_000_000L)
-                                .hasKnownStatus(SUCCESS)))
-                .then(
-                        // Even though this is on the whitelist, b/c the whitelisted contract
-                        // is going through a delegatecall "chain" via the ERC-20 call, the pair
-                        // still won't have an allowance here
-                        getAccountDetails(PRETEND_PAIR).has(accountDetailsWith().tokenAllowancesCount(0)),
-                        // Instead of the callee
-                        getAccountDetails(DELEGATE_ERC_CALLEE)
-                                .has(accountDetailsWith().tokenAllowancesCount(0)));
-    }
-
-    private HapiSpec whitelistPositiveCase() {
-        final AtomicLong whitelistedCalleeMirrorNum = new AtomicLong();
-        final AtomicReference<TokenID> tokenID = new AtomicReference<>();
-        final AtomicReference<String> attackerMirrorAddr = new AtomicReference<>();
-        final AtomicReference<String> whitelistedCalleeMirrorAddr = new AtomicReference<>();
-
-        return propertyPreservingHapiSpec("WhitelistNegativeCases")
-                .preserving(CONTRACTS_PERMITTED_DELEGATE_CALLERS)
-                .given(
-                        cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(PRETEND_ATTACKER)
-                                .exposingCreatedIdTo(id -> attackerMirrorAddr.set(asHexedSolidityAddress(id))),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .initialSupply(Long.MAX_VALUE)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .treasury(TOKEN_TREASURY)
-                                .exposingCreatedIdTo(id -> tokenID.set(asToken(id))),
-                        uploadInitCode(PRETEND_PAIR),
-                        contractCreate(PRETEND_PAIR).adminKey(DEFAULT_PAYER),
-                        uploadInitCode(DELEGATE_PRECOMPILE_CALLEE),
-                        contractCreate(DELEGATE_PRECOMPILE_CALLEE)
-                                .adminKey(DEFAULT_PAYER)
-                                .exposingNumTo(num -> {
-                                    whitelistedCalleeMirrorNum.set(num);
-                                    whitelistedCalleeMirrorAddr.set(asHexedSolidityAddress(0, 0, num));
-                                }),
-                        tokenAssociate(PRETEND_PAIR, FUNGIBLE_TOKEN),
-                        tokenAssociate(DELEGATE_PRECOMPILE_CALLEE, FUNGIBLE_TOKEN))
-                .when(
-                        sourcing(() -> overriding(
-                                CONTRACTS_PERMITTED_DELEGATE_CALLERS, "" + whitelistedCalleeMirrorNum.get())),
-                        sourcing(() -> contractCall(
-                                        PRETEND_PAIR,
-                                        CALL_TO,
-                                        asHeadlongAddress(whitelistedCalleeMirrorAddr.get()),
-                                        asHeadlongAddress(asSolidityAddress(tokenID.get())),
-                                        asHeadlongAddress(attackerMirrorAddr.get()))
-                                .via(ATTACK_CALL)
-                                .gas(5_000_000L)
-                                .hasKnownStatus(SUCCESS)))
-                .then(
-                        // Because this callee is on the whitelist, the pair WILL have an allowance
-                        // here
-                        getAccountDetails(PRETEND_PAIR).has(accountDetailsWith().tokenAllowancesCount(1)),
-                        // Instead of the callee
-                        getAccountDetails(DELEGATE_PRECOMPILE_CALLEE)
-                                .has(accountDetailsWith().tokenAllowancesCount(0)));
     }
 }
