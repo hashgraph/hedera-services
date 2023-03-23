@@ -302,12 +302,6 @@ class TransactionDispatcherTest {
     private HederaAccountNumbers accountNumbers;
 
     @Mock
-    private HandleContext handleContext;
-
-    @Mock
-    private TransactionContext txnCtx;
-
-    @Mock
     private GlobalDynamicProperties dynamicProperties;
 
     @Mock
@@ -318,6 +312,12 @@ class TransactionDispatcherTest {
 
     @Mock
     private UsageLimits usageLimits;
+
+    @Mock
+    private HandleContext handleContext;
+
+    @Mock
+    private TransactionContext txnCtx;
 
     @Mock
     private TransactionBody transactionBody;
