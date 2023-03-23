@@ -1,6 +1,6 @@
-# AddressBookTestingTool Instructions 
+# AddressBookTestingTool Instructions
 
-If this is the first time using the AddressBookTestingTool, please execute the following tests in order.  
+If this is the first time using the AddressBookTestingTool, please execute the following tests in order.
 
 ## Global Modifications and Starting Conditions
 
@@ -11,14 +11,14 @@ comment out the current app
 ```
 # app,		HashgraphDemo.jar,	   1,0,0,0,0,0,0,0,0,0, all
 ```
-uncomment the AddressBookTestingTool.jar 
+uncomment the AddressBookTestingTool.jar
 ```
  app,    AddressBookTestingTool.jar,
 ```
 
 ### AddressTestingToolMain.java
 
-```java 
+```java
 private static BasicSoftwareVersion softwareVersion = new BasicSoftwareVersion(1);
 ```
 
@@ -43,7 +43,7 @@ private int stakingProfile = 1;
 
 * check the swirlds.log for the text
 
-``` 
+```
 AddressBookInitializer: A setting has forced the use of the configuration address.
 ```
 
@@ -67,7 +67,7 @@ AddressBookInitializer: A setting has forced the use of the configuration addres
 
 * check the swirlds.log for the text
 
-``` 
+```
 AddressBookInitializer: The loaded signed state is null. The candidateAddressBook is set to genesisSwirldState.updateStake(configAddressBook, null).
 ```
 
@@ -77,7 +77,7 @@ AddressBookInitializer: The loaded signed state is null. The candidateAddressBoo
   * usedADdressBook_v1_<date>.txt.debug
     * The configuration address book is the same as what is in config.txt
     * the state saved address book was null
-    * **the used address book matches the content of the non-debug .txt file. (changed)** 
+    * **the used address book matches the content of the non-debug .txt file. (changed)**
 
 ## Testing Non-Genesis Behavior, No Software Upgrade
 
@@ -91,7 +91,7 @@ AddressBookInitializer: The loaded signed state is null. The candidateAddressBoo
 
 * check the swirlds.log for the text
 
-``` 
+```
 AddressBookInitializer: No Software Upgrade. Continuing with software version 1 and using the loaded signed state's address book and stake values.
 ```
 
@@ -113,7 +113,7 @@ AddressBookInitializer: No Software Upgrade. Continuing with software version 1 
 
 * check the swirlds.log for the text
 
-``` 
+```
 AddressBookInitializer: A setting has forced the use of the configuration address.
 ```
 
@@ -122,7 +122,7 @@ AddressBookInitializer: A setting has forced the use of the configuration addres
     * **matches the addresses in the config.txt, including stake value. (changed)**
   * usedADdressBook_v1_<date>.txt.debug
     * The configuration address book is the same as what is in config.txt
-    * **the state saved address book contains the addresses in the config.txt, all with stake 10. (changed)** 
+    * **the state saved address book contains the addresses in the config.txt, all with stake 10. (changed)**
     * **the used address book has the text `The Configuration Address Book Was Used.` (changed)**
 
 ### No Software Upgrade, Use Saved State Address Book, Matches Config
@@ -135,7 +135,7 @@ AddressBookInitializer: A setting has forced the use of the configuration addres
 
 * check the swirlds.log for the text
 
-``` 
+```
 AddressBookInitializer: No Software Upgrade. Continuing with software version 1 and using the loaded signed state's address book and stake values.
 ```
 
@@ -155,14 +155,14 @@ AddressBookInitializer: No Software Upgrade. Continuing with software version 1 
 2. Ensure settings.txt the value `state.forceUseOfConfigAddressBook, false`
 3. **Increase the softwareVersion in AddressBookTestingToolMain.java to 2. (changed)**
 4. **Change the stakingProfile in AddressBookTestingToolState.java to 2. (changed)**
-5. **recompile the application: assemble ONLY!!!!.(changed)** 
+5. **recompile the application: assemble ONLY!!!!.(changed)**
 6. Run the app for 20 seconds.
 
 #### Validation
 
 * check the swirlds.log for the text
 
-``` 
+```
 AddressBookInitializer: Software Upgrade from version 1 to 2. The address book stake will be updated by the saved state's SwirldState.
 ```
 
