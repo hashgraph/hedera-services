@@ -39,6 +39,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 @SuppressWarnings("FieldCanBeLocal")
 class LongListDiskTest {
     private static final int SAMPLE_SIZE = 10_000;
+    public static final int MAX_VALID_INDEX = SAMPLE_SIZE - 1;
     public static final int HALF_SAMPLE_SIZE = SAMPLE_SIZE / 2;
     public static final int NUM_LONGS_PER_CHUNK = 10;
     /**
@@ -93,7 +94,7 @@ class LongListDiskTest {
         checkData(longList);
 
         int newMinValidIndex = HALF_SAMPLE_SIZE + chunkOffset;
-        longList.updateMinValidIndex(newMinValidIndex);
+        longList.updateValidRange(newMinValidIndex, MAX_VALID_INDEX);
         final Path tempFile = testDirectory.resolve(String.format(
                 "LongListDiskTest_half_empty_%s_%d.ll", longList.getClass().getSimpleName(), chunkOffset));
         longList.writeToFile(tempFile);
@@ -123,7 +124,7 @@ class LongListDiskTest {
         longListDisk = populateList(new LongListDisk(NUM_LONGS_PER_CHUNK, SAMPLE_SIZE, 0));
         checkData(longListDisk);
         int newMinValidIndex = HALF_SAMPLE_SIZE;
-        longListDisk.updateMinValidIndex(newMinValidIndex);
+        longListDisk.updateValidRange(newMinValidIndex, MAX_VALID_INDEX);
 
         final Path halfEmptyListFile = testDirectory.resolve("LongListDiskTest_half_empty.ll");
         longListDisk.writeToFile(halfEmptyListFile);
@@ -144,7 +145,7 @@ class LongListDiskTest {
             assertFalse(halfEmptyList.putIfEqual(belowMinValidIndex2, IMPERMISSIBLE_VALUE, belowMinIndexValue2));
 
             // however, once we update min valid index, we should be able to put values below it
-            halfEmptyList.updateMinValidIndex(0);
+            halfEmptyList.updateValidRange(0, MAX_VALID_INDEX);
             halfEmptyList.put(belowMinValidIndex1, belowMinIndexValue1);
             assertEquals(belowMinIndexValue1, halfEmptyList.get(belowMinValidIndex1));
 
@@ -213,26 +214,26 @@ class LongListDiskTest {
     }
 
     @Test
-    void testShrinkList() throws IOException {
+    void testShrinkList_minValidIndex() throws IOException {
         longListDisk = new LongListDisk(10, SAMPLE_SIZE * 2, 0);
         populateList(longListDisk);
         checkData(longListDisk, 0, SAMPLE_SIZE);
         // temporary file channel doesn't contain the header
         final long originalFileSize = longListDisk.getCurrentFileChannel().size() + longListDisk.currentFileHeaderSize;
 
-        longListDisk.updateMinValidIndex(HALF_SAMPLE_SIZE);
+        longListDisk.updateValidRange(HALF_SAMPLE_SIZE, SAMPLE_SIZE * 2 - 1);
 
         // half-empty
         checkEmptyUpToIndex(longListDisk, HALF_SAMPLE_SIZE);
         // half-full
         checkData(longListDisk, HALF_SAMPLE_SIZE, SAMPLE_SIZE);
 
-        final Path shrinkedListFile = testDirectory.resolve("LongListDiskTest.ll");
+        final Path shrunkListFile = testDirectory.resolve("LongListDiskTest.ll");
         // if we write to the same file, it doesn't shrink after the min valid index update
-        longListDisk.writeToFile(shrinkedListFile);
-        assertEquals(HALF_SAMPLE_SIZE * Long.BYTES, originalFileSize - Files.size(shrinkedListFile));
+        longListDisk.writeToFile(shrunkListFile);
+        assertEquals(HALF_SAMPLE_SIZE * Long.BYTES, originalFileSize - Files.size(shrunkListFile));
 
-        try (final LongListDisk loadedList = new LongListDisk(shrinkedListFile, 0)) {
+        try (final LongListDisk loadedList = new LongListDisk(shrunkListFile, 0)) {
             for (int i = 0; i < SAMPLE_SIZE; i++) {
                 assertEquals(longListDisk.get(i), loadedList.get(i), "Unexpected value in a loaded longListDisk");
             }
@@ -240,7 +241,34 @@ class LongListDiskTest {
     }
 
     @Test
-    void testReuseOfChunks() throws IOException {
+    void testShrinkList_maxValidIndex() throws IOException {
+        longListDisk = new LongListDisk(10, SAMPLE_SIZE * 2, 0);
+        populateList(longListDisk);
+        checkData(longListDisk, 0, SAMPLE_SIZE);
+        // temporary file channel doesn't contain the header
+        final long originalFileSize = longListDisk.getCurrentFileChannel().size() + longListDisk.currentFileHeaderSize;
+
+        longListDisk.updateValidRange(0, HALF_SAMPLE_SIZE - 1);
+
+        // half-empty
+        checkEmptyFromIndex(longListDisk, HALF_SAMPLE_SIZE);
+        // half-full
+        checkData(longListDisk, 0, HALF_SAMPLE_SIZE - 1);
+
+        final Path shrunkListFile = testDirectory.resolve("LongListDiskTest.ll");
+        // if we write to the same file, it doesn't shrink after the min valid index update
+        longListDisk.writeToFile(shrunkListFile);
+        assertEquals(HALF_SAMPLE_SIZE * Long.BYTES, originalFileSize - Files.size(shrunkListFile));
+
+        try (final LongListDisk loadedList = new LongListDisk(shrunkListFile, 0)) {
+            for (int i = 0; i < SAMPLE_SIZE; i++) {
+                assertEquals(longListDisk.get(i), loadedList.get(i), "Unexpected value in a loaded longListDisk");
+            }
+        }
+    }
+
+    @Test
+    void testReuseOfChunks_minValidIndex() throws IOException {
         longListDisk = new LongListDisk(100, SAMPLE_SIZE * 2, 0);
         populateList(longListDisk);
         checkData(longListDisk, 0, SAMPLE_SIZE);
@@ -248,7 +276,7 @@ class LongListDiskTest {
         final long originalChannelSize = longListDisk.getCurrentFileChannel().size();
 
         // freeing up some chunks
-        longListDisk.updateMinValidIndex(HALF_SAMPLE_SIZE);
+        longListDisk.updateValidRange(HALF_SAMPLE_SIZE, SAMPLE_SIZE * 2 - 1);
 
         // using the freed up chunks
         for (int i = SAMPLE_SIZE; i < SAMPLE_SIZE + HALF_SAMPLE_SIZE; i++) {
@@ -260,6 +288,44 @@ class LongListDiskTest {
 
         checkEmptyUpToIndex(longListDisk, HALF_SAMPLE_SIZE);
         checkData(longListDisk, HALF_SAMPLE_SIZE, SAMPLE_SIZE + HALF_SAMPLE_SIZE);
+    }
+
+    @Test
+    void testReuseOfChunks_maxValidIndex() throws IOException {
+        longListDisk = new LongListDisk(100, SAMPLE_SIZE * 2, 0);
+        populateList(longListDisk);
+        checkData(longListDisk, 0, SAMPLE_SIZE);
+        // temporary file channel doesn't contain the header
+        final long originalChannelSize = longListDisk.getCurrentFileChannel().size();
+
+        // freeing up some chunks
+        longListDisk.updateValidRange(0, HALF_SAMPLE_SIZE);
+
+        // using the freed up chunks
+        for (int i = HALF_SAMPLE_SIZE; i < SAMPLE_SIZE; i++) {
+            longListDisk.put(i, i + 100);
+        }
+
+        // a longListDisk should have the same size as before because it has the same number of entries
+        assertEquals(originalChannelSize, longListDisk.getCurrentFileChannel().size());
+
+        checkData(longListDisk, 0, SAMPLE_SIZE);
+    }
+
+    @Test
+    void testBigIndex() throws IOException {
+        try (LongListDisk list = new LongListDisk()) {
+            long bigIndex = Integer.MAX_VALUE + 1L;
+            list.updateValidRange(bigIndex, bigIndex);
+            list.put(bigIndex, 1);
+
+            assertEquals(1, list.get(bigIndex));
+            final Path file = testDirectory.resolve("LongListLargeIndex.ll");
+            list.writeToFile(file);
+            try (LongListDisk listFromFile = new LongListDisk(file)) {
+                assertEquals(1, listFromFile.get(bigIndex));
+            }
+        }
     }
 
     @AfterEach
@@ -289,6 +355,12 @@ class LongListDiskTest {
 
     private static void checkEmptyUpToIndex(LongList longList, int index) {
         for (int i = 0; i < index; i++) {
+            assertEquals(0, longList.get(i), "Unexpected value for index " + i);
+        }
+    }
+
+    private static void checkEmptyFromIndex(LongList longList, int index) {
+        for (int i = index; i < SAMPLE_SIZE; i++) {
             assertEquals(0, longList.get(i), "Unexpected value for index " + i);
         }
     }

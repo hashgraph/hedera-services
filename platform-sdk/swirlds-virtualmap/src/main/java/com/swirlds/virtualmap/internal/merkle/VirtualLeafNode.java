@@ -16,6 +16,8 @@
 
 package com.swirlds.virtualmap.internal.merkle;
 
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
+
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -27,6 +29,7 @@ import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.IOException;
 import java.util.Objects;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * Implementation of a VirtualLeaf
@@ -109,7 +112,9 @@ public final class VirtualLeafNode<K extends VirtualKey<? super K>, V extends Vi
      */
     @Override
     public String toString() {
-        return "VirtualLeafNode{" + virtualRecord + "}";
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+                .append(virtualRecord)
+                .toString();
     }
 
     /**
