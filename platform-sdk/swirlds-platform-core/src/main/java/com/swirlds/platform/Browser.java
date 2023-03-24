@@ -172,6 +172,9 @@ public class Browser {
         logger.info(STARTUP.getMarker(), "\n\n" + STARTUP_MESSAGE + "\n");
         logger.debug(STARTUP.getMarker(), () -> new NodeStartPayload().toString());
 
+        Thread.setDefaultUncaughtExceptionHandler((final Thread t, final Throwable e) ->
+                logger.error(EXCEPTION.getMarker(), "exception on thread {}", t.getName(), e));
+
         // The properties from the config.txt
         final LegacyConfigProperties configurationProperties = LegacyConfigPropertiesLoader.loadConfigFile(
                 Settings.getInstance().getConfigPath());

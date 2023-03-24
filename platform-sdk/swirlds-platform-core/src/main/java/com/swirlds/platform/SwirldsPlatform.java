@@ -1218,13 +1218,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     StateLoadedFromDiskCompleteListener.class, new StateLoadedFromDiskNotification());
         }
 
-        if (Thread.getDefaultUncaughtExceptionHandler() == null) {
-            // If there is no default uncaught exception handler already provided, make sure we set one to avoid threads
-            // silently dying from exceptions.
-            Thread.setDefaultUncaughtExceptionHandler((Thread t, Throwable e) ->
-                    logger.error(EXCEPTION.getMarker(), "exception on thread {}", t.getName(), e));
-        }
-
         if (settings.getChatter().isChatterUsed()) {
             reconnectController.set(new ReconnectController(threadManager, reconnectHelper, chatterCore::startChatter));
             startChatterNetwork();
