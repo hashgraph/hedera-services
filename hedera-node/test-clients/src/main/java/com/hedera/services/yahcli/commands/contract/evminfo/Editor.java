@@ -109,7 +109,7 @@ public class Editor {
         }
     }
 
-    /** Merge a List<Line> with a bunch of Edits, producing a new assembly List<Line> */
+    /** Merge a List&lt;Line> with a bunch of Edits, producing a new assembly List&lt;Line> */
     @NonNull
     public List<Line> merge() {
         final var merged = new ArrayList<Line>(baseLines);
