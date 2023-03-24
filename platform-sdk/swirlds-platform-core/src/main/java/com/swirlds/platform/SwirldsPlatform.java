@@ -76,7 +76,6 @@ import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.common.utility.PlatformVersion;
 import com.swirlds.common.utility.Startable;
-import com.swirlds.logging.LogMarker;
 import com.swirlds.logging.payloads.PlatformStatusPayload;
 import com.swirlds.logging.payloads.SavedStateLoadedPayload;
 import com.swirlds.platform.chatter.ChatterNotifier;
@@ -225,8 +224,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /** use this for all logging, as controlled by the optional data/log4j2.xml file */
     private static final Logger logger = LogManager.getLogger(SwirldsPlatform.class);
 
-    /** logging string prefix for hash stream operation logged events. */
-    private static final String HASH_STREAM_OPERATION_PREFIX = ">>> ";
     /**
      * the ID of the member running this. Since a node can be a main node or a mirror node, the ID is not a primitive
      * value
@@ -1076,11 +1073,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      */
     void loadReconnectState(final SignedState signedState) {
         // the state was received, so now we load its data into different objects
-        logger.info(
-                LogMarker.STATE_HASH.getMarker(),
-                "{}RECONNECT: loadReconnectState: reloading state",
-                HASH_STREAM_OPERATION_PREFIX);
-        logger.debug(RECONNECT.getMarker(), "`loadReconnectState` : reloading state");
         try {
 
             reconnectStateLoadedDispatcher.dispatch(
@@ -1512,13 +1504,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     }
 
     /**
-     * {@inheritDoc}
-     */
-    public FreezeManager getFreezeManager() {
-        return freezeManager;
-    }
-
-    /**
      * @return the SyncManager used by this platform
      */
     SyncManagerImpl getSyncManager() {
@@ -1574,13 +1559,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      */
     public Consensus getConsensus() {
         return consensusRef.get();
-    }
-
-    /**
-     * @return the object that tracks recent events created
-     */
-    public CriticalQuorum getCriticalQuorum() {
-        return criticalQuorum;
     }
 
     /**
@@ -1661,13 +1639,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         return consensusRoundHandler;
     }
 
-    /**
-     * @return the handler that applies pre-consensus events to state
-     */
-    public PreConsensusEventHandler getPreConsensusHandler() {
-        return preConsensusEventHandler;
-    }
-
     /** {@inheritDoc} */
     @Override
     public boolean createTransaction(final byte[] trans) {
@@ -1708,16 +1679,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             }
         }
         throw new IllegalStateException("Unable to sort events after 100 retries");
-    }
-
-    /**
-     * get the highest generation number of all events with the given creator
-     *
-     * @param creatorId the ID of the node in question
-     * @return the highest generation number known stored for the given creator ID
-     */
-    public long getLastGen(final long creatorId) {
-        return eventMapper.getHighestGenerationNumber(creatorId);
     }
 
     /**
@@ -1820,22 +1781,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         return new AutoCloseableWrapper<>(
                 state == null ? null : (T) wrapper.get().getState().getSwirldState(), wrapper::close);
-    }
-
-    /**
-     * @return the instance for calculating runningHash and writing event stream files
-     */
-    EventStreamManager<EventImpl> getEventStreamManager() {
-        return eventStreamManager;
-    }
-
-    /**
-     * get the StartUpEventFrozenManager used by this platform
-     *
-     * @return The StartUpEventFrozenManager used by this platform
-     */
-    StartUpEventFrozenManager getStartUpEventFrozenManager() {
-        return startUpEventFrozenManager;
     }
 
     /**
