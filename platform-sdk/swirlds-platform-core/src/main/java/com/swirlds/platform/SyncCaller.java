@@ -96,7 +96,6 @@ class SyncCaller implements Runnable {
                 final long otherId = callRequestSync();
                 if (otherId >= 0) { // successful sync
                     failedAttempts = 0;
-                    sleepAfterSync();
                 } else {
                     failedAttempts++;
                     if (failedAttempts >= Settings.getInstance().getCallerSkipsBeforeSleep()) {
@@ -117,17 +116,6 @@ class SyncCaller implements Runnable {
                 failedAttempts++;
                 logger.error(EXCEPTION.getMarker(), "SyncCaller.run error", e);
             }
-        }
-    }
-
-    /**
-     * If configured, sleeps a defined amount of time after a successful sync
-     *
-     * @throws InterruptedException if the thread is interrupted
-     */
-    private void sleepAfterSync() throws InterruptedException {
-        if (platform.getSleepAfterSync() > 0) {
-            Thread.sleep(platform.getSleepAfterSync());
         }
     }
 

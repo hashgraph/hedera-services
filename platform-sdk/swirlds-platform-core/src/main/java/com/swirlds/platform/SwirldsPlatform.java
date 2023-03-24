@@ -323,8 +323,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private final QueueThread<EventIntakeTask> intakeQueue;
     private final EventLinker eventLinker;
     private final SequenceCycle<EventIntakeTask> intakeCycle;
-    /** sleep in ms after each sync in SyncCaller. A public setter for this exists. */
-    private long delayAfterSync = 0; // TODO remove this!
     /** Executes a sync with a remote node */
     private final ShadowGraphSynchronizer shadowgraphSynchronizer;
     /** Stores and passes pre-consensus events to {@link SwirldStateManager} for handling */
@@ -336,7 +334,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /** Checks the validity of transactions and submits valid ones to the event transaction pool */
     private final SwirldTransactionSubmitter transactionSubmitter;
     /** clears all pipelines to prepare for a reconnect */
-    private final Clearable clearAllPipelines;
+    private Clearable clearAllPipelines;
     /** Contains all information and state required for emergency recovery */
     private final EmergencyRecoveryManager emergencyRecoveryManager;
 
@@ -1711,16 +1709,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * {@inheritDoc}
      */
     @Override
-    public long getSleepAfterSync() {
-        return delayAfterSync;
-    }
+    public void setSleepAfterSync(final long delay) { // TODO remove
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void setSleepAfterSync(final long delay) {
-        delayAfterSync = delay;
     }
 
     /**
