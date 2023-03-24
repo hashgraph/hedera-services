@@ -251,10 +251,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private final int instanceNumber;
     /** parameters given to the app when it starts */
     private final String[] parameters;
-    /** Handles all system transactions pre-consensus */
-    private final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager;
-    /** Handles all system transactions post-consensus */
-    private final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager;
     /** The platforms freeze manager */
     private final FreezeManager freezeManager;
     /** is used for pausing event creation for a while at start up */
@@ -332,11 +328,11 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /** Executes a sync with a remote node */
     private final ShadowGraphSynchronizer shadowgraphSynchronizer;
     /** Stores and passes pre-consensus events to {@link SwirldStateManager} for handling */
-    private PreConsensusEventHandler preConsensusEventHandler;
+    private final PreConsensusEventHandler preConsensusEventHandler;
     /** Stores and processes consensus events including sending them to {@link SwirldStateManager} for handling */
     private ConsensusRoundHandler consensusRoundHandler;
     /** Handles all interaction with {@link SwirldState} */
-    private SwirldStateManager swirldStateManager;
+    private final SwirldStateManager swirldStateManager;
     /** Checks the validity of transactions and submits valid ones to the event transaction pool */
     private final SwirldTransactionSubmitter transactionSubmitter;
     /** clears all pipelines to prepare for a reconnect */
@@ -376,20 +372,11 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * For passing notifications between the platform and the application.
      */
     private final NotificationEngine notificationEngine;
-    /**
-     * This should be used when reading time.
-     */
-    private final Time time = OSTime.getInstance();
 
     /**
      * The platform context for this platform. Should be used to access basic services
      */
     private final PlatformContext platformContext;
-
-    /**
-     * Writes pre-consensus events to disk.
-     */
-    private final PreConsensusEventWriter preConsensusEventWriter;
 
     /**
      * the browser gives the Platform what app to run. There can be multiple Platforms on one computer.
@@ -470,6 +457,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         metrics.getOrCreate(StatConstructor.createEnumStat(
                 "PlatformStatus", Metrics.PLATFORM_CATEGORY, PlatformStatus.values(), currentPlatformStatus::get));
 
+        final Time time = OSTime.getInstance();
+
         // stats related to the intake cycle
         final IntakeCycleStats intakeCycleStats = new IntakeCycleStats(time, metrics);
 
@@ -512,7 +501,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         final AppCommunicationComponent appCommunicationComponent =
                 wiring.wireAppCommunicationComponent(notificationEngine);
 
-        preConsensusEventWriter = components.add(buildPreConsensusEventWriter());
+        final PreConsensusEventWriter preConsensusEventWriter = components.add(buildPreConsensusEventWriter());
 
         stateManagementComponent = wiring.wireStateManagementComponent(
                 PlatformConstructor.platformSigner(crypto.getKeysAndCerts()),
@@ -529,13 +518,15 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 new NetworkStatsTransmitter(platformContext, this::createSystemTransaction, networkMetrics);
         components.add(networkStatsTransmitter);
 
-        preConsensusSystemTransactionManager = new PreConsensusSystemTransactionManagerFactory()
-                .addHandlers(stateManagementComponent.getPreConsensusHandleMethods())
-                .build();
+        final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager =
+                new PreConsensusSystemTransactionManagerFactory()
+                        .addHandlers(stateManagementComponent.getPreConsensusHandleMethods())
+                        .build();
 
-        postConsensusSystemTransactionManager = new PostConsensusSystemTransactionManagerFactory()
-                .addHandlers(stateManagementComponent.getPostConsensusHandleMethods())
-                .build();
+        final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager =
+                new PostConsensusSystemTransactionManagerFactory()
+                        .addHandlers(stateManagementComponent.getPostConsensusHandleMethods())
+                        .build();
 
         consensusRef = new AtomicReference<>();
 
@@ -579,7 +570,56 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         // initializes EventStreamManager instance
         eventStreamManager = initEventStreamManager(String.valueOf(selfId));
 
-        buildEventHandlers(loadedState, genesisStateBuilder);
+        // Queue thread that stores and handles signed states that need to be hashed and have signatures collected.
+        final QueueThread<SignedState> stateHashSignQueueThread = components.add(PlatformConstructor.stateHashSignQueue(
+                threadManager, selfId.getId(), stateManagementComponent::newSignedStateFromTransactions));
+
+        final State startingState;
+        if (loadedState.signedStateFromDisk != null) {
+            logger.debug(STARTUP.getMarker(), () -> new SavedStateLoadedPayload(
+                            loadedState.signedStateFromDisk.getRound(),
+                            loadedState.signedStateFromDisk.getConsensusTimestamp(),
+                            startUpEventFrozenManager.getStartUpEventFrozenEndTime())
+                    .toString());
+            startingState = loadedState.signedStateFromDisk.getState();
+        } else {
+            startingState = buildGenesisState(this, initialAddressBook, appVersion, genesisStateBuilder);
+
+            // if we are not starting from a saved state, don't freeze on startup
+            startUpEventFrozenManager.setStartUpEventFrozenEndTime(null);
+        }
+
+        swirldStateManager = PlatformConstructor.swirldStateManager(
+                selfId,
+                preConsensusSystemTransactionManager,
+                postConsensusSystemTransactionManager,
+                metrics,
+                PlatformConstructor.settingsProvider(),
+                freezeManager::isFreezeStarted,
+                startingState);
+
+        // SwirldStateManager will get a copy of the state loaded, that copy will become stateCons.
+        // The original state will be saved in the SignedStateMgr and will be deleted when it becomes old
+
+        preConsensusEventHandler = components.add(PlatformConstructor.preConsensusEventHandler(
+                threadManager, selfId, swirldStateManager, consensusMetrics));
+        consensusRoundHandler = components.add(PlatformConstructor.consensusHandler(
+                platformContext,
+                threadManager,
+                selfId.getId(),
+                PlatformConstructor.settingsProvider(),
+                swirldStateManager,
+                new ConsensusHandlingMetrics(metrics, time),
+                eventStreamManager,
+                stateHashSignQueueThread,
+                preConsensusEventWriter::waitUntilDurable,
+                freezeManager::freezeStarted,
+                stateManagementComponent::roundAppliedToState,
+                appVersion));
+
+        if (loadedState.signedStateFromDisk != null) {
+            consensusRoundHandler.loadDataFromSignedState(loadedState.signedStateFromDisk, false);
+        }
 
         transactionSubmitter = new SwirldTransactionSubmitter(
                 currentPlatformStatus::get,
@@ -1138,67 +1178,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         final PreConsensusEventWriter syncWriter = new SyncPreConsensusEventWriter(platformContext, fileManager);
 
         return new AsyncPreConsensusEventWriter(platformContext, threadManager, syncWriter);
-    }
-
-    /**
-     * Build all the classes required for events and transactions to flow through the system
-     */
-    private void buildEventHandlers(final LoadedState loadedState, final Supplier<SwirldState> genesisStateBuilder) {
-
-        // Queue thread that stores and handles signed states that need to be hashed and have signatures collected.
-        final QueueThread<SignedState> stateHashSignQueueThread = PlatformConstructor.stateHashSignQueue(
-                threadManager, selfId.getId(), stateManagementComponent::newSignedStateFromTransactions);
-        stateHashSignQueueThread.start();
-
-        if (loadedState.signedStateFromDisk != null) {
-            logger.debug(STARTUP.getMarker(), () -> new SavedStateLoadedPayload(
-                            loadedState.signedStateFromDisk.getRound(),
-                            loadedState.signedStateFromDisk.getConsensusTimestamp(),
-                            startUpEventFrozenManager.getStartUpEventFrozenEndTime())
-                    .toString());
-
-            buildEventHandlersFromState(loadedState.initialState, stateHashSignQueueThread);
-
-            consensusRoundHandler.loadDataFromSignedState(loadedState.signedStateFromDisk, false);
-        } else {
-            final State state = buildGenesisState(this, initialAddressBook, appVersion, genesisStateBuilder);
-            buildEventHandlersFromState(state, stateHashSignQueueThread);
-
-            // if we are not starting from a saved state, don't freeze on startup
-            startUpEventFrozenManager.setStartUpEventFrozenEndTime(null);
-        }
-    }
-
-    private void buildEventHandlersFromState(
-            final State state, final QueueThread<SignedState> stateHashSignQueueThread) {
-
-        swirldStateManager = PlatformConstructor.swirldStateManager(
-                selfId,
-                preConsensusSystemTransactionManager,
-                postConsensusSystemTransactionManager,
-                metrics,
-                PlatformConstructor.settingsProvider(),
-                freezeManager::isFreezeStarted,
-                state);
-
-        // SwirldStateManager will get a copy of the state loaded, that copy will become stateCons.
-        // The original state will be saved in the SignedStateMgr and will be deleted when it becomes old
-
-        preConsensusEventHandler = components.add(PlatformConstructor.preConsensusEventHandler(
-                threadManager, selfId, swirldStateManager, consensusMetrics));
-        consensusRoundHandler = components.add(PlatformConstructor.consensusHandler(
-                platformContext,
-                threadManager,
-                selfId.getId(),
-                PlatformConstructor.settingsProvider(),
-                swirldStateManager,
-                new ConsensusHandlingMetrics(metrics, time),
-                eventStreamManager,
-                stateHashSignQueueThread,
-                preConsensusEventWriter::waitUntilDurable,
-                freezeManager::freezeStarted,
-                stateManagementComponent::roundAppliedToState,
-                appVersion));
     }
 
     /**
