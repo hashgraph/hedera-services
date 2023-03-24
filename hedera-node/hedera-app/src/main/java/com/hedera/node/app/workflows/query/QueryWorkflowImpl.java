@@ -214,8 +214,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 // 3.i Validate CryptoTransfer
                 allegedPayment = queryHeader.paymentOrElse(Transaction.DEFAULT);
                 txBody = checker.validateCryptoTransfer(session, allegedPayment);
-                final var payer =
-                        txBody.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT);
+                final var payer = txBody.transactionIDOrThrow().accountIDOrThrow();
 
                 // 3.ii Check permissions
                 checker.checkPermissions(payer, function);

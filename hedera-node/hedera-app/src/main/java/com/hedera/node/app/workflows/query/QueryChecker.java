@@ -122,8 +122,7 @@ public class QueryChecker {
         }
 
         // A super-user cannot use an alias. Sorry, Clark Kent.
-        final var accountNum = payer.accountNumOrElse(-1L);
-        if (accountNumbers.isSuperuser(accountNum)) {
+        if (payer.hasAccountNum() && accountNumbers.isSuperuser(payer.accountNumOrThrow())) {
             return;
         }
 
