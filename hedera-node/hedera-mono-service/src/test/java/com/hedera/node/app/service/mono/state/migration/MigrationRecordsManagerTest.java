@@ -44,6 +44,7 @@ import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.EntityCreator;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.initialization.BackedSystemAccountsCreator;
+import com.hedera.node.app.service.mono.state.initialization.BlocklistAccountCreator;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
@@ -166,6 +167,9 @@ class MigrationRecordsManagerTest {
     @Mock
     private MerkleAccount merkleAccount;
 
+    @Mock
+    private BlocklistAccountCreator blocklistAccountCreator;
+
     @LoggingTarget
     private LogCaptor logCaptor;
 
@@ -187,7 +191,8 @@ class MigrationRecordsManagerTest {
                 () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
                 factory,
                 accountNumbers,
-                bootstrapProperties);
+                bootstrapProperties,
+                blocklistAccountCreator);
 
         subject.setSideEffectsFactory(() -> switch (nextTracker.getAndIncrement()) {
             case 0 -> tracker800;

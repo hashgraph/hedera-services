@@ -42,6 +42,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_ENABL
 import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_PERIOD_SECS;
 import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_TOKEN_BALANCES;
 import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_NODE_BALANCE_WARN_THRESHOLD;
+import static com.hedera.node.app.spi.config.PropertyNames.BLOCKLIST_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_FEE_SCHEDULE_JSON_RESOURCE;
 import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_GENESIS_PUBLIC_KEY;
 import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_HAPI_PERMISSIONS_PATH;
@@ -542,7 +543,8 @@ public final class BootstrapProperties implements PropertySource {
             HEDERA_ALLOWANCES_IS_ENABLED,
             ENTITIES_LIMIT_TOKEN_ASSOCIATIONS,
             UTIL_PRNG_IS_ENABLED,
-            TOKENS_AUTO_CREATIONS_ENABLED);
+            TOKENS_AUTO_CREATIONS_ENABLED,
+            BLOCKLIST_ENABLED);
 
     static final Set<String> NODE_PROPS = Set.of(
             DEV_ONLY_DEFAULT_NODE_LISTENS,
@@ -787,5 +789,6 @@ public final class BootstrapProperties implements PropertySource {
             entry(UTIL_PRNG_IS_ENABLED, AS_BOOLEAN),
             entry(TOKENS_AUTO_CREATIONS_ENABLED, AS_BOOLEAN),
             entry(WORKFLOWS_ENABLED, AS_FUNCTIONS),
-            entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, AS_BOOLEAN));
+            entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, AS_BOOLEAN),
+            entry(BLOCKLIST_ENABLED, AS_BOOLEAN));
 }

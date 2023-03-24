@@ -34,11 +34,13 @@ import com.hedera.node.app.service.mono.records.ConsensusTimeTracker;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.EntityCreator;
 import com.hedera.node.app.service.mono.state.initialization.BackedSystemAccountsCreator;
+import com.hedera.node.app.service.mono.state.initialization.BlocklistAccountCreator;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.submerkle.CurrencyAdjustments;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.spi.config.PropertyNames;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -72,6 +74,7 @@ public class MigrationRecordsManager {
     private static final String STAKING_MEMO = "Release 0.24.1 migration record";
     private static final String TREASURY_CLONE_MEMO = "Synthetic zero-balance treasury clone";
     private static final String SYSTEM_ACCOUNT_CREATION_MEMO = "Synthetic system creation";
+    private static final String BLOCKED_ACCOUNT_CREATION_MEMO = "Synthetic blocked account creation";
 
     private final EntityCreator creator;
     private final BackedSystemAccountsCreator systemAccountsCreator;
@@ -83,6 +86,7 @@ public class MigrationRecordsManager {
     private final Supplier<AccountStorageAdapter> accounts;
     private final HederaAccountNumbers accountNumbers;
     private final BootstrapProperties bootstrapProperties;
+    private final BlocklistAccountCreator blocklistAccountCreator;
     private Supplier<SideEffectsTracker> sideEffectsFactory = SideEffectsTracker::new;
 
     @Inject
@@ -96,7 +100,8 @@ public class MigrationRecordsManager {
             final Supplier<AccountStorageAdapter> accounts,
             final SyntheticTxnFactory syntheticTxnFactory,
             final HederaAccountNumbers accountNumbers,
-            final BootstrapProperties bootstrapProperties) {
+            final BootstrapProperties bootstrapProperties,
+            final BlocklistAccountCreator blocklistAccountCreator) {
         this.systemAccountsCreator = systemAccountsCreator;
         this.sigImpactHistorian = sigImpactHistorian;
         this.recordsHistorian = recordsHistorian;
@@ -107,6 +112,7 @@ public class MigrationRecordsManager {
         this.syntheticTxnFactory = syntheticTxnFactory;
         this.accountNumbers = accountNumbers;
         this.bootstrapProperties = bootstrapProperties;
+        this.blocklistAccountCreator = blocklistAccountCreator;
     }
 
     /**
@@ -138,6 +144,11 @@ public class MigrationRecordsManager {
         // Always publish records for any system accounts created at genesis start up
         publishAccountsCreated(
                 systemAccountsCreator.getSystemAccountsCreated(), now, SYSTEM_ACCOUNT_CREATION_MEMO, "system creation");
+
+        if (bootstrapProperties.getBooleanProperty(PropertyNames.BLOCKLIST_ENABLED)) {
+            publishAccountsCreated(
+                    blocklistAccountCreator.getBlockedAccountsCreated(), now, BLOCKED_ACCOUNT_CREATION_MEMO, "blocked");
+        }
 
         curNetworkCtx.markMigrationRecordsStreamed();
         systemAccountsCreator.forgetCreations();
