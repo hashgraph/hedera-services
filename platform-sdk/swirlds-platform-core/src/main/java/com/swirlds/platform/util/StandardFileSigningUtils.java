@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.swirlds.platform.util;
 
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.computeEntireHash;
@@ -7,9 +23,10 @@ import static com.swirlds.platform.util.FileSigningUtils.signData;
 import com.swirlds.common.utility.ByteUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
@@ -17,6 +34,7 @@ import java.security.NoSuchProviderException;
 import java.security.SignatureException;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 /**
  * Utility class for signing standard, arbitrary files
@@ -38,15 +56,17 @@ public class StandardFileSigningUtils {
     public static final byte TYPE_FILE_HASH = 4;
 
     /**
-     * Get the extension from a file name
+     * Get the extension from a file path
      * <p>
      * Returns extension in all lowercase, without the `.`
      *
-     * @param fileName the name of the file to get the extension of
+     * @param filePath the file path to get the extension of
      * @return the file extension, or null if the file has no extension
      */
     @Nullable
-    private static String getFileExtension(@NonNull final String fileName) {
+    private static String getFileExtension(@NonNull final Path filePath) {
+        final String fileName = filePath.getFileName().toString();
+
         if (fileName.contains(".")) {
             return fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase();
         } else {
@@ -86,16 +106,16 @@ public class StandardFileSigningUtils {
      * @param keyPair              the key pair used for signing
      */
     public static void signStandardFile(
-            @NonNull final File destinationDirectory, @NonNull final File fileToSign, @NonNull final KeyPair keyPair) {
+            @NonNull final Path destinationDirectory, @NonNull final Path fileToSign, @NonNull final KeyPair keyPair) {
 
         Objects.requireNonNull(destinationDirectory, "destinationDirectory");
         Objects.requireNonNull(fileToSign, "fileToSign");
         Objects.requireNonNull(keyPair, "keyPair");
 
-        final String signatureFilePath = buildSignatureFilePath(destinationDirectory, fileToSign);
+        final Path signatureFilePath = buildSignatureFilePath(destinationDirectory, fileToSign);
 
-        try (final FileOutputStream outputStream = new FileOutputStream(signatureFilePath, false)) {
-            final byte[] fileHash = computeEntireHash(fileToSign).getValue();
+        try (final OutputStream outputStream = Files.newOutputStream(signatureFilePath)) {
+            final byte[] fileHash = computeEntireHash(fileToSign.toFile()).getValue();
             final byte[] signature = signData(fileHash, keyPair);
 
             outputStream.write(TYPE_FILE_HASH);
@@ -107,7 +127,7 @@ public class StandardFileSigningUtils {
 
             System.out.println("Generated signature file: " + signatureFilePath);
         } catch (final SignatureException | IOException e) {
-            System.err.println("Failed to sign file " + fileToSign.getName() + ". Exception: " + e);
+            System.err.println("Failed to sign file " + fileToSign.getFileName() + ". Exception: " + e);
         } catch (final InvalidKeyException | NoSuchAlgorithmException | NoSuchProviderException e) {
             throw new RuntimeException("Irrecoverable error encountered", e);
         }
@@ -125,8 +145,8 @@ public class StandardFileSigningUtils {
      * @param keyPair              the key pair to sign with
      */
     public static void signStandardFilesInDirectory(
-            @NonNull final File sourceDirectory,
-            @NonNull final File destinationDirectory,
+            @NonNull final Path sourceDirectory,
+            @NonNull final Path destinationDirectory,
             @NonNull final Collection<String> extensionTypes,
             @NonNull final KeyPair keyPair) {
 
@@ -140,22 +160,19 @@ public class StandardFileSigningUtils {
                 .map(StandardFileSigningUtils::sanitizeExtension)
                 .toList();
 
-        final File[] sourceFiles = sourceDirectory.listFiles((directory, fileName) -> {
-            final String fileExtension = getFileExtension(fileName);
+        try (final Stream<Path> stream = Files.walk(sourceDirectory)) {
+            stream.filter(filePath -> {
+                        final String fileExtension = getFileExtension(filePath);
 
-            if (fileExtension == null) {
-                return false;
-            }
+                        if (fileExtension == null) {
+                            return false;
+                        }
 
-            return sanitizedExtensionTypes.contains(fileExtension);
-        });
-
-        if (sourceFiles == null) {
+                        return sanitizedExtensionTypes.contains(fileExtension);
+                    })
+                    .forEach(path -> signStandardFile(destinationDirectory, path, keyPair));
+        } catch (final IOException e) {
             throw new RuntimeException("Failed to list files in directory: " + sourceDirectory);
-        }
-
-        for (final File file : sourceFiles) {
-            signStandardFile(destinationDirectory, file, keyPair);
         }
     }
 }

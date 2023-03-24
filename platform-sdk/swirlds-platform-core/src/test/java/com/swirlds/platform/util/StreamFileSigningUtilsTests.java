@@ -1,5 +1,22 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.swirlds.platform.util;
 
+import static com.swirlds.common.stream.internal.LinkedObjectStreamValidateUtils.validateFileAndSignature;
 import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.generateRandomEvents;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.writeRandomEventStream;
@@ -13,21 +30,17 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.stream.EventStreamType;
-import com.swirlds.common.stream.internal.LinkedObjectStreamValidateUtils;
-import com.swirlds.common.test.stream.TestStreamType;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.RecoveryTestUtils;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 import java.util.Random;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -44,16 +57,34 @@ class StreamFileSigningUtilsTests {
     private Path testDirectoryPath;
 
     /**
+     * Directory containing stream files to sign
+     */
+    private Path toSignDirectory;
+
+    /**
      * The directory where the signature files will be written
      */
-    private File destinationDirectory;
+    private Path destinationDirectory;
+
+    /**
+     * An instance of the EventStreamType
+     */
+    private final EventStreamType eventStreamType = EventStreamType.getInstance();
+
+    /**
+     * The key to use for tests
+     */
+    private final KeyPair keyPair = loadKey();
 
     /**
      * Sets up for each test
      */
     @BeforeEach
     void setup() {
-        destinationDirectory = testDirectoryPath.resolve("signatureFiles").toFile();
+        destinationDirectory = testDirectoryPath.resolve("signatureFiles");
+
+        // the utility method being leveraged saves stream files to a directory "events_test"
+        toSignDirectory = testDirectoryPath.resolve("events_test");
     }
 
     /**
@@ -73,41 +104,49 @@ class StreamFileSigningUtilsTests {
         }
     }
 
+    /**
+     * Gets a list of the regular files in the destination directory
+     *
+     * @return the files in the destination directory
+     */
+    private List<Path> getDestinationDirectoryFiles() {
+        try (final Stream<Path> stream = Files.walk(destinationDirectory)) {
+            return stream.filter(Files::isRegularFile).toList();
+        } catch (final IOException e) {
+            throw new RuntimeException("Failed to list files in directory: " + destinationDirectory, e);
+        }
+    }
+
     @Test
     @DisplayName("Sign stream file")
     void signSingleStreamFile() {
         createStreamFiles();
 
-        // the utility method being leveraged saves stream files to a directory "events_test"
-        final Path toSignDirectoryPath = testDirectoryPath.resolve("events_test");
-
-        final Path fileToSignPath;
+        final Path fileToSign;
         try {
             // since we are only signing 1 file, just grab the middle one
-            fileToSignPath = RecoveryTestUtils.getMiddleEventStreamFile(toSignDirectoryPath);
+            fileToSign = RecoveryTestUtils.getMiddleEventStreamFile(toSignDirectory);
         } catch (final IOException e) {
             throw new RuntimeException(e);
         }
 
-        final File fileToSign = fileToSignPath.toFile();
-        assertNotNull(fileToSign, "Expected to find a file to sign");
+        signStreamFile(destinationDirectory, eventStreamType, fileToSign, keyPair);
 
-        final KeyPair keyPair = loadKey();
-
-        signStreamFile(destinationDirectory, EventStreamType.getInstance(), fileToSign, keyPair);
-
-        final File[] destinationDirectoryFiles = destinationDirectory.listFiles();
+        final List<Path> destinationDirectoryFiles = getDestinationDirectoryFiles();
 
         assertNotNull(destinationDirectoryFiles, "Expected signature file to be created");
-        assertEquals(1, destinationDirectoryFiles.length, "Expected one signature file to be created");
+        assertEquals(1, destinationDirectoryFiles.size(), "Expected one signature file to be created");
+
+        final Path signatureFile = destinationDirectoryFiles.get(0);
+
         assertEquals(
-                fileToSign.getName() + SIGNATURE_FILE_NAME_SUFFIX,
-                destinationDirectoryFiles[0].getName(),
+                fileToSign.getFileName() + SIGNATURE_FILE_NAME_SUFFIX,
+                signatureFile.getFileName().toString(),
                 "Expected signature file to have the same name as the file to sign, with _sig appended");
 
         // validate the stream file and sig file via the standard method
-        LinkedObjectStreamValidateUtils.validateFileAndSignature(
-                fileToSign, destinationDirectoryFiles[0], keyPair.getPublic(), EventStreamType.getInstance());
+        validateFileAndSignature(
+                fileToSign.toFile(), signatureFile.toFile(), keyPair.getPublic(), EventStreamType.getInstance());
     }
 
     @Test
@@ -115,27 +154,17 @@ class StreamFileSigningUtilsTests {
     void signStreamFiles() {
         createStreamFiles();
 
-        // the utility method being leveraged saves stream files to a directory "events_test"
-        final Path toSignDirectoryPath = testDirectoryPath.resolve("events_test");
+        final List<Path> filesToSign;
+        try (final Stream<Path> stream = Files.walk(toSignDirectory)) {
+            filesToSign = stream.filter(filePath -> eventStreamType.isStreamFile(filePath.toString()))
+                    .toList();
+        } catch (final IOException e) {
+            throw new RuntimeException("Failed to list files in directory: " + toSignDirectory, e);
+        }
 
-        // find out which files have been created that will be signed
-        final Collection<File> filesToSign = Arrays.stream(Objects.requireNonNull(
-                        toSignDirectoryPath.toFile().listFiles((directory, fileName) -> fileName.endsWith(".evts"))))
-                .toList();
+        signStreamFilesInDirectory(toSignDirectory, destinationDirectory, eventStreamType, keyPair);
 
-        final KeyPair keyPair = loadKey();
-
-        // pass in stream types EventStreamType and TestStreamType. There aren't any TestStream files in the directory,
-        // so this covers the edge case of trying to sign a stream type that doesn't exist in the directory
-        signStreamFilesInDirectory(
-                toSignDirectoryPath.toFile(),
-                destinationDirectory,
-                List.of(EventStreamType.getInstance(), TestStreamType.TEST_STREAM),
-                keyPair);
-
-        final Collection<File> destinationDirectoryFiles = Arrays.stream(
-                        Objects.requireNonNull(destinationDirectory.listFiles()))
-                .toList();
+        final List<Path> destinationDirectoryFiles = getDestinationDirectoryFiles();
 
         assertNotNull(destinationDirectoryFiles, "Expected signature file to be created");
         assertEquals(
@@ -143,19 +172,17 @@ class StreamFileSigningUtilsTests {
                 destinationDirectoryFiles.size(),
                 "Expected correct number of signature files to be created");
 
-        for (final File originalFile : filesToSign) {
-            final File expectedFile = destinationDirectory
-                    .toPath()
-                    .resolve(originalFile.getName() + SIGNATURE_FILE_NAME_SUFFIX)
-                    .toFile();
+        for (final Path originalFile : filesToSign) {
+            final Path expectedFile =
+                    destinationDirectory.resolve(originalFile.getFileName() + SIGNATURE_FILE_NAME_SUFFIX);
 
             assertTrue(
                     destinationDirectoryFiles.contains(expectedFile),
-                    "Expected signature file to be created for " + originalFile.getName());
+                    "Expected signature file to be created for " + originalFile.getFileName());
 
             // validate the stream file and sig file via the standard method
-            LinkedObjectStreamValidateUtils.validateFileAndSignature(
-                    originalFile, expectedFile, keyPair.getPublic(), EventStreamType.getInstance());
+            validateFileAndSignature(
+                    originalFile.toFile(), expectedFile.toFile(), keyPair.getPublic(), EventStreamType.getInstance());
         }
     }
 }

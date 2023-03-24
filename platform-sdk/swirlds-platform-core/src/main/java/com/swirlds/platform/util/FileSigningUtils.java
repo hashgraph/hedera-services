@@ -18,10 +18,10 @@ package com.swirlds.platform.util;
 
 import com.swirlds.common.crypto.SignatureType;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyStore;
@@ -55,7 +55,7 @@ public final class FileSigningUtils {
     private static final String KEYSTORE_TYPE = "pkcs12";
 
     /**
-     * Builds a signature file path from a destination directory and file name.
+     * Builds a signature file path from a destination directory and source file
      * <p>
      * Creates the needed directories if they don't already exist
      *
@@ -64,19 +64,19 @@ public final class FileSigningUtils {
      * @return signature file path
      */
     @NonNull
-    public static String buildSignatureFilePath(
-            @NonNull final File destinationDirectory, @NonNull final File sourceFile) {
+    public static Path buildSignatureFilePath(
+            @NonNull final Path destinationDirectory, @NonNull final Path sourceFile) {
 
         Objects.requireNonNull(destinationDirectory, "destinationDirectory must not be null");
         Objects.requireNonNull(sourceFile, "sourceFile must not be null");
 
         try {
-            Files.createDirectories(destinationDirectory.toPath());
+            Files.createDirectories(destinationDirectory);
         } catch (final IOException e) {
             throw new RuntimeException("Failed to create directory", e);
         }
 
-        return new File(destinationDirectory, sourceFile.getName() + SIGNATURE_FILE_NAME_SUFFIX).getPath();
+        return destinationDirectory.resolve(sourceFile.getFileName() + SIGNATURE_FILE_NAME_SUFFIX);
     }
 
     /**
@@ -110,32 +110,32 @@ public final class FileSigningUtils {
     /**
      * Loads a pfx key from file and returns the key pair
      *
-     * @param keyFileName a pfx key file
-     * @param password    the password for the key file
-     * @param alias       alias of the key
+     * @param keyFile  a pfx key file
+     * @param password the password for the key file
+     * @param alias    alias of the key
      * @return a KeyPair
      */
     @NonNull
     public static KeyPair loadPfxKey(
-            @NonNull final String keyFileName, @NonNull final String password, @NonNull final String alias) {
+            @NonNull final Path keyFile, @NonNull final String password, @NonNull final String alias) {
 
-        Objects.requireNonNull(keyFileName, "keyFileName");
-        Objects.requireNonNull(password, "password");
-        Objects.requireNonNull(alias, "alias");
+        Objects.requireNonNull(keyFile, "keyFile must not be null");
+        Objects.requireNonNull(password, "password must not be null");
+        Objects.requireNonNull(alias, "alias must not be null");
 
-        try (final FileInputStream inputStream = new FileInputStream(keyFileName)) {
+        try (final InputStream inputStream = Files.newInputStream(keyFile)) {
             final KeyStore keyStore = KeyStore.getInstance(KEYSTORE_TYPE);
             keyStore.load(inputStream, password.toCharArray());
 
             return new KeyPair(keyStore.getCertificate(alias).getPublicKey(), (PrivateKey)
                     keyStore.getKey(alias, password.toCharArray()));
         } catch (final NoSuchAlgorithmException
-                       | KeyStoreException
-                       | UnrecoverableKeyException
-                       | IOException
-                       | CertificateException e) {
+                | KeyStoreException
+                | UnrecoverableKeyException
+                | IOException
+                | CertificateException e) {
 
-            throw new RuntimeException("Unable to load Pfx key from file: " + keyFileName, e);
+            throw new RuntimeException("Unable to load Pfx key from file: " + keyFile, e);
         }
     }
 }

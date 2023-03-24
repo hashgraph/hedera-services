@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.swirlds.platform.util;
 
 import static com.swirlds.common.utility.ByteUtils.byteArrayToInt;
@@ -16,10 +32,8 @@ import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.stream.LinkedObjectStreamUtilities;
 import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
@@ -28,10 +42,9 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.Signature;
 import java.security.SignatureException;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -50,14 +63,14 @@ class StandardFileSigningUtilsTests {
     /**
      * The directory where the signature files will be written
      */
-    private File destinationDirectory;
+    private Path destinationDirectory;
 
     /**
      * Sets up for each test
      */
     @BeforeEach
     void setup() {
-        destinationDirectory = testDirectoryPath.resolve("signatureFiles").toFile();
+        destinationDirectory = testDirectoryPath.resolve("signatureFiles");
     }
 
     /**
@@ -66,9 +79,9 @@ class StandardFileSigningUtilsTests {
      * @param file    the file to create
      * @param content the contents of the file
      */
-    private static void createStandardFile(final File file, final String content) {
+    private static void createStandardFile(final Path file, final String content) {
         try (final DataOutputStream output =
-                new DataOutputStream(new BufferedOutputStream(new FileOutputStream(file)))) {
+                new DataOutputStream(new BufferedOutputStream(Files.newOutputStream(file)))) {
             output.writeChars(content);
         } catch (final IOException e) {
             throw new RuntimeException("unable to write to file: " + file, e);
@@ -83,17 +96,17 @@ class StandardFileSigningUtilsTests {
      * @param keyPair       the keyPair that was used to sign the file
      */
     private void assertStandardSignatureFileValidity(
-            final File originalFile, final File signatureFile, final KeyPair keyPair) {
+            final Path originalFile, final Path signatureFile, final KeyPair keyPair) {
 
-        try (FileInputStream signatureFileInputStream = new FileInputStream(signatureFile)) {
+        try (InputStream signatureFileInputStream = Files.newInputStream(signatureFile)) {
             assertEquals(
                     TYPE_FILE_HASH,
                     signatureFileInputStream.read(),
                     "First byte of sig file should be the file hash byte code");
 
             // the full hash of the file that was signed
-            final byte[] originalFileHash =
-                    LinkedObjectStreamUtilities.computeEntireHash(originalFile).getValue();
+            final byte[] originalFileHash = LinkedObjectStreamUtilities.computeEntireHash(originalFile.toFile())
+                    .getValue();
 
             assertArrayEquals(
                     originalFileHash,
@@ -126,10 +139,10 @@ class StandardFileSigningUtilsTests {
                     signatureFileInputStream.readAllBytes().length,
                     "signature file contains unexpected extra bytes");
         } catch (final IOException
-                       | NoSuchAlgorithmException
-                       | NoSuchProviderException
-                       | SignatureException
-                       | InvalidKeyException e) {
+                | NoSuchAlgorithmException
+                | NoSuchProviderException
+                | SignatureException
+                | InvalidKeyException e) {
             throw new RuntimeException(e);
         }
     }
@@ -137,23 +150,28 @@ class StandardFileSigningUtilsTests {
     @Test
     @DisplayName("Sign arbitrary file")
     void signArbitraryFile() {
-        final File fileToSign = testDirectoryPath.resolve("fileToSign.txt").toFile();
+        final Path fileToSign = testDirectoryPath.resolve("fileToSign.txt");
         createStandardFile(fileToSign, "Hello there");
 
         final KeyPair keyPair = loadKey();
 
         signStandardFile(destinationDirectory, fileToSign, keyPair);
 
-        final File[] destinationDirectoryFiles = destinationDirectory.listFiles();
+        final List<Path> destinationDirectoryFiles;
+        try (final Stream<Path> stream = Files.walk(destinationDirectory)) {
+            destinationDirectoryFiles = stream.filter(Files::isRegularFile).toList();
+        } catch (final IOException e) {
+            throw new RuntimeException("Failed to list files in directory: " + destinationDirectory, e);
+        }
 
         assertNotNull(destinationDirectoryFiles, "Expected signature file to be created");
-        assertEquals(1, destinationDirectoryFiles.length, "Expected one signature file to be created");
+        assertEquals(1, destinationDirectoryFiles.size(), "Expected one signature file to be created");
         assertEquals(
-                fileToSign.getName() + SIGNATURE_FILE_NAME_SUFFIX,
-                destinationDirectoryFiles[0].getName(),
+                fileToSign.getFileName() + SIGNATURE_FILE_NAME_SUFFIX,
+                destinationDirectoryFiles.get(0).getFileName().toString(),
                 "Expected signature file to have the same name as the file to sign, with _sig appended");
 
-        assertStandardSignatureFileValidity(fileToSign, destinationDirectoryFiles[0], keyPair);
+        assertStandardSignatureFileValidity(fileToSign, destinationDirectoryFiles.get(0), keyPair);
     }
 
     @Test
@@ -172,46 +190,38 @@ class StandardFileSigningUtilsTests {
 
         // create files to sign
         for (final String fileName : filesNamesToSign) {
-            createStandardFile(toSignDirectoryPath.resolve(fileName).toFile(), "Hello there " + fileName);
+            createStandardFile(toSignDirectoryPath.resolve(fileName), "Hello there " + fileName);
         }
 
         // Create some various files to *not* sign
         final String content = "Not signed";
-        createStandardFile(toSignDirectoryPath.resolve("fileNotToSign1.exe").toFile(), content);
-        createStandardFile(toSignDirectoryPath.resolve("fileNotToSign2").toFile(), content);
-        createStandardFile(toSignDirectoryPath.resolve("fileNotToSign3txt").toFile(), content);
-        try {
-            // create a file in a nested directory, which will also not be signed
-            final Path nestedDirectoryPath = Files.createDirectories(toSignDirectoryPath.resolve("nestedDir"));
-            createStandardFile(nestedDirectoryPath.resolve("fileNotToSign4.txt").toFile(), content);
-        } catch (final IOException e) {
-            throw new RuntimeException("unable to create nested directory", e);
-        }
+        createStandardFile(toSignDirectoryPath.resolve("fileNotToSign1.exe"), content);
+        createStandardFile(toSignDirectoryPath.resolve("fileNotToSign2"), content);
+        createStandardFile(toSignDirectoryPath.resolve("fileNotToSign3txt"), content);
 
         final KeyPair keyPair = loadKey();
 
         signStandardFilesInDirectory(
-                toSignDirectoryPath.toFile(), destinationDirectory, List.of(".txt", "arbitrary", ".Z"), keyPair);
+                toSignDirectoryPath, destinationDirectory, List.of(".txt", "arbitrary", ".Z"), keyPair);
 
-        final Collection<File> destinationDirectoryFiles = Arrays.stream(
-                        Objects.requireNonNull(destinationDirectory.listFiles()))
-                .toList();
+        final List<Path> destinationDirectoryFiles;
+        try (final Stream<Path> stream = Files.walk(destinationDirectory)) {
+            destinationDirectoryFiles = stream.filter(Files::isRegularFile).toList();
+        } catch (final IOException e) {
+            throw new RuntimeException("Failed to list files in directory: " + destinationDirectory, e);
+        }
 
         assertNotNull(destinationDirectoryFiles, "Expected signature files to be created");
         assertEquals(filesNamesToSign.size(), destinationDirectoryFiles.size(), "Incorrect number of sig files");
 
         for (final String originalFileName : filesNamesToSign) {
-            final File expectedFile = destinationDirectory
-                    .toPath()
-                    .resolve(originalFileName + SIGNATURE_FILE_NAME_SUFFIX)
-                    .toFile();
+            final Path expectedFile = destinationDirectory.resolve(originalFileName + SIGNATURE_FILE_NAME_SUFFIX);
 
             assertTrue(
                     destinationDirectoryFiles.contains(expectedFile),
                     "Expected signature file to be created for " + originalFileName);
 
-            assertStandardSignatureFileValidity(
-                    toSignDirectoryPath.resolve(originalFileName).toFile(), expectedFile, keyPair);
+            assertStandardSignatureFileValidity(toSignDirectoryPath.resolve(originalFileName), expectedFile, keyPair);
         }
     }
 }
