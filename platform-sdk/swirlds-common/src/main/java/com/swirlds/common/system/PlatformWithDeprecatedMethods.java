@@ -28,17 +28,6 @@ import java.time.Instant;
 public interface PlatformWithDeprecatedMethods extends Platform {
 
     /**
-     * Set the number of milliseconds the Platform should delay after each gossip sync it initiates. This is
-     * zero by default, but can be changed to slow down the system. This can be useful for testing.
-     *
-     * @param delay
-     * 		the delay in milliseconds
-     * @deprecated this has no effect when chatter is enabled
-     */
-    @Deprecated(forRemoval = true)
-    void setSleepAfterSync(final long delay);
-
-    /**
      * Get command line arguments.
      *
      * @deprecated use configuration engine

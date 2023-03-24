@@ -81,7 +81,6 @@ public class HelloSwirldDemoMain implements SwirldMain {
         this.selfId = id.getId();
         this.console = createConsole(platform, true); // create the window, make it visible
         SwirldsGui.setAbout(platform.getSelfId().getId(), "Hello Swirld v. 1.0\n");
-        this.platform.setSleepAfterSync(sleepPeriod);
     }
 
     @Override

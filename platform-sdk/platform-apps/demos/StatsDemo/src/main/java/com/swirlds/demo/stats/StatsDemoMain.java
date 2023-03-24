@@ -230,7 +230,6 @@ public class StatsDemoMain implements SwirldMain {
                 platform.getSelfId().getId(),
                 "Stats Demo v. 1.2\nThis writes statistics to a log file,"
                         + " such as the number of transactions per second.");
-        ((PlatformWithDeprecatedMethods) platform).setSleepAfterSync(syncDelay);
     }
 
     @Override

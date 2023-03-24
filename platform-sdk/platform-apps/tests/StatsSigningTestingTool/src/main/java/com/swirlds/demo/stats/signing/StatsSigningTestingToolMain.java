@@ -187,7 +187,6 @@ public class StatsSigningTestingToolMain implements SwirldMain {
                 platform.getSelfId().getId(),
                 "Stats Signing Demo v. 1.3\nThis writes statistics to a log file,"
                         + " such as the number of transactions per second.");
-        ((PlatformWithDeprecatedMethods) platform).setSleepAfterSync(syncDelay);
 
         transactionPool = new TransactionPool(
                 platform.getSelfId().getId(),

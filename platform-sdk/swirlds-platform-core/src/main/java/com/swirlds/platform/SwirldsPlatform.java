@@ -1709,14 +1709,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * {@inheritDoc}
      */
     @Override
-    public void setSleepAfterSync(final long delay) { // TODO remove
-
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public PlatformContext getContext() {
         return platformContext;
     }

@@ -394,11 +394,6 @@ public class HashgraphDemoMain implements SwirldMain {
         this.platform = platform;
         this.selfId = id.getId();
         final String[] parameters = ((PlatformWithDeprecatedMethods) platform).getParameters();
-        if (parameters.length < 1 || parameters[0].trim().equals("0")) { // default is fast, and so is parameter 0
-            ((PlatformWithDeprecatedMethods) platform).setSleepAfterSync(0);
-        } else { // parameter 1 is checked which is slow: 1 sync (2 events) per member per second
-            ((PlatformWithDeprecatedMethods) platform).setSleepAfterSync(1000);
-        }
 
         SwirldsGui.setAbout(
                 platform.getSelfId().getId(),
@@ -434,7 +429,7 @@ public class HashgraphDemoMain implements SwirldMain {
 
         slowCheckbox.addItemListener(new ItemListener() {
             public void itemStateChanged(final ItemEvent e) {
-                ((PlatformWithDeprecatedMethods) platform).setSleepAfterSync(e.getStateChange() == 1 ? 1000 : 0);
+                // TODO
             }
         });
 
