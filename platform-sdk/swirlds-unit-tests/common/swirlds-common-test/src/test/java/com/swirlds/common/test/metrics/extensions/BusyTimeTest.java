@@ -38,6 +38,9 @@ public class BusyTimeTest {
 		metric = new BusyTime(metrics, new DefaultMetricConfig("a", "b", "c"), clock);
 	}
 
+	/**
+	 * Example from the diagram in the documentation
+	 */
 	@Test
 	void diagramExample() {
 		// time == 1
