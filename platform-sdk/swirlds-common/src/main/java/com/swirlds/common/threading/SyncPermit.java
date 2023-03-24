@@ -18,11 +18,12 @@ package com.swirlds.common.threading;
 
 import com.swirlds.common.threading.locks.internal.AcquiredOnTry;
 import com.swirlds.common.threading.locks.locked.MaybeLocked;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.Semaphore;
 
 /**
  * Manages the permits that allow syncs to occur in the protocol paradigm. Syncs should only proceed once a permit is
- * acquired.
+ * acquired. This class is thread safe.
  */
 public class SyncPermit {
 
@@ -52,7 +53,7 @@ public class SyncPermit {
      * @return an autocloseable instance that tells the caller if the permit has been acquired and will automatically
      * release the permit when used in a try-with-resources block
      */
-    public MaybeLocked tryAcquire() {
+    public @NonNull MaybeLocked tryAcquire() {
         if (syncPermits.tryAcquire()) {
             return acquired;
         }

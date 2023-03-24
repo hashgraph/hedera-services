@@ -85,7 +85,7 @@ public class SyncPermitTest {
             assertEquals(
                     i + 1,
                     syncPermit.getNumAvailable(),
-                    "one less permit should be available when a permit is acquired");
+                    "one more permit should be available when a permit is released");
         }
     }
 }
