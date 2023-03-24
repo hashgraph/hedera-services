@@ -461,7 +461,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 new SimultaneousSyncThrottle(settings.getMaxIncomingSyncsInc() + settings.getMaxOutgoingSyncs());
 
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
-        final String actualMainCLassName = stateConfig.getMainClassName(mainClassName);
+        final String actualMainClassName = stateConfig.getMainClassName(mainClassName);
 
         this.appVersion = appVersion;
 
@@ -526,7 +526,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         stateManagementComponent = wiring.wireStateManagementComponent(
                 PlatformConstructor.platformSigner(crypto.getKeysAndCerts()),
-                actualMainCLassName,
+                actualMainClassName,
                 selfId,
                 swirldName,
                 this::createPrioritySystemTransaction,

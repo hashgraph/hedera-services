@@ -42,7 +42,6 @@ import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.platform.SettingsProvider;
-import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManagerFactory;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
@@ -571,22 +570,19 @@ class EventFlowTests {
 
         final ConsensusMetrics consensusMetrics = new NoOpConsensusMetrics();
 
-        final SwirldsPlatform platform = mock(SwirldsPlatform.class);
-        when(platform.getSelfId()).thenReturn(selfNodeId);
-
         final EventStreamManager<EventImpl> eventStreamManager = mock(EventStreamManager.class);
         final RunningHashCalculator runningHashCalculator = new RunningHashCalculator();
 
         // Set up the running hash calculator, required if signed states are created
         doAnswer((Answer<Void>) invocation -> {
-                    final Object[] args = invocation.getArguments();
-                    final List<EventImpl> events = (List<EventImpl>) args[0];
+            final Object[] args = invocation.getArguments();
+            final List<EventImpl> events = (List<EventImpl>) args[0];
 
-                    // calculates and updates runningHash
-                    events.forEach(runningHashCalculator::calculateRunningHash);
+            // calculates and updates runningHash
+            events.forEach(runningHashCalculator::calculateRunningHash);
 
-                    return null;
-                })
+            return null;
+        })
                 .when(eventStreamManager)
                 .addEvents(anyList());
 
@@ -628,9 +624,12 @@ class EventFlowTests {
                 consStats,
                 eventStreamManager,
                 signedStateTracker,
-                e -> {},
-                () -> {},
-                (round) -> {},
+                e -> {
+                },
+                () -> {
+                },
+                (round) -> {
+                },
                 SoftwareVersion.NO_VERSION);
     }
 
