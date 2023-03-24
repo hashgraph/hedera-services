@@ -330,13 +330,13 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /** Stores and passes pre-consensus events to {@link SwirldStateManager} for handling */
     private final PreConsensusEventHandler preConsensusEventHandler;
     /** Stores and processes consensus events including sending them to {@link SwirldStateManager} for handling */
-    private ConsensusRoundHandler consensusRoundHandler;
+    private final ConsensusRoundHandler consensusRoundHandler;
     /** Handles all interaction with {@link SwirldState} */
     private final SwirldStateManager swirldStateManager;
     /** Checks the validity of transactions and submits valid ones to the event transaction pool */
     private final SwirldTransactionSubmitter transactionSubmitter;
     /** clears all pipelines to prepare for a reconnect */
-    private Clearable clearAllPipelines;
+    private final Clearable clearAllPipelines;
     /** Contains all information and state required for emergency recovery */
     private final EmergencyRecoveryManager emergencyRecoveryManager;
 
@@ -488,7 +488,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         this.shadowGraph = new ShadowGraph(syncMetrics, initialAddressBook.getSize());
 
-        this.consensusRoundHandler = null;
         this.swirldId = swirldId.clone();
         this.crypto = crypto;
 
