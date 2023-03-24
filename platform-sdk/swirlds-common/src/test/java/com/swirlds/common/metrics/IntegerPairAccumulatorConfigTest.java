@@ -75,9 +75,9 @@ class IntegerPairAccumulatorConfigTest {
                 .isInstanceOf(IllegalArgumentException.class);
 
         assertThatThrownBy(() -> new IntegerPairAccumulator.Config<>(CATEGORY, CATEGORY, null, AVERAGE))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new IntegerPairAccumulator.Config<>(CATEGORY, CATEGORY, Double.class, null))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(NullPointerException.class);
     }
 
     @SuppressWarnings("unchecked")
@@ -140,9 +140,9 @@ class IntegerPairAccumulatorConfigTest {
         assertThatThrownBy(() -> config.withFormat("")).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> config.withFormat(" \t\n")).isInstanceOf(IllegalArgumentException.class);
 
-        assertThatThrownBy(() -> config.withLeftAccumulator(null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> config.withLeftAccumulator(null)).isInstanceOf(NullPointerException.class);
 
-        assertThatThrownBy(() -> config.withRightAccumulator(null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> config.withRightAccumulator(null)).isInstanceOf(NullPointerException.class);
     }
 
     @SuppressWarnings("unchecked")
