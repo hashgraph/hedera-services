@@ -185,7 +185,6 @@ final class RecoveryTestUtils {
                 true,
                 destination.toString(),
                 secondsPerFile,
-                Integer.MAX_VALUE,
                 x -> false);
 
         // The event stream writer has flaky asynchronous behavior,

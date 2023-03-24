@@ -30,7 +30,6 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
@@ -86,14 +85,10 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
      * 		eventStream files will be generated in this directory
      * @param eventsLogPeriod
      * 		period of generating eventStream file
-     * @param eventStreamQueueCapacity
-     * 		capacity of the blockingQueue from which we take events and write to EventStream files
      * @param isLastEventInFreezeCheck
      * 		a predicate which checks whether this event is the last event before restart
      * @param threadManager
      * 		responsible for managing thread lifecycles
-     * @throws NoSuchAlgorithmException
-     * 		is thrown when fails to get required MessageDigest instance
      * @throws IOException
      * 		is thrown when fails to create directory for event streaming
      */
@@ -105,9 +100,8 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
             final boolean enableEventStreaming,
             final String eventsLogDir,
             final long eventsLogPeriod,
-            final int eventStreamQueueCapacity,
             final Predicate<T> isLastEventInFreezeCheck)
-            throws NoSuchAlgorithmException, IOException {
+            throws IOException {
 
         if (enableEventStreaming) {
             // the directory to which event stream files are written

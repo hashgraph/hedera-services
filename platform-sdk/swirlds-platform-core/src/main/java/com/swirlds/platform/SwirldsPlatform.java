@@ -203,7 +203,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -218,7 +217,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -308,7 +306,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /** a long name including (app, swirld, member id, member self name) */
     private final String platformName;
     /** is used for calculating runningHash of all consensus events and writing consensus events to file */
-    private EventStreamManager<EventImpl> eventStreamManager;
+    private final EventStreamManager<EventImpl> eventStreamManager;
     /**
      * True if this node started from genesis.
      */
@@ -438,8 +436,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         this.platformContext = Objects.requireNonNull(platformContext, "platformContext");
 
-        DispatchBuilder dispatchBuilder = new DispatchBuilder(
-                platformContext.getConfiguration().getConfigData(DispatchConfiguration.class));
+        DispatchBuilder dispatchBuilder =
+                new DispatchBuilder(platformContext.getConfiguration().getConfigData(DispatchConfiguration.class));
 
         components = new PlatformComponents(dispatchBuilder);
 
@@ -582,12 +580,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         }
 
         // initializes EventStreamManager instance
-        final Address address = getSelfAddress();
-        if (address.getMemo() != null && !address.getMemo().isEmpty()) {
-            initEventStreamManager(address.getMemo());
-        } else {
-            initEventStreamManager(String.valueOf(selfId));
-        }
+        eventStreamManager = initEventStreamManager(String.valueOf(selfId));
 
         buildEventHandlers(loadedState, genesisStateBuilder);
 
@@ -1135,9 +1128,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         if (loadedState.signedStateFromDisk != null) {
             logger.debug(STARTUP.getMarker(), () -> new SavedStateLoadedPayload(
-                    loadedState.signedStateFromDisk.getRound(),
-                    loadedState.signedStateFromDisk.getConsensusTimestamp(),
-                    startUpEventFrozenManager.getStartUpEventFrozenEndTime())
+                            loadedState.signedStateFromDisk.getRound(),
+                            loadedState.signedStateFromDisk.getConsensusTimestamp(),
+                            startUpEventFrozenManager.getStartUpEventFrozenEndTime())
                     .toString());
 
             buildEventHandlersFromState(loadedState.initialState, stateHashSignQueueThread);
@@ -1671,7 +1664,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             if (oldStatus != newStatus) {
                 final PlatformStatus ns = newStatus;
                 logger.info(PLATFORM_STATUS.getMarker(), () -> new PlatformStatusPayload(
-                        "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), ns.name())
+                                "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), ns.name())
                         .toString());
 
                 logger.info(PLATFORM_STATUS.getMarker(), "Platform status changed to: {}", newStatus.toString());
@@ -1924,10 +1917,10 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      *
      * @param name name of this node
      */
-    void initEventStreamManager(final String name) {
+    private EventStreamManager<EventImpl> initEventStreamManager(final String name) {
         try {
             logger.info(STARTUP.getMarker(), "initialize eventStreamManager");
-            eventStreamManager = new EventStreamManager<>(
+            return new EventStreamManager<>(
                     threadManager,
                     getSelfId(),
                     this,
@@ -1935,13 +1928,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     settings.isEnableEventStreaming(),
                     settings.getEventsLogDir(),
                     settings.getEventsLogPeriod(),
-                    settings.getEventStreamQueueCapacity(),
                     this::isLastEventBeforeRestart);
-        } catch (final NoSuchAlgorithmException | IOException e) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    "Fail to initialize eventStreamHelper. Exception: {}",
-                    ExceptionUtils.getStackTrace(e));
+        } catch (final IOException e) {
+            throw new UncheckedIOException("Unable to initialize EventStreamManager", e);
         }
     }
 

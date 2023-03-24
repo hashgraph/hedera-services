@@ -42,7 +42,6 @@ class EventStreamManagerTest {
     private static final String nodeName = "node0";
     private static final String eventsLogDir = "eventStream/";
     private static final long eventsLogPeriod = 5;
-    private static final int eventStreamQueueCapacity = 100;
 
     private static final String INITIALIZE_NOT_NULL = "after initialization, the instance should not be null";
     private static final String INITIALIZE_QUEUE_EMPTY = "after initialization, hash queue should be empty";
@@ -69,7 +68,6 @@ class EventStreamManagerTest {
                 false,
                 eventsLogDir,
                 eventsLogPeriod,
-                eventStreamQueueCapacity,
                 EventStreamManagerTest::isFreezeEvent);
 
         enableStreamingInstance = new EventStreamManager<>(
@@ -80,7 +78,6 @@ class EventStreamManagerTest {
                 true,
                 eventsLogDir,
                 eventsLogPeriod,
-                eventStreamQueueCapacity,
                 EventStreamManagerTest::isFreezeEvent);
     }
 
