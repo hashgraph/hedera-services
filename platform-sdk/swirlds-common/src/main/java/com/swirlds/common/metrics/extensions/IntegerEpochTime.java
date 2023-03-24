@@ -32,7 +32,7 @@ public class IntegerEpochTime {
 		return elapsed(startTime, getMicroTime());
 	}
 
-	private int elapsed(final int startTime, final int currentTime){
+	public static int elapsed(final int startTime, final int currentTime){
 		if (currentTime >= startTime) {
 			return currentTime - startTime;
 		} else {
