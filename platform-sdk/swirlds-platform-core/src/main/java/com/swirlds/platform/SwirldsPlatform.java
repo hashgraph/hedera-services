@@ -322,7 +322,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /** Helps when executing a reconnect */
     private final ReconnectHelper reconnectHelper;
     /** tells callers who to sync with and keeps track of whether we have fallen behind */
-    private SyncManagerImpl syncManager;
+    private final SyncManagerImpl syncManager;
     /** locks used to synchronize usage of outbound connections */
     private SharedConnectionLocks sharedConnectionLocks;
 
@@ -626,6 +626,16 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                         Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
                         Pair.of(consensusRoundHandler, "consensusRoundHandler"),
                         Pair.of(swirldStateManager, "swirldStateManager")));
+
+        syncManager = components.add(new SyncManagerImpl(
+                intakeQueue,
+                topology.getConnectionGraph(),
+                selfId,
+                new EventCreationRules(List.of(
+                        selfId, swirldStateManager.getTransactionPool(), startUpEventFrozenManager, freezeManager)),
+                criticalQuorum,
+                initialAddressBook,
+                fallenBehindManager));
 
         eventTaskCreator = new EventTaskCreator(
                 eventMapper,
@@ -1198,16 +1208,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      */
     @Override
     public void start() {
-        syncManager = components.add(new SyncManagerImpl(
-                intakeQueue,
-                topology.getConnectionGraph(),
-                selfId,
-                new EventCreationRules(List.of(
-                        selfId, swirldStateManager.getTransactionPool(), startUpEventFrozenManager, freezeManager)),
-                criticalQuorum,
-                initialAddressBook,
-                fallenBehindManager));
-
         components.start();
 
         if (!startedFromGenesis) {
