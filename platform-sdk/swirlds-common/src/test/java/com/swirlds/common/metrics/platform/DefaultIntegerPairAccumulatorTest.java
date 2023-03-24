@@ -16,17 +16,6 @@
 
 package com.swirlds.common.metrics.platform;
 
-import com.swirlds.common.metrics.IntegerGauge;
-import com.swirlds.common.metrics.IntegerPairAccumulator;
-import com.swirlds.common.metrics.Metric;
-import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
-import com.swirlds.common.statistics.StatsBuffered;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-import java.util.function.BiFunction;
-
 import static com.swirlds.common.metrics.IntegerPairAccumulator.AVERAGE;
 import static com.swirlds.common.metrics.Metric.DataType.STRING;
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
@@ -36,6 +25,16 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import com.swirlds.common.metrics.IntegerGauge;
+import com.swirlds.common.metrics.IntegerPairAccumulator;
+import com.swirlds.common.metrics.Metric;
+import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
+import com.swirlds.common.statistics.StatsBuffered;
+import java.util.List;
+import java.util.function.BiFunction;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 class DefaultIntegerPairAccumulatorTest {
 
@@ -182,9 +181,7 @@ class DefaultIntegerPairAccumulatorTest {
 
         // then
         assertThrows(
-                NullPointerException.class,
-                () -> accumulator.get(null),
-                "Calling get() with null should throw an NPE");
+                NullPointerException.class, () -> accumulator.get(null), "Calling get() with null should throw an NPE");
         assertThrows(
                 IllegalArgumentException.class,
                 () -> accumulator.get(Metric.ValueType.MIN),
@@ -225,10 +222,10 @@ class DefaultIntegerPairAccumulatorTest {
         // given
         final int leftDefault = 10;
         final int rightDefault = 5;
-        final IntegerPairAccumulator.Config<Integer> config =
-                new IntegerPairAccumulator.Config<>(CATEGORY, NAME, Integer.class, Integer::sum)
-                        .withLeftReset(i->leftDefault)
-                        .withRightReset(i->rightDefault);
+        final IntegerPairAccumulator.Config<Integer> config = new IntegerPairAccumulator.Config<>(
+                        CATEGORY, NAME, Integer.class, Integer::sum)
+                .withLeftReset(i -> leftDefault)
+                .withRightReset(i -> rightDefault);
         final IntegerPairAccumulator<Integer> accumulator = new DefaultIntegerPairAccumulator<>(config);
 
         // then

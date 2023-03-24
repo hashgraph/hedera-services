@@ -48,15 +48,10 @@ public class AtomicIntPair {
      *                         {@link #accumulate(int, int)} is called
      */
     public AtomicIntPair(final IntBinaryOperator leftAccumulator, final IntBinaryOperator rightAccumulator) {
-        this(
-                createAccumulator(leftAccumulator, rightAccumulator),
-                (current) -> RESET_VALUE
-        );
+        this(createAccumulator(leftAccumulator, rightAccumulator), (current) -> RESET_VALUE);
     }
 
-    public AtomicIntPair(
-            final LongBinaryOperator accumulator,
-            final LongUnaryOperator reset) {
+    public AtomicIntPair(final LongBinaryOperator accumulator, final LongUnaryOperator reset) {
         operator = accumulator;
         this.container = new AtomicLong(RESET_VALUE);
         this.reset = reset;
@@ -70,8 +65,7 @@ public class AtomicIntPair {
      * @return a method that will update both integers
      */
     public static LongBinaryOperator createAccumulator(
-            final IntBinaryOperator leftAccumulator,
-            final IntBinaryOperator rightAccumulator) {
+            final IntBinaryOperator leftAccumulator, final IntBinaryOperator rightAccumulator) {
         return (current, supplied) -> {
             final int left = leftAccumulator.applyAsInt(extractLeft(current), extractLeft(supplied));
             final int right = rightAccumulator.applyAsInt(extractRight(current), extractRight(supplied));
@@ -84,8 +78,7 @@ public class AtomicIntPair {
      * @param rightReset      the method that will be used to calculate the new value for the right integer when it is being reset
      */
     public static LongUnaryOperator createCombinedReset(
-            final IntUnaryOperator leftReset,
-            final IntUnaryOperator rightReset) {
+            final IntUnaryOperator leftReset, final IntUnaryOperator rightReset) {
         return (current) -> {
             final int left = leftReset.applyAsInt(extractLeft(current));
             final int right = rightReset.applyAsInt(extractRight(current));

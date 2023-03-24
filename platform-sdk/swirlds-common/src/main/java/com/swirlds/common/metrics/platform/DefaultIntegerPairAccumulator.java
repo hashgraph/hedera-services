@@ -24,11 +24,10 @@ import com.swirlds.common.metrics.MetricConfig;
 import com.swirlds.common.metrics.MetricType;
 import com.swirlds.common.metrics.atomic.AtomicIntPair;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.LongBinaryOperator;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * Platform-implementation of {@link IntegerPairAccumulator}
@@ -44,16 +43,9 @@ public class DefaultIntegerPairAccumulator<T> extends DefaultMetric implements I
         this.dataType = MetricConfig.mapDataType(config.getType());
         final LongBinaryOperator accumulator = config.getCombinedAccumulator() != null
                 ? config.getCombinedAccumulator()
-                : AtomicIntPair.createAccumulator(
-                    config.getLeftAccumulator(),
-                    config.getRightAccumulator());
+                : AtomicIntPair.createAccumulator(config.getLeftAccumulator(), config.getRightAccumulator());
         this.container = new AtomicIntPair(
-                accumulator,
-                AtomicIntPair.createCombinedReset(
-                        config.getLeftReset(),
-                        config.getRightReset()
-                )
-        );
+                accumulator, AtomicIntPair.createCombinedReset(config.getLeftReset(), config.getRightReset()));
         this.resultFunction = config.getResultFunction();
     }
 
@@ -75,8 +67,7 @@ public class DefaultIntegerPairAccumulator<T> extends DefaultMetric implements I
      */
     @Override
     public List<SnapshotEntry> takeSnapshot() {
-        final T result =
-                container.computeAndReset(resultFunction);
+        final T result = container.computeAndReset(resultFunction);
         return List.of(new SnapshotEntry(VALUE, result));
     }
 

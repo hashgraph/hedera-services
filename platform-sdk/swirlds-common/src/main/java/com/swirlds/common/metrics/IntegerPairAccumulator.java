@@ -16,7 +16,7 @@
 
 package com.swirlds.common.metrics;
 
-import org.apache.commons.lang3.builder.ToStringBuilder;
+import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
@@ -26,8 +26,7 @@ import java.util.function.IntBinaryOperator;
 import java.util.function.IntSupplier;
 import java.util.function.IntUnaryOperator;
 import java.util.function.LongBinaryOperator;
-
-import static com.swirlds.base.ArgumentUtils.throwArgNull;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * An {@code IntegerPairAccumulator} accumulates two {@code int}-values, which can be updated atomically.
@@ -113,7 +112,6 @@ public interface IntegerPairAccumulator<T> extends Metric {
         private final IntBinaryOperator leftAccumulator;
         private final IntBinaryOperator rightAccumulator;
         private final LongBinaryOperator combinedAccumulator;
-
 
         private final IntUnaryOperator leftReset;
         private final IntUnaryOperator rightReset;
@@ -273,7 +271,7 @@ public interface IntegerPairAccumulator<T> extends Metric {
          * @return a new configuration-object with updated {@code leftAccumulator}
          */
         public IntegerPairAccumulator.Config<T> withLeftAccumulator(final IntBinaryOperator leftAccumulator) {
-            if(combinedAccumulator != null){
+            if (combinedAccumulator != null) {
                 throw new IllegalStateException("Cannot set leftAccumulator when combinedAccumulator is set");
             }
             return new IntegerPairAccumulator.Config<>(
@@ -307,7 +305,7 @@ public interface IntegerPairAccumulator<T> extends Metric {
          * @return a new configuration-object with updated {@code rightAccumulator}
          */
         public IntegerPairAccumulator.Config<T> withRightAccumulator(final IntBinaryOperator rightAccumulator) {
-            if(combinedAccumulator != null){
+            if (combinedAccumulator != null) {
                 throw new IllegalStateException("Cannot set rightAccumulator when combinedAccumulator is set");
             }
             return new IntegerPairAccumulator.Config<>(
@@ -372,7 +370,7 @@ public interface IntegerPairAccumulator<T> extends Metric {
                     getLeftAccumulator(),
                     getRightAccumulator(),
                     getCombinedAccumulator(),
-                    (i)->leftInitializer.getAsInt(),
+                    (i) -> leftInitializer.getAsInt(),
                     getRightReset());
         }
 
@@ -448,7 +446,7 @@ public interface IntegerPairAccumulator<T> extends Metric {
                     getRightAccumulator(),
                     getCombinedAccumulator(),
                     getLeftReset(),
-                    (i)->rightInitializer.getAsInt());
+                    (i) -> rightInitializer.getAsInt());
         }
 
         /**

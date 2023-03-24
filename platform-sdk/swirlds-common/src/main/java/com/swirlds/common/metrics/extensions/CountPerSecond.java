@@ -16,9 +16,9 @@
 
 package com.swirlds.common.metrics.extensions;
 
+import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_2;
 import static com.swirlds.common.utility.CommonUtils.throwArgBlank;
-import static com.swirlds.base.ArgumentUtils.throwArgNull;
 
 import com.swirlds.common.metrics.IntegerPairAccumulator;
 import com.swirlds.common.metrics.LongAccumulator;
@@ -62,7 +62,7 @@ public class CountPerSecond {
     public CountPerSecond(final Metrics metrics, final CountPerSecond.Config config, final IntegerEpochTime time) {
         this.time = time;
         this.accumulator = metrics.getOrCreate(new IntegerPairAccumulator.Config<>(
-                config.getCategory(), config.getName(), Double.class, this::perSecond)
+                        config.getCategory(), config.getName(), Double.class, this::perSecond)
                 .withDescription(config.getDescription())
                 .withUnit(config.getUnit())
                 .withFormat(config.getFormat())
