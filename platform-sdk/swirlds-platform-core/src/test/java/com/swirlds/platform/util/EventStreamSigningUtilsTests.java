@@ -20,10 +20,10 @@ import static com.swirlds.common.stream.internal.LinkedObjectStreamValidateUtils
 import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.generateRandomEvents;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.writeRandomEventStream;
+import static com.swirlds.platform.util.EventStreamSigningUtils.initializeSystem;
+import static com.swirlds.platform.util.EventStreamSigningUtils.signEventStreamFile;
+import static com.swirlds.platform.util.EventStreamSigningUtils.signEventStreamFilesInDirectory;
 import static com.swirlds.platform.util.FileSigningUtils.SIGNATURE_FILE_NAME_SUFFIX;
-import static com.swirlds.platform.util.StreamFileSigningUtils.initializeSystem;
-import static com.swirlds.platform.util.StreamFileSigningUtils.signStreamFile;
-import static com.swirlds.platform.util.StreamFileSigningUtils.signStreamFilesInDirectory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -48,9 +48,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Tests for {@link StreamFileSigningUtils}
+ * Tests for {@link EventStreamSigningUtils}
  */
-class StreamFileSigningUtilsTests {
+class EventStreamSigningUtilsTests {
     /**
      * Temporary directory provided by JUnit
      */
@@ -66,11 +66,6 @@ class StreamFileSigningUtilsTests {
      * The directory where the signature files will be written
      */
     private Path destinationDirectory;
-
-    /**
-     * An instance of the EventStreamType
-     */
-    private final EventStreamType eventStreamType = EventStreamType.getInstance();
 
     /**
      * The key to use for tests
@@ -96,7 +91,8 @@ class StreamFileSigningUtilsTests {
     private static KeyPair loadKey() {
         try {
             return FileSigningUtils.loadPfxKey(
-                    Path.of(Objects.requireNonNull(StreamFileSigningUtilsTests.class.getResource("testKeyStore.pkcs12"))
+                    Path.of(Objects.requireNonNull(
+                                    EventStreamSigningUtilsTests.class.getResource("testKeyStore.pkcs12"))
                             .toURI()),
                     "123456",
                     "testKey");
@@ -148,7 +144,7 @@ class StreamFileSigningUtilsTests {
             throw new RuntimeException(e);
         }
 
-        signStreamFile(destinationDirectory, eventStreamType, fileToSign, keyPair);
+        signEventStreamFile(destinationDirectory, fileToSign, keyPair);
 
         final List<Path> destinationDirectoryFiles = getDestinationDirectoryFiles();
 
@@ -174,13 +170,14 @@ class StreamFileSigningUtilsTests {
 
         final List<Path> filesToSign;
         try (final Stream<Path> stream = Files.walk(toSignDirectory)) {
-            filesToSign = stream.filter(filePath -> eventStreamType.isStreamFile(filePath.toString()))
+            filesToSign = stream.filter(
+                            filePath -> EventStreamType.getInstance().isStreamFile(filePath.toString()))
                     .toList();
         } catch (final IOException e) {
             throw new RuntimeException("Failed to list files in directory: " + toSignDirectory, e);
         }
 
-        signStreamFilesInDirectory(toSignDirectory, destinationDirectory, eventStreamType, keyPair);
+        signEventStreamFilesInDirectory(toSignDirectory, destinationDirectory, keyPair);
 
         final List<Path> destinationDirectoryFiles = getDestinationDirectoryFiles();
 

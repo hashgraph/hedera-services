@@ -26,7 +26,7 @@ import static com.swirlds.platform.util.FileSigningUtils.signData;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.internal.SettingsCommon;
-import com.swirlds.common.stream.StreamType;
+import com.swirlds.common.stream.EventStreamType;
 import com.swirlds.common.stream.internal.InvalidStreamFileException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -41,13 +41,13 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
- * Utility class for signing stream files
+ * Utility class for signing event stream files
  */
-public class StreamFileSigningUtils {
+public class EventStreamSigningUtils {
     /**
      * Hidden constructor
      */
-    private StreamFileSigningUtils() {}
+    private EventStreamSigningUtils() {}
 
     /**
      * Supported stream version file
@@ -70,21 +70,18 @@ public class StreamFileSigningUtils {
     }
 
     /**
-     * Generates a signature file for the given stream file
+     * Generates a signature file for the given event stream file
      *
      * @param destinationDirectory the directory where the signature file will be saved
-     * @param streamType           type of the stream file
      * @param streamFileToSign     the stream file to be signed
      * @param keyPair              the keyPair used for signing
      */
-    public static void signStreamFile(
+    public static void signEventStreamFile(
             @NonNull final Path destinationDirectory,
-            @NonNull final StreamType streamType,
             @NonNull final Path streamFileToSign,
             @NonNull final KeyPair keyPair) {
 
         Objects.requireNonNull(destinationDirectory, "destinationDirectory must not be null");
-        Objects.requireNonNull(streamType, "streamType must not be null");
         Objects.requireNonNull(streamFileToSign, "streamFileToSign must not be null");
         Objects.requireNonNull(keyPair, "keyPair must not be null");
 
@@ -100,6 +97,8 @@ public class StreamFileSigningUtils {
             final Hash entireHash = computeEntireHash(streamFileToSign.toFile());
             final com.swirlds.common.crypto.Signature entireHashSignature = new com.swirlds.common.crypto.Signature(
                     SignatureType.RSA, signData(entireHash.getValue(), keyPair));
+
+            final EventStreamType streamType = EventStreamType.getInstance();
 
             final Hash metaHash = computeMetaHash(streamFileToSign.toFile(), streamType);
             final com.swirlds.common.crypto.Signature metaHashSignature =
@@ -124,30 +123,29 @@ public class StreamFileSigningUtils {
     }
 
     /**
-     * Signs all stream files of specified types in a directory
+     * Signs all event stream files in a directory
      * <p>
      * If a recoverable error is encountered while signing an individual file in the directory, an error will be logged,
      * and signing of remaining files will continue
      *
      * @param sourceDirectory      the source directory
      * @param destinationDirectory the destination directory
-     * @param streamType           the type of stream files to sign
      * @param keyPair              the key pair to sign with
      */
-    public static void signStreamFilesInDirectory(
+    public static void signEventStreamFilesInDirectory(
             @NonNull final Path sourceDirectory,
             @NonNull final Path destinationDirectory,
-            @NonNull final StreamType streamType,
             @NonNull final KeyPair keyPair) {
 
         Objects.requireNonNull(sourceDirectory, "sourceDirectory must not be null");
         Objects.requireNonNull(destinationDirectory, "destinationDirectory must not be null");
-        Objects.requireNonNull(streamType, "streamTypes must not be null");
         Objects.requireNonNull(keyPair, "keyPair must not be null");
+
+        final EventStreamType streamType = EventStreamType.getInstance();
 
         try (final Stream<Path> stream = Files.walk(sourceDirectory)) {
             stream.filter(filePath -> streamType.isStreamFile(filePath.toString()))
-                    .forEach(path -> signStreamFile(destinationDirectory, streamType, path, keyPair));
+                    .forEach(path -> signEventStreamFile(destinationDirectory, path, keyPair));
         } catch (final IOException e) {
             throw new RuntimeException("Failed to list files in directory: " + sourceDirectory);
         }
