@@ -20,6 +20,7 @@ import static com.hedera.node.app.hapi.utils.CommonUtils.functionOf;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NodeStakeUpdate;
 import static com.hederahashgraph.api.proto.java.TransactionBody.DataCase.NODE_STAKE_UPDATE;
+import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.utils.CommonUtils;
@@ -28,13 +29,15 @@ import com.hedera.services.stream.proto.RecordStreamItem;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody.DataCase;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashSet;
 import java.util.Set;
 
 public class TransactionBodyClassifier {
     private final Set<HederaFunctionality> transactionType = new HashSet<>();
 
-    public void incorporate(final RecordStreamItem item) throws InvalidProtocolBufferException {
+    public void incorporate(@NonNull final RecordStreamItem item) throws InvalidProtocolBufferException {
+        requireNonNull(item);
         var txnType = NONE;
         TransactionBody txnBody = CommonUtils.extractTransactionBody(item.getTransaction());
 
