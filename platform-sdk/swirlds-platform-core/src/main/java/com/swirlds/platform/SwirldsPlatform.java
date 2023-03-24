@@ -412,6 +412,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 new DispatchBuilder(platformContext.getConfiguration().getConfigData(DispatchConfiguration.class));
 
         components = new PlatformComponents(dispatchBuilder);
+        components.add(platformContext.getMetrics());
 
         // FUTURE WORK: use a real thread manager here
         threadManager = getStaticThreadManager();
@@ -1186,8 +1187,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         } else {
             startSyncNetwork();
         }
-
-        metrics.start();
 
         // in case of a single node network, the platform status update will not be triggered by connections, so it
         // needs to be triggered now
