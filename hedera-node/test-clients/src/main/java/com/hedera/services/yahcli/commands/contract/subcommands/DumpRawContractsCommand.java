@@ -210,7 +210,6 @@ public class DumpRawContractsCommand implements Callable<Integer> {
         return knownContracts;
     }
 
-    // BTW, yahcli log configuration file is at `test-clients/src/main/resources/log4j2.xml`
     private void setRootLogLevel(final Level level) {
         final var logger = LogManager.getRootLogger();
         Configurator.setAllLevels(logger.getName(), level);
