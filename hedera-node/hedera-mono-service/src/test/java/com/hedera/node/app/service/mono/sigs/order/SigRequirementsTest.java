@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.mono.sigs.order;
 
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.node.app.service.mono.sigs.metadata.DelegatingSigMetadataLookup.PRETEND_SIGNING_TIME;
 import static com.hedera.node.app.service.mono.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
 import static com.hedera.node.app.service.mono.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
@@ -92,13 +91,7 @@ import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPT
 import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_DELETE_ALLOWANCE_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_DELETE_ALLOWANCE_SELF_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_DELETE_NFT_ALLOWANCE_MISSING_OWNER_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_NO_RECEIVER_SIG_ECDSA_ADMIN_KEY_DIFFERENT_EVM_ADDRESS_ALIAS_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_NO_RECEIVER_SIG_ECDSA_ADMIN_KEY_EVM_ADDRESS_ALIAS_FROM_SAME_KEY_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_NO_RECEIVER_SIG_ED_ADMIN_KEY_EVM_ADDRESS_ALIAS_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_NO_RECEIVER_SIG_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_RECEIVER_SIG_ECDSA_ADMIN_KEY_DIFFERENT_EVM_ADDRESS_ALIAS_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_RECEIVER_SIG_ECDSA_ADMIN_KEY_EVM_ADDRESS_ALIAS_FROM_SAME_KEY_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_RECEIVER_SIG_ED_ADMIN_KEY_EVM_ADDRESS_ALIAS_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_RECEIVER_SIG_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoDeleteScenarios.CRYPTO_DELETE_MISSING_RECEIVER_SIG_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoDeleteScenarios.CRYPTO_DELETE_MISSING_TARGET;
@@ -287,8 +280,6 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FEE_
 import static com.hedera.test.factories.txns.ConsensusCreateTopicFactory.SIMPLE_TOPIC_ADMIN_KEY;
 import static com.hedera.test.factories.txns.ContractCreateFactory.DEFAULT_ADMIN_KT;
 import static com.hedera.test.factories.txns.CryptoCreateFactory.DEFAULT_ACCOUNT_KT;
-import static com.hedera.test.factories.txns.CryptoCreateFactory.ECDSA_KT;
-import static com.hedera.test.factories.txns.CryptoCreateFactory.ECDSA_KT_2;
 import static com.hedera.test.factories.txns.FileCreateFactory.DEFAULT_WACL_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.MASTER_PAYER_ID;
@@ -311,7 +302,6 @@ import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.iterableWithSize;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -538,101 +528,6 @@ public class SigRequirementsTest {
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
         assertThat(sanityRestored(summary.getOrderedKeys()), contains(DEFAULT_ACCOUNT_KT.asKey()));
-    }
-
-    @Test
-    void getsCryptoCreateReceiverSigEDAdminEvmAddressAlias() throws Throwable {
-        // given:
-        setupFor(CRYPTO_CREATE_RECEIVER_SIG_ED_ADMIN_KEY_EVM_ADDRESS_ALIAS_SCENARIO);
-
-        // when:
-        final var summary = subject.keysForOtherParties(txn, summaryFactory);
-
-        // then:
-        assertThat(summary.getOrderedKeys(), iterableWithSize(2));
-        assertArrayEquals(
-                recoverAddressFromPubKey(ECDSA_KT.asKey().getECDSASecp256K1().toByteArray()),
-                summary.getOrderedKeys().get(0).getWildcardECDSAKey().getEvmAddress());
-        assertFalse(summary.getOrderedKeys().get(0).getWildcardECDSAKey().isForHollowAccount());
-        assertEquals(
-                DEFAULT_ACCOUNT_KT.asKey(),
-                sanityRestored(List.of(summary.getOrderedKeys().get(1))).get(0));
-    }
-
-    @Test
-    void getsCryptoCreateNoReceiverSigEDAdminEvmAddressAlias() throws Throwable {
-        // given:
-        setupFor(CRYPTO_CREATE_NO_RECEIVER_SIG_ED_ADMIN_KEY_EVM_ADDRESS_ALIAS_SCENARIO);
-
-        // when:
-        final var summary = subject.keysForOtherParties(txn, summaryFactory);
-
-        // then:
-        assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertArrayEquals(
-                recoverAddressFromPubKey(ECDSA_KT.asKey().getECDSASecp256K1().toByteArray()),
-                summary.getOrderedKeys().get(0).getWildcardECDSAKey().getEvmAddress());
-        assertFalse(summary.getOrderedKeys().get(0).getWildcardECDSAKey().isForHollowAccount());
-    }
-
-    @Test
-    void getsCryptoCreateNoReceiverSigECDSAdminEvmAddressAlias() throws Throwable {
-        // given:
-        setupFor(CRYPTO_CREATE_NO_RECEIVER_SIG_ECDSA_ADMIN_KEY_DIFFERENT_EVM_ADDRESS_ALIAS_SCENARIO);
-
-        // when:
-        final var summary = subject.keysForOtherParties(txn, summaryFactory);
-
-        // then:
-        assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertArrayEquals(
-                recoverAddressFromPubKey(ECDSA_KT_2.asKey().getECDSASecp256K1().toByteArray()),
-                summary.getOrderedKeys().get(0).getWildcardECDSAKey().getEvmAddress());
-        assertFalse(summary.getOrderedKeys().get(0).getWildcardECDSAKey().isForHollowAccount());
-    }
-
-    @Test
-    void getsCryptoCreateReceiverSigECDSAAdminEvmAddressAlias() throws Throwable {
-        // given:
-        setupFor(CRYPTO_CREATE_RECEIVER_SIG_ECDSA_ADMIN_KEY_DIFFERENT_EVM_ADDRESS_ALIAS_SCENARIO);
-
-        // when:
-        final var summary = subject.keysForOtherParties(txn, summaryFactory);
-
-        // then:
-        assertThat(summary.getOrderedKeys(), iterableWithSize(2));
-        assertArrayEquals(
-                recoverAddressFromPubKey(ECDSA_KT_2.asKey().getECDSASecp256K1().toByteArray()),
-                summary.getOrderedKeys().get(0).getWildcardECDSAKey().getEvmAddress());
-        assertFalse(summary.getOrderedKeys().get(0).getWildcardECDSAKey().isForHollowAccount());
-        assertEquals(
-                ECDSA_KT.asKey(),
-                sanityRestored(List.of(summary.getOrderedKeys().get(1))).get(0));
-    }
-
-    @Test
-    void getsCryptoCreateReceiverSigECDSAAdminEvmAddressAliasFromSameKey() throws Throwable {
-        // given:
-        setupFor(CRYPTO_CREATE_RECEIVER_SIG_ECDSA_ADMIN_KEY_EVM_ADDRESS_ALIAS_FROM_SAME_KEY_SCENARIO);
-
-        // when:
-        final var summary = subject.keysForOtherParties(txn, summaryFactory);
-
-        // then:
-        assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(sanityRestored(summary.getOrderedKeys()), contains(ECDSA_KT.asKey()));
-    }
-
-    @Test
-    void getsCryptoCreateNoReceiverSigECDSAAdminEvmAddressAliasFromSameKey() throws Throwable {
-        // given:
-        setupFor(CRYPTO_CREATE_NO_RECEIVER_SIG_ECDSA_ADMIN_KEY_EVM_ADDRESS_ALIAS_FROM_SAME_KEY_SCENARIO);
-
-        // when:
-        final var summary = subject.keysForOtherParties(txn, summaryFactory);
-
-        // then:
-        assertThat(summary.getOrderedKeys(), iterableWithSize(0));
     }
 
     @Test

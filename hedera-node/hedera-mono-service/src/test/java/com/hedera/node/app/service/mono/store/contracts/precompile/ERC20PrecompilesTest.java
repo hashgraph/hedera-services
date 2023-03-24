@@ -110,7 +110,6 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.migration.HederaTokenRel;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenAdapter;
-import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.EvmFnResult;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
@@ -902,8 +901,7 @@ class ERC20PrecompilesTest {
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
 
-        given(syntheticTxnFactory.createFungibleApproval(eq(APPROVE_WRAPPER), any()))
-                .willReturn(mockSynthBodyBuilder);
+        given(syntheticTxnFactory.createFungibleApproval(APPROVE_WRAPPER)).willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.build())
                 .willReturn(TransactionBody.newBuilder().build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
@@ -947,8 +945,7 @@ class ERC20PrecompilesTest {
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
 
-        given(syntheticTxnFactory.createFungibleApproval(APPROVE_WRAPPER, new EntityId(0, 0, 7L)))
-                .willReturn(mockSynthBodyBuilder);
+        given(syntheticTxnFactory.createFungibleApproval(APPROVE_WRAPPER)).willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.build())
                 .willReturn(TransactionBody.newBuilder().build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
@@ -1009,8 +1006,7 @@ class ERC20PrecompilesTest {
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
 
-        given(syntheticTxnFactory.createFungibleApproval(eq(APPROVE_WRAPPER), any()))
-                .willReturn(mockSynthBodyBuilder);
+        given(syntheticTxnFactory.createFungibleApproval(APPROVE_WRAPPER)).willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.build())
                 .willReturn(TransactionBody.newBuilder().build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);

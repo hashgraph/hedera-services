@@ -20,21 +20,16 @@ import static com.hedera.test.factories.keys.NodeFactory.ed25519;
 import static com.hedera.test.factories.keys.NodeFactory.list;
 import static com.hedera.test.factories.keys.NodeFactory.threshold;
 
-import com.google.protobuf.ByteString;
 import com.hedera.test.factories.keys.KeyTree;
-import com.hedera.test.factories.keys.NodeFactory;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.OptionalLong;
 
 public class CryptoCreateFactory extends SignedTxnFactory<CryptoCreateFactory> {
     public static final KeyTree DEFAULT_ACCOUNT_KT =
             KeyTree.withRoot(list(ed25519(), threshold(1, ed25519(), ed25519(false))));
-    public static final KeyTree ECDSA_KT = KeyTree.withRoot(NodeFactory.ecdsa384Secp256k1());
-    public static final KeyTree ECDSA_KT_2 = KeyTree.withRoot(NodeFactory.ecdsa384Secp256k1());
     public static final Duration DEFAULT_AUTO_RENEW_PERIOD =
             Duration.newBuilder().setSeconds(1_000L).build();
 
@@ -44,7 +39,6 @@ public class CryptoCreateFactory extends SignedTxnFactory<CryptoCreateFactory> {
     private KeyTree accountKt = DEFAULT_ACCOUNT_KT;
     private Duration autoRenewPeriod = DEFAULT_AUTO_RENEW_PERIOD;
     private OptionalLong balance = OptionalLong.empty();
-    private ByteString alias = ByteString.EMPTY;
 
     private CryptoCreateFactory() {}
 
@@ -69,7 +63,6 @@ public class CryptoCreateFactory extends SignedTxnFactory<CryptoCreateFactory> {
                 .setAutoRenewPeriod(autoRenewPeriod)
                 .setReceiverSigRequired(receiverSigRequired)
                 .setSendRecordThreshold(sendThresholdTinybars)
-                .setAlias(alias)
                 .setReceiveRecordThreshold(receiveThresholdTinybars);
         balance.ifPresent(op::setInitialBalance);
         txn.setCryptoCreateAccount(op);
@@ -87,11 +80,6 @@ public class CryptoCreateFactory extends SignedTxnFactory<CryptoCreateFactory> {
 
     public CryptoCreateFactory receiverSigRequired(boolean isRequired) {
         this.receiverSigRequired = isRequired;
-        return this;
-    }
-
-    public CryptoCreateFactory alias(@NonNull ByteString alias) {
-        this.alias = alias;
         return this;
     }
 }

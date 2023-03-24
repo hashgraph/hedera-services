@@ -134,7 +134,7 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
         approveOp = decodeTokenApprove(nestedInput, tokenId, isFungible, aliasResolver, ledgers);
 
         if (approveOp.isFungible()) {
-            transactionBody = syntheticTxnFactory.createFungibleApproval(approveOp, operatorId);
+            transactionBody = syntheticTxnFactory.createFungibleApproval(approveOp);
         } else {
             final var nftId =
                     NftId.fromGrpc(approveOp.tokenId(), approveOp.serialNumber().longValueExact());

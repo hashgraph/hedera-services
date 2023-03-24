@@ -29,7 +29,6 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTes
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.payer;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.receiver;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.royaltyFee;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.senderId;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.token;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory.MOCK_INITCODE;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory.WEIBARS_TO_TINYBARS;
@@ -673,7 +672,7 @@ class SyntheticTxnFactoryTest {
         final var amount = BigInteger.ONE;
         final var allowances = new ApproveWrapper(token, receiver, amount, BigInteger.ZERO, true);
 
-        final var result = subject.createFungibleApproval(allowances, senderId);
+        final var result = subject.createFungibleApproval(allowances);
         final var txnBody = result.build();
 
         assertEquals(
@@ -681,9 +680,9 @@ class SyntheticTxnFactoryTest {
                 txnBody.getCryptoApproveAllowance().getTokenAllowances(0).getAmount());
         assertEquals(
                 token, txnBody.getCryptoApproveAllowance().getTokenAllowances(0).getTokenId());
-        final var allowance = txnBody.getCryptoApproveAllowance().getTokenAllowances(0);
-        assertEquals(senderId.toGrpcAccountId(), allowance.getOwner());
-        assertEquals(receiver, allowance.getSpender());
+        assertEquals(
+                receiver,
+                txnBody.getCryptoApproveAllowance().getTokenAllowances(0).getSpender());
     }
 
     @Test

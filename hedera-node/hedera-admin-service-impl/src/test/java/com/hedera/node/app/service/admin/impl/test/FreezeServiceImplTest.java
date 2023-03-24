@@ -16,14 +16,19 @@
 
 package com.hedera.node.app.service.admin.impl.test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.node.app.service.admin.FreezeService;
 import com.hedera.node.app.service.admin.impl.FreezeServiceImpl;
+import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.hedera.node.app.spi.state.StateDefinition;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -48,8 +53,18 @@ class FreezeServiceImplTest {
     @Test
     void registersExpectedSchema() {
         final var subject = FreezeService.getInstance();
+        ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
+        final var schema = schemaCaptor.getValue();
 
         subject.registerSchemas(registry);
+        verify(registry).register(schemaCaptor.capture());
         verifyNoInteractions(registry);
+
+        final var statesToCreate = schema.statesToCreate();
+        assertEquals(1, statesToCreate.size());
+        final var iter =
+                statesToCreate.stream().map(StateDefinition::stateKey).sorted().iterator();
+        assertEquals(FreezeServiceImpl.SPECIAL_FILES_KEY, iter.next());
+
     }
 }

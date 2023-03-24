@@ -37,7 +37,6 @@ import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkle.tree.MerkleBinaryTree;
 import com.swirlds.merkle.tree.MerkleTreeInternalNode;
-import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
@@ -130,11 +129,8 @@ public class Constructables {
                 .registerConstructable(new ClassConstructorPair(VirtualNodeCache.class, VirtualNodeCache::new));
     }
 
-    public static void registerForVirtualDataSource() throws ConstructableRegistryException {
+    public static void registerForJasperDb() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance()
                 .registerConstructable(new ClassConstructorPair(JasperDbBuilder.class, JasperDbBuilder::new));
-        ConstructableRegistry.getInstance()
-                .registerConstructable(
-                        new ClassConstructorPair(MerkleDbDataSourceBuilder.class, MerkleDbDataSourceBuilder::new));
     }
 }

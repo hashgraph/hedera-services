@@ -133,9 +133,8 @@
     <Logger name="com.swirlds" level="INFO" additivity="false">
       <AppenderRef ref="fileLog">
         <Filters>
-          <!-- JasperDB / MerkleDb & Virtual Merkle -->
+          <!-- JasperDB & Virtual Merkle -->
           <MarkerFilter marker="JASPER_DB"              onMatch="DENY" onMismatch="NEUTRAL"/>
-          <MarkerFilter marker="MERKLE_DB"              onMatch="DENY" onMismatch="NEUTRAL"/>
           <MarkerFilter marker="VIRTUAL_MERKLE_STATS"   onMatch="DENY" onMismatch="NEUTRAL"/>
           <MarkerFilter marker="STATE_HASH"             onMatch="DENY" onMismatch="NEUTRAL"/>
         </Filters>
@@ -143,9 +142,8 @@
 
       <AppenderRef ref="vMapLog">
         <Filters>
-          <!-- JasperDB / MerkleDb & Virtual Merkle -->
+          <!-- JasperDB & Virtual Merkle -->
           <MarkerFilter marker="JASPER_DB"              onMatch="ACCEPT" onMismatch="NEUTRAL"/>
-          <MarkerFilter marker="MERKLE_DB"              onMatch="ACCEPT" onMismatch="NEUTRAL"/>
           <MarkerFilter marker="VIRTUAL_MERKLE_STATS"   onMatch="ACCEPT" onMismatch="NEUTRAL"/>
           <MarkerFilter marker="DISABLED"               onMatch="DENY"   onMismatch="DENY" />
         </Filters>
@@ -245,9 +243,8 @@
         <MarkerFilter marker="MERKLE_GENERATION"      onMatch="DENY"   onMismatch="NEUTRAL"/>
         <MarkerFilter marker="MERKLE_LOCKS"           onMatch="DENY"   onMismatch="NEUTRAL"/>
 
-        <!-- JasperDB / MerkleDb & Virtual Merkle -->
+        <!-- JasperDB & Virtual Merkle -->
         <MarkerFilter marker="JASPER_DB"              onMatch="ACCEPT" onMismatch="NEUTRAL"/>
-        <MarkerFilter marker="MERKLE_DB"              onMatch="ACCEPT" onMismatch="NEUTRAL"/>
         <MarkerFilter marker="VIRTUAL_MERKLE_STATS"   onMatch="ACCEPT" onMismatch="NEUTRAL"/>
 
         <MarkerFilter marker="DISABLED"               onMatch="DENY"   onMismatch="DENY" />

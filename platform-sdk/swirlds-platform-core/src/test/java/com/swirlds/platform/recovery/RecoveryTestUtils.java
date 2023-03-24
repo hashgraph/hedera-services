@@ -62,7 +62,7 @@ import org.mockito.Mockito;
 /**
  * Utilities for recovery tests.
  */
-public final class RecoveryTestUtils {
+final class RecoveryTestUtils {
 
     private RecoveryTestUtils() {}
 

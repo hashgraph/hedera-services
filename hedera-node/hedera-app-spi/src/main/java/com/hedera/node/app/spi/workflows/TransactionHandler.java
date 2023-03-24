@@ -20,6 +20,11 @@ import com.hedera.node.app.spi.records.RecordBuilder;
 
 /**
  * A {@code TransactionHandler} contains all methods for the different stages of a single operation.
+ *
+ * Each implementing class contains preHandle(_) and handle(_) methods. Arguments for these methods may differ depending on
+ * context needed for the operation, but generally subclass or contain ReadableKVState instances. If an operation fails,
+ * these methods throw a PreCheckException with the appropriate response code for the failure reason.
+ *
  */
 public interface TransactionHandler {
     /**
