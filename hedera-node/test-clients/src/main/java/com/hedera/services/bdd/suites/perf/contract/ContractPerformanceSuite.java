@@ -80,7 +80,8 @@ public class ContractPerformanceSuite extends HapiSuite {
                     .replace(REVERT_CONTRACT_ADDRESS, asSolidityAddress(revertAccountAddress));
             return fileCreate(test + BYTECODE).contents(contentString.getBytes(StandardCharsets.US_ASCII));
         } catch (Exception e) {
-            LOG.warn("createTestProgram for " + test + " failed to read bytes from '" + path + "'!", e);
+            String message = String.format("createTestProgram for %s failed to read bytes from '%s'!", test, path);
+            LOG.warn(message, e);
             return fileCreate(test);
         }
     }
@@ -108,7 +109,8 @@ public class ContractPerformanceSuite extends HapiSuite {
             try {
                 contractCode = new String(Files.toByteArray(new File(path)), StandardCharsets.US_ASCII);
             } catch (IOException e) {
-                LOG.warn("createTestProgram for " + test + " failed to read bytes from '" + path + "'!", e);
+                String message = String.format("createTestProgram for %s failed to read bytes from '%s'!", test, path);
+                LOG.warn(message, e);
                 contractCode = "FE";
             }
             HapiSpecOperation[] givenBlock;
