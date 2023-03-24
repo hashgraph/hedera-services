@@ -271,6 +271,30 @@ class ConcurrentArrayTest {
         assertEquals("Element E", elements.get(8), "Wrong value");
     }
 
+    @Test
+    @Tags({@Tag("VirtualMerkle"), @Tag("VirtualNodeCache")})
+    @DisplayName("Merged with empty array")
+    void mergeWithEmptyArray() {
+        final ConcurrentArray<String> a = new ConcurrentArray<>(5);
+        a.add("Element 1");
+        a.add("Element 2");
+        a.seal();
+
+        final ConcurrentArray<String> b = new ConcurrentArray<>(5);
+        b.seal();
+
+        final ConcurrentArray<String> c = new ConcurrentArray<>(5);
+        c.seal();
+
+        // Merge with an empty array
+        a.merge(b);
+        assertEquals(2, a.size(), "Wrong size");
+
+        // Merge an empty array with a non-empty one
+        c.merge(a);
+        assertEquals(2, c.size(), "Wrong size");
+    }
+
     /**
      * Other tests indirectly validate this claim, but I thought it worth testing this explicitly.
      */
