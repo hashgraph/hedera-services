@@ -58,6 +58,8 @@ public class EventStreamSigningUtils {
      * Sets up the constructable registry, and configures {@link SettingsCommon}
      * <p>
      * Should be called before using stream utilities
+     * <p>
+     * Do <strong>NOT</strong> call this during standard node operation, as it will interfere with static settings
      */
     public static void initializeSystem() {
         BootstrapUtils.setupConstructableRegistry();
