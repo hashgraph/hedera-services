@@ -61,6 +61,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpaus
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
+import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
@@ -147,6 +148,7 @@ public final class CommonUtils {
      */
     @NonNull
     public static HederaFunctionality functionOf(@NonNull final TransactionBody txn) throws UnknownHederaFunctionality {
+        requireNonNull(txn);
         DataCase dataCase = txn.getDataCase();
 
         return switch (dataCase) {

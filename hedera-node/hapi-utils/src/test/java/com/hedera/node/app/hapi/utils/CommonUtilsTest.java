@@ -132,6 +132,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class CommonUtilsTest {
@@ -270,7 +271,7 @@ class CommonUtilsTest {
                 final var input = txn.build();
                 assertEquals(function, functionOf(input));
             } catch (final UnknownHederaFunctionality uhf) {
-                throw new IllegalStateException(uhf);
+                Assertions.fail("Failed HederaFunctionality check :: " + uhf.getMessage());
             }
         });
     }

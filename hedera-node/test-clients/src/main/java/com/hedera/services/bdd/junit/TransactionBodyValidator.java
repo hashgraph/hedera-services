@@ -16,10 +16,15 @@
 
 package com.hedera.services.bdd.junit;
 
+import static java.util.Objects.requireNonNull;
+
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.junit.utils.TransactionBodyClassifier;
 import com.hedera.services.bdd.suites.records.TransactionBodyValidation;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This validator checks all the transactions submitted have {@link com.hederahashgraph.api.proto.java.TransactionBody}
@@ -28,25 +33,30 @@ import java.util.List;
  * <p>It uses the {@link TransactionBodyValidation} suite to perform the queries.
  */
 public class TransactionBodyValidator implements RecordStreamValidator {
+    private static final Logger log = LogManager.getLogger(TransactionBodyValidator.class);
 
     private final TransactionBodyClassifier transactionBodyClassifier = new TransactionBodyClassifier();
 
     @Override
-    public void validateRecordsAndSidecars(final List<RecordWithSidecars> recordsWithSidecars) {
+    public void validateRecordsAndSidecars(@NonNull final List<RecordWithSidecars> recordsWithSidecars) {
+        requireNonNull(recordsWithSidecars);
         validateTransactionBody(recordsWithSidecars);
     }
 
     private void validateTransactionBody(final List<RecordWithSidecars> recordsWithSidecars) {
+        String errorMsg = "Invalid TransactionBody type HederaFunctionality.NONE with record: {}";
+
         for (final var recordWithSidecars : recordsWithSidecars) {
             final var items = recordWithSidecars.recordFile().getRecordStreamItemsList();
             for (final var item : items) {
                 try {
                     transactionBodyClassifier.incorporate(item);
                     if (transactionBodyClassifier.isInvalid()) {
-                        throw new IllegalStateException(
-                                "Invalid TransactionBody type HederaFunctionality.NONE with record: " + item);
+                        log.error(errorMsg, item);
+                        throw new IllegalStateException(errorMsg + item);
                     }
                 } catch (InvalidProtocolBufferException e) {
+                    log.error(errorMsg, e);
                     throw new IllegalStateException(e);
                 }
             }
