@@ -76,8 +76,7 @@ class MonoHandleContextTest {
     @Test
     void delegatesIdCreationToEntitySource() {
         final var nextNum = 666L;
-        given(ids.newAccountId(notNull()))
-                .willReturn(AccountID.newBuilder().setAccountNum(nextNum).build());
+        given(ids.newAccountNumber()).willReturn(nextNum);
 
         final var numSupplier = subject.newEntityNumSupplier();
 

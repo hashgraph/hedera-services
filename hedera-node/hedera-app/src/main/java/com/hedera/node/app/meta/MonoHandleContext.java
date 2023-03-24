@@ -23,6 +23,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
+import com.hedera.node.app.service.mono.ledger.ids.SeqNoEntityIdSource;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.spi.exceptions.HandleStatusException;
@@ -56,10 +57,7 @@ public class MonoHandleContext implements HandleContext {
             @NonNull final ExpiryValidator expiryValidator,
             @NonNull final OptionValidator optionValidator,
             @NonNull final TransactionContext txnCtx) {
-        Objects.requireNonNull(ids);
-        this.nums = () -> ids.newAccountId(PbjConverter.pbjToProto(
-                        PLACEHOLDER_ID, AccountID.class, com.hederahashgraph.api.proto.java.AccountID.class))
-                .getAccountNum();
+        this.nums = Objects.requireNonNull(ids)::newAccountNumber;
         this.txnCtx = Objects.requireNonNull(txnCtx);
         this.expiryValidator = Objects.requireNonNull(expiryValidator);
         this.attributeValidator = new MonoAttributeValidator(Objects.requireNonNull(optionValidator));
