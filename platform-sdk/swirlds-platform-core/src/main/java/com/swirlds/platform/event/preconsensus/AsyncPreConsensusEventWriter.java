@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.event.preconsensus;
 
+import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.context.PlatformContext;
@@ -24,6 +25,7 @@ import com.swirlds.common.threading.framework.MultiQueueThread;
 import com.swirlds.common.threading.framework.config.MultiQueueThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.internal.EventImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -63,11 +65,13 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
      * @param writer        the writer to which events will be written, wrapped by this class
      */
     public AsyncPreConsensusEventWriter(
-            final PlatformContext platformContext,
-            final ThreadManager threadManager,
-            final PreConsensusEventWriter writer) {
+            @NonNull final PlatformContext platformContext,
+            @NonNull final ThreadManager threadManager,
+            @NonNull final PreConsensusEventWriter writer) {
 
-        this.writer = writer;
+        throwArgNull(platformContext, "platformContext");
+        throwArgNull(threadManager, "threadManager");
+        this.writer = throwArgNull(writer, "writer");
 
         final PreConsensusEventStreamConfig config =
                 platformContext.getConfiguration().getConfigData(PreConsensusEventStreamConfig.class);
@@ -106,7 +110,7 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
      * {@inheritDoc}
      */
     @Override
-    public void writeEvent(final EventImpl event) throws InterruptedException {
+    public void writeEvent(@NonNull final EventImpl event) throws InterruptedException {
         if (event.getStreamSequenceNumber() == EventImpl.NO_STREAM_SEQUENCE_NUMBER
                 || event.getStreamSequenceNumber() == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
             throw new IllegalStateException("Event must have a valid stream sequence number");
@@ -134,7 +138,7 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
      * {@inheritDoc}
      */
     @Override
-    public boolean isEventDurable(final EventImpl event) {
+    public boolean isEventDurable(@NonNull final EventImpl event) {
         return writer.isEventDurable(event);
     }
 
@@ -142,7 +146,7 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
      * {@inheritDoc}
      */
     @Override
-    public void waitUntilDurable(final EventImpl event) throws InterruptedException {
+    public void waitUntilDurable(@NonNull final EventImpl event) throws InterruptedException {
         writer.waitUntilDurable(event);
     }
 
@@ -150,7 +154,8 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
      * {@inheritDoc}
      */
     @Override
-    public boolean waitUntilDurable(final EventImpl event, final Duration timeToWait) throws InterruptedException {
+    public boolean waitUntilDurable(@NonNull final EventImpl event, @NonNull final Duration timeToWait)
+            throws InterruptedException {
         return writer.waitUntilDurable(event, timeToWait);
     }
 
@@ -158,14 +163,14 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
      * {@inheritDoc}
      */
     @Override
-    public void requestFlush(final EventImpl event) {
+    public void requestFlush(@NonNull final EventImpl event) {
         writer.requestFlush(event);
     }
 
     /**
      * Pass a minimum generation non-ancient to the wrapped writer.
      */
-    private void setMinimumGenerationNonAncientHandler(final Long minimumGenerationNonAncient) {
+    private void setMinimumGenerationNonAncientHandler(@NonNull final Long minimumGenerationNonAncient) {
         try {
             writer.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
         } catch (final InterruptedException e) {
@@ -182,7 +187,7 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
     /**
      * Pass an event to the wrapped writer.
      */
-    private void addEventHandler(final EventImpl event) {
+    private void addEventHandler(@NonNull final EventImpl event) {
         try {
             writer.writeEvent(event);
         } catch (final InterruptedException e) {
