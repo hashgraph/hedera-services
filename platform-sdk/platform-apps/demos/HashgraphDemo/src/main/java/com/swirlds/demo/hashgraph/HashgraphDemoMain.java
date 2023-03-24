@@ -54,8 +54,6 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.Label;
 import java.awt.TextField;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
 import java.awt.geom.Rectangle2D;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -110,8 +108,6 @@ public class HashgraphDemoMain implements SwirldMain {
     /** the nicknames of all the members */
     private String[] names;
 
-    /** if checked, this member calls to gossip once per second */
-    private Checkbox slowCheckbox;
     /** if checked, freeze the display (don't update it) */
     private Checkbox freezeCheckbox;
     /** if checked, color vertices only green (non-consensus) or blue (consensus) */
@@ -414,7 +410,9 @@ public class HashgraphDemoMain implements SwirldMain {
         final BiFunction<Integer, String, Checkbox> cb = (n, s) -> new Checkbox(
                 s, null, parameters.length > n && parameters[n].trim().equals("1"));
 
-        slowCheckbox = cb.apply(p++, "Slow: this member initiates gossip once a second");
+        // skip the first parameter
+        p++;
+
         freezeCheckbox = cb.apply(p++, "Freeze: don't change this window");
         simpleColorsCheckbox = cb.apply(p++, "Simple colors: blue for consensus, green for not");
         labelRoundCheckbox = cb.apply(p++, "Labels: Round created");
@@ -425,13 +423,6 @@ public class HashgraphDemoMain implements SwirldMain {
         labelCreatorCheckbox = cb.apply(p++, "Labels: Creator ID");
 
         eventLimit = new TextField(parameters.length <= p ? "" : parameters[p].trim(), 5);
-        p++;
-
-        slowCheckbox.addItemListener(new ItemListener() {
-            public void itemStateChanged(final ItemEvent e) {
-                // TODO
-            }
-        });
 
         final GridBagConstraints constr = new GridBagConstraints();
         constr.fill = GridBagConstraints.NONE; // don't stretch components
@@ -444,7 +435,6 @@ public class HashgraphDemoMain implements SwirldMain {
         constr.insets = new Insets(0, 10, -4, 0); // add external padding on left, remove from bottom
 
         final Component[] comps = new Component[] {
-            slowCheckbox,
             freezeCheckbox,
             simpleColorsCheckbox,
             labelRoundCheckbox,
