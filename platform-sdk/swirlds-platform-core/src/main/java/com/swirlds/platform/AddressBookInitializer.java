@@ -37,6 +37,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -235,7 +236,6 @@ public class AddressBookInitializer {
      * @param usedAddressBook the address book to be returned from the AddressBookInitializer.
      */
     private synchronized void recordAddressBooks(@NonNull final AddressBook usedAddressBook) {
-        cleanAddressBookDirectory();
         final String date = DATE_TIME_FORMAT.format(Instant.now());
         final String addressBookFileName = ADDRESS_BOOK_FILE_PREFIX + "_v" + currentVersion + "_" + date + ".txt";
         final String addressBookDebugFileName = addressBookFileName + ".debug";
@@ -267,20 +267,21 @@ public class AddressBookInitializer {
         } catch (final IOException e) {
             logger.error(EXCEPTION.getMarker(), "Not able to write address book to file. ", e);
         }
+        cleanAddressBookDirectory();
     }
 
     /**
      * Deletes the oldest address book files if there are more than the maximum number of address book files.
      */
     private synchronized void cleanAddressBookDirectory() {
-        try {
-            List<Path> files = Files.list(pathToAddressBookDirectory).sorted().toList();
+        try (final Stream<Path> filesStream = Files.list(pathToAddressBookDirectory)) {
+            final List<Path> files = filesStream.sorted().toList();
             if (files.size() > MAX_ADDRESS_BOOK_FILES) {
                 for (int i = 0; i < files.size() - MAX_ADDRESS_BOOK_FILES; i++) {
                     Files.delete(files.get(i));
                 }
             }
-        } catch (IOException e) {
+        } catch (final IOException e) {
             logger.info(EXCEPTION.getMarker(), "Unable to list files in address book directory. ", e);
         }
     }
