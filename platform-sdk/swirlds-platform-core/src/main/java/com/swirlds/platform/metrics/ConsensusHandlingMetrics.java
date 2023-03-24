@@ -88,9 +88,6 @@ public class ConsensusHandlingMetrics {
                                         "average time to propagate consensus data to transactions"),
                                 Pair.of("handleMillis/round", "average time to handle a consensus round"),
                                 Pair.of(
-                                        "roundCompletedDispatch/round",
-                                        "average time to send round completed dispatch"),
-                                Pair.of(
                                         "storeMillis/round",
                                         "average time to add consensus round events to signed state storage"),
                                 Pair.of("hashMillis/round", "average time spent hashing the consensus round events"),

@@ -63,8 +63,9 @@ class PreConsensusEventFileManagerTests {
      */
     @TempDir
     Path testDirectory;
+
     private Path fileDirectory = null;
-    
+
     @BeforeEach
     void beforeEach() throws IOException {
         FileUtils.deleteDirectory(testDirectory);

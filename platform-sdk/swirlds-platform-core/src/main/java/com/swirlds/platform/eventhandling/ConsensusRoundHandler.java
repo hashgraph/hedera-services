@@ -341,13 +341,9 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
 
         consensusTimingStat.setTimePoint(2);
 
-        swirldStateManager.handleConsensusRound(round);
-
-        consensusTimingStat.setTimePoint(3);
-
         roundAppliedToStateConsumer.roundAppliedToState(round.getRoundNum());
 
-        consensusTimingStat.setTimePoint(4);
+        consensusTimingStat.setTimePoint(3);
 
         eventsAndGenerations.addEvents(round.getConsensusEvents());
 
@@ -355,7 +351,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
         numEventsCons.updateAndGet(
                 prevValue -> prevValue + round.getConsensusEvents().size());
 
-        consensusTimingStat.setTimePoint(5);
+        consensusTimingStat.setTimePoint(4);
 
         for (final EventImpl event : round.getConsensusEvents()) {
             if (event.getHash() == null) {
@@ -369,13 +365,13 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
         // time point 3 to the end is misleading on its own because it is recorded even when no signed state is created
         // . For an accurate stat on how much time it takes to create a signed state, refer to
         // newSignedStateCycleTiming in Statistics
-        consensusTimingStat.setTimePoint(6);
+        consensusTimingStat.setTimePoint(5);
 
         // remove events and generations that are not needed
         eventsAndGenerations.expire();
         updatePlatformState(round);
 
-        consensusTimingStat.setTimePoint(7);
+        consensusTimingStat.setTimePoint(6);
 
         // If the round should be signed (because the settings say so), create the signed state
         if (timeToSignState(round.getRoundNum())) {
