@@ -109,8 +109,9 @@ public class DeleteTokenPrecompileSuite extends HapiSuite {
                                         DELETE_TOKEN_CONTRACT,
                                         TOKEN_DELETE_FUNCTION,
                                         asHeadlongAddress(asHexedAddress(vanillaTokenID.get())))
-                                .payingWith(ACCOUNT)
                                 .gas(GAS_TO_OFFER)
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
                                 .via(DELETE_TXN),
                         getTokenInfo(VANILLA_TOKEN).isDeleted().logged(),
                         cryptoTransfer(moving(500, VANILLA_TOKEN).between(TOKEN_TREASURY, ACCOUNT))
@@ -119,9 +120,10 @@ public class DeleteTokenPrecompileSuite extends HapiSuite {
                                         DELETE_TOKEN_CONTRACT,
                                         TOKEN_DELETE_FUNCTION,
                                         asHeadlongAddress(asHexedAddress(vanillaTokenID.get())))
-                                .payingWith(ACCOUNT)
                                 .gas(GAS_TO_OFFER)
                                 .via(tokenAlreadyDeletedTxn)
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(childRecordsCheck(
                         tokenAlreadyDeletedTxn,
@@ -160,8 +162,9 @@ public class DeleteTokenPrecompileSuite extends HapiSuite {
                                         DELETE_TOKEN_CONTRACT,
                                         TOKEN_DELETE_FUNCTION,
                                         asHeadlongAddress(asHexedAddress(vanillaTokenID.get())))
-                                .payingWith(ACCOUNT)
                                 .gas(GAS_TO_OFFER)
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
                                 .via(notAnAdminTxn)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         cryptoUpdate(ACCOUNT).key(MULTI_KEY),
@@ -169,7 +172,8 @@ public class DeleteTokenPrecompileSuite extends HapiSuite {
                                         DELETE_TOKEN_CONTRACT,
                                         TOKEN_DELETE_FUNCTION,
                                         asHeadlongAddress(asHexedAddress(vanillaTokenID.get())))
-                                .payingWith(ACCOUNT)
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
                                 .gas(GAS_TO_OFFER),
                         getTokenInfo(VANILLA_TOKEN).isDeleted().logged())))
                 .then(childRecordsCheck(

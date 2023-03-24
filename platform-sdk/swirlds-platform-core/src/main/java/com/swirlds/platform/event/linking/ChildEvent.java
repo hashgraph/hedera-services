@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.event.linking;
 
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
+
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
@@ -185,7 +187,7 @@ public final class ChildEvent {
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this)
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
                 .append("child", child)
                 .append("missingSelfParent", missingSelfParent)
                 .append("missingOtherParent", missingOtherParent)

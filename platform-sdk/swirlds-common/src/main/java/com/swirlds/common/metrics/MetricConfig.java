@@ -18,6 +18,7 @@ package com.swirlds.common.metrics;
 
 import static com.swirlds.common.utility.CommonUtils.throwArgBlank;
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
@@ -82,7 +83,9 @@ public abstract sealed class MetricConfig<T extends Metric, C extends MetricConf
         this.description = throwArgBlank(description, "description");
         if (description.length() > MAX_DESCRIPTION_LENGTH) {
             throw new IllegalArgumentException(
-                    "Description must not be longer than " + MAX_DESCRIPTION_LENGTH + " characters: " + description);
+                    "Description has " + description.length() + " characters, must not be longer than "
+                            + MAX_DESCRIPTION_LENGTH + " characters: "
+                            + description);
         }
         this.unit = throwArgNull(unit, "unit");
         this.format = throwArgBlank(format, "format");
@@ -195,7 +198,7 @@ public abstract sealed class MetricConfig<T extends Metric, C extends MetricConf
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this)
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
                 .append("category", category)
                 .append("name", name)
                 .append("description", description)
