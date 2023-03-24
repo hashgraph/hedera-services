@@ -291,8 +291,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private final Crypto crypto;
     /** a long name including (app, swirld, member id, member self name) */
     private final String platformName;
-    /** is used for calculating runningHash of all consensus events and writing consensus events to file */
-    private final EventStreamManager<EventImpl> eventStreamManager;
     /**
      * True if this node started from genesis.
      */
@@ -559,8 +557,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             logger.info(STARTUP.getMarker(), "startUpEventFrozenEndTime: {}", () -> startUpEventFrozenEndTime);
         }
 
-        // initializes EventStreamManager instance
-        eventStreamManager = initEventStreamManager(String.valueOf(selfId));
+        final EventStreamManager<EventImpl> eventStreamManager = initEventStreamManager(String.valueOf(selfId));
 
         // Queue thread that stores and handles signed states that need to be hashed and have signatures collected.
         final QueueThread<SignedState> stateHashSignQueueThread = components.add(PlatformConstructor.stateHashSignQueue(
