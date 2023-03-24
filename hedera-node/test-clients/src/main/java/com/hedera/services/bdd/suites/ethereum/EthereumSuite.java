@@ -30,6 +30,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountI
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAutoCreatedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getLiteralAliasContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -199,6 +200,7 @@ public class EthereumSuite extends HapiSuite {
         final AtomicReference<String> spenderAutoCreatedAccountId = new AtomicReference<>();
         final AtomicReference<String> tokenCreateContractID = new AtomicReference<>();
         final AtomicReference<String> erc721ContractID = new AtomicReference<>();
+        final AtomicReference<String> contractAddressID = new AtomicReference<>();
         final AtomicReference<ByteString> createdTokenAddressString = new AtomicReference<>();
         final String spenderAlias = "spenderAlias";
         final var createTokenContractNum = new AtomicLong();
@@ -260,9 +262,13 @@ public class EthereumSuite extends HapiSuite {
                                     .hasKnownStatusFrom(SUCCESS);
 
                             var exposeEthereumContractAddress = getContractInfo(ERC721_CONTRACT_WITH_HTS_CALLS)
-                                    .exposingEvmAddress(address -> erc721ContractID.set("0x" + address));
-
+                                    .exposingEvmAddress(address -> erc721ContractID.set("0x" + address)).logged();
                             allRunFor(spec, createEthereumContract, exposeEthereumContractAddress);
+
+                            var contractInfo = getLiteralAliasContractInfo(erc721ContractID.get().substring(2))
+                                    .exposingEvmAddress(address -> contractAddressID.set("0x" + address) ).logged();
+                            allRunFor(spec, contractInfo);
+                            assertEquals(erc721ContractID.get(), contractAddressID.get());
                         }),
                         withOpContext((spec, opLog) -> {
                             var associateTokenToERC721 = ethereumCall(

@@ -35,6 +35,8 @@ import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
+import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractGetInfoQuery;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -244,12 +246,7 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
         } else {
             final var builder = ContractGetInfoQuery.newBuilder()
                     .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment));
-            if (contract.length() == 40) {
-                builder.setContractID(
-                        ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(contract))));
-            } else {
-                builder.setContractID(asContractId(contract, spec));
-            }
+            builder.setContractID(asContractId(contract, spec));
             contractGetInfo = builder.build();
         }
         return Query.newBuilder().setContractGetInfo(contractGetInfo).build();
