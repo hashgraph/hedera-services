@@ -209,8 +209,6 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -330,7 +328,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private final EventLinker eventLinker;
     private final SequenceCycle<EventIntakeTask> intakeCycle;
     /** sleep in ms after each sync in SyncCaller. A public setter for this exists. */
-    private long delayAfterSync = 0;
+    private long delayAfterSync = 0; // TODO remove this!
     /** Executes a sync with a remote node */
     private ShadowGraphSynchronizer shadowgraphSynchronizer;
     /** Stores and passes pre-consensus events to {@link SwirldStateManager} for handling */
@@ -566,7 +564,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         startedFromGenesis = loadedSignedState == null;
         diskStateRound = loadedSignedState == null ? 0 : loadedSignedState.getRound();
-        diskStateHash = loadedSignedState == null ? null : loadedSignedState.getState().getHash();
+        diskStateHash =
+                loadedSignedState == null ? null : loadedSignedState.getState().getHash();
         final LoadedState loadedState = initializeLoadedStateFromSignedState(loadedSignedState);
 
         // if this setting is 0 or less, there is no startup freeze
