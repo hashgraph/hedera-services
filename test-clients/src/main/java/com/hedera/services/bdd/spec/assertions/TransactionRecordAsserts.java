@@ -54,7 +54,7 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
                 spec ->
                         txnId -> {
                             try {
-                                Assertions.assertEquals(
+                                assertEquals(
                                         spec.registry().getTxnId(expectedTxn),
                                         txnId,
                                         "Wrong txnId!");
@@ -77,7 +77,7 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
                                         parentTime.toBuilder()
                                                 .setNanos(parentTime.getNanos() + nonce)
                                                 .build();
-                                Assertions.assertEquals(expectedTime, actualTime);
+                                assertEquals(expectedTime, actualTime);
                             } catch (Throwable t) {
                                 return List.of(t);
                             }
@@ -92,7 +92,7 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
                 spec ->
                         txnId -> {
                             try {
-                                Assertions.assertEquals(expectedTxn, txnId, "Wrong txnId!");
+                                assertEquals(expectedTxn, txnId, "Wrong txnId!");
                             } catch (Throwable t) {
                                 return List.of(t);
                             }
@@ -108,7 +108,7 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
                         prngBytes -> {
                             try {
                                 Assertions.assertNotNull(prngBytes, "Null prngBytes!");
-                                Assertions.assertEquals(32, prngBytes.size(), "Wrong prngBytes!");
+                                assertEquals(32, prngBytes.size(), "Wrong prngBytes!");
                             } catch (Throwable t) {
                                 return List.of(t);
                             }
@@ -147,8 +147,7 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
                 spec ->
                         receipt -> {
                             try {
-                                Assertions.assertEquals(
-                                        expectedStatus, receipt.getStatus(), "Bad status!");
+                                assertEquals(expectedStatus, receipt.getStatus(), "Bad status!");
                             } catch (Throwable t) {
                                 return List.of(t);
                             }
@@ -163,7 +162,7 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
                 spec ->
                         receipt -> {
                             try {
-                                Assertions.assertEquals(
+                                assertEquals(
                                         minted, receipt.getSerialNumbersList(), "Wrong serial nos");
                             } catch (Throwable t) {
                                 return List.of(t);
@@ -179,7 +178,7 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
                 spec ->
                         receipt -> {
                             try {
-                                Assertions.assertEquals(
+                                assertEquals(
                                         expected,
                                         receipt.getNewTotalSupply(),
                                         "Wrong new total supply");
@@ -198,7 +197,7 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
                         receipt -> {
                             try {
                                 final var expected = TxnUtils.asContractId(id, spec);
-                                Assertions.assertEquals(
+                                assertEquals(
                                         expected, receipt.getContractID(), "Bad targeted contract");
                             } catch (Throwable t) {
                                 return List.of(t);
@@ -214,8 +213,29 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
                 spec ->
                         receipt -> {
                             try {
-                                Assertions.assertEquals(
-                                        id, receipt.getContractID(), "Bad targeted contract");
+                                assertEquals(id, receipt.getContractID(), "Bad targeted contract");
+                            } catch (Exception t) {
+                                return List.of(t);
+                            }
+                            return EMPTY_LIST;
+                        });
+        return this;
+    }
+
+    public TransactionRecordAsserts hasMirrorIdInReceipt() {
+        this.<TransactionReceipt>registerTypedProvider(
+                "receipt",
+                spec ->
+                        receipt -> {
+                            try {
+                                assertEquals(
+                                        0,
+                                        receipt.getContractID().getShardNum(),
+                                        "Bad receipt shard");
+                                assertEquals(
+                                        0,
+                                        receipt.getContractID().getRealmNum(),
+                                        "Bad receipt realm");
                             } catch (Exception t) {
                                 return List.of(t);
                             }
@@ -230,7 +250,7 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
                 spec ->
                         receipt -> {
                             try {
-                                Assertions.assertEquals(
+                                assertEquals(
                                         versionNumber,
                                         receipt.getTopicRunningHashVersion(),
                                         "Bad TopicRunningHashVerions!");
