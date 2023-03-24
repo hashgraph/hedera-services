@@ -328,7 +328,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
     private final QueueThread<EventIntakeTask> intakeQueue;
     private final EventLinker eventLinker;
-    private SequenceCycle<EventIntakeTask> intakeCycle = null;
+    private final SequenceCycle<EventIntakeTask> intakeCycle;
     /** sleep in ms after each sync in SyncCaller. A public setter for this exists. */
     private long delayAfterSync = 0;
     /** Executes a sync with a remote node */
@@ -703,6 +703,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             intakeCycle = new SequenceCycle<>(taskDispatcher::dispatchTask);
             intakeHandler = intakeCycle;
         } else {
+            intakeCycle = null;
             intakeHandler = taskDispatcher::dispatchTask;
         }
 
