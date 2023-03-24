@@ -226,8 +226,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     public static final String PLATFORM_THREAD_POOL_NAME = "platform-core";
     /** use this for all logging, as controlled by the optional data/log4j2.xml file */
     private static final Logger logger = LogManager.getLogger(SwirldsPlatform.class);
-    /** alert threshold for java app pause */
-    private static final long PAUSE_ALERT_INTERVAL = 5000;
+
     /** logging string prefix for hash stream operation logged events. */
     private static final String HASH_STREAM_OPERATION_PREFIX = ">>> ";
     /**
@@ -324,11 +323,10 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /** tells callers who to sync with and keeps track of whether we have fallen behind */
     private final SyncManagerImpl syncManager;
     /** locks used to synchronize usage of outbound connections */
-    private SharedConnectionLocks sharedConnectionLocks;
+    private SharedConnectionLocks sharedConnectionLocks; // TODO this is a tough one...
 
     private final StateManagementComponent stateManagementComponent;
-    /** last time stamp when pause check timer is active */
-    private long pauseCheckTimeStamp;
+
     /** Tracks recent events created in the network */
     private final CriticalQuorum criticalQuorum;
 
@@ -664,15 +662,10 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 this::loadReconnectState,
                 new ReconnectLearnerFactory(
                         threadManager, initialAddressBook, settings.getReconnect(), reconnectMetrics));
-    }
 
-    /**
-     * Check if the platform was started from genesis.
-     *
-     * @return true if the platform was started from genesis, false if it was started from a saved state
-     */
-    public boolean isStartedFromGenesis() {
-        return startedFromGenesis;
+        if (settings.isRunPauseCheckTimer()) {
+            components.add(new PauseCheck());
+        }
     }
 
     /**
@@ -680,6 +673,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      *
      * @return this platform's instance number
      */
+    @Override
     public int getInstanceNumber() {
         return instanceNumber;
     }
@@ -1253,29 +1247,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         metrics.start();
 
-        if (settings.isRunPauseCheckTimer()) {
-            // periodically check current time stamp to detect whether the java application
-            // has been paused for a long period
-            final Timer pauseCheckTimer = new Timer("pause check", true);
-            pauseCheckTimer.schedule(
-                    new TimerTask() {
-                        @Override
-                        public void run() {
-                            final long currentTimeStamp = System.currentTimeMillis();
-                            if ((currentTimeStamp - pauseCheckTimeStamp) > PAUSE_ALERT_INTERVAL
-                                    && pauseCheckTimeStamp != 0) {
-                                logger.error(
-                                        EXCEPTION.getMarker(),
-                                        "ERROR, a pause larger than {} is detected ",
-                                        PAUSE_ALERT_INTERVAL);
-                            }
-                            pauseCheckTimeStamp = currentTimeStamp;
-                        }
-                    },
-                    0,
-                    PAUSE_ALERT_INTERVAL / 2);
-        }
-
         // in case of a single node network, the platform status update will not be triggered by connections, so it
         // needs to be triggered now
         checkPlatformStatus();
@@ -1451,7 +1422,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 CryptographyHolder.get(),
                 OSTime.getInstance());
 
-        if (isStartedFromGenesis()) {
+        if (startedFromGenesis) {
             // if we are starting from genesis, we will create a genesis event, which is the only event that will
             // ever be created without an other-parent
             chatterEventCreator.createGenesisEvent();
