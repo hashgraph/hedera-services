@@ -238,7 +238,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      */
     private final NodeId selfId;
     /** tell which pairs of members should establish connections */
-    final NetworkTopology topology;
+    private final NetworkTopology topology;
     /**
      * This object is responsible for rate limiting reconnect attempts (in the role of sender)
      */
@@ -572,7 +572,64 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         components.add(new Shutdown());
 
         final LoadedState loadedState = initializeLoadedStateFromSignedState(loadedSignedState);
-        init(loadedState, genesisStateBuilder);
+
+        // if this setting is 0 or less, there is no startup freeze
+        if (settings.getFreezeSecondsAfterStartup() > 0) {
+            final Instant startUpEventFrozenEndTime =
+                    Instant.now().plusSeconds(settings.getFreezeSecondsAfterStartup());
+            startUpEventFrozenManager.setStartUpEventFrozenEndTime(startUpEventFrozenEndTime);
+            logger.info(STARTUP.getMarker(), "startUpEventFrozenEndTime: {}", () -> startUpEventFrozenEndTime);
+        }
+
+        // initializes EventStreamManager instance
+        final Address address = getSelfAddress();
+        if (address.getMemo() != null && !address.getMemo().isEmpty()) {
+            initEventStreamManager(address.getMemo());
+        } else {
+            initEventStreamManager(String.valueOf(selfId));
+        }
+
+        buildEventHandlers(loadedState, genesisStateBuilder);
+
+        transactionSubmitter = new SwirldTransactionSubmitter(
+                currentPlatformStatus::get,
+                PlatformConstructor.settingsProvider(),
+                getSelfAddress().isZeroStake(),
+                swirldStateManager::submitTransaction,
+                new TransactionMetrics(metrics));
+
+        if (loadedState.signedStateFromDisk != null) {
+            loadIntoConsensusAndEventMapper(loadedState.signedStateFromDisk);
+        } else {
+            consensusRef.set(new ConsensusImpl(
+                    platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
+                    consensusMetrics,
+                    consensusRoundHandler::addMinGenInfo,
+                    getAddressBook()));
+        }
+
+        if (settings.getChatter().isChatterUsed()) {
+            criticalQuorum =
+                    new CriticalQuorumImpl(initialAddressBook, false, settings.getChatter().criticalQuorumSoftening);
+        } else {
+            criticalQuorum = new CriticalQuorumImpl(initialAddressBook);
+        }
+
+        // build the event intake classes
+        buildEventIntake();
+        if (loadedState.signedStateFromDisk != null) {
+            eventLinker.loadFromSignedState(loadedState.signedStateFromDisk);
+        }
+
+        clearAllPipelines = new LoggingClearables(
+                RECONNECT.getMarker(),
+                List.of(
+                        Pair.of(getIntakeQueue(), "intakeQueue"),
+                        Pair.of(getEventMapper(), "eventMapper"),
+                        Pair.of(getShadowGraph(), "shadowGraph"),
+                        Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
+                        Pair.of(consensusRoundHandler, "consensusRoundHandler"),
+                        Pair.of(swirldStateManager, "swirldStateManager")));
     }
 
     /**
@@ -896,72 +953,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         logger.debug(
                 RECONNECT.getMarker(),
                 "`loadReconnectState` : resetting fallen-behind & reloading state, finished, succeeded`");
-    }
-
-    /**
-     * First part of initialization. This was split up so that appMain.init() could be called before
-     * {@link StateLoadedFromDiskNotification} would be dispatched. Eventually, this should be split into more discrete
-     * parts.
-     */
-    private void init(final LoadedState loadedState, final Supplier<SwirldState> genesisStateBuilder) {
-
-        // if this setting is 0 or less, there is no startup freeze
-        if (settings.getFreezeSecondsAfterStartup() > 0) {
-            final Instant startUpEventFrozenEndTime =
-                    Instant.now().plusSeconds(settings.getFreezeSecondsAfterStartup());
-            startUpEventFrozenManager.setStartUpEventFrozenEndTime(startUpEventFrozenEndTime);
-            logger.info(STARTUP.getMarker(), "startUpEventFrozenEndTime: {}", () -> startUpEventFrozenEndTime);
-        }
-
-        // initializes EventStreamManager instance
-        final Address address = getSelfAddress();
-        if (address.getMemo() != null && !address.getMemo().isEmpty()) {
-            initEventStreamManager(address.getMemo());
-        } else {
-            initEventStreamManager(String.valueOf(selfId));
-        }
-
-        buildEventHandlers(loadedState, genesisStateBuilder);
-
-        transactionSubmitter = new SwirldTransactionSubmitter(
-                currentPlatformStatus::get,
-                PlatformConstructor.settingsProvider(),
-                getSelfAddress().isZeroStake(),
-                swirldStateManager::submitTransaction,
-                new TransactionMetrics(metrics));
-
-        if (loadedState.signedStateFromDisk != null) {
-            loadIntoConsensusAndEventMapper(loadedState.signedStateFromDisk);
-        } else {
-            consensusRef.set(new ConsensusImpl(
-                    platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
-                    consensusMetrics,
-                    consensusRoundHandler::addMinGenInfo,
-                    getAddressBook()));
-        }
-
-        if (settings.getChatter().isChatterUsed()) {
-            criticalQuorum =
-                    new CriticalQuorumImpl(initialAddressBook, false, settings.getChatter().criticalQuorumSoftening);
-        } else {
-            criticalQuorum = new CriticalQuorumImpl(initialAddressBook);
-        }
-
-        // build the event intake classes
-        buildEventIntake();
-        if (loadedState.signedStateFromDisk != null) {
-            eventLinker.loadFromSignedState(loadedState.signedStateFromDisk);
-        }
-
-        clearAllPipelines = new LoggingClearables(
-                RECONNECT.getMarker(),
-                List.of(
-                        Pair.of(getIntakeQueue(), "intakeQueue"),
-                        Pair.of(getEventMapper(), "eventMapper"),
-                        Pair.of(getShadowGraph(), "shadowGraph"),
-                        Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
-                        Pair.of(consensusRoundHandler, "consensusRoundHandler"),
-                        Pair.of(swirldStateManager, "swirldStateManager")));
     }
 
     /**
