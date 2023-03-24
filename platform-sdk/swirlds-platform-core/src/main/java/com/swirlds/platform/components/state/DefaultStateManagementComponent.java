@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.components.state;
 
+import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.config.ConsensusConfig;
@@ -62,6 +63,7 @@ import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.SignedStateSentinel;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.util.HashLogger;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -149,22 +151,39 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * @param fatalErrorConsumer                 consumer to invoke when a fatal error has occurred
      */
     public DefaultStateManagementComponent(
-            final PlatformContext context,
-            final ThreadManager threadManager,
-            final AddressBook addressBook,
-            final PlatformSigner signer,
-            final String mainClassName,
-            final NodeId selfId,
-            final String swirldName,
-            final PrioritySystemTransactionSubmitter prioritySystemTransactionSubmitter,
-            final StateToDiskAttemptConsumer stateToDiskEventConsumer,
-            final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer,
-            final StateLacksSignaturesConsumer stateLacksSignaturesConsumer,
-            final StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer,
-            final IssConsumer issConsumer,
-            final HaltRequestedConsumer haltRequestedConsumer,
-            final FatalErrorConsumer fatalErrorConsumer,
-            final PreConsensusEventWriter preConsensusEventWriter) {
+            @NonNull final PlatformContext context,
+            @NonNull final ThreadManager threadManager,
+            @NonNull final AddressBook addressBook,
+            @NonNull final PlatformSigner signer,
+            @NonNull final String mainClassName,
+            @NonNull final NodeId selfId,
+            @NonNull final String swirldName,
+            @NonNull final PrioritySystemTransactionSubmitter prioritySystemTransactionSubmitter,
+            @NonNull final StateToDiskAttemptConsumer stateToDiskEventConsumer,
+            @NonNull final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer,
+            @NonNull final StateLacksSignaturesConsumer stateLacksSignaturesConsumer,
+            @NonNull final StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer,
+            @NonNull final IssConsumer issConsumer,
+            @NonNull final HaltRequestedConsumer haltRequestedConsumer,
+            @NonNull final FatalErrorConsumer fatalErrorConsumer,
+            @NonNull final PreConsensusEventWriter preConsensusEventWriter) {
+
+        throwArgNull(context, "context");
+        throwArgNull(threadManager, "threadManager");
+        throwArgNull(addressBook, "addressBook");
+        throwArgNull(signer, "signer");
+        throwArgNull(mainClassName, "mainClassName");
+        throwArgNull(selfId, "selfId");
+        throwArgNull(swirldName, "swirldName");
+        throwArgNull(prioritySystemTransactionSubmitter, "prioritySystemTransactionSubmitter");
+        throwArgNull(stateToDiskEventConsumer, "stateToDiskEventConsumer");
+        throwArgNull(newLatestCompleteStateConsumer, "newLatestCompleteStateConsumer");
+        throwArgNull(stateLacksSignaturesConsumer, "stateLacksSignaturesConsumer");
+        throwArgNull(stateHasEnoughSignaturesConsumer, "stateHasEnoughSignaturesConsumer");
+        throwArgNull(issConsumer, "issConsumer");
+        throwArgNull(haltRequestedConsumer, "haltRequestedConsumer");
+        throwArgNull(fatalErrorConsumer, "fatalErrorConsumer");
+        throwArgNull(preConsensusEventWriter, "preConsensusEventWriter");
 
         this.signer = signer;
         this.signatureTransmitter = new SignatureTransmitter(addressBook, selfId, prioritySystemTransactionSubmitter);

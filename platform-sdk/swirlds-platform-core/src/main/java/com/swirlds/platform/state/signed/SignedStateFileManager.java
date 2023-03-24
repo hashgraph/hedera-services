@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.state.signed;
 
+import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.common.io.utility.FileUtils.deleteDirectoryAndLog;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
@@ -37,10 +38,10 @@ import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.Startable;
 import com.swirlds.platform.components.state.output.MinimumGenerationNonAncientConsumer;
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -114,24 +115,25 @@ public class SignedStateFileManager implements Startable {
      * @param swirldName    the name of the swirld
      */
     public SignedStateFileManager(
-            final PlatformContext context,
-            final ThreadManager threadManager,
-            final SignedStateMetrics metrics,
-            final Time time,
-            final String mainClassName,
-            final NodeId selfId,
-            final String swirldName,
-            final StateToDiskAttemptConsumer stateToDiskAttemptConsumer,
-            final MinimumGenerationNonAncientConsumer minimumGenerationNonAncientConsumer) {
+            @NonNull final PlatformContext context,
+            @NonNull final ThreadManager threadManager,
+            @NonNull final SignedStateMetrics metrics,
+            @NonNull final Time time,
+            @NonNull final String mainClassName,
+            @NonNull final NodeId selfId,
+            @NonNull final String swirldName,
+            @NonNull final StateToDiskAttemptConsumer stateToDiskAttemptConsumer,
+            @NonNull final MinimumGenerationNonAncientConsumer minimumGenerationNonAncientConsumer) {
 
-        this.metrics = Objects.requireNonNull(metrics, "metrics");
+        this.metrics = throwArgNull(metrics, "metrics");
         this.time = time;
         this.selfId = selfId;
         this.mainClassName = mainClassName;
         this.swirldName = swirldName;
         this.stateToDiskAttemptConsumer = stateToDiskAttemptConsumer;
         this.stateConfig = context.getConfiguration().getConfigData(StateConfig.class);
-        this.minimumGenerationNonAncientConsumer = Objects.requireNonNull(minimumGenerationNonAncientConsumer);
+        this.minimumGenerationNonAncientConsumer =
+                throwArgNull(minimumGenerationNonAncientConsumer, "minimumGenerationNonAncientConsumer");
 
         final BasicConfig basicConfig = context.getConfiguration().getConfigData(BasicConfig.class);
 

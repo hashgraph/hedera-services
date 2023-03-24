@@ -16,10 +16,13 @@
 
 package com.swirlds.common.threading.interrupt;
 
+import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-import com.swirlds.common.utility.ThrowingConsumer;
+import com.swirlds.base.functions.ThrowingConsumer;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -56,7 +59,8 @@ public final class Uninterruptable {
      *
      * @param action the action to perform, may be called multiple times if interrupted
      */
-    public static void retryIfInterrupted(final InterruptableRunnable action) {
+    public static void retryIfInterrupted(@NonNull final InterruptableRunnable action) {
+        throwArgNull(action, "action");
         boolean finished = false;
         boolean interrupted = false;
         while (!finished) {
@@ -88,7 +92,8 @@ public final class Uninterruptable {
      *
      * @param action the action to perform, may be called multiple times if interrupted
      */
-    public static <T> T retryIfInterrupted(final InterruptableSupplier<T> action) {
+    public static @Nullable <T> T retryIfInterrupted(@NonNull final InterruptableSupplier<T> action) {
+        throwArgNull(action, "action");
         boolean finished = false;
         boolean interrupted = false;
         T value = null;
@@ -114,7 +119,8 @@ public final class Uninterruptable {
      *
      * @param action the action to perform
      */
-    public static void abortIfInterrupted(final InterruptableRunnable action) {
+    public static void abortIfInterrupted(@NonNull InterruptableRunnable action) {
+        throwArgNull(action, "action");
         try {
             action.run();
         } catch (final InterruptedException e) {
@@ -135,7 +141,9 @@ public final class Uninterruptable {
      * @param action       the action to perform
      * @param errorMessage the error message to write to the log if this thread is inerrupted
      */
-    public static void abortAndLogIfInterrupted(final InterruptableRunnable action, final String errorMessage) {
+    public static void abortAndLogIfInterrupted(
+            @NonNull final InterruptableRunnable action, @NonNull final String errorMessage) {
+        throwArgNull(action, "action");
         try {
             action.run();
         } catch (final InterruptedException e) {
@@ -159,7 +167,11 @@ public final class Uninterruptable {
      * @param errorMessage the error message to write to the log if this thread is inerrupted
      */
     public static <T> void abortAndLogIfInterrupted(
-            final ThrowingConsumer<T, InterruptedException> consumer, final T object, final String errorMessage) {
+            @NonNull final ThrowingConsumer<T, InterruptedException> consumer,
+            @Nullable final T object,
+            @NonNull final String errorMessage) {
+
+        throwArgNull(consumer, "consumer");
 
         try {
             consumer.accept(object);
@@ -184,7 +196,9 @@ public final class Uninterruptable {
      * @param errorMessage the error message to write to the log if this thread is interrupted
      * @throws IllegalStateException if interrupted
      */
-    public static void abortAndThrowIfInterrupted(final InterruptableRunnable action, final String errorMessage) {
+    public static void abortAndThrowIfInterrupted(
+            @NonNull InterruptableRunnable action, @NonNull final String errorMessage) {
+        throwArgNull(action, "action");
         try {
             action.run();
         } catch (final InterruptedException e) {
@@ -199,7 +213,7 @@ public final class Uninterruptable {
      *
      * @param duration the amount of time to sleep
      */
-    public static void tryToSleep(final Duration duration) {
+    public static void tryToSleep(@NonNull Duration duration) {
         abortIfInterrupted(() -> MILLISECONDS.sleep(duration.toMillis()));
     }
 }

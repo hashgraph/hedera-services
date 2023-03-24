@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.event.preconsensus;
 
+import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.config.StateConfig;
@@ -25,6 +26,7 @@ import com.swirlds.common.utility.BinarySearch;
 import com.swirlds.common.utility.RandomAccessDeque;
 import com.swirlds.common.utility.Units;
 import com.swirlds.common.utility.ValueReference;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -96,8 +98,12 @@ public class PreConsensusEventFileManager {
      * @param time          provides wall clock time
      * @param selfId        the ID of this node
      */
-    public PreConsensusEventFileManager(final PlatformContext platformContext, final Time time, final long selfId)
+    public PreConsensusEventFileManager(
+            @NonNull final PlatformContext platformContext, @NonNull final Time time, final long selfId)
             throws IOException {
+
+        throwArgNull(platformContext, "platformContext");
+        throwArgNull(time, "time");
 
         final PreConsensusEventStreamConfig preConsensusEventStreamConfig =
                 platformContext.getConfiguration().getConfigData(PreConsensusEventStreamConfig.class);
@@ -150,7 +156,7 @@ public class PreConsensusEventFileManager {
      * @param path the path to the file
      * @return the wrapper object, or null if the file can't be parsed
      */
-    private static PreConsensusEventFile parseFile(final Path path) {
+    private static @NonNull PreConsensusEventFile parseFile(@NonNull final Path path) {
         try {
             return PreConsensusEventFile.of(path);
         } catch (final IOException exception) {
@@ -167,7 +173,7 @@ public class PreConsensusEventFileManager {
      * @param permitGaps if gaps are permitted in sequence number
      * @return the handler
      */
-    private Consumer<PreConsensusEventFile> buildFileHandler(final boolean permitGaps) {
+    private @NonNull Consumer<PreConsensusEventFile> buildFileHandler(@NonNull final boolean permitGaps) {
 
         final ValueReference<Long> previousSequenceNumber = new ValueReference<>(-1L);
         final ValueReference<Long> previousMinimumGeneration = new ValueReference<>(-1L);
@@ -199,11 +205,11 @@ public class PreConsensusEventFileManager {
      */
     private static void fileSanityChecks(
             final boolean permitGaps,
-            final ValueReference<Long> previousSequenceNumber,
-            final ValueReference<Long> previousMinimumGeneration,
-            final ValueReference<Long> previousMaximumGeneration,
-            final ValueReference<Instant> previousTimestamp,
-            final PreConsensusEventFile descriptor) {
+            @NonNull final ValueReference<Long> previousSequenceNumber,
+            @NonNull final ValueReference<Long> previousMinimumGeneration,
+            @NonNull final ValueReference<Long> previousMaximumGeneration,
+            @NonNull final ValueReference<Instant> previousTimestamp,
+            @NonNull final PreConsensusEventFile descriptor) {
 
         // Sequence number should always monotonically increase
         if (!permitGaps
@@ -257,7 +263,7 @@ public class PreConsensusEventFileManager {
      *                          available event files.
      * @return an iterator that walks over event files in order
      */
-    public Iterator<PreConsensusEventFile> getFileIterator(final long minimumGeneration) {
+    public @NonNull Iterator<PreConsensusEventFile> getFileIterator(final long minimumGeneration) {
         return getFileIterator(minimumGeneration, false);
     }
 
@@ -281,7 +287,7 @@ public class PreConsensusEventFileManager {
      *                                 generation.
      * @return an iterator that walks over event files in order
      */
-    public Iterator<PreConsensusEventFile> getFileIterator(
+    public @NonNull Iterator<PreConsensusEventFile> getFileIterator(
             final long minimumGeneration, final boolean requireMinimumGeneration) {
         try {
             // Returns the index of the last file with a maximum generation that is
@@ -331,7 +337,7 @@ public class PreConsensusEventFileManager {
      *                          guaranteed to be returned by the iterator.
      * @return an iterator that walks over events
      */
-    public PreConsensusEventMultiFileIterator getEventIterator(final long minimumGeneration) {
+    public @NonNull PreConsensusEventMultiFileIterator getEventIterator(final long minimumGeneration) {
         return new PreConsensusEventMultiFileIterator(minimumGeneration, getFileIterator(minimumGeneration));
     }
 
@@ -341,7 +347,7 @@ public class PreConsensusEventFileManager {
      * @param minimumGeneration the minimum generation desired by the caller
      * @return a function for finding a starting file guaranteed for the generation requested by the user
      */
-    private LongToIntFunction buildBinarySearchComparisonLambda(final long minimumGeneration) {
+    private @NonNull LongToIntFunction buildBinarySearchComparisonLambda(final long minimumGeneration) {
         return (final long index) -> {
             final PreConsensusEventFile file = files.get((int) index);
             final long maxGenerationInFile = file.maximumGeneration();
@@ -367,7 +373,8 @@ public class PreConsensusEventFileManager {
      *
      * @return a new event file descriptor
      */
-    public PreConsensusEventFile getNextFileDescriptor(final long minimumGeneration, final long maximumGeneration) {
+    public @NonNull PreConsensusEventFile getNextFileDescriptor(
+            final long minimumGeneration, final long maximumGeneration) {
 
         if (minimumGeneration > maximumGeneration) {
             throw new IllegalArgumentException("minimum generation must be less than or equal to maximum generation");
@@ -418,7 +425,7 @@ public class PreConsensusEventFileManager {
      *
      * @param file the file that has been completely written
      */
-    public void finishedWritingFile(final PreConsensusEventMutableFile file) {
+    public void finishedWritingFile(@NonNull final PreConsensusEventMutableFile file) {
         totalFileByteCount += file.fileSize();
 
         metrics.getPreconsensusEventFileRate().cycle();

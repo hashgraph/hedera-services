@@ -122,6 +122,7 @@ module com.swirlds.platform {
 
     /* Swirlds Libraries */
     requires transitive com.swirlds.common;
+    requires com.swirlds.base;
     requires com.swirlds.common.test;
     requires com.swirlds.test.framework;
     requires com.swirlds.logging;

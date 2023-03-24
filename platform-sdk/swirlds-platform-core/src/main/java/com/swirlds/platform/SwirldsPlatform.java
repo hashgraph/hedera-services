@@ -1027,7 +1027,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         try {
             fileManager = new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), selfId.getId());
         } catch (final IOException e) {
-            throw new UncheckedIOException(e);
+            throw new UncheckedIOException("unable load preconsensus files", e);
         }
 
         final PreConsensusEventWriter syncWriter = new SyncPreConsensusEventWriter(platformContext, fileManager);

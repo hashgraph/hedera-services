@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.components;
 
+import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLogIfInterrupted;
 import static com.swirlds.logging.LogMarker.INTAKE_EVENT;
 import static com.swirlds.logging.LogMarker.STALE_EVENTS;
@@ -36,6 +37,7 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.sync.ShadowGraph;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Supplier;
@@ -82,23 +84,23 @@ public class EventIntake {
      * @param preConsensusEventWriter a writer for preconsensus events
      */
     public EventIntake(
-            final NodeId selfId,
-            final EventLinker eventLinker,
-            final Supplier<Consensus> consensusSupplier,
-            final AddressBook addressBook,
-            final EventObserverDispatcher dispatcher,
-            final IntakeCycleStats stats,
-            final ShadowGraph shadowGraph,
-            final PreConsensusEventWriter preConsensusEventWriter) {
-        this.selfId = selfId;
-        this.eventLinker = eventLinker;
-        this.consensusSupplier = consensusSupplier;
+            @NonNull final NodeId selfId,
+            @NonNull final EventLinker eventLinker,
+            @NonNull final Supplier<Consensus> consensusSupplier,
+            @NonNull final AddressBook addressBook,
+            @NonNull final EventObserverDispatcher dispatcher,
+            @NonNull final IntakeCycleStats stats,
+            @NonNull final ShadowGraph shadowGraph,
+            @NonNull final PreConsensusEventWriter preConsensusEventWriter) {
+        this.selfId = throwArgNull(selfId, "selfId");
+        this.eventLinker = throwArgNull(eventLinker, "eventLinker");
+        this.consensusSupplier = throwArgNull(consensusSupplier, "consensusSupplier");
         this.consensusWrapper = new ConsensusWrapper(consensusSupplier);
-        this.addressBook = addressBook;
-        this.dispatcher = dispatcher;
-        this.stats = stats;
-        this.shadowGraph = shadowGraph;
-        this.preConsensusEventWriter = preConsensusEventWriter;
+        this.addressBook = throwArgNull(addressBook, "addressBook");
+        this.dispatcher = throwArgNull(dispatcher, "dispatcher");
+        this.stats = throwArgNull(stats, "stats");
+        this.shadowGraph = throwArgNull(shadowGraph, "shadowGraph");
+        this.preConsensusEventWriter = throwArgNull(preConsensusEventWriter, "preConsensusEventWriter");
     }
 
     /**
