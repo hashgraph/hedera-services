@@ -32,6 +32,9 @@ import com.swirlds.platform.reconnect.ReconnectHelper;
 import com.swirlds.platform.reconnect.ReconnectUtils;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
+import com.swirlds.platform.sync.ShadowGraphSynchronizer;
+import com.swirlds.platform.sync.SimultaneousSyncThrottle;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -56,6 +59,8 @@ class SyncCaller implements Runnable {
     private final ReconnectHelper reconnectHelper;
     private final SignedStateValidator signedStateValidator;
     private final PlatformMetrics platformMetrics;
+    private final ShadowGraphSynchronizer shadowGraphSynchronizer;
+    private final SimultaneousSyncThrottle simultaneousSyncThrottle;
 
     /**
      * The platform instantiates this, and gives it the self ID number, plus other info that will be useful to it. The
@@ -68,13 +73,15 @@ class SyncCaller implements Runnable {
      * @param callerNumber 0 for the first caller thread created by this platform, 1 for the next, etc
      */
     public SyncCaller(
-            final SwirldsPlatform platform,
-            final AddressBook addressBook,
-            final NodeId selfId,
+            @NonNull final SwirldsPlatform platform,
+            @NonNull final AddressBook addressBook,
+            @NonNull final NodeId selfId,
             final int callerNumber,
-            final ReconnectHelper reconnectHelper,
-            final SignedStateValidator signedStateValidator,
-            final PlatformMetrics platformMetrics) {
+            @NonNull final ReconnectHelper reconnectHelper,
+            @NonNull final SignedStateValidator signedStateValidator,
+            @NonNull final PlatformMetrics platformMetrics,
+            @NonNull final ShadowGraphSynchronizer shadowGraphSynchronizer,
+            @NonNull final SimultaneousSyncThrottle simultaneousSyncThrottle) {
         this.platform = platform;
         this.addressBook = addressBook;
         this.selfId = selfId;
@@ -82,6 +89,8 @@ class SyncCaller implements Runnable {
         this.reconnectHelper = reconnectHelper;
         this.signedStateValidator = signedStateValidator;
         this.platformMetrics = platformMetrics;
+        this.shadowGraphSynchronizer = shadowGraphSynchronizer;
+        this.simultaneousSyncThrottle = simultaneousSyncThrottle;
     }
 
     /**
@@ -190,7 +199,7 @@ class SyncCaller implements Runnable {
                 logger.debug(SYNC_START.getMarker(), "{} about to call {} (connection looks good)", selfId, otherId);
 
                 try (final MaybeLocked lock =
-                        platform.getSimultaneousSyncThrottle().trySync(otherId, true)) {
+                        simultaneousSyncThrottle.trySync(otherId, true)) {
                     // Try to get both locks. If either is unavailable, then try the next node. Never block.
                     if (!lock.isLockAcquired()) {
                         continue;
@@ -208,7 +217,7 @@ class SyncCaller implements Runnable {
                         }
                         // try to initiate a sync. If they accept the request, then sync
                         try {
-                            syncAccepted = platform.getShadowGraphSynchronizer().synchronize(conn);
+                            syncAccepted = shadowGraphSynchronizer.synchronize(conn);
                             if (syncAccepted) {
                                 break;
                             }

@@ -760,7 +760,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 List.of(
                         Pair.of(getIntakeQueue(), "intakeQueue"),
                         Pair.of(getEventMapper(), "eventMapper"),
-                        Pair.of(getShadowGraph(), "shadowGraph"),
+                        Pair.of(shadowGraph, "shadowGraph"),
                         Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
                         Pair.of(consensusRoundHandler, "consensusRoundHandler"),
                         Pair.of(swirldStateManager, "swirldStateManager")));
@@ -791,7 +791,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 // wait and acquire all sync ongoing locks and release them immediately
                 // this will ensure any ongoing sync are finished before we start reconnect
                 // no new sync will start because we have a fallen behind status
-                : getSimultaneousSyncThrottle()::waitForAllSyncsToFinish;
+                : simultaneousSyncThrottle::waitForAllSyncsToFinish;
 
         reconnectHelper = new ReconnectHelper(
                 stopGossip,
@@ -810,7 +810,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         final ParallelExecutor shadowgraphExecutor =
                 components.add(PlatformConstructor.parallelExecutor(threadManager));
         shadowgraphSynchronizer = new ShadowGraphSynchronizer(
-                getShadowGraph(),
+                shadowGraph,
                 getAddressBook().getSize(),
                 syncMetrics,
                 consensusRef::get,
@@ -850,29 +850,11 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     }
 
     /**
-     * Get the transactionMaxBytes in Settings
-     *
-     * @return integer representing the maximum number of bytes allowed in a transaction
-     */
-    public static int getTransactionMaxBytes() {
-        return Settings.getInstance().getTransactionMaxBytes();
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
     public NodeId getSelfId() {
         return selfId;
-    }
-
-    /**
-     * if it is a Mirror node
-     *
-     * @return true/false based on if this is mirror node
-     */
-    public boolean isMirrorNode() {
-        return selfId.isMirror();
     }
 
     /**
@@ -1222,7 +1204,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      *
      * @return an instance that maintains connection managers for all connections to neighbors
      */
-    public StaticConnectionManagers startCommonNetwork() {
+    private StaticConnectionManagers startCommonNetwork() {
         final SocketFactory socketFactory = PlatformConstructor.socketFactory(
                 crypto.getKeysAndCerts(), platformContext.getConfiguration().getConfigData(CryptoConfig.class));
         // create an instance that can create new outbound connections
@@ -1266,7 +1248,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * Constructs and starts all networking components needed for a chatter network to run: readers, writers and a
      * separate event creation thread.
      */
-    public void startChatterNetwork() {
+    private void startChatterNetwork() {
 
         final StaticConnectionManagers connectionManagers = startCommonNetwork();
 
@@ -1290,7 +1272,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             final ParallelExecutor shadowgraphExecutor = PlatformConstructor.parallelExecutor(threadManager);
             shadowgraphExecutor.start();
             final ShadowGraphSynchronizer chatterSynchronizer = new ShadowGraphSynchronizer(
-                    getShadowGraph(),
+                    shadowGraph,
                     getAddressBook().getSize(),
                     syncMetrics,
                     consensusRef::get,
@@ -1409,7 +1391,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                         Pair.of(new PauseAndClear(getIntakeQueue(), eventLinker), "eventLinker"),
                         Pair.of(eventMapper, "eventMapper"),
                         Pair.of(chatterEventMapper, "chatterEventMapper"),
-                        Pair.of(getShadowGraph(), "shadowGraph"),
+                        Pair.of(shadowGraph, "shadowGraph"),
                         Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
                         Pair.of(consensusRoundHandler, "consensusRoundHandler"),
                         Pair.of(swirldStateManager, "swirldStateManager")));
@@ -1419,7 +1401,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /**
      * Constructs and starts all networking components needed for a sync network to run: heartbeats, callers, listeners
      */
-    public void startSyncNetwork() {
+    private void startSyncNetwork() {
         final StaticConnectionManagers connectionManagers = startCommonNetwork();
 
         sharedConnectionLocks = new SharedConnectionLocks(topology, connectionManagers);
@@ -1489,7 +1471,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 callerNumber,
                 reconnectHelper,
                 new DefaultSignedStateValidator(),
-                platformMetrics);
+                platformMetrics,
+                shadowgraphSynchronizer,
+                simultaneousSyncThrottle);
 
         /* the thread that repeatedly initiates syncs with other members */
         final Thread syncCallerThread = new ThreadConfiguration(threadManager)
@@ -1814,19 +1798,5 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      */
     private boolean isLastEventBeforeRestart(final EventImpl event) {
         return event.isLastInRoundReceived() && swirldStateManager.isInFreezePeriod(event.getConsensusTimestamp());
-    }
-
-    /**
-     * @return the platform instance of the {@link ShadowGraphSynchronizer}
-     */
-    public ShadowGraphSynchronizer getShadowGraphSynchronizer() {
-        return shadowgraphSynchronizer;
-    }
-
-    /**
-     * @return the instance that throttles simultaneous syncs
-     */
-    public SimultaneousSyncThrottle getSimultaneousSyncThrottle() {
-        return simultaneousSyncThrottle;
     }
 }
