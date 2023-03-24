@@ -420,10 +420,6 @@ jobs:
             JRS_ARGUMENTS="${JRS_ARGUMENTS} -pr ${PLATFORM_REPO_PATH}"
           fi
 
-          if [[ -n "${ENHANCED_RUNTIME_ENGINE}" ]]; then
-            JRS_ARGUMENTS="${JRS_ARGUMENTS} -w ${ENHANCED_RUNTIME_ENGINE}"
-          fi
-
           if [[ -n "${HEDERA_TESTS_ENABLED}" && "${HEDERA_TESTS_ENABLED}" = true ]]; then
             JRS_ARGUMENTS="${JRS_ARGUMENTS} -r ${{ github.workspace }}"
             JRS_ARGUMENTS="${JRS_ARGUMENTS} -ci ${JRS_USER}_${ACTIONS_RUN_URL}"
