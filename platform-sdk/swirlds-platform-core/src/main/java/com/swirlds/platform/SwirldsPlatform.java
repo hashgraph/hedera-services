@@ -310,15 +310,15 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /**
      * True if this node started from genesis.
      */
-    private boolean startedFromGenesis;
+    private final boolean startedFromGenesis;
     /**
      * If a state was loaded from disk, this will have the round of that state.
      */
-    private long diskStateRound;
+    private final long diskStateRound;
     /**
      * If a state was loaded from disk, this will have the hash of that state.
      */
-    private Hash diskStateHash;
+    private final Hash diskStateHash;
     /** Helps when executing a reconnect */
     private ReconnectHelper reconnectHelper;
     /** tells callers who to sync with and keeps track of whether we have fallen behind */
@@ -569,6 +569,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         // FUTURE WORK remove this when there are no more ShutdownRequestedTriggers being dispatched
         components.add(new Shutdown());
 
+        startedFromGenesis = loadedSignedState == null;
+        diskStateRound = loadedSignedState == null ? 0 : loadedSignedState.getRound();
+        diskStateHash = loadedSignedState == null ? null : loadedSignedState.getState().getHash();
         final LoadedState loadedState = initializeLoadedStateFromSignedState(loadedSignedState);
 
         // if this setting is 0 or less, there is no startup freeze
@@ -765,12 +768,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         try {
             if (signedStateFromDisk != null) {
                 updateLoadedStateAddressBook(signedStateFromDisk, initialAddressBook);
-                diskStateHash = signedStateFromDisk.getState().getHash();
-                diskStateRound = signedStateFromDisk.getRound();
                 final State initialState = loadSavedState(signedStateFromDisk);
                 return new LoadedState(signedStateFromDisk, initialState);
-            } else {
-                startedFromGenesis = true;
             }
         } catch (final Exception e) {
             logger.error(EXCEPTION.getMarker(), "Saved state not loaded:", e);
