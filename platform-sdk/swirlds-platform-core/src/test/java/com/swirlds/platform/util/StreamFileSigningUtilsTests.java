@@ -21,7 +21,6 @@ import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.generateRandomEvents;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.writeRandomEventStream;
 import static com.swirlds.platform.util.FileSigningUtils.SIGNATURE_FILE_NAME_SUFFIX;
-import static com.swirlds.platform.util.SigningTestUtils.loadKey;
 import static com.swirlds.platform.util.StreamFileSigningUtils.initializeSystem;
 import static com.swirlds.platform.util.StreamFileSigningUtils.signStreamFile;
 import static com.swirlds.platform.util.StreamFileSigningUtils.signStreamFilesInDirectory;
@@ -33,12 +32,14 @@ import com.swirlds.common.stream.EventStreamType;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.RecoveryTestUtils;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -85,6 +86,23 @@ class StreamFileSigningUtilsTests {
 
         // the utility method being leveraged saves stream files to a directory "events_test"
         toSignDirectory = testDirectoryPath.resolve("events_test");
+    }
+
+    /**
+     * Loads a key from a keystore in the test resources
+     *
+     * @return the key
+     */
+    private static KeyPair loadKey() {
+        try {
+            return FileSigningUtils.loadPfxKey(
+                    Path.of(Objects.requireNonNull(StreamFileSigningUtilsTests.class.getResource("testKeyStore.pkcs12"))
+                            .toURI()),
+                    "123456",
+                    "testKey");
+        } catch (final URISyntaxException e) {
+            throw new RuntimeException("Failed to get resource", e);
+        }
     }
 
     /**
