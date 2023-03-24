@@ -16,6 +16,9 @@
 
 package com.swirlds.common.metrics.platform;
 
+import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
+
 import com.swirlds.common.metrics.IntegerPairAccumulator;
 import com.swirlds.common.metrics.MetricConfig;
 import com.swirlds.common.metrics.MetricType;
@@ -26,8 +29,6 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.LongBinaryOperator;
-
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 
 /**
  * Platform-implementation of {@link IntegerPairAccumulator}
@@ -124,7 +125,7 @@ public class DefaultIntegerPairAccumulator<T> extends DefaultMetric implements I
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this)
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
                 .appendSuper(super.toString())
                 .append("value", get())
                 .toString();

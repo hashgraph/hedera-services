@@ -17,6 +17,8 @@
 package com.swirlds.common.metrics;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
+import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import java.util.EnumSet;
 import java.util.function.BiFunction;
@@ -25,7 +27,6 @@ import java.util.function.IntSupplier;
 import java.util.function.IntUnaryOperator;
 import java.util.function.LongBinaryOperator;
 
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 import static com.swirlds.base.ArgumentUtils.throwArgNull;
 
 /**
@@ -516,7 +517,7 @@ public interface IntegerPairAccumulator<T> extends Metric {
          */
         @Override
         public String toString() {
-            return new ToStringBuilder(this)
+            return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
                     .appendSuper(super.toString())
                     .append("type", type.getName())
                     .toString();
