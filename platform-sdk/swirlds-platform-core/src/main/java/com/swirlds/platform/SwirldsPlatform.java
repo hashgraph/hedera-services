@@ -460,8 +460,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         // stats related to the intake cycle
         final IntakeCycleStats intakeCycleStats = new IntakeCycleStats(time, metrics);
 
-        this.platformMetrics = new PlatformMetrics(this);
-        metrics.addUpdater(platformMetrics::update);
         this.consensusMetrics = new ConsensusMetricsImpl(this.selfId, metrics);
         final AddedEventMetrics addedEventMetrics = new AddedEventMetrics(this.selfId, metrics);
         final EventIntakeMetrics eventIntakeMetrics = new EventIntakeMetrics(metrics, time);
@@ -825,6 +823,23 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 shadowgraphExecutor,
                 true,
                 () -> {});
+
+        this.platformMetrics = new PlatformMetrics(
+                metrics,
+                selfId,
+                freezeManager,
+                startUpEventFrozenManager,
+                syncManager,
+                eventMapper,
+                swirldStateManager,
+                criticalQuorum,
+                initialAddressBook,
+                preConsensusEventHandler,
+                consensusRoundHandler,
+                simultaneousSyncThrottle,
+                eventStreamManager,
+                stateManagementComponent);
+        metrics.addUpdater(platformMetrics::update);
     }
 
     /**

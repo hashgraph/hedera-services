@@ -25,11 +25,23 @@ import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
+import com.swirlds.common.stream.EventStreamManager;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.PlatformStatNames;
-import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.platform.components.CriticalQuorum;
+import com.swirlds.platform.components.EventMapper;
+import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.EventCounter;
+import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
+import com.swirlds.platform.eventhandling.PreConsensusEventHandler;
+import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.stats.AverageAndMax;
 import com.swirlds.platform.stats.AverageStat;
+import com.swirlds.platform.sync.SimultaneousSyncThrottle;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Collection of metrics related to the platform
@@ -137,17 +149,48 @@ public class PlatformMetrics {
 
     private final AverageAndMax avgQ1PreConsEvents;
     private final AverageAndMax avgQ2ConsEvents;
-    private final SwirldsPlatform platform;
+    private final NodeId selfId;
+    private final EventMapper eventMapper;
+    private final SwirldStateManager swirldStateManager;
+    private final CriticalQuorum criticalQuorum;
+    private final AddressBook addressBook;
+    private final PreConsensusEventHandler preConsensusEventHandler;
+    private final ConsensusRoundHandler consensusRoundHandler;
+    private final SimultaneousSyncThrottle simultaneousSyncThrottle;
+    private final EventStreamManager<EventImpl> eventStreamManager;
+    private final StateManagementComponent stateManagementComponent;
 
+    // TODO refactor this... this class should probably die
     /**
      * Constructor of {@code PlatformMetrics}
      *
-     * @param platform
-     * 		a reference to the {@link SwirldsPlatform}
      */
-    public PlatformMetrics(final SwirldsPlatform platform) {
-        this.platform = CommonUtils.throwArgNull(platform, "platform");
-        final Metrics metrics = platform.getContext().getMetrics();
+    public PlatformMetrics(
+            @NonNull final Metrics metrics,
+            @NonNull final NodeId selfId,
+            @NonNull final FreezeManager freezeManager,
+            @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
+            @Nullable final SyncManagerImpl syncManager,
+            @NonNull final EventMapper eventMapper,
+            @NonNull final SwirldStateManager swirldStateManager,
+            @NonNull final CriticalQuorum criticalQuorum,
+            @NonNull final AddressBook addressBook,
+            @NonNull final PreConsensusEventHandler preConsensusEventHandler,
+            @NonNull final ConsensusRoundHandler consensusRoundHandler,
+            @NonNull final SimultaneousSyncThrottle simultaneousSyncThrottle,
+            @NonNull final EventStreamManager<EventImpl> eventStreamManager,
+            @NonNull final StateManagementComponent stateManagementComponent) {
+
+        this.selfId = selfId;
+        this.eventMapper = eventMapper;
+        this.swirldStateManager = swirldStateManager;
+        this.criticalQuorum = criticalQuorum;
+        this.addressBook = addressBook;
+        this.preConsensusEventHandler = preConsensusEventHandler;
+        this.consensusRoundHandler = consensusRoundHandler;
+        this.simultaneousSyncThrottle = simultaneousSyncThrottle;
+        this.eventStreamManager = eventStreamManager;
+        this.stateManagementComponent = stateManagementComponent;
 
         interruptedCallSyncsPerSecond = metrics.getOrCreate(INTERRUPTED_CALL_SYNCS_PER_SECOND_CONFIG);
         interruptedRecSyncsPerSecond = metrics.getOrCreate(INTERRUPTED_REC_SYNCS_PER_SECOND_CONFIG);
@@ -180,10 +223,15 @@ public class PlatformMetrics {
         metrics.getOrCreate(TLS_CONFIG);
         sleep1perSecond = metrics.getOrCreate(SLEEP_1_PER_SECOND_CONFIG);
 
-        addFunctionGauges(metrics);
+        addFunctionGauges(metrics, freezeManager, startUpEventFrozenManager, syncManager);
     }
 
-    private void addFunctionGauges(final Metrics metrics) {
+    private void addFunctionGauges(
+            @NonNull final Metrics metrics,
+            @NonNull FreezeManager freezeManager,
+            @NonNull StartUpEventFrozenManager startUpEventFrozenManager,
+            @Nullable SyncManagerImpl syncManager) {
+
         metrics.getOrCreate(new FunctionGauge.Config<>(INFO_CATEGORY, "name", String.class, this::getMemberName)
                 .withDescription("name of this member")
                 .withFormat("%8s"));
@@ -203,8 +251,8 @@ public class PlatformMetrics {
                         INTERNAL_CATEGORY,
                         "isEvFrozen",
                         Boolean.class,
-                        () -> platform.getFreezeManager().isEventCreationFrozen()
-                                || platform.getStartUpEventFrozenManager().isEventCreationPausedAfterStartUp())
+                        () -> freezeManager.isEventCreationFrozen()
+                                || startUpEventFrozenManager.isEventCreationPausedAfterStartUp())
                 .withDescription("isEventCreationFrozen")
                 .withFormat("%b"));
         metrics.getOrCreate(new FunctionGauge.Config<>(
@@ -217,83 +265,62 @@ public class PlatformMetrics {
                         INTERNAL_CATEGORY,
                         "hasFallenBehind",
                         Object.class,
-                        () -> platform.getSyncManager() == null
-                                ? 0
-                                : platform.getSyncManager().hasFallenBehind())
+                        () -> syncManager == null ? 0 : syncManager.hasFallenBehind())
                 .withFormat("%b"));
         metrics.getOrCreate(new FunctionGauge.Config<>(
                         INTERNAL_CATEGORY,
                         "numReportFallenBehind",
                         Integer.class,
-                        () -> platform.getSyncManager() == null
-                                ? 0
-                                : platform.getSyncManager().numReportedFallenBehind())
+                        () -> syncManager == null ? 0 : syncManager.numReportedFallenBehind())
                 .withFormat("%d"));
     }
 
     private String getMemberName() {
-        if (platform.isMirrorNode()) {
-            return "Mirror-" + platform.getSelfId().getId();
+        if (selfId.isMirror()) {
+            return "Mirror-" + selfId.getId();
         }
-        return platform.getAddressBook()
-                .getAddress(platform.getSelfId().getId())
-                .getSelfName();
+        return Long.toString(selfId.getId());
     }
 
     private long getLastEventGenerationNumber() {
-        if (platform.isMirrorNode()) {
+        if (selfId.isMirror()) {
             return -1L;
         }
-        return platform.getLastGen(platform.getSelfId().getId());
+        return eventMapper.getHighestGenerationNumber(selfId.getId());
     }
 
     private int getTransEventSize() {
-        if (platform.getSwirldStateManager() == null
-                || platform.getSwirldStateManager().getTransactionPool() == null) {
-            return 0;
-        }
-        return platform.getSwirldStateManager().getTransactionPool().getTransEventSize();
+        return swirldStateManager.getTransactionPool().getTransEventSize();
     }
 
     private int getPriorityTransEventSize() {
-        if (platform.getSwirldStateManager() == null
-                || platform.getSwirldStateManager().getTransactionPool() == null) {
-            return 0;
-        }
-        return platform.getSwirldStateManager().getTransactionPool().getPriorityTransEventSize();
+        return swirldStateManager.getTransactionPool().getPriorityTransEventSize();
     }
 
     private Boolean isStrongMinorityInMaxRound() {
-        if (platform.isMirrorNode()) {
+        if (selfId.isMirror()) {
             return false;
         }
-        return platform.getCriticalQuorum()
-                .isInCriticalQuorum(platform.getSelfId().getId());
+        return criticalQuorum.isInCriticalQuorum(selfId.getId());
     }
 
     void update() {
         interruptedCallSyncsPerSecond.update(0);
         interruptedRecSyncsPerSecond.update(0);
         sleep1perSecond.update(0);
-        avgSelfId.update(platform.getSelfId().getId());
-        avgNumMembers.update(platform.getAddressBook().getSize());
+        avgSelfId.update(selfId.getId());
+        avgNumMembers.update(addressBook.getSize());
         avgWrite.update(Settings.getInstance().getCsvWriteFrequency());
         avgSimCallSyncsMax.update(Settings.getInstance().getMaxOutgoingSyncs());
-        avgQ1PreConsEvents.update(platform.getPreConsensusHandler().getQueueSize());
-        avgQ2ConsEvents.update(platform.getConsensusHandler().getNumEventsInQueue());
-        avgQSignedStateEvents.update(platform.getConsensusHandler().getSignedStateEventsSize());
-        avgSimSyncs.update(platform.getSimultaneousSyncThrottle().getNumSyncs());
-        avgSimListenSyncs.update(platform.getSimultaneousSyncThrottle().getNumListenerSyncs());
-        eventStreamQueueSize.update(
-                platform.getEventStreamManager() != null
-                        ? platform.getEventStreamManager().getEventStreamingQueueSize()
-                        : 0);
-        hashQueueSize.update(
-                platform.getEventStreamManager() != null
-                        ? platform.getEventStreamManager().getHashQueueSize()
-                        : 0);
-        avgStateToHashSignDepth.update(platform.getConsensusHandler().getStateToHashSignSize());
-        avgRoundSupermajority.update(platform.getStateManagementComponent().getLastCompleteRound());
+        avgQ1PreConsEvents.update(preConsensusEventHandler.getQueueSize());
+        avgQ2ConsEvents.update(consensusRoundHandler.getNumEventsInQueue());
+        avgQSignedStateEvents.update(consensusRoundHandler.getSignedStateEventsSize());
+        avgSimSyncs.update(simultaneousSyncThrottle.getNumSyncs());
+        avgSimListenSyncs.update(simultaneousSyncThrottle.getNumListenerSyncs());
+        eventStreamQueueSize.update(eventStreamManager.getEventStreamingQueueSize());
+        hashQueueSize.update(eventStreamManager.getHashQueueSize());
+        avgStateToHashSignDepth.update(consensusRoundHandler.getStateToHashSignSize());
+        avgRoundSupermajority.update(stateManagementComponent.getLastCompleteRound());
         avgEventsInMem.update(EventCounter.getNumEventsInMemory());
     }
 
