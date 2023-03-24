@@ -68,6 +68,8 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTes
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.tokensTransferListAliasedX2;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.tokensTransferListReceiverOnly;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.tokensTransferListSenderOnly;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TransferPrecompile.addNftExchanges;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TransferPrecompile.addSignedAdjustments;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TransferPrecompile.decodeCryptoTransfer;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TransferPrecompile.decodeCryptoTransferV2;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TransferPrecompile.decodeHbarTransfers;
@@ -2670,6 +2672,9 @@ class TransferPrecompilesTest {
                                         identity(),
                                         accoundIdExists))
                 .thenCallRealMethod();
+        transferPrecompile
+                .when(() -> addSignedAdjustments(any(), any(), any(), any(), any()))
+                .thenCallRealMethod();
         final var decodedInput =
                 decodeTransferTokens(
                         POSITIVE_AMOUNTS_TRANSFER_TOKENS_INPUT, identity(), accoundIdExists);
@@ -2699,6 +2704,9 @@ class TransferPrecompilesTest {
                                         POSITIVE_AMOUNTS_TRANSFER_TOKENS_INPUT,
                                         identity(),
                                         nonExistingPredicate))
+                .thenCallRealMethod();
+        transferPrecompile
+                .when(() -> addSignedAdjustments(any(), any(), any(), any(), any()))
                 .thenCallRealMethod();
         final var decodedInput =
                 decodeTransferTokens(
@@ -2737,6 +2745,9 @@ class TransferPrecompilesTest {
                                         POSITIVE_NEGATIVE_AMOUNT_TRANSFER_TOKENS_INPUT,
                                         identity(),
                                         accoundIdExists))
+                .thenCallRealMethod();
+        transferPrecompile
+                .when(() -> addSignedAdjustments(any(), any(), any(), any(), any()))
                 .thenCallRealMethod();
         final var decodedInput =
                 decodeTransferTokens(
@@ -2787,6 +2798,9 @@ class TransferPrecompilesTest {
         transferPrecompile
                 .when(() -> decodeHbarTransfers(any(), any(), any(), any()))
                 .thenCallRealMethod();
+        transferPrecompile
+                .when(() -> addNftExchanges(any(), any(), any(), any(), any(), any()))
+                .thenCallRealMethod();
         final var decodedInput =
                 decodeTransferNFTs(TRANSFER_NFTS_INPUT, identity(), accoundIdExists);
         final var hbarTransfers = decodedInput.transferWrapper().hbarTransfers();
@@ -2812,6 +2826,9 @@ class TransferPrecompilesTest {
                         () ->
                                 decodeTransferNFTs(
                                         TRANSFER_NFTS_INPUT, identity(), nonExistingPredicate))
+                .thenCallRealMethod();
+        transferPrecompile
+                .when(() -> addNftExchanges(any(), any(), any(), any(), any(), any()))
                 .thenCallRealMethod();
         transferPrecompile
                 .when(() -> decodeTokenTransfer(any(), any(), any(), any()))

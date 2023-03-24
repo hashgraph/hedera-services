@@ -19,6 +19,7 @@ import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ARRAY_BR
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.EXPIRY;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.EXPIRY_V2;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.TOKEN_KEY;
+import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.accountIdFromEvmAddress;
 
 import com.esaulpaugh.headlong.abi.ABIType;
@@ -170,7 +171,18 @@ public class DecodingFacade {
             final byte[] leftPaddedAddress, @NonNull final UnaryOperator<byte[]> aliasResolver) {
         final var addressOrAlias =
                 Arrays.copyOfRange(leftPaddedAddress, ADDRESS_SKIP_BYTES_LENGTH, WORD_LENGTH);
-        return accountIdFromEvmAddress(aliasResolver.apply(addressOrAlias));
+        final var resolvedAddress = aliasResolver.apply(addressOrAlias);
+        if (!isMirror(resolvedAddress)) {
+            // The input address was missing, so we return an AccountID with the
+            // missing address as alias; this means that any downstream code that
+            // relies on 0.0.X account numbers will get INVALID_ACCOUNT_ID, but
+            // the AccountID in any synthetic transaction body will have a valid
+            // 0.0.<alias> format instead of a "nonsense" X.Y.Z format
+            return AccountID.newBuilder()
+                    .setAlias(ByteStringUtils.wrapUnsafely(addressOrAlias))
+                    .build();
+        }
+        return accountIdFromEvmAddress(resolvedAddress);
     }
 
     /**
@@ -186,7 +198,7 @@ public class DecodingFacade {
             @NonNull final UnaryOperator<byte[]> aliasResolver,
             @NonNull final Predicate<AccountID> exists) {
         var accountID = convertLeftPaddedAddressToAccountId(leftPaddedAddress, aliasResolver);
-        if (!exists.test(accountID)) {
+        if (!exists.test(accountID) && !accountID.hasAlias()) {
             accountID = generateAccountIDWithAliasCalculatedFrom(accountID);
         }
         return accountID;
@@ -232,7 +244,7 @@ public class DecodingFacade {
         for (final var transfer : abiTransfers) {
             var accountID = convertLeftPaddedAddressToAccountId(transfer.get(0), aliasResolver);
             final long amount = transfer.get(1);
-            if (amount > 0 && !exists.test(accountID)) {
+            if (amount > 0 && !exists.test(accountID) && !accountID.hasAlias()) {
                 accountID = generateAccountIDWithAliasCalculatedFrom(accountID);
             }
             // Only set the isApproval flag to true if it was sent in as a tuple parameter as "true"
