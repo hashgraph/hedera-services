@@ -212,7 +212,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             TransactionBody txBody = null;
             if (paymentRequired) {
                 // 3.i Validate CryptoTransfer
-                allegedPayment = queryHeader.paymentOrElse(Transaction.DEFAULT);
+                allegedPayment = queryHeader.paymentOrThrow();
                 txBody = checker.validateCryptoTransfer(session, allegedPayment);
                 final var payer = txBody.transactionIDOrThrow().accountIDOrThrow();
 
