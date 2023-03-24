@@ -129,7 +129,6 @@ import com.swirlds.platform.event.preconsensus.NoOpPreConsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventFileManager;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventStreamConfig;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventMetrics;
 import com.swirlds.platform.event.preconsensus.SyncPreConsensusEventWriter;
 import com.swirlds.platform.event.validation.AncientValidator;
 import com.swirlds.platform.event.validation.EventDeduplication;
@@ -996,7 +995,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         try {
             fileManager = new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), selfId.getId());
         } catch (final IOException e) {
-            throw new UncheckedIOException(e);
+            throw new UncheckedIOException("unable load preconsensus files", e);
         }
 
         final PreConsensusEventWriter syncWriter = new SyncPreConsensusEventWriter(platformContext, fileManager);

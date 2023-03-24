@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.components.state;
 
+import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.common.formatting.StringFormattingUtils.addLine;
 
 import com.swirlds.common.context.PlatformContext;
@@ -32,6 +33,7 @@ import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Creates instances of {@link DefaultStateManagementComponent}
@@ -124,8 +126,9 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
     }
 
     @Override
-    public StateManagementComponentFactory setPreConsensusEventWriter(PreConsensusEventWriter preConsensusEventWriter) {
-        this.preConsensusEventWriter = preConsensusEventWriter;
+    public @NonNull StateManagementComponentFactory setPreConsensusEventWriter(
+            @NonNull final PreConsensusEventWriter preConsensusEventWriter) {
+        this.preConsensusEventWriter = throwArgNull(preConsensusEventWriter, "preConsensusEventWriter");
         return this;
     }
 

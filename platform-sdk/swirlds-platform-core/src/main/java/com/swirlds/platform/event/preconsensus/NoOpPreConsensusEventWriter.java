@@ -20,9 +20,12 @@ import com.swirlds.platform.internal.EventImpl;
 import java.time.Duration;
 
 /**
- * A {@link PreConsensusEventWriter} that does nothing. Once we decide to enable this in production, we will
- * remove this implementation and will not support disabling the pre-consensus event writer.
+ * A {@link PreConsensusEventWriter} that does nothing.
+ *
+ * @deprecated Once we decide to enable this in production, we will remove this implementation and will not support
+ * disabling the pre-consensus event writer.
  */
+@Deprecated
 public class NoOpPreConsensusEventWriter implements PreConsensusEventWriter {
 
     /**

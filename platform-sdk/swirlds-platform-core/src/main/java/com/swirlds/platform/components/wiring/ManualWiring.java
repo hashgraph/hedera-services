@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.components.wiring;
 
+import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.config.WiringConfig;
@@ -42,6 +43,7 @@ import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
 import com.swirlds.platform.metrics.WiringMetrics;
 import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.util.PlatformComponents;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -117,15 +119,24 @@ public class ManualWiring {
      * @param preConsensusEventWriter            writes preconsensus events to disk
      * @return a fully wired {@link StateManagementComponent}
      */
-    public StateManagementComponent wireStateManagementComponent(
-            final PlatformSigner platformSigner,
-            final String mainClassName,
-            final NodeId selfId,
-            final String swirldName,
-            final PrioritySystemTransactionSubmitter prioritySystemTransactionSubmitter,
-            final HaltRequestedConsumer haltRequestedConsumer,
-            final AppCommunicationComponent appCommunicationComponent,
-            final PreConsensusEventWriter preConsensusEventWriter) {
+    public @NonNull StateManagementComponent wireStateManagementComponent(
+            @NonNull final PlatformSigner platformSigner,
+            @NonNull final String mainClassName,
+            @NonNull final NodeId selfId,
+            @NonNull final String swirldName,
+            @NonNull final PrioritySystemTransactionSubmitter prioritySystemTransactionSubmitter,
+            @NonNull final HaltRequestedConsumer haltRequestedConsumer,
+            @NonNull final AppCommunicationComponent appCommunicationComponent,
+            @NonNull final PreConsensusEventWriter preConsensusEventWriter) {
+
+        throwArgNull(platformSigner, "platformSigner");
+        throwArgNull(mainClassName, "mainClassName");
+        throwArgNull(selfId, "selfId");
+        throwArgNull(swirldName, "swirldName");
+        throwArgNull(prioritySystemTransactionSubmitter, "prioritySystemTransactionSubmitter");
+        throwArgNull(haltRequestedConsumer, "haltRequestedConsumer");
+        throwArgNull(appCommunicationComponent, "appCommunicationComponent");
+        throwArgNull(preConsensusEventWriter, "preConsensusEventWriter");
 
         final StateManagementComponentFactory stateManagementComponentFactory =
                 new DefaultStateManagementComponentFactory(

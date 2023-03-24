@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.utility;
+package com.swirlds.base.functions;
 
 /**
  * Similar to {@link java.util.function.Consumer} but throws an exception.

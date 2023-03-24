@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.internal;
 
+import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.system.Round;
@@ -23,6 +24,7 @@ import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.util.iterator.TypedIterator;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -63,7 +65,13 @@ public class ConsensusRound implements Round {
      * @param generations     the consensus generations for this round
      */
     public ConsensusRound(
-            final List<EventImpl> consensusEvents, final EventImpl keystoneEvent, final GraphGenerations generations) {
+            @NonNull final List<EventImpl> consensusEvents,
+            @NonNull final EventImpl keystoneEvent,
+            @NonNull final GraphGenerations generations) {
+
+        throwArgNull(consensusEvents, "consensusEvents");
+        throwArgNull(keystoneEvent, "keystoneEvent");
+        throwArgNull(generations, "generations");
 
         this.consensusEvents = Collections.unmodifiableList(consensusEvents);
         this.keystoneEvent = keystoneEvent;
@@ -172,7 +180,7 @@ public class ConsensusRound implements Round {
     /**
      * @return the event that, when added to the hashgraph, caused this round to reach consensus
      */
-    public EventImpl getKeystoneEvent() {
+    public @NonNull EventImpl getKeystoneEvent() {
         return keystoneEvent;
     }
 
