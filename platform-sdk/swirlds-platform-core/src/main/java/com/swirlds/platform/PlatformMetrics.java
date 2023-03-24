@@ -160,7 +160,6 @@ public class PlatformMetrics {
     private final EventStreamManager<EventImpl> eventStreamManager;
     private final StateManagementComponent stateManagementComponent;
 
-    // TODO refactor this... this class should probably die
     /**
      * Constructor of {@code PlatformMetrics}
      *

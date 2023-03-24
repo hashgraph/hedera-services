@@ -277,8 +277,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private final SyncMetrics syncMetrics;
     private final NetworkMetrics networkMetrics;
     private final ReconnectMetrics reconnectMetrics;
-    /** Reference to the instance responsible for executing reconnect when chatter is used */
-    private final AtomicReference<ReconnectController> reconnectController = new AtomicReference<>();
+    private final ReconnectController reconnectController;
     /** tracks if we have fallen behind or not, takes appropriate action if we have */
     private final FallenBehindManagerImpl fallenBehindManager;
 
@@ -527,20 +526,12 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 settings.getNumConnections(),
                 !settings.getChatter().isChatterUsed());
 
-        fallenBehindManager = new FallenBehindManagerImpl(
-                selfId,
-                topology.getConnectionGraph(),
-                this::checkPlatformStatus,
-                () -> {
-                    if (!settings.getChatter().isChatterUsed()) {
-                        return;
-                    }
-                    reconnectController.get().start();
-                },
-                settings.getReconnect());
-
-        // FUTURE WORK remove this when there are no more ShutdownRequestedTriggers being dispatched
-        components.add(new Shutdown());
+        final Runnable stopGossip = settings.getChatter().isChatterUsed()
+                ? chatterCore::stopChatter
+                // wait and acquire all sync ongoing locks and release them immediately
+                // this will ensure any ongoing sync are finished before we start reconnect
+                // no new sync will start because we have a fallen behind status
+                : simultaneousSyncThrottle::waitForAllSyncsToFinish;
 
         startedFromGenesis = loadedSignedState == null;
         diskStateRound = loadedSignedState == null ? 0 : loadedSignedState.getRound();
@@ -548,26 +539,12 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 loadedSignedState == null ? null : loadedSignedState.getState().getHash();
         final LoadedState loadedState = initializeLoadedStateFromSignedState(loadedSignedState);
 
-        // if this setting is 0 or less, there is no startup freeze
-        if (settings.getFreezeSecondsAfterStartup() > 0) {
-            final Instant startUpEventFrozenEndTime =
-                    Instant.now().plusSeconds(settings.getFreezeSecondsAfterStartup());
-            startUpEventFrozenManager.setStartUpEventFrozenEndTime(startUpEventFrozenEndTime);
-            logger.info(STARTUP.getMarker(), "startUpEventFrozenEndTime: {}", () -> startUpEventFrozenEndTime);
-        }
-
-        final EventStreamManager<EventImpl> eventStreamManager = initEventStreamManager(String.valueOf(selfId));
-
-        // Queue thread that stores and handles signed states that need to be hashed and have signatures collected.
-        final QueueThread<SignedState> stateHashSignQueueThread = components.add(PlatformConstructor.stateHashSignQueue(
-                threadManager, selfId.getId(), stateManagementComponent::newSignedStateFromTransactions));
-
         final State startingState;
         if (loadedState.signedStateFromDisk != null) {
             logger.debug(STARTUP.getMarker(), () -> new SavedStateLoadedPayload(
-                            loadedState.signedStateFromDisk.getRound(),
-                            loadedState.signedStateFromDisk.getConsensusTimestamp(),
-                            startUpEventFrozenManager.getStartUpEventFrozenEndTime())
+                    loadedState.signedStateFromDisk.getRound(),
+                    loadedState.signedStateFromDisk.getConsensusTimestamp(),
+                    startUpEventFrozenManager.getStartUpEventFrozenEndTime())
                     .toString());
             startingState = loadedState.signedStateFromDisk.getState();
         } else {
@@ -585,6 +562,51 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 PlatformConstructor.settingsProvider(),
                 freezeManager::isFreezeStarted,
                 startingState);
+
+        reconnectHelper = new ReconnectHelper(
+                stopGossip,
+                clearAllPipelines,
+                swirldStateManager::getConsensusState,
+                stateManagementComponent::getLastCompleteRound,
+                new ReconnectLearnerThrottle(selfId, settings.getReconnect()),
+                this::loadReconnectState,
+                new ReconnectLearnerFactory(
+                        threadManager, initialAddressBook, settings.getReconnect(), reconnectMetrics));
+
+        if (settings.getChatter().isChatterUsed()) {
+            reconnectController = new ReconnectController(threadManager, reconnectHelper, chatterCore::startChatter);
+        } else {
+            reconnectController = null;
+        }
+
+        fallenBehindManager = new FallenBehindManagerImpl(
+                selfId,
+                topology.getConnectionGraph(),
+                this::checkPlatformStatus,
+                () -> {
+                    if (!settings.getChatter().isChatterUsed()) {
+                        return;
+                    }
+                    reconnectController.start();
+                },
+                settings.getReconnect());
+
+        // FUTURE WORK remove this when there are no more ShutdownRequestedTriggers being dispatched
+        components.add(new Shutdown());
+
+        // if this setting is 0 or less, there is no startup freeze
+        if (settings.getFreezeSecondsAfterStartup() > 0) {
+            final Instant startUpEventFrozenEndTime =
+                    Instant.now().plusSeconds(settings.getFreezeSecondsAfterStartup());
+            startUpEventFrozenManager.setStartUpEventFrozenEndTime(startUpEventFrozenEndTime);
+            logger.info(STARTUP.getMarker(), "startUpEventFrozenEndTime: {}", () -> startUpEventFrozenEndTime);
+        }
+
+        final EventStreamManager<EventImpl> eventStreamManager = initEventStreamManager(String.valueOf(selfId));
+
+        // Queue thread that stores and handles signed states that need to be hashed and have signatures collected.
+        final QueueThread<SignedState> stateHashSignQueueThread = components.add(PlatformConstructor.stateHashSignQueue(
+                threadManager, selfId.getId(), stateManagementComponent::newSignedStateFromTransactions));
 
         // SwirldStateManager will get a copy of the state loaded, that copy will become stateCons.
         // The original state will be saved in the SignedStateMgr and will be deleted when it becomes old
@@ -781,23 +803,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 StaticSettingsProvider.getSingleton(),
                 syncManager,
                 ThreadLocalRandom::current);
-
-        final Runnable stopGossip = settings.getChatter().isChatterUsed()
-                ? chatterCore::stopChatter
-                // wait and acquire all sync ongoing locks and release them immediately
-                // this will ensure any ongoing sync are finished before we start reconnect
-                // no new sync will start because we have a fallen behind status
-                : simultaneousSyncThrottle::waitForAllSyncsToFinish;
-
-        reconnectHelper = new ReconnectHelper(
-                stopGossip,
-                clearAllPipelines,
-                swirldStateManager::getConsensusState,
-                stateManagementComponent::getLastCompleteRound,
-                new ReconnectLearnerThrottle(selfId, settings.getReconnect()),
-                this::loadReconnectState,
-                new ReconnectLearnerFactory(
-                        threadManager, initialAddressBook, settings.getReconnect(), reconnectMetrics));
 
         if (settings.isRunPauseCheckTimer()) {
             components.add(new PauseCheck());
@@ -1180,7 +1185,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         }
 
         if (settings.getChatter().isChatterUsed()) {
-            reconnectController.set(new ReconnectController(threadManager, reconnectHelper, chatterCore::startChatter));
             startChatterNetwork();
         } else {
             startSyncNetwork();
@@ -1256,7 +1260,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         // protocol is initiated.
         // This must be after all chatter peer instances are created so that the chatter comm state can be suspended
         if (emergencyRecoveryManager.isEmergencyStateRequired()) {
-            reconnectController.get().start();
+            reconnectController.start();
         }
 
         final ParallelExecutor parallelExecutor = new CachedPoolParallelExecutor(threadManager, "chatter");
@@ -1309,7 +1313,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                                             stateManagementComponent,
                                             settings.getReconnect().getAsyncStreamTimeoutMilliseconds(),
                                             reconnectMetrics,
-                                            reconnectController.get()),
+                                            reconnectController),
                                     new ReconnectProtocol(
                                             threadManager,
                                             otherId,
@@ -1319,7 +1323,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                                                     .get(),
                                             settings.getReconnect().getAsyncStreamTimeoutMilliseconds(),
                                             reconnectMetrics,
-                                            reconnectController.get(),
+                                            reconnectController,
                                             new DefaultSignedStateValidator(),
                                             fallenBehindManager),
                                     new ChatterSyncProtocol(
