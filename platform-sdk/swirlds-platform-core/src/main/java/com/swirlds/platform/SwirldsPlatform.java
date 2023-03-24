@@ -60,6 +60,7 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.PlatformEvent;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
+import com.swirlds.common.threading.SyncPermit;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
@@ -187,6 +188,7 @@ import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.StateSettings;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.SignedStateReference;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.stats.StatConstructor;
 import com.swirlds.platform.sync.ShadowGraph;
@@ -194,6 +196,8 @@ import com.swirlds.platform.sync.ShadowGraphEventObserver;
 import com.swirlds.platform.sync.ShadowGraphSynchronizer;
 import com.swirlds.platform.sync.SimultaneousSyncThrottle;
 import com.swirlds.platform.sync.SyncProtocolResponder;
+import com.swirlds.platform.sync.protocol.PeerAgnosticSyncChecks;
+import com.swirlds.platform.sync.protocol.SyncProtocol;
 import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.system.SystemExitReason;
 import com.swirlds.platform.system.SystemUtils;
@@ -214,6 +218,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
@@ -411,6 +416,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private final PlatformContext platformContext;
 
     private final BasicConfig basicConfig;
+    private AtomicBoolean gossipHalted = new AtomicBoolean(false);
 
     /**
      * the browser gives the Platform what app to run. There can be multiple Platforms on one computer.
@@ -991,7 +997,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         for (final StoppableThread thread : chatterThreads) {
             thread.stop();
         }
-        if (syncManager != null) {
+        if (settings.isSyncAsProtocol()) {
+            gossipHalted.set(true);
+        } else if (syncManager != null) {
             syncManager.haltRequestedObserver(reason);
         }
     }
@@ -1119,9 +1127,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         if (loadedState.signedStateFromDisk != null) {
             logger.debug(STARTUP.getMarker(), () -> new SavedStateLoadedPayload(
-                            loadedState.signedStateFromDisk.getRound(),
-                            loadedState.signedStateFromDisk.getConsensusTimestamp(),
-                            startUpEventFrozenManager.getStartUpEventFrozenEndTime())
+                    loadedState.signedStateFromDisk.getRound(),
+                    loadedState.signedStateFromDisk.getConsensusTimestamp(),
+                    startUpEventFrozenManager.getStartUpEventFrozenEndTime())
                     .toString());
 
             buildEventHandlersFromState(loadedState.initialState, stateHashSignQueueThread);
@@ -1488,6 +1496,27 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     public void startSyncNetwork() {
         final StaticConnectionManagers connectionManagers = startCommonNetwork();
 
+        final SyncPermit syncPermit = new SyncPermit(settings.getMaxOutgoingSyncs());
+        final PeerAgnosticSyncChecks peerAgnosticSyncChecks = new PeerAgnosticSyncChecks(
+                List.of(
+                        () -> !gossipHalted.get(),
+                        () -> intakeQueue.size() <= settings.getEventIntakeQueueSize()
+                )
+        );
+
+        // first create all instances because of thread safety
+        for (final NodeId otherId : topology.getNeighbors()) {
+            new SyncProtocol(
+                    otherId,
+                    shadowgraphSynchronizer,
+                    fallenBehindManager,
+                    syncPermit,
+                    criticalQuorum,
+                    peerAgnosticSyncChecks,
+                    syncMetrics
+            );
+        }
+
         sharedConnectionLocks = new SharedConnectionLocks(topology, connectionManagers);
         final MultiProtocolResponder protocolHandlers = new MultiProtocolResponder(List.of(
                 ProtocolMapping.map(
@@ -1665,7 +1694,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             if (oldStatus != newStatus) {
                 final PlatformStatus ns = newStatus;
                 logger.info(PLATFORM_STATUS.getMarker(), () -> new PlatformStatusPayload(
-                                "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), ns.name())
+                        "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), ns.name())
                         .toString());
 
                 logger.info(PLATFORM_STATUS.getMarker(), "Platform status changed to: {}", newStatus.toString());
