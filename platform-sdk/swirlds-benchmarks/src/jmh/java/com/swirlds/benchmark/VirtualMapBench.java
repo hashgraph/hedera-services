@@ -130,11 +130,6 @@ public abstract class VirtualMapBench extends BaseBench {
 
     protected VirtualMap<BenchmarkKey, BenchmarkValue> copyMap(
             final VirtualMap<BenchmarkKey, BenchmarkValue> virtualMap) {
-        return copyMap(virtualMap, true);
-    }
-
-    protected VirtualMap<BenchmarkKey, BenchmarkValue> copyMap(
-            final VirtualMap<BenchmarkKey, BenchmarkValue> virtualMap, final boolean release) {
         final VirtualRoot root = virtualMap.getRight();
         final VirtualMap<BenchmarkKey, BenchmarkValue> newCopy = virtualMap.copy();
         hasher.execute(root::getHash);
@@ -152,9 +147,7 @@ public abstract class VirtualMapBench extends BaseBench {
                                     new SerializableDataOutputStream(Files.newOutputStream(savedDir.resolve(SERDE)))) {
                                 virtualMap.serialize(out, savedDir);
                             }
-                            if (release) {
-                                virtualMap.release();
-                            }
+                            virtualMap.release();
                             Utils.deleteRecursively(savedDir);
 
                             snapshotTime.set(System.currentTimeMillis() + SNAPSHOT_DELAY);
@@ -164,9 +157,7 @@ public abstract class VirtualMapBench extends BaseBench {
                     })
                     .start();
         } else {
-            if (release) {
-                virtualMap.release();
-            }
+            virtualMap.release();
         }
 
         return newCopy;

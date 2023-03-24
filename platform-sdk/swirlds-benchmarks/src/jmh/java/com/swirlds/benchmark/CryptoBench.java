@@ -207,7 +207,12 @@ public abstract class CryptoBench extends VirtualMapBench {
         // aren't complete by the end of the round, so they will start piling up. To fix it,
         // clear the queue in the end of each round
         final BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>();
-        final ExecutorService prefetchPool = new ThreadPoolExecutor(numThreads, numThreads, 1, TimeUnit.SECONDS, queue,
+        final ExecutorService prefetchPool = new ThreadPoolExecutor(
+                numThreads,
+                numThreads,
+                1,
+                TimeUnit.SECONDS,
+                queue,
                 new ThreadConfiguration(getStaticThreadManager())
                         .setComponent("benchmark")
                         .setThreadName("prefetch")
@@ -218,12 +223,8 @@ public abstract class CryptoBench extends VirtualMapBench {
 
         initializeFixedAccounts(virtualMap);
 
-        final List<VirtualMap<BenchmarkKey, BenchmarkValue>> toRelease = new ArrayList<>();
-
         long prevTime = System.currentTimeMillis();
         for (int i = 1; i <= numFiles; ++i) {
-            toRelease.add(virtualMap);
-
             // Generate a new set of unique random keys
             final Integer[] keys = generateKeySet();
 
@@ -281,41 +282,12 @@ public abstract class CryptoBench extends VirtualMapBench {
 
             queue.clear();
 
-            // Add some chaos. Don't release the map on copy
-            virtualMap = copyMap(virtualMap, false);
-            // Either release a random previous copy, or two copies, or none
-            int randomInt = Utils.randomInt(100);
-            final VirtualMap<BenchmarkKey, BenchmarkValue> mapToRelease1;
-            final VirtualMap<BenchmarkKey, BenchmarkValue> mapToRelease2;
-            if (randomInt < 60) {
-                final int indexToRelease = Utils.randomInt(toRelease.size());
-                mapToRelease1 = toRelease.remove(indexToRelease);
-                mapToRelease2 = null;
-            } else if (randomInt < 80) {
-                final int indexToRelease = Utils.randomInt(toRelease.size());
-                mapToRelease1 = toRelease.remove(indexToRelease);
-                mapToRelease2 = (toRelease.size() > 0) ? toRelease.remove(0) : null;
-            } else {
-                mapToRelease1 = null;
-                mapToRelease2 = null;
-            }
-            if (mapToRelease1 != null) {
-                mapToRelease1.release();
-            }
-            if (mapToRelease2 != null) {
-                mapToRelease2.release();
-            }
+            virtualMap = copyMap(virtualMap);
 
             // Report TPS
             final long curTime = System.currentTimeMillis();
             updateTPS(i, curTime - prevTime);
             prevTime = curTime;
-        }
-
-        logger.debug("Maps left to release: " + toRelease.size());
-        // Now release the remaining copies
-        for (VirtualMap<BenchmarkKey, BenchmarkValue> m : toRelease) {
-            m.release();
         }
 
         // Ensure the map is done with hashing/merging/flushing
