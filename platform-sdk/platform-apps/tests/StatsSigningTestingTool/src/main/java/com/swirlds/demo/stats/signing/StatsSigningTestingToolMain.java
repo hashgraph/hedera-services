@@ -138,7 +138,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
      * 		these are not used
      */
     public static void main(final String[] args) {
-        Browser.launch(args);
+        Browser.parseCommandLineArgsAndLaunch(args);
     }
 
     public StatsSigningTestingToolMain() {

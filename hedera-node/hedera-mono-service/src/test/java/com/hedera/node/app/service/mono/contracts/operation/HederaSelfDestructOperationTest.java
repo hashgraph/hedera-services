@@ -82,8 +82,8 @@ class HederaSelfDestructOperationTest {
     void delegatesToSuperWhenValid() {
         givenRubberstampValidator();
 
-        final var tbdMirrorAddress = EntityIdUtils.asEvmAddress(0, 0, 1234L);
-        final var beneficiaryMirrorAddress = EntityIdUtils.asEvmAddress(0, 0, 4567L);
+        final var tbdMirrorAddress = EntityIdUtils.asEvmAddress(1234L);
+        final var beneficiaryMirrorAddress = EntityIdUtils.asEvmAddress(4567L);
 
         final var beneficiaryMirror = beneficiary.toEvmAddress();
         given(frame.getStackItem(0)).willReturn(beneficiaryMirror);

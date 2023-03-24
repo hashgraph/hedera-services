@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -310,6 +311,7 @@ class EventStreamRoundIteratorTest {
         }
     }
 
+    @Disabled("This test is disabled because it is flaky. Fails ~1/10 times, but only when run remotely.")
     @Test
     @DisplayName("Read Complete Rounds Truncated File Test")
     void readCompleteRoundsTruncatedFileTest()

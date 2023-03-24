@@ -154,6 +154,7 @@ public class ContractDeleteSuite extends HapiSuite {
                         sourcing((() -> contractCall(tokenMirrorAddr.get())
                                 .sending(1L)
                                 .payingWith(TOKEN_TREASURY)
+                                .refusingEthConversion()
                                 .via(externalViolation)
                                 .hasKnownStatus(LOCAL_CALL_MODIFICATION_EXCEPTION))))
                 .then(
