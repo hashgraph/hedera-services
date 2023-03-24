@@ -758,8 +758,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         clearAllPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
                 List.of(
-                        Pair.of(getIntakeQueue(), "intakeQueue"),
-                        Pair.of(getEventMapper(), "eventMapper"),
+                        Pair.of(intakeQueue, "intakeQueue"),
+                        Pair.of(eventMapper, "eventMapper"),
                         Pair.of(shadowGraph, "shadowGraph"),
                         Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
                         Pair.of(consensusRoundHandler, "consensusRoundHandler"),
@@ -796,7 +796,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         reconnectHelper = new ReconnectHelper(
                 stopGossip,
                 clearAllPipelines,
-                getSwirldStateManager()::getConsensusState,
+                swirldStateManager::getConsensusState,
                 stateManagementComponent::getLastCompleteRound,
                 new ReconnectLearnerThrottle(selfId, settings.getReconnect()),
                 this::loadReconnectState,
@@ -1095,9 +1095,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             // thread. after a reconnect, it needs to load the minimum generation from a state on a different thread,
             // so the intake thread is paused before the data is loaded and unpaused after. this ensures that the
             // thread will get the up-to-date data loaded
-            new PauseAndLoad(getIntakeQueue(), eventLinker).loadFromSignedState(signedState);
+            new PauseAndLoad(intakeQueue, eventLinker).loadFromSignedState(signedState);
 
-            getConsensusHandler().loadDataFromSignedState(signedState, true);
+            consensusRoundHandler.loadDataFromSignedState(signedState, true);
 
             // Notify any listeners that the reconnect has been completed
             try {
@@ -1121,7 +1121,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         logger.debug(
                 RECONNECT.getMarker(),
                 "`loadReconnectState` : reconnect complete notifications finished. Resetting fallen-behind");
-        getSyncManager().resetFallenBehind();
+        syncManager.resetFallenBehind();
         logger.debug(
                 RECONNECT.getMarker(),
                 "`loadReconnectState` : resetting fallen-behind & reloading state, finished, succeeded`");
@@ -1385,10 +1385,10 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 List.of(
                         // chatter event creator needs to be cleared first, because it sends event to intake
                         Pair.of(eventCreatorThread, "eventCreatorThread"),
-                        Pair.of(getIntakeQueue(), "intakeQueue"),
+                        Pair.of(intakeQueue, "intakeQueue"),
                         // eventLinker is not thread safe, so the intake thread needs to be paused while its being
                         // cleared
-                        Pair.of(new PauseAndClear(getIntakeQueue(), eventLinker), "eventLinker"),
+                        Pair.of(new PauseAndClear(intakeQueue, eventLinker), "eventLinker"),
                         Pair.of(eventMapper, "eventMapper"),
                         Pair.of(chatterEventMapper, "chatterEventMapper"),
                         Pair.of(shadowGraph, "shadowGraph"),
@@ -1473,7 +1473,10 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 new DefaultSignedStateValidator(),
                 platformMetrics,
                 shadowgraphSynchronizer,
-                simultaneousSyncThrottle);
+                simultaneousSyncThrottle,
+                syncManager,
+                sharedConnectionLocks,
+                eventTaskCreator);
 
         /* the thread that repeatedly initiates syncs with other members */
         final Thread syncCallerThread = new ThreadConfiguration(threadManager)
@@ -1488,17 +1491,11 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     }
 
     /**
-     * @return the SyncManager used by this platform
-     */
-    SyncManagerImpl getSyncManager() {
-        return syncManager;
-    }
-
-    /**
      * Get the shadow graph used by this platform
      *
      * @return the {@link ShadowGraph} used by this platform
      */
+    @Deprecated
     public ShadowGraph getShadowGraph() {
         return shadowGraph;
     }
@@ -1506,36 +1503,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /**
      * @return the signed state manager for this platform
      */
+    @Deprecated
     public StateManagementComponent getStateManagementComponent() {
         return stateManagementComponent;
-    }
-
-    /**
-     * @return locks used to synchronize usage of outbound connections
-     */
-    SharedConnectionLocks getSharedConnectionLocks() {
-        return sharedConnectionLocks;
-    }
-
-    /**
-     * @return the instance responsible for creating event tasks
-     */
-    public EventTaskCreator getEventTaskCreator() {
-        return eventTaskCreator;
-    }
-
-    /**
-     * Get the {@link EventMapper} for this platform.
-     */
-    public EventMapper getEventMapper() {
-        return eventMapper;
-    }
-
-    /**
-     * Get the event intake queue for this platform.
-     */
-    public QueueThread<EventIntakeTask> getIntakeQueue() {
-        return intakeQueue;
     }
 
     /**
@@ -1555,7 +1525,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             final PlatformStatus newStatus;
             if (numNodes > 1 && activeConnectionNumber.get() == 0) {
                 newStatus = PlatformStatus.DISCONNECTED;
-            } else if (getSyncManager().hasFallenBehind()) {
+            } else if (syncManager.hasFallenBehind()) {
                 newStatus = PlatformStatus.BEHIND;
             } else if (freezeManager.isFreezeStarted()) {
                 newStatus = PlatformStatus.MAINTENANCE;
@@ -1607,20 +1577,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             platformMetrics.incrementInterruptedRecSyncs();
         }
         networkMetrics.recordDisconnect(conn);
-    }
-
-    /**
-     * @return the instance that manages interactions with the {@link SwirldState}
-     */
-    public SwirldStateManager getSwirldStateManager() {
-        return swirldStateManager;
-    }
-
-    /**
-     * @return the handler that applies consensus events to state and creates signed states
-     */
-    public ConsensusRoundHandler getConsensusHandler() {
-        return consensusRoundHandler;
     }
 
     /** {@inheritDoc} */
@@ -1708,6 +1664,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      *
      * @return AddressBook
      */
+    @Override
     public AddressBook getAddressBook() {
         return initialAddressBook;
     }

@@ -26,8 +26,10 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.locks.locked.MaybeLocked;
 import com.swirlds.common.threading.locks.locked.MaybeLockedResource;
 import com.swirlds.logging.payloads.ReconnectPeerInfoPayload;
+import com.swirlds.platform.components.EventTaskCreator;
 import com.swirlds.platform.network.ConnectionManager;
 import com.swirlds.platform.network.NetworkUtils;
+import com.swirlds.platform.network.unidirectional.SharedConnectionLocks;
 import com.swirlds.platform.reconnect.ReconnectHelper;
 import com.swirlds.platform.reconnect.ReconnectUtils;
 import com.swirlds.platform.state.signed.SignedState;
@@ -61,6 +63,9 @@ class SyncCaller implements Runnable {
     private final PlatformMetrics platformMetrics;
     private final ShadowGraphSynchronizer shadowGraphSynchronizer;
     private final SimultaneousSyncThrottle simultaneousSyncThrottle;
+    private final SyncManagerImpl syncManager;
+    private final SharedConnectionLocks sharedConnectionLocks;
+    private final EventTaskCreator eventTaskCreator;
 
     /**
      * The platform instantiates this, and gives it the self ID number, plus other info that will be useful to it. The
@@ -81,7 +86,10 @@ class SyncCaller implements Runnable {
             @NonNull final SignedStateValidator signedStateValidator,
             @NonNull final PlatformMetrics platformMetrics,
             @NonNull final ShadowGraphSynchronizer shadowGraphSynchronizer,
-            @NonNull final SimultaneousSyncThrottle simultaneousSyncThrottle) {
+            @NonNull final SimultaneousSyncThrottle simultaneousSyncThrottle,
+            @NonNull final SyncManagerImpl syncManager,
+            @NonNull final SharedConnectionLocks sharedConnectionLocks,
+            @NonNull final EventTaskCreator eventTaskCreator) {
         this.platform = platform;
         this.addressBook = addressBook;
         this.selfId = selfId;
@@ -91,6 +99,9 @@ class SyncCaller implements Runnable {
         this.platformMetrics = platformMetrics;
         this.shadowGraphSynchronizer = shadowGraphSynchronizer;
         this.simultaneousSyncThrottle = simultaneousSyncThrottle;
+        this.syncManager = syncManager;
+        this.sharedConnectionLocks = sharedConnectionLocks;
+        this.eventTaskCreator = eventTaskCreator;
     }
 
     /**
@@ -139,7 +150,7 @@ class SyncCaller implements Runnable {
     private int callRequestSync() {
         int otherId = -1; // the ID of the member that I am syncing with now
         try { // catch any exceptions, log them, and ignore them
-            if (platform.getSyncManager().hasFallenBehind()) {
+            if (syncManager.hasFallenBehind()) {
                 // we will not sync if we have fallen behind
                 if (callerNumber == 0) {
                     // caller number 0 will do the reconnect, the others will wait
@@ -160,7 +171,7 @@ class SyncCaller implements Runnable {
             }
 
             // check with sync manager for any reasons not to sync
-            if (!platform.getSyncManager().shouldInitiateSync()) {
+            if (!syncManager.shouldInitiateSync()) {
                 return -1;
             }
 
@@ -172,7 +183,7 @@ class SyncCaller implements Runnable {
 
                 // self is the only member, so create an event for just this one transaction,
                 // and immediately put it into the hashgraph. No syncing is needed.
-                platform.getEventTaskCreator()
+                eventTaskCreator
                         .createEvent(
                                 selfId.getId() /*selfId assumed to be main*/); // otherID (so self will count as the
                 // "other")
@@ -186,7 +197,7 @@ class SyncCaller implements Runnable {
             }
 
             // the sync manager will tell us who we need to call
-            final List<Long> nodeList = platform.getSyncManager().getNeighborsToCall();
+            final List<Long> nodeList = syncManager.getNeighborsToCall();
 
             // the array is sorted in ascending or from highest to lowest priority, so we go through the array and
             // try to
@@ -206,7 +217,7 @@ class SyncCaller implements Runnable {
                     }
 
                     try (final MaybeLockedResource<ConnectionManager> resource =
-                            platform.getSharedConnectionLocks().tryLockConnection(NodeId.createMain(otherId))) {
+                            sharedConnectionLocks.tryLockConnection(NodeId.createMain(otherId))) {
                         if (!resource.isLockAcquired()) {
                             continue;
                         }
@@ -302,7 +313,7 @@ class SyncCaller implements Runnable {
         // and consensus round queue (q2) are empty during reconnect
         reconnectHelper.prepareForReconnect();
 
-        final List<Long> reconnectNeighbors = platform.getSyncManager().getNeighborsForReconnect();
+        final List<Long> reconnectNeighbors = syncManager.getNeighborsForReconnect();
         logger.info(
                 RECONNECT.getMarker(),
                 "{} has fallen behind, will try to reconnect with {}",
@@ -320,7 +331,7 @@ class SyncCaller implements Runnable {
             final SignedState signedState;
             // try to get the lock, it should be available if we have fallen behind
             try (final MaybeLockedResource<ConnectionManager> resource =
-                    platform.getSharedConnectionLocks().tryLockConnection(NodeId.createMain(neighborId))) {
+                    sharedConnectionLocks.tryLockConnection(NodeId.createMain(neighborId))) {
                 if (!resource.isLockAcquired()) {
                     peerInfo.addPeerInfo(neighborId, "failed to acquire lock, blocked by heartbeat thread");
                     continue;
