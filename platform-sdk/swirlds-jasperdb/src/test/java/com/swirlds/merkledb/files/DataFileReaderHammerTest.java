@@ -102,7 +102,7 @@ public class DataFileReaderHammerTest {
         while (activeReaders.get() > 0) {
             try {
                 // Don't interrupt too often
-                Thread.sleep(rand.nextInt(100) + 100);
+                Thread.sleep(rand.nextInt(100) + 300);
             } catch (final InterruptedException e) {
                 // ignore
             }
