@@ -307,8 +307,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private final ReconnectHelper reconnectHelper;
     /** tells callers who to sync with and keeps track of whether we have fallen behind */
     private final SyncManagerImpl syncManager;
-    /** locks used to synchronize usage of outbound connections */
-    private SharedConnectionLocks sharedConnectionLocks; // TODO this is a tough one...
 
     private final StateManagementComponent stateManagementComponent;
 
@@ -1400,7 +1398,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private void startSyncNetwork() {
         final StaticConnectionManagers connectionManagers = startCommonNetwork();
 
-        sharedConnectionLocks = new SharedConnectionLocks(topology, connectionManagers);
+        SharedConnectionLocks sharedConnectionLocks = new SharedConnectionLocks(topology, connectionManagers);
         final MultiProtocolResponder protocolHandlers = new MultiProtocolResponder(List.of(
                 ProtocolMapping.map(
                         UnidirectionalProtocols.SYNC.getInitialByte(),
@@ -1451,14 +1449,14 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         metrics.resetAll();
         // create and start threads to call other members
         for (int i = 0; i < settings.getMaxOutgoingSyncs(); i++) {
-            spawnSyncCaller(i);
+            spawnSyncCaller(i, sharedConnectionLocks);
         }
     }
 
     /**
      * Spawn a thread to initiate syncs with other users
      */
-    private void spawnSyncCaller(final int callerNumber) {
+    private void spawnSyncCaller(final int callerNumber, final SharedConnectionLocks sharedConnectionLocks) {
         // create a caller that will run repeatedly to call random members other than selfId
         final SyncCaller syncCaller = new SyncCaller(
                 this,
