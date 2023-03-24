@@ -300,7 +300,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
     private final ChatterCore<GossipEvent> chatterCore;
     /** all the events and other data about the hashgraph */
-    private EventTaskCreator eventTaskCreator;
+    private final EventTaskCreator eventTaskCreator;
     /** ID number of the swirld being run */
     private final byte[] swirldId;
     /** the object that contains all key pairs and CSPRNG state for this member */
@@ -332,7 +332,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /** last time stamp when pause check timer is active */
     private long pauseCheckTimeStamp;
     /** Tracks recent events created in the network */
-    private CriticalQuorum criticalQuorum;
+    private final CriticalQuorum criticalQuorum;
 
     private QueueThread<EventIntakeTask> intakeQueue;
     private EventLinker eventLinker;
@@ -348,7 +348,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /** Handles all interaction with {@link SwirldState} */
     private SwirldStateManager swirldStateManager;
     /** Checks the validity of transactions and submits valid ones to the event transaction pool */
-    private SwirldTransactionSubmitter transactionSubmitter;
+    private final SwirldTransactionSubmitter transactionSubmitter;
     /** clears all pipelines to prepare for a reconnect */
     private Clearable clearAllPipelines;
     /** Contains all information and state required for emergency recovery */
@@ -630,6 +630,17 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                         Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
                         Pair.of(consensusRoundHandler, "consensusRoundHandler"),
                         Pair.of(swirldStateManager, "swirldStateManager")));
+
+        eventTaskCreator = new EventTaskCreator(
+                eventMapper,
+                // hashgraph and state get separate copies of the address book
+                initialAddressBook.copy(),
+                selfId,
+                eventIntakeMetrics,
+                intakeQueue,
+                StaticSettingsProvider.getSingleton(),
+                syncManager,
+                ThreadLocalRandom::current);
     }
 
     /**
@@ -1206,17 +1217,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             Thread.setDefaultUncaughtExceptionHandler((Thread t, Throwable e) ->
                     logger.error(EXCEPTION.getMarker(), "exception on thread {}", t.getName(), e));
         }
-
-        this.eventTaskCreator = new EventTaskCreator(
-                eventMapper,
-                // hashgraph and state get separate copies of the address book
-                initialAddressBook.copy(),
-                selfId,
-                eventIntakeMetrics,
-                intakeQueue,
-                StaticSettingsProvider.getSingleton(),
-                syncManager,
-                ThreadLocalRandom::current);
 
         // a genesis event could be created here, but it isn't needed. This member will naturally create an
         // event after their first sync, where the first sync will involve sending no events.
