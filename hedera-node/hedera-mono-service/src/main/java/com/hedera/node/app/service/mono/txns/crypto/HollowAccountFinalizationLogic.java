@@ -23,6 +23,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -191,5 +192,7 @@ public class HollowAccountFinalizationLogic {
         recordsHistorian.trackPrecedingChildRecord(DEFAULT_SOURCE_ID, inProgress.syntheticBody(), childRecord);
 
         sigImpactHistorian.markEntityChanged(accountID.getAccountNum());
+        final var alias = EthSigsUtils.recoverAddressFromPubKey(key.getECDSASecp256k1Key());
+        sigImpactHistorian.markAliasChanged(ByteString.copyFrom(alias));
     }
 }

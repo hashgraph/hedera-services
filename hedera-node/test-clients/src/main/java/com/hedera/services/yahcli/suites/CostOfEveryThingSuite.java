@@ -136,7 +136,7 @@ public class CostOfEveryThingSuite extends HapiSuite {
     }
 
     HapiSpec canonicalContractOps() {
-        return HapiSpec.customHapiSpec(String.format("canonicalContractOps"))
+        return HapiSpec.customHapiSpec("canonicalContractOps")
                 .withProperties(specConfig, Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
                 .given(
                         newKeyNamed("key").shape(SIMPLE),
@@ -192,7 +192,7 @@ public class CostOfEveryThingSuite extends HapiSuite {
         final byte[] first = randomUtf8Bytes(fileSize);
         final byte[] next = randomUtf8Bytes(fileSize);
 
-        return HapiSpec.customHapiSpec(String.format("canonicalFileOps"))
+        return HapiSpec.customHapiSpec("canonicalFileOps")
                 .withProperties(specConfig, Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
                 .given(
                         newKeyNamed("key").shape(SIMPLE),
@@ -233,7 +233,7 @@ public class CostOfEveryThingSuite extends HapiSuite {
     }
 
     HapiSpec canonicalTopicOps() {
-        return HapiSpec.customHapiSpec(String.format("canonicalTopicOps"))
+        return HapiSpec.customHapiSpec("canonicalTopicOps")
                 .withProperties(specConfig, Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
                 .given(
                         newKeyNamed("key").shape(SIMPLE),
@@ -269,7 +269,7 @@ public class CostOfEveryThingSuite extends HapiSuite {
     }
 
     HapiSpec canonicalTokenOps() {
-        return HapiSpec.customHapiSpec(String.format("canonicalTokenOps"))
+        return HapiSpec.customHapiSpec("canonicalTokenOps")
                 .withProperties(specConfig, Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
                 .given(
                         newKeyNamed("key").shape(SIMPLE),
@@ -377,7 +377,7 @@ public class CostOfEveryThingSuite extends HapiSuite {
 
     HapiSpec canonicalCryptoOps() {
 
-        return HapiSpec.customHapiSpec(String.format("canonicalCryptoOps"))
+        return HapiSpec.customHapiSpec("canonicalCryptoOps")
                 .withProperties(specConfig, Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
                 .given(
                         newKeyNamed("key").shape(SIMPLE),
@@ -423,7 +423,7 @@ public class CostOfEveryThingSuite extends HapiSuite {
     }
 
     HapiSpec canonicalScheduleOps() {
-        return HapiSpec.customHapiSpec(String.format("canonicalScheduleOps"))
+        return HapiSpec.customHapiSpec("canonicalScheduleOps")
                 .withProperties(specConfig, Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
                 .given(
                         cryptoCreate(PAYING_SENDER).balance(ONE_HUNDRED_HBARS),
@@ -460,7 +460,7 @@ public class CostOfEveryThingSuite extends HapiSuite {
 
     private void appendServiceName(final String serviceName) {
         feeTableBuilder.append(serviceBorder);
-        feeTableBuilder.append(String.format("%30s | Fees \t\t |\n", serviceName));
+        feeTableBuilder.append(String.format("%30s | Fees \t\t |%n", serviceName));
         feeTableBuilder.append(serviceBorder);
     }
 }

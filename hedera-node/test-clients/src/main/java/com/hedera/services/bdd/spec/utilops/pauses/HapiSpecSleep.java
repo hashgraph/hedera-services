@@ -33,7 +33,7 @@ public class HapiSpecSleep extends UtilOp {
 
     @Override
     protected boolean submitOp(HapiSpec spec) throws Throwable {
-        log.info("Sleeping for " + timeMs + "ms now...");
+        log.info("Sleeping for {}ms now...", timeMs);
         Thread.sleep(timeMs);
         return false;
     }
