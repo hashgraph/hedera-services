@@ -320,7 +320,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      */
     private final Hash diskStateHash;
     /** Helps when executing a reconnect */
-    private ReconnectHelper reconnectHelper;
+    private final ReconnectHelper reconnectHelper;
     /** tells callers who to sync with and keeps track of whether we have fallen behind */
     private SyncManagerImpl syncManager;
     /** locks used to synchronize usage of outbound connections */
@@ -637,6 +637,23 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 StaticSettingsProvider.getSingleton(),
                 syncManager,
                 ThreadLocalRandom::current);
+
+        final Runnable stopGossip = settings.getChatter().isChatterUsed()
+                ? chatterCore::stopChatter
+                // wait and acquire all sync ongoing locks and release them immediately
+                // this will ensure any ongoing sync are finished before we start reconnect
+                // no new sync will start because we have a fallen behind status
+                : getSimultaneousSyncThrottle()::waitForAllSyncsToFinish;
+
+        reconnectHelper = new ReconnectHelper(
+                stopGossip,
+                clearAllPipelines,
+                getSwirldStateManager()::getConsensusState,
+                stateManagementComponent::getLastCompleteRound,
+                new ReconnectLearnerThrottle(selfId, settings.getReconnect()),
+                this::loadReconnectState,
+                new ReconnectLearnerFactory(
+                        threadManager, initialAddressBook, settings.getReconnect(), reconnectMetrics));
     }
 
     /**
@@ -1227,21 +1244,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 true,
                 () -> {});
 
-        final Runnable stopGossip = settings.getChatter().isChatterUsed()
-                ? chatterCore::stopChatter
-                // wait and acquire all sync ongoing locks and release them immediately
-                // this will ensure any ongoing sync are finished before we start reconnect
-                // no new sync will start because we have a fallen behind status
-                : getSimultaneousSyncThrottle()::waitForAllSyncsToFinish;
-        reconnectHelper = new ReconnectHelper(
-                stopGossip,
-                clearAllPipelines,
-                getSwirldStateManager()::getConsensusState,
-                stateManagementComponent::getLastCompleteRound,
-                new ReconnectLearnerThrottle(selfId, settings.getReconnect()),
-                this::loadReconnectState,
-                new ReconnectLearnerFactory(
-                        threadManager, initialAddressBook, settings.getReconnect(), reconnectMetrics));
         if (settings.getChatter().isChatterUsed()) {
             reconnectController.set(new ReconnectController(threadManager, reconnectHelper, chatterCore::startChatter));
             startChatterNetwork();
