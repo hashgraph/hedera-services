@@ -330,7 +330,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /** sleep in ms after each sync in SyncCaller. A public setter for this exists. */
     private long delayAfterSync = 0; // TODO remove this!
     /** Executes a sync with a remote node */
-    private ShadowGraphSynchronizer shadowgraphSynchronizer;
+    private final ShadowGraphSynchronizer shadowgraphSynchronizer;
     /** Stores and passes pre-consensus events to {@link SwirldStateManager} for handling */
     private PreConsensusEventHandler preConsensusEventHandler;
     /** Stores and processes consensus events including sending them to {@link SwirldStateManager} for handling */
@@ -774,6 +774,20 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         if (settings.isRunPauseCheckTimer()) {
             components.add(new PauseCheck());
         }
+
+        final ParallelExecutor shadowgraphExecutor =
+                components.add(PlatformConstructor.parallelExecutor(threadManager));
+        shadowgraphSynchronizer = new ShadowGraphSynchronizer(
+                getShadowGraph(),
+                getAddressBook().getSize(),
+                syncMetrics,
+                consensusRef::get,
+                eventTaskCreator::syncDone,
+                eventTaskCreator::addEvent,
+                syncManager,
+                shadowgraphExecutor,
+                true,
+                () -> {});
     }
 
     /**
@@ -1210,23 +1224,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             Thread.setDefaultUncaughtExceptionHandler((Thread t, Throwable e) ->
                     logger.error(EXCEPTION.getMarker(), "exception on thread {}", t.getName(), e));
         }
-
-        // a genesis event could be created here, but it isn't needed. This member will naturally create an
-        // event after their first sync, where the first sync will involve sending no events.
-
-        final ParallelExecutor shadowgraphExecutor = PlatformConstructor.parallelExecutor(threadManager);
-        shadowgraphExecutor.start();
-        shadowgraphSynchronizer = new ShadowGraphSynchronizer(
-                getShadowGraph(),
-                getAddressBook().getSize(),
-                syncMetrics,
-                consensusRef::get,
-                eventTaskCreator::syncDone,
-                eventTaskCreator::addEvent,
-                syncManager,
-                shadowgraphExecutor,
-                true,
-                () -> {});
 
         if (settings.getChatter().isChatterUsed()) {
             reconnectController.set(new ReconnectController(threadManager, reconnectHelper, chatterCore::startChatter));
