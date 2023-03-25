@@ -23,6 +23,7 @@ import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
@@ -30,7 +31,9 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 
 /**
  * The aim for a DataFileReader is to facilitate fast highly concurrent random reading of items from
@@ -42,8 +45,28 @@ import java.util.concurrent.atomic.AtomicLong;
 public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFileReader<D>>, IndexedObject {
     /** FileChannel's for each thread */
     private static final ThreadLocal<ByteBuffer> BUFFER_CACHE = new ThreadLocal<>();
-    /** FileChannel's for each thread */
-    private final FileChannel fileChannel;
+    /** Max number of file channels to use for reading */
+    private static final int MAX_FILE_CHANNELS = 8;
+    /**
+     * When a data file reader is created, a single file channel is open to read data from the
+     * file. This channel is used by all threads. Number of threads currently reading data is
+     * tracked in {@link #fileChannelsInUse}. When the number of threads per opened file channel
+     * exceeds this threshold, a new file channel is open, unless there are {@link #MAX_FILE_CHANNELS}
+     * channels are already opened.
+     */
+    private static final int THREADS_PER_FILECHANNEL = 8;
+    /**
+     * A single data file reader may use multiple file channels. Previously, a single file channel
+     * was used, and it resulted in unnecessary locking in FileChannelImpl.readInternal(), when
+     * the number of threads working with the channel in parallel was high. Now a single file
+     * channel is open in the constructor, and additioinal file channels up to {@link #MAX_FILE_CHANNELS}
+     * are opened as needed
+     */
+    private final AtomicReferenceArray<FileChannel> fileChannels = new AtomicReferenceArray<>(MAX_FILE_CHANNELS);
+    /** Number of currently opened file channels */
+    private final AtomicInteger fileChannelsCount = new AtomicInteger(0);
+    /** Number of file channels currently in use by all threads working with this data file reader */
+    private final AtomicInteger fileChannelsInUse = new AtomicInteger(0);
     /** The path to the file on disk */
     private final Path path;
     /** The metadata for this file read from the footer */
@@ -85,7 +108,7 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
         this.path = path;
         this.metadata = metadata;
         this.dataItemSerializer = dataItemSerializer;
-        this.fileChannel = FileChannel.open(path, StandardOpenOption.READ);
+        openNewFileChannel(0);
     }
 
     /**
@@ -105,7 +128,7 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
      */
     public void setFileCompleted() {
         try {
-            fileSizeBytes.set(fileChannel.size());
+            fileSizeBytes.set(fileChannels.get(0).size());
         } catch (final IOException e) {
             throw new UncheckedIOException("Failed to update data file reader size", e);
         } finally {
@@ -242,16 +265,95 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
      * @return True if file is open for reading
      */
     public boolean isOpen() {
+        final FileChannel fileChannel = fileChannels.get(0);
         return fileChannel != null && fileChannel.isOpen();
     }
 
     /** Close this data file, it can not be used once closed. */
     public void close() throws IOException {
-        fileChannel.close();
+        for (int i = 0; i < MAX_FILE_CHANNELS; i++) {
+            final FileChannel fileChannel = fileChannels.getAndSet(i, null);
+            if (fileChannel != null) {
+                fileChannel.close();
+            }
+        }
     }
 
     // =================================================================================================================
     // Private methods
+
+    /**
+     * Opens a new file channel for reading the file, if the total number of channels opened is
+     * less than {@link #MAX_FILE_CHANNELS}. This method is safe to call from multiple threads.
+     *
+     * @param index Index of the new file channel. If greater or equal to {@link}
+     *                            #MAX_FILE_CHANNELS}, no new channel is opened
+     * @throws IOException
+     *      If an I/O error occurs
+     */
+    private void openNewFileChannel(final int index) throws IOException {
+        if (index >= MAX_FILE_CHANNELS) {
+            return;
+        }
+        final FileChannel fileChannel = FileChannel.open(path, StandardOpenOption.READ);
+        if (fileChannels.compareAndSet(index, null, fileChannel)) {
+            fileChannelsCount.incrementAndGet();
+        } else {
+            fileChannel.close();
+        }
+    }
+
+    /**
+     * Replaces a closed file channel at a given index in {@link #fileChannels} with a new one.
+     * This method is safe to be called from multiple threads. If a channel is closed, and two
+     * threads are calling this method to replace it with a new channel, only one of them will
+     * proceed, while the channel opened in the other thread will be closed immediately and
+     * not used any further.
+     *
+     * @param index File channel index in {@link #fileChannels}
+     * @param closedChannel Closed file channel to replace
+     * @throws IOException
+     *      If an I/O error occurs
+     */
+    private void reopenFileChannel(final int index, final FileChannel closedChannel) throws IOException {
+        assert index < MAX_FILE_CHANNELS;
+        // May be closedChannel or may be already reopened in a different thread
+        assert fileChannels.get(index) != null;
+        assert !closedChannel.isOpen();
+        final FileChannel fileChannel = FileChannel.open(path, StandardOpenOption.READ);
+        if (!fileChannels.compareAndSet(index, closedChannel, fileChannel)) {
+            fileChannel.close();
+        }
+    }
+
+    /**
+     * Returns an index of an opened file channel to reading data. Opens a new file channel, if
+     * possible, when the number of file channels currently in use is much greater than the number
+     * of opened file channels.
+     *
+     * @return An index of a file channel to read data
+     * @throws IOException
+     *      If an I/O exception occurs
+     */
+    private int leaseFileChannel() throws IOException {
+        int count = fileChannelsCount.get();
+        final int inUse = fileChannelsInUse.incrementAndGet();
+        // Although openNewFileChannel() is thread safe, it makes sense to check the count here.
+        // Since the channels are never closed (other than when the data file reader is closed),
+        // it's safe to check count against MAX_FC
+        if ((inUse / count > THREADS_PER_FILECHANNEL) && (count < MAX_FILE_CHANNELS)) {
+            openNewFileChannel(count);
+            count = fileChannelsCount.get();
+        }
+        return inUse % count;
+    }
+
+    /**
+     * Decreases the number of opened file channels in use by one.
+     */
+    private void releaseFileChannel() {
+        fileChannelsInUse.decrementAndGet();
+    }
 
     /**
      * Read bytesToRead bytes of data from the file starting at byteOffsetInFile unless we reach the
@@ -272,11 +374,30 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
             buffer = ByteBuffer.allocate(bytesToRead);
             BUFFER_CACHE.set(buffer);
         }
-        buffer.position(0);
-        buffer.limit(bytesToRead);
-        // read data
-        MerkleDbFileUtils.completelyRead(fileChannel, buffer, byteOffsetInFile);
-        buffer.flip();
-        return buffer;
+        // Try a few times. It's very unlikely (other than in tests) that a thread is
+        // interrupted more than once in short period of time, so 2 retries should be enough
+        for (int retries = 2; retries > 0; retries--) {
+            final int fcIndex = leaseFileChannel();
+            final FileChannel fileChannel = fileChannels.get(fcIndex);
+            try {
+                buffer.position(0);
+                buffer.limit(bytesToRead);
+                // read data
+                MerkleDbFileUtils.completelyRead(fileChannel, buffer, byteOffsetInFile);
+                buffer.flip();
+                return buffer;
+            } catch (final ClosedByInterruptException e) {
+                // If the thread and the channel are interrupted, propagate it to the callers
+                throw e;
+            } catch (final ClosedChannelException e) {
+                // This exception may be thrown, if the channel was closed, because a different
+                // thread reading from the channel was interrupted. Re-create the file channel
+                // and retry
+                reopenFileChannel(fcIndex, fileChannel);
+            } finally {
+                releaseFileChannel();
+            }
+        }
+        throw new IOException("Failed to read from file, file channels keep getting closed");
     }
 }
