@@ -17,6 +17,7 @@
 import com.hedera.services.bdd.junit.BalanceReconciliationValidator;
 import com.hedera.services.bdd.junit.ExpiryRecordsValidator;
 import com.hedera.services.bdd.junit.TokenReconciliationValidator;
+import com.hedera.services.bdd.junit.TransactionBodyValidator;
 import com.hedera.services.bdd.junit.validators.BlockNoValidator;
 import java.util.Arrays;
 import java.util.Collection;
@@ -82,6 +83,7 @@ class AllIntegrationTests extends IntegrationTestBase {
                 new BalanceReconciliationValidator(),
                 new BlockNoValidator(),
                 new ExpiryRecordsValidator(),
-                new TokenReconciliationValidator()));
+                new TokenReconciliationValidator(),
+                new TransactionBodyValidator()));
     }
 }

@@ -112,28 +112,25 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
     private final RoundAppliedToStateConsumer roundAppliedToStateConsumer;
 
     /**
+     * The number of non-ancient rounds.
+     */
+    private final int roundsNonAncient;
+
+    /**
      * Instantiate, but don't start any threads yet. The Platform should first instantiate the
      * {@link ConsensusRoundHandler}. Then the Platform should call start to start the queue thread.
      *
-     * @param platformContext contains various platform utilities
-     * @param threadManager
-     * 		responsible for creating and managing threads
-     * @param selfId
-     * 		the id of this node
-     * @param settings
-     * 		a provider of static settings
-     * @param swirldStateManager
-     * 		the swirld state manager to send events to
-     * @param consensusHandlingMetrics
-     * 		statistics updated by {@link ConsensusRoundHandler}
-     * @param eventStreamManager
-     * 		the event stream manager to send consensus events to
-     * @param stateHashSignQueue
-     * 		the queue thread that handles hashing and collecting signatures of new self-signed states
-     * @param enterFreezePeriod
-     * 		puts the system in a freeze state when executed
-     * @param softwareVersion
-     * 		the current version of the software
+     * @param platformContext          contains various platform utilities
+     * @param threadManager            responsible for creating and managing threads
+     * @param selfId                   the id of this node
+     * @param settings                 a provider of static settings
+     * @param swirldStateManager       the swirld state manager to send events to
+     * @param consensusHandlingMetrics statistics updated by {@link ConsensusRoundHandler}
+     * @param eventStreamManager       the event stream manager to send consensus events to
+     * @param stateHashSignQueue       the queue thread that handles hashing and collecting signatures of new
+     *                                 self-signed states
+     * @param enterFreezePeriod        puts the system in a freeze state when executed
+     * @param softwareVersion          the current version of the software
      */
     public ConsensusRoundHandler(
             final PlatformContext platformContext,
@@ -157,8 +154,11 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
         this.stateHashSignQueue = stateHashSignQueue;
         this.softwareVersion = softwareVersion;
         this.enterFreezePeriod = enterFreezePeriod;
-        eventsAndGenerations = new SignedStateEventsAndGenerations(
-                platformContext.getConfiguration().getConfigData(ConsensusConfig.class));
+
+        final ConsensusConfig consensusConfig =
+                platformContext.getConfiguration().getConfigData(ConsensusConfig.class);
+
+        eventsAndGenerations = new SignedStateEventsAndGenerations(consensusConfig);
         final ConsensusQueue queue = new ConsensusQueue(consensusHandlingMetrics, settings.getMaxEventQueueForCons());
         queueThread = new QueueThreadConfiguration<ConsensusRound>(threadManager)
                 .setNodeId(selfId)
@@ -175,6 +175,11 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
                         .logStackTracePauseDuration())
                 .setQueue(queue)
                 .build();
+
+        roundsNonAncient = platformContext
+                .getConfiguration()
+                .getConfigData(ConsensusConfig.class)
+                .roundsNonAncient();
     }
 
     /**
@@ -407,7 +412,8 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
                 .setEvents(events)
                 .setConsensusTimestamp(round.getLastEvent().getLastTransTime())
                 .setMinGenInfo(minGen)
-                .setCreationSoftwareVersion(softwareVersion);
+                .setCreationSoftwareVersion(softwareVersion)
+                .setRoundsNonAncient(roundsNonAncient);
     }
 
     private void createSignedState() throws InterruptedException {
