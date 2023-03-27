@@ -179,7 +179,7 @@ class RulesTests {
             }
         };
 
-        final AncientParentsRule ancientParentsCheck = new AncientParentsRule(() -> graphGenerations);
+        final AncientParentsRule ancientParentsCheck = new AncientParentsRule(graphGenerations);
 
         final BaseEvent oldSelfParent = mock(BaseEvent.class);
         ancientEvents.add(oldSelfParent);

@@ -38,7 +38,7 @@ public class AccessibleEventCreator extends EventCreator {
             final NodeId selfId,
             final EventMapper eventMapper,
             final Signer signer,
-            final Supplier<GraphGenerations> graphGenerationsSupplier,
+            final GraphGenerations graphGenerationsSupplier,
             final TransactionSupplier transactionSupplier,
             final EventHandler newEventHandler,
             final TransactionPool transactionPool,

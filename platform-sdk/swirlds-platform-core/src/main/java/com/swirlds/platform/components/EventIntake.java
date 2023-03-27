@@ -37,7 +37,6 @@ import com.swirlds.platform.sync.ShadowGraph;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
 import java.util.List;
-import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -51,8 +50,7 @@ public class EventIntake {
     private final NodeId selfId;
 
     private final EventLinker eventLinker;
-    /** A functor that provides access to a {@code Consensus} instance. */
-    private final Supplier<Consensus> consensusSupplier;
+    private final Consensus consensus;
 
     private final ConsensusWrapper consensusWrapper;
     /** A reference to the initial address book for this node. */
@@ -67,23 +65,23 @@ public class EventIntake {
     /**
      * Constructor
      *
-     * @param selfId                        the ID of this node
-     * @param consensusSupplier             a functor which provides access to the {@code Consensus} interface
-     * @param addressBook                   the current address book
-     * @param dispatcher                    an event observer dispatcher
+     * @param selfId      the ID of this node
+     * @param consensus   the implementation of the hashgraph consensus algorithm
+     * @param addressBook the current address book
+     * @param dispatcher  an event observer dispatcher
      */
     public EventIntake(
             @NonNull final NodeId selfId,
             @NonNull final EventLinker eventLinker,
-            @NonNull final Supplier<Consensus> consensusSupplier,
+            @NonNull final Consensus consensus,
             @NonNull final AddressBook addressBook,
             @NonNull final EventObserverDispatcher dispatcher,
             @NonNull final IntakeCycleStats stats,
             @NonNull final ShadowGraph shadowGraph) {
         this.selfId = throwArgNull(selfId, "selfId");
         this.eventLinker = throwArgNull(eventLinker, "eventLinker");
-        this.consensusSupplier = throwArgNull(consensusSupplier, "consensusSupplier");
-        this.consensusWrapper = new ConsensusWrapper(consensusSupplier);
+        this.consensus = throwArgNull(consensus, "consensus");
+        this.consensusWrapper = new ConsensusWrapper(this.consensus);
         this.addressBook = throwArgNull(addressBook, "addressBook");
         this.dispatcher = throwArgNull(dispatcher, "dispatcher");
         this.stats = throwArgNull(stats, "stats");
@@ -114,7 +112,7 @@ public class EventIntake {
      */
     public void addEvent(final EventImpl event) {
         // an expired event will cause ShadowGraph to throw an exception, so we just to discard it
-        if (consensus().isExpired(event)) {
+        if (consensus.isExpired(event)) {
             return;
         }
         stats.startIntakeAddEvent();
@@ -130,7 +128,7 @@ public class EventIntake {
         dispatcher.preConsensusEvent(event);
         logger.debug(INTAKE_EVENT.getMarker(), "Adding {} ", event::toShortString);
         stats.dispatchedPreConsensus();
-        final long minGenNonAncientBeforeAdding = consensus().getMinGenerationNonAncient();
+        final long minGenNonAncientBeforeAdding = consensus.getMinGenerationNonAncient();
         // #5762 if we cannot calculate its roundCreated, then we use the one that was sent to us
         final boolean hasAtLeastOneParent = event.getSelfParentHash() != null || event.getOtherParentHash() != null;
         final boolean noParentsFound = event.getSelfParent() == null && event.getOtherParent() == null;
@@ -157,7 +155,7 @@ public class EventIntake {
             consRounds.forEach(this::handleConsensus);
             stats.dispatchedRound();
         }
-        if (consensus().getMinGenerationNonAncient() > minGenNonAncientBeforeAdding) {
+        if (consensus.getMinGenerationNonAncient() > minGenNonAncientBeforeAdding) {
             // consensus rounds can be null and the minNonAncient might change, this is probably because of a round
             // with no consensus events, so we check the diff in generations to look for stale events
             handleStale(minGenNonAncientBeforeAdding);
@@ -172,7 +170,7 @@ public class EventIntake {
     private void handleStale(final long previousNonAncient) {
         // find all events that just became ancient and did not reach consensus, these events will be considered stale
         final Collection<EventImpl> staleEvents = shadowGraph.findByGeneration(
-                previousNonAncient, consensus().getMinGenerationNonAncient(), EventIntake::isNotConsensus);
+                previousNonAncient, consensus.getMinGenerationNonAncient(), EventIntake::isNotConsensus);
         for (final EventImpl e : staleEvents) {
             e.setStale(true);
             dispatcher.staleEvent(e);
@@ -195,14 +193,5 @@ public class EventIntake {
             eventLinker.updateGenerations(consensusRound.getGenerations());
             dispatcher.consensusRound(consensusRound);
         }
-    }
-
-    /**
-     * Get a reference to the consensus instance to use
-     *
-     * @return a reference to the consensus instance
-     */
-    private Consensus consensus() {
-        return consensusSupplier.get();
     }
 }

@@ -98,7 +98,7 @@ class OrphanEventsIntakeTest {
             intake = new EventIntake(
                     NodeId.createMain(0),
                     orphanBuffer,
-                    () -> consensus,
+                    consensus,
                     generator.getAddressBook(),
                     new EventObserverDispatcher(
                             (EventAddedObserver) e -> linkedEventMap.put(e.getBaseHash(), e),

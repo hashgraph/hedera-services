@@ -22,7 +22,6 @@ import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.consensus.GraphGenerations;
-import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -34,10 +33,10 @@ public class AncientParentsRule implements ParentBasedCreationRule {
     /**
      * Supplies the key generation number from the hashgraph
      */
-    private final Supplier<GraphGenerations> graphGenerationsSupplier;
+    private final GraphGenerations graphGenerations;
 
-    public AncientParentsRule(final Supplier<GraphGenerations> graphGenerationsSupplier) {
-        this.graphGenerationsSupplier = graphGenerationsSupplier;
+    public AncientParentsRule(final GraphGenerations graphGenerations) {
+        this.graphGenerations = graphGenerations;
     }
 
     @Override
@@ -72,14 +71,13 @@ public class AncientParentsRule implements ParentBasedCreationRule {
         // them, and they were not gossipped out.
         // Update 15 November 2021: The code has since changed and creating ancient events no longer breaks the system.
         // But it does not make sense create an ancient event, so this rule is still in place.
-        final GraphGenerations generations = graphGenerationsSupplier.get();
-        if (!generations.areAnyEventsAncient()) {
+        if (!graphGenerations.areAnyEventsAncient()) {
             // if there are no ancient event yet, we return immediately. This is to account for genesis, where both
             // parents will be null
             return false;
         }
         // if a parent is null, it's the same as if it were ancient
-        return (selfParent == null || generations.isAncient(selfParent))
-                && (otherParent == null || generations.isAncient(otherParent));
+        return (selfParent == null || graphGenerations.isAncient(selfParent))
+                && (otherParent == null || graphGenerations.isAncient(otherParent));
     }
 }

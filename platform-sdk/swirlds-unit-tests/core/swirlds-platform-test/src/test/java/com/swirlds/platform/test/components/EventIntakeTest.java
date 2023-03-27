@@ -63,7 +63,7 @@ class EventIntakeTest {
         final EventIntake intake = new EventIntake(
                 NodeId.createMain(0),
                 mock(EventLinker.class),
-                () -> consensus,
+                consensus,
                 addressBook,
                 dispatcher,
                 mock(IntakeCycleStats.class),

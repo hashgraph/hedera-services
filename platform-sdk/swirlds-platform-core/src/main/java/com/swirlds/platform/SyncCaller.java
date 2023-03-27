@@ -183,9 +183,8 @@ class SyncCaller implements Runnable {
 
                 // self is the only member, so create an event for just this one transaction,
                 // and immediately put it into the hashgraph. No syncing is needed.
-                eventTaskCreator
-                        .createEvent(
-                                selfId.getId() /*selfId assumed to be main*/); // otherID (so self will count as the
+                eventTaskCreator.createEvent(
+                        selfId.getId() /*selfId assumed to be main*/); // otherID (so self will count as the
                 // "other")
                 Thread.sleep(50);
                 // selfId assumed to be main
@@ -209,8 +208,7 @@ class SyncCaller implements Runnable {
 
                 logger.debug(SYNC_START.getMarker(), "{} about to call {} (connection looks good)", selfId, otherId);
 
-                try (final MaybeLocked lock =
-                        simultaneousSyncThrottle.trySync(otherId, true)) {
+                try (final MaybeLocked lock = simultaneousSyncThrottle.trySync(otherId, true)) {
                     // Try to get both locks. If either is unavailable, then try the next node. Never block.
                     if (!lock.isLockAcquired()) {
                         continue;

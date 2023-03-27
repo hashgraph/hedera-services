@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.function.Supplier;
 
 /**
  * A wrapper for the consensus algorithm that returns {@link ConsensusRound} objects instead of {@link EventImpl}
@@ -34,14 +33,14 @@ import java.util.function.Supplier;
  */
 public class ConsensusWrapper {
 
-    private final Supplier<Consensus> consensusSupplier;
+    private final Consensus consensus;
 
-    public ConsensusWrapper(final Supplier<Consensus> consensusSupplier) {
-        this.consensusSupplier = consensusSupplier;
+    public ConsensusWrapper(final Consensus consensus) {
+        this.consensus = consensus;
     }
 
     public List<ConsensusRound> addEvent(final EventImpl event, final AddressBook addressBook) {
-        final List<EventImpl> consensusEvents = consensusSupplier.get().addEvent(event, addressBook);
+        final List<EventImpl> consensusEvents = consensus.addEvent(event, addressBook);
         if (consensusEvents == null || consensusEvents.isEmpty()) {
             return null;
         }
@@ -55,7 +54,7 @@ public class ConsensusWrapper {
 
         final List<ConsensusRound> rounds = new LinkedList<>();
         for (final Map.Entry<Long, List<EventImpl>> entry : roundEvents.entrySet()) {
-            final Generations generations = new Generations(consensusSupplier.get());
+            final Generations generations = new Generations(consensus);
             rounds.add(new ConsensusRound(entry.getValue(), event, generations));
         }
 

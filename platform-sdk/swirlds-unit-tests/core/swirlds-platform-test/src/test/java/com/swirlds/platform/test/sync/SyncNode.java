@@ -66,7 +66,6 @@ public class SyncNode {
     private Connection connection;
     private boolean saveGeneratedEvents;
     private boolean shouldAcceptSync = true;
-    private boolean reconnected = false;
     private boolean sendRecInitBytes = true;
 
     private long oldestGeneration;
@@ -209,7 +208,7 @@ public class SyncNode {
                 shadowGraph,
                 numNodes,
                 mock(SyncMetrics.class),
-                this::getConsensus,
+                consensus,
                 r -> {},
                 eventHandler,
                 syncManager,
@@ -260,10 +259,6 @@ public class SyncNode {
         return generatedEvents;
     }
 
-    public List<IndexedEvent> getDiscardedEvents() {
-        return discardedEvents;
-    }
-
     public void setSaveGeneratedEvents(final boolean saveGeneratedEvents) {
         this.saveGeneratedEvents = saveGeneratedEvents;
     }
@@ -276,14 +271,6 @@ public class SyncNode {
         this.shouldAcceptSync = canAcceptSync;
     }
 
-    public boolean isReconnected() {
-        return reconnected;
-    }
-
-    public void setReconnected(final boolean reconnected) {
-        this.reconnected = reconnected;
-    }
-
     public Exception getSyncException() {
         return syncException;
     }
@@ -292,20 +279,12 @@ public class SyncNode {
         this.syncException = syncException;
     }
 
-    public void setParallelExecutor(final ParallelExecutor executor) {
-        this.executor = executor;
-    }
-
     public Consensus getConsensus() {
         return consensus;
     }
 
     public long getOldestGeneration() {
         return oldestGeneration;
-    }
-
-    public int getSleepAfterEventReadMillis() {
-        return sleepAfterEventReadMillis.get();
     }
 
     public void setSleepAfterEventReadMillis(final int sleepAfterEventReadMillis) {

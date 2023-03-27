@@ -74,10 +74,8 @@ class EventCreatorTests {
             (bytes) -> new Signature(SignatureType.RSA, new byte[SignatureType.RSA.signatureLength()]);
     private static final GraphGenerations defaultGenerations = new Generations(
             GraphGenerations.FIRST_GENERATION, GraphGenerations.FIRST_GENERATION, GraphGenerations.FIRST_GENERATION);
-    private static final Supplier<GraphGenerations> defaultGenerationsSupplier = () -> defaultGenerations;
 
     private static final TransactionSupplier defaultTransactionSupplier = () -> new SwirldTransaction[0];
-    private static final EventHandler noOpEventHandler = (event) -> {};
 
     static final TransactionPool defaultTransactionPool = mock(TransactionPool.class);
 
@@ -144,7 +142,7 @@ class EventCreatorTests {
             }
         };
 
-        final AncientParentsRule ancientParentsCheck = new AncientParentsRule(() -> graphGenerations);
+        final AncientParentsRule ancientParentsCheck = new AncientParentsRule(graphGenerations);
 
         final EventImpl oldSelfParent = mock(EventImpl.class);
         ancientEvents.add(oldSelfParent);
@@ -298,7 +296,7 @@ class EventCreatorTests {
                 selfId,
                 mockMapper(recentEvents, null),
                 noOpSigner,
-                defaultGenerationsSupplier,
+                defaultGenerations,
                 () -> transactions,
                 events::add,
                 defaultTransactionPool,
@@ -352,7 +350,7 @@ class EventCreatorTests {
                 selfId,
                 mockMapper(recentEvents, selfParentImpl),
                 noOpSigner,
-                defaultGenerationsSupplier,
+                defaultGenerations,
                 () -> transactions,
                 events::add,
                 defaultTransactionPool,
@@ -414,7 +412,7 @@ class EventCreatorTests {
                 selfId,
                 mapper,
                 noOpSigner,
-                defaultGenerationsSupplier,
+                defaultGenerations,
                 defaultTransactionSupplier,
                 (e) -> {
                     events.add(e);
@@ -456,7 +454,7 @@ class EventCreatorTests {
                 selfId,
                 mockMapper(recentEvents, null),
                 noOpSigner,
-                defaultGenerationsSupplier,
+                defaultGenerations,
                 defaultTransactionSupplier,
                 events::add,
                 defaultTransactionPool,
