@@ -17,7 +17,6 @@
 package com.swirlds.common.metrics.atomic;
 
 import com.swirlds.common.metrics.extensions.IntPairUtils;
-
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 import java.util.function.IntBinaryOperator;
@@ -143,5 +142,4 @@ public class AtomicIntPair {
     public void reset() {
         container.getAndUpdate(reset);
     }
-
 }

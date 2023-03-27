@@ -17,7 +17,6 @@
 package com.swirlds.common.metrics.extensions;
 
 import com.swirlds.common.metrics.atomic.AtomicIntPair;
-
 import java.util.function.IntBinaryOperator;
 import java.util.function.IntUnaryOperator;
 import java.util.function.LongBinaryOperator;
@@ -27,8 +26,7 @@ import java.util.function.LongUnaryOperator;
  * Utility methods for working with {@link AtomicIntPair}
  */
 public final class IntPairUtils {
-    private IntPairUtils() {
-    }
+    private IntPairUtils() {}
 
     /**
      * An implementation of a {@link com.swirlds.common.metrics.IntegerAccumulator} that does not change the value
