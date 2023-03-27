@@ -141,13 +141,9 @@ public class BlocklistAccountCreator {
     }
 
     private List<String> getPrivateKeyBlocklist() {
-        try {
-            final var inputStream = getClass().getClassLoader().getResourceAsStream("evm-addresses-blocklist.txt");
-            final var reader = new BufferedReader(new InputStreamReader(inputStream));
-            return reader.lines().collect(Collectors.toList());
-        } catch (Exception e) {
-            throw new RuntimeException("Could not read file blocklist file", e);
-        }
+        final var inputStream = getClass().getClassLoader().getResourceAsStream("evm-addresses-blocklist.txt");
+        final var reader = new BufferedReader(new InputStreamReader(inputStream));
+        return reader.lines().toList();
     }
 
     private byte[] ecdsaPrivateToPublicKey(byte[] privateKeyBytes) {
