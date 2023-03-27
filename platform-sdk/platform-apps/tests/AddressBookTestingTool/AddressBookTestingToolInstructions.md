@@ -1,6 +1,6 @@
 # AddressBookTestingTool Instructions
 
-If this is the first time using the AddressBookTestingTool, please execute the following tests in order.
+This document describes various manual tests that were performed using this testing app. This playbook should be used when designing automated tests using this app.
 
 ## Global Modifications and Starting Conditions
 
