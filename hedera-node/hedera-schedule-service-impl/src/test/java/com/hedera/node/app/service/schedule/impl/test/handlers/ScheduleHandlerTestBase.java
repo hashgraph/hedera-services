@@ -39,7 +39,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ScheduleHandlerTestBase {
-    protected final static Key TEST_KEY = Key.newBuilder()
+    protected static final Key TEST_KEY = Key.newBuilder()
             .ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
             .build();
     protected HederaKey adminKey = asHederaKey(TEST_KEY).get();

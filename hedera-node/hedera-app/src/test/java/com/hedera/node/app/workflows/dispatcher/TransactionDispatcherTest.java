@@ -533,8 +533,7 @@ class TransactionDispatcherTest {
 
     @Test
     void cannotDispatchUnsupportedOperations() {
-        assertThatThrownBy(
-                () -> dispatcher.dispatchHandle(
+        assertThatThrownBy(() -> dispatcher.dispatchHandle(
                         HederaFunctionality.CRYPTO_TRANSFER, transactionBody, writableStoreFactory))
                 .isInstanceOf(IllegalArgumentException.class);
     }
