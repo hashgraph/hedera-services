@@ -83,7 +83,7 @@ class SeqNoEntityIdSourceTest {
         AccountID newId = subject.newAccountId();
 
         // then:
-        assertEquals(asAccount("1.2.555"), newId);
+        assertEquals(asAccount("0.0.555"), newId);
     }
 
     @Test
