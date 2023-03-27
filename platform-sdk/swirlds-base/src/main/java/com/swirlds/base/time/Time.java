@@ -16,7 +16,6 @@
 
 package com.swirlds.base.time;
 
-import com.swirlds.base.time.internal.OSTime;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
@@ -50,13 +49,4 @@ public interface Time {
     @NonNull
     Instant now();
 
-    /**
-     * Returns an implementation of {@link Time} that will return the true wall clock time (according to the OS).
-     *
-     * @return implementation of {@link Time} that will return the true wall clock time (according to the OS)
-     */
-    @NonNull
-    static Time getOsTime() {
-        return OSTime.getInstance();
-    }
 }
