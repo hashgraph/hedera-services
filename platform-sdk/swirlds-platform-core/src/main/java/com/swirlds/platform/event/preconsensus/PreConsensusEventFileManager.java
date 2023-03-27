@@ -27,6 +27,7 @@ import com.swirlds.common.utility.RandomAccessDeque;
 import com.swirlds.common.utility.Units;
 import com.swirlds.common.utility.ValueReference;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -156,7 +157,7 @@ public class PreConsensusEventFileManager {
      * @param path the path to the file
      * @return the wrapper object, or null if the file can't be parsed
      */
-    private static @NonNull PreConsensusEventFile parseFile(@NonNull final Path path) {
+    private static @Nullable PreConsensusEventFile parseFile(@NonNull final Path path) {
         try {
             return PreConsensusEventFile.of(path);
         } catch (final IOException exception) {
@@ -173,7 +174,7 @@ public class PreConsensusEventFileManager {
      * @param permitGaps if gaps are permitted in sequence number
      * @return the handler
      */
-    private @NonNull Consumer<PreConsensusEventFile> buildFileHandler(@NonNull final boolean permitGaps) {
+    private @NonNull Consumer<PreConsensusEventFile> buildFileHandler(final boolean permitGaps) {
 
         final ValueReference<Long> previousSequenceNumber = new ValueReference<>(-1L);
         final ValueReference<Long> previousMinimumGeneration = new ValueReference<>(-1L);

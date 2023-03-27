@@ -28,7 +28,6 @@ import com.swirlds.platform.components.EventIntake;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
-import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
 import com.swirlds.platform.intake.IntakeCycleStats;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
@@ -105,8 +104,7 @@ class OrphanEventsIntakeTest {
                             (EventAddedObserver) e -> linkedEventMap.put(e.getBaseHash(), e),
                             (ConsensusRoundObserver) rnd -> consensusEvents.addAll(rnd.getConsensusEvents())),
                     mock(IntakeCycleStats.class),
-                    mock(ShadowGraph.class),
-                    mock(PreConsensusEventWriter.class));
+                    mock(ShadowGraph.class));
         }
 
         public void generateAndFeed(final int numEvents) {
