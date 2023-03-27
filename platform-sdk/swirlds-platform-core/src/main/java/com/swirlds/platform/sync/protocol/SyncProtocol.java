@@ -22,6 +22,7 @@ import com.swirlds.common.threading.SyncPermit;
 import com.swirlds.common.threading.locks.locked.MaybeLocked;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.platform.Connection;
+import com.swirlds.platform.Utilities;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.NetworkProtocolException;
@@ -40,7 +41,7 @@ public class SyncProtocol implements Protocol {
     private final NodeId peerId;
     private final ShadowGraphSynchronizer synchronizer;
     private final FallenBehindManager fallenBehindManager;
-    private final SyncPermit syncPermit;
+    private final SyncPermit initiateSyncPermit;
     private final CriticalQuorum criticalQuorum;
     /** A boolean indicating that, based on peer agnostic checks, whether this node should sync or not */
     private final PeerAgnosticSyncChecks peerAgnosticSyncCheck;
@@ -53,14 +54,14 @@ public class SyncProtocol implements Protocol {
             final NodeId peerId,
             final ShadowGraphSynchronizer synchronizer,
             final FallenBehindManager fallenBehindManager,
-            final SyncPermit syncPermit,
+            final SyncPermit initiateSyncPermit,
             final CriticalQuorum criticalQuorum,
             final PeerAgnosticSyncChecks peerAgnosticSyncCheck,
             final SyncMetrics syncMetrics) {
         this.peerId = peerId;
         this.synchronizer = synchronizer;
         this.fallenBehindManager = fallenBehindManager;
-        this.syncPermit = syncPermit;
+        this.initiateSyncPermit = initiateSyncPermit;
         this.criticalQuorum = criticalQuorum;
         this.peerAgnosticSyncCheck = peerAgnosticSyncCheck;
         this.syncMetrics = syncMetrics;
@@ -89,7 +90,7 @@ public class SyncProtocol implements Protocol {
     }
 
     private boolean tryAcquirePermit() {
-        maybeAcquiredPermit = syncPermit.tryAcquire();
+        maybeAcquiredPermit = initiateSyncPermit.tryAcquire();
         return maybeAcquiredPermit.isLockAcquired();
     }
 
@@ -112,11 +113,6 @@ public class SyncProtocol implements Protocol {
     }
 
     @Override
-    public void acceptFailed() {
-        Protocol.super.acceptFailed();
-    }
-
-    @Override
     public boolean acceptOnSimultaneousInitiate() {
         return true;
     }
@@ -129,8 +125,10 @@ public class SyncProtocol implements Protocol {
         }
         try {
             synchronizer.synchronize(connection);
-            // TODO invoke event creation logic
-        } catch (ParallelExecutionException | SyncException e) {
+        } catch (final ParallelExecutionException | SyncException e) {
+            if (Utilities.isRootCauseSuppliedType(e, IOException.class)) {
+                throw new IOException(e);
+            }
             throw new NetworkProtocolException(e);
         }
     }

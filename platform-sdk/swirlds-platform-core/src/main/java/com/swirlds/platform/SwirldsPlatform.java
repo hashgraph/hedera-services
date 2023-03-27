@@ -997,7 +997,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         for (final StoppableThread thread : chatterThreads) {
             thread.stop();
         }
-        if (settings.isSyncAsProtocol()) {
+        if (basicConfig.syncAsProtocolEnabled()) {
             gossipHalted.set(true);
         } else if (syncManager != null) {
             syncManager.haltRequestedObserver(reason);
@@ -1496,25 +1496,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     public void startSyncNetwork() {
         final StaticConnectionManagers connectionManagers = startCommonNetwork();
 
-        final SyncPermit syncPermit = new SyncPermit(settings.getMaxOutgoingSyncs());
-        final PeerAgnosticSyncChecks peerAgnosticSyncChecks = new PeerAgnosticSyncChecks(
-                List.of(
-                        () -> !gossipHalted.get(),
-                        () -> intakeQueue.size() <= settings.getEventIntakeQueueSize()
-                )
-        );
-
-        // first create all instances because of thread safety
-        for (final NodeId otherId : topology.getNeighbors()) {
-            new SyncProtocol(
-                    otherId,
-                    shadowgraphSynchronizer,
-                    fallenBehindManager,
-                    syncPermit,
-                    criticalQuorum,
-                    peerAgnosticSyncChecks,
-                    syncMetrics
-            );
+        if (basicConfig.syncAsProtocolEnabled()) {
+            startSyncAsProtocolNetwork();
+            return;
         }
 
         sharedConnectionLocks = new SharedConnectionLocks(topology, connectionManagers);
@@ -1569,6 +1553,38 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         // create and start threads to call other members
         for (int i = 0; i < settings.getMaxOutgoingSyncs(); i++) {
             spawnSyncCaller(i);
+        }
+    }
+
+    private void startSyncAsProtocolNetwork() {
+        final SyncPermit syncPermit = new SyncPermit(settings.getMaxOutgoingSyncs());
+        final PeerAgnosticSyncChecks peerAgnosticSyncChecks = new PeerAgnosticSyncChecks(
+                List.of(
+                        () -> !gossipHalted.get(),
+                        () -> intakeQueue.size() <= settings.getEventIntakeQueueSize()
+                )
+        );
+
+        // If we still need an emergency recovery state, we need it via emergency reconnect.
+        // Start the helper now so that it is ready to receive a connection to perform reconnect with when the
+        // protocol is initiated.
+        if (emergencyRecoveryManager.isEmergencyStateRequired()) {
+            reconnectController.get().start();
+        }
+
+        // TODO if single node network, start dedicated thread to "sync" and create events
+
+        // first create all instances because of thread safety
+        for (final NodeId otherId : topology.getNeighbors()) {
+            new SyncProtocol(
+                    otherId,
+                    shadowgraphSynchronizer,
+                    fallenBehindManager,
+                    syncPermit,
+                    criticalQuorum,
+                    peerAgnosticSyncChecks,
+                    syncMetrics
+            );
         }
     }
 

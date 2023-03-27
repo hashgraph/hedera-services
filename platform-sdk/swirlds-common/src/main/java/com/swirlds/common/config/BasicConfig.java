@@ -182,6 +182,8 @@ import java.nio.file.Path;
  * 		maximum number of simultaneous outgoing syncs initiated by me
  * @param logPath
  * 		path to log4j2.xml (which might not exist)
+ * @param syncAsProtocol
+ *      if true, perform the sync gossip algorithm as a negotiated protocol using bidirectional connections.
  */
 @ConfigData
 public record BasicConfig(
@@ -251,4 +253,5 @@ public record BasicConfig(
         @ConfigProperty(value = "socketIpTos", defaultValue = "-1") int socketIpTos,
         @ConfigProperty(value = "maxIncomingSyncsInc", defaultValue = "1") int maxIncomingSyncsInc,
         @ConfigProperty(value = "maxOutgoingSyncs", defaultValue = "2") int maxOutgoingSyncs,
-        @ConfigProperty(value = "logPath", defaultValue = "log4j2.xml") Path logPath) {}
+        @ConfigProperty(value = "logPath", defaultValue = "log4j2.xml") Path logPath,
+        @ConfigProperty(value = "syncAsProtocolEnabled", defaultValue = "false") boolean syncAsProtocolEnabled) {}
