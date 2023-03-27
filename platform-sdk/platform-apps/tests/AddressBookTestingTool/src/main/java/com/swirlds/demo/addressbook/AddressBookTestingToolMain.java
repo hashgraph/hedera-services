@@ -45,7 +45,7 @@ import org.apache.logging.log4j.Logger;
 public class AddressBookTestingToolMain implements SwirldMain {
     private static final Logger logger = LogManager.getLogger(AddressBookTestingToolMain.class);
 
-    private static BasicSoftwareVersion softwareVersion = new BasicSoftwareVersion(1);
+    private static final BasicSoftwareVersion softwareVersion = new BasicSoftwareVersion(1);
 
     private Platform platform;
 
