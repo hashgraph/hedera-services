@@ -459,6 +459,9 @@ class IngestWorkflowImplTest extends AppTestBase {
         void noSuchPayerAccount() throws PreCheckException, IOException {
             // Given an account store that is not able to find the account
             when(accountStore.getAccountById(any())).thenReturn(Optional.empty());
+            doThrow(new PreCheckException(PAYER_ACCOUNT_NOT_FOUND))
+                    .when(checker)
+                    .checkPayerSignature(any(), any(), any(), any());
 
             // When we submit a transaction
             workflow.submitTransaction(ctx, requestBuffer, responseBuffer);

@@ -17,6 +17,7 @@
 package com.hedera.node.app.workflows.query;
 
 import com.hedera.hapi.node.base.ResponseType;
+import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.fees.MonoFeeAccumulator;
 import com.hedera.node.app.service.consensus.impl.components.ConsensusComponent;
@@ -28,6 +29,7 @@ import com.hedera.node.app.service.token.impl.components.TokenComponent;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.MonoThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
+import com.hedera.pbj.runtime.Codec;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import dagger.Binds;
@@ -96,5 +98,10 @@ public interface QueryWorkflowModule {
                 tokenComponent.tokenGetAccountNftInfosHandler(),
                 tokenComponent.tokenGetNftInfoHandler(),
                 tokenComponent.tokenGetNftInfosHandler());
+    }
+
+    @Provides
+    static Codec<Query> provideQueryParser() {
+        return Query.PROTOBUF;
     }
 }

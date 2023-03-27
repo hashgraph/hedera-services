@@ -25,19 +25,18 @@ import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.Parser;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
@@ -48,6 +47,7 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.file.FileGetInfoQuery;
 import com.hedera.hapi.node.file.FileGetInfoResponse;
+import com.hedera.hapi.node.network.NetworkGetExecutionTimeResponse;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -60,14 +60,18 @@ import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
+import com.hedera.node.app.service.network.impl.handlers.NetworkGetExecutionTimeHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
+import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hederahashgraph.api.proto.java.NetworkGetExecutionTimeQuery;
+import com.swirlds.common.metrics.Metric;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.PlatformStatus;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import io.grpc.Status;
@@ -123,6 +127,9 @@ class QueryWorkflowImplTest extends AppTestBase {
     @Mock
     private QueryContextImpl queryContext;
 
+    @Mock(strictness = LENIENT)
+    private Codec<Query> queryParser;
+
     private Query query;
     private Transaction payment;
     private TransactionBody txBody;
@@ -133,7 +140,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     private QueryWorkflowImpl workflow;
 
     @BeforeEach
-    void setup() throws PreCheckException {
+    void setup() throws PreCheckException, IOException {
         when(currentPlatformStatus.get()).thenReturn(PlatformStatus.ACTIVE);
         when(stateAccessor.apply(any())).thenReturn(new AutoCloseableWrapper<>(state, () -> {}));
         requestBuffer = Bytes.wrap(new byte[] {1, 2, 3});
@@ -142,6 +149,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         query = Query.newBuilder()
                 .fileGetInfo(FileGetInfoQuery.newBuilder().header(queryHeader))
                 .build();
+        when(queryParser.parseStrict(notNull())).thenReturn(query);
         ctx = new SessionContext();
 
         payer = AccountID.newBuilder().accountNum(42L).build();
@@ -179,7 +187,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                 dispatcher,
                 metrics,
                 feeAccumulator,
-                queryContext);
+                queryContext,
+                queryParser);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -195,7 +204,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         metrics,
                         feeAccumulator,
-                        queryContext))
+                        queryContext,
+                        queryParser))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         nodeInfo,
@@ -207,7 +217,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         metrics,
                         feeAccumulator,
-                        queryContext))
+                        queryContext,
+                        queryParser))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         nodeInfo,
@@ -219,7 +230,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         metrics,
                         feeAccumulator,
-                        queryContext))
+                        queryContext,
+                        queryParser))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         nodeInfo,
@@ -231,7 +243,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         metrics,
                         feeAccumulator,
-                        queryContext))
+                        queryContext,
+                        queryParser))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         nodeInfo,
@@ -243,7 +256,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         metrics,
                         feeAccumulator,
-                        queryContext))
+                        queryContext,
+                        queryParser))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         nodeInfo,
@@ -255,7 +269,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         metrics,
                         feeAccumulator,
-                        queryContext))
+                        queryContext,
+                        queryParser))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         nodeInfo,
@@ -267,7 +282,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                         null,
                         metrics,
                         feeAccumulator,
-                        queryContext))
+                        queryContext,
+                        queryParser))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         nodeInfo,
@@ -279,7 +295,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         null,
                         feeAccumulator,
-                        queryContext))
+                        queryContext,
+                        queryParser))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         nodeInfo,
@@ -291,7 +308,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         metrics,
                         null,
-                        queryContext))
+                        queryContext,
+                        queryParser))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         nodeInfo,
@@ -303,6 +321,20 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         metrics,
                         feeAccumulator,
+                        null,
+                        queryParser))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new QueryWorkflowImpl(
+                        nodeInfo,
+                        currentPlatformStatus,
+                        stateAccessor,
+                        throttleAccumulator,
+                        submissionManager,
+                        checker,
+                        dispatcher,
+                        metrics,
+                        feeAccumulator,
+                        queryContext,
                         null))
                 .isInstanceOf(NullPointerException.class);
     }
@@ -337,19 +369,24 @@ class QueryWorkflowImplTest extends AppTestBase {
         Assertions.assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(OK);
         Assertions.assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
         Assertions.assertThat(header.cost()).isZero();
-        verify(opCounters).countReceived(FileGetInfo);
-        verify(opCounters).countAnswered(FileGetInfo);
+        verifyReceivedFileGetInfo(metrics);
+        verifyAnsweredFileGetInfo(metrics, 1);
     }
 
     @Test
     void testSuccessIfPaymentRequired() throws PreCheckException, IOException {
+        // given
         given(feeAccumulator.computePayment(any(), any(), any(), any())).willReturn(new FeeObject(100L, 0L, 100L));
         given(handler.requiresNodePayment(any())).willReturn(true);
         given(dispatcher.validate(any(), any())).willReturn(OK);
-        given(dispatcher.getResponse(any(), any(), any(), any()))
-                .willReturn(Response.newBuilder().build());
-        // given
+        when(dispatcher.getResponse(any(), any(), any(), any()))
+                .thenReturn(Response.newBuilder()
+                        .fileGetInfo(FileGetInfoResponse.newBuilder()
+                                .header(ResponseHeader.newBuilder().build())
+                                .build())
+                        .build());
         final var responseBuffer = newEmptyBuffer();
+
         // when
         workflow.handleQuery(ctx, requestBuffer, responseBuffer);
 
@@ -359,15 +396,14 @@ class QueryWorkflowImplTest extends AppTestBase {
         Assertions.assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(OK);
         Assertions.assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
         Assertions.assertThat(header.cost()).isZero();
-        verify(opCounters).countReceived(FileGetInfo);
-        verify(opCounters).countAnswered(FileGetInfo);
+        verifyReceivedFileGetInfo(metrics);
+        verifyAnsweredFileGetInfo(metrics, 1L);
     }
 
     @Test
-    void testParsingFails(@Mock Parser<Query> localQueryParser) throws InvalidProtocolBufferException {
+    void testParsingFails() throws IOException {
         // given
-        when(localQueryParser.parseFrom(PbjConverter.asBytes(requestBuffer)))
-                .thenThrow(new InvalidProtocolBufferException("Expected failure"));
+        lenient().when(queryParser.parseStrict(notNull())).thenThrow(new IOException("Expected failure"));
         final var responseBuffer = newEmptyBuffer();
 
         // then
@@ -379,10 +415,10 @@ class QueryWorkflowImplTest extends AppTestBase {
     }
 
     @Test
-    void testUnrecognizableQueryTypeFails(@Mock Parser<Query> localQueryParser) throws InvalidProtocolBufferException {
+    void testUnrecognizableQueryTypeFails() throws IOException {
         // given
         final var query = Query.newBuilder().build();
-        when(localQueryParser.parseFrom(PbjConverter.asBytes(requestBuffer))).thenReturn(query);
+        lenient().when(queryParser.parseStrict(notNull())).thenReturn(query);
         final var responseBuffer = newEmptyBuffer();
 
         // then
@@ -408,14 +444,14 @@ class QueryWorkflowImplTest extends AppTestBase {
                 localDispatcher,
                 metrics,
                 feeAccumulator,
-                queryContext);
+                queryContext,
+                queryParser);
 
         // then
         assertThatThrownBy(() -> workflow.handleQuery(ctx, requestBuffer, responseBuffer))
                 .isInstanceOf(StatusRuntimeException.class)
                 .hasFieldOrPropertyWithValue("status", Status.INVALID_ARGUMENT);
-        verify(opCounters).countReceived(FileGetInfo);
-        verify(opCounters, never()).countAnswered(FileGetInfo);
+        verifyReceivedAndNotAnswered(metrics);
     }
 
     @Test
@@ -433,7 +469,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                 dispatcher,
                 metrics,
                 feeAccumulator,
-                queryContext);
+                queryContext,
+                queryParser);
 
         // when
         workflow.handleQuery(ctx, requestBuffer, responseBuffer);
@@ -444,8 +481,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         Assertions.assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(ResponseCodeEnum.INVALID_NODE_ACCOUNT);
         Assertions.assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
         Assertions.assertThat(header.cost()).isZero();
-        verify(opCounters).countReceived(FileGetInfo);
-        verify(opCounters, never()).countAnswered(FileGetInfo);
+        verifyReceivedAndNotAnswered(metrics);
     }
 
     @Test
@@ -463,7 +499,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                 dispatcher,
                 metrics,
                 feeAccumulator,
-                queryContext);
+                queryContext,
+                queryParser);
 
         // when
         workflow.handleQuery(ctx, requestBuffer, responseBuffer);
@@ -474,14 +511,14 @@ class QueryWorkflowImplTest extends AppTestBase {
         Assertions.assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(ResponseCodeEnum.PLATFORM_NOT_ACTIVE);
         Assertions.assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
         Assertions.assertThat(header.cost()).isZero();
-        verify(opCounters).countReceived(FileGetInfo);
-        verify(opCounters, never()).countAnswered(FileGetInfo);
+        verifyReceivedAndNotAnswered(metrics);
     }
 
     @Test
-    void testSuccess() throws IOException {
+    void testSuccess() throws PreCheckException, IOException {
         // given
         final var responseBuffer = newEmptyBuffer();
+        given(dispatcher.validate(any(), any())).willReturn(OK);
 
         // when
         workflow.handleQuery(ctx, requestBuffer, responseBuffer);
@@ -494,8 +531,8 @@ class QueryWorkflowImplTest extends AppTestBase {
         Assertions.assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
         // TODO: Expected costs need to be updated once fee calculation was integrated
         Assertions.assertThat(header.cost()).isZero();
-        verify(opCounters).countReceived(FileGetInfo);
-        verify(opCounters).countAnswered(FileGetInfo);
+        verifyReceivedFileGetInfo(metrics);
+        verifyAnsweredFileGetInfo(metrics, 1);
     }
 
     @Test
@@ -507,6 +544,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         final var query = Query.newBuilder()
                 .fileGetInfo(FileGetInfoQuery.newBuilder().header(queryHeader).build())
                 .build();
+        when(queryParser.parseStrict(notNull())).thenReturn(query);
 
         final var requestBytes = PbjConverter.asBytes(localRequestBuffer);
         when(handler.extractHeader(query)).thenReturn(queryHeader);
@@ -518,30 +556,40 @@ class QueryWorkflowImplTest extends AppTestBase {
 
         // then
         final var response = parseResponse(responseBuffer);
-        Assertions.assertThat(response.fileGetInfo()).isNotNull();
         final var header = response.fileGetInfoOrThrow().headerOrThrow();
         Assertions.assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(NOT_SUPPORTED);
         Assertions.assertThat(header.responseType()).isEqualTo(ANSWER_STATE_PROOF);
         Assertions.assertThat(header.cost()).isZero();
-        verify(opCounters).countReceived(FileGetInfo);
-        verify(opCounters, never()).countAnswered(FileGetInfo);
+        verifyReceivedAndNotAnswered(metrics);
     }
 
     @Test
-    void testUnpaidQueryWithRestrictedFunctionalityFails() throws IOException {
+    void testUnpaidQueryWithRestrictedFunctionalityFails(@Mock NetworkGetExecutionTimeHandler networkHandler)
+            throws IOException {
         // given
         final var localRequestBuffer = newEmptyBuffer();
-        final var queryHeader =
+        final var localQueryHeader =
                 QueryHeader.newBuilder().responseType(COST_ANSWER).build();
-        final var query = Query.newBuilder()
+        final var localQuery = Query.newBuilder()
                 .networkGetExecutionTime(PbjConverter.toPbj(NetworkGetExecutionTimeQuery.newBuilder()
-                        .setHeader(PbjConverter.fromPbj(queryHeader))
+                        .setHeader(PbjConverter.fromPbj(localQueryHeader))
                         .build()))
                 .build();
 
         final var requestBytes = PbjConverter.asBytes(localRequestBuffer);
-        when(handler.extractHeader(query)).thenReturn(queryHeader);
-        when(dispatcher.getHandler(query)).thenReturn(handler);
+        when(queryParser.parseStrict(notNull())).thenReturn(localQuery);
+        when(networkHandler.extractHeader(localQuery)).thenReturn(localQueryHeader);
+        when(dispatcher.getHandler(localQuery)).thenReturn(networkHandler);
+
+        final var expectedResponse = Response.newBuilder()
+                .networkGetExecutionTime(NetworkGetExecutionTimeResponse.newBuilder()
+                        .header(ResponseHeader.newBuilder()
+                                .responseType(COST_ANSWER)
+                                .nodeTransactionPrecheckCode(NOT_SUPPORTED)
+                                .build())
+                        .build())
+                .build();
+        when(networkHandler.createEmptyResponse(notNull())).thenReturn(expectedResponse);
         final var responseBuffer = newEmptyBuffer();
 
         // when
@@ -549,13 +597,14 @@ class QueryWorkflowImplTest extends AppTestBase {
 
         // then
         final var response = parseResponse(responseBuffer);
-        Assertions.assertThat(response.fileGetInfo()).isNotNull();
-        final var header = response.fileGetInfoOrThrow().headerOrThrow();
+        final var header = response.networkGetExecutionTimeOrThrow().headerOrThrow();
         Assertions.assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(NOT_SUPPORTED);
         Assertions.assertThat(header.responseType()).isEqualTo(COST_ANSWER);
         Assertions.assertThat(header.cost()).isZero();
-        verify(opCounters).countReceived(NetworkGetExecutionTime);
-        verify(opCounters, never()).countAnswered(NetworkGetExecutionTime);
+        final var receivedMetric = metrics.getMetric("app", "NETWORK_GET_EXECUTION_TIMEReceived");
+        Assertions.assertThat(receivedMetric.get(Metric.ValueType.VALUE)).isEqualTo(1L);
+        final var answeredMetric = metrics.getMetric("app", "NETWORK_GET_EXECUTION_TIMEAnswered");
+        Assertions.assertThat(answeredMetric.get(Metric.ValueType.VALUE)).isEqualTo(0L);
     }
 
     @Test
@@ -574,8 +623,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         Assertions.assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(BUSY);
         Assertions.assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
         Assertions.assertThat(header.cost()).isZero();
-        verify(opCounters).countReceived(FileGetInfo);
-        verify(opCounters, never()).countAnswered(FileGetInfo);
+        verifyReceivedAndNotAnswered(metrics);
     }
 
     @Test
@@ -594,8 +642,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         Assertions.assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(INSUFFICIENT_TX_FEE);
         Assertions.assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
         Assertions.assertThat(header.cost()).isZero();
-        verify(opCounters).countReceived(FileGetInfo);
-        verify(opCounters, never()).countAnswered(FileGetInfo);
+        verifyReceivedAndNotAnswered(metrics);
     }
 
     @Test
@@ -614,7 +661,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                 dispatcher,
                 metrics,
                 feeAccumulator,
-                queryContext);
+                queryContext,
+                queryParser);
 
         // when
         workflow.handleQuery(ctx, requestBuffer, responseBuffer);
@@ -625,8 +673,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         Assertions.assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(INSUFFICIENT_TX_FEE);
         Assertions.assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
         Assertions.assertThat(header.cost()).isZero();
-        verify(opCounters).countReceived(FileGetInfo);
-        verify(opCounters, never()).countAnswered(FileGetInfo);
+        verifyReceivedAndNotAnswered(metrics);
     }
 
     @Test
@@ -647,39 +694,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         Assertions.assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(NOT_SUPPORTED);
         Assertions.assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
         Assertions.assertThat(header.cost()).isZero();
-        verify(opCounters).countReceived(FileGetInfo);
-        verify(opCounters, never()).countAnswered(FileGetInfo);
-    }
-
-    @Test
-    void testUnpaidQueryWithRestrictedFunctionalityFails(@Mock Parser<Query> queryParser) throws IOException {
-        // given
-        final var localRequestBuffer = Bytes.wrap(new byte[] {4, 5, 6});
-        final var queryHeader =
-                QueryHeader.newBuilder().responseType(COST_ANSWER).build();
-        final var query = Query.newBuilder()
-                .networkGetExecutionTime(PbjConverter.toPbj(NetworkGetExecutionTimeQuery.newBuilder()
-                        .setHeader(PbjConverter.fromPbj(queryHeader))
-                        .build()))
-                .build();
-
-        final var requestBytes = PbjConverter.asBytes(localRequestBuffer);
-        when(queryParser.parseFrom(requestBytes)).thenReturn(query);
-        when(handler.extractHeader(query)).thenReturn(queryHeader);
-        when(dispatcher.getHandler(query)).thenReturn(handler);
-        final var responseBuffer = newEmptyBuffer();
-
-        // when
-        workflow.handleQuery(ctx, Bytes.wrap(requestBytes), responseBuffer);
-
-        // then
-        final var response = parseResponse(responseBuffer);
-        final var header = response.fileGetInfoOrThrow().headerOrThrow();
-        Assertions.assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(NOT_SUPPORTED);
-        Assertions.assertThat(header.responseType()).isEqualTo(COST_ANSWER);
-        Assertions.assertThat(header.cost()).isZero();
-        verify(opCounters).countReceived(NetworkGetExecutionTime);
-        verify(opCounters, never()).countAnswered(NetworkGetExecutionTime);
+        verifyReceivedAndNotAnswered(metrics);
     }
 
     @Test
@@ -700,8 +715,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                 .isEqualTo(ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN);
         Assertions.assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
         Assertions.assertThat(header.cost()).isZero();
-        verify(opCounters).countReceived(FileGetInfo);
-        verify(opCounters, never()).countAnswered(FileGetInfo);
+        verifyReceivedAndNotAnswered(metrics);
     }
 
     @Test
@@ -723,14 +737,29 @@ class QueryWorkflowImplTest extends AppTestBase {
         Assertions.assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(PLATFORM_TRANSACTION_NOT_CREATED);
         Assertions.assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
         Assertions.assertThat(header.cost()).isEqualTo(200L);
-        verify(opCounters).countReceived(FileGetInfo);
-        verify(opCounters, never()).countAnswered(FileGetInfo);
+        verifyReceivedAndNotAnswered(metrics);
+    }
+
+    private void verifyReceivedAndNotAnswered(Metrics metrics) {
+        verifyReceivedFileGetInfo(metrics);
+        verifyAnsweredFileGetInfo(metrics, 0);
+    }
+
+    private void verifyReceivedFileGetInfo(Metrics result) {
+        final var receivedMetric = result.getMetric("app", "FILE_GET_INFOReceived");
+        Assertions.assertThat(receivedMetric.get(Metric.ValueType.VALUE)).isEqualTo(1L);
+    }
+
+    private void verifyAnsweredFileGetInfo(Metrics result, long expected) {
+        final var answeredMetric = result.getMetric("app", "FILE_GET_INFOAnswered");
+        Assertions.assertThat(answeredMetric.get(Metric.ValueType.VALUE)).isEqualTo(expected);
     }
 
     private static Response parseResponse(BufferedData responseBuffer) throws IOException {
         final byte[] bytes = new byte[Math.toIntExact(responseBuffer.position())];
-        responseBuffer.writeBytes(bytes);
-        return Response.PROTOBUF.parse(BufferedData.wrap(bytes));
+        responseBuffer.resetPosition();
+        responseBuffer.readBytes(bytes);
+        return Response.PROTOBUF.parseStrict(BufferedData.wrap(bytes));
     }
 
     private static BufferedData newEmptyBuffer() {
