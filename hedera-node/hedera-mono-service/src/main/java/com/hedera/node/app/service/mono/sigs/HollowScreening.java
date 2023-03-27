@@ -21,6 +21,7 @@ import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JWildcardECDSAKey;
+import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
 import com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.PendingCompletion;
@@ -93,13 +94,16 @@ public class HollowScreening {
      * @param payerKey the payer key of the current txn
      * @param otherKeys the other req keys for the current txn
      * @param aliasManager an alias resolver
+     * @param linkedRefs if non-null, the object to use for tracking referenced entities
      * @return an instance of {@link HollowScreenResult}
      */
     static HollowScreenResult performFor(
             @NonNull final List<TransactionSignature> txnSigs,
             @NonNull final JKey payerKey,
             @NonNull final List<JKey> otherKeys,
-            @NonNull final AliasManager aliasManager) {
+            @NonNull final AliasManager aliasManager,
+            @Nullable final LinkedRefs linkedRefs) {
+
         final var evmAddressToEcdsaKeyIndex = createEvmAddressToEcdsaKeyIndexFrom(txnSigs);
 
         List<PendingCompletion> pendingCompletions = null;
@@ -112,8 +116,8 @@ public class HollowScreening {
             // the transaction will fail with INVALID_PAYER_SIGNATURE
             if (correspondingKey != null) {
                 replacedPayerKey = correspondingKey;
-                pendingCompletions =
-                        maybeAddToCompletions(payerEvmAddress, correspondingKey, pendingCompletions, aliasManager);
+                pendingCompletions = maybeAddToCompletions(
+                        payerEvmAddress, correspondingKey, pendingCompletions, aliasManager, linkedRefs);
             }
         }
 
@@ -130,8 +134,8 @@ public class HollowScreening {
                     }
                     replacedOtherKeys.set(i, correspondingKey);
                     if (hollowKey.isForHollowAccount()) {
-                        pendingCompletions =
-                                maybeAddToCompletions(evmAddress, correspondingKey, pendingCompletions, aliasManager);
+                        pendingCompletions = maybeAddToCompletions(
+                                evmAddress, correspondingKey, pendingCompletions, aliasManager, linkedRefs);
                     }
                 }
             }
@@ -170,11 +174,19 @@ public class HollowScreening {
             final byte[] evmAddress,
             final JECDSASecp256k1Key correspondingKey,
             List<PendingCompletion> pendingCompletions,
-            final AliasManager aliasManager) {
-        final var accountNum = aliasManager.lookupIdBy(ByteStringUtils.wrapUnsafely(evmAddress));
+            final AliasManager aliasManager,
+            @Nullable final LinkedRefs linkedRefs) {
+        final var alias = ByteStringUtils.wrapUnsafely(evmAddress);
+        if (linkedRefs != null) {
+            linkedRefs.link(alias);
+        }
+        final var accountNum = aliasManager.lookupIdBy(alias);
         // a hollow account cannot be CryptoDelete-d, but it may have expired since the latest
         // immutable state
         if (accountNum != EntityNum.MISSING_NUM) {
+            if (linkedRefs != null) {
+                linkedRefs.link(accountNum.longValue());
+            }
             if (pendingCompletions == null) {
                 pendingCompletions = new ArrayList<>();
             }

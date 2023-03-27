@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.sigs.order;
 
+import static com.hedera.node.app.hapi.utils.CommonUtils.functionOf;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.IMMUTABLE_ACCOUNT;
 import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.IMMUTABLE_CONTRACT;
@@ -30,7 +31,7 @@ import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAlias;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asUsableFcKey;
 import static java.util.Collections.EMPTY_LIST;
 
-import com.hedera.node.app.service.mono.exceptions.UnknownHederaFunctionality;
+import com.hedera.node.app.hapi.utils.exception.UnknownHederaFunctionality;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JWildcardECDSAKey;
 import com.hedera.node.app.service.mono.sigs.metadata.SigMetadataLookup;
@@ -1127,7 +1128,7 @@ public class SigRequirements {
             final @Nullable LinkedRefs linkedRefs,
             final AccountID payerForNested) {
         try {
-            final var scheduledFunction = MiscUtils.functionOf(scheduledTxn);
+            final var scheduledFunction = functionOf(scheduledTxn);
             if (!MiscUtils.isSchedulable(scheduledFunction)) {
                 return Optional.of(factory.forUnschedulableTxn());
             }

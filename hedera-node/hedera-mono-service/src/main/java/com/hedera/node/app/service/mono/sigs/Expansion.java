@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.mono.utils.RationalizedSigMeta.forPaye
 import static com.hedera.node.app.service.mono.utils.RationalizedSigMeta.noneAvailable;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
@@ -115,7 +116,7 @@ public class Expansion {
         if (HollowScreening.atLeastOneWildcardECDSAKeyIn(payerKey, otherPartyKeys)
                 && pkToSigFn.hasAtLeastOneEcdsaSig()) {
             final var hollowScreenResult =
-                    HollowScreening.performFor(expandedSigs, payerKey, otherPartyKeys, aliasManager);
+                    HollowScreening.performFor(expandedSigs, payerKey, otherPartyKeys, aliasManager, linkedRefs);
             if (hollowScreenResult.pendingCompletions() != null) {
                 txnAccessor.setPendingCompletions(hollowScreenResult.pendingCompletions());
             }
@@ -172,5 +173,10 @@ public class Expansion {
     public interface CryptoSigsCreation {
         PlatformSigsCreationResult createFrom(
                 List<JKey> hederaKeys, PubKeyToSigBytes sigBytesFn, TxnScopedPlatformSigFactory factory);
+    }
+
+    @VisibleForTesting
+    LinkedRefs getLinkedRefs() {
+        return linkedRefs;
     }
 }
