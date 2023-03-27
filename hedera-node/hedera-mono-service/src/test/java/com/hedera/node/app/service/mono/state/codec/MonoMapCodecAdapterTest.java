@@ -53,9 +53,6 @@ class MonoMapCodecAdapterTest {
 
         longCodec.write(longValue, out);
 
-        out.flush();
-        out.close();
-
         final var bais = new ByteArrayInputStream(baos.toByteArray());
         final var in = new ReadableStreamingData(bais);
 

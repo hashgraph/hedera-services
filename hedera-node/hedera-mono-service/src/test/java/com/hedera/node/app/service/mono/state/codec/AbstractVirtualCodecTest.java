@@ -88,8 +88,7 @@ abstract class AbstractVirtualCodecTest<T> {
         final var baos = new ByteArrayOutputStream();
         final var out = new WritableStreamingData(baos);
         try {
-            subject.write(instance, new WritableStreamingData(out));
-            out.flush();
+            subject.write(instance, out);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

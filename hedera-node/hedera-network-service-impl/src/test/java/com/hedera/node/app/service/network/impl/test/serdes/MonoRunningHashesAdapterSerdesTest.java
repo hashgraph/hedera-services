@@ -58,7 +58,6 @@ class MonoRunningHashesAdapterSerdesTest {
         final var baos = new ByteArrayOutputStream();
         final var actualOut = new WritableStreamingData(baos) {};
         subject.write(SOME_HASHES, actualOut);
-        actualOut.flush();
 
         final var actualIn = new SerializableDataInputStream(new ByteArrayInputStream(baos.toByteArray()));
         final var parsed = subject.parse(new ReadableStreamingData(actualIn));

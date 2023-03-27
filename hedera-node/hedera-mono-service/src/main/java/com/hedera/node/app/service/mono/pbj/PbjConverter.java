@@ -1262,12 +1262,13 @@ public final class PbjConverter {
         try (final var baos = new ByteArrayOutputStream();
                 final var dos = new WritableStreamingData(baos)) {
             Key.PROTOBUF.write(pbjKey, dos);
-            dos.flush();
             final var grpcKey = com.hederahashgraph.api.proto.java.Key.parseFrom(baos.toByteArray());
             return asHederaKey(grpcKey);
         } catch (final IOException e) {
             // Should be impossible, so just propagate an exception
             throw new IllegalStateException("Invalid conversion from PBJ for Key", e);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 

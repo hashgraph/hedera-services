@@ -53,7 +53,7 @@ public class MonoSchedulingStateAdapterCodec implements Codec<MerkleScheduledTra
 
     @Override
     public int measureRecord(MerkleScheduledTransactionsState merkleScheduledTransactionsState) {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 
     @Override
