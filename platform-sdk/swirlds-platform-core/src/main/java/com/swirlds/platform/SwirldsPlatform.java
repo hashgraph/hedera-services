@@ -69,9 +69,6 @@ import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.common.utility.Startable;
 import com.swirlds.logging.payloads.PlatformStatusPayload;
 import com.swirlds.logging.payloads.SavedStateLoadedPayload;
-import com.swirlds.platform.chatter.ChatterNotifier;
-import com.swirlds.platform.chatter.PrepareChatterEvent;
-import com.swirlds.platform.chatter.protocol.ChatterCore;
 import com.swirlds.platform.chatter.protocol.messages.ChatterEventDescriptor;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.CriticalQuorumImpl;
@@ -95,8 +92,6 @@ import com.swirlds.platform.dispatch.triggers.flow.DiskStateLoadedTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.ReconnectStateLoadedTrigger;
 import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.EventUtils;
-import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.intake.ChatterEventMapper;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
@@ -192,11 +187,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private final Settings settings = Settings.getInstance();
     /** A type used by Hashgraph, Statistics, and SyncUtils. Only Hashgraph modifies this type instance. */
     private final EventMapper eventMapper;
-    /**
-     * A simpler event mapper used for chatter. Stores the thread-safe GossipEvent and has less functionality. The plan
-     * is for this to replace EventMapper once syncing is removed from the code
-     */
-    private final ChatterEventMapper chatterEventMapper;
     /** this is the Nth Platform running on this machine (N=winNum) */
     private final int instanceNumber;
     /** parameters given to the app when it starts */
@@ -227,7 +217,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private final NetworkMetrics networkMetrics;
     private final ReconnectController reconnectController;
 
-    private final ChatterCore<GossipEvent> chatterCore;
     /** ID number of the swirld being run */
     private final byte[] swirldId;
     /** the object that contains all key pairs and CSPRNG state for this member */
@@ -370,7 +359,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         this.initialAddressBook = initialAddressBook;
 
         this.eventMapper = new EventMapper(selfId);
-        this.chatterEventMapper = new ChatterEventMapper(); // TODO remove
 
         this.platformName = platformName;
 
@@ -396,18 +384,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         platformContext.getMetrics().addUpdater(networkMetrics::update);
         final ReconnectMetrics reconnectMetrics = new ReconnectMetrics(platformContext.getMetrics());
         RuntimeMetrics.setup(platformContext.getMetrics());
-
-        if (settings.getChatter().isChatterUsed()) {
-            chatterCore = new ChatterCore<>(
-                    time,
-                    GossipEvent.class,
-                    new PrepareChatterEvent(platformContext.getCryptography()),
-                    settings.getChatter(),
-                    networkMetrics::recordPingTime,
-                    platformContext.getMetrics());
-        } else {
-            chatterCore = null;
-        }
 
         this.shadowGraph = new ShadowGraph(syncMetrics, initialAddressBook.getSize());
 
@@ -458,13 +434,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 settings.getNumConnections(),
                 !settings.getChatter().isChatterUsed());
 
-        final Runnable stopGossip = settings.getChatter().isChatterUsed()
-                ? chatterCore::stopChatter
-                // wait and acquire all sync ongoing locks and release them immediately
-                // this will ensure any ongoing sync are finished before we start reconnect
-                // no new sync will start because we have a fallen behind status
-                : simultaneousSyncThrottle::waitForAllSyncsToFinish;
-
         startedFromGenesis = loadedSignedState == null;
         diskStateRound = loadedSignedState == null ? 0 : loadedSignedState.getRound();
         diskStateHash =
@@ -496,7 +465,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 startingState);
 
         final ReconnectHelper reconnectHelper = new ReconnectHelper(
-                stopGossip,
+                this::stopGossip,
                 this::clearAllPipelines,
                 swirldStateManager::getConsensusState,
                 stateManagementComponent::getLastCompleteRound,
@@ -506,7 +475,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                         threadManager, initialAddressBook, settings.getReconnect(), reconnectMetrics));
 
         if (settings.getChatter().isChatterUsed()) {
-            reconnectController = new ReconnectController(threadManager, reconnectHelper, chatterCore::startChatter);
+            reconnectController = new ReconnectController(threadManager, reconnectHelper, this::startGossip);
         } else {
             reconnectController = null;
         }
@@ -534,7 +503,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             logger.info(STARTUP.getMarker(), "startUpEventFrozenEndTime: {}", () -> startUpEventFrozenEndTime);
         }
 
-        final EventStreamManager<EventImpl> eventStreamManager = initEventStreamManager(String.valueOf(selfId));
+        final EventStreamManager<EventImpl> eventStreamManager = buildEventStreamManager(String.valueOf(selfId));
 
         // Queue thread that stores and handles signed states that need to be hashed and have signatures collected.
         final QueueThread<SignedState> stateHashSignQueueThread = components.add(PlatformConstructor.stateHashSignQueue(
@@ -597,7 +566,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         // build the event intake classes
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
-        final EventObserverDispatcher dispatcher = new EventObserverDispatcher(
+        final EventObserverDispatcher eventObserverDispatcher = new EventObserverDispatcher(
                 new ShadowGraphEventObserver(shadowGraph),
                 consensusRoundHandler,
                 preConsensusEventHandler,
@@ -621,10 +590,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     final EventImpl keystoneEvent = round.getKeystoneEvent();
                     preConsensusEventWriter.requestFlush(keystoneEvent);
                 });
-        if (settings.getChatter().isChatterUsed()) {
-            dispatcher.addObserver(new ChatterNotifier(selfId, chatterCore));
-            dispatcher.addObserver(chatterEventMapper);
-        }
 
         final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
 
@@ -655,7 +620,13 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         }
 
         final EventIntake eventIntake = new EventIntake(
-                selfId, eventLinker, consensus, initialAddressBook, dispatcher, intakeCycleStats, shadowGraph);
+                selfId,
+                eventLinker,
+                consensus,
+                initialAddressBook,
+                eventObserverDispatcher,
+                intakeCycleStats,
+                shadowGraph);
 
         final EventCreator eventCreator;
         if (settings.getChatter().isChatterUsed()) {
@@ -725,17 +696,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         if (loadedState.signedStateFromDisk != null) {
             eventLinker.loadFromSignedState(loadedState.signedStateFromDisk);
         }
-
-        // TODO when chatter is enabled this was overwritten!
-        clearAllPipelines = new LoggingClearables(
-                RECONNECT.getMarker(),
-                List.of(
-                        Pair.of(intakeQueue, "intakeQueue"),
-                        Pair.of(eventMapper, "eventMapper"),
-                        Pair.of(shadowGraph, "shadowGraph"),
-                        Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
-                        Pair.of(consensusRoundHandler, "consensusRoundHandler"),
-                        Pair.of(swirldStateManager, "swirldStateManager")));
 
         syncManager = components.add(new SyncManagerImpl(
                 intakeQueue,
@@ -814,7 +774,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     reconnectController,
                     reconnectThrottle,
                     consensus,
-                    syncManager,
                     notificationEngine,
                     stateManagementComponent,
                     fallenBehindManager,
@@ -825,7 +784,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     freezeManager,
                     criticalQuorum,
                     intakeQueue,
-                    intakeCycle));
+                    intakeCycle,
+                    eventObserverDispatcher,
+                    eventLinker));
         } else {
             gossipNetwork = components.add(new SyncNetwork(
                     platformContext,
@@ -850,11 +811,31 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     reconnectMetrics,
                     networkMetrics));
         }
+
+        final List<Pair<Clearable, String>> clearables = new ArrayList<>();
+        clearables.add(Pair.of(intakeQueue, "intakeQueue"));
+        clearables.add(Pair.of(eventMapper, "eventMapper"));
+        clearables.add(Pair.of(shadowGraph, "shadowGraph"));
+        clearables.add(Pair.of(preConsensusEventHandler, "preConsensusEventHandler"));
+        clearables.add(Pair.of(consensusRoundHandler, "consensusRoundHandler"));
+        clearables.add(Pair.of(swirldStateManager, "swirldStateManager"));
+
+        clearables.addAll(gossipNetwork.getClearables());
+
+        clearAllPipelines = new LoggingClearables(RECONNECT.getMarker(), clearables);
     }
 
     // TODO javadoc
     private void clearAllPipelines() {
         clearAllPipelines.clear();
+    }
+
+    private void startGossip() {
+        gossipNetwork.startGossip();
+    }
+
+    private void stopGossip() {
+        gossipNetwork.stopGossip();
     }
 
     /**
@@ -1045,10 +1026,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             eventMapper.eventAdded(e);
         }
 
-        if (settings.getChatter().isChatterUsed()) {
-            chatterEventMapper.loadFromSignedState(signedState);
-            chatterCore.loadFromSignedState(signedState);
-        }
+        gossipNetwork.loadFromSignedState(signedState);
 
         logger.info(
                 STARTUP.getMarker(),
@@ -1434,7 +1412,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      *
      * @param name name of this node
      */
-    private EventStreamManager<EventImpl> initEventStreamManager(final String name) {
+    private EventStreamManager<EventImpl> buildEventStreamManager(final String name) {
         try {
             logger.info(STARTUP.getMarker(), "initialize eventStreamManager");
             return new EventStreamManager<>(

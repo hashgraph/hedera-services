@@ -37,12 +37,13 @@ import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
 import com.swirlds.platform.network.connectivity.SocketFactory;
 import com.swirlds.platform.network.topology.NetworkTopology;
 import com.swirlds.platform.network.topology.StaticConnectionManagers;
+import com.swirlds.platform.state.signed.LoadableFromSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 
 // TODO javadoc
-abstract class GossipNetwork implements Startable {
+abstract class GossipNetwork implements Startable, LoadableFromSignedState {
 
     protected final PlatformContext platformContext;
     protected final ThreadManager threadManager;
@@ -125,6 +126,10 @@ abstract class GossipNetwork implements Startable {
 
     // TODO javadoc
     public abstract void halt();
+
+    public abstract void stopGossip();
+
+    public abstract void startGossip();
 
     public abstract List<Pair<Clearable, String>> getClearables();
 }

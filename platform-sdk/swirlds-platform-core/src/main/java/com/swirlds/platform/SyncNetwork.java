@@ -46,6 +46,7 @@ import com.swirlds.platform.reconnect.DefaultSignedStateValidator;
 import com.swirlds.platform.reconnect.ReconnectHelper;
 import com.swirlds.platform.reconnect.ReconnectProtocolResponder;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
+import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.sync.ShadowGraphSynchronizer;
 import com.swirlds.platform.sync.SimultaneousSyncThrottle;
 import com.swirlds.platform.sync.SyncProtocolResponder;
@@ -222,8 +223,32 @@ public class SyncNetwork extends GossipNetwork {
      * {@inheritDoc}
      */
     @Override
+    public void stopGossip() {
+        simultaneousSyncThrottle.waitForAllSyncsToFinish();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void startGossip() {
+        // no-op
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     @NonNull
     public List<Pair<Clearable, String>> getClearables() {
-        return null;
+        return List.of();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void loadFromSignedState(SignedState signedState) {
+        // no-op
     }
 }

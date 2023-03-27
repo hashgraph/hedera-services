@@ -21,7 +21,6 @@ import static com.swirlds.common.utility.CommonUtils.combineConsumers;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
@@ -38,6 +37,7 @@ import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.PlatformVersion;
 import com.swirlds.common.utility.Startable;
+import com.swirlds.platform.chatter.ChatterNotifier;
 import com.swirlds.platform.chatter.ChatterSyncProtocol;
 import com.swirlds.platform.chatter.PrepareChatterEvent;
 import com.swirlds.platform.chatter.communication.ChatterProtocol;
@@ -60,6 +60,7 @@ import com.swirlds.platform.event.creation.LoggingEventCreationRules;
 import com.swirlds.platform.event.creation.OtherParentTracker;
 import com.swirlds.platform.event.creation.StaticCreationRules;
 import com.swirlds.platform.event.intake.ChatterEventMapper;
+import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.ConnectionTracker;
@@ -69,6 +70,7 @@ import com.swirlds.platform.network.communication.NegotiatorThread;
 import com.swirlds.platform.network.communication.handshake.VersionCompareHandshake;
 import com.swirlds.platform.network.topology.NetworkTopology;
 import com.swirlds.platform.network.topology.StaticConnectionManagers;
+import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.reconnect.DefaultSignedStateValidator;
 import com.swirlds.platform.reconnect.FallenBehindManagerImpl;
 import com.swirlds.platform.reconnect.ReconnectController;
@@ -77,9 +79,10 @@ import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.reconnect.emergency.EmergencyReconnectProtocol;
 import com.swirlds.platform.state.EmergencyRecoveryManager;
 import com.swirlds.platform.state.SwirldStateManager;
+import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.sync.ShadowGraph;
 import com.swirlds.platform.sync.ShadowGraphSynchronizer;
-import com.swirlds.platform.sync.SyncManager;
+import com.swirlds.platform.threading.PauseAndClear;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedList;
 import java.util.List;
@@ -91,7 +94,6 @@ import org.apache.commons.lang3.tuple.Pair;
 public class ChatterNetwork extends GossipNetwork implements Startable {
 
     private final ChatterCore<GossipEvent> chatterCore;
-    private final NetworkMetrics networkMetrics;
     private final SyncMetrics syncMetrics;
     private final EventTaskCreator eventTaskCreator;
     private final EmergencyRecoveryManager emergencyRecoveryManager;
@@ -99,24 +101,22 @@ public class ChatterNetwork extends GossipNetwork implements Startable {
     private final ReconnectController reconnectController;
     private final ReconnectThrottle reconnectThrottle;
     private final Consensus consensus;
-    private final SyncManager syncManager;
     private final NotificationEngine notificationEngine;
     private final StateManagementComponent stateManagementComponent;
     private final FallenBehindManagerImpl fallenBehindManager;
-    private final SwirldStateManager swirldStateManager;
     private final boolean startedFromGenesis;
     private final ReconnectMetrics reconnectMetrics;
     private final ChatterEventMapper chatterEventMapper = new ChatterEventMapper();
-    private final StartUpEventFrozenManager startUpEventFrozenManager;
-    private final FreezeManager freezeManager;
-    private final CriticalQuorum criticalQuorum;
     private final QueueThread<EventIntakeTask> intakeQueue;
     private final SequenceCycle<EventIntakeTask> intakeCycle;
+    private final EventCreatorThread eventCreatorThread;
+    private final ChatterEventCreator chatterEventCreator;
+    private final EventLinker eventLinker;
 
     /**
      * A list of threads that execute the chatter protocol.
      */
-    private final List<StoppableThread> chatterThreads = new LinkedList<>(); // TODO methods that stop these threads
+    private final List<StoppableThread> chatterThreads = new LinkedList<>();
 
     public ChatterNetwork(
             @NonNull final PlatformContext platformContext,
@@ -137,7 +137,6 @@ public class ChatterNetwork extends GossipNetwork implements Startable {
             @NonNull final ReconnectController reconnectController,
             @NonNull final ReconnectThrottle reconnectThrottle,
             @NonNull final Consensus consensus,
-            @NonNull final SyncManager syncManager,
             @NonNull final NotificationEngine notificationEngine,
             @NonNull final StateManagementComponent stateManagementComponent,
             @NonNull final FallenBehindManagerImpl fallenBehindManager,
@@ -148,7 +147,9 @@ public class ChatterNetwork extends GossipNetwork implements Startable {
             @NonNull final FreezeManager freezeManager,
             @NonNull final CriticalQuorum criticalQuorum,
             @NonNull final QueueThread<EventIntakeTask> intakeQueue,
-            @NonNull final SequenceCycle<EventIntakeTask> intakeCycle) {
+            @NonNull final SequenceCycle<EventIntakeTask> intakeCycle,
+            @NonNull final EventObserverDispatcher dispatcher,
+            @NonNull final EventLinker eventLinker) {
 
         super(
                 platformContext,
@@ -161,7 +162,6 @@ public class ChatterNetwork extends GossipNetwork implements Startable {
                 topology,
                 connectionTracker);
 
-        this.networkMetrics = throwArgNull(networkMetrics, "networkMetrics");
         this.syncMetrics = throwArgNull(syncMetrics, "syncMetrics");
         this.eventTaskCreator = throwArgNull(eventTaskCreator, "eventTaskCreator");
         this.emergencyRecoveryManager = throwArgNull(emergencyRecoveryManager, "emergencyRecoveryManager");
@@ -169,26 +169,64 @@ public class ChatterNetwork extends GossipNetwork implements Startable {
         this.reconnectController = throwArgNull(reconnectController, "reconnectController");
         this.reconnectThrottle = throwArgNull(reconnectThrottle, "reconnectThrottle");
         this.consensus = throwArgNull(consensus, "consensus");
-        this.syncManager = throwArgNull(syncManager, "syncManager");
         this.notificationEngine = throwArgNull(notificationEngine, "notificationEngine");
         this.stateManagementComponent = throwArgNull(stateManagementComponent, "stateManagementComponent");
         this.fallenBehindManager = throwArgNull(fallenBehindManager, "fallenBehindManager");
-        this.swirldStateManager = throwArgNull(swirldStateManager, "swirldStateManager");
         this.startedFromGenesis = startedFromGenesis;
         this.reconnectMetrics = throwArgNull(reconnectMetrics, "reconnectMetrics");
-        this.startUpEventFrozenManager = throwArgNull(startUpEventFrozenManager, "startUpEventFrozenManager");
-        this.freezeManager = throwArgNull(freezeManager, "freezeManager");
-        this.criticalQuorum = throwArgNull(criticalQuorum, "criticalQuorum");
         this.intakeQueue = throwArgNull(intakeQueue, "intakeQueue");
         this.intakeCycle = throwArgNull(intakeCycle, "intakeCycle");
+        this.eventLinker = throwArgNull(eventLinker, "eventLinker");
 
         chatterCore = new ChatterCore<>(
                 time,
                 GossipEvent.class,
-                new PrepareChatterEvent(CryptographyHolder.get()),
+                new PrepareChatterEvent(platformContext.getCryptography()),
                 settings.getChatter(),
                 networkMetrics::recordPingTime,
                 platformContext.getMetrics());
+
+        final OtherParentTracker otherParentTracker = new OtherParentTracker();
+        final EventCreationRules eventCreationRules = LoggingEventCreationRules.create(
+                List.of(
+                        startUpEventFrozenManager,
+                        freezeManager,
+                        fallenBehindManager,
+                        new ChatteringRule(
+                                settings.getChatter().getChatteringCreationThreshold(),
+                                chatterCore.getPeerInstances().stream()
+                                        .map(PeerInstance::communicationState)
+                                        .toList()),
+                        swirldStateManager.getTransactionPool(),
+                        new BelowIntCreationRule(
+                                intakeQueue::size, settings.getChatter().getChatterIntakeThrottle())),
+                List.of(
+                        StaticCreationRules::nullOtherParent,
+                        otherParentTracker,
+                        new AncientParentsRule(consensus),
+                        criticalQuorum));
+
+        chatterEventCreator = new ChatterEventCreator(
+                selfId,
+                PlatformConstructor.platformSigner(crypto.getKeysAndCerts()),
+                swirldStateManager.getTransactionPool(),
+                combineConsumers(
+                        eventTaskCreator::createdEvent, otherParentTracker::track, chatterEventMapper::mapEvent),
+                chatterEventMapper::getMostRecentEvent,
+                eventCreationRules,
+                platformContext.getCryptography(),
+                OSTime.getInstance());
+
+        eventCreatorThread = new EventCreatorThread(
+                threadManager,
+                selfId,
+                settings.getChatter().getAttemptedChatterEventPerSecond(),
+                initialAddressBook,
+                chatterEventCreator::createEvent,
+                CryptoStatic.getNonDetRandom());
+
+        dispatcher.addObserver(new ChatterNotifier(selfId, chatterCore));
+        dispatcher.addObserver(chatterEventMapper);
     }
 
     /**
@@ -196,6 +234,7 @@ public class ChatterNetwork extends GossipNetwork implements Startable {
      */
     @Override
     public void start() {
+
         final StaticConnectionManagers connectionManagers = startCommonNetwork();
 
         // first create all instances because of thread safety
@@ -283,66 +322,13 @@ public class ChatterNetwork extends GossipNetwork implements Startable {
                                     new ChatterProtocol(chatterPeer, parallelExecutor)))))
                     .build(true));
         }
-        final OtherParentTracker otherParentTracker = new OtherParentTracker();
-        final EventCreationRules eventCreationRules = LoggingEventCreationRules.create(
-                List.of(
-                        startUpEventFrozenManager,
-                        freezeManager,
-                        fallenBehindManager,
-                        new ChatteringRule(
-                                settings.getChatter().getChatteringCreationThreshold(),
-                                chatterCore.getPeerInstances().stream()
-                                        .map(PeerInstance::communicationState)
-                                        .toList()),
-                        swirldStateManager.getTransactionPool(),
-                        new BelowIntCreationRule(
-                                intakeQueue::size, settings.getChatter().getChatterIntakeThrottle())),
-                List.of(
-                        StaticCreationRules::nullOtherParent,
-                        otherParentTracker,
-                        new AncientParentsRule(consensus),
-                        criticalQuorum));
-        final ChatterEventCreator chatterEventCreator = new ChatterEventCreator(
-                selfId,
-                PlatformConstructor.platformSigner(crypto.getKeysAndCerts()),
-                swirldStateManager.getTransactionPool(),
-                combineConsumers(
-                        eventTaskCreator::createdEvent, otherParentTracker::track, chatterEventMapper::mapEvent),
-                chatterEventMapper::getMostRecentEvent,
-                eventCreationRules,
-                CryptographyHolder.get(),
-                OSTime.getInstance());
 
         if (startedFromGenesis) {
             // if we are starting from genesis, we will create a genesis event, which is the only event that will
             // ever be created without an other-parent
             chatterEventCreator.createGenesisEvent();
         }
-        final EventCreatorThread eventCreatorThread = new EventCreatorThread(
-                threadManager,
-                selfId,
-                settings.getChatter().getAttemptedChatterEventPerSecond(),
-                initialAddressBook,
-                chatterEventCreator::createEvent,
-                CryptoStatic.getNonDetRandom());
 
-        // TODO
-        //        clearAllPipelines = new LoggingClearables(
-        //                RECONNECT.getMarker(),
-        //                List.of(
-        //                        // chatter event creator needs to be cleared first, because it sends event to intake
-        //                        Pair.of(eventCreatorThread, "eventCreatorThread"),
-        //                        Pair.of(intakeQueue, "intakeQueue"),
-        //                        // eventLinker is not thread safe, so the intake thread needs to be paused while its
-        // being
-        //                        // cleared
-        //                        Pair.of(new PauseAndClear(intakeQueue, eventLinker), "eventLinker"),
-        //                        Pair.of(eventMapper, "eventMapper"),
-        //                        Pair.of(chatterEventMapper, "chatterEventMapper"),
-        //                        Pair.of(shadowGraph, "shadowGraph"),
-        //                        Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
-        //                        Pair.of(consensusRoundHandler, "consensusRoundHandler"),
-        //                        Pair.of(swirldStateManager, "swirldStateManager")));
         eventCreatorThread.start();
     }
 
@@ -360,7 +346,36 @@ public class ChatterNetwork extends GossipNetwork implements Startable {
      * {@inheritDoc}
      */
     @Override
+    public void stopGossip() {
+        chatterCore.stopChatter();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void startGossip() {
+        chatterCore.startChatter();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public List<Pair<Clearable, String>> getClearables() {
-        return List.of(); // TODO
+        return List.of(
+                Pair.of(eventCreatorThread, "eventCreatorThread"),
+                Pair.of(chatterEventMapper, "chatterEventMapper"),
+                Pair.of(new PauseAndClear(intakeQueue, eventLinker), "eventLinker"),
+                Pair.of(chatterEventMapper, "chatterEventMapper"));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void loadFromSignedState(SignedState signedState) {
+        chatterEventMapper.loadFromSignedState(signedState);
+        chatterCore.loadFromSignedState(signedState);
     }
 }
