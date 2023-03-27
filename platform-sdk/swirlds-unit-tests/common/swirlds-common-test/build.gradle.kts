@@ -40,6 +40,7 @@ dependencies {
   testImplementation(testLibs.bundles.utils)
   testImplementation(project(":swirlds-config-impl"))
   testImplementation(testFixtures(project(":swirlds-common")))
+  testImplementation(project(":swirlds-base"))
 
   testImplementation(libs.prometheus.httpserver) {
     exclude("io.prometheus", "simpleclient_tracer_otel")

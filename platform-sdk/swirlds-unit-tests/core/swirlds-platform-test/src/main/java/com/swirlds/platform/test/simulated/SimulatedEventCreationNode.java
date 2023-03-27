@@ -18,6 +18,7 @@ package com.swirlds.platform.test.simulated;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.SerializableHashable;
@@ -26,7 +27,6 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.test.RandomUtils;
-import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.chatter.ChatterSubSetting;
 import com.swirlds.platform.components.CriticalQuorum;

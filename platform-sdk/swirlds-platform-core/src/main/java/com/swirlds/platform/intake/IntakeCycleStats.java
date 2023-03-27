@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.intake;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.time.Time;
 import com.swirlds.platform.stats.cycle.AccumulatedCycleMetrics;
 import com.swirlds.platform.stats.cycle.CycleDefinition;
 import com.swirlds.platform.stats.cycle.CycleTracker;

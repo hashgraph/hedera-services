@@ -19,12 +19,12 @@ package com.swirlds.platform.test.chatter;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.base.time.TimeFacade;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.time.OSTime;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.chatter.ChatterSubSetting;
@@ -58,11 +58,13 @@ public class SimulatedChatterFactories implements SimulatedChatterFactory {
         when(registry.register(any(), any(), any())).thenReturn(true);
 
         final ChatterCore<ChatterEvent> core = new ChatterCore<>(
-                OSTime.getInstance(),
+                TimeFacade.getOsTime(),
                 ChatterEvent.class,
-                e -> {},
+                e -> {
+                },
                 new ChatterSubSetting(),
-                (nodeId, ping) -> {},
+                (nodeId, ping) -> {
+                },
                 new DefaultMetrics(
                         NodeId.createMain(selfId),
                         registry,

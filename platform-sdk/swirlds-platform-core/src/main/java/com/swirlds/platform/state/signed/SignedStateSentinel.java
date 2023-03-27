@@ -18,11 +18,11 @@ package com.swirlds.platform.state.signed;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
+import com.swirlds.base.time.Time;
+import com.swirlds.base.time.TimeFacade;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.common.time.OSTime;
-import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
@@ -65,7 +65,7 @@ public class SignedStateSentinel implements Startable, Stoppable {
                 .setWork(this::checkSignedStates)
                 .build();
 
-        rateLimiter = new RateLimiter(OSTime.getInstance(), Duration.ofMinutes(10));
+        rateLimiter = new RateLimiter(TimeFacade.getOsTime(), Duration.ofMinutes(10));
     }
 
     /**

@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.state.signed;
 
-import com.swirlds.common.time.Time;
+import com.swirlds.base.time.Time;
 import com.swirlds.common.utility.StackTrace;
 import java.time.Instant;
 import java.util.Queue;
@@ -80,7 +80,7 @@ public class SignedStateHistory {
 
     private final Queue<SignedStateActionReport> actions = new ConcurrentLinkedQueue<>();
     private final Time time;
-    private AtomicLong round = new AtomicLong(-1);
+    private final AtomicLong round = new AtomicLong(-1);
 
     /**
      * Create a new object to track the history of a signed state.
@@ -104,7 +104,7 @@ public class SignedStateHistory {
      * @param action       the action
      * @param reservations the number of reservations before the action
      */
-    public void recordAction(final SignedStateAction action, int reservations) {
+    public void recordAction(final SignedStateAction action, final int reservations) {
         actions.add(new SignedStateActionReport(action, StackTrace.getStackTrace(), time.now(), reservations));
     }
 

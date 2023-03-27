@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.simulated;
 
-import com.swirlds.common.time.Time;
+import com.swirlds.base.time.Time;
 import com.swirlds.platform.event.GossipEvent;
 import java.time.Duration;
 import java.time.Instant;

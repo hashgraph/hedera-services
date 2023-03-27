@@ -23,11 +23,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.base.time.TimeFacade;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.common.test.metrics.NoOpMetrics;
-import com.swirlds.common.time.OSTime;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventFile;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventFileManager;
@@ -109,7 +109,7 @@ class PreConsensusEventFileManagerTests {
 
         assertThrows(
                 IllegalStateException.class,
-                () -> new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics()));
+                () -> new PreConsensusEventFileManager(TimeFacade.getOsTime(), config, buildMetrics()));
     }
 
     @Test
@@ -129,7 +129,7 @@ class PreConsensusEventFileManagerTests {
 
         assertThrows(
                 IllegalStateException.class,
-                () -> new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics()));
+                () -> new PreConsensusEventFileManager(TimeFacade.getOsTime(), config, buildMetrics()));
     }
 
     @Test
@@ -149,7 +149,7 @@ class PreConsensusEventFileManagerTests {
 
         assertThrows(
                 IllegalStateException.class,
-                () -> new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics()));
+                () -> new PreConsensusEventFileManager(TimeFacade.getOsTime(), config, buildMetrics()));
     }
 
     @Test
@@ -169,7 +169,7 @@ class PreConsensusEventFileManagerTests {
 
         assertThrows(
                 IllegalStateException.class,
-                () -> new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics()));
+                () -> new PreConsensusEventFileManager(TimeFacade.getOsTime(), config, buildMetrics()));
     }
 
     @Test
@@ -214,7 +214,7 @@ class PreConsensusEventFileManagerTests {
                 .getConfigData(PreConsensusEventStreamConfig.class);
 
         final PreConsensusEventFileManager manager =
-                new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
+                new PreConsensusEventFileManager(TimeFacade.getOsTime(), config, buildMetrics());
 
         assertIteratorEquality(
                 files.iterator(), manager.getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION, false));
@@ -281,7 +281,7 @@ class PreConsensusEventFileManagerTests {
         if (permitGaps) {
             // Gaps are allowed. We should see all files except for the one that was skipped.
             final PreConsensusEventFileManager manager =
-                    new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
+                    new PreConsensusEventFileManager(TimeFacade.getOsTime(), config, buildMetrics());
 
             assertIteratorEquality(
                     files.iterator(), manager.getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION));
@@ -289,7 +289,7 @@ class PreConsensusEventFileManagerTests {
             // Gaps are not allowed.
             assertThrows(
                     IllegalStateException.class,
-                    () -> new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics()));
+                    () -> new PreConsensusEventFileManager(TimeFacade.getOsTime(), config, buildMetrics()));
         }
     }
 
@@ -334,7 +334,7 @@ class PreConsensusEventFileManagerTests {
                 .getConfigData(PreConsensusEventStreamConfig.class);
 
         final PreConsensusEventFileManager manager =
-                new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
+                new PreConsensusEventFileManager(TimeFacade.getOsTime(), config, buildMetrics());
 
         // For this test, we want to iterate over files so that we are guaranteed to observe every event
         // with a generation greater than or equal to the target generation. Choose a generation that falls
@@ -416,7 +416,7 @@ class PreConsensusEventFileManagerTests {
                 .getConfigData(PreConsensusEventStreamConfig.class);
 
         final PreConsensusEventFileManager manager =
-                new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
+                new PreConsensusEventFileManager(TimeFacade.getOsTime(), config, buildMetrics());
 
         // For this test, we want to iterate over files so that we are guaranteed to observe every event
         // with a generation greater than or equal to the target generation. Choose a generation that falls
@@ -491,7 +491,7 @@ class PreConsensusEventFileManagerTests {
                 .getConfigData(PreConsensusEventStreamConfig.class);
 
         final PreConsensusEventFileManager manager =
-                new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
+                new PreConsensusEventFileManager(TimeFacade.getOsTime(), config, buildMetrics());
 
         // Request a generation higher than all files in the data store
         final long targetGeneration = files.get(fileCount - 1).maximumGeneration() + 1;
@@ -521,7 +521,7 @@ class PreConsensusEventFileManagerTests {
         Instant timestamp = Instant.now();
 
         final PreConsensusEventFileManager generatingManager =
-                new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
+                new PreConsensusEventFileManager(TimeFacade.getOsTime(), config, buildMetrics());
         for (int i = 0; i < fileCount; i++) {
 
             final PreConsensusEventFile file =
@@ -540,7 +540,7 @@ class PreConsensusEventFileManagerTests {
         }
 
         final PreConsensusEventFileManager manager =
-                new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
+                new PreConsensusEventFileManager(TimeFacade.getOsTime(), config, buildMetrics());
 
         assertIteratorEquality(
                 files.iterator(), manager.getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION));
@@ -614,7 +614,7 @@ class PreConsensusEventFileManagerTests {
             // Parse files with a new manager to make sure we aren't "cheating" by just
             // removing the in-memory descriptor without also removing the file on disk
             final List<PreConsensusEventFile> parsedFiles = new ArrayList<>();
-            new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics())
+            new PreConsensusEventFileManager(TimeFacade.getOsTime(), config, buildMetrics())
                     .getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION)
                     .forEachRemaining(parsedFiles::add);
 
@@ -654,7 +654,7 @@ class PreConsensusEventFileManagerTests {
         // Parse files with a new manager to make sure we aren't "cheating" by just
         // removing the in-memory descriptor without also removing the file on disk
         final List<PreConsensusEventFile> parsedFiles = new ArrayList<>();
-        new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics())
+        new PreConsensusEventFileManager(TimeFacade.getOsTime(), config, buildMetrics())
                 .getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION)
                 .forEachRemaining(parsedFiles::add);
 
@@ -738,7 +738,7 @@ class PreConsensusEventFileManagerTests {
             // Parse files with a new manager to make sure we aren't "cheating" by just
             // removing the in-memory descriptor without also removing the file on disk
             final List<PreConsensusEventFile> parsedFiles = new ArrayList<>();
-            new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics())
+            new PreConsensusEventFileManager(TimeFacade.getOsTime(), config, buildMetrics())
                     .getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION)
                     .forEachRemaining(parsedFiles::add);
 
@@ -783,7 +783,7 @@ class PreConsensusEventFileManagerTests {
         // Parse files with a new manager to make sure we aren't "cheating" by just
         // removing the in-memory descriptor without also removing the file on disk
         final List<PreConsensusEventFile> parsedFiles = new ArrayList<>();
-        new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics())
+        new PreConsensusEventFileManager(TimeFacade.getOsTime(), config, buildMetrics())
                 .getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION)
                 .forEachRemaining(parsedFiles::add);
 

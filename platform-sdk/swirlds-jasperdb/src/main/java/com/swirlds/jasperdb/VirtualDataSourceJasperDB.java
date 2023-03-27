@@ -23,6 +23,7 @@ import static com.swirlds.logging.LogMarker.ERROR;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.JASPER_DB;
 
+import com.swirlds.base.time.TimeFacade;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
@@ -63,7 +64,6 @@ import java.nio.file.StandardOpenOption;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.LongSummaryStatistics;
 import java.util.Objects;
@@ -276,7 +276,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
     /**
      * a nanosecond-precise Clock
      */
-    private final NanoClock clock = new NanoClock();
+    private final Clock clock = TimeFacade.getNanoClock();
 
     /**
      * When we register stats for the first instance, also register the global stats. If true
@@ -392,7 +392,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
         if (Files.exists(storageDir)) {
             // read metadata
             if (Files.exists(dbPaths.metadataFile)) {
-                try (DataInputStream metaIn = new DataInputStream(Files.newInputStream(dbPaths.metadataFile))) {
+                try (final DataInputStream metaIn = new DataInputStream(Files.newInputStream(dbPaths.metadataFile))) {
                     final int fileVersion = metaIn.readInt();
                     if (fileVersion != METADATA_FILE_FORMAT_VERSION) {
                         throw new IOException("Tried to read a file with incompatible file format version ["
@@ -467,7 +467,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
                 longKeyToPath = new LongListOffHeap();
                 loadedDataCallback = (path, dataLocation, hashKeyValueData) -> {
                     // read key from hashKeyValueData, as we are in isLongKeyMode mode then the key is a single long
-                    long key = hashKeyValueData.getLong(0);
+                    final long key = hashKeyValueData.getLong(0);
                     // update index
                     longKeyToPath.put(key, path);
                 };
@@ -646,7 +646,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
                 storeInternalExecutor.execute(() -> {
                     try {
                         writeInternalRecords(firstLeafPath, internalRecords);
-                    } catch (IOException e) {
+                    } catch (final IOException e) {
                         logger.error(ERROR.getMarker(), "[{}] Failed to store internal records", label, e);
                         throw new UncheckedIOException(e);
                     } finally {
@@ -662,7 +662,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
             // the flood gates are opened for reads through to the data we have written here.
             try {
                 countDownLatch.await();
-            } catch (InterruptedException e) {
+            } catch (final InterruptedException e) {
                 logger.warn(
                         EXCEPTION.getMarker(), "[{}] Interrupted while waiting on internal record storage", label, e);
                 Thread.currentThread().interrupt();
@@ -843,13 +843,14 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
      * {@inheritDoc}
      */
     @Override
-    public VirtualInternalRecord loadInternalRecord(long path) throws IOException {
+    public VirtualInternalRecord loadInternalRecord(final long path) throws IOException {
         return loadInternalRecord(path, true);
     }
 
     /**
      * {@inheritDoc}
      */
+    @Override
     public VirtualInternalRecord loadInternalRecord(final long path, final boolean deserialize) throws IOException {
         if (path < 0) {
             throw new IllegalArgumentException("path is less than 0");
@@ -859,7 +860,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
         // know about. This can happen if some leaves have been added to the tree, but we haven't
         // hashed yet, so the cache doesn't have any internal records for it, and somebody
         // tries to iterate over the nodes in the tree.
-        long firstLeaf = validLeafPathRange.getMinValidKey();
+        final long firstLeaf = validLeafPathRange.getMinValidKey();
         if (path >= firstLeaf) {
             return null;
         }
@@ -885,7 +886,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
      * {@inheritDoc}
      */
     @Override
-    public void warmInternalRecord(long path) throws IOException {
+    public void warmInternalRecord(final long path) throws IOException {
         loadInternalRecord(path, false);
     }
 
@@ -902,9 +903,9 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
             shutdownThreadsAndWait(mergingExecutor, storeInternalExecutor, storeKeyToPathExecutor);
         } finally {
             // create new snapshot directory
-            Path storageDirParent = dbPaths.storageDir.toAbsolutePath().getParent();
-            String storageDirName = dbPaths.storageDir.getFileName().toString();
-            Path snapshotDir = storageDirParent.resolve(storageDirName + "_SNAPSHOT");
+            final Path storageDirParent = dbPaths.storageDir.toAbsolutePath().getParent();
+            final String storageDirName = dbPaths.storageDir.getFileName().toString();
+            final Path snapshotDir = storageDirParent.resolve(storageDirName + "_SNAPSHOT");
             snapshot(snapshotDir);
             // close all closable data stores
             close();
@@ -1036,7 +1037,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
                     return true;
                 });
                 runWithSnapshotExecutor(true, countDownLatch, "metadata", () -> {
-                    try (DataOutputStream metaOut = new DataOutputStream(Files.newOutputStream(
+                    try (final DataOutputStream metaOut = new DataOutputStream(Files.newOutputStream(
                             snapshotDbPaths.metadataFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE))) {
                         metaOut.writeInt(METADATA_FILE_FORMAT_VERSION); // serialization version
                         metaOut.writeLong(internalHashesRamToDiskThreshold);
@@ -1048,7 +1049,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
                 });
                 // wait for the others to finish
                 countDownLatch.await();
-            } catch (InterruptedException e) {
+            } catch (final InterruptedException e) {
                 logger.error(
                         EXCEPTION.getMarker(),
                         "[{}] InterruptedException from waiting for countDownLatch in snapshot",
@@ -1142,12 +1143,10 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
     /**
      * Shutdown threads if they are running and wait for them to finish
      *
-     * @param executors
-     * 		array of threads to shut down.
-     * @throws IOException
-     * 		if there was a problem or timeout shutting down threads.
+     * @param executors array of threads to shut down.
+     * @throws IOException if there was a problem or timeout shutting down threads.
      */
-    private void shutdownThreadsAndWait(ExecutorService... executors) throws IOException {
+    private void shutdownThreadsAndWait(final ExecutorService... executors) throws IOException {
         try {
             // shutdown threads
             for (final ExecutorService executor : executors) {
@@ -1159,7 +1158,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
                     }
                 }
             }
-        } catch (InterruptedException e) {
+        } catch (final InterruptedException e) {
             logger.warn(EXCEPTION.getMarker(), "[{}] Interrupted while waiting on executors to shutdown", label, e);
             Thread.currentThread().interrupt();
             throw new IOException("Interrupted while waiting for merge to finish.", e);
@@ -1179,7 +1178,8 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
      * 		the code to run
      */
     private void runWithSnapshotExecutor(
-            boolean shouldRun, CountDownLatch countDownLatch, String taskName, Callable<Object> runnable) {
+            final boolean shouldRun, final CountDownLatch countDownLatch, final String taskName,
+            final Callable<Object> runnable) {
         if (shouldRun) {
             snapshotExecutor.submit(() -> {
                 final long START = System.currentTimeMillis();
@@ -1223,7 +1223,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
                 } else {
                     try {
                         internalHashStoreDisk.put(rec.getPath(), rec);
-                    } catch (IOException e) {
+                    } catch (final IOException e) {
                         logger.error(EXCEPTION.getMarker(), "[{}] IOException writing internal records", label, e);
                         throw new UncheckedIOException(e);
                     }
@@ -1295,7 +1295,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
                 // update pathToHashKeyValue
                 try {
                     pathToHashKeyValue.put(leafRecord.getPath(), leafRecord);
-                } catch (IOException e) {
+                } catch (final IOException e) {
                     logger.error(EXCEPTION.getMarker(), "[{}] IOException writing to pathToHashKeyValue", label, e);
                     throw new UncheckedIOException(e);
                 }
@@ -1351,7 +1351,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
             final Instant afterObjectKeyToPathMerge;
             final Instant afterPathToHashKeyValueMerge;
 
-            UnaryOperator<List<DataFileReader>> filesToMergeFilter;
+            final UnaryOperator<List<DataFileReader>> filesToMergeFilter;
             boolean isLargeMerge = false;
             boolean isMediumMerge = false;
             boolean isSmallMerge = false;
@@ -1450,7 +1450,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
             // update file stats (those statistics don't care about small vs medium vs large merge size)
             updateFileStats();
             return true;
-        } catch (InterruptedException | ClosedByInterruptException e) {
+        } catch (final InterruptedException | ClosedByInterruptException e) {
             logger.info(JASPER_DB.getMarker(), "Interrupted while merging, this is allowed.");
             Thread.currentThread().interrupt();
             return false;
@@ -1483,42 +1483,4 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
         return isLongKeyMode;
     }
 
-    /**
-     * A clock that is accurate to the nanosecond, as compared to the standard Java "Instant" clock, which is only
-     * accurate to the nearest millisecond.
-     */
-    public static class NanoClock extends Clock {
-        private final Clock clock;
-        private final long initialNanos;
-        private final Instant initialInstant;
-
-        public NanoClock() {
-            this(Clock.systemUTC());
-        }
-
-        public NanoClock(final Clock clock) {
-            this.clock = clock;
-            initialInstant = clock.instant();
-            initialNanos = getSystemNanos();
-        }
-
-        @Override
-        public ZoneId getZone() {
-            return clock.getZone();
-        }
-
-        @Override
-        public Instant instant() {
-            return initialInstant.plusNanos(getSystemNanos() - initialNanos);
-        }
-
-        @Override
-        public Clock withZone(final ZoneId zone) {
-            return new NanoClock(clock.withZone(zone));
-        }
-
-        private static long getSystemNanos() {
-            return System.nanoTime();
-        }
-    }
 }

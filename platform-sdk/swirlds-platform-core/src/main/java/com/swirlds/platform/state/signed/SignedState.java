@@ -20,13 +20,13 @@ import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.SIGNED_STATE;
 
+import com.swirlds.base.time.TimeFacade;
 import com.swirlds.common.Reservable;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.time.OSTime;
 import com.swirlds.common.utility.AbstractReservable;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
@@ -149,7 +149,7 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
         this.state = state;
 
         if (Settings.getInstance().getState().signedStateSentinelEnabled) {
-            history = new SignedStateHistory(OSTime.getInstance());
+            history = new SignedStateHistory(TimeFacade.getOsTime());
             history.recordAction(SignedStateHistory.SignedStateAction.CREATION, getReservationCount());
         } else {
             history = null;

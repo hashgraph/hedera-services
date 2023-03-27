@@ -20,9 +20,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.base.time.TimeFacade;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
-import com.swirlds.common.time.OSTime;
 import com.swirlds.platform.components.EventCreator;
 import com.swirlds.platform.components.EventTaskDispatcher;
 import com.swirlds.platform.event.CreateEventTask;
@@ -50,7 +50,7 @@ class EventTaskDispatcherTest {
         final Consumer<GossipEvent> intake = (Consumer<GossipEvent>) mock(Consumer.class);
 
         final EventTaskDispatcher dispatcher = new EventTaskDispatcher(
-                OSTime.getInstance(),
+                TimeFacade.getOsTime(),
                 validator,
                 creator,
                 intake,

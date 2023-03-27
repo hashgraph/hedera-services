@@ -25,6 +25,7 @@ import static com.swirlds.logging.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.KeyRange.INVALID_KEY_RANGE;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import com.swirlds.base.time.TimeFacade;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
@@ -64,6 +65,7 @@ import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -246,7 +248,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
     /** A nanosecond-precise Clock */
-    private final NanoClock clock = new NanoClock();
+    private final Clock clock = TimeFacade.getNanoClock();
 
     public MerkleDbDataSource(
             final MerkleDb database,
@@ -1487,7 +1489,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
      * {@inheritDoc}
      */
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (!(o instanceof MerkleDbDataSource<?, ?> other)) {
             return false;
         }

@@ -22,12 +22,12 @@ import static com.swirlds.platform.test.event.preconsensus.AsyncPreConsensusEven
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.base.time.TimeFacade;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.test.RandomUtils;
-import com.swirlds.common.time.OSTime;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventFile;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventFileManager;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventStreamConfig;
@@ -107,7 +107,7 @@ class SyncPreConsensusEventWriterTests {
                 .getConfigData(PreConsensusEventStreamConfig.class);
 
         final PreConsensusEventFileManager fileManager =
-                new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
+                new PreConsensusEventFileManager(TimeFacade.getOsTime(), config, buildMetrics());
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreConsensusEventWriter writer = new SyncPreConsensusEventWriter(config, fileManager);
@@ -166,7 +166,7 @@ class SyncPreConsensusEventWriterTests {
                 .getConfigData(PreConsensusEventStreamConfig.class);
 
         final PreConsensusEventFileManager fileManager =
-                new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
+                new PreConsensusEventFileManager(TimeFacade.getOsTime(), config, buildMetrics());
 
         final PreConsensusEventWriter writer = new SyncPreConsensusEventWriter(config, fileManager);
 
@@ -229,7 +229,7 @@ class SyncPreConsensusEventWriterTests {
                 .getConfigData(PreConsensusEventStreamConfig.class);
 
         final PreConsensusEventFileManager fileManager =
-                new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
+                new PreConsensusEventFileManager(TimeFacade.getOsTime(), config, buildMetrics());
 
         final PreConsensusEventWriter writer = new SyncPreConsensusEventWriter(config, fileManager);
 
@@ -281,7 +281,7 @@ class SyncPreConsensusEventWriterTests {
                 .getConfigData(PreConsensusEventStreamConfig.class);
 
         final PreConsensusEventFileManager fileManager =
-                new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
+                new PreConsensusEventFileManager(TimeFacade.getOsTime(), config, buildMetrics());
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreConsensusEventWriter writer = new SyncPreConsensusEventWriter(config, fileManager);
@@ -332,7 +332,7 @@ class SyncPreConsensusEventWriterTests {
                 .getConfigData(PreConsensusEventStreamConfig.class);
 
         final PreConsensusEventFileManager fileManager =
-                new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
+                new PreConsensusEventFileManager(TimeFacade.getOsTime(), config, buildMetrics());
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreConsensusEventWriter writer = new SyncPreConsensusEventWriter(config, fileManager);
@@ -399,7 +399,7 @@ class SyncPreConsensusEventWriterTests {
                 .getConfigData(PreConsensusEventStreamConfig.class);
 
         final PreConsensusEventFileManager fileManager =
-                new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
+                new PreConsensusEventFileManager(TimeFacade.getOsTime(), config, buildMetrics());
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreConsensusEventWriter writer = new SyncPreConsensusEventWriter(config, fileManager);

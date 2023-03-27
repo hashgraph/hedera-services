@@ -18,6 +18,7 @@ package com.swirlds.platform.event.creation;
 
 import static com.swirlds.logging.LogMarker.CREATE_EVENT;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.system.EventCreationRuleResponse;
@@ -25,7 +26,6 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
-import com.swirlds.common.time.Time;
 import com.swirlds.platform.components.EventCreationRules;
 import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.transaction.TransactionSupplier;

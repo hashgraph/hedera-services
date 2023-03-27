@@ -18,6 +18,7 @@ package com.swirlds.platform.components.state;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
+import com.swirlds.base.time.TimeFacade;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
@@ -28,7 +29,6 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.common.time.OSTime;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.components.common.query.PrioritySystemTransactionSubmitter;
@@ -169,7 +169,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         this.signedStateMetrics = new SignedStateMetrics(context.getMetrics());
         this.signedStateGarbageCollector = new SignedStateGarbageCollector(threadManager, signedStateMetrics);
         this.stateConfig = context.getConfiguration().getConfigData(StateConfig.class);
-        this.signedStateSentinel = new SignedStateSentinel(threadManager, OSTime.getInstance());
+        this.signedStateSentinel = new SignedStateSentinel(threadManager, TimeFacade.getOsTime());
 
         dispatchBuilder = new DispatchBuilder(context.getConfiguration().getConfigData(DispatchConfiguration.class));
 
@@ -183,7 +183,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 context,
                 threadManager,
                 signedStateMetrics,
-                OSTime.getInstance(),
+                TimeFacade.getOsTime(),
                 mainClassName,
                 selfId,
                 swirldName,
@@ -209,14 +209,14 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 combinedStateLacksSignaturesConsumer);
 
         consensusHashManager = new ConsensusHashManager(
-                OSTime.getInstance(),
+                TimeFacade.getOsTime(),
                 dispatchBuilder,
                 addressBook,
                 context.getConfiguration().getConfigData(ConsensusConfig.class),
                 stateConfig);
 
         final IssHandler issHandler = new IssHandler(
-                OSTime.getInstance(),
+                TimeFacade.getOsTime(),
                 dispatchBuilder,
                 stateConfig,
                 selfId.getId(),

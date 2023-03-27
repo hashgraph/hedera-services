@@ -22,8 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.base.time.TimeFacade;
 import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.time.OSTime;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.components.state.output.IssConsumer;
@@ -65,13 +65,14 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                TimeFacade.getOsTime(),
                 dispatchBuilder,
                 stateConfig,
                 selfId,
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {
+                });
 
         dispatchBuilder.start();
 
@@ -110,13 +111,14 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                TimeFacade.getOsTime(),
                 dispatchBuilder,
                 stateConfig,
                 selfId,
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {
+                });
 
         dispatchBuilder.start();
 
@@ -161,13 +163,14 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                TimeFacade.getOsTime(),
                 dispatchBuilder,
                 stateConfig,
                 selfId,
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {
+                });
 
         dispatchBuilder.start();
 
@@ -210,13 +213,14 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                TimeFacade.getOsTime(),
                 dispatchBuilder,
                 stateConfig,
                 selfId,
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {
+                });
 
         dispatchBuilder.start();
 
@@ -254,13 +258,14 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                TimeFacade.getOsTime(),
                 dispatchBuilder,
                 stateConfig,
                 selfId,
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {
+                });
 
         dispatchBuilder.start();
 
@@ -306,13 +311,14 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                TimeFacade.getOsTime(),
                 dispatchBuilder,
                 stateConfig,
                 selfId,
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {
+                });
 
         dispatchBuilder.start();
 
@@ -349,13 +355,14 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                TimeFacade.getOsTime(),
                 dispatchBuilder,
                 stateConfig,
                 selfId,
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {
+                });
 
         dispatchBuilder.start();
 
@@ -394,13 +401,14 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                TimeFacade.getOsTime(),
                 dispatchBuilder,
                 stateConfig,
                 selfId,
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {
+                });
 
         dispatchBuilder.start();
 
@@ -446,13 +454,14 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                TimeFacade.getOsTime(),
                 dispatchBuilder,
                 stateConfig,
                 selfId,
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {
+                });
 
         dispatchBuilder.start();
 
@@ -496,13 +505,14 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                TimeFacade.getOsTime(),
                 dispatchBuilder,
                 stateConfig,
                 selfId,
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {
+                });
 
         dispatchBuilder.start();
 
@@ -541,13 +551,14 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                TimeFacade.getOsTime(),
                 dispatchBuilder,
                 stateConfig,
                 selfId,
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {
+                });
 
         dispatchBuilder.start();
 
@@ -593,13 +604,14 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                TimeFacade.getOsTime(),
                 dispatchBuilder,
                 stateConfig,
                 selfId,
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {
+                });
 
         dispatchBuilder.start();
 
@@ -645,13 +657,14 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                TimeFacade.getOsTime(),
                 dispatchBuilder,
                 stateConfig,
                 selfId,
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {});
+                (r, type, otherId) -> {
+                });
 
         dispatchBuilder.start();
 
@@ -687,12 +700,14 @@ class IssHandlerTests {
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         final IssHandler issHandler = new IssHandler(
-                OSTime.getInstance(),
+                TimeFacade.getOsTime(),
                 dispatchBuilder,
                 stateConfig,
                 0L,
-                (reason) -> {},
-                (msg, t, code) -> {},
+                (reason) -> {
+                },
+                (msg, t, code) -> {
+                },
                 issConsumer);
 
         assertEquals(0, selfIssCount.get(), "incorrect self ISS count");

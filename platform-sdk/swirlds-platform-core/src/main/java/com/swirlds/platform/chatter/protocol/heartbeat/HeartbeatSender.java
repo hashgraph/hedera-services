@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.chatter.protocol.heartbeat;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.time.Time;
 import com.swirlds.platform.chatter.protocol.MessageHandler;
 import com.swirlds.platform.chatter.protocol.MessageProvider;
 import java.time.Duration;

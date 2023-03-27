@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.state.iss;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.state.notifications.IssNotification;
-import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.components.state.output.IssConsumer;

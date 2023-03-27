@@ -24,6 +24,8 @@ import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
 
+import com.swirlds.base.time.Time;
+import com.swirlds.base.time.TimeFacade;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.OSHealthCheckConfig;
@@ -71,8 +73,6 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.common.threading.utility.SequenceCycle;
-import com.swirlds.common.time.OSTime;
-import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.CommonUtils;
@@ -403,7 +403,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /**
      * This should be used when reading time.
      */
-    private final Time time = OSTime.getInstance();
+    private final Time time = TimeFacade.getOsTime();
 
     /**
      * The platform context for this platform. Should be used to access basic services
@@ -609,6 +609,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      *
      * @return this platform's instance number
      */
+    @Override
     public int getInstanceNumber() {
         return instanceNumber;
     }
@@ -1449,7 +1450,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 chatterEventMapper::getMostRecentEvent,
                 eventCreationRules,
                 CryptographyHolder.get(),
-                OSTime.getInstance());
+                TimeFacade.getOsTime());
 
         if (isStartedFromGenesis()) {
             // if we are starting from genesis, we will create a genesis event, which is the only event that will
@@ -1837,6 +1838,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      *
      * @return AddressBook
      */
+    @Override
     public AddressBook getAddressBook() {
         return initialAddressBook;
     }

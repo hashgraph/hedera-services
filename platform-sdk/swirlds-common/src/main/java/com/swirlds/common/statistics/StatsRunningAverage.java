@@ -16,9 +16,9 @@
 
 package com.swirlds.common.statistics;
 
+import com.swirlds.base.time.Time;
+import com.swirlds.base.time.TimeFacade;
 import com.swirlds.common.statistics.internal.StatsBuffer;
-import com.swirlds.common.time.OSTime;
-import com.swirlds.common.time.Time;
 import com.swirlds.logging.LogMarker;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -104,7 +104,7 @@ public class StatsRunningAverage implements StatsBuffered {
      */
     @SuppressWarnings("removal")
     public StatsRunningAverage(final double halfLife) {
-        this(halfLife, OSTime.getInstance());
+        this(halfLife, TimeFacade.getOsTime());
     }
 
     /**
@@ -177,7 +177,7 @@ public class StatsRunningAverage implements StatsBuffered {
             }
             allHistory.recordValue(mean);
             recentHistory.recordValue(mean);
-        } catch (Exception e) {
+        } catch (final Exception e) {
             logger.error(LogMarker.EXCEPTION.getMarker(), "Exception while updating statistics!", e);
         }
     }

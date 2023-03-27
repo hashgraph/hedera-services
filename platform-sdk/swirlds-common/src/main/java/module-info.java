@@ -72,7 +72,6 @@ module com.swirlds.common {
     exports com.swirlds.common.threading.manager;
     exports com.swirlds.common.threading.pool;
     exports com.swirlds.common.threading.utility;
-    exports com.swirlds.common.time;
     exports com.swirlds.common.utility;
     exports com.swirlds.common.utility.throttle;
     exports com.swirlds.common.jackson;

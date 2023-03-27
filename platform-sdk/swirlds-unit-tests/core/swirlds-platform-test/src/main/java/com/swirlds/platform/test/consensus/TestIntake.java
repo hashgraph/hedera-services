@@ -18,12 +18,12 @@ package com.swirlds.platform.test.consensus;
 
 import static org.mockito.Mockito.mock;
 
+import com.swirlds.base.time.Time;
+import com.swirlds.base.time.TimeFacade;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.time.OSTime;
-import com.swirlds.common.time.Time;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.components.EventIntake;
@@ -70,7 +70,7 @@ public class TestIntake implements ConsensusRoundObserver, StaleEventObserver, L
     }
 
     public TestIntake(final AddressBook ab, final BiConsumer<Long, Long> minGenConsumer) {
-        this(ab, minGenConsumer, OSTime.getInstance());
+        this(ab, minGenConsumer, TimeFacade.getOsTime());
     }
 
     public TestIntake(final AddressBook ab, final Time time) {
@@ -82,7 +82,7 @@ public class TestIntake implements ConsensusRoundObserver, StaleEventObserver, L
     }
 
     public TestIntake(final AddressBook ab, final ConsensusConfig consensusConfig) {
-        this(ab, NOOP_MINGEN, OSTime.getInstance(), consensusConfig);
+        this(ab, NOOP_MINGEN, TimeFacade.getOsTime(), consensusConfig);
     }
 
     /**

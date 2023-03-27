@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.base.time.TimeFacade;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.internal.SettingsCommon;
@@ -37,7 +38,6 @@ import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.test.TransactionGenerator;
 import com.swirlds.common.test.io.FileManipulation;
 import com.swirlds.common.test.metrics.NoOpMetrics;
-import com.swirlds.common.time.OSTime;
 import com.swirlds.platform.event.preconsensus.AsyncPreConsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventFile;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventFileManager;
@@ -174,7 +174,7 @@ class AsyncPreConsensusEventWriterTests {
         }
 
         final PreConsensusEventFileManager reader =
-                new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
+                new PreConsensusEventFileManager(TimeFacade.getOsTime(), config, buildMetrics());
 
         // Verify that the events were written correctly
         final PreConsensusEventMultiFileIterator eventsIterator = reader.getEventIterator(0);
@@ -262,7 +262,7 @@ class AsyncPreConsensusEventWriterTests {
                 .getConfigData(PreConsensusEventStreamConfig.class);
 
         final PreConsensusEventFileManager fileManager =
-                new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
+                new PreConsensusEventFileManager(TimeFacade.getOsTime(), config, buildMetrics());
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreConsensusEventWriter writer = new AsyncPreConsensusEventWriter(
@@ -347,7 +347,7 @@ class AsyncPreConsensusEventWriterTests {
                 .getConfigData(PreConsensusEventStreamConfig.class);
 
         final PreConsensusEventFileManager fileManager =
-                new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
+                new PreConsensusEventFileManager(TimeFacade.getOsTime(), config, buildMetrics());
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreConsensusEventWriter writer = new AsyncPreConsensusEventWriter(
@@ -411,7 +411,7 @@ class AsyncPreConsensusEventWriterTests {
         // Since we were very careful to always advance the first non-ancient generation, we should
         // find lots of files with a minimum generation exceeding 0.
         boolean foundNonZeroMinimumGeneration = false;
-        for (Iterator<PreConsensusEventFile> it2 = fileManager.getFileIterator(0); it2.hasNext(); ) {
+        for (final Iterator<PreConsensusEventFile> it2 = fileManager.getFileIterator(0); it2.hasNext(); ) {
             final PreConsensusEventFile file = it2.next();
             if (file.minimumGeneration() > 0) {
                 foundNonZeroMinimumGeneration = true;
@@ -457,7 +457,7 @@ class AsyncPreConsensusEventWriterTests {
                 .getConfigData(PreConsensusEventStreamConfig.class);
 
         final PreConsensusEventFileManager fileManager =
-                new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
+                new PreConsensusEventFileManager(TimeFacade.getOsTime(), config, buildMetrics());
 
         final PreconsensusEventStreamSequencer sequencer1 = new PreconsensusEventStreamSequencer();
         final PreConsensusEventWriter writer1 = new AsyncPreConsensusEventWriter(

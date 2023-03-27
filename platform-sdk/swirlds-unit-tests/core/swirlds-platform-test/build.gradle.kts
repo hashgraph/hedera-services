@@ -25,6 +25,7 @@ extraJavaModuleInfo { failOnMissingModuleInfo.set(false) }
 
 dependencies {
   // Individual Dependencies
+  implementation(project(":swirlds-base"))
   implementation(project(":swirlds-platform-core"))
   compileOnly(libs.spotbugs.annotations)
 
@@ -35,6 +36,7 @@ dependencies {
   implementation(project(":swirlds-unit-tests:common:swirlds-common-test"))
   implementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
 
+  testImplementation(project(":swirlds-base"))
   testImplementation(project(":swirlds-merkle"))
   testImplementation(libs.commons.collections4)
   testImplementation(libs.classgraph)

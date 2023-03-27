@@ -19,7 +19,7 @@ package com.swirlds.common.utility.throttle;
 import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
 import static com.swirlds.common.utility.Units.SECONDS_TO_NANOSECONDS;
 
-import com.swirlds.common.time.Time;
+import com.swirlds.base.time.Time;
 import java.time.Duration;
 import java.time.Instant;
 
