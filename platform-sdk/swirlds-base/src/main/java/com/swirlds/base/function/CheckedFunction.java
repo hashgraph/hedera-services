@@ -16,7 +16,10 @@
 
 package com.swirlds.base.function;
 
+import com.swirlds.base.ArgumentUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.function.Function;
 
 /**
  * Similar to {@link java.util.function.Function} but throws an exception.
@@ -29,7 +32,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * 		the type thrown by the function
  */
 @FunctionalInterface
-public interface ThrowingFunction<T, R, E extends Exception> {
+public interface CheckedFunction<T, R, E extends Exception> {
 
     /**
      * Apply the function.
@@ -40,4 +43,18 @@ public interface ThrowingFunction<T, R, E extends Exception> {
      */
     @Nullable
     R apply(@Nullable T t) throws E;
+
+    /**
+     * Convert a {@link Function} to a {@link CheckedFunction}.
+     *
+     * @param function the function
+     * @param <T>      the type accepted by the function
+     * @param <R>      the return type of the function
+     * @param <E>      the type thrown by the function
+     * @return the {@link CheckedFunction}
+     */
+    static <T, R, E extends Exception> CheckedFunction<T, R, E> of(@NonNull final Function<T, R> function) {
+        ArgumentUtils.throwArgNull(function, "function");
+        return function::apply;
+    }
 }

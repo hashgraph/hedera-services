@@ -16,7 +16,7 @@
 
 package com.swirlds.common.io.streams;
 
-import com.swirlds.base.function.ThrowingFunction;
+import com.swirlds.base.function.CheckedFunction;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.internal.SerializationOperation;
 import com.swirlds.common.io.streams.internal.SerializationStack;
@@ -698,7 +698,7 @@ public class DebuggableMerkleDataInputStream extends MerkleDataInputStream {
             final boolean readClassId,
             final ValueReference<Long> classId,
             final ValueReference<Integer> version,
-            final ThrowingFunction<Long, T, IOException> serializableConstructor)
+            final CheckedFunction<Long, T, IOException> serializableConstructor)
             throws IOException {
         startOperation(SerializationOperation.READ_SERIALIZABLE);
         try {

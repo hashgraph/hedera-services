@@ -21,7 +21,7 @@ import static com.swirlds.common.io.streams.SerializableStreamConstants.NULL_LIS
 import static com.swirlds.common.io.streams.SerializableStreamConstants.NULL_VERSION;
 import static com.swirlds.common.io.streams.SerializableStreamConstants.SERIALIZATION_PROTOCOL_VERSION;
 
-import com.swirlds.base.function.ThrowingFunction;
+import com.swirlds.base.function.CheckedFunction;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDet;
@@ -140,7 +140,7 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
      * Same as {@link #readSerializable(boolean, Supplier)} except that the constructor takes a class ID
      */
     private <T extends SelfSerializable> T readSerializable(
-            final boolean readClassId, final ThrowingFunction<Long, T, IOException> serializableConstructor)
+            final boolean readClassId, final CheckedFunction<Long, T, IOException> serializableConstructor)
             throws IOException {
 
         final Long classId;
@@ -228,7 +228,7 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
     private <T extends SelfSerializable> void readSerializableIterableWithSizeInternal(
             final int size,
             final boolean readClassId,
-            final ThrowingFunction<Long, T, IOException> serializableConstructor,
+            final CheckedFunction<Long, T, IOException> serializableConstructor,
             final Consumer<T> callback)
             throws IOException {
 
@@ -276,7 +276,7 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
             final boolean readClassId,
             final ValueReference<Long> classId,
             final ValueReference<Integer> version,
-            final ThrowingFunction<Long, T, IOException> serializableConstructor)
+            final CheckedFunction<Long, T, IOException> serializableConstructor)
             throws IOException {
 
         if (!allSameClass) {
@@ -359,7 +359,7 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
     private <T extends SelfSerializable> List<T> readSerializableList(
             final int maxListSize,
             final boolean readClassId,
-            final ThrowingFunction<Long, T, IOException> serializableConstructor)
+            final CheckedFunction<Long, T, IOException> serializableConstructor)
             throws IOException {
 
         final int length = readInt();
