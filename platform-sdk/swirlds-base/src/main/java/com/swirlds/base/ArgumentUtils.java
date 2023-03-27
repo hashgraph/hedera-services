@@ -34,10 +34,27 @@ public final class ArgumentUtils {
      * @param argument     the argument to check
      * @param argumentName the name of the argument
      */
-    public static <T> T throwArgNull(final T argument, final String argumentName) {
+    public static <T> T throwArgNull(final T argument, final String argumentName) throws NullPointerException {
         if (argument == null) {
             throw new NullPointerException("The supplied argument '%s' cannot be null!".formatted(argumentName));
         }
         return argument;
+    }
+
+    /**
+     * Throw an {@link IllegalArgumentException} if the supplied {@code String} is blank. Throw an {@link
+     * NullPointerException} if the supplied {@code String} is null (see {@link #throwArgNull(Object, String)}).
+     *
+     * @param arg     the argument checked
+     * @param argName the name of the argument
+     * @see String#isBlank()
+     */
+    public static String throwArgBlank(final String arg, final String argName)
+            throws NullPointerException, IllegalArgumentException {
+        throwArgNull(arg, argName);
+        if (arg.isBlank()) {
+            throw new IllegalArgumentException("The supplied argument '%s' cannot be blank!".formatted(argName));
+        }
+        return arg;
     }
 }
