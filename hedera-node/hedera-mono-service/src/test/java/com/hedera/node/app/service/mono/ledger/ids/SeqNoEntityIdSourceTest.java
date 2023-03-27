@@ -128,7 +128,7 @@ class SeqNoEntityIdSourceTest {
     void exceptionalSourceAlwaysThrows() {
         var defaultAccountId = AccountID.getDefaultInstance();
         // expect:
-        assertThrows(UnsupportedOperationException.class, () -> NOOP_ID_SOURCE.newAccountId());
+        assertThrows(UnsupportedOperationException.class, NOOP_ID_SOURCE::newAccountId);
         assertThrows(UnsupportedOperationException.class, () -> NOOP_ID_SOURCE.newFileId(defaultAccountId));
         assertThrows(UnsupportedOperationException.class, () -> NOOP_ID_SOURCE.newTokenId(defaultAccountId));
         assertThrows(UnsupportedOperationException.class, () -> NOOP_ID_SOURCE.newScheduleId(defaultAccountId));
