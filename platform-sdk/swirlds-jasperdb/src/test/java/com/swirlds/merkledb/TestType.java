@@ -162,8 +162,6 @@ public enum TestType {
                 boolean preferDiskBasedIndexes)
                 throws IOException {
             final MerkleDb database = MerkleDb.getInstance(dbPath);
-            // clean folder first if it has old data in it
-            database.removeDataSource(name);
             final MerkleDbTableConfig<? extends VirtualLongKey, ? extends ExampleByteArrayVirtualValue> tableConfig =
                     new MerkleDbTableConfig<>(
                                     (short) 1, DigestType.SHA_384,
