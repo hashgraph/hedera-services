@@ -229,7 +229,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      * @param addressBook the address book to update.
      * @return the updated address book.
      */
-    private AddressBook stakingProfile1(AddressBook addressBook) {
+    private @NonNull AddressBook stakingProfile1(@NonNull final AddressBook addressBook) {
         logger.info(STARTUP.getMarker(), "Staking Profile 1: updating all nodes to have 10 stake.");
         for (int i = 0; i < addressBook.getSize(); i++) {
             addressBook.updateStake(i, 10);
