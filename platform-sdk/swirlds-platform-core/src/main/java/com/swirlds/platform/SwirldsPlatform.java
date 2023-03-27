@@ -547,7 +547,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     consensusRoundHandler::addMinGenInfo,
                     getAddressBook(),
                     loadedState.signedStateFromDisk);
-            loadIntoConsensusAndEventMapper(loadedState.signedStateFromDisk);
         } else {
             consensus = new ConsensusImpl(
                     platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
@@ -823,17 +822,29 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         clearables.addAll(gossipNetwork.getClearables());
 
         clearAllPipelines = new LoggingClearables(RECONNECT.getMarker(), clearables);
+
+        if (loadedState.signedStateFromDisk != null) {
+            loadIntoConsensusAndEventMapper(loadedState.signedStateFromDisk);
+        }
     }
 
-    // TODO javadoc
+    /**
+     * Clear all data pipelines. Used during reconnect.
+     */
     private void clearAllPipelines() {
         clearAllPipelines.clear();
     }
 
+    /**
+     * Start the gossip subsystem. Called after a reconnect is complete.
+     */
     private void startGossip() {
         gossipNetwork.startGossip();
     }
 
+    /**
+     * Stop the gossip subsystem. Called before a reconnect is started.
+     */
     private void stopGossip() {
         gossipNetwork.stopGossip();
     }
@@ -1367,6 +1378,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /**
      * {@inheritDoc}
      */
+    @SuppressWarnings("unchecked")
     @Override
     public <T extends SwirldState> T getState() {
         return (T) swirldStateManager.getCurrentSwirldState();

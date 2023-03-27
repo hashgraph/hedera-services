@@ -42,7 +42,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 
-// TODO javadoc
+/**
+ * Gossips with other nodes to exchange events.
+ */
 abstract class GossipNetwork implements Startable, LoadableFromSignedState {
 
     protected final PlatformContext platformContext;
@@ -124,12 +126,24 @@ abstract class GossipNetwork implements Startable, LoadableFromSignedState {
         return connectionManagers;
     }
 
-    // TODO javadoc
+    /**
+     * Permanently stop the gossip system.
+     */
     public abstract void halt();
 
+    /**
+     * Stop the gossip system, but allow it to be restarted.
+     */
     public abstract void stopGossip();
 
+    /**
+     * Start the gossip system after it has been stopped.
+     */
     public abstract void startGossip();
 
+    /**
+     * Get things that need to be cleared when the platform is stopped for a reconnect.
+     * @return a list of all the objects that need to be cleared when the platform is stopped for a reconnect
+     */
     public abstract List<Pair<Clearable, String>> getClearables();
 }
