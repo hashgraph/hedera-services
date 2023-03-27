@@ -49,7 +49,7 @@ public class AddressBookTestingToolMain implements SwirldMain {
 
     private Platform platform;
 
-    private static final int transactionsPerSecond = 100;
+    private static final int TRANSACTIONS_PER_SECOND = 100;
 
     public AddressBookTestingToolMain() {
         // default constructor, does nothing
