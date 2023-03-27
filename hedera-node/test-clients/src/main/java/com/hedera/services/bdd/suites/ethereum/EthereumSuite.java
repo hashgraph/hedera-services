@@ -262,13 +262,14 @@ public class EthereumSuite extends HapiSuite {
                                     .hasKnownStatusFrom(SUCCESS);
 
                             var exposeEthereumContractAddress = getContractInfo(ERC721_CONTRACT_WITH_HTS_CALLS)
-                                    .exposingEvmAddress(address -> erc721ContractID.set("0x" + address)).logged();
+                                    .exposingEvmAddress(address -> erc721ContractID.set("0x" + address));
                             allRunFor(spec, createEthereumContract, exposeEthereumContractAddress);
 
-                            var contractInfo = getLiteralAliasContractInfo(erc721ContractID.get().substring(2))
-                                    .exposingEvmAddress(address -> contractAddressID.set("0x" + address) ).logged();
+                            var contractInfo = getLiteralAliasContractInfo(
+                                            erc721ContractID.get().substring(2))
+                                    .exposingEvmAddress(contractAddressID::set);
                             allRunFor(spec, contractInfo);
-                            assertEquals(erc721ContractID.get(), contractAddressID.get());
+                            assertEquals(erc721ContractID.get().substring(2), contractAddressID.get());
                         }),
                         withOpContext((spec, opLog) -> {
                             var associateTokenToERC721 = ethereumCall(
