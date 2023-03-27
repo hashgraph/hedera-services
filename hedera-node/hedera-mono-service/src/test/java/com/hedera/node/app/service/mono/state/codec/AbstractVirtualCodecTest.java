@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.state.codec;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
@@ -87,8 +88,7 @@ abstract class AbstractVirtualCodecTest<T> {
         final var baos = new ByteArrayOutputStream();
         final var out = new WritableStreamingData(baos);
         try {
-            subject.write(instance, new WritableStreamingData(out));
-            out.flush();
+            subject.write(instance, out);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -113,8 +113,8 @@ abstract class AbstractVirtualCodecTest<T> {
         final var in = new ReadableStreamingData(bais);
         byte[] leftover;
         try {
-            instance = subject.parse(new ReadableStreamingData(in));
-            leftover = in.readAllBytes();
+            instance = subject.parse(in);
+            leftover = PbjConverter.asBytes(in.readBytes(Integer.MAX_VALUE));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

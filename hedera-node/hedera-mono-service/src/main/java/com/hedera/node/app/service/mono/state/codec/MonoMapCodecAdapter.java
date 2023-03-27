@@ -107,10 +107,13 @@ public class MonoMapCodecAdapter {
             public T parse(final @NonNull ReadableSequentialData input) throws IOException {
                 final var item = factory.get();
                 if (input instanceof ReadableStreamingData in) {
-                    item.deserialize(new SerializableDataInputStream(in), version);
+                    final var buffer = new byte[input.readInt()];
+                    input.readBytes(buffer);
+                    final var bais = new ByteArrayInputStream(buffer);
+                    item.deserialize(new SerializableDataInputStream(bais), version);
                 } else if (input instanceof BufferedData dataBuffer) {
                     // TODO: Is it possible to get direct access to the underlying ByteBuffer here?
-                    final var byteBuffer = ByteBuffer.allocate(dataBuffer.capacity());
+                    final var byteBuffer = ByteBuffer.allocate(Math.toIntExact(dataBuffer.capacity()));
                     dataBuffer.readBytes(byteBuffer);
                     // TODO: Remove the following line once this was fixed in BufferedData
                     dataBuffer.skip(dataBuffer.remaining());
@@ -132,10 +135,16 @@ public class MonoMapCodecAdapter {
             @Override
             public void write(final @NonNull T item, final @NonNull WritableSequentialData output) throws IOException {
                 if (output instanceof WritableStreamingData out) {
-                    item.serialize(new SerializableDataOutputStream(out));
+                    final var baos = new ByteArrayOutputStream();
+                    try (final var outStream = new SerializableDataOutputStream(baos)) {
+                        item.serialize(outStream);
+                        outStream.flush();
+                    }
+                    out.writeInt(baos.toByteArray().length);
+                    out.writeBytes(baos.toByteArray());
                 } else if (output instanceof BufferedData dataBuffer) {
                     // TODO: Is it possible to get direct access to the underlying ByteBuffer here?
-                    final var byteBuffer = ByteBuffer.allocate(dataBuffer.capacity());
+                    final var byteBuffer = ByteBuffer.allocate(Math.toIntExact(dataBuffer.capacity()));
                     item.serialize(byteBuffer);
                     byteBuffer.rewind();
                     dataBuffer.writeBytes(byteBuffer);
@@ -169,10 +178,13 @@ public class MonoMapCodecAdapter {
             public T parse(final @NonNull ReadableSequentialData input) throws IOException {
                 final var item = factory.get();
                 if (input instanceof ReadableStreamingData in) {
-                    item.deserialize(new SerializableDataInputStream(in), version);
+                    final var buffer = new byte[input.readInt()];
+                    input.readBytes(buffer);
+                    final var bais = new ByteArrayInputStream(buffer);
+                    item.deserialize(new SerializableDataInputStream(bais), version);
                 } else if (input instanceof BufferedData dataBuffer) {
                     // TODO: Is it possible to get direct access to the underlying ByteBuffer here?
-                    final var byteBuffer = ByteBuffer.allocate(dataBuffer.capacity());
+                    final var byteBuffer = ByteBuffer.allocate(Math.toIntExact(dataBuffer.capacity()));
                     dataBuffer.readBytes(byteBuffer);
                     // TODO: Remove the following line once this was fixed in BufferedData
                     dataBuffer.skip(dataBuffer.remaining());
@@ -194,10 +206,16 @@ public class MonoMapCodecAdapter {
             @Override
             public void write(final @NonNull T item, final @NonNull WritableSequentialData output) throws IOException {
                 if (output instanceof WritableStreamingData out) {
-                    item.serialize(new SerializableDataOutputStream(out));
+                    final var baos = new ByteArrayOutputStream();
+                    try (final var outStream = new SerializableDataOutputStream(baos)) {
+                        item.serialize(outStream);
+                        outStream.flush();
+                    }
+                    out.writeInt(baos.toByteArray().length);
+                    out.writeBytes(baos.toByteArray());
                 } else if (output instanceof BufferedData dataBuffer) {
                     // TODO: Is it possible to get direct access to the underlying ByteBuffer here?
-                    final var byteBuffer = ByteBuffer.allocate(dataBuffer.capacity());
+                    final var byteBuffer = ByteBuffer.allocate(Math.toIntExact(dataBuffer.capacity()));
                     item.serialize(byteBuffer);
                     byteBuffer.rewind();
                     dataBuffer.writeBytes(byteBuffer);

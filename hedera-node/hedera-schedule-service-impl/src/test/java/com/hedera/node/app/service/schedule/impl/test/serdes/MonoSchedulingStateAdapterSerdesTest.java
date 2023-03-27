@@ -51,7 +51,6 @@ class MonoSchedulingStateAdapterSerdesTest {
         final ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
         final WritableStreamingData actualOut = new WritableStreamingData(byteStream);
         subject.write(SOME_SCHEDULING_STATE, actualOut);
-        actualOut.flush();
 
         final ReadableStreamingData actualIn =
                 new ReadableStreamingData(new ByteArrayInputStream(byteStream.toByteArray()));
