@@ -192,12 +192,11 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     public MerkleHederaState(
             @NonNull final Consumer<Event> onPreHandle,
             @NonNull final BiConsumer<Round, SwirldDualState> onHandleConsensusRound,
-            @NonNull final OnStateInitialized onInit,
-            @NonNull final FCHashMap<ByteString, EntityNum> aliases) {
+            @NonNull final OnStateInitialized onInit) {
         this.onPreHandle = Objects.requireNonNull(onPreHandle);
         this.onHandleConsensusRound = Objects.requireNonNull(onHandleConsensusRound);
         this.onInit = Objects.requireNonNull(onInit);
-        this.aliases = Objects.requireNonNull(aliases);
+        this.aliases = new FCHashMap<>();
     }
 
     /**
@@ -266,11 +265,6 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     @Override
     public int getVersion() {
         return CURRENT_VERSION;
-    }
-
-    /** TEMPORARY: Gets access to the aliases rebuilt data structure. */
-    public final FCHashMap<ByteString, EntityNum> getAliases() {
-        return aliases;
     }
 
     /**
@@ -662,8 +656,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      * better than having this here.
      */
     @Deprecated(forRemoval = true)
-    public StateChildrenProvider getStateChildrenProvider(
-            @NonNull final Platform platform, @NonNull final Map<ByteString, EntityNum> aliases) {
+    public StateChildrenProvider getStateChildrenProvider(@NonNull final Platform platform) {
         return new StateChildrenProvider() {
             @Override
             @SuppressWarnings("unchecked")

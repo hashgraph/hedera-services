@@ -78,7 +78,6 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
-import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.platform.gui.SwirldsGui;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -247,8 +246,7 @@ public final class Hedera implements SwirldMain {
     @Override
     @NonNull
     public SwirldState newState() {
-        return new MerkleHederaState(
-                this::onPreHandle, this::onHandleConsensusRound, this::onStateInitialized, new FCHashMap<>());
+        return new MerkleHederaState(this::onPreHandle, this::onHandleConsensusRound, this::onStateInitialized);
     }
 
     /*==================================================================================================================
@@ -683,9 +681,9 @@ public final class Hedera implements SwirldMain {
         logger.debug("Initializing dagger");
         final var selfId = platform.getSelfId().getId();
         if (daggerApp == null) {
+            stateChildren = state.getStateChildrenProvider(platform);
             // Today, the alias map has to be constructed by walking over all accounts.
-            // TODO Populate aliases properly
-            stateChildren = state.getStateChildrenProvider(platform, state.getAliases());
+            // TODO Populate aliases from stateChildren based on the accounts
             final var nodeAddress = stateChildren.addressBook().getAddress(selfId);
             final var initialHash =
                     stateChildren.runningHashLeaf().getRunningHash().getHash();
