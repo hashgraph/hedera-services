@@ -152,6 +152,7 @@ public class MigrationRecordsManager {
 
         curNetworkCtx.markMigrationRecordsStreamed();
         systemAccountsCreator.forgetCreations();
+        blocklistAccountCreator.forgetCreatedBlockedAccounts();
     }
 
     private void publishAccountsCreated(
