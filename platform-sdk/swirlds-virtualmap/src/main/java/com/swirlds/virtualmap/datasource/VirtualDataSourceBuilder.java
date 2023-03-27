@@ -58,14 +58,20 @@ public interface VirtualDataSourceBuilder<K extends VirtualKey<? super K>, V ext
      * a snapshot of the given data source. The new data source doesn't have background file
      * compaction enabled.
      *
-     * This method is used when a virtual map copy is created during reconnects.
+     * This method is used when a virtual map copy is created during reconnects. When a copy is
+     * created on the teacher side, the original data source is preserved as active, i.e. used
+     * to handle transactions. When this method is used on the learner side, it behaves in the
+     * opposite way: the copied data source becomes active, while the original data source isn't
+     * used any longer other than to re-initiate reconnect when failed.
      *
      * @param snapshotMe
      * 		The dataSource to invoke snapshot on. Cannot be null
+     * @param makeCopyActive
+     *      Indicates whether to make the copy active or keep the original data source active
      * @return
      * 		An opened {@link VirtualDataSource}
      */
-    VirtualDataSource<K, V> copy(VirtualDataSource<K, V> snapshotMe);
+    VirtualDataSource<K, V> copy(VirtualDataSource<K, V> snapshotMe, boolean makeCopyActive);
 
     /**
      * Builds a new {@link VirtualDataSource} using the configuration of this builder by creating

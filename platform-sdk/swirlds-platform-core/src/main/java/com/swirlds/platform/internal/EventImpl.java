@@ -74,9 +74,9 @@ public class EventImpl extends AbstractSerializableHashable
                 Timestamped {
 
     /**
-     * the consensus timestamp of a transaction is guaranteed to be at least this many nanoseconds
-     * later than that of the transaction immediately before it in consensus order,
-     * and to be a multiple of this (must be positive and a multiple of 10)
+     * the consensus timestamp of a transaction is guaranteed to be at least this many nanoseconds later than that of
+     * the transaction immediately before it in consensus order, and to be a multiple of this (must be positive and a
+     * multiple of 10)
      */
     public static final long MIN_TRANS_TIMESTAMP_INCR_NANOS = 1_000;
 
@@ -105,6 +105,22 @@ public class EventImpl extends AbstractSerializableHashable
 
     /** The number of application transactions in this round */
     private int numAppTransactions = 0;
+
+    /**
+     * The sequence number of an event before it is added to the write queue.
+     */
+    public static final long NO_STREAM_SEQUENCE_NUMBER = -1;
+
+    /**
+     * The sequence number of an event that will never be written to disk because it is stale.
+     */
+    public static final long STALE_EVENT_STREAM_SEQUENCE_NUMBER = -2;
+
+    /**
+     * Each event is assigned a sequence number as it is written to the preconsensus event stream. This is used to
+     * signal when events have been made durable.
+     */
+    private long streamSequenceNumber = NO_STREAM_SEQUENCE_NUMBER; // needs to be atomic, thread will mark as stale
 
     public EventImpl() {}
 
@@ -174,6 +190,31 @@ public class EventImpl extends AbstractSerializableHashable
     }
 
     /**
+     * Set the sequence number in the preconsenus event stream for this event.
+     *
+     * @param streamSequenceNumber the sequence number
+     */
+    public void setStreamSequenceNumber(final long streamSequenceNumber) {
+        if (this.streamSequenceNumber != NO_STREAM_SEQUENCE_NUMBER
+                && streamSequenceNumber != STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
+            throw new IllegalStateException("sequence number already set");
+        }
+        this.streamSequenceNumber = streamSequenceNumber;
+    }
+
+    /**
+     * Get the sequence number in the preconsensus event stream for this event.
+     *
+     * @return the sequence number
+     */
+    public long getStreamSequenceNumber() {
+        if (streamSequenceNumber == NO_STREAM_SEQUENCE_NUMBER) {
+            throw new IllegalStateException("sequence number not set");
+        }
+        return streamSequenceNumber;
+    }
+
+    /**
      * initialize RunningHash instance
      */
     private void setDefaultValues() {
@@ -203,17 +244,13 @@ public class EventImpl extends AbstractSerializableHashable
     /**
      * Set the consensusTimestamp to an estimate of what it will be when consensus is reached even if it has already
      * reached consensus. Callers are responsible for checking the consensus systemIndicesStatus of this event and using
-     * the
-     * consensus time or estimated time appropriately.
-     *
+     * the consensus time or estimated time appropriately.
+     * <p>
      * Estimated consensus times are predicted only here and in Platform.estimateTime().
      *
-     * @param selfId
-     * 		the ID of this platform
-     * @param avgSelfCreatedTimestamp
-     * 		self event consensus timestamp minus time created
-     * @param avgOtherReceivedTimestamp
-     * 		other event consensus timestamp minus time received
+     * @param selfId                    the ID of this platform
+     * @param avgSelfCreatedTimestamp   self event consensus timestamp minus time created
+     * @param avgOtherReceivedTimestamp other event consensus timestamp minus time received
      */
     public synchronized void estimateTime(
             final NodeId selfId, final double avgSelfCreatedTimestamp, final double avgOtherReceivedTimestamp) {
@@ -260,8 +297,7 @@ public class EventImpl extends AbstractSerializableHashable
     /**
      * Returns the timestamp of the transaction with given index in this event
      *
-     * @param transactionIndex
-     * 		index of the transaction in this event
+     * @param transactionIndex index of the transaction in this event
      * @return timestamp of the given index transaction
      */
     public Instant getTransactionTime(final int transactionIndex) {
@@ -300,11 +336,10 @@ public class EventImpl extends AbstractSerializableHashable
     }
 
     /**
-     * Events compare by generation. So sorting is always a topological sort. Returns -1 if this.generation
-     * is less than other.generation, 1 if greater, 0 if equal.
+     * Events compare by generation. So sorting is always a topological sort. Returns -1 if this.generation is less than
+     * other.generation, 1 if greater, 0 if equal.
      *
-     * @param other
-     *        {@inheritDoc}
+     * @param other {@inheritDoc}
      * @return {@inheritDoc}
      */
     @Override
@@ -419,8 +454,8 @@ public class EventImpl extends AbstractSerializableHashable
     }
 
     /**
-     * Propagates consensus data to all transactions. Invoked when this event has reached consensus and all
-     * consensus data is set.
+     * Propagates consensus data to all transactions. Invoked when this event has reached consensus and all consensus
+     * data is set.
      */
     public void consensusReached() {
         final ConsensusTransactionImpl[] transactions = getTransactions();
@@ -627,32 +662,28 @@ public class EventImpl extends AbstractSerializableHashable
     //////////////////////////////////////////
 
     /**
-     * @param selfParent
-     * 		the self parent of this
+     * @param selfParent the self parent of this
      */
     public void setSelfParent(final EventImpl selfParent) {
         internalEventData.setSelfParent(selfParent);
     }
 
     /**
-     * @param otherParent
-     * 		the other parent of this
+     * @param otherParent the other parent of this
      */
     public void setOtherParent(final EventImpl otherParent) {
         internalEventData.setOtherParent(otherParent);
     }
 
     /**
-     * @param fameDecided
-     * 		is this both a witness and the fame election is over?
+     * @param fameDecided is this both a witness and the fame election is over?
      */
     public void setFameDecided(final boolean fameDecided) {
         internalEventData.setFameDecided(fameDecided);
     }
 
     /**
-     * @param consensus
-     * 		is this part of the consensus order yet?
+     * @param consensus is this part of the consensus order yet?
      */
     public void setConsensus(final boolean consensus) {
         internalEventData.setConsensus(consensus);
@@ -666,8 +697,7 @@ public class EventImpl extends AbstractSerializableHashable
     }
 
     /**
-     * @param timeReceived
-     * 		the time this event was first received locally
+     * @param timeReceived the time this event was first received locally
      */
     public void setTimeReceived(final Instant timeReceived) {
         internalEventData.setTimeReceived(timeReceived);
@@ -686,8 +716,7 @@ public class EventImpl extends AbstractSerializableHashable
     }
 
     /**
-     * @param estimatedTime
-     * 		an estimate of what the consensus timestamp will be (could be a very bad guess)
+     * @param estimatedTime an estimate of what the consensus timestamp will be (could be a very bad guess)
      */
     public void setEstimatedTime(final Instant estimatedTime) {
         internalEventData.setEstimatedTime(estimatedTime);
@@ -715,8 +744,8 @@ public class EventImpl extends AbstractSerializableHashable
     }
 
     /**
-     * @param firstElection
-     * 		the Election associated with the earliest round involved in the election for this event's fame
+     * @param firstElection the Election associated with the earliest round involved in the election for this event's
+     *                      fame
      */
     public void setFirstElection(final RoundInfo.ElectionRound firstElection) {
         internalEventData.setFirstElection(firstElection);
@@ -730,8 +759,7 @@ public class EventImpl extends AbstractSerializableHashable
     }
 
     /**
-     * @param mark
-     * 		temporarily used during any graph algorithm that needs to mark vertices (events) already visited
+     * @param mark temporarily used during any graph algorithm that needs to mark vertices (events) already visited
      */
     public void setMark(final int mark) {
         internalEventData.setMark(mark);
@@ -745,40 +773,36 @@ public class EventImpl extends AbstractSerializableHashable
     }
 
     /**
-     * @param recTimes
-     * 		the time at which each unique famous witness in the received round first received this event
+     * @param recTimes the time at which each unique famous witness in the received round first received this event
      */
     public void setRecTimes(final ArrayList<Instant> recTimes) {
         internalEventData.setRecTimes(recTimes);
     }
 
     /**
-     * @return is roundCreated frozen (won't change with address book changes)? True if an ancestor of a famous
-     * 		witness
+     * @return is roundCreated frozen (won't change with address book changes)? True if an ancestor of a famous witness
      */
     public boolean isFrozen() {
         return internalEventData.isFrozen();
     }
 
     /**
-     * @param frozen
-     * 		is roundCreated frozen (won't change with address book changes)? True if an ancestor of a famous witness
+     * @param frozen is roundCreated frozen (won't change with address book changes)? True if an ancestor of a famous
+     *               witness
      */
     public void setFrozen(final boolean frozen) {
         internalEventData.setFrozen(frozen);
     }
 
     /**
-     * @param reachedConsTimestamp
-     * 		the local time (not consensus time) at which the event reached consensus
+     * @param reachedConsTimestamp the local time (not consensus time) at which the event reached consensus
      */
     public void setReachedConsTimestamp(final Instant reachedConsTimestamp) {
         internalEventData.setReachedConsTimestamp(reachedConsTimestamp);
     }
 
     /**
-     * @param m
-     * 		the member ID
+     * @param m the member ID
      * @return last ancestor created by m (memoizes lastSee function from Swirlds-TR-2020-01)
      */
     public EventImpl getLastSee(final int m) {
@@ -788,10 +812,8 @@ public class EventImpl extends AbstractSerializableHashable
     /**
      * remember event, the last ancestor created by m (memoizes lastSee function from Swirlds-TR-2020-01)
      *
-     * @param m
-     * 		the member ID of the creator
-     * @param event
-     * 		the last seen {@link EventImpl} object created by m
+     * @param m     the member ID of the creator
+     * @param event the last seen {@link EventImpl} object created by m
      */
     public void setLastSee(final int m, final EventImpl event) {
         internalEventData.setLastSee(m, event);
@@ -801,8 +823,7 @@ public class EventImpl extends AbstractSerializableHashable
      * Initialize the lastSee array to hold n elements (for n &ge; 0) (memoizes lastSee function from
      * Swirlds-TR-2020-01)
      *
-     * @param n
-     * 		number of members in AddressBook
+     * @param n number of members in AddressBook
      */
     public void initLastSee(final int n) {
         internalEventData.initLastSee(n);
@@ -816,8 +837,7 @@ public class EventImpl extends AbstractSerializableHashable
     }
 
     /**
-     * @param m
-     * 		the member ID
+     * @param m the member ID
      * @return strongly-seen witness in parent round by m (memoizes stronglySeeP function from Swirlds-TR-2020-01)
      */
     public EventImpl getStronglySeeP(final int m) {
@@ -828,10 +848,8 @@ public class EventImpl extends AbstractSerializableHashable
      * remember event, the strongly-seen witness in parent round by m (memoizes stronglySeeP function from
      * Swirlds-TR-2020-01)
      *
-     * @param m
-     * 		the member ID of the creator
-     * @param event
-     * 		the strongly-seen witness in parent round created by m
+     * @param m     the member ID of the creator
+     * @param event the strongly-seen witness in parent round created by m
      */
     public void setStronglySeeP(final int m, final EventImpl event) {
         internalEventData.setStronglySeeP(m, event);
@@ -885,21 +903,6 @@ public class EventImpl extends AbstractSerializableHashable
      */
     public void setFirstWitnessS(final EventImpl firstWitnessS) {
         internalEventData.setFirstWitnessS(firstWitnessS);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public boolean isLastOneBeforeShutdown() {
-        return internalEventData.isLastEventBeforeShutdown();
-    }
-
-    /**
-     * @param isLastEventBeforeShutdown
-     * 		whether this event is the last event to be written to event stream before shut down
-     */
-    public void setLastOneBeforeShutdown(final boolean isLastEventBeforeShutdown) {
-        internalEventData.setLastEventBeforeShutdown(isLastEventBeforeShutdown);
     }
 
     //////////////////////////////////////////
@@ -1083,5 +1086,16 @@ public class EventImpl extends AbstractSerializableHashable
     @Override
     public String toString() {
         return toMediumString();
+    }
+
+    /**
+     * Get a mnemonic string representing this event. Event should be hashed prior to this being called. Useful for
+     * debugging.
+     */
+    public String toMnemonic() {
+        if (getHash() == null) {
+            return "unhashed-event";
+        }
+        return getHash().toMnemonic();
     }
 }

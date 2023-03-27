@@ -80,7 +80,7 @@ class LegacyCsvWriterTest {
         final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, metricsConfig);
 
         // then
-        assertThat(writer.toString()).matches("^LegacyCsvWriter\\{csvFilePath=" + tempDir + ".*}$");
+        assertThat(writer.toString()).matches("^LegacyCsvWriter\\[csvFilePath=" + tempDir + ".*]$");
     }
 
     @Test

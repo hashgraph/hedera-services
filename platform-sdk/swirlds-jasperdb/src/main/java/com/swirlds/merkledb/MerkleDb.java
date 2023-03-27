@@ -34,6 +34,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -73,7 +74,7 @@ public final class MerkleDb {
     private static final Logger logger = LogManager.getLogger(MerkleDb.class);
 
     /** Max number of tables in a single database instance */
-    private static final int MAX_TABLES = 256;
+    private static final int MAX_TABLES = 4096;
 
     /** Sub-folder name for shared database data. Relative to database storage dir */
     private static final String SHARED_DIRNAME = "shared";
@@ -102,8 +103,9 @@ public final class MerkleDb {
     private final Path storageDir;
 
     /**
-     * When a new data source is created, it gets an ID within the database. The next ID to use is
-     * tracked in this field.
+     * When a new data source is created, it gets an ID within the database. This field is used
+     * to generate an ID. The database starts from the value of the field and checks if there
+     * is a table with the corresponding ID. If so, it increments the field and checks again.
      */
     private final AtomicInteger nextTableId = new AtomicInteger(0);
 
@@ -120,6 +122,19 @@ public final class MerkleDb {
      */
     @SuppressWarnings("rawtypes")
     private final AtomicReferenceArray<MerkleDbDataSource> dataSources = new AtomicReferenceArray<>(MAX_TABLES);
+
+    /**
+     * For every table name (data source label) there may be multiple tables in a single
+     * database. One of them is "primary", it's used by some virtual map in the merkle tree. All
+     * others are "secondary", for example, they are used during reconnects (both on the teacher
+     * and the learner sides). Secondary tables are deleted, both metadata and data, when the
+     * corresponding data source is closed. When a primary data source is closed, its data is
+     * preserved on disk.
+     *
+     * Secondary tables are not included to snapshots and aren't written to DB metadata.
+     */
+    @SuppressWarnings("rawtypes")
+    private final Set<Integer> primaryTables = ConcurrentHashMap.newKeySet();
 
     /**
      * Returns a virtual database instance for a given path. If the instance doesn't exist, it gets
@@ -187,14 +202,6 @@ public final class MerkleDb {
         }
         this.storageDir = storageDir;
         this.tableConfigs = loadMetadata();
-        int maxTableId = 0;
-        for (int i = MAX_TABLES - 1; i >= 0; i--) {
-            if (tableConfigs.get(i) != null) {
-                maxTableId = i;
-                break;
-            }
-        }
-        this.nextTableId.set(maxTableId + 1);
         try {
             Files.createDirectories(getSharedDir());
             Files.createDirectories(getTablesDir());
@@ -203,6 +210,22 @@ public final class MerkleDb {
         }
         // If this is a new database, create the metadata file
         storeMetadata();
+    }
+
+    /**
+     * Iterates over the list of table metadata starting from index from {@link #nextTableId} until
+     * it finds an ID that isn't used by a table.
+     *
+     * @return The next available table ID
+     */
+    private int getNextTableId() {
+        for (int tablesCount = 0; tablesCount < MAX_TABLES; tablesCount++) {
+            final int id = Math.abs(nextTableId.getAndIncrement() % MAX_TABLES);
+            if (tableConfigs.get(id) == null) {
+                return id;
+            }
+        }
+        throw new IllegalStateException("Tables limit is reached");
     }
 
     /**
@@ -242,18 +265,19 @@ public final class MerkleDb {
     }
 
     /**
-     * Database storage dir to store data for a data source with the specified name. This is a
-     * sub-folder in {@link #getTablesDir()}
+     * Database storage dir to store data for a data source with the specified name and table ID.
+     * This is a sub-folder in {@link #getTablesDir()}
      *
      * @param tableName Table name
+     * @param tableId Table ID
      * @return Database storage dir to store data for the specified table
      */
-    public Path getTableDir(final String tableName) {
-        return getTableDir(storageDir, tableName);
+    public Path getTableDir(final String tableName, final int tableId) {
+        return getTableDir(storageDir, tableName, tableId);
     }
 
-    private static Path getTableDir(final Path baseDir, final String tableName) {
-        return getTablesDir(baseDir).resolve(tableName);
+    private static Path getTableDir(final Path baseDir, final String tableName, final int tableId) {
+        return getTablesDir(baseDir).resolve(tableName + "-" + tableId);
     }
 
     /**
@@ -274,7 +298,7 @@ public final class MerkleDb {
     public <K extends VirtualKey<? super K>, V extends VirtualValue> MerkleDbDataSource<K, V> createDataSource(
             final String label, final MerkleDbTableConfig<K, V> tableConfig, final boolean dbCompactionEnabled)
             throws IOException {
-        // This method should be synchronzed, as between tableExists() and tableConfigs.set()
+        // This method should be synchronized, as between tableExists() and tableConfigs.set()
         // a new data source can be created in a parallel thread. However, the current assumption
         // is no threads are creating a data source with the same name at the same time. From
         // Java memory perspective, neither of methods in this class need to be synchronized, as
@@ -282,16 +306,60 @@ public final class MerkleDb {
         if (tableExists(label)) {
             throw new IllegalStateException("Table already exists: " + label);
         }
-        final int tableId = nextTableId.getAndIncrement();
-        if (tableId >= MAX_TABLES) {
-            throw new IllegalStateException("Tables limit is reached");
-        }
+        final int tableId = getNextTableId();
         tableConfigs.set(tableId, new TableMetadata(tableId, label, tableConfig));
         MerkleDbDataSource<K, V> dataSource =
                 new MerkleDbDataSource<>(this, label, tableId, tableConfig, dbCompactionEnabled);
         dataSources.set(tableId, dataSource);
+        // New tables are always primary
+        primaryTables.add(tableId);
         storeMetadata();
         return dataSource;
+    }
+
+    /**
+     * Make a data source copy. The copied data source has the same metadata and label (table name),
+     * but a different table ID.
+     *
+     * Only one data source for any given label can be active at a time, that is used by a virtual
+     * map in the merkle tree. If makeCopyPrimary is {@code true}, the copy is marked as active, and
+     * the original data source is marked as secondary. This happens when a learner creates a copy
+     * of a virtual root during reconnects. If makeCopyPrimary is {@code false}, the copy is not
+     * marked as active, and the status of the original data source is not changed. This mode is used
+     * during reconnects by teachers.
+     *
+     * @param dataSource Data source to copy
+     * @param makeCopyPrimary Whether to make the copy primary
+     * @return A copied data source
+     * @param <K> Virtual key type
+     * @param <V> Virtual value type
+     * @throws IOException If an I/O error occurs
+     */
+    public <K extends VirtualKey<? super K>, V extends VirtualValue> MerkleDbDataSource<K, V> copyDataSource(
+            final MerkleDbDataSource<K, V> dataSource, final boolean makeCopyPrimary) throws IOException {
+        final String label = dataSource.getTableName();
+        final int tableId = getNextTableId();
+        final MerkleDbTableConfig<K, V> tableConfig =
+                dataSource.getTableConfig().copy();
+        tableConfigs.set(tableId, new TableMetadata(tableId, label, tableConfig));
+        try {
+            startSnapshot(Set.of(dataSource));
+            // No need to snapshot shared data, just a single table
+            snapshotTable(getTableDir(label, tableId), dataSource);
+        } finally {
+            endSnapshot(Set.of(dataSource));
+        }
+        final MerkleDbDataSource<K, V> copy =
+                new MerkleDbDataSource<>(this, label, tableId, tableConfig, makeCopyPrimary);
+        dataSources.set(tableId, copy);
+        if (makeCopyPrimary) {
+            dataSource.stopBackgroundCompaction();
+            primaryTables.remove(dataSource.getTableId());
+            primaryTables.add(tableId);
+            // Only need to update metadata, if the primary table is changed
+            storeMetadata();
+        }
+        return copy;
     }
 
     /**
@@ -350,25 +418,29 @@ public final class MerkleDb {
         final int tableId = dataSource.getTableId();
         assert dataSources.get(tableId) != null;
         dataSources.set(tableId, null);
-        storeMetadata();
+        if (!primaryTables.contains(tableId)) {
+            // Delete data, if the table is secondary
+            removeTable(tableId);
+        }
     }
 
     /**
      * For testing purpose only.
      *
-     * Removes the data source altogether. Table config and table data files are deleted.
+     * Removes the table. Table config and table data files are deleted.
      *
-     * @param name Data source name to remove
+     * @param tableId ID of the table to remove
      */
-    void removeDataSource(final String name) {
-        final TableMetadata metadata = getTableMetadata(name);
-        if (metadata != null) {
-            final int tableId = metadata.tableId();
-            dataSources.set(tableId, null);
-            tableConfigs.set(tableId, null);
-            storeMetadata();
+    void removeTable(final int tableId) {
+        final TableMetadata metadata = tableConfigs.get(tableId);
+        if (metadata == null) {
+            throw new IllegalArgumentException("Unknown table ID: " + tableId);
         }
-        DataFileCommon.deleteDirectoryAndContents(getTableDir(name));
+        assert dataSources.get(tableId) == null; // data source must have been already closed
+        final String label = metadata.tableName();
+        tableConfigs.set(tableId, null);
+        DataFileCommon.deleteDirectoryAndContents(getTableDir(label, tableId));
+        storeMetadata();
     }
 
     /**
@@ -396,26 +468,20 @@ public final class MerkleDb {
     }
 
     /**
-     * Takes a snapshot of the database into the specified folder. All database shared and table
-     * data is included to the snapshot.
+     * Takes a snapshot of the database into the specified folder. Only primary open tables are
+     * included to snapshots.
      *
      * @param destination Destination folder
-     * @throws IOException If an I/O error occurred
-     */
-    public void snapshot(final Path destination) throws IOException {
-        snapshot(destination, getOpenedDataSources());
-    }
-
-    /**
-     * Takes a snapshot of the database into the specified folder. Database shared data and table
-     * data for the specified list of tables is included to the snapshot.
-     *
-     * @param destination Destination folder
-     * @param tables List of tables to include to the snapshot
      * @throws IOException If an I/O error occurred
      */
     @SuppressWarnings("rawtypes")
-    public void snapshot(final Path destination, final Collection<MerkleDbDataSource> tables) throws IOException {
+    public void snapshot(final Path destination) throws IOException {
+        final Collection<MerkleDbDataSource> tables = primaryTables.stream()
+                .map(dataSources::get)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        // Check if the destination path is a MerkleDb instance. If so, compare the list of
+        // tables in this database and the destination database
         if (Files.exists(destination.resolve(METADATA_FILENAME))) {
             final Set<String> tableNames =
                     tables.stream().map(MerkleDbDataSource::getTableName).collect(Collectors.toSet());
@@ -478,16 +544,21 @@ public final class MerkleDb {
     }
 
     @SuppressWarnings("rawtypes")
-    private void snapshotTables(final Path destination, final Collection<MerkleDbDataSource> tables) {
+    private static void snapshotTables(final Path destination, final Collection<MerkleDbDataSource> tables) {
         // Call snapshot() on all data sources. Can be done in parallel
         tables.parallelStream().forEach(dataSource -> {
-            final Path tableDir = getTableDir(destination, dataSource.getTableName());
+            final Path tableDir = getTableDir(destination, dataSource.getTableName(), dataSource.getTableId());
             try {
-                dataSource.snapshot(tableDir);
+                snapshotTable(tableDir, dataSource);
             } catch (IOException z) {
                 throw new UncheckedIOException(z);
             }
         });
+    }
+
+    @SuppressWarnings("rawtypes")
+    private static void snapshotTable(final Path targetDir, final MerkleDbDataSource table) throws IOException {
+        table.snapshot(targetDir);
     }
 
     @SuppressWarnings("rawtypes")
@@ -523,7 +594,11 @@ public final class MerkleDb {
         if (!Files.exists(defaultInstancePath.resolve(METADATA_FILENAME))) {
             Files.createDirectories(defaultInstancePath);
             hardLinkTree(source.resolve(METADATA_FILENAME), defaultInstancePath.resolve(METADATA_FILENAME));
-            hardLinkTree(source.resolve(SHARED_DIRNAME), defaultInstancePath.resolve(SHARED_DIRNAME));
+            final Path sharedDirPath = source.resolve(SHARED_DIRNAME);
+            // No shared data yet, so the folder may be empty or even may not exist
+            if (Files.exists(sharedDirPath)) {
+                hardLinkTree(sharedDirPath, defaultInstancePath.resolve(SHARED_DIRNAME));
+            }
             hardLinkTree(source.resolve(TABLES_DIRNAME), defaultInstancePath.resolve(TABLES_DIRNAME));
         } else {
             // Check the target database:
@@ -534,7 +609,7 @@ public final class MerkleDb {
     }
 
     private void storeMetadata() {
-        storeMetadata(storageDir, getAllTables());
+        storeMetadata(storageDir, getPrimaryTables());
     }
 
     /**
@@ -570,7 +645,14 @@ public final class MerkleDb {
     }
 
     private AtomicReferenceArray<TableMetadata> loadMetadata() {
-        return loadMetadata(storageDir);
+        final AtomicReferenceArray<TableMetadata> metadata = loadMetadata(storageDir);
+        // All tables loaded from disk are primary
+        for (int i = 0; i < MAX_TABLES; i++) {
+            if (metadata.get(i) != null) {
+                primaryTables.add(i);
+            }
+        }
+        return metadata;
     }
 
     /**
@@ -623,8 +705,8 @@ public final class MerkleDb {
     }
 
     /**
-     * Returns table metadata for the table with the specified name. If there is no table with the
-     * name, returns {@code null}.
+     * Returns table metadata for the primary table with the specified name. If there is no table
+     * with the name, returns {@code null}.
      *
      * @param tableName Table name
      * @return Table metadata or {@code null} if the table with the specified name doesn't exist
@@ -632,48 +714,26 @@ public final class MerkleDb {
     private TableMetadata getTableMetadata(final String tableName) {
         // I wish there was AtomicReferenceArray.stream()
         for (int i = 0; i < tableConfigs.length(); i++) {
-            final TableMetadata tableMetadata = tableConfigs.get(i);
-            if ((tableMetadata != null) && tableName.equals(tableMetadata.tableName())) {
-                return tableMetadata;
+            final TableMetadata metadata = tableConfigs.get(i);
+            if ((metadata != null) && tableName.equals(metadata.tableName()) && primaryTables.contains(i)) {
+                return metadata;
             }
         }
         return null;
     }
 
     /**
-     * Returns the list of opened data source objects in this database. A data source is opened when
-     * it's created from scratch using {@link #createDataSource(String, MerkleDbTableConfig,
-     * boolean)} or when it's loaded from existing database using {@link #getDataSource(String,
-     * boolean)}. Data sources can be closed with {@link #closeDataSource(MerkleDbDataSource)}, such
-     * data sources aren't returned by this method.
-     *
-     * @return List of currently opened data sources in the database
-     */
-    @SuppressWarnings("rawtypes")
-    private Set<MerkleDbDataSource> getOpenedDataSources() {
-        // I wish there was AtomicReferenceArray.stream()
-        final Set<MerkleDbDataSource> result = new HashSet<>();
-        for (int i = 0; i < dataSources.length(); i++) {
-            final MerkleDbDataSource dataSource = dataSources.get(i);
-            if (dataSource != null) {
-                result.add(dataSource);
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Returns the list of all tables in this database. The corresponding data source may or may not
-     * be opened.
+     * Returns the list of primary tables in this database. The corresponding data source may
+     * or may not be opened.
      *
      * @return List of all tables in the database
      */
-    private Set<TableMetadata> getAllTables() {
+    private Set<TableMetadata> getPrimaryTables() {
         // I wish there was AtomicReferenceArray.stream()
         final Set<TableMetadata> tables = new HashSet<>();
         for (int i = 0; i < tableConfigs.length(); i++) {
             final TableMetadata tableMetadata = tableConfigs.get(i);
-            if (tableMetadata != null) {
+            if ((tableMetadata != null) && primaryTables.contains(i)) {
                 tables.add(tableConfigs.get(i));
             }
         }
@@ -694,8 +754,11 @@ public final class MerkleDb {
     @SuppressWarnings("rawtypes")
     private record TableMetadata(int tableId, String tableName, MerkleDbTableConfig tableConfig) {
         public TableMetadata {
-            if (tableId == 0) {
-                throw new IllegalArgumentException("Table ID is 0");
+            if (tableId < 0) {
+                throw new IllegalArgumentException("Table ID < 0");
+            }
+            if (tableId >= MAX_TABLES) {
+                throw new IllegalArgumentException("Table ID >= MAX_TABLES");
             }
             if (tableName == null) {
                 throw new IllegalArgumentException("Table name is null");
@@ -704,5 +767,24 @@ public final class MerkleDb {
                 throw new IllegalArgumentException("Table config is null");
             }
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int hashCode() {
+        return storageDir.hashCode();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof MerkleDb other)) {
+            return false;
+        }
+        return Objects.equals(storageDir, other.storageDir);
     }
 }

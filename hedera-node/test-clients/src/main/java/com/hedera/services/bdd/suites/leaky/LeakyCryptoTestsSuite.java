@@ -174,6 +174,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 cannotExceedAccountAllowanceLimit(),
                 cannotExceedAllowancesTransactionLimit(),
                 createAnAccountWithEVMAddressAliasAndECKey(),
+                createAnAccountWithEVMAddress(),
                 scheduledCryptoApproveAllowanceWaitForExpiryTrue(),
                 txnsUsingHip583FunctionalitiesAreNotAcceptedWhenFlagsAreDisabled(),
                 getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
@@ -322,27 +323,26 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
         final Map<String, String> startingProps = new HashMap<>();
         return defaultHapiSpec("txnsUsingHip583FunctionalitiesAreNotAcceptedWhenFlagsAreDisabled")
                 .given(
-                        remembering(
-                                startingProps, LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED),
+                        remembering(startingProps, LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_ENABLED),
                         overridingTwo(
                                 LAZY_CREATION_ENABLED, FALSE_VALUE,
-                                CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, FALSE_VALUE),
+                                CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519))
                 .when(withOpContext((spec, opLog) -> {
                     final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
                     // create with ECDSA alias and no key
                     final var op =
-                            cryptoCreate(ACCOUNT).alias(ecdsaKey.toByteString()).hasPrecheck(NOT_SUPPORTED);
+                            cryptoCreate(ACCOUNT).alias(ecdsaKey.toByteString()).hasPrecheck(INVALID_ALIAS_KEY);
                     // create with EVM address alias and no key
                     final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                     final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(tmp));
-                    final var op2 = cryptoCreate(ACCOUNT).alias(evmAddress).hasPrecheck(NOT_SUPPORTED);
+                    final var op2 = cryptoCreate(ACCOUNT).alias(evmAddress).hasPrecheck(INVALID_ALIAS_KEY);
                     // create with ED alias and no key
                     final var ed25519Key = spec.registry().getKey(ED_25519_KEY);
                     final var op3 = cryptoCreate(ACCOUNT)
                             .alias(ed25519Key.toByteString())
-                            .hasPrecheck(NOT_SUPPORTED);
+                            .hasPrecheck(INVALID_ALIAS_KEY);
                     // create with evm address alias and ECDSA key
                     final var op4 = cryptoCreate(ACCOUNT)
                             .key(SECP_256K1_SOURCE_KEY)
@@ -352,12 +352,12 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                     final var op5 = cryptoCreate(ACCOUNT)
                             .key(ED_25519_KEY)
                             .alias(ed25519Key.toByteString())
-                            .hasPrecheck(NOT_SUPPORTED);
+                            .hasPrecheck(INVALID_ALIAS_KEY);
                     // create with ECDSA alias and key
                     final var op6 = cryptoCreate(ACCOUNT)
                             .key(SECP_256K1_SOURCE_KEY)
                             .alias(ecdsaKey.toByteString())
-                            .hasPrecheck(NOT_SUPPORTED);
+                            .hasPrecheck(INVALID_ALIAS_KEY);
                     // assert that an account created with ECDSA key and no alias
                     // does not automagically set alias to evm address
                     final var op7 = cryptoCreate(ACCOUNT).key(SECP_256K1_SOURCE_KEY);
@@ -498,13 +498,8 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
         final Map<String, String> startingProps = new HashMap<>();
         return defaultHapiSpec("CreateAnAccountWithEVMAddressAliasAndECKey")
                 .given(
-                        remembering(
-                                startingProps, LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED),
-                        overridingTwo(
-                                LAZY_CREATION_ENABLED,
-                                TRUE_VALUE,
-                                CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED,
-                                TRUE_VALUE),
+                        remembering(startingProps, LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_ENABLED),
+                        overridingTwo(LAZY_CREATION_ENABLED, TRUE_VALUE, CRYPTO_CREATE_WITH_ALIAS_ENABLED, TRUE_VALUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
                 .when(withOpContext((spec, opLog) -> {
                     final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
@@ -556,6 +551,27 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                     allRunFor(spec, hapiGetAccountInfo, hapiGetAnotherAccountInfo, getTxnRecord);
                 }))
                 .then(overridingAllOfDeferred(() -> startingProps));
+    }
+
+    private HapiSpec createAnAccountWithEVMAddress() {
+        return propertyPreservingHapiSpec("CreateAnAccountWithEVMAddress")
+                .preserving(LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_ENABLED)
+                .given(
+                        overridingTwo(LAZY_CREATION_ENABLED, TRUE_VALUE, CRYPTO_CREATE_WITH_ALIAS_ENABLED, TRUE_VALUE),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
+                .when(withOpContext((spec, opLog) -> {
+                    final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                    assert addressBytes.length > 0;
+                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
+                    final var op = cryptoCreate(ACCOUNT)
+                            .alias(evmAddressBytes)
+                            .balance(100 * ONE_HBAR)
+                            .hasPrecheck(INVALID_ALIAS_KEY);
+                    allRunFor(spec, op);
+                }))
+                .then();
     }
 
     private HapiSpec cannotExceedAllowancesTransactionLimit() {
@@ -688,41 +704,18 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
         final var payer = "payer";
         final var secondKey = "secondKey";
         return propertyPreservingHapiSpec("hollowAccountCreationChargesExpectedFees")
-                .preserving(LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED)
+                .preserving(LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_ENABLED)
                 .given(
-                        overridingTwo(
-                                LAZY_CREATION_ENABLED,
-                                "true",
-                                CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED,
-                                "true"),
+                        overridingTwo(LAZY_CREATION_ENABLED, "true", CRYPTO_CREATE_WITH_ALIAS_ENABLED, "true"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(secondKey).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(payer).balance(ONE_HUNDRED_HBARS + REDUCED_TOTAL_FEE),
+                        cryptoCreate(payer).balance(0L),
                         reduceFeeFor(
                                 List.of(CryptoTransfer, CryptoUpdate, CryptoCreate),
                                 REDUCED_NODE_FEE,
                                 REDUCED_NETWORK_FEE,
                                 REDUCED_SERVICE_FEE))
                 .when(withOpContext((spec, opLog) -> {
-                    // crypto create fees check
-                    final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
-                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                    final var addressBytes = recoverAddressFromPubKey(tmp);
-                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
-                    final var op = cryptoCreate(ACCOUNT)
-                            .alias(evmAddressBytes)
-                            .payingWith(payer)
-                            .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE)
-                            .balance(ONE_HUNDRED_HBARS);
-                    final var op2 = cryptoTransfer(tinyBarsFromTo(GENESIS, payer, 2 * REDUCED_TOTAL_FEE));
-                    final var op3 = cryptoCreate(ACCOUNT)
-                            .alias(evmAddressBytes)
-                            .payingWith(payer)
-                            .hasKnownStatus(SUCCESS)
-                            .balance(ONE_HUNDRED_HBARS);
-                    final var op4 = getAccountBalance(payer).hasTinyBars(0).logged();
-                    allRunFor(spec, op, op2, op3, op4);
-
                     // crypto transfer fees check
                     final HapiCryptoTransfer transferToPayerAgain =
                             cryptoTransfer(tinyBarsFromTo(GENESIS, payer, ONE_HUNDRED_HBARS + 2 * REDUCED_TOTAL_FEE));

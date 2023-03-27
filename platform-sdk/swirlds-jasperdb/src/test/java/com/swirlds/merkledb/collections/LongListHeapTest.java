@@ -31,7 +31,7 @@ public class LongListHeapTest extends AbstractLongListTest<LongListHeap> {
 
     @Override
     protected LongListHeap createFullyParameterizedLongListWith(final int numLongsPerChunk, final long maxLongs) {
-        return new LongListHeap(numLongsPerChunk, maxLongs);
+        return new LongListHeap(numLongsPerChunk, maxLongs, 0);
     }
 
     @Override

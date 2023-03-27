@@ -36,9 +36,11 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.system.events.Event;
+import com.swirlds.common.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -53,9 +55,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     private static final Logger LOG = LoggerFactory.getLogger(PreHandleWorkflowImpl.class);
 
     /**
-     * Per-thread shared resources are shared in a {@link SessionContext}. We store these in a
-     * thread local, because we do not have control over the thread pool used by the underlying gRPC
-     * server.
+     * Per-thread shared resources are shared in a {@link SessionContext}. We store these in a thread local, because we
+     * do not have control over the thread pool used by the underlying gRPC server.
      */
     private static final ThreadLocal<SessionContext> SESSION_CONTEXT_THREAD_LOCAL =
             ThreadLocal.withInitial(SessionContext::new);
@@ -71,7 +72,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
      *
      * @param exe the {@link ExecutorService} to use when submitting new tasks
      * @param dispatcher the {@link TransactionDispatcher} that will call transaction-specific
-     *     {@code preHandle()}-methods
+     * {@code preHandle()}-methods
      * @param onset the {@link WorkflowOnset} that pre-processes the {@link byte[]} of a transaction
      * @param signaturePreparer the {@link SignaturePreparer} to prepare signatures
      * @param cryptography the {@link Cryptography} component used to verify signatures
@@ -108,15 +109,17 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
     @Override
     public void start(@NonNull final HederaState state, @NonNull final Event event) {
-        requireNonNull(state);
-        requireNonNull(event);
+        preHandle(requireNonNull(event).transactionIterator(), requireNonNull(state));
+    }
 
+    public void preHandle(
+            @NonNull final Iterator<Transaction> itr,
+            @NonNull final HederaState state) {
         // Each transaction in the event will go through pre-handle using a background thread
         // from the executor service. The Future representing that work is stored on the
         // platform transaction. The HandleTransactionWorkflow will pull this future back
         // out and use it to block until the pre handle work is done, if needed.
         final ArrayList<CompletableFuture<Void>> futures = new ArrayList<>();
-        final var itr = event.transactionIterator();
         while (itr.hasNext()) {
             final var platformTx = itr.next();
             final var future = runner.apply(() -> {
