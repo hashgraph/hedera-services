@@ -41,6 +41,7 @@ import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.crypto.TransactionSignature;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -113,6 +114,7 @@ public class Rationalization {
 
         pkToSigFn.resetAllSigsToUnused();
         bodySigningFactory.resetFor(txnAccessor);
+        txnAccessor.setPendingCompletions(Collections.emptyList());
 
         txnSigs = txnAccessor.getCryptoSigs();
         realPayerSigs.clear();
@@ -215,7 +217,7 @@ public class Rationalization {
         if (HollowScreening.atLeastOneWildcardECDSAKeyIn(reqPayerSig, reqOthersSigs)
                 && pkToSigFn.hasAtLeastOneEcdsaSig()) {
             final var hollowScreenResult =
-                    HollowScreening.performFor(txnSigs, reqPayerSig, reqOthersSigs, aliasManager);
+                    HollowScreening.performFor(txnSigs, reqPayerSig, reqOthersSigs, aliasManager, null);
             if (hollowScreenResult.pendingCompletions() != null) {
                 txnAccessor.setPendingCompletions(hollowScreenResult.pendingCompletions());
             }
