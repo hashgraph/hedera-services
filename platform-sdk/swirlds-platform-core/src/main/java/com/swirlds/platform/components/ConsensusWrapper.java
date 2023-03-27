@@ -55,7 +55,8 @@ public class ConsensusWrapper {
 
         final List<ConsensusRound> rounds = new LinkedList<>();
         for (final Map.Entry<Long, List<EventImpl>> entry : roundEvents.entrySet()) {
-            rounds.add(new ConsensusRound(entry.getValue(), new Generations(consensusSupplier.get())));
+            final Generations generations = new Generations(consensusSupplier.get());
+            rounds.add(new ConsensusRound(entry.getValue(), generations));
         }
 
         return rounds;

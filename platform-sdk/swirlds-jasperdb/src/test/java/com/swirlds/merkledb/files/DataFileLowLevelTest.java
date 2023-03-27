@@ -147,7 +147,7 @@ class DataFileLowLevelTest {
         int size = RANDOM.nextInt(300) + 1;
         long key = RANDOM.nextLong();
         DataItemHeader dataItemHeader = new DataItemHeader(size, key);
-        String expectedToString = "DataItemHeader{size=" + size + ", key=" + key + "}";
+        String expectedToString = "DataItemHeader[size=" + size + ",key=" + key + "]";
         assertEquals(expectedToString, dataItemHeader.toString(), "unexpected value of toString()");
     }
 
@@ -177,13 +177,11 @@ class DataFileLowLevelTest {
                 dataFileMetadata.getFileFormatVersion(),
                 "unexpected FileFormatVersion");
         if (testType == FilesTestType.fixed) {
-            String expectedToString = "DataFileMetadata{fileFormatVersion=1, dataItemValueSize=16, "
-                    + "dataItemCount=1000,"
-                    + " "
-                    + "index=123, creationDate="
+            String expectedToString = "DataFileMetadata[fileFormatVersion=1,dataItemValueSize=16,"
+                    + "dataItemCount=1000,index=123,creationDate="
                     + TEST_START
-                    + ", "
-                    + "serializationVersion=1}";
+                    + ","
+                    + "serializationVersion=1]";
             assertEquals(expectedToString, dataFileMetadata.toString(), "unexpected toString() value");
         }
     }

@@ -112,9 +112,11 @@ public final class FileUtils {
     @SuppressWarnings("resource")
     public static void deleteDirectory(final Path directoryToBeDeleted) throws IOException {
         if (Files.isDirectory(directoryToBeDeleted)) {
-            final Iterator<Path> children = Files.list(directoryToBeDeleted).iterator();
-            while (children.hasNext()) {
-                deleteDirectory(children.next());
+            try (final Stream<Path> list = Files.list(directoryToBeDeleted)) {
+                final Iterator<Path> children = list.iterator();
+                while (children.hasNext()) {
+                    deleteDirectory(children.next());
+                }
             }
             Files.delete(directoryToBeDeleted);
         } else {

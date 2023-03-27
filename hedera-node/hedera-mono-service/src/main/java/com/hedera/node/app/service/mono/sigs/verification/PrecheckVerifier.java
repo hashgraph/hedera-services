@@ -70,13 +70,13 @@ public class PrecheckVerifier {
             final var reqKeys = precheckKeyReqs.getRequiredKeys(accessor.getTxn());
             // first key in reqKeys is always the payer key
             final var payerKey = reqKeys.get(0);
-            if (payerKey.hasHollowKey()) {
+            if (payerKey.hasWildcardECDSAKey()) {
                 // can change this algorithm to use the accessor.getSigMap()
                 // and return immediately when we find the first match
                 accessor.getPkToSigsFn().forEachUnusedSigWithFullPrefix((type, pubKey, sig) -> {
                     if (type.equals(ECDSA_SECP256K1)
                             && Arrays.equals(
-                                    payerKey.getHollowKey().getEvmAddress(),
+                                    payerKey.getWildcardECDSAKey().getEvmAddress(),
                                     EthSigsUtils.recoverAddressFromPubKey(pubKey))) {
                         reqKeys.set(0, new JECDSASecp256k1Key(pubKey));
                     }

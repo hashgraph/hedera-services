@@ -69,11 +69,6 @@ on:
         required: false
         type: boolean
         default: false
-      enhanced-runtime-engine:
-        description: ""
-        required: false
-        type: string
-        default: "DOCKER_REMOTE"
       java-distribution:
         description: "Java JDK Distribution:"
         type: string
@@ -246,7 +241,7 @@ jobs:
           echo "::endgroup::"
 
           echo "::group::Installing Python Virtual Environment"
-            sudo apt install python3 python3-venv
+            sudo apt install -y python3 python3-venv
           echo "::endgroup::"
 
       - name: Install SSH Keygen
@@ -349,7 +344,6 @@ jobs:
           CONFIG_PATH: ${{ steps.jrs-config.outputs.file }}
           USE_ENHANCED_RUNTIME: ${{ inputs.use-enhanced-runtime }}
           PLATFORM_REPO_PATH: ${{ inputs.platform-repo-path || format('{0}/{1}', github.workspace, 'platform-sdk') }}
-          ENHANCED_RUNTIME_ENGINE: ${{ inputs.enhanced-runtime-engine }}
           SLACK_SUMMARY: ${{ inputs.slack-summary-channel }}
           SLACK_RESULTS: ${{ inputs.slack-results-channel }}
           GENERATE_SLACK_CHANNEL: ${{ inputs.use-branch-for-slack-channel }}
@@ -418,10 +412,6 @@ jobs:
 
           if [[ -n "${PLATFORM_REPO_PATH}" ]]; then
             JRS_ARGUMENTS="${JRS_ARGUMENTS} -pr ${PLATFORM_REPO_PATH}"
-          fi
-
-          if [[ -n "${ENHANCED_RUNTIME_ENGINE}" ]]; then
-            JRS_ARGUMENTS="${JRS_ARGUMENTS} -w ${ENHANCED_RUNTIME_ENGINE}"
           fi
 
           if [[ -n "${HEDERA_TESTS_ENABLED}" && "${HEDERA_TESTS_ENABLED}" = true ]]; then

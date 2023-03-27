@@ -167,7 +167,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     private static final String WITH_SPENDER = "WITH_SPENDER";
     private static final String DO_SPECIFIC_APPROVAL = "doSpecificApproval";
     private static final String NFT_TOKEN_MINT = "nftTokenMint";
-    static final String TRANSFER_SIGNATURE = "Transfer(address,address,uint256)";
+    public static final String TRANSFER_SIGNATURE = "Transfer(address,address,uint256)";
 
     public static void main(String... args) {
         new ERCPrecompileSuite().runSuiteAsync();
@@ -1504,6 +1504,10 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                     spec.registry().getAccountID(RECIPIENT))),
                                             BigInteger.valueOf(tokenTransferAmount))
                                     .via(TRANSFER_TXN)
+                                    /* Don't run with Ethereum calls, since txn payer
+                                     * keys are revoked in Ethereum transactions and sender is the wrapped
+                                     * ethereum txn sender . Analogous test with appropriate setup is present in EthereumSuite  */
+                                    .refusingEthConversion()
                                     .payingWith(ACCOUNT));
                 }))
                 .then(withOpContext((spec, ignore) -> allRunFor(
@@ -1715,11 +1719,10 @@ public class ERCPrecompileSuite extends HapiSuite {
                         tokenAssociate(A_CIVILIAN, NF_TOKEN),
                         tokenAssociate(B_CIVILIAN, NF_TOKEN))
                 .when(
-                        withOpContext((spec, opLog) -> {
-                            zCivilianMirrorAddr.set(asHexedSolidityAddress(AccountID.newBuilder()
-                                    .setAccountNum(666_666_666L)
-                                    .build()));
-                        }),
+                        withOpContext(
+                                (spec, opLog) -> zCivilianMirrorAddr.set(asHexedSolidityAddress(AccountID.newBuilder()
+                                        .setAccountNum(666_666_666L)
+                                        .build()))),
                         // --- Negative cases for approve ---
                         // * Can't approve a non-existent serial number
                         sourcing(() -> contractCall(
@@ -1827,6 +1830,10 @@ public class ERCPrecompileSuite extends HapiSuite {
                                         asHeadlongAddress(tokenMirrorAddr.get()),
                                         BigInteger.valueOf(5))
                                 .payingWith(B_CIVILIAN)
+                                /* Don't run with Ethereum calls, since txn payer
+                                 * keys are revoked in Ethereum transactions and sender is the wrapped
+                                 * ethereum txn sender . Analogous test with appropriate setup is present in EthereumSuite  */
+                                .refusingEthConversion()
                                 .via("D")),
                         getTxnRecord("D").andAllChildRecords().logged())
                 .then(

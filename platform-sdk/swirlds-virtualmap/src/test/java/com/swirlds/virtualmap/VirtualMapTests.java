@@ -122,8 +122,8 @@ class VirtualMapTests extends VirtualTestBase {
             if (info != null) {
                 final String threadName = info.getThreadName();
                 if (!threadName.contains("hasher")
-                        && !threadName.contains("CacheCleaner-")
-                        && !threadName.contains("<virtual-pipeline: lifecycle")
+                        && !threadName.contains("virtual-map: cache-cleaner")
+                        && !threadName.contains("virtual-pipeline: lifecycle")
                         && !threadName.contains("ForkJoinPool.commonPool-worker-")
                         && !(threadName.contains("pool-") && threadName.contains("-thread-"))) {
                     threadNames.add(threadName);

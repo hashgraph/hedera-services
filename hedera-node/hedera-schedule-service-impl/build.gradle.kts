@@ -31,6 +31,7 @@ configurations.all {
 }
 
 dependencies {
+  implementation(project(":hedera-node:hapi-utils"))
   annotationProcessor(libs.dagger.compiler)
   api(project(":hedera-node:hedera-schedule-service"))
   api(project(":hedera-node:hedera-token-service"))
