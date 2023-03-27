@@ -20,11 +20,19 @@ import static com.swirlds.common.utility.CommonUtils.throwArgBlank;
 
 import com.swirlds.common.metrics.Metric;
 
+/**
+ * A default configuration for a metrics with values that all metrics need
+ */
 public class DefaultMetricConfig {
     private final String category;
     private final String name;
     private final String description;
 
+    /**
+     * @param category the kind of {@code Metric} (metrics are grouped or filtered by this)
+     * @param name a short name for the {@code Metric}
+     * @param description a one-sentence description of the {@code Metric}
+     */
     public DefaultMetricConfig(final String category, final String name, final String description) {
         this.category = throwArgBlank(category, "category");
         this.name = throwArgBlank(name, "name");

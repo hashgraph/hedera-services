@@ -323,10 +323,21 @@ public interface IntegerPairAccumulator<T> extends Metric {
                     getRightReset());
         }
 
+        /**
+         * Getter of the {@code combinedAccumulator}
+         *
+         * @return the {@code combinedAccumulator}
+         */
         public LongBinaryOperator getCombinedAccumulator() {
             return combinedAccumulator;
         }
 
+        /**
+         * Fluent-style setter of the combined accumulator.
+         *
+         * @param combinedAccumulator the accumulator method
+         * @return a new configuration-object with updated {@code combinedAccumulator}
+         */
         public IntegerPairAccumulator.Config<T> withCombinedAccumulator(final LongBinaryOperator combinedAccumulator) {
             return new IntegerPairAccumulator.Config<>(
                     getCategory(),

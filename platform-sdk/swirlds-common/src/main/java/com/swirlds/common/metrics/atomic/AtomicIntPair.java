@@ -52,6 +52,10 @@ public class AtomicIntPair {
         this(IntPairUtils.createAccumulator(leftAccumulator, rightAccumulator), current -> RESET_VALUE);
     }
 
+    /**
+     * @param accumulator the method that will be used to calculate the new value for the integers when being updated
+     * @param reset      the method that will be used to calculate the new value for the integers when being reset
+     */
     public AtomicIntPair(final LongBinaryOperator accumulator, final LongUnaryOperator reset) {
         operator = accumulator;
         this.container = new AtomicLong(RESET_VALUE);

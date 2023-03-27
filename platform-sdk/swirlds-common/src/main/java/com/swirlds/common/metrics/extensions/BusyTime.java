@@ -22,6 +22,11 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.time.OSTime;
 import com.swirlds.common.time.Time;
 
+/**
+ * A metric that measures the fraction of time that a thread is busy. This metric could be used to track the overall busy
+ * time of a thread, or the busy time of a specific subtask. The granularity of this metric is in microseconds. A
+ * snapshot of this metric must be taken at least once every 34 minutes in order to get accurate data.
+ */
 public class BusyTime {
     public static final int WORK_START = 0;
     public static final int WORK_END = 1;
@@ -61,18 +66,30 @@ public class BusyTime {
                 .withRightReset(this::resetStatus));
     }
 
+    /**
+     * Notifies the metric that work has started
+     */
     public void startingWork() {
         accumulator.update(time.getMicroTime(), WORK_START);
     }
 
+    /**
+     * Notifies the metric that work has finished
+     */
     public void finishedWork() {
         accumulator.update(time.getMicroTime(), WORK_END);
     }
 
+    /**
+     * @return the fraction of time that the thread has been busy
+     */
     public double getBusyFraction() {
         return accumulator.get();
     }
 
+    /**
+     * @return the accumulator that is used to update the metric
+     */
     public IntegerPairAccumulator<Double> getAccumulator() {
         return accumulator;
     }
