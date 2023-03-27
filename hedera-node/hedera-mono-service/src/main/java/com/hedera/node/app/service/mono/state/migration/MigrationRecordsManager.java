@@ -25,6 +25,7 @@ import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.node.app.spi.config.PropertyNames.AUTO_RENEW_GRANT_FREE_RENEWALS;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
@@ -166,7 +167,8 @@ public class MigrationRecordsManager {
                 account.getMemo(),
                 memo,
                 description,
-                account.getBalance()));
+                account.getBalance(),
+                account.getAlias()));
     }
 
     private boolean grantingFreeAutoRenewals() {
@@ -183,7 +185,8 @@ public class MigrationRecordsManager {
                 EMPTY_MEMO,
                 STAKING_MEMO,
                 "staking fund",
-                0L); // since 0.0.800 and 0.0.801 are created with zero balance
+                0L, // since 0.0.800 and 0.0.801 are created with zero balance
+                ByteString.EMPTY);
     }
 
     @SuppressWarnings("java:S107")
@@ -196,11 +199,12 @@ public class MigrationRecordsManager {
             final String accountMemo,
             final String recordMemo,
             final String description,
-            final long balance) {
+            final long balance,
+            final ByteString alias) {
         final var tracker = sideEffectsFactory.get();
         tracker.trackAutoCreation(num.toGrpcAccountId());
         final var synthBody =
-                synthCreation(autoRenewPeriod, key, accountMemo, receiverSigRequired, declineReward, balance);
+                synthCreation(autoRenewPeriod, key, accountMemo, receiverSigRequired, declineReward, balance, alias);
         final var synthRecord = creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker, recordMemo);
         // show the balance of any accounts whose balance is not zero for mirror node
         // reconciliation.
@@ -220,16 +224,21 @@ public class MigrationRecordsManager {
             final String memo,
             final boolean receiverSigRequired,
             final boolean declineReward,
-            final long balance) {
+            final long balance,
+            final ByteString alias) {
         final var txnBody = CryptoCreateTransactionBody.newBuilder()
                 .setKey(key)
                 .setMemo(memo)
                 .setDeclineReward(declineReward)
                 .setReceiverSigRequired(receiverSigRequired)
                 .setInitialBalance(balance)
-                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
-                .build();
-        return TransactionBody.newBuilder().setCryptoCreateAccount(txnBody);
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod));
+
+        if (alias != null && !alias.isEmpty()) {
+            txnBody.setAlias(alias);
+        }
+
+        return TransactionBody.newBuilder().setCryptoCreateAccount(txnBody.build());
     }
 
     private void publishContractFreeAutoRenewalRecords() {
