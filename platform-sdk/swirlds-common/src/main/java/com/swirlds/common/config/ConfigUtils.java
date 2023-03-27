@@ -21,7 +21,6 @@ import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigurationBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfoList;
 import io.github.classgraph.ScanResult;
@@ -58,14 +57,10 @@ public final class ConfigUtils {
      */
     @NonNull
     public static ConfigurationBuilder scanAndRegisterAllConfigTypes(
-            @NonNull final ConfigurationBuilder configurationBuilder, @Nullable final String... packagePrefixes) {
+            @NonNull final ConfigurationBuilder configurationBuilder, @NonNull final String... packagePrefixes) {
         CommonUtils.throwArgNull(configurationBuilder, "configurationBuilder");
-        if (packagePrefixes == null) {
-            return scanAndRegisterAllConfigTypes(configurationBuilder, Collections.emptySet(), Collections.emptyList());
-        } else {
-            return scanAndRegisterAllConfigTypes(
-                    configurationBuilder, Set.of(packagePrefixes), Collections.emptyList());
-        }
+        CommonUtils.throwArgNull(packagePrefixes, "packagePrefixes");
+        return scanAndRegisterAllConfigTypes(configurationBuilder, Set.of(packagePrefixes), Collections.emptyList());
     }
 
     /**
@@ -96,7 +91,7 @@ public final class ConfigUtils {
         final ClassGraph classGraph = new ClassGraph().enableAnnotationInfo();
 
         if (!packagePrefixes.isEmpty()) {
-            classGraph.whitelistPackages(packagePrefixes.toArray(new String[packagePrefixes.size()]));
+            classGraph.whitelistPackages(packagePrefixes.toArray(new String[0]));
         }
 
         if (!additionalClassLoaders.isEmpty()) {
@@ -108,7 +103,9 @@ public final class ConfigUtils {
         try (final ScanResult result = classGraph.scan()) {
             final ClassInfoList classInfos = result.getClassesWithAnnotation(ConfigData.class.getName());
             return classInfos.stream()
-                    .map(classInfo -> (Class<? extends Record>) classInfo.loadClass())
+                    .map(classInfo -> classInfo.loadClass())
+                    .filter(clazz -> clazz.isRecord())
+                    .map(clazz -> (Class<? extends Record>) clazz)
                     .collect(Collectors.toSet());
         }
     }
