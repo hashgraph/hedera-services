@@ -499,7 +499,7 @@ class AutoCreationLogicTest {
 
     private void givenCollaborators(final ExpirableTxnRecord.Builder mockBuilder, final String memo) {
         given(txnCtx.consensusTime()).willReturn(consensusNow);
-        given(ids.newAccountId(any())).willReturn(created);
+        given(ids.newAccountId()).willReturn(created);
         given(feeCalculator.computeFee(any(), eq(EMPTY_KEY), eq(currentView), eq(consensusNow)))
                 .willReturn(fees);
         given(creator.createSuccessfulSyntheticRecord(eq(Collections.emptyList()), any(), eq(memo)))
