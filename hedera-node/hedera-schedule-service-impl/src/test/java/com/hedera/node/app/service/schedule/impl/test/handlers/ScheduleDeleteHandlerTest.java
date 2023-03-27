@@ -50,15 +50,19 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
             AccountID.newBuilder().accountNum(3001L).build();
     private final ScheduleDeleteHandler subject = new ScheduleDeleteHandler();
     protected TransactionBody scheduledTxn;
+
     @Mock
     private ScheduleVirtualValue schedule;
+
     @Mock
     private ReadableKVStateBase<Long, ScheduleVirtualValue> schedulesById;
+
     private ReadableScheduleStore scheduleStore;
 
     @BeforeEach
     void setUp() {
-        BDDMockito.given(states.<Long, ScheduleVirtualValue>get("SCHEDULES_BY_ID")).willReturn(schedulesById);
+        BDDMockito.given(states.<Long, ScheduleVirtualValue>get("SCHEDULES_BY_ID"))
+                .willReturn(schedulesById);
         scheduleStore = new ReadableScheduleStore(states);
     }
 
@@ -77,7 +81,7 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
     }
 
     @Test
-        // when schedule id to delete is not found, fail with INVALID_SCHEDULE_ID
+    // when schedule id to delete is not found, fail with INVALID_SCHEDULE_ID
     void scheduleDeleteFailsIfScheduleMissing() {
         final var txn = scheduleDeleteTransaction();
         scheduledTxn = givenSetupForScheduleDelete(txn);
@@ -89,7 +93,7 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
     }
 
     @Test
-        // when admin key not set in scheduled tx, fail with SCHEDULE_IS_IMMUTABLE
+    // when admin key not set in scheduled tx, fail with SCHEDULE_IS_IMMUTABLE
     void scheduleDeleteScheduleIsImmutable() {
         final var txn = scheduleDeleteTransaction();
         scheduledTxn = givenSetupForScheduleDelete(txn);

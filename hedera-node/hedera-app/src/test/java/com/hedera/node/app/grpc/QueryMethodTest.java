@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.grpc;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -68,7 +68,7 @@ class QueryMethodTest {
         final var requestBuffer = BufferedData.allocate(100);
         final AtomicBoolean called = new AtomicBoolean(false);
         final QueryWorkflow w = (s, r1, r2) -> {
-            assertEquals(PbjConverter.asBytes(requestBuffer), PbjConverter.asBytes(r1));
+            assertArrayEquals(PbjConverter.asBytes(requestBuffer), PbjConverter.asBytes(r1));
             called.set(true);
         };
 

@@ -27,10 +27,8 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-
-import java.util.Objects;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 

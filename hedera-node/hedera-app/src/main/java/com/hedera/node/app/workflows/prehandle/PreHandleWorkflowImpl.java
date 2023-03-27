@@ -112,9 +112,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         preHandle(requireNonNull(event).transactionIterator(), requireNonNull(state));
     }
 
-    public void preHandle(
-            @NonNull final Iterator<Transaction> itr,
-            @NonNull final HederaState state) {
+    public void preHandle(@NonNull final Iterator<Transaction> itr, @NonNull final HederaState state) {
         // Each transaction in the event will go through pre-handle using a background thread
         // from the executor service. The Future representing that work is stored on the
         // platform transaction. The HandleTransactionWorkflow will pull this future back

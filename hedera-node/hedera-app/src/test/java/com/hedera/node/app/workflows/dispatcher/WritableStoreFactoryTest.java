@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.dispatcher;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.BDDMockito.given;
 
@@ -44,12 +45,13 @@ class WritableStoreFactoryTest {
     @BeforeEach
     void setUp() {
         workingStateAccessor = new WorkingStateAccessor();
+        workingStateAccessor.setHederaState(state);
         subject = new WritableStoreFactory(workingStateAccessor);
     }
 
     @Test
     void emptyConstructor() {
-        assertNotNull(new WritableStoreFactory(workingStateAccessor));
+        assertDoesNotThrow(() -> new WritableStoreFactory(workingStateAccessor));
     }
 
     @Test

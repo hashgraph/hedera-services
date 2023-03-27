@@ -41,6 +41,7 @@ import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -284,6 +285,32 @@ class QueryCheckerTest {
 
         // when
         assertDoesNotThrow(() -> checker.validateAccountBalances(payer, txBody, fee));
+    }
+
+    @Test
+    void onlyAccountNumCanBeSuperuserInValidateAccountBalances() {
+        // given
+        final var fee = 42L;
+        final var payer = AccountID.newBuilder().alias(Bytes.wrap("acct alias")).build();
+        final var accountAmount = AccountAmount.newBuilder().build();
+        final var transferList =
+                TransferList.newBuilder().accountAmounts(accountAmount).build();
+        final var cryptoTransfer = CryptoTransferTransactionBody.newBuilder()
+                .transfers(transferList)
+                .build();
+        final var nodeAccountId = AccountID.newBuilder().build();
+        final var txBody = TransactionBody.newBuilder()
+                .cryptoTransfer(cryptoTransfer)
+                .nodeAccountID(nodeAccountId)
+                .build();
+        when(queryFeeCheck.validateQueryPaymentTransfers2(txBody)).thenReturn(OK);
+        when(queryFeeCheck.nodePaymentValidity2(List.of(accountAmount), fee, nodeAccountId))
+                .thenReturn(INSUFFICIENT_TX_FEE);
+
+        // when
+        assertThatThrownBy(() -> checker.validateAccountBalances(payer, txBody, fee))
+                .isInstanceOf(InsufficientBalanceException.class)
+                .hasFieldOrPropertyWithValue("responseCode", INSUFFICIENT_TX_FEE);
     }
 
     @SuppressWarnings("ConstantConditions")
