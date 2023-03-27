@@ -123,33 +123,4 @@ public class EventStreamSigningUtils {
             throw new RuntimeException("Irrecoverable error encountered", e);
         }
     }
-
-    /**
-     * Signs all event stream files in a directory
-     * <p>
-     * If a recoverable error is encountered while signing an individual file in the directory, an error will be logged,
-     * and signing of remaining files will continue
-     *
-     * @param sourceDirectory      the source directory
-     * @param destinationDirectory the destination directory
-     * @param keyPair              the key pair to sign with
-     */
-    public static void signEventStreamFilesInDirectory(
-            @NonNull final Path sourceDirectory,
-            @NonNull final Path destinationDirectory,
-            @NonNull final KeyPair keyPair) {
-
-        Objects.requireNonNull(sourceDirectory, "sourceDirectory must not be null");
-        Objects.requireNonNull(destinationDirectory, "destinationDirectory must not be null");
-        Objects.requireNonNull(keyPair, "keyPair must not be null");
-
-        final EventStreamType streamType = EventStreamType.getInstance();
-
-        try (final Stream<Path> stream = Files.walk(sourceDirectory)) {
-            stream.filter(filePath -> streamType.isStreamFile(filePath.toString()))
-                    .forEach(path -> signEventStreamFile(destinationDirectory, path, keyPair));
-        } catch (final IOException e) {
-            throw new RuntimeException("Failed to list files in directory: " + sourceDirectory);
-        }
-    }
 }
