@@ -176,7 +176,6 @@ class MonoSignaturePreparerTest {
         given(result.getPlatformSigs()).willReturn(List.of(mockSig, mockSig));
     }
 
-
     private void givenUnhappy(final PlatformSigsCreationResult result) {
         given(result.asCode()).willReturn(KEY_PREFIX_MISMATCH);
         given(result.hasFailed()).willReturn(true);

@@ -400,7 +400,6 @@ class QueryWorkflowImplTest extends AppTestBase {
         verifyAnsweredFileGetInfo(metrics, 1L);
     }
 
-
     @Test
     void testParsingFails() throws IOException {
         // given

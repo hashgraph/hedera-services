@@ -79,6 +79,7 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
+import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.platform.gui.SwirldsGui;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -131,6 +132,8 @@ public final class Hedera implements SwirldMain {
     private Platform platform;
     /** Used to interface with the mono-service. */
     private StateChildrenProvider stateChildren;
+    /** TEMPORARY until after migration to modular services, when this will become a normal VirtualMap */
+    private final FCHashMap<ByteString, EntityNum> aliases;
 
     /**
      * Dependencies managed by Dagger. Set during state initialization. The mono-service requires this object,
@@ -182,6 +185,10 @@ public final class Hedera implements SwirldMain {
             logger.error("Failed to register MerkleHederaState with ConstructableRegistry", e);
             throw new RuntimeException(e);
         }
+
+        // This rebuilt data structure will be moved to be part of state by using a VirtualMap once
+        // we have fully migrated to the modular services.
+        this.aliases = new FCHashMap<>();
     }
 
     /**
@@ -247,7 +254,8 @@ public final class Hedera implements SwirldMain {
     @Override
     @NonNull
     public SwirldState newState() {
-        return new MerkleHederaState(this::onPreHandle, this::onHandleConsensusRound, this::onStateInitialized);
+        return new MerkleHederaState(
+                this::onPreHandle, this::onHandleConsensusRound, this::onStateInitialized, aliases);
     }
 
     /*==================================================================================================================
@@ -684,9 +692,6 @@ public final class Hedera implements SwirldMain {
         if (daggerApp == null) {
             // Today, the alias map has to be constructed by walking over all accounts.
             // TODO Populate aliases properly
-            final var aliases = new HashMap<
-                    ByteString,
-                    EntityNum>(); // Unfortunately, have to keep this Google protobuf dependency for the moment :-(
             stateChildren = state.getStateChildrenProvider(platform, aliases);
             final var nodeAddress = stateChildren.addressBook().getAddress(selfId);
             final var initialHash =
