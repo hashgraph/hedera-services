@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.workflows.prehandle;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -26,6 +24,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.signature.SignaturePreparer;
+import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -47,8 +46,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import javax.inject.Inject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** Implementation of {@link PreHandleWorkflow} */
 @Singleton
@@ -229,7 +229,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     private static TransactionMetadata createTransactionMetadata(
             @NonNull final PreHandleContext context,
             @NonNull final SignatureMap signatureMap,
-            @NonNull final List<TransactionSignature> cryptoSigs,
+            @Nullable final TransactionSignature payerSignature,
+            @NonNull final Map<HederaKey, TransactionSignature> otherSignatures,
             @Nullable final TransactionMetadata innerMetadata) {
         final var otherSigs = otherSignatures.values();
         final var allSigs = new ArrayList<TransactionSignature>(otherSigs.size() + 1);

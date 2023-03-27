@@ -221,8 +221,4 @@ public class ConfigurationAdaptor implements Configuration {
     private String exceptionMessagePropertyDoesNotExist(final String name) {
         return "Config property with name '" + name + "' does not exist!";
     }
-
-    private String exceptionMessagePropertyDoesNotExist(final String name) {
-        return "Config property with name '" + name + "' does not exist!";
-    }
 }
