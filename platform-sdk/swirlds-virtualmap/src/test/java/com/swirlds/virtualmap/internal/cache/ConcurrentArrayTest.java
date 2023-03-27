@@ -271,6 +271,64 @@ class ConcurrentArrayTest {
         assertEquals("Element E", elements.get(8), "Wrong value");
     }
 
+    @Test
+    @Tags({@Tag("VirtualMerkle"), @Tag("VirtualNodeCache")})
+    @DisplayName("Merged with empty array")
+    void mergeWithEmptyArray() {
+        final ConcurrentArray<String> a = new ConcurrentArray<>(5);
+        a.add("Element 1");
+        a.add("Element 2");
+        a.seal();
+
+        final ConcurrentArray<String> b = new ConcurrentArray<>(5);
+        b.seal();
+
+        final ConcurrentArray<String> c = new ConcurrentArray<>(5);
+        c.seal();
+
+        // Merge with an empty array
+        a.merge(b);
+        assertEquals(2, a.size(), "Wrong size");
+
+        // Merge an empty array with a non-empty one
+        c.merge(a);
+        assertEquals(2, c.size(), "Wrong size");
+    }
+
+    @Test
+    @Tags({@Tag("VirtualMerkle"), @Tag("VirtualNodeCache")})
+    @DisplayName("Multiple merge")
+    void multipleMerge() {
+        final ConcurrentArray<String> a = new ConcurrentArray<>(5);
+        a.add("Element 1");
+        a.seal();
+
+        final ConcurrentArray<String> b = new ConcurrentArray<>(5);
+        b.add("Element 2");
+        b.add("Element 3");
+        b.seal();
+
+        final ConcurrentArray<String> c = new ConcurrentArray<>(5);
+        c.add("Element 4");
+        c.add("Element 5");
+        c.add("Element 6");
+        c.seal();
+
+        a.merge(b);
+        a.merge(c);
+        assertEquals(6, a.size(), "Wrong size");
+
+        List<String> elements = a.sortedStream(null).toList();
+
+        assertEquals(a.size(), elements.size(), "Wrong value");
+        assertEquals("Element 1", elements.get(0), "Wrong value");
+        assertEquals("Element 2", elements.get(1), "Wrong value");
+        assertEquals("Element 3", elements.get(2), "Wrong value");
+        assertEquals("Element 4", elements.get(3), "Wrong value");
+        assertEquals("Element 5", elements.get(4), "Wrong value");
+        assertEquals("Element 6", elements.get(5), "Wrong value");
+    }
+
     /**
      * Other tests indirectly validate this claim, but I thought it worth testing this explicitly.
      */

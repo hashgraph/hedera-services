@@ -59,13 +59,13 @@ public class FreezeSuite extends HapiSuite {
     private HapiSpec uploadNewFile() {
         String uploadFile = UPDATE_NEW_FILE;
         if (uploadPath != null) {
-            log.info("Creating zip file from " + uploadPath);
+            log.info("Creating zip file from {}", uploadPath);
             final var zipFile = "Archive.zip";
             createZip(UPLOAD_PATH_PREFIX + uploadPath, zipFile, null);
             uploadFile = zipFile;
         }
 
-        log.info("Uploading file " + uploadFile);
+        log.info("Uploading file {}", uploadFile);
         final File f = new File(uploadFile);
         byte[] bytes = new byte[0];
         try {

@@ -16,12 +16,12 @@
 
 package com.hedera.node.app.service.schedule.impl.handlers;
 
-import static com.hedera.node.app.service.mono.utils.MiscUtils.functionOf;
+import static com.hedera.node.app.hapi.utils.CommonUtils.functionOf;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.isSchedulable;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 
-import com.hedera.node.app.service.mono.exceptions.UnknownHederaFunctionality;
+import com.hedera.node.app.hapi.utils.exception.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
 import com.hederahashgraph.api.proto.java.AccountID;

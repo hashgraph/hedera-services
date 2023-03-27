@@ -9,6 +9,7 @@ module com.hedera.node.app.service.schedule.impl {
     requires dagger;
     requires javax.inject;
     requires com.swirlds.common;
+    requires com.hedera.node.app.hapi.utils;
 
     exports com.hedera.node.app.service.schedule.impl to
             com.hedera.node.app.service.schedule.impl.test,

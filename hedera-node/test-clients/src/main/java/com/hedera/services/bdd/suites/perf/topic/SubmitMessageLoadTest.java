@@ -87,19 +87,19 @@ public class SubmitMessageLoadTest extends LoadTest {
         // parsing local argument specific to this test
         if (args.length > (usedArgs)) {
             messageSize = Integer.parseInt(args[usedArgs]);
-            log.info("Set messageSize as " + messageSize);
+            log.info("Set messageSize as {}", messageSize);
             usedArgs++;
         }
 
         if (args.length > (usedArgs)) {
             pemFile = args[usedArgs];
-            log.info("Set pemFile as " + pemFile);
+            log.info("Set pemFile as {}", pemFile);
             usedArgs++;
         }
 
         if (args.length > usedArgs) {
             topicID = args[usedArgs];
-            log.info("Set topicID as " + topicID);
+            log.info("Set topicID as {}", topicID);
             usedArgs++;
         }
 
