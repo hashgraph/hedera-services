@@ -80,7 +80,11 @@ class SeqNoEntityIdSourceTest {
         given(seqNo.getAndIncrement()).willReturn(555L);
 
         // when:
-        AccountID newId = subject.newAccountId(sponsor);
+        AccountID newId = AccountID.newBuilder()
+                .setRealmNum(sponsor.getRealmNum())
+                .setShardNum(sponsor.getShardNum())
+                .setAccountNum(subject.newAccountNumber())
+                .build();
 
         // then:
         assertEquals(asAccount("1.2.555"), newId);
@@ -128,7 +132,7 @@ class SeqNoEntityIdSourceTest {
     void exceptionalSourceAlwaysThrows() {
         var defaultAccountId = AccountID.getDefaultInstance();
         // expect:
-        assertThrows(UnsupportedOperationException.class, () -> NOOP_ID_SOURCE.newAccountId(defaultAccountId));
+        assertThrows(UnsupportedOperationException.class, NOOP_ID_SOURCE::newAccountId);
         assertThrows(UnsupportedOperationException.class, () -> NOOP_ID_SOURCE.newFileId(defaultAccountId));
         assertThrows(UnsupportedOperationException.class, () -> NOOP_ID_SOURCE.newTokenId(defaultAccountId));
         assertThrows(UnsupportedOperationException.class, () -> NOOP_ID_SOURCE.newScheduleId(defaultAccountId));
