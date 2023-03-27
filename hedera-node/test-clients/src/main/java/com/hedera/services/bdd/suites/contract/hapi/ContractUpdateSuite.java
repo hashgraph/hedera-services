@@ -69,6 +69,7 @@ public class ContractUpdateSuite extends HapiSuite {
     public static final String ADMIN_KEY = "adminKey";
     public static final String NEW_ADMIN_KEY = "newAdminKey";
     private static final String CONTRACT = "Multipurpose";
+    public static final String INITIAL_ADMIN_KEY = "initialAdminKey";
 
     public static void main(String... args) {
         new ContractUpdateSuite().runSuiteAsync();
@@ -335,32 +336,32 @@ public class ContractUpdateSuite extends HapiSuite {
 
         return defaultHapiSpec("FridayThe13thSpec")
                 .given(
-                        newKeyNamed("initialAdminKey").shape(initialKeyShape),
-                        newKeyNamed("newAdminKey").shape(newKeyShape),
+                        newKeyNamed(INITIAL_ADMIN_KEY).shape(initialKeyShape),
+                        newKeyNamed(NEW_ADMIN_KEY).shape(newKeyShape),
                         cryptoCreate(payer).balance(10 * ONE_HUNDRED_HBARS),
                         uploadInitCode(contract))
                 .when(
                         contractCreate(contract).payingWith(payer).omitAdminKey(),
                         contractCustomCreate(contract, suffix)
                                 .payingWith(payer)
-                                .adminKey("initialAdminKey")
+                                .adminKey(INITIAL_ADMIN_KEY)
                                 .entityMemo(INITIAL_MEMO),
                         getContractInfo(contract + suffix)
                                 .payingWith(payer)
                                 .logged()
-                                .has(contractWith().memo(INITIAL_MEMO).adminKey("initialAdminKey")))
+                                .has(contractWith().memo(INITIAL_MEMO).adminKey(INITIAL_ADMIN_KEY)))
                 .then(
                         contractUpdate(contract + suffix)
                                 .payingWith(payer)
-                                .newKey("newAdminKey")
-                                .signedBy(payer, "initialAdminKey")
+                                .newKey(NEW_ADMIN_KEY)
+                                .signedBy(payer, INITIAL_ADMIN_KEY)
                                 .hasKnownStatus(INVALID_SIGNATURE),
                         contractUpdate(contract + suffix)
                                 .payingWith(payer)
-                                .newKey("newAdminKey")
-                                .signedBy(payer, "newAdminKey")
+                                .newKey(NEW_ADMIN_KEY)
+                                .signedBy(payer, NEW_ADMIN_KEY)
                                 .hasKnownStatus(INVALID_SIGNATURE),
-                        contractUpdate(contract + suffix).payingWith(payer).newKey("newAdminKey"),
+                        contractUpdate(contract + suffix).payingWith(payer).newKey(NEW_ADMIN_KEY),
                         contractUpdate(contract + suffix)
                                 .payingWith(payer)
                                 .newExpirySecs(newExpiry)
@@ -394,7 +395,7 @@ public class ContractUpdateSuite extends HapiSuite {
                                 .hasKnownStatus(INVALID_SIGNATURE),
                         contractUpdate(contract + suffix)
                                 .payingWith(payer)
-                                .signedBy(payer, "initialAdminKey")
+                                .signedBy(payer, INITIAL_ADMIN_KEY)
                                 .hasKnownStatus(INVALID_SIGNATURE),
                         contractUpdate(contract)
                                 .payingWith(payer)
@@ -404,7 +405,7 @@ public class ContractUpdateSuite extends HapiSuite {
                         contractUpdate(contract).payingWith(payer).newExpirySecs(betterExpiry),
                         contractDelete(contract + suffix)
                                 .payingWith(payer)
-                                .signedBy(payer, "initialAdminKey")
+                                .signedBy(payer, INITIAL_ADMIN_KEY)
                                 .hasKnownStatus(INVALID_SIGNATURE),
                         contractDelete(contract + suffix)
                                 .payingWith(payer)

@@ -80,11 +80,7 @@ class SeqNoEntityIdSourceTest {
         given(seqNo.getAndIncrement()).willReturn(555L);
 
         // when:
-        AccountID newId = AccountID.newBuilder()
-                .setRealmNum(0)
-                .setShardNum(0)
-                .setAccountNum(subject.newAccountNumber())
-                .build();
+        AccountID newId = subject.newAccountId();
 
         // then:
         assertEquals(asAccount("0.0.555"), newId);

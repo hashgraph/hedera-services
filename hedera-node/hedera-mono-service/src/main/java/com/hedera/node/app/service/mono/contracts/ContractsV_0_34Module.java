@@ -177,10 +177,9 @@ public interface ContractsV_0_34Module {
     @V_0_34
     static Operation bindStaticCallOperation(
             final GasCalculator gasCalculator,
-            final EvmSigsVerifier sigsVerifier,
             @V_0_34 final BiPredicate<Address, MessageFrame> addressValidator,
             final Map<String, PrecompiledContract> precompiledContractMap) {
-        return new HederaStaticCallOperation(gasCalculator, sigsVerifier, addressValidator, precompiledContractMap);
+        return new HederaStaticCallOperation(gasCalculator, addressValidator, precompiledContractMap);
     }
 
     @Provides

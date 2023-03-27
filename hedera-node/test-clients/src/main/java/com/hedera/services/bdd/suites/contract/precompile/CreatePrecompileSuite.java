@@ -924,17 +924,10 @@ public class CreatePrecompileSuite extends HapiSuite {
                                 .payingWith(ACCOUNT)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(
-                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
-                        getAccountBalance(ACCOUNT).logged(),
-                        getAccountBalance(TOKEN_CREATE_CONTRACT).logged(),
-                        getContractInfo(TOKEN_CREATE_CONTRACT).logged(),
-                        childRecordsCheck(
-                                FIRST_CREATE_TXN,
-                                ResponseCodeEnum.CONTRACT_REVERT_EXECUTED,
-                                TransactionRecordAsserts.recordWith()
-                                        .status(INSUFFICIENT_TX_FEE)
-                                        .contractCallResult(ContractFnResultAsserts.resultWith()
-                                                .error(INSUFFICIENT_TX_FEE.name()))));
+                        getTxnRecord(FIRST_CREATE_TXN).hasChildRecordCount(0),
+                        getAccountBalance(ACCOUNT),
+                        getAccountBalance(TOKEN_CREATE_CONTRACT),
+                        getContractInfo(TOKEN_CREATE_CONTRACT));
     }
 
     private HapiSpec createTokenWithDefaultExpiryAndEmptyKeys() {

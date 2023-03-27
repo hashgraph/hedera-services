@@ -38,6 +38,7 @@ import org.apache.logging.log4j.Logger;
 
 public class SignedTransactionBytesRecordsSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(SignedTransactionBytesRecordsSuite.class);
+    private static final String FAILED_CRYPTO_TRANSACTION = "failedCryptoTransaction";
 
     public static void main(String... args) {
         new SignedTransactionBytesRecordsSuite().runSuiteSync();
@@ -62,7 +63,7 @@ public class SignedTransactionBytesRecordsSuite extends HapiSuite {
         return defaultHapiSpec("TransactionsWithOnlySigMap")
                 .given(
                         cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1L))
-                                .via("failedCryptoTransaction")
+                                .via(FAILED_CRYPTO_TRANSACTION)
                                 .asTxnWithOnlySigMap()
                                 .hasPrecheck(INVALID_TRANSACTION_BODY),
                         uploadInitCode(contract),
@@ -76,7 +77,7 @@ public class SignedTransactionBytesRecordsSuite extends HapiSuite {
                         .asTxnWithOnlySigMap()
                         .hasPrecheck(INVALID_TRANSACTION_BODY))
                 .then(
-                        getTxnRecord("failedCryptoTransaction").hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),
+                        getTxnRecord(FAILED_CRYPTO_TRANSACTION).hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),
                         getTxnRecord("failedFileTransaction").hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),
                         getTxnRecord("failedContractTransaction").hasCostAnswerPrecheck(INVALID_ACCOUNT_ID));
     }
@@ -95,10 +96,10 @@ public class SignedTransactionBytesRecordsSuite extends HapiSuite {
         return defaultHapiSpec("TransactionsWithSignedTxnBytesAndBodyBytes")
                 .given()
                 .when(cryptoCreate("testAccount")
-                        .via("failedCryptoTransaction")
+                        .via(FAILED_CRYPTO_TRANSACTION)
                         .asTxnWithSignedTxnBytesAndBodyBytes()
                         .hasPrecheck(INVALID_TRANSACTION))
-                .then(getTxnRecord("failedCryptoTransaction").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
+                .then(getTxnRecord(FAILED_CRYPTO_TRANSACTION).hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
     }
 
     @Override

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.utils;
 
+import static com.hedera.node.app.hapi.utils.CommonUtils.functionOf;
 import static com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.node.app.service.mono.throttling.MapAccessType.ACCOUNTS_GET;
 import static com.hedera.node.app.service.mono.throttling.MapAccessType.STORAGE_REMOVE;
@@ -47,7 +48,6 @@ import static com.hedera.node.app.service.mono.utils.MiscUtils.baseStatNameOf;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.canonicalDiffRepr;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.canonicalRepr;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.describe;
-import static com.hedera.node.app.service.mono.utils.MiscUtils.functionOf;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.functionalityOfQuery;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.getTxnStat;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.isGasThrottled;
@@ -61,69 +61,31 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hedera.test.utils.TxnUtils.withNftAdjustments;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDeleteTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusGetTopicInfo;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusUpdateTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCallLocal;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetBytecode;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetRecords;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractUpdate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAddLiveHash;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelete;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteLiveHash;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountRecords;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetLiveHash;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetContents;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetAccountDetails;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetByKey;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetBySolidityID;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleSign;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemDelete;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndelete;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenPause;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
@@ -144,7 +106,7 @@ import com.google.protobuf.GeneratedMessageV3;
 import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
-import com.hedera.node.app.service.mono.exceptions.UnknownHederaFunctionality;
+import com.hedera.node.app.hapi.utils.exception.UnknownHederaFunctionality;
 import com.hedera.node.app.service.mono.grpc.controllers.ConsensusController;
 import com.hedera.node.app.service.mono.grpc.controllers.ContractController;
 import com.hedera.node.app.service.mono.grpc.controllers.CryptoController;
@@ -240,7 +202,6 @@ import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
 import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.utility.KeyedMerkleLong;
@@ -482,11 +443,6 @@ class MiscUtilsTest {
                 .setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
                 .setConsensusTimestamp(Timestamp.getDefaultInstance())
                 .build();
-    }
-
-    @Test
-    void throwsOnUnexpectedFunctionality() {
-        assertThrows(UnknownHederaFunctionality.class, () -> functionOf(TransactionBody.getDefaultInstance()));
     }
 
     @Test
@@ -742,69 +698,6 @@ class MiscUtilsTest {
     }
 
     @Test
-    void getsExpectedTxnFunctionality() {
-        final Map<HederaFunctionality, BodySetter<? extends GeneratedMessageV3, TransactionBody.Builder>> setters =
-                new HashMap<>() {
-                    {
-                        put(SystemDelete, new BodySetter<>(SystemDeleteTransactionBody.class));
-                        put(SystemUndelete, new BodySetter<>(SystemUndeleteTransactionBody.class));
-                        put(ContractCall, new BodySetter<>(ContractCallTransactionBody.class));
-                        put(ContractCreate, new BodySetter<>(ContractCreateTransactionBody.class));
-                        put(EthereumTransaction, new BodySetter<>(EthereumTransactionBody.class));
-                        put(ContractUpdate, new BodySetter<>(ContractUpdateTransactionBody.class));
-                        put(CryptoAddLiveHash, new BodySetter<>(CryptoAddLiveHashTransactionBody.class));
-                        put(CryptoCreate, new BodySetter<>(CryptoCreateTransactionBody.class));
-                        put(CryptoDelete, new BodySetter<>(CryptoDeleteTransactionBody.class));
-                        put(CryptoDeleteLiveHash, new BodySetter<>(CryptoDeleteLiveHashTransactionBody.class));
-                        put(CryptoTransfer, new BodySetter<>(CryptoTransferTransactionBody.class));
-                        put(CryptoUpdate, new BodySetter<>(CryptoUpdateTransactionBody.class));
-                        put(FileAppend, new BodySetter<>(FileAppendTransactionBody.class));
-                        put(FileCreate, new BodySetter<>(FileCreateTransactionBody.class));
-                        put(FileDelete, new BodySetter<>(FileDeleteTransactionBody.class));
-                        put(FileUpdate, new BodySetter<>(FileUpdateTransactionBody.class));
-                        put(ContractDelete, new BodySetter<>(ContractDeleteTransactionBody.class));
-                        put(TokenCreate, new BodySetter<>(TokenCreateTransactionBody.class));
-                        put(TokenFreezeAccount, new BodySetter<>(TokenFreezeAccountTransactionBody.class));
-                        put(TokenUnfreezeAccount, new BodySetter<>(TokenUnfreezeAccountTransactionBody.class));
-                        put(TokenGrantKycToAccount, new BodySetter<>(TokenGrantKycTransactionBody.class));
-                        put(TokenRevokeKycFromAccount, new BodySetter<>(TokenRevokeKycTransactionBody.class));
-                        put(TokenDelete, new BodySetter<>(TokenDeleteTransactionBody.class));
-                        put(TokenUpdate, new BodySetter<>(TokenUpdateTransactionBody.class));
-                        put(TokenMint, new BodySetter<>(TokenMintTransactionBody.class));
-                        put(TokenBurn, new BodySetter<>(TokenBurnTransactionBody.class));
-                        put(TokenAccountWipe, new BodySetter<>(TokenWipeAccountTransactionBody.class));
-                        put(TokenAssociateToAccount, new BodySetter<>(TokenAssociateTransactionBody.class));
-                        put(TokenDissociateFromAccount, new BodySetter<>(TokenDissociateTransactionBody.class));
-                        put(TokenUnpause, new BodySetter<>(TokenUnpauseTransactionBody.class));
-                        put(TokenPause, new BodySetter<>(TokenPauseTransactionBody.class));
-                        put(ScheduleCreate, new BodySetter<>(ScheduleCreateTransactionBody.class));
-                        put(ScheduleSign, new BodySetter<>(ScheduleSignTransactionBody.class));
-                        put(ScheduleDelete, new BodySetter<>(ScheduleDeleteTransactionBody.class));
-                        put(Freeze, new BodySetter<>(FreezeTransactionBody.class));
-                        put(ConsensusCreateTopic, new BodySetter<>(ConsensusCreateTopicTransactionBody.class));
-                        put(ConsensusUpdateTopic, new BodySetter<>(ConsensusUpdateTopicTransactionBody.class));
-                        put(ConsensusDeleteTopic, new BodySetter<>(ConsensusDeleteTopicTransactionBody.class));
-                        put(ConsensusSubmitMessage, new BodySetter<>(ConsensusSubmitMessageTransactionBody.class));
-                        put(UncheckedSubmit, new BodySetter<>(UncheckedSubmitBody.class));
-                        put(TokenFeeScheduleUpdate, new BodySetter<>(TokenFeeScheduleUpdateTransactionBody.class));
-                        put(UtilPrng, new BodySetter<>(UtilPrngTransactionBody.class));
-                        put(CryptoApproveAllowance, new BodySetter<>(CryptoApproveAllowanceTransactionBody.class));
-                    }
-                };
-
-        setters.forEach((function, setter) -> {
-            final var txn = TransactionBody.newBuilder();
-            setter.setDefaultInstanceFor(txn);
-            try {
-                final var input = txn.build();
-                assertEquals(function, functionOf(input));
-            } catch (final UnknownHederaFunctionality uhf) {
-                throw new IllegalStateException(uhf);
-            }
-        });
-    }
-
-    @Test
     void hashCorrectly() throws IllegalArgumentException {
         final var testBytes = "test bytes".getBytes();
         final var expectedHash = com.swirlds.common.utility.CommonUtils.unhex(
@@ -948,7 +841,7 @@ class MiscUtilsTest {
         final var txn =
                 TransactionBody.newBuilder().setContractCreateInstance(op).build();
 
-        assertEquals(123456789L, MiscUtils.getGasLimitForContractTx(txn, MiscUtils.functionOf(txn), null));
+        assertEquals(123456789L, MiscUtils.getGasLimitForContractTx(txn, functionOf(txn), null));
     }
 
     @Test
@@ -957,7 +850,7 @@ class MiscUtilsTest {
                 ContractCallTransactionBody.newBuilder().setGas(123456789L).build();
         final var txn = TransactionBody.newBuilder().setContractCall(op).build();
 
-        assertEquals(123456789L, MiscUtils.getGasLimitForContractTx(txn, MiscUtils.functionOf(txn), null));
+        assertEquals(123456789L, MiscUtils.getGasLimitForContractTx(txn, functionOf(txn), null));
     }
 
     @Test
@@ -986,9 +879,9 @@ class MiscUtilsTest {
                 .build();
         final var txn = TransactionBody.newBuilder().setEthereumTransaction(op).build();
 
-        assertEquals(gasLimit, MiscUtils.getGasLimitForContractTx(txn, MiscUtils.functionOf(txn), null));
+        assertEquals(gasLimit, MiscUtils.getGasLimitForContractTx(txn, functionOf(txn), null));
 
-        assertEquals(gasLimit, MiscUtils.getGasLimitForContractTx(txn, MiscUtils.functionOf(txn), () -> ethTxData));
+        assertEquals(gasLimit, MiscUtils.getGasLimitForContractTx(txn, functionOf(txn), () -> ethTxData));
     }
 
     @Test
@@ -996,7 +889,7 @@ class MiscUtilsTest {
         final var op = TokenCreateTransactionBody.getDefaultInstance();
         final var txn = TransactionBody.newBuilder().setTokenCreation(op).build();
 
-        assertEquals(0L, MiscUtils.getGasLimitForContractTx(txn, MiscUtils.functionOf(txn), null));
+        assertEquals(0L, MiscUtils.getGasLimitForContractTx(txn, functionOf(txn), null));
     }
 
     @Test

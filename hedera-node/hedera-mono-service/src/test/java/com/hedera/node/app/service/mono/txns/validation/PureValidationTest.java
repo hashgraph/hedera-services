@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.node.app.service.mono.context.NodeInfo;
@@ -58,6 +59,19 @@ class PureValidationTest {
         given(accounts.get(num)).willReturn(contract);
         assertEquals(INVALID_ACCOUNT_ID, PureValidation.queryableAccountStatus(num, accounts));
         assertEquals(OK, PureValidation.queryableAccountOrContractStatus(num, accounts));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void contractOkIfExplicitlyAllowedAlsoWhenCalledThroughValidator() {
+        final var validator = mock(OptionValidator.class);
+        final AccountStorageAdapter accounts = AccountStorageAdapter.fromInMemory(mock(MerkleMapLike.class));
+        final var contract = MerkleAccountFactory.newContract().get();
+        final var num = EntityNum.fromLong(1234L);
+        doCallRealMethod().when(validator).queryableAccountOrContractStatus(num, accounts);
+
+        given(accounts.get(num)).willReturn(contract);
+        assertEquals(OK, validator.queryableAccountOrContractStatus(num, accounts));
     }
 
     @Test

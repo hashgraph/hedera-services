@@ -87,7 +87,6 @@ import static com.swirlds.platform.SettingConstants.TIMEOUT_SERVER_ACCEPT_CONNEC
 import static com.swirlds.platform.SettingConstants.TIMEOUT_SYNC_CLIENT_CONNECT_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.TIMEOUT_SYNC_CLIENT_SOCKET_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.TRANSACTION_MAX_BYTES_DEFAULT_VALUES;
-import static com.swirlds.platform.SettingConstants.TRANS_THROTTLE_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.USE_LOOPBACK_IP_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.USE_TLS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.VERBOSE_STATISTICS_DEFAULT_VALUE;
@@ -294,12 +293,6 @@ public class Settings {
     private int maxTransactionBytesPerEvent = MAX_TRANSACTION_BYTES_PER_EVENT_DEFAULT_VALUE;
     /** the maximum number of transactions that a single event may contain */
     private int maxTransactionCountPerEvent = MAX_TRANSACTION_COUNT_PER_EVENT_DEFAULT_VALUE;
-    /**
-     * if on, transThrottle will stop initiating syncs and thus stop generating events if the are no non consensus user
-     * transactions. If states are being saved to disk, it will only stop after all user transactions have been handled
-     * by a state that has been saved to disk.
-     */
-    private boolean transThrottle = TRANS_THROTTLE_DEFAULT_VALUE;
     /**
      * The absolute or relative folder path where all the statistics CSV files will be written. If this value is null or
      * an empty string, the current folder selection behavior will be used (ie: the SDK base path).
@@ -980,14 +973,6 @@ public class Settings {
 
     public MerkleDbSettingsImpl getMerkleDb() {
         return merkleDb;
-    }
-
-    public boolean isTransThrottle() {
-        return transThrottle;
-    }
-
-    public void setTransThrottle(final boolean transThrottle) {
-        this.transThrottle = transThrottle;
     }
 
     public String getCsvOutputFolder() {

@@ -68,7 +68,7 @@ public class ConfigurationAdaptor implements Configuration {
         if (exists(name)) {
             return propertySource.getRawValue(name);
         }
-        throw new NoSuchElementException("Config property with name '" + name + "' does not exist!");
+        throw new NoSuchElementException(exceptionMessagePropertyDoesNotExist(name));
     }
 
     @Override
@@ -85,7 +85,7 @@ public class ConfigurationAdaptor implements Configuration {
         if (exists(name)) {
             return propertySource.getTypedProperty(type, name);
         }
-        throw new NoSuchElementException("Config property with name '" + name + "' does not exist!");
+        throw new NoSuchElementException(exceptionMessagePropertyDoesNotExist(name));
     }
 
     @Override
@@ -102,7 +102,7 @@ public class ConfigurationAdaptor implements Configuration {
         if (exists(name)) {
             return propertySource.getTypedProperty(List.class, name);
         }
-        throw new NoSuchElementException("Config property with name '" + name + "' does not exist!");
+        throw new NoSuchElementException(exceptionMessagePropertyDoesNotExist(name));
     }
 
     @Override
@@ -119,7 +119,7 @@ public class ConfigurationAdaptor implements Configuration {
         if (exists(name)) {
             return propertySource.getTypedProperty(List.class, name);
         }
-        throw new NoSuchElementException("Config property with name '" + name + "' does not exist!");
+        throw new NoSuchElementException(exceptionMessagePropertyDoesNotExist(name));
     }
 
     @Override
@@ -210,12 +210,19 @@ public class ConfigurationAdaptor implements Configuration {
     }
 
     /**
-     * Since we do not depend on the real config implementation we need to create the config data *
-     * records "by hand".
+     * Since we do not depend on the real config implementation we need to create the config data * records "by hand".
      *
      * @return a new GlobalConfig instance
      */
     private GlobalConfig createGlobalConfig() {
         return new GlobalConfig(propertySource.getTypedProperty(Set.class, PropertyNames.WORKFLOWS_ENABLED));
+    }
+
+    private String exceptionMessagePropertyDoesNotExist(final String name) {
+        return "Config property with name '" + name + "' does not exist!";
+    }
+
+    private String exceptionMessagePropertyDoesNotExist(final String name) {
+        return "Config property with name '" + name + "' does not exist!";
     }
 }

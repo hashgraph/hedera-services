@@ -26,4 +26,5 @@ public interface FeeCalculatorModule {
     @Binds
     @Singleton
     FeeCalculator bindFeeCalculator(UsageBasedFeeCalculator usageBasedFeeCalculator);
+
 }

@@ -102,9 +102,11 @@ public class EmergencyReconnectTests {
     @DisplayName("Verify learner-teacher interaction when teacher does not has a compatible state")
     @Test
     void teacherDoesNotHaveCompatibleState() throws InterruptedException {
-        final Hash stateHash = RandomUtils.randomHash();
+        final Random random = RandomUtils.getRandomPrintSeed();
+        final Hash stateHash = RandomUtils.randomHash(random);
         final NotificationEngine notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
-        final EmergencyRecoveryFile emergencyRecoveryFile = new EmergencyRecoveryFile(1L, stateHash);
+        final EmergencyRecoveryFile emergencyRecoveryFile =
+                new EmergencyRecoveryFile(1L, stateHash, RandomUtils.randomInstant(random));
 
         final ReconnectController reconnectController = mock(ReconnectController.class);
         when(reconnectController.acquireLearnerPermit()).thenReturn(true);
@@ -160,7 +162,7 @@ public class EmergencyReconnectTests {
         TimeUnit.MILLISECONDS.sleep(100);
 
         final EmergencyRecoveryFile emergencyRecoveryFile =
-                new EmergencyRecoveryFile(emergencyRound, emergencyStateHash);
+                new EmergencyRecoveryFile(emergencyRound, emergencyStateHash, RandomUtils.randomInstant(random));
 
         learnerProtocol = createLearnerProtocol(notificationEngine, emergencyRecoveryFile, reconnectController);
         teacherProtocol = createTeacherProtocol(notificationEngine, reconnectController);

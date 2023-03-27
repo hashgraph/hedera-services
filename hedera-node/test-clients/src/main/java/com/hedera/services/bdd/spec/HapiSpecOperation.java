@@ -52,6 +52,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -253,9 +254,11 @@ public abstract class HapiSpecOperation {
                 return Optional.empty();
             }
             if (verboseLoggingOn) {
-                log.warn(spec.logPrefix() + this + " failed - {}", t);
+                String message = MessageFormat.format("{0}{1} failed - {2}", spec.logPrefix(), this, t);
+                log.warn(message);
             } else if (!loggingOff) {
-                log.warn(spec.logPrefix() + this + " failed {}!", t.getMessage());
+                String message = MessageFormat.format("{0}{1} failed - {2}!", spec.logPrefix(), this, t.getMessage());
+                log.warn(message);
             }
             return Optional.of(t);
         }
@@ -315,10 +318,8 @@ public abstract class HapiSpecOperation {
             } else {
                 node.ifPresent(builder::setNodeAccountID);
             }
-            validDurationSecs.ifPresent(s -> {
-                builder.setTransactionValidDuration(
-                        Duration.newBuilder().setSeconds(s).build());
-            });
+            validDurationSecs.ifPresent(s -> builder.setTransactionValidDuration(
+                    Duration.newBuilder().setSeconds(s).build()));
             genRecord.ifPresent(builder::setGenerateRecord);
             memo.ifPresent(builder::setMemo);
         };
