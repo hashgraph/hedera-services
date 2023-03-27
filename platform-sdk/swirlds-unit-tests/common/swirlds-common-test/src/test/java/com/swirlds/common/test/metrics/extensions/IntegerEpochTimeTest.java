@@ -27,7 +27,7 @@ import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class IntegerEpochTimeTest {
+class IntegerEpochTimeTest {
     private final FakeTime clock = new FakeTime(Instant.EPOCH, Duration.ZERO);
     private final IntegerEpochTime epochClock = new IntegerEpochTime(clock);
 
