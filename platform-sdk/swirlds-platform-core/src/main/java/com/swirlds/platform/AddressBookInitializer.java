@@ -23,6 +23,7 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.address.AddressBookValidator;
+import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -62,8 +63,6 @@ public class AddressBookInitializer {
     private static final String ADDRESS_BOOK_DIRECTORY_NAME = "address_book";
     /** The file name prefix to use when creating address book files. */
     private static final String ADDRESS_BOOK_FILE_PREFIX = "usedAddressBook";
-    /** The maximum number of address book files to keep in the address book directory. */
-    private static final int MAX_ADDRESS_BOOK_FILES = 50;
     /** The format of date and time to use when creating address book files. */
     private static final DateTimeFormatter DATE_TIME_FORMAT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-m-ss").withZone(ZoneId.systemDefault());
@@ -90,6 +89,8 @@ public class AddressBookInitializer {
     /** The path to the directory for writing address books. */
     @NonNull
     private final Path pathToAddressBookDirectory;
+    /** The maximum number of address book files to keep in the address book directory. */
+    private final int maxNumFiles;
     /** Indicate that the unmodified config address book must be used. */
     private final boolean useConfigAddressBook;
 
@@ -101,31 +102,30 @@ public class AddressBookInitializer {
      * @param signedState          The signed state loaded from disk.  May be null.
      * @param genesisSupplier      The swirld application state in genesis start. Must not be null.
      * @param configAddressBook    The address book derived from config.txt. Must not be null.
-     * @param parentDirectory      The parent directory of the address book directory. Must not be null.
-     * @param useConfigAddressBook Indicates if the unmodified config address book should be used.
+     * @param addressBookConfig    The configuration settings for AddressBooks.
      */
     public AddressBookInitializer(
             @NonNull final SoftwareVersion currentVersion,
             @Nullable final SignedState signedState,
             @NonNull final Supplier<SwirldState> genesisSupplier,
             @NonNull final AddressBook configAddressBook,
-            @NonNull final String parentDirectory,
-            final boolean useConfigAddressBook) {
+            @NonNull final AddressBookConfig addressBookConfig) {
         this.currentVersion = Objects.requireNonNull(currentVersion, "The currentVersion must not be null.");
         this.genesisSupplier =
                 Objects.requireNonNull(genesisSupplier, "The genesis swirldState supplier must not be null.");
         this.configAddressBook = Objects.requireNonNull(configAddressBook, "The configAddressBook must not be null.");
-        Objects.requireNonNull(parentDirectory, "The parentDirectory must not be null.");
-        this.pathToAddressBookDirectory = Path.of(parentDirectory, ADDRESS_BOOK_DIRECTORY_NAME);
+        Objects.requireNonNull(addressBookConfig, "The addressBookConfig must not be null.");
+        this.loadedSignedState = signedState;
+        this.loadedAddressBook = loadedSignedState == null ? null : loadedSignedState.getAddressBook();
+        this.pathToAddressBookDirectory = Path.of(addressBookConfig.addressBookDirectory());
         try {
             Files.createDirectories(pathToAddressBookDirectory);
         } catch (final IOException e) {
             logger.error(EXCEPTION.getMarker(), "Not able to create directory: {}", pathToAddressBookDirectory, e);
             throw new IllegalStateException("Not able to create directory: " + pathToAddressBookDirectory, e);
         }
-        this.loadedSignedState = signedState;
-        this.loadedAddressBook = loadedSignedState == null ? null : loadedSignedState.getAddressBook();
-        this.useConfigAddressBook = useConfigAddressBook;
+        this.useConfigAddressBook = addressBookConfig.forceUseOfConfigAddressBook();
+        this.maxNumFiles = addressBookConfig.maxRecordedAddressBookFiles();
 
         initialAddressBook = initialize();
     }
@@ -276,8 +276,8 @@ public class AddressBookInitializer {
     private synchronized void cleanAddressBookDirectory() {
         try (final Stream<Path> filesStream = Files.list(pathToAddressBookDirectory)) {
             final List<Path> files = filesStream.sorted().toList();
-            if (files.size() > MAX_ADDRESS_BOOK_FILES) {
-                for (int i = 0; i < files.size() - MAX_ADDRESS_BOOK_FILES; i++) {
+            if (files.size() > maxNumFiles) {
+                for (int i = 0; i < files.size() - maxNumFiles; i++) {
                     Files.delete(files.get(i));
                 }
             }
