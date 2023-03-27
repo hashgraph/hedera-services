@@ -100,11 +100,11 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         final var builder = new Topic.Builder();
 
         /* Validate admin and submit keys and set them */
-        if (op.adminKey() != null) {
+        if (op.hasAdminKey()) {
             handleContext.attributeValidator().validateKey(op.adminKey());
             builder.adminKey(op.adminKey());
         }
-        if (op.submitKey() != null) {
+        if (op.hasSubmitKey()) {
             handleContext.attributeValidator().validateKey(op.submitKey());
             builder.submitKey(op.submitKey());
         }

@@ -84,6 +84,7 @@ class MemoryIndexDiskKeyValueStoreTest {
             final var dataItem = store.get(i);
             assertNotNull(dataItem, "dataItem unexpectedly null");
             assertNull(store.get(i, false), "dataItem should be null if deserialize=false");
+            //noinspection EnhancedSwitchMigration
             switch (testType) {
                 default:
                 case fixed:
@@ -109,9 +110,9 @@ class MemoryIndexDiskKeyValueStoreTest {
             final long lastLeafPath,
             final int valueAddition)
             throws IOException {
-        store.startWriting();
+        store.startWriting(0, lastLeafPath);
         writeDataBatch(testType, store, start, count, valueAddition);
-        store.endWriting(0, lastLeafPath);
+        store.endWriting();
     }
 
     private void writeDataBatch(
@@ -123,6 +124,7 @@ class MemoryIndexDiskKeyValueStoreTest {
             throws IOException {
         for (int i = start; i < (start + count); i++) {
             long[] dataValue;
+            //noinspection EnhancedSwitchMigration
             switch (testType) {
                 default:
                 case fixed:
@@ -283,14 +285,12 @@ class MemoryIndexDiskKeyValueStoreTest {
         writeBatch(testType, store, 10, 20, 30, 1234);
         checkRange(testType, store, 0, 20, 1234);
         // start writing new range
-        store.startWriting();
+        store.startWriting(10, 30);
         writeDataBatch(testType, store, 10, 30, 5678);
-        // heck the index to put in bad data so that logging conditions are met
-        index.put(9, DataFileCommon.dataLocation(1000, 0));
         // merge all files
         store.merge(dataFileReaders -> dataFileReaders, 2);
         // finish writing range
-        store.endWriting(10, 30);
+        store.endWriting();
         checkRange(testType, store, 10, 20, 5678);
         // check get out of range
         assertNull(store.get(1), "Getting a value that is below valid key range should return null.");

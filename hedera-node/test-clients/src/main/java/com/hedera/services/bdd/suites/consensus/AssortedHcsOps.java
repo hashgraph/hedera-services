@@ -49,6 +49,9 @@ import org.apache.logging.log4j.Logger;
 
 public class AssortedHcsOps extends HapiSuite {
     private static final Logger log = LogManager.getLogger(AssortedHcsOps.class);
+    private static final String UPDATED_TOPIC = "updatedTopic";
+    private static final String VANILLA_TOPIC = "vanillaTopic";
+    private static final String DELETED_TOPIC = "deletedTopic";
 
     public static void main(String... args) {
         new AssortedHcsOps().runSuiteSync();
@@ -113,27 +116,27 @@ public class AssortedHcsOps extends HapiSuite {
                 .given(
                         newKeyNamed("origAdminKey").shape(origAdminKey),
                         newKeyNamed("origSubmitKey").shape(origSubmitKey),
-                        createTopic("vanillaTopic").adminKeyName(GENESIS),
-                        createTopic("updatedTopic").adminKeyName("origAdminKey").submitKeyName("origSubmitKey"),
-                        createTopic("deletedTopic").adminKeyName(GENESIS),
+                        createTopic(VANILLA_TOPIC).adminKeyName(GENESIS),
+                        createTopic(UPDATED_TOPIC).adminKeyName("origAdminKey").submitKeyName("origSubmitKey"),
+                        createTopic(DELETED_TOPIC).adminKeyName(GENESIS),
                         withOpContext((spec, opLog) -> {
-                            vanillaTopic.set(asTopicString(spec.registry().getTopicID("vanillaTopic")));
-                            updatedTopic.set(asTopicString(spec.registry().getTopicID("updatedTopic")));
-                            deletedTopic.set(asTopicString(spec.registry().getTopicID("deletedTopic")));
+                            vanillaTopic.set(asTopicString(spec.registry().getTopicID(VANILLA_TOPIC)));
+                            updatedTopic.set(asTopicString(spec.registry().getTopicID(UPDATED_TOPIC)));
+                            deletedTopic.set(asTopicString(spec.registry().getTopicID(DELETED_TOPIC)));
                         }))
                 .when(flattened(
-                        submitBurst.apply("vanillaTopic"),
-                        submitBurst.apply("updatedTopic"),
-                        submitBurst.apply("deletedTopic"),
-                        updateTopic("updatedTopic").adminKey(GENESIS).submitKey(GENESIS),
-                        deleteTopic("deletedTopic")))
+                        submitBurst.apply(VANILLA_TOPIC),
+                        submitBurst.apply(UPDATED_TOPIC),
+                        submitBurst.apply(DELETED_TOPIC),
+                        updateTopic(UPDATED_TOPIC).adminKey(GENESIS).submitKey(GENESIS),
+                        deleteTopic(DELETED_TOPIC)))
                 .then(
-                        getTopicInfo("vanillaTopic").hasSeqNo(10L),
-                        getTopicInfo("updatedTopic")
+                        getTopicInfo(VANILLA_TOPIC).hasSeqNo(10L),
+                        getTopicInfo(UPDATED_TOPIC)
                                 .hasSeqNo(10L)
                                 .hasAdminKey(GENESIS)
                                 .hasSubmitKey(GENESIS),
-                        getTopicInfo("deletedTopic").hasCostAnswerPrecheck(INVALID_TOPIC_ID),
+                        getTopicInfo(DELETED_TOPIC).hasCostAnswerPrecheck(INVALID_TOPIC_ID),
                         logIt(spec -> String.format(
                                 "Vanilla: %s, Updated: %s, Deleted: %s",
                                 vanillaTopic.get(), updatedTopic.get(), deletedTopic.get())));

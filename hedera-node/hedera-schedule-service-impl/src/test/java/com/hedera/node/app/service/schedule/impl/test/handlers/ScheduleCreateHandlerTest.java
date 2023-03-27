@@ -23,7 +23,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_S
 import static com.hedera.node.app.service.schedule.impl.test.ScheduledTxnFactory.scheduleCreateTxnWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -145,11 +144,11 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
         // @todo whitelist tests don't work; it appears they never actually tested a
         //       non-whitelist situation so much as a missing key.  This requires careful
         //       thought and rework.
-//        final var innerContext = context.getInnerContext();
-//        basicContextAssertions(innerContext, 0, true, SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
-//        assertEquals(scheduler, innerContext.getPayer());
-//        assertEquals(schedulerKey, innerContext.getPayerKey());
-//        verify(dispatcher, never()).dispatch(any());
+        //        final var innerContext = context.getInnerContext();
+        //        basicContextAssertions(innerContext, 0, true, SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+        //        assertEquals(scheduler, innerContext.getPayer());
+        //        assertEquals(schedulerKey, innerContext.getPayerKey());
+        //        verify(dispatcher, never()).dispatch(any());
     }
 
     @Test

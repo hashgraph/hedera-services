@@ -124,7 +124,8 @@ public class WipeTokenAccountPrecompileSuite extends HapiSuite {
                                         HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
                                         HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
                                         10L)
-                                .payingWith(ADMIN_ACCOUNT)
+                                .signedBy(GENESIS, ADMIN_ACCOUNT)
+                                .alsoSigningWithFullPrefix(ADMIN_ACCOUNT)
                                 .via("accountDoesNotOwnWipeKeyTxn")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -135,7 +136,8 @@ public class WipeTokenAccountPrecompileSuite extends HapiSuite {
                                         HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
                                         HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
                                         1_000L)
-                                .payingWith(ADMIN_ACCOUNT)
+                                .signedBy(GENESIS, ADMIN_ACCOUNT)
+                                .alsoSigningWithFullPrefix(ADMIN_ACCOUNT)
                                 .via("amountLargerThanBalanceTxn")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -145,7 +147,8 @@ public class WipeTokenAccountPrecompileSuite extends HapiSuite {
                                         HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
                                         HapiParserUtil.asHeadlongAddress(asAddress(secondAccountID.get())),
                                         10L)
-                                .payingWith(ADMIN_ACCOUNT)
+                                .signedBy(GENESIS, ADMIN_ACCOUNT)
+                                .alsoSigningWithFullPrefix(ADMIN_ACCOUNT)
                                 .via("accountDoesNotOwnTokensTxn")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -155,7 +158,8 @@ public class WipeTokenAccountPrecompileSuite extends HapiSuite {
                                         HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
                                         HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
                                         10L)
-                                .payingWith(ADMIN_ACCOUNT)
+                                .signedBy(GENESIS, ADMIN_ACCOUNT)
+                                .alsoSigningWithFullPrefix(ADMIN_ACCOUNT)
                                 .via("wipeFungibleTxn")
                                 .gas(GAS_TO_OFFER),
                         contractCall(
@@ -164,7 +168,8 @@ public class WipeTokenAccountPrecompileSuite extends HapiSuite {
                                         HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
                                         HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
                                         0L)
-                                .payingWith(ADMIN_ACCOUNT)
+                                .signedBy(GENESIS, ADMIN_ACCOUNT)
+                                .alsoSigningWithFullPrefix(ADMIN_ACCOUNT)
                                 .via("wipeFungibleTxnWithZeroAmount")
                                 .gas(GAS_TO_OFFER))))
                 .then(
@@ -240,7 +245,8 @@ public class WipeTokenAccountPrecompileSuite extends HapiSuite {
                                             HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
                                             HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
                                             serialNumbers)
-                                    .payingWith(ADMIN_ACCOUNT)
+                                    .signedBy(GENESIS, ADMIN_ACCOUNT)
+                                    .alsoSigningWithFullPrefix(ADMIN_ACCOUNT)
                                     .via("wipeNonFungibleAccountDoesNotOwnWipeKeyTxn")
                                     .gas(GAS_TO_OFFER)
                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -251,7 +257,8 @@ public class WipeTokenAccountPrecompileSuite extends HapiSuite {
                                             HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
                                             HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
                                             new long[] {2L})
-                                    .payingWith(ADMIN_ACCOUNT)
+                                    .signedBy(GENESIS, ADMIN_ACCOUNT)
+                                    .alsoSigningWithFullPrefix(ADMIN_ACCOUNT)
                                     .via("wipeNonFungibleAccountDoesNotOwnTheSerialTxn")
                                     .gas(GAS_TO_OFFER)
                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -261,7 +268,8 @@ public class WipeTokenAccountPrecompileSuite extends HapiSuite {
                                             HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
                                             HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
                                             new long[] {-2L})
-                                    .payingWith(ADMIN_ACCOUNT)
+                                    .signedBy(GENESIS, ADMIN_ACCOUNT)
+                                    .alsoSigningWithFullPrefix(ADMIN_ACCOUNT)
                                     .via("wipeNonFungibleNegativeSerialTxn")
                                     .gas(GAS_TO_OFFER)
                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -271,7 +279,8 @@ public class WipeTokenAccountPrecompileSuite extends HapiSuite {
                                             HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
                                             HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
                                             new long[] {3L})
-                                    .payingWith(ADMIN_ACCOUNT)
+                                    .signedBy(GENESIS, ADMIN_ACCOUNT)
+                                    .alsoSigningWithFullPrefix(ADMIN_ACCOUNT)
                                     .via("wipeNonFungibleSerialDoesNotExistsTxn")
                                     .gas(GAS_TO_OFFER)
                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -281,7 +290,8 @@ public class WipeTokenAccountPrecompileSuite extends HapiSuite {
                                             HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
                                             HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
                                             serialNumbers)
-                                    .payingWith(ADMIN_ACCOUNT)
+                                    .signedBy(GENESIS, ADMIN_ACCOUNT)
+                                    .alsoSigningWithFullPrefix(ADMIN_ACCOUNT)
                                     .via("wipeNonFungibleTxn")
                                     .gas(GAS_TO_OFFER));
                 }))

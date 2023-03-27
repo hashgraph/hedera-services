@@ -34,7 +34,7 @@ public final class EventStreamRecoverCommand extends AbstractCommand {
 
     private Path outputPath = Path.of("./out");
     private String appMainName;
-    private Path initialSignedState;
+    private Path bootstrapSignedState;
     private long selfId;
     private boolean ignorePartialRounds;
     private long finalRound = -1;
@@ -74,10 +74,10 @@ public final class EventStreamRecoverCommand extends AbstractCommand {
 
     @CommandLine.Parameters(
             index = "0",
-            description = "The path to the initial SignedState.swh file."
+            description = "The path to the bootstrap SignedState.swh file."
                     + "Events will be replayed on top of this state file.")
-    private void setInitialSignedState(final Path initialSignedState) {
-        this.initialSignedState = pathMustExist(initialSignedState.toAbsolutePath());
+    private void setBootstrapSignedState(final Path bootstrapSignedState) {
+        this.bootstrapSignedState = pathMustExist(bootstrapSignedState.toAbsolutePath());
     }
 
     @CommandLine.Option(
@@ -108,7 +108,7 @@ public final class EventStreamRecoverCommand extends AbstractCommand {
     @Override
     public Integer call() throws Exception {
         recoverState(
-                initialSignedState,
+                bootstrapSignedState,
                 configurationPaths,
                 eventStreamDirectory,
                 appMainName,

@@ -26,6 +26,7 @@ import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.sigs.ExpansionHelper;
 import com.hedera.node.app.service.mono.sigs.metadata.SigMetadataLookup;
 import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
@@ -80,11 +81,15 @@ class SigReqsManagerTest {
     @Mock
     private PubKeyToSigBytes pubKeyToSigBytes;
 
+    @Mock
+    private AliasManager aliasManager;
+
     private SigReqsManager subject;
 
     @BeforeEach
     void setUp() {
-        subject = new SigReqsManager(fileNumbers, expansionHelper, signatureWaivers, workingState, dynamicProperties);
+        subject = new SigReqsManager(
+                fileNumbers, expansionHelper, signatureWaivers, workingState, dynamicProperties, aliasManager);
         given(accessor.getPkToSigsFn()).willReturn(pubKeyToSigBytes);
     }
 
@@ -99,7 +104,7 @@ class SigReqsManagerTest {
 
         subject.expandSigs(sourceState, accessor);
 
-        verify(expansionHelper).expandIn(accessor, workingStateSigReqs, pubKeyToSigBytes);
+        verify(expansionHelper).expandIn(accessor, workingStateSigReqs, pubKeyToSigBytes, aliasManager);
     }
 
     @Test
@@ -114,7 +119,7 @@ class SigReqsManagerTest {
 
         subject.expandSigs(sourceState, accessor);
 
-        verify(expansionHelper).expandIn(accessor, workingStateSigReqs, pubKeyToSigBytes);
+        verify(expansionHelper).expandIn(accessor, workingStateSigReqs, pubKeyToSigBytes, aliasManager);
     }
 
     @Test
@@ -130,7 +135,7 @@ class SigReqsManagerTest {
 
         subject.expandSigs(sourceState, accessor);
 
-        verify(expansionHelper).expandIn(accessor, workingStateSigReqs, pubKeyToSigBytes);
+        verify(expansionHelper).expandIn(accessor, workingStateSigReqs, pubKeyToSigBytes, aliasManager);
     }
 
     @Test
@@ -155,13 +160,13 @@ class SigReqsManagerTest {
                     return null;
                 })
                 .given(expansionHelper)
-                .expandIn(any(), any(), any());
+                .expandIn(any(), any(), any(), any());
         subject.setLookupsFactory(lookupsFactory);
         subject.setSigReqsFactory(sigReqsFactory);
 
         subject.expandSigs(sourceState, accessor);
 
-        verify(expansionHelper).expandIn(accessor, workingStateSigReqs, pubKeyToSigBytes);
+        verify(expansionHelper).expandIn(accessor, workingStateSigReqs, pubKeyToSigBytes, aliasManager);
     }
 
     @Test
@@ -179,7 +184,7 @@ class SigReqsManagerTest {
 
         subject.expandSigs(sourceState, accessor);
 
-        verify(expansionHelper).expandIn(accessor, immutableStateSigReqs, pubKeyToSigBytes);
+        verify(expansionHelper).expandIn(accessor, immutableStateSigReqs, pubKeyToSigBytes, aliasManager);
     }
 
     @Test
@@ -192,7 +197,7 @@ class SigReqsManagerTest {
 
         subject.expandSigs(sourceState, accessor);
 
-        verify(expansionHelper).expandIn(accessor, workingStateSigReqs, pubKeyToSigBytes);
+        verify(expansionHelper).expandIn(accessor, workingStateSigReqs, pubKeyToSigBytes, aliasManager);
     }
 
     private static final Instant lastHandleTime = Instant.ofEpochSecond(1_234_567, 890);
