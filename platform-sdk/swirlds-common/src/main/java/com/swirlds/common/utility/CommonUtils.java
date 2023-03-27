@@ -127,7 +127,7 @@ public class CommonUtils {
     public static void click() {
         try {
             if (data == null) {
-                data = new byte[]{0, 127};
+                data = new byte[] {0, 127};
                 format = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100.0f, 16, 1, 2, 44100.0f, false);
                 clip = AudioSystem.getClip();
                 clip.open(format, data, 0, data.length);
