@@ -310,7 +310,7 @@ public class SyntheticTxnFactory {
         if (approveWrapper.isFungible()) {
             builder.addTokenAllowances(TokenAllowance.newBuilder()
                     .setTokenId(approveWrapper.tokenId())
-                    .setOwner(ownerId.toGrpcAccountId())
+                    .setOwner(Objects.requireNonNull(ownerId).toGrpcAccountId())
                     .setSpender(approveWrapper.spender())
                     .setAmount(approveWrapper.amount().longValueExact())
                     .build());
