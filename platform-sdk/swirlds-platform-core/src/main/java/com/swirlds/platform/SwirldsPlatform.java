@@ -442,8 +442,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         this.platformContext = Objects.requireNonNull(platformContext, "platformContext");
 
-        DispatchBuilder dispatchBuilder = new DispatchBuilder(
-                platformContext.getConfiguration().getConfigData(DispatchConfiguration.class));
+        DispatchBuilder dispatchBuilder =
+                new DispatchBuilder(platformContext.getConfiguration().getConfigData(DispatchConfiguration.class));
 
         components = new PlatformComponents(dispatchBuilder);
 
@@ -1148,9 +1148,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         if (loadedState.signedStateFromDisk != null) {
             logger.debug(STARTUP.getMarker(), () -> new SavedStateLoadedPayload(
-                    loadedState.signedStateFromDisk.getRound(),
-                    loadedState.signedStateFromDisk.getConsensusTimestamp(),
-                    startUpEventFrozenManager.getStartUpEventFrozenEndTime())
+                            loadedState.signedStateFromDisk.getRound(),
+                            loadedState.signedStateFromDisk.getConsensusTimestamp(),
+                            startUpEventFrozenManager.getStartUpEventFrozenEndTime())
                     .toString());
 
             buildEventHandlersFromState(loadedState.initialState, stateHashSignQueueThread);
@@ -1695,7 +1695,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             if (oldStatus != newStatus) {
                 final PlatformStatus ns = newStatus;
                 logger.info(PLATFORM_STATUS.getMarker(), () -> new PlatformStatusPayload(
-                        "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), ns.name())
+                                "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), ns.name())
                         .toString());
 
                 logger.info(PLATFORM_STATUS.getMarker(), "Platform status changed to: {}", newStatus.toString());

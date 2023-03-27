@@ -575,14 +575,14 @@ class EventFlowTests {
 
         // Set up the running hash calculator, required if signed states are created
         doAnswer((Answer<Void>) invocation -> {
-            final Object[] args = invocation.getArguments();
-            final List<EventImpl> events = (List<EventImpl>) args[0];
+                    final Object[] args = invocation.getArguments();
+                    final List<EventImpl> events = (List<EventImpl>) args[0];
 
-            // calculates and updates runningHash
-            events.forEach(runningHashCalculator::calculateRunningHash);
+                    // calculates and updates runningHash
+                    events.forEach(runningHashCalculator::calculateRunningHash);
 
-            return null;
-        })
+                    return null;
+                })
                 .when(eventStreamManager)
                 .addEvents(anyList());
 
@@ -624,12 +624,9 @@ class EventFlowTests {
                 consStats,
                 eventStreamManager,
                 signedStateTracker,
-                e -> {
-                },
-                () -> {
-                },
-                (round) -> {
-                },
+                e -> {},
+                () -> {},
+                (round) -> {},
                 SoftwareVersion.NO_VERSION);
     }
 
