@@ -16,8 +16,8 @@
 
 package com.swirlds.common.config;
 
+import com.swirlds.base.ArgumentUtils;
 import com.swirlds.common.constructable.URLClassLoaderWithLookup;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigurationBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -58,8 +58,7 @@ public final class ConfigUtils {
     @NonNull
     public static ConfigurationBuilder scanAndRegisterAllConfigTypes(
             @NonNull final ConfigurationBuilder configurationBuilder, @NonNull final String... packagePrefixes) {
-        CommonUtils.throwArgNull(configurationBuilder, "configurationBuilder");
-        CommonUtils.throwArgNull(packagePrefixes, "packagePrefixes");
+        ArgumentUtils.throwArgNull(packagePrefixes, "packagePrefixes");
         return scanAndRegisterAllConfigTypes(configurationBuilder, Set.of(packagePrefixes), Collections.emptyList());
     }
 
@@ -76,6 +75,7 @@ public final class ConfigUtils {
             @NonNull final ConfigurationBuilder configurationBuilder,
             @NonNull final Set<String> packagePrefixes,
             @NonNull final List<URLClassLoaderWithLookup> additionalClassLoaders) {
+        ArgumentUtils.throwArgNull(configurationBuilder, "configurationBuilder");
         loadAllConfigDataRecords(packagePrefixes, additionalClassLoaders)
                 .forEach(configurationBuilder::withConfigDataType);
         return configurationBuilder;
@@ -85,8 +85,8 @@ public final class ConfigUtils {
     private static Set<Class<? extends Record>> loadAllConfigDataRecords(
             @NonNull final Set<String> packagePrefixes,
             @NonNull final List<URLClassLoaderWithLookup> additionalClassLoaders) {
-        CommonUtils.throwArgNull(packagePrefixes, "packagePrefix");
-        CommonUtils.throwArgNull(additionalClassLoaders, "additionalClassLoaders");
+        ArgumentUtils.throwArgNull(packagePrefixes, "packagePrefix");
+        ArgumentUtils.throwArgNull(additionalClassLoaders, "additionalClassLoaders");
 
         final ClassGraph classGraph = new ClassGraph().enableAnnotationInfo();
 
