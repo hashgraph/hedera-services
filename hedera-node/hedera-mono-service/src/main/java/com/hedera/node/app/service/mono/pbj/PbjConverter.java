@@ -51,8 +51,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Objects;
 import java.util.Optional;
@@ -1313,15 +1311,12 @@ public final class PbjConverter {
         return protoToPbj(sigMap, SignatureMap.class);
     }
 
-    public static com.hederahashgraph.api.proto.java.SignatureMap fromPbj(
-            SignatureMap signatureMap) {
-        return pbjToProto(signatureMap, SignatureMap.class,
-                com.hederahashgraph.api.proto.java.SignatureMap.class);
+    public static com.hederahashgraph.api.proto.java.SignatureMap fromPbj(SignatureMap signatureMap) {
+        return pbjToProto(signatureMap, SignatureMap.class, com.hederahashgraph.api.proto.java.SignatureMap.class);
     }
 
     public static com.hederahashgraph.api.proto.java.QueryHeader fromPbj(QueryHeader queryHeader) {
-        return pbjToProto(queryHeader, QueryHeader.class,
-                com.hederahashgraph.api.proto.java.QueryHeader.class);
+        return pbjToProto(queryHeader, QueryHeader.class, com.hederahashgraph.api.proto.java.QueryHeader.class);
     }
 
     public static NetworkGetExecutionTimeQuery toPbj(
