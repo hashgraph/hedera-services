@@ -95,15 +95,16 @@ public abstract class VirtualMapBench extends BaseBench {
 
     protected VirtualMap<BenchmarkKey, BenchmarkValue> createMap(final long[] map) {
         final long start = System.currentTimeMillis();
-        final VirtualMap<BenchmarkKey, BenchmarkValue> restoredMap = restoreMap();
-        if (restoredMap != null) {
+        VirtualMap<BenchmarkKey, BenchmarkValue> virtualMap = restoreMap();
+        if (virtualMap != null) {
             if (verify && map != null) {
                 final int parallelism = ForkJoinPool.getCommonPoolParallelism();
                 final AtomicLong numKeys = new AtomicLong();
+                final VirtualMap<BenchmarkKey, BenchmarkValue> srcMap = virtualMap;
                 IntStream.range(0, parallelism).parallel().forEach(idx -> {
                     long count = 0L;
                     for (int i = idx; i < map.length; i += parallelism) {
-                        final BenchmarkValue value = restoredMap.get(new BenchmarkKey(i));
+                        final BenchmarkValue value = srcMap.get(new BenchmarkKey(i));
                         if (value != null) {
                             map[i] = value.toLong();
                             ++count;
@@ -115,11 +116,11 @@ public abstract class VirtualMapBench extends BaseBench {
             } else {
                 logger.info("Loaded map in {} ms", System.currentTimeMillis() - start);
             }
-            BenchmarkMetrics.register(restoredMap::registerMetrics);
-            return restoredMap;
         } else {
-            return createEmptyMap();
+            virtualMap = createEmptyMap();
         }
+        BenchmarkMetrics.register(virtualMap::registerMetrics);
+        return virtualMap;
     }
 
     private void enableSnapshots() {
