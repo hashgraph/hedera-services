@@ -298,7 +298,7 @@ public class SyntheticTxnFactory {
     }
 
     public TransactionBody.Builder createFungibleApproval(
-            final ApproveWrapper approveWrapper, @NonNull EntityId ownerId) {
+            @NonNull final ApproveWrapper approveWrapper, @NonNull EntityId ownerId) {
         return createNonfungibleApproval(approveWrapper, ownerId, null);
     }
 
