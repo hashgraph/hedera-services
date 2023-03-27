@@ -81,13 +81,13 @@ class SeqNoEntityIdSourceTest {
 
         // when:
         AccountID newId = AccountID.newBuilder()
-                .setRealmNum(sponsor.getRealmNum())
-                .setShardNum(sponsor.getShardNum())
+                .setRealmNum(0)
+                .setShardNum(0)
                 .setAccountNum(subject.newAccountNumber())
                 .build();
 
         // then:
-        assertEquals(asAccount("1.2.555"), newId);
+        assertEquals(asAccount("0.0.555"), newId);
     }
 
     @Test
