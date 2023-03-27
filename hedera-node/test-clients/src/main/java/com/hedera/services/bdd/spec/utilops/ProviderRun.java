@@ -133,17 +133,16 @@ public class ProviderRun extends UtilOp {
                 nextLogTargetMs += logIncrementMs;
                 long delta = duration - stopwatch.elapsed(unit);
                 if (delta != lastDeltaLogged) {
-                    log.info(delta
-                            + " "
-                            + unit.toString().toLowerCase()
-                            + (fixedOpSubmission ? (" or " + remainingOpsToSubmit + " ops ") : "")
-                            + " left in test - "
-                            + submittedSoFar
-                            + " ops submitted so far ("
-                            + numPending
-                            + " pending).");
-                    log.info("Precheck txn status counts :: " + spec.precheckStatusCounts());
-                    log.info("Resolved txn status counts :: " + spec.finalizedStatusCounts());
+                    String message = String.format(
+                            "%d %s%s left in test - %d ops submitted so far (%d pending).",
+                            delta,
+                            unit.toString().toLowerCase(),
+                            (fixedOpSubmission ? (" or " + remainingOpsToSubmit + " ops ") : ""),
+                            submittedSoFar,
+                            numPending);
+                    log.info(message);
+                    log.info("Precheck txn status counts :: {}", spec.precheckStatusCounts());
+                    log.info("Resolved txn status counts :: {}", spec.finalizedStatusCounts());
                     log.info("\n------------------------------\n");
                     lastDeltaLogged = delta;
                 }
@@ -179,7 +178,7 @@ public class ProviderRun extends UtilOp {
                     opsThisSecond.getAndAdd(burst.length);
                 }
             } else {
-                log.warn("Now " + numPending + " ops pending; backing off for " + BACKOFF_SLEEP_SECS + "s!");
+                log.warn("Now {} ops pending; backing off for {}s!", numPending, BACKOFF_SLEEP_SECS);
                 try {
                     Thread.sleep(BACKOFF_SLEEP_SECS * 1_000L);
                 } catch (InterruptedException ignore) {
@@ -191,8 +190,8 @@ public class ProviderRun extends UtilOp {
                 .filter(entry -> entry.getValue().get() > 0)
                 .collect(Collectors.toMap(
                         Map.Entry::getKey, entry -> entry.getValue().get()));
-        log.info("Final breakdown of *provided* ops: " + finalCounts);
-        log.info("Final breakdown of *resolved* statuses: " + spec.finalizedStatusCounts());
+        log.info("Final breakdown of *provided* ops: {}", finalCounts);
+        log.info("Final breakdown of *resolved* statuses: {}", spec.finalizedStatusCounts());
 
         return false;
     }

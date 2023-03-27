@@ -73,7 +73,7 @@ public class SpecKeyFromMnemonic extends UtilOp {
         var pk = new EdDSAPrivateKey(privateKeySpec);
         var pubKeyHex = CommonUtils.hex(pk.getAbyte());
         if (logToUse != null) {
-            logToUse.info("Hex-encoded public key: " + pubKeyHex);
+            logToUse.info("Hex-encoded public key: {}", pubKeyHex);
         }
         var key = Ed25519Factory.populatedFrom(pk.getAbyte());
         spec.registry().saveKey(name, key);
