@@ -26,9 +26,7 @@ import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
 
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.merkle.MerkleNode;
@@ -57,7 +55,6 @@ import com.swirlds.common.system.events.PlatformEvent;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.common.threading.framework.QueueThread;
-import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.interrupt.Uninterruptable;
@@ -168,7 +165,6 @@ import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
@@ -192,12 +188,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * value
      */
     private final NodeId selfId;
-    /** tell which pairs of members should establish connections */
-    private final NetworkTopology topology;
-    /**
-     * This object is responsible for rate limiting reconnect attempts (in the role of sender)
-     */
-    private final ReconnectThrottle reconnectThrottle;
 
     private final Settings settings = Settings.getInstance();
     /** A type used by Hashgraph, Statistics, and SyncUtils. Only Hashgraph modifies this type instance. */
@@ -232,21 +222,12 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /** set in the constructor and given to the SwirldState object in run() */
     private final AddressBook initialAddressBook;
 
-    private final Metrics metrics;
     private final PlatformMetrics platformMetrics;
 
-    private final SimultaneousSyncThrottle simultaneousSyncThrottle;
-    private final ConsensusMetrics consensusMetrics;
-    private final SyncMetrics syncMetrics;
     private final NetworkMetrics networkMetrics;
-    private final ReconnectMetrics reconnectMetrics;
     private final ReconnectController reconnectController;
-    /** tracks if we have fallen behind or not, takes appropriate action if we have */
-    private final FallenBehindManagerImpl fallenBehindManager;
 
     private final ChatterCore<GossipEvent> chatterCore;
-    /** all the events and other data about the hashgraph */
-    private final EventTaskCreator eventTaskCreator;
     /** ID number of the swirld being run */
     private final byte[] swirldId;
     /** the object that contains all key pairs and CSPRNG state for this member */
@@ -265,23 +246,13 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * If a state was loaded from disk, this will have the hash of that state.
      */
     private final Hash diskStateHash;
-    /** Helps when executing a reconnect */
-    private final ReconnectHelper reconnectHelper;
     /** tells callers who to sync with and keeps track of whether we have fallen behind */
     private final SyncManagerImpl syncManager;
 
     private final StateManagementComponent stateManagementComponent;
 
-    /** Tracks recent events created in the network */
-    private final CriticalQuorum criticalQuorum;
-
     private final QueueThread<EventIntakeTask> intakeQueue;
     private final EventLinker eventLinker;
-    private final SequenceCycle<EventIntakeTask> intakeCycle;
-    /** Executes a sync with a remote node */
-    private final ShadowGraphSynchronizer shadowgraphSynchronizer;
-    /** Stores and passes pre-consensus events to {@link SwirldStateManager} for handling */
-    private final PreConsensusEventHandler preConsensusEventHandler;
     /** Stores and processes consensus events including sending them to {@link SwirldStateManager} for handling */
     private final ConsensusRoundHandler consensusRoundHandler;
     /** Handles all interaction with {@link SwirldState} */
@@ -290,8 +261,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private final SwirldTransactionSubmitter transactionSubmitter;
     /** clears all pipelines to prepare for a reconnect */
     private final Clearable clearAllPipelines;
-    /** Contains all information and state required for emergency recovery */
-    private final EmergencyRecoveryManager emergencyRecoveryManager;
 
     /**
      * Responsible for managing the lifecycle of threads on this platform.
@@ -385,9 +354,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 dispatchBuilder.getDispatcher(this, ReconnectStateLoadedTrigger.class)::dispatch;
         diskStateLoadedDispatcher = dispatchBuilder.getDispatcher(this, DiskStateLoadedTrigger.class)::dispatch;
 
-        this.emergencyRecoveryManager = emergencyRecoveryManager;
-
-        this.simultaneousSyncThrottle =
+        final SimultaneousSyncThrottle simultaneousSyncThrottle =
                 new SimultaneousSyncThrottle(settings.getMaxIncomingSyncsInc() + settings.getMaxOutgoingSyncs());
 
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
@@ -405,35 +372,39 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         this.eventMapper = new EventMapper(selfId);
         this.chatterEventMapper = new ChatterEventMapper(); // TODO remove
 
-        this.metrics = platformContext.getMetrics();
         this.platformName = platformName;
 
-        metrics.getOrCreate(StatConstructor.createEnumStat(
-                "PlatformStatus", Metrics.PLATFORM_CATEGORY, PlatformStatus.values(), currentPlatformStatus::get));
+        platformContext
+                .getMetrics()
+                .getOrCreate(StatConstructor.createEnumStat(
+                        "PlatformStatus",
+                        Metrics.PLATFORM_CATEGORY,
+                        PlatformStatus.values(),
+                        currentPlatformStatus::get));
 
         final Time time = OSTime.getInstance();
 
         // stats related to the intake cycle
-        final IntakeCycleStats intakeCycleStats = new IntakeCycleStats(time, metrics);
+        final IntakeCycleStats intakeCycleStats = new IntakeCycleStats(time, platformContext.getMetrics());
 
-        this.consensusMetrics = new ConsensusMetricsImpl(this.selfId, metrics);
-        final AddedEventMetrics addedEventMetrics = new AddedEventMetrics(this.selfId, metrics);
-        final EventIntakeMetrics eventIntakeMetrics = new EventIntakeMetrics(metrics, time);
-        this.syncMetrics = new SyncMetrics(metrics);
-        this.networkMetrics =
-                new NetworkMetrics(metrics, selfId, getAddressBook().getSize());
-        metrics.addUpdater(networkMetrics::update);
-        this.reconnectMetrics = new ReconnectMetrics(metrics);
-        RuntimeMetrics.setup(metrics);
+        final ConsensusMetrics consensusMetrics = new ConsensusMetricsImpl(this.selfId, platformContext.getMetrics());
+        final AddedEventMetrics addedEventMetrics = new AddedEventMetrics(this.selfId, platformContext.getMetrics());
+        final EventIntakeMetrics eventIntakeMetrics = new EventIntakeMetrics(platformContext.getMetrics(), time);
+        final SyncMetrics syncMetrics = new SyncMetrics(platformContext.getMetrics());
+        this.networkMetrics = new NetworkMetrics(
+                platformContext.getMetrics(), selfId, getAddressBook().getSize());
+        platformContext.getMetrics().addUpdater(networkMetrics::update);
+        final ReconnectMetrics reconnectMetrics = new ReconnectMetrics(platformContext.getMetrics());
+        RuntimeMetrics.setup(platformContext.getMetrics());
 
         if (settings.getChatter().isChatterUsed()) {
             chatterCore = new ChatterCore<>(
                     time,
                     GossipEvent.class,
-                    new PrepareChatterEvent(CryptographyHolder.get()),
+                    new PrepareChatterEvent(platformContext.getCryptography()),
                     settings.getChatter(),
                     networkMetrics::recordPingTime,
-                    metrics);
+                    platformContext.getMetrics());
         } else {
             chatterCore = null;
         }
@@ -443,12 +414,12 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         this.swirldId = swirldId.clone();
         this.crypto = crypto;
 
-        startUpEventFrozenManager = new StartUpEventFrozenManager(metrics, Instant::now);
+        startUpEventFrozenManager = new StartUpEventFrozenManager(platformContext.getMetrics(), Instant::now);
         freezeManager = new FreezeManager(this::checkPlatformStatus);
 
         // Manually wire components for now.
         final ManualWiring wiring = new ManualWiring(platformContext, threadManager, getAddressBook(), freezeManager);
-        metrics.addUpdater(wiring::updateMetrics);
+        platformContext.getMetrics().addUpdater(wiring::updateMetrics);
         final AppCommunicationComponent appCommunicationComponent =
                 wiring.wireAppCommunicationComponent(notificationEngine);
 
@@ -479,9 +450,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                         .addHandlers(stateManagementComponent.getPostConsensusHandleMethods())
                         .build();
 
-        reconnectThrottle = new ReconnectThrottle(settings.getReconnect());
+        final ReconnectThrottle reconnectThrottle = new ReconnectThrottle(settings.getReconnect());
 
-        topology = new StaticTopology(
+        final NetworkTopology topology = new StaticTopology(
                 selfId,
                 initialAddressBook.getSize(),
                 settings.getNumConnections(),
@@ -519,12 +490,12 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 selfId,
                 preConsensusSystemTransactionManager,
                 postConsensusSystemTransactionManager,
-                metrics,
+                platformContext.getMetrics(),
                 PlatformConstructor.settingsProvider(),
                 freezeManager::isFreezeStarted,
                 startingState);
 
-        reconnectHelper = new ReconnectHelper(
+        final ReconnectHelper reconnectHelper = new ReconnectHelper(
                 stopGossip,
                 this::clearAllPipelines,
                 swirldStateManager::getConsensusState,
@@ -540,7 +511,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             reconnectController = null;
         }
 
-        fallenBehindManager = new FallenBehindManagerImpl(
+        final FallenBehindManagerImpl fallenBehindManager = new FallenBehindManagerImpl(
                 selfId,
                 topology.getConnectionGraph(),
                 this::checkPlatformStatus,
@@ -572,15 +543,16 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         // SwirldStateManager will get a copy of the state loaded, that copy will become stateCons.
         // The original state will be saved in the SignedStateMgr and will be deleted when it becomes old
 
-        preConsensusEventHandler = components.add(PlatformConstructor.preConsensusEventHandler(
-                threadManager, selfId, swirldStateManager, consensusMetrics));
+        final PreConsensusEventHandler preConsensusEventHandler =
+                components.add(PlatformConstructor.preConsensusEventHandler(
+                        threadManager, selfId, swirldStateManager, consensusMetrics));
         consensusRoundHandler = components.add(PlatformConstructor.consensusHandler(
                 platformContext,
                 threadManager,
                 selfId.getId(),
                 PlatformConstructor.settingsProvider(),
                 swirldStateManager,
-                new ConsensusHandlingMetrics(metrics, time),
+                new ConsensusHandlingMetrics(platformContext.getMetrics(), time),
                 eventStreamManager,
                 stateHashSignQueueThread,
                 preConsensusEventWriter::waitUntilDurable,
@@ -597,7 +569,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 PlatformConstructor.settingsProvider(),
                 getSelfAddress().isZeroStake(),
                 swirldStateManager::submitTransaction,
-                new TransactionMetrics(metrics));
+                new TransactionMetrics(platformContext.getMetrics()));
 
         if (loadedState.signedStateFromDisk != null) {
             consensus = new ConsensusImpl(
@@ -615,6 +587,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     getAddressBook());
         }
 
+        final CriticalQuorum criticalQuorum;
         if (settings.getChatter().isChatterUsed()) {
             criticalQuorum =
                     new CriticalQuorumImpl(initialAddressBook, false, settings.getChatter().criticalQuorumSoftening);
@@ -662,8 +635,10 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                     parentFinder,
                     settings.getChatter().getFutureGenerationLimit());
-            metrics.getOrCreate(
-                    new FunctionGauge.Config<>("intake", "numOrphans", Integer.class, orphanBuffer::getNumOrphans)
+            platformContext
+                    .getMetrics()
+                    .getOrCreate(new FunctionGauge.Config<>(
+                                    "intake", "numOrphans", Integer.class, orphanBuffer::getNumOrphans)
                             .withDescription("the number of events without parents buffered")
                             .withFormat("%d"));
             eventLinker = orphanBuffer;
@@ -725,6 +700,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 intakeCycleStats);
 
         final InterruptableConsumer<EventIntakeTask> intakeHandler;
+        final SequenceCycle<EventIntakeTask> intakeCycle;
         if (settings.getChatter().isChatterUsed()) {
             intakeCycle = new SequenceCycle<>(taskDispatcher::dispatchTask);
             intakeHandler = intakeCycle;
@@ -739,11 +715,11 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 .setThreadName("event-intake")
                 .setHandler(intakeHandler)
                 .setCapacity(settings.getEventIntakeQueueSize())
-                .setLogAfterPauseDuration(ConfigurationHolder.getInstance()
-                        .get()
+                .setLogAfterPauseDuration(platformContext
+                        .getConfiguration()
                         .getConfigData(ThreadConfig.class)
                         .logStackTracePauseDuration())
-                .enableMaxSizeMetric(metrics)
+                .enableMaxSizeMetric(platformContext.getMetrics())
                 .build());
 
         if (loadedState.signedStateFromDisk != null) {
@@ -771,7 +747,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 initialAddressBook,
                 fallenBehindManager));
 
-        eventTaskCreator = new EventTaskCreator(
+        // hashgraph and state get separate copies of the address book
+        final EventTaskCreator eventTaskCreator = new EventTaskCreator(
                 eventMapper,
                 // hashgraph and state get separate copies of the address book
                 initialAddressBook.copy(),
@@ -788,7 +765,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         final ParallelExecutor shadowgraphExecutor =
                 components.add(PlatformConstructor.parallelExecutor(threadManager));
-        shadowgraphSynchronizer = new ShadowGraphSynchronizer(
+        final ShadowGraphSynchronizer shadowgraphSynchronizer = new ShadowGraphSynchronizer(
                 shadowGraph,
                 getAddressBook().getSize(),
                 syncMetrics,
@@ -801,7 +778,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 () -> {});
 
         this.platformMetrics = new PlatformMetrics(
-                metrics,
+                platformContext.getMetrics(),
                 selfId,
                 freezeManager,
                 startUpEventFrozenManager,
@@ -815,7 +792,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 simultaneousSyncThrottle,
                 eventStreamManager,
                 stateManagementComponent);
-        metrics.addUpdater(platformMetrics::update);
+        platformContext.getMetrics().addUpdater(platformMetrics::update);
 
         if (settings.getChatter().isChatterUsed()) {
             gossipNetwork = components.add(new ChatterNetwork(

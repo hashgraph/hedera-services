@@ -27,7 +27,6 @@ import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.internal.EventImpl;
 import java.util.function.BooleanSupplier;
-import java.util.function.Supplier;
 
 /**
  * This class has identical behavior as {@link EventCreator} but makes a variety of methods public.
