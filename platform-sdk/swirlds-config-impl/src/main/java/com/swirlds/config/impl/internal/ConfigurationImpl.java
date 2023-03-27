@@ -76,8 +76,8 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
 
     @Nullable
     @Override
-    public <T> T getValue(@NonNull final String propertyName, @NonNull final Class<T> propertyType,
-            @Nullable final T defaultValue) {
+    public <T> T getValue(
+            @NonNull final String propertyName, @NonNull final Class<T> propertyType, @Nullable final T defaultValue) {
         ArgumentUtils.throwArgBlank(propertyName, "propertyName");
         ArgumentUtils.throwArgNull(propertyType, "propertyType");
         if (!exists(propertyName)) {
@@ -123,7 +123,9 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
 
     @Nullable
     @Override
-    public <T> List<T> getValues(@NonNull final String propertyName, @NonNull final Class<T> propertyType,
+    public <T> List<T> getValues(
+            @NonNull final String propertyName,
+            @NonNull final Class<T> propertyType,
             @Nullable final List<T> defaultValue) {
         ArgumentUtils.throwArgBlank(propertyName, "propertyName");
         ArgumentUtils.throwArgNull(propertyType, "propertyType");

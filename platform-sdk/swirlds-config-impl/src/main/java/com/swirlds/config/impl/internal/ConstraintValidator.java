@@ -48,8 +48,8 @@ final class ConstraintValidator implements ConfigValidator {
         ArgumentUtils.throwArgNull(configuration, "configuration");
         return constraintData.stream()
                 .map(d -> {
-                    final PropertyMetadata<?> propertyMetadata = createMetadata(d.propertyName, d.valueType,
-                            configuration);
+                    final PropertyMetadata<?> propertyMetadata =
+                            createMetadata(d.propertyName, d.valueType, configuration);
                     return d.validator.check(propertyMetadata);
                 })
                 .filter(Objects::nonNull);
@@ -57,7 +57,8 @@ final class ConstraintValidator implements ConfigValidator {
 
     @NonNull
     private <T> PropertyMetadata<T> createMetadata(
-            @NonNull final String propertyName, @NonNull final Class<T> valueType,
+            @NonNull final String propertyName,
+            @NonNull final Class<T> valueType,
             @NonNull final Configuration configuration) {
         ArgumentUtils.throwArgBlank(propertyName, "propertyName");
         ArgumentUtils.throwArgNull(valueType, "valueType");
@@ -73,7 +74,8 @@ final class ConstraintValidator implements ConfigValidator {
     }
 
     <T> void addConstraint(
-            @NonNull final String propertyName, @NonNull final Class<T> valueType,
+            @NonNull final String propertyName,
+            @NonNull final Class<T> valueType,
             @NonNull final ConfigPropertyConstraint<T> validator) {
         ArgumentUtils.throwArgBlank(propertyName, "propertyName");
         ArgumentUtils.throwArgNull(valueType, "valueType");
@@ -86,6 +88,5 @@ final class ConstraintValidator implements ConfigValidator {
     }
 
     private record ConfigPropertyConstraintData<T>(
-            String propertyName, Class<T> valueType, ConfigPropertyConstraint<T> validator) {
-    }
+            String propertyName, Class<T> valueType, ConfigPropertyConstraint<T> validator) {}
 }

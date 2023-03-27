@@ -102,7 +102,8 @@ class ConfigValidationService implements ConfigLifecycle {
     }
 
     <T> void addConstraint(
-            @NonNull final String propertyName, @NonNull final Class<T> valueType,
+            @NonNull final String propertyName,
+            @NonNull final Class<T> valueType,
             @NonNull final ConfigPropertyConstraint<T> validator) {
         throwIfInitialized();
         ArgumentUtils.throwArgBlank(propertyName, "propertyName");

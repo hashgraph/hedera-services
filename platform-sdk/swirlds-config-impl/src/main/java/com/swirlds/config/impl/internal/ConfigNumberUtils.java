@@ -37,8 +37,8 @@ public final class ConfigNumberUtils {
      * @return a negative integer, zero, or a positive integer as the value is less than, equal to, or greater than the
      * number.
      */
-    public static <T extends Number> int compare(@NonNull final T value, @NonNull final Class<T> valueType,
-            @NonNull final Number number) {
+    public static <T extends Number> int compare(
+            @NonNull final T value, @NonNull final Class<T> valueType, @NonNull final Number number) {
         ArgumentUtils.throwArgNull(value, "value");
         ArgumentUtils.throwArgNull(valueType, "valueType");
         ArgumentUtils.throwArgNull(number, "number");

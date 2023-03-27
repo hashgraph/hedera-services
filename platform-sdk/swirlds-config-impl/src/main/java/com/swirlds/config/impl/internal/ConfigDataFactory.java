@@ -85,8 +85,8 @@ class ConfigDataFactory {
     }
 
     @Nullable
-    private Object getValueForRecordComponent(@NonNull final String namePrefix,
-            @NonNull final RecordComponent component) {
+    private Object getValueForRecordComponent(
+            @NonNull final String namePrefix, @NonNull final RecordComponent component) {
         ArgumentUtils.throwArgNull(component, "component");
         final String name = createPropertyName(namePrefix, component);
         final Class<?> valueType = component.getType();
