@@ -127,7 +127,7 @@ public class CommonUtils {
     public static void click() {
         try {
             if (data == null) {
-                data = new byte[] {0, 127};
+                data = new byte[]{0, 127};
                 format = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100.0f, 16, 1, 2, 44100.0f, false);
                 clip = AudioSystem.getClip();
                 clip.open(format, data, 0, data.length);
@@ -255,7 +255,9 @@ public class CommonUtils {
      * @param arg     the argument checked
      * @param argName the name of the argument
      * @see StringUtils#isBlank(CharSequence)
+     * @deprecated use {@link com.swirlds.base.ArgumentUtils#throwArgBlank(String, String)} instead
      */
+    @Deprecated(forRemoval = true)
     public static String throwArgBlank(final String arg, final String argName) {
         throwArgNull(arg, argName);
         if (StringUtils.isBlank(arg)) {
