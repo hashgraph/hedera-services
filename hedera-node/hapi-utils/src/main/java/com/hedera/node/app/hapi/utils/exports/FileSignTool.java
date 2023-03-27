@@ -292,7 +292,11 @@ public class FileSignTool {
         // extract latest app version from system property if available
         final String appVersionString = System.getProperty(HAPI_PROTOBUF_VERSION);
         if (appVersionString != null) {
-            final String[] versions = appVersionString.replace("-SNAPSHOT", "").split(Pattern.quote("."));
+            final String[] versions = appVersionString
+                    .replace("-SNAPSHOT", "")
+                    .split(Pattern.quote("-"))[0]
+                    .split(Pattern.quote("."));
+
             if (versions.length >= 3) {
                 try {
                     fileHeader = new int[] {

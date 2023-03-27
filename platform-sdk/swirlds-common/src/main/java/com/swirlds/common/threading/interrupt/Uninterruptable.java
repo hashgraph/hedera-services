@@ -172,6 +172,7 @@ public final class Uninterruptable {
             @NonNull final String errorMessage) {
 
         throwArgNull(consumer, "consumer");
+        throwArgNull(errorMessage, "errorMessage");
 
         try {
             consumer.accept(object);

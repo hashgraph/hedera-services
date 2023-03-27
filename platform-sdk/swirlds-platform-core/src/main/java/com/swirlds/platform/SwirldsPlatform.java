@@ -16,6 +16,7 @@
 
 package com.swirlds.platform;
 
+import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLogIfInterrupted;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.utility.CommonUtils.combineConsumers;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
@@ -128,6 +129,7 @@ import com.swirlds.platform.event.preconsensus.NoOpPreConsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventFileManager;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventStreamConfig;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
 import com.swirlds.platform.event.preconsensus.SyncPreConsensusEventWriter;
 import com.swirlds.platform.event.validation.AncientValidator;
 import com.swirlds.platform.event.validation.EventDeduplication;
@@ -169,6 +171,8 @@ import com.swirlds.platform.network.unidirectional.MultiProtocolResponder;
 import com.swirlds.platform.network.unidirectional.ProtocolMapping;
 import com.swirlds.platform.network.unidirectional.SharedConnectionLocks;
 import com.swirlds.platform.network.unidirectional.UnidirectionalProtocols;
+import com.swirlds.platform.observers.AboutToAddEventObserver;
+import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.reconnect.DefaultSignedStateValidator;
 import com.swirlds.platform.reconnect.FallenBehindManagerImpl;
@@ -656,6 +660,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         }
 
         // build the event intake classes
+        final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final EventObserverDispatcher dispatcher = new EventObserverDispatcher(
                 new ShadowGraphEventObserver(shadowGraph),
                 consensusRoundHandler,
@@ -663,7 +668,23 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 eventMapper,
                 addedEventMetrics,
                 criticalQuorum,
-                eventIntakeMetrics);
+                eventIntakeMetrics,
+                (AboutToAddEventObserver) event -> {
+                    sequencer.assignStreamSequenceNumber(event);
+                    abortAndLogIfInterrupted(
+                            preConsensusEventWriter::writeEvent,
+                            event,
+                            "Interrupted while attempting to enqueue preconsensus event for writing");
+                },
+                (ConsensusRoundObserver) round -> {
+                    abortAndLogIfInterrupted(
+                            preConsensusEventWriter::setMinimumGenerationNonAncient,
+                            round.getGenerations().getMinGenerationNonAncient(),
+                            "Interrupted while attempting to enqueue change in minimum generation non-ancient");
+
+                    final EventImpl keystoneEvent = round.getKeystoneEvent();
+                    preConsensusEventWriter.requestFlush(keystoneEvent);
+                });
         if (settings.getChatter().isChatterUsed()) {
             dispatcher.addObserver(new ChatterNotifier(selfId, chatterCore));
             dispatcher.addObserver(chatterEventMapper);
@@ -702,8 +723,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 initialAddressBook,
                 dispatcher,
                 intakeCycleStats,
-                shadowGraph,
-                preConsensusEventWriter);
+                shadowGraph);
 
         final EventCreator eventCreator;
         if (settings.getChatter().isChatterUsed()) {
