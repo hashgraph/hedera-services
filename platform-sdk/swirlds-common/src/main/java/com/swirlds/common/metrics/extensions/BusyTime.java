@@ -19,7 +19,6 @@ package com.swirlds.common.metrics.extensions;
 import com.swirlds.common.metrics.FloatFormats;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.metrics.atomic.AtomicIntPair;
 import com.swirlds.common.time.OSTime;
 import com.swirlds.common.time.Time;
 
@@ -97,10 +96,10 @@ public class BusyTime {
     }
 
     private long statusUpdate(final long previousPair, final long suppliedValues) {
-        final int measurementStart = AtomicIntPair.extractLeft(previousPair);
-        final int currentStatus = AtomicIntPair.extractRight(previousPair);
-        final int currentTime = AtomicIntPair.extractLeft(suppliedValues);
-        final int statusChange = AtomicIntPair.extractRight(suppliedValues);
+        final int measurementStart = IntPairUtils.extractLeft(previousPair);
+        final int currentStatus = IntPairUtils.extractRight(previousPair);
+        final int currentTime = IntPairUtils.extractLeft(suppliedValues);
+        final int statusChange = IntPairUtils.extractRight(suppliedValues);
 
         if ((statusChange == WORK_START && !isIdle(currentStatus))
                 || (statusChange == WORK_END && isIdle(currentStatus))) {
@@ -111,11 +110,11 @@ public class BusyTime {
         if (statusChange == WORK_START) {
             final int busyTime = Math.abs(currentStatus) - 1;
             final int idleTime = elapsedTime - busyTime;
-            return AtomicIntPair.combine(measurementStart, idleTime + 1);
+            return IntPairUtils.combine(measurementStart, idleTime + 1);
         }
         final int idleTime = currentStatus - 1;
         final int busyTime = elapsedTime - idleTime;
-        return AtomicIntPair.combine(measurementStart, -busyTime - 1);
+        return IntPairUtils.combine(measurementStart, -busyTime - 1);
     }
 
     private int resetStatus(final int status) {

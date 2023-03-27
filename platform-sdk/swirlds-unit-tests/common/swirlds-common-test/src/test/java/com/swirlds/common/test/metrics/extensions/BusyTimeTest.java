@@ -38,7 +38,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 
-public class BusyTimeTest {
+class BusyTimeTest {
     private final FakeTime clock = new FakeTime(Instant.EPOCH, Duration.ZERO);
     private BusyTime metric;
 

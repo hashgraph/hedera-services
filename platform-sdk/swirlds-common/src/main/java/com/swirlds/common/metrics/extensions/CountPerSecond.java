@@ -66,7 +66,7 @@ public class CountPerSecond {
                 .withDescription(config.getDescription())
                 .withUnit(config.getUnit())
                 .withFormat(config.getFormat())
-                .withLeftAccumulator(ExtensionUtils::noChangeAccumulator)
+                .withLeftAccumulator(IntPairUtils::noChangeAccumulator)
                 .withRightAccumulator(Integer::sum)
                 .withLeftInitializer(this.time::getMilliTime)
                 .withRightInitialValue(0));

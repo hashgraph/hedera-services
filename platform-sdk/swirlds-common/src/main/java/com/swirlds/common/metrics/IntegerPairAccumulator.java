@@ -116,7 +116,7 @@ public interface IntegerPairAccumulator<T> extends Metric {
         private final IntUnaryOperator leftReset;
         private final IntUnaryOperator rightReset;
 
-        private static final IntUnaryOperator DEFAULT_INITIALIZER = (i) -> 0;
+        private static final IntUnaryOperator DEFAULT_INITIALIZER = i -> 0;
 
         /**
          * Constructor of {@code IntegerPairAccumulator.Config}
@@ -370,7 +370,7 @@ public interface IntegerPairAccumulator<T> extends Metric {
                     getLeftAccumulator(),
                     getRightAccumulator(),
                     getCombinedAccumulator(),
-                    (i) -> leftInitializer.getAsInt(),
+                    i -> leftInitializer.getAsInt(),
                     getRightReset());
         }
 
@@ -392,7 +392,7 @@ public interface IntegerPairAccumulator<T> extends Metric {
                     getLeftAccumulator(),
                     getRightAccumulator(),
                     getCombinedAccumulator(),
-                    leftInitialValue == 0 ? DEFAULT_INITIALIZER : (i) -> leftInitialValue,
+                    leftInitialValue == 0 ? DEFAULT_INITIALIZER : i -> leftInitialValue,
                     getRightReset());
         }
 
@@ -446,7 +446,7 @@ public interface IntegerPairAccumulator<T> extends Metric {
                     getRightAccumulator(),
                     getCombinedAccumulator(),
                     getLeftReset(),
-                    (i) -> rightInitializer.getAsInt());
+                    i -> rightInitializer.getAsInt());
         }
 
         /**
@@ -468,7 +468,7 @@ public interface IntegerPairAccumulator<T> extends Metric {
                     getRightAccumulator(),
                     getCombinedAccumulator(),
                     getLeftReset(),
-                    rightInitialValue == 0 ? DEFAULT_INITIALIZER : (i) -> rightInitialValue);
+                    rightInitialValue == 0 ? DEFAULT_INITIALIZER : i -> rightInitialValue);
         }
 
         /**
