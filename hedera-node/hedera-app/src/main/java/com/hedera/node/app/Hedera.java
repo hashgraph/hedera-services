@@ -22,7 +22,6 @@ import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_FIRST_USER_ENT
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import com.google.protobuf.ByteString;
 import com.hedera.node.app.grpc.GrpcServiceBuilder;
 import com.hedera.node.app.service.admin.FreezeService;
 import com.hedera.node.app.service.admin.impl.FreezeServiceImpl;
@@ -132,8 +131,6 @@ public final class Hedera implements SwirldMain {
     private Platform platform;
     /** Used to interface with the mono-service. */
     private StateChildrenProvider stateChildren;
-    /** TEMPORARY until after migration to modular services, when this will become a normal VirtualMap */
-    private final FCHashMap<ByteString, EntityNum> aliases;
 
     /**
      * Dependencies managed by Dagger. Set during state initialization. The mono-service requires this object,
@@ -185,10 +182,6 @@ public final class Hedera implements SwirldMain {
             logger.error("Failed to register MerkleHederaState with ConstructableRegistry", e);
             throw new RuntimeException(e);
         }
-
-        // This rebuilt data structure will be moved to be part of state by using a VirtualMap once
-        // we have fully migrated to the modular services.
-        this.aliases = new FCHashMap<>();
     }
 
     /**
@@ -255,7 +248,7 @@ public final class Hedera implements SwirldMain {
     @NonNull
     public SwirldState newState() {
         return new MerkleHederaState(
-                this::onPreHandle, this::onHandleConsensusRound, this::onStateInitialized, aliases);
+                this::onPreHandle, this::onHandleConsensusRound, this::onStateInitialized, new FCHashMap<>());
     }
 
     /*==================================================================================================================
@@ -692,7 +685,7 @@ public final class Hedera implements SwirldMain {
         if (daggerApp == null) {
             // Today, the alias map has to be constructed by walking over all accounts.
             // TODO Populate aliases properly
-            stateChildren = state.getStateChildrenProvider(platform, aliases);
+            stateChildren = state.getStateChildrenProvider(platform, state.getAliases());
             final var nodeAddress = stateChildren.addressBook().getAddress(selfId);
             final var initialHash =
                     stateChildren.runningHashLeaf().getRunningHash().getHash();

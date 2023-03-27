@@ -268,6 +268,11 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         return CURRENT_VERSION;
     }
 
+    /** TEMPORARY: Gets access to the aliases rebuilt data structure. */
+    public final FCHashMap<ByteString, EntityNum> getAliases() {
+        return aliases;
+    }
+
     /**
      * {@inheritDoc}
      */
