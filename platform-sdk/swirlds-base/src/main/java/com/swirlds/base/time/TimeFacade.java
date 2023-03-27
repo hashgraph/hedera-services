@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.swirlds.base.time;
@@ -29,8 +28,7 @@ public final class TimeFacade {
 
     private static final Clock nanoClock = new NanoClock();
 
-    private TimeFacade() {
-    }
+    private TimeFacade() {}
 
     /**
      * Returns an implementation of {@link Time} that will return the true wall clock time (according to the OS).

@@ -53,9 +53,12 @@ public class ChatterCoreTests {
 
         final Random random = RandomUtils.getRandomPrintSeed();
         final ChatterCore<GossipEvent> chatterCore = new ChatterCore<>(
-                TimeFacade.getOsTime(), GossipEvent.class, (m) -> {
-        }, chatterSettings, (id, l) -> {
-        }, new NoOpMetrics());
+                TimeFacade.getOsTime(),
+                GossipEvent.class,
+                (m) -> {},
+                chatterSettings,
+                (id, l) -> {},
+                new NoOpMetrics());
 
         chatterCore.newPeerInstance(0L, e -> {});
         chatterCore.newPeerInstance(1L, e -> {});

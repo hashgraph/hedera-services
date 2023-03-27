@@ -1178,7 +1178,9 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
      * 		the code to run
      */
     private void runWithSnapshotExecutor(
-            final boolean shouldRun, final CountDownLatch countDownLatch, final String taskName,
+            final boolean shouldRun,
+            final CountDownLatch countDownLatch,
+            final String taskName,
             final Callable<Object> runnable) {
         if (shouldRun) {
             snapshotExecutor.submit(() -> {
@@ -1482,5 +1484,4 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
     boolean isLongKeyMode() {
         return isLongKeyMode;
     }
-
 }
