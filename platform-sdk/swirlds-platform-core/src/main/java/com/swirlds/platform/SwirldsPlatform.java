@@ -16,6 +16,7 @@
 
 package com.swirlds.platform;
 
+import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLogIfInterrupted;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.utility.CommonUtils.combineConsumers;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
@@ -131,6 +132,7 @@ import com.swirlds.platform.event.preconsensus.NoOpPreConsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventFileManager;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventStreamConfig;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
 import com.swirlds.platform.event.preconsensus.SyncPreConsensusEventWriter;
 import com.swirlds.platform.event.validation.AncientValidator;
 import com.swirlds.platform.event.validation.EventDeduplication;
@@ -147,6 +149,7 @@ import com.swirlds.platform.health.clock.OSClockSpeedSourceChecker;
 import com.swirlds.platform.health.entropy.OSEntropyChecker;
 import com.swirlds.platform.health.filesystem.OSFileSystemChecker;
 import com.swirlds.platform.intake.IntakeCycleStats;
+import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.AddedEventMetrics;
 import com.swirlds.platform.metrics.ConsensusHandlingMetrics;
@@ -1079,6 +1082,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     eventMapper::getMostRecentEvent);
         }
 
+        final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
+
         final EventIntake eventIntake = new EventIntake(
                 selfId,
                 eventLinker,
@@ -1087,7 +1092,22 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 dispatcher,
                 intakeCycleStats,
                 shadowGraph,
-                preConsensusEventWriter);
+                (final EventImpl event) -> {
+                    sequencer.assignStreamSequenceNumber(event);
+                    abortAndLogIfInterrupted(
+                            preConsensusEventWriter::writeEvent,
+                            event,
+                            "Interrupted while attempting to enqueue preconsensus event for writing");
+                },
+                (final ConsensusRound round) -> {
+                    abortAndLogIfInterrupted(
+                            preConsensusEventWriter::setMinimumGenerationNonAncient,
+                            round.getGenerations().getMinGenerationNonAncient(),
+                            "Interrupted while attempting to enqueue change in minimum generation non-ancient");
+
+                    final EventImpl keystoneEvent = round.getKeystoneEvent();
+                    preConsensusEventWriter.requestFlush(keystoneEvent);
+                });
 
         final EventCreator eventCreator;
         if (settings.getChatter().isChatterUsed()) {

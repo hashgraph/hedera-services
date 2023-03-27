@@ -17,7 +17,6 @@
 package com.swirlds.platform.components;
 
 import static com.swirlds.base.ArgumentUtils.throwArgNull;
-import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLogIfInterrupted;
 import static com.swirlds.logging.LogMarker.INTAKE_EVENT;
 import static com.swirlds.logging.LogMarker.STALE_EVENTS;
 import static com.swirlds.logging.LogMarker.SYNC;
@@ -28,8 +27,6 @@ import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
-import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
-import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
 import com.swirlds.platform.event.validation.StaticValidators;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.intake.IntakeCycleStats;
@@ -40,6 +37,7 @@ import com.swirlds.platform.sync.ShadowGraph;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -67,21 +65,18 @@ public class EventIntake {
     /** Stores events, expires them, provides event lookup methods */
     private final ShadowGraph shadowGraph;
 
-    private final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
-
-    /**
-     * Writes preconsensus events to disk.
-     */
-    private final PreConsensusEventWriter preConsensusEventWriter;
+    private final Consumer<EventImpl> eventAddedObserver;
+    private final Consumer<ConsensusRound> roundReachedConsensusObserver;
 
     /**
      * Constructor
      *
-     * @param selfId                  the ID of this node
-     * @param consensusSupplier       a functor which provides access to the {@code Consensus} interface
-     * @param addressBook             the current address book
-     * @param dispatcher              an event observer dispatcher
-     * @param preConsensusEventWriter a writer for preconsensus events
+     * @param selfId                        the ID of this node
+     * @param consensusSupplier             a functor which provides access to the {@code Consensus} interface
+     * @param addressBook                   the current address book
+     * @param dispatcher                    an event observer dispatcher
+     * @param eventAddedObserver            this method is called each time an event is added
+     * @param roundReachedConsensusObserver this method is called each time a round reaches consensus
      */
     public EventIntake(
             @NonNull final NodeId selfId,
@@ -91,7 +86,8 @@ public class EventIntake {
             @NonNull final EventObserverDispatcher dispatcher,
             @NonNull final IntakeCycleStats stats,
             @NonNull final ShadowGraph shadowGraph,
-            @NonNull final PreConsensusEventWriter preConsensusEventWriter) {
+            @NonNull final Consumer<EventImpl> eventAddedObserver,
+            @NonNull final Consumer<ConsensusRound> roundReachedConsensusObserver) {
         this.selfId = throwArgNull(selfId, "selfId");
         this.eventLinker = throwArgNull(eventLinker, "eventLinker");
         this.consensusSupplier = throwArgNull(consensusSupplier, "consensusSupplier");
@@ -100,7 +96,9 @@ public class EventIntake {
         this.dispatcher = throwArgNull(dispatcher, "dispatcher");
         this.stats = throwArgNull(stats, "stats");
         this.shadowGraph = throwArgNull(shadowGraph, "shadowGraph");
-        this.preConsensusEventWriter = throwArgNull(preConsensusEventWriter, "preConsensusEventWriter");
+        this.eventAddedObserver = throwArgNull(eventAddedObserver, "eventAddedObserver");
+        this.roundReachedConsensusObserver =
+                throwArgNull(roundReachedConsensusObserver, "roundReachedConsensusObserver");
     }
 
     /**
@@ -136,13 +134,7 @@ public class EventIntake {
             return;
         }
 
-        // Enqueue the event to be written to disk as early as possible in this process to minimize latency
-        // when it comes to handling transactions that may be gated by this event's durability.
-        sequencer.assignStreamSequenceNumber(event);
-        abortAndLogIfInterrupted(
-                preConsensusEventWriter::writeEvent,
-                event,
-                "Interrupted while attempting to enqueue preconsensus event for writing");
+        eventAddedObserver.accept(event);
 
         stats.doneValidation();
         logger.debug(SYNC.getMarker(), "{} sees {}", selfId, event);
@@ -173,17 +165,6 @@ public class EventIntake {
         dispatcher.eventAdded(event);
         stats.dispatchedAdded();
         if (consRounds != null) {
-
-            abortAndLogIfInterrupted(
-                    preConsensusEventWriter::setMinimumGenerationNonAncient,
-                    consensus().getMinGenerationNonAncient(),
-                    "Interrupted while attempting to enqueue change in minimum generation non-ancient");
-
-            // All rounds that reach consensus at the same time will have the same keystone event,
-            // so we only need to request that it be flushed once.
-            final EventImpl keystoneEvent = consRounds.get(0).getKeystoneEvent();
-            preConsensusEventWriter.requestFlush(keystoneEvent);
-
             consRounds.forEach(this::handleConsensus);
             stats.dispatchedRound();
         }
@@ -222,6 +203,7 @@ public class EventIntake {
      */
     private void handleConsensus(final ConsensusRound consensusRound) {
         if (consensusRound != null) {
+            roundReachedConsensusObserver.accept(consensusRound);
             eventLinker.updateGenerations(consensusRound.getGenerations());
             dispatcher.consensusRound(consensusRound);
         }
