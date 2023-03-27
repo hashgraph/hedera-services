@@ -16,7 +16,7 @@
 
 package com.swirlds.common.threading.framework;
 
-import com.swirlds.common.utility.Startable;
+import com.swirlds.base.state.Startable;
 
 /**
  * Describes a thread or a collection of threads that can be started, stopped, paused, resumed, and joined.

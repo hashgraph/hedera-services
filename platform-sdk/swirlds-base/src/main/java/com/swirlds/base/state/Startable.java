@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-plugins {
-  id("com.swirlds.platform.conventions")
-  id("com.swirlds.platform.library")
-  id("com.swirlds.platform.maven-publish")
-}
+package com.swirlds.base.state;
 
-dependencies {
-  compileOnly(libs.spotbugs.annotations)
+/**
+ * An object that can be started.
+ */
+@FunctionalInterface
+public interface Startable {
 
-  // Test Dependencies
-  testImplementation(testLibs.bundles.junit)
+    /**
+     * Start this object.
+     */
+    void start();
 }

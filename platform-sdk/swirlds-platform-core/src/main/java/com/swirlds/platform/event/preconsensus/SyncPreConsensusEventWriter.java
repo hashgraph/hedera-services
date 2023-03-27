@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.event.preconsensus;
 
+import com.swirlds.base.state.Startable;
+import com.swirlds.base.state.Stoppable;
 import com.swirlds.common.threading.CountUpLatch;
 import com.swirlds.common.utility.LongRunningAverage;
-import com.swirlds.common.utility.Startable;
-import com.swirlds.common.utility.Stoppable;
 import com.swirlds.common.utility.Units;
 import com.swirlds.platform.internal.EventImpl;
 import java.io.IOException;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.utility;
+package com.swirlds.base.function;
+
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Similar to {@link java.util.function.Function} but throws an exception.
@@ -32,11 +34,10 @@ public interface ThrowingFunction<T, R, E extends Exception> {
     /**
      * Apply the function.
      *
-     * @param t
-     * 		the input to the function
+     * @param t the input to the function
      * @return the value returned by the function
-     * @throws E
-     * 		the exception type thrown by the function
+     * @throws E the exception type thrown by the function
      */
-    R apply(T t) throws E;
+    @Nullable
+    R apply(@Nullable T t) throws E;
 }

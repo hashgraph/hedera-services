@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,32 +14,20 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.exceptions;
+package com.swirlds.base.state;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * This exception is thrown when an operation violates mutability constraints.
  */
-public class MutabilityException extends RuntimeException {
+public class MutabilityException extends IllegalStateException {
 
-    public MutabilityException() {}
-
-    public MutabilityException(final String message) {
+    public MutabilityException(@NonNull final String message) {
         super(message);
     }
 
-    public MutabilityException(final String message, final Throwable cause) {
+    public MutabilityException(@NonNull final String message, @NonNull final Throwable cause) {
         super(message, cause);
-    }
-
-    public MutabilityException(final Throwable cause) {
-        super(cause);
-    }
-
-    public MutabilityException(
-            final String message,
-            final Throwable cause,
-            final boolean enableSuppression,
-            final boolean writableStackTrace) {
-        super(message, cause, enableSuppression, writableStackTrace);
     }
 }

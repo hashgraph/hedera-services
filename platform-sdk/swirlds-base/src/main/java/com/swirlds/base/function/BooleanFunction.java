@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,24 +14,18 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.utility;
+package com.swirlds.base.function;
 
-/**
- * An exception type thrown when something is in the wrong {@link LifecyclePhase}.
- */
-public class LifecycleException extends IllegalStateException {
+import edu.umd.cs.findbugs.annotations.Nullable;
 
-    public LifecycleException() {}
+@FunctionalInterface
+public interface BooleanFunction<T> {
 
-    public LifecycleException(final String s) {
-        super(s);
-    }
-
-    public LifecycleException(final String message, final Throwable cause) {
-        super(message, cause);
-    }
-
-    public LifecycleException(final Throwable cause) {
-        super(cause);
-    }
+    /**
+     * A function that accepts and object and returns a primitive boolean. Side effects are allowed.
+     *
+     * @param object the object to apply
+     * @return true if success, false otherwise
+     */
+    boolean apply(@Nullable final T object);
 }

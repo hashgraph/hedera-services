@@ -120,6 +120,7 @@ module com.swirlds.platform {
     exports com.swirlds.platform.components.transaction.system;
 
     /* Swirlds Libraries */
+    requires com.swirlds.base;
     requires transitive com.swirlds.common;
     requires com.swirlds.common.test;
     requires com.swirlds.test.framework;

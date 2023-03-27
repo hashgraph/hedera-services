@@ -18,6 +18,7 @@ package com.swirlds.common.utility;
 
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
+import com.swirlds.base.function.ThrowingFunction;
 import java.util.NoSuchElementException;
 import java.util.function.LongToIntFunction;
 
