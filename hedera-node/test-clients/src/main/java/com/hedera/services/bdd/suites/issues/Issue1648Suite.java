@@ -54,8 +54,8 @@ public class Issue1648Suite extends HapiSuite {
                 .then(UtilVerbs.assertionsHold((spec, assertLog) -> {
                     long feeForOne = spec.registry().getAmount("feeForOne");
                     long feeForTwo = spec.registry().getAmount("feeForTwo");
-                    assertLog.info("[Record storage] fee for one transfer : " + feeForOne);
-                    assertLog.info("[Record storage] fee for two transfers: " + feeForTwo);
+                    assertLog.info("[Record storage] fee for one transfer : {}", feeForOne);
+                    assertLog.info("[Record storage] fee for two transfers: {}", feeForTwo);
                     Assertions.assertEquals(-1, Long.compare(feeForOne, feeForTwo));
                 }));
     }

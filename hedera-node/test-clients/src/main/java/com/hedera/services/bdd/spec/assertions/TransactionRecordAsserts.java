@@ -325,14 +325,15 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
         try {
             Method m = TransactionRecord.class.getMethod(QueryUtils.asGetter(forField));
             registerProvider((spec, o) -> {
-                TransactionRecord record = (TransactionRecord) o;
-                T instance = (T) m.invoke(record);
+                TransactionRecord transactionRecord = (TransactionRecord) o;
+                T instance = (T) m.invoke(transactionRecord);
                 ErroringAsserts<T> asserts = provider.assertsFor(spec);
                 List<Throwable> errors = asserts.errorsIn(instance);
                 AssertUtils.rethrowSummaryError(log, "Bad " + forField + "!", errors);
             });
         } catch (Exception e) {
-            log.warn("Unable to register asserts provider for TransactionRecord field '" + forField + "'", e);
+            log.warn(
+                    String.format("Unable to register asserts provider for TransactionRecord field '%s'", forField), e);
         }
     }
 }

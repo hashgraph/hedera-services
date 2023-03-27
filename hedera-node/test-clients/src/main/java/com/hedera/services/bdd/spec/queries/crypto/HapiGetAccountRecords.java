@@ -165,8 +165,8 @@ public class HapiGetAccountRecords extends HapiQueryOp<HapiGetAccountRecords> {
                 ByteSink byteSink = Files.asByteSink(recordFile);
                 byteSink.write(records.get(i).toByteArray());
             }
-
-            log.info("Saved " + n + " records to " + snapshotDir);
+            String message = String.format("Saved %d records to %s", n, snapshotDir);
+            log.info(message);
         } catch (Exception e) {
             log.error("Couldn't save record snapshots!", e);
         }
