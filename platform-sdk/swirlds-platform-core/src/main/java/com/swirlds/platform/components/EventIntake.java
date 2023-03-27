@@ -37,7 +37,6 @@ import com.swirlds.platform.sync.ShadowGraph;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -65,9 +64,6 @@ public class EventIntake {
     /** Stores events, expires them, provides event lookup methods */
     private final ShadowGraph shadowGraph;
 
-    private final Consumer<EventImpl> eventAddedObserver;
-    private final Consumer<ConsensusRound> roundReachedConsensusObserver;
-
     /**
      * Constructor
      *
@@ -75,8 +71,6 @@ public class EventIntake {
      * @param consensusSupplier             a functor which provides access to the {@code Consensus} interface
      * @param addressBook                   the current address book
      * @param dispatcher                    an event observer dispatcher
-     * @param eventAddedObserver            this method is called each time an event is added
-     * @param roundReachedConsensusObserver this method is called each time a round reaches consensus
      */
     public EventIntake(
             @NonNull final NodeId selfId,
@@ -85,9 +79,7 @@ public class EventIntake {
             @NonNull final AddressBook addressBook,
             @NonNull final EventObserverDispatcher dispatcher,
             @NonNull final IntakeCycleStats stats,
-            @NonNull final ShadowGraph shadowGraph,
-            @NonNull final Consumer<EventImpl> eventAddedObserver,
-            @NonNull final Consumer<ConsensusRound> roundReachedConsensusObserver) {
+            @NonNull final ShadowGraph shadowGraph) {
         this.selfId = throwArgNull(selfId, "selfId");
         this.eventLinker = throwArgNull(eventLinker, "eventLinker");
         this.consensusSupplier = throwArgNull(consensusSupplier, "consensusSupplier");
@@ -96,9 +88,6 @@ public class EventIntake {
         this.dispatcher = throwArgNull(dispatcher, "dispatcher");
         this.stats = throwArgNull(stats, "stats");
         this.shadowGraph = throwArgNull(shadowGraph, "shadowGraph");
-        this.eventAddedObserver = throwArgNull(eventAddedObserver, "eventAddedObserver");
-        this.roundReachedConsensusObserver =
-                throwArgNull(roundReachedConsensusObserver, "roundReachedConsensusObserver");
     }
 
     /**
@@ -134,7 +123,7 @@ public class EventIntake {
             return;
         }
 
-        eventAddedObserver.accept(event);
+        dispatcher.aboutToAddEvent(event);
 
         stats.doneValidation();
         logger.debug(SYNC.getMarker(), "{} sees {}", selfId, event);
@@ -203,7 +192,6 @@ public class EventIntake {
      */
     private void handleConsensus(final ConsensusRound consensusRound) {
         if (consensusRound != null) {
-            roundReachedConsensusObserver.accept(consensusRound);
             eventLinker.updateGenerations(consensusRound.getGenerations());
             dispatcher.consensusRound(consensusRound);
         }

@@ -19,19 +19,20 @@ package com.swirlds.platform.observers;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A type which accretes observers of several different types. This type facilitates
- * the implied observer DAG.
+ * A type which accretes observers of several different types. This type facilitates the implied observer DAG.
  */
 public class EventObserverDispatcher
         implements EventReceivedObserver,
                 PreConsensusEventObserver,
                 EventAddedObserver,
                 ConsensusRoundObserver,
-                StaleEventObserver {
+                StaleEventObserver,
+                AboutToAddEventObserver {
 
     /** A list of implementors of the {@link EventReceivedObserver} interface */
     private final List<EventReceivedObserver> eventReceivedObservers;
@@ -43,19 +44,21 @@ public class EventObserverDispatcher
     private final List<ConsensusRoundObserver> consensusRoundObservers;
     /** A list of implementors of the {@link StaleEventObserver} interface */
     private final List<StaleEventObserver> staleEventObservers;
+    /** A list of implementors of the {@link AboutToAddEventObserver} interface */
+    private final List<AboutToAddEventObserver> aboutToAddEventObservers;
 
     /**
      * Constructor
      *
-     * @param observers
-     * 		a list of {@link EventObserver} implementors
+     * @param observers a list of {@link EventObserver} implementors
      */
-    public EventObserverDispatcher(final List<EventObserver> observers) {
+    public EventObserverDispatcher(@NonNull final List<EventObserver> observers) {
         eventReceivedObservers = new ArrayList<>();
         preConsensusEventObservers = new ArrayList<>();
         eventAddedObservers = new ArrayList<>();
         consensusRoundObservers = new ArrayList<>();
         staleEventObservers = new ArrayList<>();
+        aboutToAddEventObservers = new ArrayList<>();
 
         for (final EventObserver observer : observers) {
             addObserver(observer);
@@ -65,8 +68,7 @@ public class EventObserverDispatcher
     /**
      * Constructor
      *
-     * @param observers
-     * 		a variadic sequence of {@link EventObserver} implementors
+     * @param observers a variadic sequence of {@link EventObserver} implementors
      */
     public EventObserverDispatcher(final EventObserver... observers) {
         this(List.of(observers));
@@ -75,10 +77,9 @@ public class EventObserverDispatcher
     /**
      * Adds an observer
      *
-     * @param observer
-     * 		the observer to add
+     * @param observer the observer to add
      */
-    public void addObserver(final EventObserver observer) {
+    public void addObserver(@NonNull final EventObserver observer) {
         if (observer instanceof EventReceivedObserver o) {
             eventReceivedObservers.add(o);
         }
@@ -93,6 +94,9 @@ public class EventObserverDispatcher
         }
         if (observer instanceof StaleEventObserver o) {
             staleEventObservers.add(o);
+        }
+        if (observer instanceof AboutToAddEventObserver o) {
+            aboutToAddEventObservers.add(o);
         }
     }
 
@@ -143,6 +147,16 @@ public class EventObserverDispatcher
     public void staleEvent(final EventImpl event) {
         for (final StaleEventObserver observer : staleEventObservers) {
             observer.staleEvent(event);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void aboutToAddEvent(@NonNull final EventImpl event) {
+        for (final AboutToAddEventObserver observer : aboutToAddEventObservers) {
+            observer.aboutToAddEvent(event);
         }
     }
 }

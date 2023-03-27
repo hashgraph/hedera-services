@@ -116,9 +116,7 @@ public class TestIntake implements ConsensusRoundObserver, StaleEventObserver, L
                 ab,
                 dispatcher,
                 ConsensusUtils.NOOP_INTAKE_CYCLE_STATS,
-                shadowGraph,
-                e -> {},
-                r -> {});
+                shadowGraph);
     }
 
     /**

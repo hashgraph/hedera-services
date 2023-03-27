@@ -149,7 +149,6 @@ import com.swirlds.platform.health.clock.OSClockSpeedSourceChecker;
 import com.swirlds.platform.health.entropy.OSEntropyChecker;
 import com.swirlds.platform.health.filesystem.OSFileSystemChecker;
 import com.swirlds.platform.intake.IntakeCycleStats;
-import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.AddedEventMetrics;
 import com.swirlds.platform.metrics.ConsensusHandlingMetrics;
@@ -179,6 +178,8 @@ import com.swirlds.platform.network.unidirectional.MultiProtocolResponder;
 import com.swirlds.platform.network.unidirectional.ProtocolMapping;
 import com.swirlds.platform.network.unidirectional.SharedConnectionLocks;
 import com.swirlds.platform.network.unidirectional.UnidirectionalProtocols;
+import com.swirlds.platform.observers.AboutToAddEventObserver;
+import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.reconnect.DefaultSignedStateValidator;
 import com.swirlds.platform.reconnect.FallenBehindManagerImpl;
@@ -1043,6 +1044,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * routing those events throughout the system.
      */
     private void buildEventIntake() {
+        final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
+
         final EventObserverDispatcher dispatcher = new EventObserverDispatcher(
                 new ShadowGraphEventObserver(shadowGraph),
                 consensusRoundHandler,
@@ -1050,7 +1053,23 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 eventMapper,
                 addedEventMetrics,
                 criticalQuorum,
-                eventIntakeMetrics);
+                eventIntakeMetrics,
+                (AboutToAddEventObserver) event -> {
+                    sequencer.assignStreamSequenceNumber(event);
+                    abortAndLogIfInterrupted(
+                            preConsensusEventWriter::writeEvent,
+                            event,
+                            "Interrupted while attempting to enqueue preconsensus event for writing");
+                },
+                (ConsensusRoundObserver) round -> {
+                    abortAndLogIfInterrupted(
+                            preConsensusEventWriter::setMinimumGenerationNonAncient,
+                            round.getGenerations().getMinGenerationNonAncient(),
+                            "Interrupted while attempting to enqueue change in minimum generation non-ancient");
+
+                    final EventImpl keystoneEvent = round.getKeystoneEvent();
+                    preConsensusEventWriter.requestFlush(keystoneEvent);
+                });
         if (settings.getChatter().isChatterUsed()) {
             dispatcher.addObserver(new ChatterNotifier(selfId, chatterCore));
             dispatcher.addObserver(chatterEventMapper);
@@ -1082,32 +1101,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     eventMapper::getMostRecentEvent);
         }
 
-        final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
-
         final EventIntake eventIntake = new EventIntake(
-                selfId,
-                eventLinker,
-                consensusRef::get,
-                initialAddressBook,
-                dispatcher,
-                intakeCycleStats,
-                shadowGraph,
-                (final EventImpl event) -> {
-                    sequencer.assignStreamSequenceNumber(event);
-                    abortAndLogIfInterrupted(
-                            preConsensusEventWriter::writeEvent,
-                            event,
-                            "Interrupted while attempting to enqueue preconsensus event for writing");
-                },
-                (final ConsensusRound round) -> {
-                    abortAndLogIfInterrupted(
-                            preConsensusEventWriter::setMinimumGenerationNonAncient,
-                            round.getGenerations().getMinGenerationNonAncient(),
-                            "Interrupted while attempting to enqueue change in minimum generation non-ancient");
-
-                    final EventImpl keystoneEvent = round.getKeystoneEvent();
-                    preConsensusEventWriter.requestFlush(keystoneEvent);
-                });
+                selfId, eventLinker, consensusRef::get, initialAddressBook, dispatcher, intakeCycleStats, shadowGraph);
 
         final EventCreator eventCreator;
         if (settings.getChatter().isChatterUsed()) {

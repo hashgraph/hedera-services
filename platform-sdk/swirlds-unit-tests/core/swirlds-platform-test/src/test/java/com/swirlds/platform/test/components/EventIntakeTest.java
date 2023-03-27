@@ -67,9 +67,7 @@ class EventIntakeTest {
                 addressBook,
                 dispatcher,
                 mock(IntakeCycleStats.class),
-                shadowGraph,
-                e -> {},
-                r -> {});
+                shadowGraph);
 
         final GossipEvent gossipEvent = mock(GossipEvent.class);
         final EventImpl added = mock(EventImpl.class);

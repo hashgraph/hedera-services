@@ -104,9 +104,7 @@ class OrphanEventsIntakeTest {
                             (EventAddedObserver) e -> linkedEventMap.put(e.getBaseHash(), e),
                             (ConsensusRoundObserver) rnd -> consensusEvents.addAll(rnd.getConsensusEvents())),
                     mock(IntakeCycleStats.class),
-                    mock(ShadowGraph.class),
-                    e -> {},
-                    r -> {});
+                    mock(ShadowGraph.class));
         }
 
         public void generateAndFeed(final int numEvents) {
