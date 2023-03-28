@@ -61,7 +61,7 @@ public class AddressBookTestingToolMain implements SwirldMain {
     private static final int TRANSACTIONS_PER_SECOND = 100;
 
     public AddressBookTestingToolMain() {
-        // default constructor, does nothing
+        logger.info(STARTUP.getMarker(), "constructor called in Main.");
     }
 
     /**
