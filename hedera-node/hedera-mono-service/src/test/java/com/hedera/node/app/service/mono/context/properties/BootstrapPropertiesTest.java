@@ -399,7 +399,7 @@ class BootstrapPropertiesTest {
             entry(LEDGER_TOTAL_TINY_BAR_FLOAT, 5000000000000000000L),
             entry(AUTO_CREATION_ENABLED, true),
             entry(LAZY_CREATION_ENABLED, true),
-            entry(CRYPTO_CREATE_WITH_ALIAS_ENABLED, false),
+            entry(CRYPTO_CREATE_WITH_ALIAS_ENABLED, true),
             entry(AUTO_RENEW_TARGET_TYPES, Collections.emptySet()),
             entry(AUTO_RENEW_NUM_OF_ENTITIES_TO_SCAN, 100),
             entry(AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE, 2),
