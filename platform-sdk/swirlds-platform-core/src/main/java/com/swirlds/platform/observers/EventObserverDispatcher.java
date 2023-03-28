@@ -31,8 +31,7 @@ public class EventObserverDispatcher
                 PreConsensusEventObserver,
                 EventAddedObserver,
                 ConsensusRoundObserver,
-                StaleEventObserver,
-                AboutToAddEventObserver {
+                StaleEventObserver {
 
     /** A list of implementors of the {@link EventReceivedObserver} interface */
     private final List<EventReceivedObserver> eventReceivedObservers;
@@ -44,8 +43,6 @@ public class EventObserverDispatcher
     private final List<ConsensusRoundObserver> consensusRoundObservers;
     /** A list of implementors of the {@link StaleEventObserver} interface */
     private final List<StaleEventObserver> staleEventObservers;
-    /** A list of implementors of the {@link AboutToAddEventObserver} interface */
-    private final List<AboutToAddEventObserver> aboutToAddEventObservers;
 
     /**
      * Constructor
@@ -58,7 +55,6 @@ public class EventObserverDispatcher
         eventAddedObservers = new ArrayList<>();
         consensusRoundObservers = new ArrayList<>();
         staleEventObservers = new ArrayList<>();
-        aboutToAddEventObservers = new ArrayList<>();
 
         for (final EventObserver observer : observers) {
             addObserver(observer);
@@ -94,9 +90,6 @@ public class EventObserverDispatcher
         }
         if (observer instanceof StaleEventObserver o) {
             staleEventObservers.add(o);
-        }
-        if (observer instanceof AboutToAddEventObserver o) {
-            aboutToAddEventObservers.add(o);
         }
     }
 
@@ -147,16 +140,6 @@ public class EventObserverDispatcher
     public void staleEvent(final EventImpl event) {
         for (final StaleEventObserver observer : staleEventObservers) {
             observer.staleEvent(event);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void aboutToAddEvent(@NonNull final EventImpl event) {
-        for (final AboutToAddEventObserver observer : aboutToAddEventObservers) {
-            observer.aboutToAddEvent(event);
         }
     }
 }

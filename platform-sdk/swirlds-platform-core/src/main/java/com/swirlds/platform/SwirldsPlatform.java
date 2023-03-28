@@ -128,9 +128,9 @@ import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.network.NetworkMetrics;
 import com.swirlds.platform.network.topology.NetworkTopology;
 import com.swirlds.platform.network.topology.StaticTopology;
-import com.swirlds.platform.observers.AboutToAddEventObserver;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.observers.EventObserverDispatcher;
+import com.swirlds.platform.observers.PreConsensusEventObserver;
 import com.swirlds.platform.reconnect.FallenBehindManagerImpl;
 import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.reconnect.ReconnectHelper;
@@ -573,7 +573,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 addedEventMetrics,
                 criticalQuorum,
                 eventIntakeMetrics,
-                (AboutToAddEventObserver) event -> {
+                (PreConsensusEventObserver) event -> {
                     sequencer.assignStreamSequenceNumber(event);
                     abortAndLogIfInterrupted(
                             preConsensusEventWriter::writeEvent,
