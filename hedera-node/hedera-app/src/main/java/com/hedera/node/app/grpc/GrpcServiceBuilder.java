@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.grpc;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
@@ -25,12 +27,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.MethodDescriptor;
 import io.helidon.grpc.core.MarshallerSupplier;
 import io.helidon.grpc.server.ServiceDescriptor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.io.InputStream;
 import java.util.HashSet;
 import java.util.Set;
-import static java.util.Objects.requireNonNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Convenient builder API for constructing gRPC Service definitions. The {@link GrpcServiceBuilder}

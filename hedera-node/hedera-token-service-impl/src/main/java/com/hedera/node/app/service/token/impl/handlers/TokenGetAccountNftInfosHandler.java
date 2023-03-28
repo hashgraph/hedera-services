@@ -50,7 +50,7 @@ public class TokenGetAccountNftInfosHandler extends FreeQueryHandler {
 
     @Override
     public Response createEmptyResponse(@NonNull final ResponseHeader header) {
-        final var response = TokenGetAccountNftInfosResponse.newBuilder().header(header);
+        final var response = TokenGetAccountNftInfosResponse.newBuilder().header(requireNonNull(header));
         return Response.newBuilder().tokenGetAccountNftInfos(response).build();
     }
 

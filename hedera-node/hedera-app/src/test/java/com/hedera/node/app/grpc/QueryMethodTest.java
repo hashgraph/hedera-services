@@ -16,12 +16,24 @@
 
 package com.hedera.node.app.grpc;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
 import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
 import io.grpc.stub.StreamObserver;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,17 +43,6 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import utils.TestUtils;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicBoolean;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 final class QueryMethodTest {
@@ -72,8 +73,7 @@ final class QueryMethodTest {
     @Test
     void nullMetricsThrows() {
         //noinspection ConstantConditions
-        assertThrows(
-                NullPointerException.class, () -> new QueryMethod(SERVICE_NAME, METHOD_NAME, queryWorkflow, null));
+        assertThrows(NullPointerException.class, () -> new QueryMethod(SERVICE_NAME, METHOD_NAME, queryWorkflow, null));
     }
 
     @ParameterizedTest(name = "With {0} bytes")
@@ -109,7 +109,7 @@ final class QueryMethodTest {
         final QueryWorkflow w = (s, req, res) -> {
             assertEquals(requestBuffer.getBytes(0, requestBuffer.length()), req);
             called.set(true);
-            res.writeBytes(new byte[] { 1, 2, 3 });
+            res.writeBytes(new byte[] {1, 2, 3});
         };
         final var method = new QueryMethod(SERVICE_NAME, METHOD_NAME, w, metrics);
 
@@ -129,10 +129,9 @@ final class QueryMethodTest {
         assertThat(counter("Fail").get()).isZero();
 
         // And the response includes the data written by the workflow
-        final var expectedResponseBytes = Bytes.wrap(new byte[] { 1, 2, 3 });
-        verify(streamObserver).onNext(Mockito.argThat(
-                response -> response.getBytes(0, response.length()).equals(expectedResponseBytes)));
-
+        final var expectedResponseBytes = Bytes.wrap(new byte[] {1, 2, 3});
+        verify(streamObserver).onNext(Mockito.argThat(response -> response.getBytes(0, response.length())
+                .equals(expectedResponseBytes)));
     }
 
     @Test

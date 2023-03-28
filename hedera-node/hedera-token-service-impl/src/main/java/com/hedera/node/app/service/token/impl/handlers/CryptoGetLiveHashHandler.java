@@ -50,7 +50,7 @@ public class CryptoGetLiveHashHandler extends FreeQueryHandler {
 
     @Override
     public Response createEmptyResponse(@NonNull final ResponseHeader header) {
-        final var response = CryptoGetLiveHashResponse.newBuilder().header(header);
+        final var response = CryptoGetLiveHashResponse.newBuilder().header(requireNonNull(header));
         return Response.newBuilder().cryptoGetLiveHash(response).build();
     }
 

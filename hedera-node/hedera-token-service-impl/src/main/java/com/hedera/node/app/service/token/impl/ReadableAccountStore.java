@@ -88,6 +88,9 @@ public class ReadableAccountStore implements AccountAccess {
     @Override
     public KeyOrLookupFailureReason getKey(@NonNull final AccountID id) {
         requireNonNull(id);
+        if (id.equals(AccountID.DEFAULT)) {
+            return withFailureReason(INVALID_ACCOUNT_ID);
+        }
         final var account = getAccountLeaf(id);
         return account == null ? withFailureReason(INVALID_ACCOUNT_ID) : validateKey(account.getAccountKey(), false);
     }
@@ -97,6 +100,10 @@ public class ReadableAccountStore implements AccountAccess {
     @Override
     public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(@NonNull final AccountID id) {
         requireNonNull(id);
+        if (id.equals(AccountID.DEFAULT)) {
+            return withFailureReason(INVALID_ACCOUNT_ID);
+        }
+
         final var account = getAccountLeaf(id);
         if (account == null) {
             return withFailureReason(INVALID_ACCOUNT_ID);
@@ -113,6 +120,11 @@ public class ReadableAccountStore implements AccountAccess {
     @Override
     public KeyOrLookupFailureReason getKey(@NonNull final ContractID id) {
         requireNonNull(id);
+
+        if (id.equals(ContractID.DEFAULT)) {
+            return withFailureReason(INVALID_CONTRACT_ID);
+        }
+
         final var contract = getContractLeaf(id);
         if (contract == null || contract.isDeleted() || !contract.isSmartContract()) {
             return withFailureReason(INVALID_CONTRACT_ID);
@@ -126,6 +138,11 @@ public class ReadableAccountStore implements AccountAccess {
     @Override
     public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(@NonNull final ContractID id) {
         requireNonNull(id);
+
+        if (id.equals(ContractID.DEFAULT)) {
+            return withFailureReason(INVALID_CONTRACT_ID);
+        }
+
         final var contract = getContractLeaf(id);
         if (contract == null || contract.isDeleted() || !contract.isSmartContract()) {
             return withFailureReason(INVALID_CONTRACT_ID);
@@ -149,6 +166,9 @@ public class ReadableAccountStore implements AccountAccess {
     @NonNull
     public Optional<Account> getAccountById(@NonNull final AccountID id) {
         requireNonNull(id);
+        if (id.equals(AccountID.DEFAULT)) {
+            return Optional.empty();
+        }
         // TODO Make sure we have tests for getAccount for all valid account IDs.
         final var account = getAccountLeaf(id);
         return Optional.ofNullable(account).map(accountLeaf -> mapAccount(id, accountLeaf));

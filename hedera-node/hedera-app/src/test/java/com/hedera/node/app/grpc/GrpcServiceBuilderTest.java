@@ -154,9 +154,7 @@ final class GrpcServiceBuilderTest {
     @Test
     @DisplayName("Calling `transaction` with the same name twice is idempotent")
     void duplicateTransaction() {
-        final var sd = builder.transaction("txA")
-                .transaction("txA")
-                .build(metrics);
+        final var sd = builder.transaction("txA").transaction("txA").build(metrics);
 
         assertNotNull(sd.method("txA"));
     }
@@ -164,9 +162,7 @@ final class GrpcServiceBuilderTest {
     @Test
     @DisplayName("Calling `query` with the same name twice is idempotent")
     void duplicateQuery() {
-        final var sd = builder.query("qA")
-                .query("qA")
-                .build(metrics);
+        final var sd = builder.query("qA").query("qA").build(metrics);
 
         assertNotNull(sd.method("qA"));
     }

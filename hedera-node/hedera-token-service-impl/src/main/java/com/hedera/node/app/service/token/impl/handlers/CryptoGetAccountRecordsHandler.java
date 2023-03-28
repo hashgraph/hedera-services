@@ -50,7 +50,7 @@ public class CryptoGetAccountRecordsHandler extends PaidQueryHandler {
 
     @Override
     public Response createEmptyResponse(@NonNull final ResponseHeader header) {
-        final var response = CryptoGetAccountRecordsResponse.newBuilder().header(header);
+        final var response = CryptoGetAccountRecordsResponse.newBuilder().header(requireNonNull(header));
         return Response.newBuilder().cryptoGetAccountRecords(response).build();
     }
 
