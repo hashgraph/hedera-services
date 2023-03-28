@@ -87,15 +87,7 @@ public class CryptocurrencyDemoMain implements SwirldMain {
         public void keyReleased(KeyEvent e) {}
 
         @Override
-        public void keyPressed(KeyEvent e) {
-            if (e.getKeyChar() == 'F' || e.getKeyChar() == 'f') {
-                isFast = true;
-                speedCmd = (byte) CryptocurrencyDemoState.TransType.fast.ordinal();
-            } else if (e.getKeyChar() == 'S' || e.getKeyChar() == 's') {
-                isFast = false;
-                speedCmd = (byte) CryptocurrencyDemoState.TransType.slow.ordinal();
-            }
-        }
+        public void keyPressed(KeyEvent e) {}
 
         @Override
         public void keyTyped(KeyEvent e) {}
