@@ -43,9 +43,10 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.utility.ByteUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
-import java.time.Instant;
 import java.util.Iterator;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -54,6 +55,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class AddressBookTestingToolState extends PartialMerkleLeaf implements SwirldState, MerkleLeaf {
 
+    @NonNull
     private static final Logger logger = LogManager.getLogger(AddressBookTestingToolState.class);
 
     /** modify this value to change how updateStake behaves. */
@@ -72,35 +74,19 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      */
     private long runningSum = 0;
 
-    /**
-     * The timestamp of the first event after genesis.
-     */
-    private Instant genesisTimestamp;
-
-    private boolean immutable;
-
     public AddressBookTestingToolState() {
-
         logger.info(STARTUP.getMarker(), "New State Constructed.");
     }
 
     /**
      * Copy constructor.
      */
-    private AddressBookTestingToolState(final AddressBookTestingToolState that) {
+    private AddressBookTestingToolState(@NonNull final AddressBookTestingToolState that) {
         super(that);
+        Objects.requireNonNull(that, "the address book testing tool state to copy cannot be null");
         this.runningSum = that.runningSum;
-        this.genesisTimestamp = that.genesisTimestamp;
         this.selfId = that.selfId;
-        that.immutable = true;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean isImmutable() {
-        return immutable;
+        this.setImmutable(true);
     }
 
     /**
@@ -117,10 +103,14 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      */
     @Override
     public void init(
-            final Platform platform,
-            final SwirldDualState swirldDualState,
-            final InitTrigger trigger,
-            final SoftwareVersion previousSoftwareVersion) {
+            @NonNull final Platform platform,
+            @NonNull final SwirldDualState swirldDualState,
+            @NonNull final InitTrigger trigger,
+            @NonNull final SoftwareVersion previousSoftwareVersion) {
+        Objects.requireNonNull(platform, "the platform cannot be null");
+        Objects.requireNonNull(swirldDualState, "the swirld dual state cannot be null");
+        Objects.requireNonNull(trigger, "the init trigger cannot be null");
+        Objects.requireNonNull(previousSoftwareVersion, "the previous software version cannot be null");
 
         logger.info(STARTUP.getMarker(), "init called in State.");
         throwIfImmutable();
@@ -136,23 +126,16 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      * {@inheritDoc}
      */
     @Override
-    public void handleConsensusRound(final Round round, final SwirldDualState swirldDualState) {
+    public void handleConsensusRound(@NonNull final Round round, @NonNull final SwirldDualState swirldDualState) {
+        Objects.requireNonNull(round, "the round cannot be null");
+        Objects.requireNonNull(swirldDualState, "the swirld dual state cannot be null");
         throwIfImmutable();
+
         final Iterator<ConsensusEvent> eventIterator = round.iterator();
 
         while (eventIterator.hasNext()) {
             final ConsensusEvent event = eventIterator.next();
-            captureTimestamp(event);
             event.consensusTransactionIterator().forEachRemaining(this::handleTransaction);
-        }
-    }
-
-    /**
-     * Save the event's timestamp, if needed.
-     */
-    private void captureTimestamp(final ConsensusEvent event) {
-        if (genesisTimestamp == null) {
-            genesisTimestamp = event.getConsensusTimestamp();
         }
     }
 
@@ -161,7 +144,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      *
      * @param transaction the transaction to apply
      */
-    private void handleTransaction(final ConsensusTransaction transaction) {
+    private void handleTransaction(@NonNull final ConsensusTransaction transaction) {
         final int delta = ByteUtils.byteArrayToInt(transaction.getContents(), 0);
         runningSum += delta;
     }
@@ -170,24 +153,24 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      * {@inheritDoc}
      */
     @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
+    public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
+        Objects.requireNonNull(out, "the serializable data output stream cannot be null");
         out.writeLong(runningSum);
-        out.writeInstant(genesisTimestamp);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+    public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
+        Objects.requireNonNull(in, "the serializable data input stream cannot be null");
         runningSum = in.readLong();
-        genesisTimestamp = in.readInstant();
     }
 
     /**
      * {@inheritDoc}
      */
-    private void parseArguments(final String[] args) {
+    private void parseArguments(@NonNull final String[] args) {
         if (args.length != 0) {
             throw new IllegalArgumentException("Expected no arguments. See javadocs for details.");
         }
@@ -209,8 +192,13 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         return ClassVersion.ORIGINAL;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public AddressBook updateStake(AddressBook addressBook) {
+    @NonNull
+    public AddressBook updateStake(@NonNull final AddressBook addressBook) {
+        Objects.requireNonNull(addressBook, "the address book cannot be null");
         logger.info("updateStake called in State. Staking Profile: {}", stakingProfile);
         switch (stakingProfile) {
             case 1:
@@ -229,7 +217,8 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      * @param addressBook the address book to update.
      * @return the updated address book.
      */
-    private @NonNull AddressBook stakingProfile1(@NonNull final AddressBook addressBook) {
+    @NonNull
+    private AddressBook stakingProfile1(@NonNull final AddressBook addressBook) {
         logger.info(STARTUP.getMarker(), "Staking Profile 1: updating all nodes to have 10 stake.");
         for (int i = 0; i < addressBook.getSize(); i++) {
             addressBook.updateStake(i, 10);
@@ -243,7 +232,8 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      * @param addressBook the address book to update.
      * @return the updated address book.
      */
-    private AddressBook stakingProfile2(AddressBook addressBook) {
+    @NonNull
+    private AddressBook stakingProfile2(@NonNull final AddressBook addressBook) {
         logger.info(STARTUP.getMarker(), "Staking Profile 2: updating all nodes to have stake equal to their nodeId.");
         for (int i = 0; i < addressBook.getSize(); i++) {
             addressBook.updateStake(i, i);

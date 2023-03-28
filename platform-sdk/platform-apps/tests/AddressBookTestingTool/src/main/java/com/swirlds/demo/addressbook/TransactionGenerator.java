@@ -23,6 +23,8 @@ import com.swirlds.common.system.Platform;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.utility.Startable;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import java.util.Random;
 
 /**
@@ -36,8 +38,13 @@ public class TransactionGenerator implements Startable {
     private final StoppableThread thread;
 
     public TransactionGenerator(
-            final Random random, final Platform platform, final int networkWideTransactionsPerSecond) {
-
+            @NonNull final Random random,
+            @NonNull final Platform platform,
+            @NonNull final int networkWideTransactionsPerSecond) {
+        Objects.requireNonNull(random, "The random number generator must not be null");
+        Objects.requireNonNull(platform, "The platform must not be null");
+        Objects.requireNonNull(
+                networkWideTransactionsPerSecond, "The network-wide transactions per second must not be null");
         this.random = random;
         this.platform = platform;
 

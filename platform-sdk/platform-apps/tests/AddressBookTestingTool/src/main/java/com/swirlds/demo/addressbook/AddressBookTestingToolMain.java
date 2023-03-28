@@ -24,7 +24,9 @@ import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.PlatformWithDeprecatedMethods;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.SecureRandom;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -43,12 +45,19 @@ import org.apache.logging.log4j.Logger;
  * </ol>
  */
 public class AddressBookTestingToolMain implements SwirldMain {
+    /** The logger for this class. */
+    @NonNull
     private static final Logger logger = LogManager.getLogger(AddressBookTestingToolMain.class);
 
+    /** The default software version of this application. */
+    @NonNull
     private static final BasicSoftwareVersion softwareVersion = new BasicSoftwareVersion(1);
 
+    /** The platform. */
+    @NonNull
     private Platform platform;
 
+    /** The number of transactions to generate per second. */
     private static final int TRANSACTIONS_PER_SECOND = 100;
 
     public AddressBookTestingToolMain() {
@@ -59,14 +68,24 @@ public class AddressBookTestingToolMain implements SwirldMain {
      * {@inheritDoc}
      */
     @Override
-    public void init(final Platform platform, final NodeId id) {
-        logger.info(STARTUP.getMarker(), "init called in Main.");
+    public void init(@NonNull final Platform platform, @NonNull final NodeId id) {
+        Objects.requireNonNull(platform, "The platform must not be null.");
+        Objects.requireNonNull(id, "The node id must not be null.");
+
+        logger.info(STARTUP.getMarker(), "init called in Main for node {}.", id);
         this.platform = platform;
 
         parseArguments(((PlatformWithDeprecatedMethods) platform).getParameters());
     }
 
-    private void parseArguments(final String[] args) {
+    /**
+     * Parses the arguments.  Currently, no arguments are expected.
+     *
+     * @param args the arguments
+     * @throws IllegalArgumentException if the arguments array has length other than 0.
+     */
+    private void parseArguments(@NonNull final String[] args) {
+        Objects.requireNonNull(args, "The arguments must not be null.");
         if (args.length != 0) {
             throw new IllegalArgumentException("Expected no arguments. See javadocs for details.");
         }
@@ -78,7 +97,7 @@ public class AddressBookTestingToolMain implements SwirldMain {
     @Override
     public void run() {
         logger.info(STARTUP.getMarker(), "run called in Main.");
-        new TransactionGenerator(new SecureRandom(), platform, transactionsPerSecond).start();
+        new TransactionGenerator(new SecureRandom(), platform, TRANSACTIONS_PER_SECOND).start();
     }
 
     /**
