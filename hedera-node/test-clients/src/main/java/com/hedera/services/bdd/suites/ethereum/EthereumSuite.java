@@ -101,6 +101,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Assertions;
 
+@SuppressWarnings("java:S5960")
 public class EthereumSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(EthereumSuite.class);
