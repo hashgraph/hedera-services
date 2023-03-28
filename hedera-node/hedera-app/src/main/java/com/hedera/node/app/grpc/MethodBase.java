@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.grpc;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.Hedera;
 import com.hedera.node.app.SessionContext;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
@@ -26,7 +28,6 @@ import com.swirlds.common.metrics.SpeedometerMetric;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.stub.ServerCalls;
 import io.grpc.stub.StreamObserver;
-import static java.util.Objects.requireNonNull;
 
 /**
  * An instance of either {@link TransactionMethod} or {@link QueryMethod} is created per transaction

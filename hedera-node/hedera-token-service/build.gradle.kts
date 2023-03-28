@@ -21,5 +21,5 @@ description = "Hedera Token Service API"
 dependencies {
   api(project(":hedera-node:hedera-app-spi"))
   implementation(libs.pbj.runtime)
-  implementation(project(mapOf("path" to ":hedera-node:hapi")))
+  implementation(project(":hedera-node:hapi"))
 }

@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.grpc;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
@@ -25,7 +27,6 @@ import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import static java.util.Objects.requireNonNull;
 
 /**
  * Handles gRPC duties for processing {@link Query} gRPC calls. A single instance of this class is

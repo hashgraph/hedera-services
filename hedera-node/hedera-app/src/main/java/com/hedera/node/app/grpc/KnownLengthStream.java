@@ -16,12 +16,12 @@
 
 package com.hedera.node.app.grpc;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.KnownLength;
 import java.io.InputStream;
-import java.util.Objects;
-import static java.util.Objects.requireNonNull;
 
 /**
  * An {@link InputStream} that implements {@link KnownLength} which allows the gRPC server to do

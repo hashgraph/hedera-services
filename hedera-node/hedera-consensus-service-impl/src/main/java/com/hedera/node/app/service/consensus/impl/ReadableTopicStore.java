@@ -62,7 +62,7 @@ public class ReadableTopicStore extends TopicStore {
      */
     // TODO : Change to return Topic instead of TopicMetadata
     public TopicMetaOrLookupFailureReason getTopicMetadata(@Nullable final TopicID id) {
-        if (id == null) {
+        if (id == null || id.equals(TopicID.DEFAULT)) {
             return withFailureReason(INVALID_TOPIC_ID);
         }
 

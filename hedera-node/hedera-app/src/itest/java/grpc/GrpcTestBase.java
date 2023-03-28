@@ -187,7 +187,6 @@ abstract class GrpcTestBase extends TestBase {
         }
         clients.clear();
         services.clear();
-
     }
 
     /**

@@ -95,8 +95,8 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
     public ResponseCodeEnum validate(@NonNull final Query query, @NonNull final ReadableTopicStore topicStore)
             throws PreCheckException {
         final ConsensusGetTopicInfoQuery op = query.consensusGetTopicInfoOrThrow();
-        if (op.topicID() != null) {
-            final var topicMetadata = topicStore.getTopicMetadata(op.topicID());
+        if (op.hasTopicID()) {
+            final var topicMetadata = topicStore.getTopicMetadata(op.topicIDOrElse(TopicID.DEFAULT));
             if (topicMetadata.failed() || topicMetadata.metadata().isDeleted()) {
                 return INVALID_TOPIC_ID;
             }
@@ -124,12 +124,13 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
             @NonNull final QueryContext queryContext) {
         final var op = query.consensusGetTopicInfoOrThrow();
         final var response = ConsensusGetTopicInfoResponse.newBuilder();
-        response.topicID(op.topicIDOrElse(TopicID.DEFAULT));
+        final var topic = op.topicIDOrElse(TopicID.DEFAULT);
+        response.topicID(topic);
 
         final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
         response.header(header);
         if (header.nodeTransactionPrecheckCode() == OK && responseType != COST_ANSWER) {
-            final var optionalInfo = infoForTopic(op.topicIDOrElse(TopicID.DEFAULT), topicStore, queryContext);
+            final var optionalInfo = infoForTopic(topic, topicStore, queryContext);
             optionalInfo.ifPresent(response::topicInfo);
         }
 

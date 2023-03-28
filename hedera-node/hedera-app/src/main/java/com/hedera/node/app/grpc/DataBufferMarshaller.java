@@ -16,12 +16,13 @@
 
 package com.hedera.node.app.grpc;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.Hedera;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.MethodDescriptor;
 import java.io.InputStream;
-import static java.util.Objects.requireNonNull;
 
 /**
  * A thread-safe implementation of a gRPC marshaller which does nothing but pass through byte arrays as {@link

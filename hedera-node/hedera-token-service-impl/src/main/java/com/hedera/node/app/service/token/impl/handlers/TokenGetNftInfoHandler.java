@@ -50,7 +50,7 @@ public class TokenGetNftInfoHandler extends PaidQueryHandler {
 
     @Override
     public Response createEmptyResponse(@NonNull final ResponseHeader header) {
-        final var response = TokenGetNftInfoResponse.newBuilder().header(header);
+        final var response = TokenGetNftInfoResponse.newBuilder().header(requireNonNull(header));
         return Response.newBuilder().tokenGetNftInfo(response).build();
     }
 
