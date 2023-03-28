@@ -28,10 +28,7 @@ import picocli.CommandLine;
 /**
  * A subcommand of the {@link SignCommand}, for signing event stream files
  */
-@CommandLine.Command(
-        name = "sign",
-        mixinStandardHelpOptions = true,
-        description = "Sign event stream files")
+@CommandLine.Command(name = "sign", mixinStandardHelpOptions = true, description = "Sign event stream files")
 @SubcommandOf(EventStreamCommand.class)
 public final class EventStreamSignCommand extends SignCommand {
     /**

@@ -67,29 +67,27 @@ public abstract class SignCommand extends AbstractCommand {
      */
     private KeyPair keyPair;
 
-    @CommandLine.Parameters(description = "The path to the key file to use to generate signatures",
-            index = "0")
+    @CommandLine.Parameters(description = "The path to the key file to use to generate signatures", index = "0")
     private void setKeyFile(@NonNull final Path keyFilePath) {
         pathMustExist(keyFilePath.toAbsolutePath());
 
         this.keyFilePath = keyFilePath;
     }
 
-    @CommandLine.Parameters(description = "The password to the key file",
-            index = "1")
+    @CommandLine.Parameters(description = "The password to the key file", index = "1")
     private void setKeyFilePassword(@NonNull final String keyFilePassword) {
         this.keyFilePassword = keyFilePassword;
     }
 
-    @CommandLine.Parameters(description = "The alias of the key in the key file",
-            index = "2")
+    @CommandLine.Parameters(description = "The alias of the key in the key file", index = "2")
     private void setKeyAlias(@NonNull final String keyAlias) {
         this.keyAlias = keyAlias;
     }
 
     @CommandLine.Option(
             names = {"-p", "--paths-to-sign"},
-            description = "The paths to what will be signed. Can contain single files, as well as directories")
+            description = "The paths to what will be signed. Can contain single files, as well as directories."
+                    + "Defaults to the current working directory")
     private void setPathsToSign(@NonNull final List<Path> pathsToSign) {
         for (final Path path : pathsToSign) {
             pathMustExist(path.toAbsolutePath());

@@ -30,7 +30,6 @@ import com.swirlds.common.stream.EventStreamType;
 import com.swirlds.common.stream.internal.InvalidStreamFileException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
@@ -38,7 +37,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.SignatureException;
 import java.util.Objects;
-import java.util.stream.Stream;
 
 /**
  * Utility class for signing event stream files
