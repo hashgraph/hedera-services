@@ -50,7 +50,6 @@ import com.hedera.node.app.service.mono.state.expiry.ExpiryModule;
 import com.hedera.node.app.service.mono.state.exports.AccountsExporter;
 import com.hedera.node.app.service.mono.state.exports.BalancesExporter;
 import com.hedera.node.app.service.mono.state.forensics.HashLogger;
-import com.hedera.node.app.service.mono.state.initialization.BlocklistAccountCreator;
 import com.hedera.node.app.service.mono.state.initialization.SystemAccountsCreator;
 import com.hedera.node.app.service.mono.state.initialization.SystemFilesManager;
 import com.hedera.node.app.service.mono.state.initialization.TreasuryCloner;
@@ -208,8 +207,6 @@ public interface ServicesApp {
     Supplier<NotificationEngine> notificationEngine();
 
     BackingStore<AccountID, HederaAccount> backingAccounts();
-
-    BlocklistAccountCreator blocklistAccountCreator();
 
     @BootstrapProps
     PropertySource bootstrapProps();

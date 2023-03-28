@@ -398,10 +398,6 @@ public class ServicesState extends PartialNaryMerkleInternal
                 // Once we have a dynamic address book, this will run unconditionally
                 app.sysFilesManager().updateStakeDetails();
             }
-
-            if (bootstrapProps.getBooleanProperty(PropertyNames.BLOCKLIST_ENABLED)) {
-                app.blocklistAccountCreator().ensureBlockedAccounts();
-            }
         }
         return app;
     }

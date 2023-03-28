@@ -418,7 +418,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.sysFilesManager()).willReturn(systemFilesManager);
         given(platform.getSelfId()).willReturn(selfId);
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
-        given(app.blocklistAccountCreator()).willReturn(blocklistAccountCreator);
 
         APPS.save(selfId.getId(), app);
 
@@ -451,7 +450,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.workingState()).willReturn(workingState);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
-        given(app.blocklistAccountCreator()).willReturn(blocklistAccountCreator);
 
         // when:
         subject.init(platform, dualState, InitTrigger.GENESIS, null);
@@ -543,7 +541,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
         given(platform.getAddressBook()).willReturn(addressBook);
-        given(app.blocklistAccountCreator()).willReturn(blocklistAccountCreator);
         // and:
         APPS.save(selfId.getId(), app);
 
@@ -594,7 +591,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(platform.getSelfId()).willReturn(selfId);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
-        given(app.blocklistAccountCreator()).willReturn(blocklistAccountCreator);
         // and:
         APPS.save(selfId.getId(), app);
 
@@ -623,7 +619,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(platform.getSelfId()).willReturn(selfId);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
-        given(app.blocklistAccountCreator()).willReturn(blocklistAccountCreator);
         // and:
         APPS.save(selfId.getId(), app);
 
@@ -656,7 +651,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(platform.getSelfId()).willReturn(selfId);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
-        given(app.blocklistAccountCreator()).willReturn(blocklistAccountCreator);
         // and:
         APPS.save(selfId.getId(), app);
 
@@ -687,7 +681,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
-        given(app.blocklistAccountCreator()).willReturn(blocklistAccountCreator);
         // and:
         APPS.save(selfId.getId(), app);
 
@@ -755,9 +748,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
                 .willReturn(false);
         given(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_STORE_RELS_ON_DISK))
                 .willReturn(true);
-        given(bootstrapProperties.getBooleanProperty(PropertyNames.BLOCKLIST_ENABLED))
-                .willReturn(true);
-        given(app.blocklistAccountCreator()).willReturn(blocklistAccountCreator);
         ServicesState.setMapToDiskMigration(mapToDiskMigration);
         ServicesState.setVmFactory(vmf);
         given(vmf.get()).willReturn(virtualMapFactory);

@@ -26,11 +26,13 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.RewardCalculator;
 import com.hedera.node.app.service.mono.records.RecordCache;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
+import com.hedera.node.app.service.mono.state.initialization.BlocklistAccountCreator;
 import com.hedera.node.app.service.mono.state.migration.MigrationRecordsManager;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
@@ -92,6 +94,12 @@ class ServicesTxnManagerTest {
     @Mock
     private RewardCalculator rewardCalculator;
 
+    @Mock
+    private BootstrapProperties bootstrapProperties;
+
+    @Mock
+    private BlocklistAccountCreator blocklistAccountCreator;
+
     @LoggingTarget
     private LogCaptor logCaptor;
 
@@ -111,7 +119,9 @@ class ServicesTxnManagerTest {
                 migrationRecordsManager,
                 recordStreaming,
                 blockManager,
-                rewardCalculator);
+                rewardCalculator,
+                bootstrapProperties,
+                blocklistAccountCreator);
     }
 
     @Test
