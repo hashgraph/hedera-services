@@ -208,6 +208,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -377,6 +378,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * A list of threads that execute the chatter protocol.
      */
     private final List<StoppableThread> chatterThreads = new LinkedList<>();
+
+    /** A list of threads that execute the sync protocol using bidirectional connections */
+    private final List<StoppableThread> syncProtocolThreads = new ArrayList<>();
 
     /**
      * Builds dispatchers and registers observers for this platform instance.
@@ -997,6 +1001,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         for (final StoppableThread thread : chatterThreads) {
             thread.stop();
         }
+        for (final StoppableThread thread : syncProtocolThreads) {
+            thread.stop();
+        }
         if (basicConfig.syncAsProtocolEnabled()) {
             gossipHalted.set(true);
         } else if (syncManager != null) {
@@ -1557,7 +1564,11 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     }
 
     private void startSyncAsProtocolNetwork() {
+
+        final StaticConnectionManagers connectionManagers = startCommonNetwork();
+
         final SyncPermit syncPermit = new SyncPermit(settings.getMaxOutgoingSyncs());
+
         final PeerAgnosticSyncChecks peerAgnosticSyncChecks = new PeerAgnosticSyncChecks(
                 List.of(
                         () -> !gossipHalted.get(),
@@ -1574,17 +1585,59 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         // TODO if single node network, start dedicated thread to "sync" and create events
 
+        // TODO move this out of chatter config
+        final Duration hangingThreadDuration = platformContext.getConfiguration().getConfigData(ChatterConfig.class)
+                .hangingThreadDuration();
+
         // first create all instances because of thread safety
         for (final NodeId otherId : topology.getNeighbors()) {
-            new SyncProtocol(
-                    otherId,
-                    shadowgraphSynchronizer,
-                    fallenBehindManager,
-                    syncPermit,
-                    criticalQuorum,
-                    peerAgnosticSyncChecks,
-                    syncMetrics
-            );
+            syncProtocolThreads.add(new StoppableThreadConfiguration<>(threadManager)
+                    .setPriority(Thread.NORM_PRIORITY)
+                    .setNodeId(selfId.getId())
+                    .setComponent(PLATFORM_THREAD_POOL_NAME)
+                    .setOtherNodeId(otherId.getId())
+                    .setThreadName("SyncProtocolReader")
+                    .setHangingThreadPeriod(hangingThreadDuration)
+                    .setWork(new NegotiatorThread(
+                            connectionManagers.getManager(otherId, topology.shouldConnectTo(otherId)),
+                            List.of(
+                                    new VersionCompareHandshake(appVersion, !settings.isGossipWithDifferentVersions()),
+                                    new VersionCompareHandshake(
+                                            PlatformVersion.locateOrDefault(),
+                                            !settings.isGossipWithDifferentVersions())),
+                            new NegotiationProtocols(List.of(
+                                    new EmergencyReconnectProtocol(
+                                            threadManager,
+                                            notificationEngine,
+                                            otherId,
+                                            emergencyRecoveryManager,
+                                            reconnectThrottle,
+                                            stateManagementComponent,
+                                            settings.getReconnect().getAsyncStreamTimeoutMilliseconds(),
+                                            reconnectMetrics,
+                                            reconnectController.get()),
+                                    new ReconnectProtocol(
+                                            threadManager,
+                                            otherId,
+                                            reconnectThrottle,
+                                            () -> stateManagementComponent
+                                                    .getLatestSignedState()
+                                                    .get(),
+                                            settings.getReconnect().getAsyncStreamTimeoutMilliseconds(),
+                                            reconnectMetrics,
+                                            reconnectController.get(),
+                                            new DefaultSignedStateValidator(),
+                                            fallenBehindManager),
+                                    new SyncProtocol(
+                                            otherId,
+                                            shadowgraphSynchronizer,
+                                            fallenBehindManager,
+                                            syncPermit,
+                                            criticalQuorum,
+                                            peerAgnosticSyncChecks,
+                                            syncMetrics
+                                    )))))
+                    .build(true));
         }
     }
 

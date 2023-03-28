@@ -182,7 +182,7 @@ import java.nio.file.Path;
  * 		maximum number of simultaneous outgoing syncs initiated by me
  * @param logPath
  * 		path to log4j2.xml (which might not exist)
- * @param syncAsProtocol
+ * @param syncAsProtocolEnabled
  *      if true, perform the sync gossip algorithm as a negotiated protocol using bidirectional connections.
  */
 @ConfigData

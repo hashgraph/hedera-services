@@ -48,7 +48,8 @@ public class SyncPermit {
     }
 
     /**
-     * Attempts to acquire a sync permit. This method returns immediately if no permit is not available.
+     * Attempts to acquire a sync permit. This method returns immediately and never blocks, even if no permit is
+     * available.
      *
      * @return an autocloseable instance that tells the caller if the permit has been acquired and will automatically
      * release the permit when used in a try-with-resources block
