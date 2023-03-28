@@ -20,12 +20,7 @@ import com.hedera.node.app.meta.MonoHandleContext;
 import com.hedera.node.app.service.admin.impl.components.AdminComponent;
 import com.hedera.node.app.service.consensus.impl.components.ConsensusComponent;
 import com.hedera.node.app.service.contract.impl.components.ContractComponent;
-import com.hedera.node.app.service.file.impl.handlers.FileAppendHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileCreateHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileSystemUndeleteHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
+import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.mono.sigs.Expansion;
 import com.hedera.node.app.service.mono.sigs.PlatformSigOps;
 import com.hedera.node.app.service.mono.sigs.factories.ReusableBodySigningFactory;
@@ -95,12 +90,7 @@ public interface HandleWorkflowModule {
     static TransactionHandlers provideTransactionHandlers(
             @NonNull final AdminComponent adminComponent,
             @NonNull final ConsensusComponent consensusComponent,
-            @NonNull final FileCreateHandler fileCreateHandler,
-            @NonNull final FileUpdateHandler fileUpdateHandler,
-            @NonNull final FileDeleteHandler fileDeleteHandler,
-            @NonNull final FileAppendHandler fileAppendHandler,
-            @NonNull final FileSystemDeleteHandler fileSystemDeleteHandler,
-            @NonNull final FileSystemUndeleteHandler fileSystemUndeleteHandler,
+            @NonNull final FileServiceImpl fileService,
             @NonNull final NetworkComponent networkComponent,
             @NonNull final ContractComponent contractComponent,
             @NonNull final ScheduleComponent scheduleComponent,
@@ -126,12 +116,12 @@ public interface HandleWorkflowModule {
                 tokenComponent.cryptoDeleteAllowanceHandler(),
                 tokenComponent.cryptoAddLiveHashHandler(),
                 tokenComponent.cryptoDeleteLiveHashHandler(),
-                fileCreateHandler,
-                fileUpdateHandler,
-                fileDeleteHandler,
-                fileAppendHandler,
-                fileSystemDeleteHandler,
-                fileSystemUndeleteHandler,
+                fileService.getFileCreateHandler(),
+                fileService.getFileUpdateHandler(),
+                fileService.getFileDeleteHandler(),
+                fileService.getFileAppendHandler(),
+                fileService.getFileSystemDeleteHandler(),
+                fileService.getFileSystemUndeleteHandler(),
                 adminComponent.freezeHandler(),
                 networkComponent.networkUncheckedSubmitHandler(),
                 scheduleComponent.scheduleCreateHandler(),

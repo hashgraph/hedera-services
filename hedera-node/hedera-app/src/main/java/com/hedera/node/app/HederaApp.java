@@ -20,12 +20,14 @@ import com.hedera.node.app.annotations.MaxSignedTxnSize;
 import com.hedera.node.app.components.IngestComponent;
 import com.hedera.node.app.components.QueryComponent;
 import com.hedera.node.app.fees.AdaptedFeeCalculatorModule;
+import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.mono.ServicesApp;
 import com.hedera.node.app.service.mono.config.ConfigModule;
 import com.hedera.node.app.service.mono.context.ContextModule;
 import com.hedera.node.app.service.mono.context.annotations.BootstrapProps;
 import com.hedera.node.app.service.mono.context.annotations.StaticAccountMemo;
-import com.hedera.node.app.service.mono.context.properties.*;
+import com.hedera.node.app.service.mono.context.properties.PropertiesModule;
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.contracts.ContractsModule;
 import com.hedera.node.app.service.mono.fees.FeesModule;
 import com.hedera.node.app.service.mono.files.FilesModule;
@@ -60,40 +62,39 @@ import javax.inject.Provider;
 import javax.inject.Singleton;
 
 /**
- * The infrastructure used to implement the platform contract for a Hedera Services node.
- * This is needed for adding dagger subcomponents.
- * Currently, it extends {@link com.hedera.node.app.service.mono.ServicesApp}. But,
- * in the future this class will be cleaned up to not have multiple module dependencies
+ * The infrastructure used to implement the platform contract for a Hedera Services node. This is needed for adding
+ * dagger subcomponents. Currently, it extends {@link com.hedera.node.app.service.mono.ServicesApp}. But, in the future
+ * this class will be cleaned up to not have multiple module dependencies
  */
 @Singleton
 @Component(
         modules = {
-            TaskModule.class,
-            FeesModule.class,
-            KeysModule.class,
-            SigsModule.class,
-            GrpcModule.class,
-            ConfigModule.class,
-            StatsModule.class,
-            StateModule.class,
-            FilesModule.class,
-            LedgerModule.class,
-            StoresModule.class,
-            ContextModule.class,
-            RecordsModule.class,
-            QueriesModule.class,
-            ContractsModule.class,
-            PropertiesModule.class,
-            ThrottlingModule.class,
-            SubmissionModule.class,
-            TransactionsModule.class,
-            ExpiryModule.class,
-            ServiceModule.class,
-            QueryWorkflowModule.class,
-            HandleWorkflowModule.class,
-            PreHandleWorkflowModule.class,
-            HederaStateModule.class,
-            AdaptedFeeCalculatorModule.class
+                TaskModule.class,
+                FeesModule.class,
+                KeysModule.class,
+                SigsModule.class,
+                GrpcModule.class,
+                ConfigModule.class,
+                StatsModule.class,
+                StateModule.class,
+                FilesModule.class,
+                LedgerModule.class,
+                StoresModule.class,
+                ContextModule.class,
+                RecordsModule.class,
+                QueriesModule.class,
+                ContractsModule.class,
+                PropertiesModule.class,
+                ThrottlingModule.class,
+                SubmissionModule.class,
+                TransactionsModule.class,
+                ExpiryModule.class,
+                ServiceModule.class,
+                QueryWorkflowModule.class,
+                HandleWorkflowModule.class,
+                PreHandleWorkflowModule.class,
+                HederaStateModule.class,
+                AdaptedFeeCalculatorModule.class
         })
 public interface HederaApp extends ServicesApp {
     /* Needed by ServicesState */
@@ -104,6 +105,8 @@ public interface HederaApp extends ServicesApp {
     WorkingStateAccessor workingStateAccessor();
 
     AdaptedMonoEventExpansion adaptedMonoEventExpansion();
+
+    FileServiceImpl fileService();
 
     @Component.Builder
     interface Builder {

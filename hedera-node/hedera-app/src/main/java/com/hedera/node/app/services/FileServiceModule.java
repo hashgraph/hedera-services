@@ -17,6 +17,7 @@
 
 package com.hedera.node.app.services;
 
+import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.file.impl.handlers.FileAppendHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileCreateHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
@@ -92,5 +93,20 @@ public interface FileServiceModule {
     @NonNull
     static FileUpdateHandler fileUpdateHandler() {
         return new FileUpdateHandler();
+    }
+
+    @Provides
+    @Singleton
+    @NonNull
+    static FileServiceImpl fileService(@NonNull final FileAppendHandler fileAppendHandler,
+            @NonNull final FileCreateHandler fileCreateHandler,
+            @NonNull final FileDeleteHandler fileDeleteHandler,
+            @NonNull final FileGetContentsHandler fileGetContentsHandler,
+            @NonNull final FileGetInfoHandler fileGetInfoHandler,
+            @NonNull final FileSystemDeleteHandler fileSystemDeleteHandler,
+            @NonNull final FileSystemUndeleteHandler fileSystemUndeleteHandler,
+            @NonNull final FileUpdateHandler fileUpdateHandler) {
+        return new FileServiceImpl(fileAppendHandler, fileCreateHandler, fileDeleteHandler, fileGetContentsHandler,
+                fileGetInfoHandler, fileSystemDeleteHandler, fileSystemUndeleteHandler, fileUpdateHandler);
     }
 }

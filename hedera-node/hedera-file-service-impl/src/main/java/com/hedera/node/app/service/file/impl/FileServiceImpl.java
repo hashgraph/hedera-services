@@ -17,6 +17,14 @@
 package com.hedera.node.app.service.file.impl;
 
 import com.hedera.node.app.service.file.FileService;
+import com.hedera.node.app.service.file.impl.handlers.FileAppendHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileCreateHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileGetContentsHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileSystemUndeleteHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKeySerializer;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
@@ -26,6 +34,7 @@ import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.state.serdes.MonoMapSerdesAdapter;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import java.util.Set;
 
 /** Standard implementation of the {@link FileService} {@link com.hedera.node.app.spi.Service}. */
@@ -35,8 +44,93 @@ public final class FileServiceImpl implements FileService {
             SemanticVersion.newBuilder().setMinor(34).build();
     public static final String BLOBS_KEY = "BLOBS";
 
+    private final FileAppendHandler fileAppendHandler;
+
+    private final FileCreateHandler fileCreateHandler;
+
+    private final FileDeleteHandler fileDeleteHandler;
+
+    private final FileGetContentsHandler fileGetContentsHandler;
+
+    private final FileGetInfoHandler fileGetInfoHandler;
+
+    private final FileSystemDeleteHandler fileSystemDeleteHandler;
+
+    private final FileSystemUndeleteHandler fileSystemUndeleteHandler;
+
+    private final FileUpdateHandler fileUpdateHandler;
+
+    /**
+     * WARNING: This contructor is only used to let the code compile. All places that call this constructor must be
+     * refactored to use Dagger instead.
+     *
+     * @deprecated DO NOT USE THIS CONSTRUCTOR.
+     */
+    @Deprecated(forRemoval = true)
+    public FileServiceImpl() {
+        this(
+                new FileAppendHandler(),
+                new FileCreateHandler(),
+                new FileDeleteHandler(),
+                new FileGetContentsHandler(),
+                new FileGetInfoHandler(),
+                new FileSystemDeleteHandler(),
+                new FileSystemUndeleteHandler(),
+                new FileUpdateHandler());
+    }
+
+    public FileServiceImpl(@NonNull final FileAppendHandler fileAppendHandler,
+            @NonNull final FileCreateHandler fileCreateHandler,
+            @NonNull final FileDeleteHandler fileDeleteHandler,
+            @NonNull final FileGetContentsHandler fileGetContentsHandler,
+            @NonNull final FileGetInfoHandler fileGetInfoHandler,
+            @NonNull final FileSystemDeleteHandler fileSystemDeleteHandler,
+            @NonNull final FileSystemUndeleteHandler fileSystemUndeleteHandler,
+            @NonNull final FileUpdateHandler fileUpdateHandler) {
+        this.fileAppendHandler = Objects.requireNonNull(fileAppendHandler);
+        this.fileCreateHandler = Objects.requireNonNull(fileCreateHandler);
+        this.fileDeleteHandler = Objects.requireNonNull(fileDeleteHandler);
+        this.fileGetContentsHandler = Objects.requireNonNull(fileGetContentsHandler);
+        this.fileGetInfoHandler = Objects.requireNonNull(fileGetInfoHandler);
+        this.fileSystemDeleteHandler = Objects.requireNonNull(fileSystemDeleteHandler);
+        this.fileSystemUndeleteHandler = Objects.requireNonNull(fileSystemUndeleteHandler);
+        this.fileUpdateHandler = Objects.requireNonNull(fileUpdateHandler);
+    }
+
+    public FileAppendHandler getFileAppendHandler() {
+        return fileAppendHandler;
+    }
+
+    public FileCreateHandler getFileCreateHandler() {
+        return fileCreateHandler;
+    }
+
+    public FileDeleteHandler getFileDeleteHandler() {
+        return fileDeleteHandler;
+    }
+
+    public FileGetContentsHandler getFileGetContentsHandler() {
+        return fileGetContentsHandler;
+    }
+
+    public FileGetInfoHandler getFileGetInfoHandler() {
+        return fileGetInfoHandler;
+    }
+
+    public FileSystemDeleteHandler getFileSystemDeleteHandler() {
+        return fileSystemDeleteHandler;
+    }
+
+    public FileSystemUndeleteHandler getFileSystemUndeleteHandler() {
+        return fileSystemUndeleteHandler;
+    }
+
+    public FileUpdateHandler getFileUpdateHandler() {
+        return fileUpdateHandler;
+    }
+
     @Override
-    public void registerSchemas(@NonNull SchemaRegistry registry) {
+    public void registerSchemas(@NonNull final SchemaRegistry registry) {
         registry.register(fileServiceSchema());
     }
 
