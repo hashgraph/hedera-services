@@ -16,6 +16,13 @@
 
 package com.hedera.node.app;
 
+import static com.hedera.node.app.service.mono.ServicesState.EMPTY_HASH;
+import static com.hedera.node.app.service.mono.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_FIRST_USER_ENTITY;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.grpc.GrpcServiceBuilder;
 import com.hedera.node.app.service.admin.FreezeService;
 import com.hedera.node.app.service.admin.impl.FreezeServiceImpl;
@@ -79,8 +86,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import io.helidon.grpc.server.GrpcRouting;
 import io.helidon.grpc.server.GrpcServer;
 import io.helidon.grpc.server.GrpcServerConfiguration;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
@@ -88,12 +93,8 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-import static com.hedera.node.app.service.mono.ServicesState.EMPTY_HASH;
-import static com.hedera.node.app.service.mono.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_FIRST_USER_ENTITY;
-import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Objects.requireNonNull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Represents the Hedera Consensus Node.
@@ -487,7 +488,8 @@ public final class Hedera implements SwirldMain {
      * Invoked by the platform to handle a round of consensus events.  This only happens after {@link #run()} has been
      * called.
      */
-    private void onHandleConsensusRound(@NonNull final Round round, @NonNull final SwirldDualState dualState, @NonNull final HederaState state) {
+    private void onHandleConsensusRound(
+            @NonNull final Round round, @NonNull final SwirldDualState dualState, @NonNull final HederaState state) {
         // TBD: The handle workflow should be created by dagger and just be something we can delegate to here.
         daggerApp.dualStateAccessor().setDualState(dualState);
         daggerApp.workingStateAccessor().setHederaState(state);

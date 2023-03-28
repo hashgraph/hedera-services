@@ -572,7 +572,7 @@ class IngestWorkflowImplTest extends AppTestBase {
     class PlatformSubmissionTests {
 
         @Test
-        @DisplayName("If the platform fails to accept the transaction, the transaction should be rejected")
+        @DisplayName("If the platform fails to onConsensusRound the transaction, the transaction should be rejected")
         void testSubmitFails() throws PreCheckException, IOException {
             // Given a SubmissionManager that will fail the submit
             doThrow(new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED))

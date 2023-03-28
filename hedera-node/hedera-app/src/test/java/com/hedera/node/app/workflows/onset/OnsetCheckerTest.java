@@ -201,7 +201,7 @@ class OnsetCheckerTest extends AppTestBase {
 
         @Test
         @SuppressWarnings("ConstantConditions")
-        @DisplayName("The checkTransaction method does not accept null arguments")
+        @DisplayName("The checkTransaction method does not onConsensusRound null arguments")
         void checkTransactionWithIllegalArguments() {
             assertThatThrownBy(() -> checker.checkTransaction(null)).isInstanceOf(NullPointerException.class);
         }
@@ -213,7 +213,7 @@ class OnsetCheckerTest extends AppTestBase {
 
         @Test
         @SuppressWarnings("ConstantConditions")
-        @DisplayName("The checkTransactionBody method does not accept null arguments")
+        @DisplayName("The checkTransactionBody method does not onConsensusRound null arguments")
         void testCheckTransactionBodyWithIllegalArguments() {
             assertThatThrownBy(() -> checker.checkTransactionBody(null)).isInstanceOf(NullPointerException.class);
         }

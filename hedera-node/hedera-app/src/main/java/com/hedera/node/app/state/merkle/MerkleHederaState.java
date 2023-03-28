@@ -106,8 +106,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 /**
  * An implementation of {@link SwirldState2} and {@link HederaState}. The Hashgraph Platform
@@ -327,7 +325,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     public void handleConsensusRound(@NonNull final Round round, @NonNull final SwirldDualState swirldDualState) {
         throwIfImmutable();
         if (onHandleConsensusRound != null) {
-            onHandleConsensusRound.accept(round, swirldDualState, this);
+            onHandleConsensusRound.onConsensusRound(round, swirldDualState, this);
         }
     }
 
@@ -337,7 +335,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     @Override
     public void preHandle(@NonNull final Event event) {
         if (onPreHandle != null) {
-            onPreHandle.accept(event, this);
+            onPreHandle.onPreHandle(event, this);
         }
     }
 

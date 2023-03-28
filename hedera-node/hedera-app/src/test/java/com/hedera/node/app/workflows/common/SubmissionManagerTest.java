@@ -122,7 +122,7 @@ class SubmissionManagerTest extends AppTestBase {
         }
 
         @Test
-        @DisplayName("If the platform fails to accept the bytes, a PreCheckException is thrown")
+        @DisplayName("If the platform fails to onConsensusRound the bytes, a PreCheckException is thrown")
         void testSubmittingToPlatformFails() {
             // Given a platform that will **fail** in taking bytes
             when(platform.createTransaction(any())).thenReturn(false);
