@@ -380,8 +380,11 @@ public class TxnReceipt implements SelfSerializable {
         private long newTotalSupply;
         private TxnId scheduledTxnId;
         private long[] serialNumbers;
+        private boolean isRevertable = true;
 
         public void revert() {
+            if (!isRevertable) return;
+
             if (SUCCESS_LITERAL.equals(status)) {
                 status = REVERTED_SUCCESS_LITERAL;
             }
@@ -469,6 +472,11 @@ public class TxnReceipt implements SelfSerializable {
 
         public Builder setSerialNumbers(final long[] serialNumbers) {
             this.serialNumbers = serialNumbers;
+            return this;
+        }
+
+        public Builder nonRevertable() {
+            this.isRevertable = false;
             return this;
         }
 
