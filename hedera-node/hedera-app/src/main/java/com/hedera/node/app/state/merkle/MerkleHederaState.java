@@ -94,6 +94,7 @@ import com.swirlds.common.system.SwirldState2;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.utility.Labeled;
+import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -173,6 +174,15 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     private final RecordCache recordCache = new MerkleRecordCache();
 
     /**
+     * A rebuilt-map of all aliases.
+     *
+     * <p>NOTE: This field is TEMPORARY. Once we have eliminated mono-service, this alias map will
+     * move to being a normal part of state using a VirtualMap, and we will no longer have it as a
+     * separate in-memory data structure.</p>
+     */
+    private final FCHashMap<ByteString, EntityNum> aliases;
+
+    /**
      * Create a new instance. This constructor must be used for all creations of this class.
      *
      * @param onPreHandle            The callback to invoke when an event is ready for pre-handle
@@ -186,6 +196,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         this.onPreHandle = Objects.requireNonNull(onPreHandle);
         this.onHandleConsensusRound = Objects.requireNonNull(onHandleConsensusRound);
         this.onInit = Objects.requireNonNull(onInit);
+        this.aliases = new FCHashMap<>();
     }
 
     /**
@@ -215,6 +226,9 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     private MerkleHederaState(@NonNull final MerkleHederaState from) {
         // Copy the Merkle route from the source instance
         super(from);
+
+        // Make a copy of the aliases map
+        this.aliases = from.aliases.copy();
 
         // Copy over the metadata
         for (final var entry : from.services.entrySet()) {
@@ -642,8 +656,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      * better than having this here.
      */
     @Deprecated(forRemoval = true)
-    public StateChildrenProvider getStateChildrenProvider(
-            @NonNull final Platform platform, @NonNull final Map<ByteString, EntityNum> aliases) {
+    public StateChildrenProvider getStateChildrenProvider(@NonNull final Platform platform) {
         return new StateChildrenProvider() {
             @Override
             @SuppressWarnings("unchecked")

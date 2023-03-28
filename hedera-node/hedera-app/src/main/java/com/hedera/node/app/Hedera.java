@@ -22,7 +22,6 @@ import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_FIRST_USER_ENT
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import com.google.protobuf.ByteString;
 import com.hedera.node.app.grpc.GrpcServiceBuilder;
 import com.hedera.node.app.service.admin.FreezeService;
 import com.hedera.node.app.service.admin.impl.FreezeServiceImpl;
@@ -682,12 +681,9 @@ public final class Hedera implements SwirldMain {
         logger.debug("Initializing dagger");
         final var selfId = platform.getSelfId().getId();
         if (daggerApp == null) {
+            stateChildren = state.getStateChildrenProvider(platform);
             // Today, the alias map has to be constructed by walking over all accounts.
-            // TODO Populate aliases properly
-            final var aliases = new HashMap<
-                    ByteString,
-                    EntityNum>(); // Unfortunately, have to keep this Google protobuf dependency for the moment :-(
-            stateChildren = state.getStateChildrenProvider(platform, aliases);
+            // TODO Populate aliases from stateChildren based on the accounts
             final var nodeAddress = stateChildren.addressBook().getAddress(selfId);
             final var initialHash =
                     stateChildren.runningHashLeaf().getRunningHash().getHash();
