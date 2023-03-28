@@ -199,6 +199,12 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         this.aliases = new FCHashMap<>();
     }
 
+    public MerkleHederaState() {
+        // ConstructableRegistry requires a "working" no-arg constructor
+        aliases = null;
+        onPreHandle = null;
+    }
+
     /**
      * {@inheritDoc}
      *
