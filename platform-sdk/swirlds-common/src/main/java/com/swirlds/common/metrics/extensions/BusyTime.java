@@ -29,8 +29,10 @@ import com.swirlds.common.time.Time;
  * snapshot of this metric must be taken at least once every 34 minutes in order to get accurate data.
  */
 public class BusyTime {
-    public static final int WORK_START = 0;
-    public static final int WORK_END = 1;
+    /** passed to the accumulator method to indicate that work has started */
+    private static final int WORK_START = 0;
+    /** passed to the accumulator method to indicate that work has ended */
+    private static final int WORK_END = 1;
     /** An instance that provides the current time */
     private final IntegerEpochTime time;
 
@@ -40,6 +42,7 @@ public class BusyTime {
     /**
      * The default constructor, uses the {@link OSTime}
      *
+     * @param metrics the metrics instance to use
      * @param config
      * 		the configuration for this metric
      */
@@ -50,6 +53,7 @@ public class BusyTime {
     /**
      * A constructor where a custom {@link Time} instance could be supplied
      *
+     * @param metrics the metrics instance to use
      * @param config
      * 		the configuration for this metric
      * @param time

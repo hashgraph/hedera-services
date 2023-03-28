@@ -17,6 +17,8 @@
 package com.swirlds.common.metrics.atomic;
 
 import com.swirlds.common.metrics.extensions.IntPairUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 import java.util.function.IntBinaryOperator;
@@ -47,7 +49,9 @@ public class AtomicIntPair {
      * @param rightAccumulator the method that will be used to calculate the new value for the right integer when
      *                         {@link #accumulate(int, int)} is called
      */
-    public AtomicIntPair(final IntBinaryOperator leftAccumulator, final IntBinaryOperator rightAccumulator) {
+    public AtomicIntPair(
+            @NonNull final IntBinaryOperator leftAccumulator,
+            @NonNull final IntBinaryOperator rightAccumulator) {
         this(IntPairUtils.createAccumulator(leftAccumulator, rightAccumulator), current -> RESET_VALUE);
     }
 
@@ -55,7 +59,7 @@ public class AtomicIntPair {
      * @param accumulator the method that will be used to calculate the new value for the integers when being updated
      * @param reset      the method that will be used to calculate the new value for the integers when being reset
      */
-    public AtomicIntPair(final LongBinaryOperator accumulator, final LongUnaryOperator reset) {
+    public AtomicIntPair(@NonNull final LongBinaryOperator accumulator, @NonNull final LongUnaryOperator reset) {
         operator = accumulator;
         this.container = new AtomicLong(RESET_VALUE);
         this.reset = reset;
@@ -129,7 +133,7 @@ public class AtomicIntPair {
     }
 
     /**
-     * Same as {@link #compute(BiFunction)} but also atomically resets the integers to {@code 0}
+     * Same as {@link #compute(BiFunction)} but also atomically resets the integers with the reset method
      */
     public <T> T computeAndReset(final BiFunction<Integer, Integer, T> compute) {
         final long twoInts = container.getAndUpdate(reset);

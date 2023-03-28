@@ -20,9 +20,9 @@ performance issues often requires a lot of time to narrow down the issue.
 
 - All thread work is tracked by percentages (or fractions)
 - All subtasks of a thread are tracked individually
-- The metric tracks the current status of the thread, so that accurate information can sampled even if the thread is
+- The metric tracks the current status of the thread, so that accurate information can be sampled even if the thread is
   stuck
-- it is lock-free and garbage-free. The metric implementation that stores all relevant information within an integer
+- it is lock-free and garbage-free. The metric implementation stores all relevant information within an integer
   pair that can be updated atomically.
 - This can track the overall busyness of a thread
 - It can also track each part of the execution to get more detailed information about where a thread is spending its
