@@ -20,7 +20,8 @@ import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.fees.MonoFeeAccumulator;
 import com.hedera.node.app.service.consensus.impl.components.ConsensusComponent;
 import com.hedera.node.app.service.contract.impl.components.ContractComponent;
-import com.hedera.node.app.service.file.impl.components.FileComponent;
+import com.hedera.node.app.service.file.impl.handlers.FileGetContentsHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandler;
 import com.hedera.node.app.service.network.impl.components.NetworkComponent;
 import com.hedera.node.app.service.schedule.impl.components.ScheduleComponent;
 import com.hedera.node.app.service.token.impl.components.TokenComponent;
@@ -65,12 +66,13 @@ public interface QueryWorkflowModule {
 
     @Provides
     static QueryHandlers provideQueryHandlers(
-            @NonNull ConsensusComponent consensusComponent,
-            @NonNull FileComponent fileComponent,
-            @NonNull NetworkComponent networkComponent,
-            @NonNull ContractComponent contractComponent,
-            @NonNull ScheduleComponent scheduleComponent,
-            @NonNull TokenComponent tokenComponent) {
+            @NonNull final ConsensusComponent consensusComponent,
+            @NonNull final FileGetContentsHandler contentsHandler,
+            @NonNull final FileGetInfoHandler infoHandler,
+            @NonNull final NetworkComponent networkComponent,
+            @NonNull final ContractComponent contractComponent,
+            @NonNull final ScheduleComponent scheduleComponent,
+            @NonNull final TokenComponent tokenComponent) {
         return new QueryHandlers(
                 consensusComponent.consensusGetTopicInfoHandler(),
                 contractComponent.contractGetBySolidityIDHandler(),
@@ -83,8 +85,8 @@ public interface QueryWorkflowModule {
                 tokenComponent.cryptoGetAccountRecordsHandler(),
                 tokenComponent.cryptoGetLiveHashHandler(),
                 tokenComponent.cryptoGetStakersHandler(),
-                fileComponent.fileGetContentsHandler(),
-                fileComponent.fileGetInfoHandler(),
+                contentsHandler,
+                infoHandler,
                 networkComponent.networkGetAccountDetailsHandler(),
                 networkComponent.networkGetByKeyHandler(),
                 networkComponent.networkGetExecutionTimeHandler(),

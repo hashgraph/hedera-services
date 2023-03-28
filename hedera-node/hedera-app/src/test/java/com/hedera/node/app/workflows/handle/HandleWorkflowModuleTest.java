@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.admin.impl.components.AdminComponent;
@@ -34,7 +34,6 @@ import com.hedera.node.app.service.contract.impl.handlers.ContractSystemDeleteHa
 import com.hedera.node.app.service.contract.impl.handlers.ContractSystemUndeleteHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractUpdateHandler;
 import com.hedera.node.app.service.contract.impl.handlers.EtherumTransactionHandler;
-import com.hedera.node.app.service.file.impl.components.FileComponent;
 import com.hedera.node.app.service.file.impl.handlers.FileAppendHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileCreateHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
@@ -73,6 +72,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.util.impl.components.UtilComponent;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
+import com.hedera.node.app.services.FileServiceModule;
 import com.hedera.node.app.workflows.dispatcher.TransactionHandlers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -88,7 +88,7 @@ class HandleWorkflowModuleTest {
     private ConsensusComponent consensusComponent;
 
     @Mock
-    private FileComponent fileComponent;
+    private FileServiceModule fileServiceModule;
 
     @Mock
     private NetworkComponent networkComponent;
@@ -264,12 +264,6 @@ class HandleWorkflowModuleTest {
         given(tokenComponent.cryptoDeleteAllowanceHandler()).willReturn(cryptoDeleteAllowanceHandler);
         given(tokenComponent.cryptoAddLiveHashHandler()).willReturn(cryptoAddLiveHashHandler);
         given(tokenComponent.cryptoDeleteLiveHashHandler()).willReturn(cryptoDeleteLiveHashHandler);
-        given(fileComponent.fileCreateHandler()).willReturn(fileCreateHandler);
-        given(fileComponent.fileUpdateHandler()).willReturn(fileUpdateHandler);
-        given(fileComponent.fileDeleteHandler()).willReturn(fileDeleteHandler);
-        given(fileComponent.fileAppendHandler()).willReturn(fileAppendHandler);
-        given(fileComponent.fileSystemDeleteHandler()).willReturn(fileSystemDeleteHandler);
-        given(fileComponent.fileSystemUndeleteHandler()).willReturn(fileSystemUndeleteHandler);
         given(adminComponent.freezeHandler()).willReturn(freezeHandler);
         given(networkComponent.networkUncheckedSubmitHandler()).willReturn(networkUncheckedSubmitHandler);
         given(scheduleComponent.scheduleCreateHandler()).willReturn(scheduleCreateHandler);
@@ -295,7 +289,12 @@ class HandleWorkflowModuleTest {
         final var handlers = HandleWorkflowModule.provideTransactionHandlers(
                 adminComponent,
                 consensusComponent,
-                fileComponent,
+                fileCreateHandler,
+                fileUpdateHandler,
+                fileDeleteHandler,
+                fileAppendHandler,
+                fileSystemDeleteHandler,
+                fileSystemUndeleteHandler,
                 networkComponent,
                 contractComponent,
                 scheduleComponent,
