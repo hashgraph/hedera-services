@@ -16,8 +16,9 @@
 
 package com.hedera.node.app.grpc;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.hedera.node.app.Hedera;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import java.io.ByteArrayInputStream;
@@ -50,11 +51,7 @@ final class DataBufferMarshallerTest {
     }
 
     private static Stream<Arguments> provideBuffers() {
-        return Stream.of(
-                Arguments.of(0, 0),
-                Arguments.of(100, 0),
-                Arguments.of(100, 80),
-                Arguments.of(100, 100));
+        return Stream.of(Arguments.of(0, 0), Arguments.of(100, 0), Arguments.of(100, 80), Arguments.of(100, 100));
     }
 
     @ParameterizedTest(name = "A buffer with capacity {0} and position {1}")

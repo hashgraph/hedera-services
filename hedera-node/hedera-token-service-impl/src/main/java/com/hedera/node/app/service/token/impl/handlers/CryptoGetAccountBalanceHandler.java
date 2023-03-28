@@ -50,7 +50,7 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
 
     @Override
     public Response createEmptyResponse(@NonNull final ResponseHeader header) {
-        final var response = CryptoGetAccountBalanceResponse.newBuilder().header(header);
+        final var response = CryptoGetAccountBalanceResponse.newBuilder().header(requireNonNull(header));
         return Response.newBuilder().cryptogetAccountBalance(response).build();
     }
 

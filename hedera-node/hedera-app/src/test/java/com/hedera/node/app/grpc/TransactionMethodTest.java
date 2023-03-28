@@ -16,12 +16,22 @@
 
 package com.hedera.node.app.grpc;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
 import io.grpc.stub.StreamObserver;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,17 +41,6 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import utils.TestUtils;
-import java.io.ByteArrayInputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicBoolean;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 final class TransactionMethodTest {
@@ -54,32 +53,28 @@ final class TransactionMethodTest {
     @Test
     void nullServiceNameThrows() {
         //noinspection ConstantConditions
-        assertThatThrownBy(
-                () -> new TransactionMethod(null, METHOD_NAME, ingestWorkflow, metrics))
+        assertThatThrownBy(() -> new TransactionMethod(null, METHOD_NAME, ingestWorkflow, metrics))
                 .isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void nullMethodNameThrows() {
         //noinspection ConstantConditions
-        assertThatThrownBy(
-                () -> new TransactionMethod(SERVICE_NAME, null, ingestWorkflow, metrics))
+        assertThatThrownBy(() -> new TransactionMethod(SERVICE_NAME, null, ingestWorkflow, metrics))
                 .isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void nullWorkflowThrows() {
         //noinspection ConstantConditions
-        assertThatThrownBy(
-                () -> new TransactionMethod(SERVICE_NAME, METHOD_NAME, null, metrics))
+        assertThatThrownBy(() -> new TransactionMethod(SERVICE_NAME, METHOD_NAME, null, metrics))
                 .isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void nullMetricsThrows() {
         //noinspection ConstantConditions
-        assertThatThrownBy(
-                () -> new TransactionMethod(SERVICE_NAME, METHOD_NAME, ingestWorkflow, null))
+        assertThatThrownBy(() -> new TransactionMethod(SERVICE_NAME, METHOD_NAME, ingestWorkflow, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -114,7 +109,7 @@ final class TransactionMethodTest {
         final IngestWorkflow w = (s, req, res) -> {
             assertThat(req).isEqualTo(requestBuffer.getBytes(0, requestBuffer.length()));
             called.set(true);
-            res.writeBytes(new byte[] { 1, 2, 3 });
+            res.writeBytes(new byte[] {1, 2, 3});
         };
         final var method = new TransactionMethod(SERVICE_NAME, METHOD_NAME, w, metrics);
 
@@ -132,9 +127,9 @@ final class TransactionMethodTest {
         assertThat(counter("Fail").get()).isZero();
 
         // And the response includes the data written by the workflow
-        final var expectedResponseBytes = Bytes.wrap(new byte[] { 1, 2, 3 });
-        verify(streamObserver).onNext(Mockito.argThat(
-                response -> response.getBytes(0, response.length()).equals(expectedResponseBytes)));
+        final var expectedResponseBytes = Bytes.wrap(new byte[] {1, 2, 3});
+        verify(streamObserver).onNext(Mockito.argThat(response -> response.getBytes(0, response.length())
+                .equals(expectedResponseBytes)));
     }
 
     @Test

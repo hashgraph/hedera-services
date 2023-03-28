@@ -50,7 +50,7 @@ public class CryptoGetStakersHandler extends FreeQueryHandler {
 
     @Override
     public Response createEmptyResponse(@NonNull final ResponseHeader header) {
-        final var response = CryptoGetStakersResponse.newBuilder().header(header);
+        final var response = CryptoGetStakersResponse.newBuilder().header(requireNonNull(header));
         return Response.newBuilder().cryptoGetProxyStakers(response).build();
     }
 

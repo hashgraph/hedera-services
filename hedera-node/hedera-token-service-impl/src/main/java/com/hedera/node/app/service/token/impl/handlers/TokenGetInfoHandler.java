@@ -50,7 +50,7 @@ public class TokenGetInfoHandler extends PaidQueryHandler {
 
     @Override
     public Response createEmptyResponse(@NonNull final ResponseHeader header) {
-        final var response = TokenGetInfoResponse.newBuilder().header(header);
+        final var response = TokenGetInfoResponse.newBuilder().header(requireNonNull(header));
         return Response.newBuilder().tokenGetInfo(response).build();
     }
 
