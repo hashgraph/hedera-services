@@ -73,7 +73,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
     @Test
     void scheduleSignVanillaNoExplicitPayer() {
         final var txn = scheduleSignTransaction();
-        scheduledTxn = givenSetupForScheduleSign(txn);
+        scheduledTxn = givenSetupForScheduleSign();
 
         final var context = new PreHandleContext(keyLookup, txn, scheduler);
         subject.preHandle(context, scheduleStore, dispatcher);
@@ -104,7 +104,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
     @Test
     void scheduleSignVanillaWithOptionalPayerSet() {
         final var txn = scheduleSignTransaction();
-        scheduledTxn = givenSetupForScheduleSign(txn);
+        scheduledTxn = givenSetupForScheduleSign();
 
         given(schedule.hasExplicitPayer()).willReturn(true);
         // @migration this use of PbjConverter is temporary until services complete PBJ migration
@@ -153,7 +153,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
     // @todo Need to create a valid test for "schedule sign with key not in whitelist"
     //       (the prior test just checked for a missing key, which throws NPE now)
 
-    private TransactionBody givenSetupForScheduleSign(TransactionBody txn) {
+    private TransactionBody givenSetupForScheduleSign() {
         final TransactionBody scheduledTxn = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(scheduler).build())
                 .cryptoCreateAccount(CryptoCreateTransactionBody.newBuilder().build())

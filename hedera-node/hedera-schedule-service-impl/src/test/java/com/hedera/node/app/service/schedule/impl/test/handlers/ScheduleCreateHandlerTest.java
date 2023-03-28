@@ -175,7 +175,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
     }
 
     private TransactionBody scheduleCreateTransaction(final AccountID payer) {
-        Timestamp timestampValue = Timestamp.newBuilder().seconds(1_234_567L).build();
+        final Timestamp timestampValue = Timestamp.newBuilder().seconds(1_234_567L).build();
         return scheduleCreateTxnWith(TEST_KEY, "test", payer, scheduler, timestampValue);
     }
 }
