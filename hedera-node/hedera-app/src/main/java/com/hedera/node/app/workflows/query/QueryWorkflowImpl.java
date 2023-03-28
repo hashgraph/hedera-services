@@ -75,7 +75,7 @@ import org.apache.logging.log4j.Logger;
 /** Implementation of {@link QueryWorkflow} */
 public final class QueryWorkflowImpl implements QueryWorkflow {
 
-    private static final Logger LOGGER = LogManager.getLogger(QueryWorkflowImpl.class);
+    private static final Logger logger = LogManager.getLogger(QueryWorkflowImpl.class);
 
     private static final EnumSet<ResponseType> UNSUPPORTED_RESPONSE_TYPES =
             EnumSet.of(ANSWER_STATE_PROOF, COST_ANSWER_STATE_PROOF);
@@ -167,8 +167,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
         }
 
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Received query: {}", query);
+        if (logger.isDebugEnabled()) {
+            logger.debug("Received query: {}", query);
         }
 
         final var functionality = functionOf(query);
@@ -180,7 +180,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
         }
         final ResponseType responseType = queryHeader.responseType();
-        LOGGER.info("Started answering a {} query of type {}", functionality, responseType);
+        logger.debug("Started answering a {} query of type {}", functionality, responseType);
 
         Response response;
         long fee = 0L;
@@ -270,7 +270,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
 
         try {
             Response.PROTOBUF.write(response, responseBuffer);
-            LOGGER.debug("Finished handling a query request in Query workflow");
+            logger.debug("Finished handling a query request in Query workflow");
         } catch (IOException e) {
             e.printStackTrace();
             throw new StatusRuntimeException(Status.INTERNAL);

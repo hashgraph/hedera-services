@@ -16,12 +16,6 @@
 
 package com.hedera.node.app;
 
-import static com.hedera.node.app.service.mono.ServicesState.EMPTY_HASH;
-import static com.hedera.node.app.service.mono.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_FIRST_USER_ENTITY;
-import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 import com.hedera.node.app.grpc.GrpcServiceBuilder;
 import com.hedera.node.app.service.admin.FreezeService;
 import com.hedera.node.app.service.admin.impl.FreezeServiceImpl;
@@ -55,6 +49,7 @@ import com.hedera.node.app.service.util.UtilService;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.MerkleHederaState.MerkleWritableStates;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
@@ -84,16 +79,21 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import io.helidon.grpc.server.GrpcRouting;
 import io.helidon.grpc.server.GrpcServer;
 import io.helidon.grpc.server.GrpcServerConfiguration;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import static com.hedera.node.app.service.mono.ServicesState.EMPTY_HASH;
+import static com.hedera.node.app.service.mono.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_FIRST_USER_ENTITY;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Represents the Hedera Consensus Node.
@@ -155,7 +155,7 @@ public final class Hedera implements SwirldMain {
             @NonNull final BootstrapProperties bootstrapProps) {
 
         // Load properties, configuration, and other things that can be done before a state is created.
-        this.bootstrapProps = Objects.requireNonNull(bootstrapProps);
+        this.bootstrapProps = requireNonNull(bootstrapProps);
 
         // Read the software version
         version = SEMANTIC_VERSIONS.deployedSoftwareVersion();
@@ -477,16 +477,21 @@ public final class Hedera implements SwirldMain {
     /**
      * Invoked by the platform to handle pre-consensus events. This only happens after {@link #run()} has been called.
      */
-    private void onPreHandle(@NonNull final Event event) {
-        // TBD: The pre-handle workflow should be created by dagger and just be something we can delegate to here.
+    private void onPreHandle(@NonNull final Event event, @NonNull final HederaState state) {
+        // For now, we will delegate pre-handle to the mono-service. But this needs to be moved to
+        // use the Pre-Handle workflow instead.
+        daggerApp.adaptedMonoEventExpansion().expand(event, state);
     }
 
     /**
      * Invoked by the platform to handle a round of consensus events.  This only happens after {@link #run()} has been
      * called.
      */
-    private void onHandleConsensusRound(@NonNull final Round round, @NonNull final SwirldDualState dualState) {
+    private void onHandleConsensusRound(@NonNull final Round round, @NonNull final SwirldDualState dualState, @NonNull final HederaState state) {
         // TBD: The handle workflow should be created by dagger and just be something we can delegate to here.
+        daggerApp.dualStateAccessor().setDualState(dualState);
+        daggerApp.workingStateAccessor().setHederaState(state);
+        daggerApp.logic().incorporateConsensus(round);
     }
 
     /*==================================================================================================================

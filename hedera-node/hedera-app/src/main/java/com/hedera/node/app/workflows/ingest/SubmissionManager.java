@@ -91,7 +91,7 @@ public class SubmissionManager {
         byte[] payload = txBytes;
 
         // Unchecked submits are a mechanism to inject transaction to the system, that bypass all
-        // pre-checks.This is used in tests to check the reaction to illegal input.
+        // pre-checks. This is used in tests to check the reaction to illegal input.
         if (txBody.hasUncheckedSubmit()) {
             LOG.warn("Unchecked submit is not supported in this version of Hedera");
             if (nodeLocalProperties.activeProfile() == Profile.PROD) {

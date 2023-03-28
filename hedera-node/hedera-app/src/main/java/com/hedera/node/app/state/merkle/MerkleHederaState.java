@@ -70,7 +70,9 @@ import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.state.HandleConsensusRoundListener;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.state.PreHandleListener;
 import com.hedera.node.app.state.RecordCache;
 import com.hedera.node.app.state.merkle.adapters.MerkleMapLikeAdapter;
 import com.hedera.node.app.state.merkle.adapters.ScheduledTransactionsAdapter;
@@ -148,14 +150,14 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      *
      * <p>This reference is moved forward to the working mutable state.
      */
-    private BiConsumer<Round, SwirldDualState> onHandleConsensusRound;
+    private HandleConsensusRoundListener onHandleConsensusRound;
 
     /**
      * This callback is invoked whenever there is an event to pre-handle.
      *
      * <p>This reference is moved forward to the working mutable state.
      */
-    private final Consumer<Event> onPreHandle;
+    private final PreHandleListener onPreHandle;
 
     /**
      * This callback is invoked whenever the state is initialized.
@@ -190,8 +192,8 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      * @param onInit                 The callback to invoke when state is initialized by the platform
      */
     public MerkleHederaState(
-            @NonNull final Consumer<Event> onPreHandle,
-            @NonNull final BiConsumer<Round, SwirldDualState> onHandleConsensusRound,
+            @NonNull final PreHandleListener onPreHandle,
+            @NonNull final HandleConsensusRoundListener onHandleConsensusRound,
             @NonNull final OnStateInitialized onInit) {
         this.onPreHandle = Objects.requireNonNull(onPreHandle);
         this.onHandleConsensusRound = Objects.requireNonNull(onHandleConsensusRound);
@@ -199,6 +201,15 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         this.aliases = new FCHashMap<>();
     }
 
+    /**
+     * This constructor ONLY exists for the benefit of the ConstructableRegistry. It is not actually
+     * used except by the registry to create an instance of this class for the purpose of getting
+     * the class ID. It should never be used for any other purpose. And one day we won't need it
+     * anymore and can remove it.
+     *
+     * @deprecated This constructor is only for use by the ConstructableRegistry.
+     */
+    @Deprecated(forRemoval = true)
     public MerkleHederaState() {
         // ConstructableRegistry requires a "working" no-arg constructor
         aliases = null;
@@ -316,7 +327,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     public void handleConsensusRound(@NonNull final Round round, @NonNull final SwirldDualState swirldDualState) {
         throwIfImmutable();
         if (onHandleConsensusRound != null) {
-            onHandleConsensusRound.accept(round, swirldDualState);
+            onHandleConsensusRound.accept(round, swirldDualState, this);
         }
     }
 
@@ -324,9 +335,9 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      * {@inheritDoc}
      */
     @Override
-    public void preHandle(Event event) {
+    public void preHandle(@NonNull final Event event) {
         if (onPreHandle != null) {
-            onPreHandle.accept(event);
+            onPreHandle.accept(event, this);
         }
     }
 
@@ -334,7 +345,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      * {@inheritDoc}
      */
     @Override
-    public MerkleNode migrate(int ignored) {
+    public MerkleNode migrate(final int ignored) {
         // Always return this node, we never want to replace MerkleHederaState node in the tree
         return this;
     }
