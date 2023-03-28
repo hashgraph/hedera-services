@@ -26,7 +26,6 @@ import static com.hedera.test.factories.txns.ContractCreateFactory.DEFAULT_ADMIN
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.utils.KeyUtils.sanityRestored;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
@@ -53,7 +52,7 @@ class ContractCreateHandlerParityTest {
         subject.preHandle(context);
 
         assertThat(sanityRestored(context.getPayerKey())).isEqualTo(DEFAULT_PAYER_KT.asKey());
-        assertEquals(sanityRestored(context.getRequiredNonPayerKeys()), List.of(MISC_ACCOUNT_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys())).isEqualTo(List.of(MISC_ACCOUNT_KT.asKey()));
     }
 
     @Test
@@ -83,7 +82,7 @@ class ContractCreateHandlerParityTest {
         subject.preHandle(context);
 
         assertThat(sanityRestored(context.getPayerKey())).isEqualTo(DEFAULT_PAYER_KT.asKey());
-        assertEquals(sanityRestored(context.getRequiredNonPayerKeys()), List.of(DEFAULT_ADMIN_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys())).isEqualTo(List.of(DEFAULT_ADMIN_KT.asKey()));
     }
 
     private TransactionBody txnFrom(final TxnHandlingScenario scenario) {

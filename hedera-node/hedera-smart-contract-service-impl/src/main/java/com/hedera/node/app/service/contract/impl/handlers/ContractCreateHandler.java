@@ -58,7 +58,7 @@ public class ContractCreateHandler implements TransactionHandler {
         requireNonNull(context);
         final var op = context.getTxn().contractCreateInstanceOrThrow();
         final var adminKey = asHederaKey(op.adminKeyOrElse(Key.DEFAULT));
-        if (adminKey.isPresent() && !((JKey) adminKey.get()).hasContractID()) {
+        if (op.hasAdminKey() && adminKey.isPresent() && !((JKey) adminKey.get()).hasContractID()) {
             context.addToReqNonPayerKeys(adminKey.get());
         }
         if (op.hasAutoRenewAccountId()) {
