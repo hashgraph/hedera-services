@@ -682,8 +682,6 @@ public final class Hedera implements SwirldMain {
         final var selfId = platform.getSelfId().getId();
         if (daggerApp == null) {
             stateChildren = state.getStateChildrenProvider(platform);
-            // Today, the alias map has to be constructed by walking over all accounts.
-            // TODO Populate aliases from stateChildren based on the accounts
             final var nodeAddress = stateChildren.addressBook().getAddress(selfId);
             final var initialHash =
                     stateChildren.runningHashLeaf().getRunningHash().getHash();
