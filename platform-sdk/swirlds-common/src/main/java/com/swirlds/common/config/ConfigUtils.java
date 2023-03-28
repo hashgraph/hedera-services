@@ -94,10 +94,8 @@ public final class ConfigUtils {
             classGraph.whitelistPackages(packagePrefixes.toArray(new String[0]));
         }
 
-        if (!additionalClassLoaders.isEmpty()) {
-            for (final URLClassLoaderWithLookup classloader : additionalClassLoaders) {
-                classGraph.addClassLoader(classloader);
-            }
+        for (final URLClassLoaderWithLookup classloader : additionalClassLoaders) {
+            classGraph.addClassLoader(classloader);
         }
 
         try (final ScanResult result = classGraph.scan()) {
