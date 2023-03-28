@@ -545,17 +545,12 @@ public class Browser {
                 final SignedState loadedSignedState = getUnmodifiedSignedStateFromDisk(
                         mainClassName, swirldName, nodeId, appVersion, addressBook.copy(), emergencyRecoveryManager);
 
-                final StateConfig stateConfig =
-                        platformContext.getConfiguration().getConfigData(StateConfig.class);
+                final AddressBookConfig addressBookConfig =
+                        platformContext.getConfiguration().getConfigData(AddressBookConfig.class);
 
                 // Initialize the address book from the configuration and platform saved state.
                 final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
-                        appVersion,
-                        loadedSignedState,
-                        appMain::newState,
-                        addressBook.copy(),
-                        stateConfig.savedStateDirectory(),
-                        stateConfig.forceUseOfConfigAddressBook());
+                        appVersion, loadedSignedState, appMain::newState, addressBook.copy(), addressBookConfig);
                 // set here, then given to the state in run(). A copy of it is given to hashgraph.
                 final AddressBook initialAddressBook = addressBookInitializer.getInitialAddressBook();
 
