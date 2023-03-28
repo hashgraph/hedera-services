@@ -111,6 +111,7 @@ tasks.assemble {
 }
 
 val generatedSources = file("build/generated/sources/annotationProcessor/java/main")
+
 java.sourceSets["main"].java.srcDir(generatedSources)
 
 // Create the "run" task for running a Hedera consensus node

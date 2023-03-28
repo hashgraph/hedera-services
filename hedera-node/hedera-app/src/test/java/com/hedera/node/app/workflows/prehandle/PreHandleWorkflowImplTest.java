@@ -296,8 +296,6 @@ class PreHandleWorkflowImplTest extends AppTestBase {
         given(signaturePreparer.prepareSignature(any(), any(), any(), any())).willReturn(cryptoSig);
         given(state.createReadableStates(TokenService.NAME)).willReturn(readableStates);
         given(readableStates.get("ACCOUNTS")).willReturn(accountState);
-        given(accountState.get(any())).willReturn(payerAccount);
-        given(payerAccount.getAccountKey()).willReturn(payerKey);
 
         workflow = new PreHandleWorkflowImpl(dispatcher, localOnset, signaturePreparer, cryptography, RUN_INSTANTLY);
 

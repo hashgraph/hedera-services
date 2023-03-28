@@ -17,8 +17,8 @@
 package com.hedera.node.app.service.mono.state.codec;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
@@ -111,14 +111,12 @@ abstract class AbstractVirtualCodecTest<T> {
         final T instance;
         final var bais = new ByteArrayInputStream(serialized);
         final var in = new ReadableStreamingData(bais);
-        byte[] leftover;
         try {
             instance = subject.parse(in);
-            leftover = PbjConverter.asBytes(in.readBytes(Integer.MAX_VALUE));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
-        assertEquals(0, leftover.length, "No bytes should be left in the stream");
+        assertFalse(in.hasRemaining(), "No bytes should be left in the stream");
         return instance;
     }
 
