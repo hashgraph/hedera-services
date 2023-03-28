@@ -76,8 +76,8 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         final var adminKey = asHederaKey(op.adminKeyOrElse(Key.DEFAULT));
         adminKey.ifPresent(context::addToReqNonPayerKeys);
 
-        if (op.autoRenewAccount() != null) {
-            final var autoRenewAccount = op.autoRenewAccount();
+        if (op.hasAutoRenewAccount()) {
+            final var autoRenewAccount = op.autoRenewAccountOrThrow();
             context.addNonPayerKey(autoRenewAccount, ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
         }
     }
@@ -124,9 +124,9 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
                 impliedExpiry,
                 op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds(),
                 // Shard and realm will be ignored if num is NA
-                op.autoRenewAccount() != null ? op.autoRenewAccount().shardNum() : NA,
-                op.autoRenewAccount() != null ? op.autoRenewAccount().realmNum() : NA,
-                op.autoRenewAccount() != null ? op.autoRenewAccount().accountNumOrElse(NA) : NA);
+                op.hasAutoRenewAccount() ? op.autoRenewAccount().shardNum() : NA,
+                op.hasAutoRenewAccount() ? op.autoRenewAccount().realmNum() : NA,
+                op.hasAutoRenewAccount() ? op.autoRenewAccount().accountNumOrElse(NA) : NA);
 
         try {
             final var effectiveExpiryMeta =

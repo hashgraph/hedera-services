@@ -147,12 +147,13 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
 
         /* Check if the message submitted is empty */
         // Question do we need this check ?
-        if (op.message().length() == 0) {
+        final var msgLen = op.message().length();
+        if (msgLen == 0) {
             throw new HandleStatusException(INVALID_TOPIC_MESSAGE);
         }
 
         /* Check if the message submitted is greater than acceptable size */
-        if (op.message().length() > config.maxMessageSize()) {
+        if (msgLen > config.maxMessageSize()) {
             throw new HandleStatusException(MESSAGE_SIZE_TOO_LARGE);
         }
 
@@ -174,8 +175,8 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
      */
     private void validateChunkInfo(
             final TransactionID txnId, final AccountID payer, final ConsensusSubmitMessageTransactionBody op) {
-        if (op.chunkInfo() != null) {
-            var chunkInfo = op.chunkInfo();
+        if (op.hasChunkInfo()) {
+            var chunkInfo = op.chunkInfoOrThrow();
 
             /* Validate chunk number */
             if (!(1 <= chunkInfo.number() && chunkInfo.number() <= chunkInfo.total())) {
@@ -211,9 +212,10 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
     public Topic updateRunningHashAndSequenceNumber(
             @NonNull final TransactionBody txn, @NonNull final Topic topic, @Nullable Instant consensusNow)
             throws IOException {
+        final var submitMessage = txn.consensusSubmitMessageOrThrow();
         final var payer = txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT);
-        final var topicId = txn.consensusSubmitMessageOrThrow().topicIDOrElse(TopicID.DEFAULT);
-        final var message = asBytes(txn.consensusSubmitMessageOrThrow().message());
+        final var topicId = submitMessage.topicIDOrElse(TopicID.DEFAULT);
+        final var message = asBytes(submitMessage.message());
 
         // This line will be uncommented once there is PBJ fix to make copyBuilder() public
         final var topicBuilder = topic.copyBuilder();
