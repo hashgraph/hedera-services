@@ -208,14 +208,12 @@ public class StatsDemoMain implements SwirldMain {
     @Override
     public void init(final Platform platform, final NodeId id) {
 
-        long syncDelay;
         this.platform = platform;
         selfId = id.getId();
         // parse the config.txt parameters, and allow optional _ as in 1_000_000
         final String[] parameters = ((PlatformWithDeprecatedMethods) platform).getParameters();
         headless = (parameters[0].equals("1"));
         writePeriod = Integer.parseInt(parameters[1].replaceAll("_", ""));
-        syncDelay = Integer.parseInt(parameters[2].replaceAll("_", ""));
         bytesPerTrans = Integer.parseInt(parameters[3].replaceAll("_", ""));
         transPerEventMax = Integer.parseInt(parameters[4].replaceAll("_", ""));
         transPerSecToCreate = Integer.parseInt(parameters[5].replaceAll("_", ""));

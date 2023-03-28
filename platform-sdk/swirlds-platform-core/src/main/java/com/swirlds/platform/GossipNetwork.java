@@ -57,6 +57,9 @@ abstract class GossipNetwork implements Startable, LoadableFromSignedState {
     protected final NetworkTopology topology;
     protected final ConnectionTracker connectionTracker;
 
+    /**
+     * Start the gossip network.
+     */
     public GossipNetwork(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
@@ -145,5 +148,5 @@ abstract class GossipNetwork implements Startable, LoadableFromSignedState {
      * Get things that need to be cleared when the platform is stopped for a reconnect.
      * @return a list of all the objects that need to be cleared when the platform is stopped for a reconnect
      */
-    public abstract List<Pair<Clearable, String>> getClearables();
+    public abstract @NonNull List<Pair<Clearable, String>> getClearables();
 }

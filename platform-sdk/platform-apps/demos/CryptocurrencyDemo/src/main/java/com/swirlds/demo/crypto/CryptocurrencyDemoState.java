@@ -81,8 +81,6 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
      * change the order (and add new ones only to the end)
      */
     public static enum TransType {
-        slow,
-        fast,
         bid,
         ask // run slow/fast or broadcast a bid/ask
     }
@@ -228,11 +226,7 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
         if (transaction == null || transaction.getContents().length == 0) {
             return;
         }
-        if (transaction.getContents()[0] == TransType.slow.ordinal()) {
-            return;
-        } else if (transaction.getContents()[0] == TransType.fast.ordinal()) {
-            return;
-        } else if (!isConsensus || transaction.getContents().length < 3) {
+        if (!isConsensus || transaction.getContents().length < 3) {
             return; // ignore any bid/ask that doesn't have consensus yet
         }
         final int selfId = (int) id;

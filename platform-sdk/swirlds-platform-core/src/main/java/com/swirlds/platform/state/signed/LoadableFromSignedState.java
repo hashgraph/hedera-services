@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.state.signed;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 /**
  * A class that can be loaded from a signed state.
  */
@@ -27,5 +29,5 @@ public interface LoadableFromSignedState {
      * @param signedState
      * 		the signed state to load
      */
-    void loadFromSignedState(final SignedState signedState);
+    void loadFromSignedState(final @NonNull SignedState signedState);
 }

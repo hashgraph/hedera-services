@@ -410,7 +410,8 @@ public class HashgraphDemoMain implements SwirldMain {
         final BiFunction<Integer, String, Checkbox> cb = (n, s) -> new Checkbox(
                 s, null, parameters.length > n && parameters[n].trim().equals("1"));
 
-        // skip the first parameter
+        // Skip the first parameter.
+        // The first parameter used to be used to enable/disable slow sync, which is no longer supported.
         p++;
 
         freezeCheckbox = cb.apply(p++, "Freeze: don't change this window");

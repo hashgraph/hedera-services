@@ -158,7 +158,7 @@ public class SyncNetwork extends GossipNetwork {
     public void start() {
         final StaticConnectionManagers connectionManagers = startCommonNetwork();
 
-        SharedConnectionLocks sharedConnectionLocks = new SharedConnectionLocks(topology, connectionManagers);
+        final SharedConnectionLocks sharedConnectionLocks = new SharedConnectionLocks(topology, connectionManagers);
         final MultiProtocolResponder protocolHandlers = new MultiProtocolResponder(List.of(
                 ProtocolMapping.map(
                         UnidirectionalProtocols.SYNC.getInitialByte(),

@@ -38,8 +38,6 @@ public class PauseCheck implements Startable {
     /** last time stamp when pause check timer is active */
     private long pauseCheckTimeStamp;
 
-    public PauseCheck() {}
-
     /**
      * Start the pause check timer.
      */

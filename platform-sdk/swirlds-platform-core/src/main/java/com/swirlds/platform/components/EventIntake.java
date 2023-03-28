@@ -81,7 +81,7 @@ public class EventIntake {
             @NonNull final ShadowGraph shadowGraph) {
         this.selfId = throwArgNull(selfId, "selfId");
         this.eventLinker = throwArgNull(eventLinker, "eventLinker");
-        this.consensusSupplier = throwArgNull(consensusSupplier, "consensus");
+        this.consensusSupplier = throwArgNull(consensusSupplier, "consensusSupplier");
         this.consensusWrapper = new ConsensusWrapper(this.consensusSupplier);
         this.addressBook = throwArgNull(addressBook, "addressBook");
         this.dispatcher = throwArgNull(dispatcher, "dispatcher");

@@ -119,6 +119,9 @@ public class ChatterNetwork extends GossipNetwork implements Startable {
      */
     private final List<StoppableThread> chatterThreads = new LinkedList<>();
 
+    /**
+     * Construct a chatter network.
+     */
     public ChatterNetwork(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
@@ -169,7 +172,7 @@ public class ChatterNetwork extends GossipNetwork implements Startable {
         this.shadowGraph = throwArgNull(shadowGraph, "shadowGraph");
         this.reconnectController = throwArgNull(reconnectController, "reconnectController");
         this.reconnectThrottle = throwArgNull(reconnectThrottle, "reconnectThrottle");
-        this.consensusSupplier = throwArgNull(consensusSupplier, "consensus");
+        this.consensusSupplier = throwArgNull(consensusSupplier, "consensusSupplier");
         this.notificationEngine = throwArgNull(notificationEngine, "notificationEngine");
         this.stateManagementComponent = throwArgNull(stateManagementComponent, "stateManagementComponent");
         this.fallenBehindManager = throwArgNull(fallenBehindManager, "fallenBehindManager");
@@ -178,6 +181,11 @@ public class ChatterNetwork extends GossipNetwork implements Startable {
         this.intakeQueue = throwArgNull(intakeQueue, "intakeQueue");
         this.intakeCycle = throwArgNull(intakeCycle, "intakeCycle");
         this.eventLinker = throwArgNull(eventLinker, "eventLinker");
+
+        throwArgNull(time, "time");
+        throwArgNull(startUpEventFrozenManager, "startUpEventFrozenManager");
+        throwArgNull(freezeManager, "freezeManager");
+        throwArgNull(criticalQuorum, "criticalQuorum");
 
         chatterCore = new ChatterCore<>(
                 time,
@@ -363,6 +371,7 @@ public class ChatterNetwork extends GossipNetwork implements Startable {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public List<Pair<Clearable, String>> getClearables() {
         return List.of(
                 Pair.of(eventCreatorThread, "eventCreatorThread"),
@@ -375,7 +384,7 @@ public class ChatterNetwork extends GossipNetwork implements Startable {
      * {@inheritDoc}
      */
     @Override
-    public void loadFromSignedState(SignedState signedState) {
+    public void loadFromSignedState(final @NonNull SignedState signedState) {
         chatterEventMapper.loadFromSignedState(signedState);
         chatterCore.loadFromSignedState(signedState);
     }

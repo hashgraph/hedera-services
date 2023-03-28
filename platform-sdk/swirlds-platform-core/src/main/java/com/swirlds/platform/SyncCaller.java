@@ -16,6 +16,7 @@
 
 package com.swirlds.platform;
 
+import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.logging.LogMarker.SOCKET_EXCEPTIONS;
@@ -76,6 +77,14 @@ class SyncCaller implements Runnable {
      * @param selfId       the ID number for self /** ID number for this caller thread (0 is the first created by this
      *                     platform, 1 next, etc)
      * @param callerNumber 0 for the first caller thread created by this platform, 1 for the next, etc
+     * @param reconnectHelper assists with reconnects
+     * @param signedStateValidator validates states after a reconnect
+     * @param platformMetrics various platform metrics
+     * @param shadowGraphSynchronizer used to perform sync gossip
+     * @param simultaneousSyncThrottle used to prevent too many syncs from happening at once
+     * @param syncManager used to manage syncs
+     * @param sharedConnectionLocks used to manage connections
+     * @param eventTaskCreator used to create events
      */
     public SyncCaller(
             @NonNull final SwirldsPlatform platform,
@@ -90,18 +99,18 @@ class SyncCaller implements Runnable {
             @NonNull final SyncManagerImpl syncManager,
             @NonNull final SharedConnectionLocks sharedConnectionLocks,
             @NonNull final EventTaskCreator eventTaskCreator) {
-        this.platform = platform;
-        this.addressBook = addressBook;
-        this.selfId = selfId;
+        this.platform = throwArgNull(platform, "platform");
+        this.addressBook = throwArgNull(addressBook, "addressBook");
+        this.selfId = throwArgNull(selfId, "selfId");
         this.callerNumber = callerNumber;
-        this.reconnectHelper = reconnectHelper;
-        this.signedStateValidator = signedStateValidator;
-        this.platformMetrics = platformMetrics;
-        this.shadowGraphSynchronizer = shadowGraphSynchronizer;
-        this.simultaneousSyncThrottle = simultaneousSyncThrottle;
-        this.syncManager = syncManager;
-        this.sharedConnectionLocks = sharedConnectionLocks;
-        this.eventTaskCreator = eventTaskCreator;
+        this.reconnectHelper = throwArgNull(reconnectHelper, "reconnectHelper");
+        this.signedStateValidator = throwArgNull(signedStateValidator, "signedStateValidator");
+        this.platformMetrics = throwArgNull(platformMetrics, "platformMetrics");
+        this.shadowGraphSynchronizer = throwArgNull(shadowGraphSynchronizer, "shadowGraphSynchronizer");
+        this.simultaneousSyncThrottle = throwArgNull(simultaneousSyncThrottle, "simultaneousSyncThrottle");
+        this.syncManager = throwArgNull(syncManager, "syncManager");
+        this.sharedConnectionLocks = throwArgNull(sharedConnectionLocks, "sharedConnectionLocks");
+        this.eventTaskCreator = throwArgNull(eventTaskCreator, "eventTaskCreator");
     }
 
     /**

@@ -16,6 +16,7 @@
 
 package com.swirlds.platform;
 
+import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.common.metrics.FloatFormats.*;
 import static com.swirlds.common.metrics.Metrics.INFO_CATEGORY;
 import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
@@ -180,16 +181,20 @@ public class PlatformMetrics {
             @NonNull final EventStreamManager<EventImpl> eventStreamManager,
             @NonNull final StateManagementComponent stateManagementComponent) {
 
-        this.selfId = selfId;
-        this.eventMapper = eventMapper;
-        this.swirldStateManager = swirldStateManager;
-        this.criticalQuorum = criticalQuorum;
-        this.addressBook = addressBook;
-        this.preConsensusEventHandler = preConsensusEventHandler;
-        this.consensusRoundHandler = consensusRoundHandler;
-        this.simultaneousSyncThrottle = simultaneousSyncThrottle;
-        this.eventStreamManager = eventStreamManager;
-        this.stateManagementComponent = stateManagementComponent;
+        this.selfId = throwArgNull(selfId, "selfId");
+        this.eventMapper = throwArgNull(eventMapper, "eventMapper");
+        this.swirldStateManager = throwArgNull(swirldStateManager, "swirldStateManager");
+        this.criticalQuorum = throwArgNull(criticalQuorum, "criticalQuorum");
+        this.addressBook = throwArgNull(addressBook, "addressBook");
+        this.preConsensusEventHandler = throwArgNull(preConsensusEventHandler, "preConsensusEventHandler");
+        this.consensusRoundHandler = throwArgNull(consensusRoundHandler, "consensusRoundHandler");
+        this.simultaneousSyncThrottle = throwArgNull(simultaneousSyncThrottle, "simultaneousSyncThrottle");
+        this.eventStreamManager = throwArgNull(eventStreamManager, "eventStreamManager");
+        this.stateManagementComponent = throwArgNull(stateManagementComponent, "stateManagementComponent");
+
+        throwArgNull(metrics, "metrics");
+        throwArgNull(freezeManager, "freezeManager");
+        throwArgNull(startUpEventFrozenManager, "startUpEventFrozenManager");
 
         interruptedCallSyncsPerSecond = metrics.getOrCreate(INTERRUPTED_CALL_SYNCS_PER_SECOND_CONFIG);
         interruptedRecSyncsPerSecond = metrics.getOrCreate(INTERRUPTED_REC_SYNCS_PER_SECOND_CONFIG);
