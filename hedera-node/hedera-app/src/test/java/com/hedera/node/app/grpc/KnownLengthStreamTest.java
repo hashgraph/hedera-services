@@ -34,7 +34,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import utils.TestUtils;
 
-class KnownLengthStreamTest {
+final class KnownLengthStreamTest {
     @Test
     @DisplayName("KnownLengthStream cannot be created with a null buffer")
     void nullBufferThrows() {

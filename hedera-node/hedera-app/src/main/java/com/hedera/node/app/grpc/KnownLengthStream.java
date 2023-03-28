@@ -21,6 +21,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.KnownLength;
 import java.io.InputStream;
 import java.util.Objects;
+import static java.util.Objects.requireNonNull;
 
 /**
  * An {@link InputStream} that implements {@link KnownLength} which allows the gRPC server to do
@@ -31,7 +32,7 @@ final class KnownLengthStream extends InputStream implements KnownLength {
     private final BufferedData buf;
 
     public KnownLengthStream(final BufferedData buf) {
-        this.buf = Objects.requireNonNull(buf);
+        this.buf = requireNonNull(buf);
     }
 
     @Override

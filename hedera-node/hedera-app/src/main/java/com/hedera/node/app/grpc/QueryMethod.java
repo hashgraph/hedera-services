@@ -25,7 +25,7 @@ import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Handles gRPC duties for processing {@link Query} gRPC calls. A single instance of this class is
@@ -36,6 +36,7 @@ import java.util.Objects;
  */
 /*@ThreadSafe*/
 final class QueryMethod extends MethodBase {
+    // Constants for metric names and descriptions
     private static final String COUNTER_ANSWERED_NAME_TPL = "%sSub";
     private static final String COUNTER_ANSWERED_DESC_TPL = "number of %s answered";
     private static final String SPEEDOMETER_ANSWERED_NAME_TPL = "%sSub/sec";
@@ -63,13 +64,13 @@ final class QueryMethod extends MethodBase {
             @NonNull final QueryWorkflow workflow,
             @NonNull final Metrics metrics) {
         super(serviceName, methodName, metrics);
-        this.workflow = Objects.requireNonNull(workflow);
-
+        this.workflow = requireNonNull(workflow);
         this.queriesAnsweredCounter = counter(metrics, COUNTER_ANSWERED_NAME_TPL, COUNTER_ANSWERED_DESC_TPL);
         this.queriesAnsweredSpeedometer =
                 speedometer(metrics, SPEEDOMETER_ANSWERED_NAME_TPL, SPEEDOMETER_ANSWERED_DESC_TPL);
     }
 
+    /** {@inheritDoc} */
     @Override
     protected void handle(
             @NonNull final SessionContext session,

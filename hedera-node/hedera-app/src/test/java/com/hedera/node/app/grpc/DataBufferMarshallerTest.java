@@ -17,7 +17,8 @@
 package com.hedera.node.app.grpc;
 
 import static org.junit.jupiter.api.Assertions.*;
-
+import static org.assertj.core.api.Assertions.assertThat;
+import com.hedera.node.app.Hedera;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -33,7 +34,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 import utils.TestUtils;
 
-class DataBufferMarshallerTest {
+final class DataBufferMarshallerTest {
     private final DataBufferMarshaller marshaller = new DataBufferMarshaller();
 
     @Test
@@ -49,7 +50,11 @@ class DataBufferMarshallerTest {
     }
 
     private static Stream<Arguments> provideBuffers() {
-        return Stream.of(Arguments.of(0, 0), Arguments.of(100, 0), Arguments.of(100, 80), Arguments.of(100, 100));
+        return Stream.of(
+                Arguments.of(0, 0),
+                Arguments.of(100, 0),
+                Arguments.of(100, 80),
+                Arguments.of(100, 100));
     }
 
     @ParameterizedTest(name = "A buffer with capacity {0} and position {1}")
@@ -106,7 +111,8 @@ class DataBufferMarshallerTest {
     void parseStreamThatIsTooBig(int numBytes) {
         final var arr = TestUtils.randomBytes(numBytes);
         final var stream = new ByteArrayInputStream(arr);
-        assertThrows(RuntimeException.class, () -> marshaller.parse(stream));
+        final var buff = marshaller.parse(stream);
+        assertThat(buff.length()).isEqualTo(Hedera.MAX_SIGNED_TXN_SIZE + 1);
     }
 
     @Test

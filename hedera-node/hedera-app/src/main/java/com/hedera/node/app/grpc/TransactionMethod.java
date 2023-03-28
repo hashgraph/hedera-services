@@ -51,6 +51,7 @@ final class TransactionMethod extends MethodBase {
         this.workflow = Objects.requireNonNull(workflow);
     }
 
+    /** {@inheritDoc} */
     @Override
     protected void handle(
             @NonNull final SessionContext session,

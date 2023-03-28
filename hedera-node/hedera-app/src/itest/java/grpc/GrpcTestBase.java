@@ -178,9 +178,16 @@ abstract class GrpcTestBase extends TestBase {
 
     @AfterEach
     void tearDown() {
-        grpcServer.shutdown();
+        final var shutdownLatch = new CountDownLatch(1);
+        grpcServer.shutdown().thenRun(shutdownLatch::countDown);
+        try {
+            shutdownLatch.await();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
         clients.clear();
         services.clear();
+
     }
 
     /**

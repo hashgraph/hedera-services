@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.grpc;
 
+import com.hedera.node.app.Hedera;
 import com.hedera.node.app.SessionContext;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.Counter;
@@ -26,7 +26,7 @@ import com.swirlds.common.metrics.SpeedometerMetric;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.stub.ServerCalls;
 import io.grpc.stub.StreamObserver;
-import java.util.Objects;
+import static java.util.Objects.requireNonNull;
 
 /**
  * An instance of either {@link TransactionMethod} or {@link QueryMethod} is created per transaction
@@ -34,18 +34,18 @@ import java.util.Objects;
  */
 abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData, BufferedData> {
     // To be set by configuration. See Issue #4294
-    private static final int MAX_MESSAGE_SIZE = 1024 * 6; // 6k
+    private static final int MAX_MESSAGE_SIZE = Hedera.MAX_SIGNED_TXN_SIZE;
 
+    // Constants for metric names and descriptions
     private static final String COUNTER_HANDLED_NAME_TPL = "%sHdl";
-    private static final String COUNTER_RECEIVED_NAME_TPL = "%sRcv";
-    private static final String COUNTER_FAILED_NAME_TPL = "%sFail";
-    private static final String SPEEDOMETER_HANDLED_NAME_TPL = "%sHdl/sec";
-    private static final String SPEEDOMETER_RECEIVED_NAME_TPL = "%sRcv/sec";
-
     private static final String COUNTER_HANDLED_DESC_TPL = "number of %s handled";
+    private static final String COUNTER_RECEIVED_NAME_TPL = "%sRcv";
     private static final String COUNTER_RECEIVED_DESC_TPL = "number of %s received";
+    private static final String COUNTER_FAILED_NAME_TPL = "%sFail";
     private static final String COUNTER_FAILED_DESC_TPL = "number of %s failed";
+    private static final String SPEEDOMETER_HANDLED_NAME_TPL = "%sHdl/sec";
     private static final String SPEEDOMETER_HANDLED_DESC_TPL = "number of %s handled per second";
+    private static final String SPEEDOMETER_RECEIVED_NAME_TPL = "%sRcv/sec";
     private static final String SPEEDOMETER_RECEIVED_DESC_TPL = "number of %s received per second";
 
     /**
@@ -57,7 +57,7 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData, Buffe
             ThreadLocal.withInitial(SessionContext::new);
 
     /**
-     * Per-thread shared ByteBuffer for responses. We store these in a thread local, because we do
+     * Per-thread shared {@link BufferedData} for responses. We store these in a thread local, because we do
      * not have control over the thread pool used by the underlying gRPC server.
      */
     private static final ThreadLocal<BufferedData> BUFFER_THREAD_LOCAL =
@@ -92,8 +92,8 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData, Buffe
      */
     MethodBase(@NonNull final String serviceName, @NonNull final String methodName, @NonNull final Metrics metrics) {
 
-        this.serviceName = Objects.requireNonNull(serviceName);
-        this.methodName = Objects.requireNonNull(methodName);
+        this.serviceName = requireNonNull(serviceName);
+        this.methodName = requireNonNull(methodName);
 
         this.callsHandledCounter = counter(metrics, COUNTER_HANDLED_NAME_TPL, COUNTER_HANDLED_DESC_TPL);
         this.callsReceivedCounter = counter(metrics, COUNTER_RECEIVED_NAME_TPL, COUNTER_RECEIVED_DESC_TPL);
@@ -111,14 +111,22 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData, Buffe
             callsReceivedCounter.increment();
             callsReceivedSpeedometer.cycle();
 
+            // Fail-fast if the request is too large (Note that the request buffer is sized to allow exactly
+            // 1 more byte than MAX_MESSAGE_SIZE, so we can detect this case).
+            if (requestBuffer.length() > MAX_MESSAGE_SIZE) {
+                throw new RuntimeException("More than " + MAX_MESSAGE_SIZE + " received");
+            }
+
             // Prepare the response buffer
             final var session = SESSION_CONTEXT_THREAD_LOCAL.get();
             final var responseBuffer = BUFFER_THREAD_LOCAL.get();
             responseBuffer.reset();
 
+            // Convert the request BufferedData to a Bytes instance without copying the bytes
+            final var requestBytes = requestBuffer.getBytes(0, requestBuffer.length());
+
             // Call the workflow
-            final var requestBytes = PbjConverter.asBytes(requestBuffer);
-            handle(session, Bytes.wrap(requestBytes), responseBuffer);
+            handle(session, requestBytes, responseBuffer);
 
             // Respond to the client
             responseBuffer.flip();
@@ -136,7 +144,7 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData, Buffe
     }
 
     /**
-     * Called to handle the method invocation. Implementations should <b>only</b> throw an exception
+     * Called to handle the method invocation. Implementations should <b>only</b> throw a {@link RuntimeException}
      * if a gRPC <b>ERROR</b> is to be returned.
      *
      * @param session The {@link SessionContext} for this call

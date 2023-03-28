@@ -29,7 +29,14 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import utils.TestUtils;
 
-class GrpcServiceBuilderTest {
+/**
+ * Tests for the {@link GrpcServiceBuilder}. Since the gRPC system deals in bytes, these tests use simple strings
+ * as the input and output values, doing simple conversion to and from byte arrays.
+ */
+final class GrpcServiceBuilderTest {
+    private static final String SERVICE_NAME = "TestService";
+
+    // These are simple no-op workflows
     private final QueryWorkflow queryWorkflow = (session, requestBuffer, responseBuffer) -> {};
     private final IngestWorkflow ingestWorkflow = (session, requestBuffer, responseBuffer) -> {};
 
@@ -38,21 +45,21 @@ class GrpcServiceBuilderTest {
 
     @BeforeEach
     void setUp() {
-        builder = new GrpcServiceBuilder("TestService", ingestWorkflow, queryWorkflow);
+        builder = new GrpcServiceBuilder(SERVICE_NAME, ingestWorkflow, queryWorkflow);
     }
 
     @Test
     @DisplayName("The ingestWorkflow cannot be null")
     void ingestWorkflowIsNull() {
         //noinspection ConstantConditions
-        assertThrows(NullPointerException.class, () -> new GrpcServiceBuilder("TestService", null, queryWorkflow));
+        assertThrows(NullPointerException.class, () -> new GrpcServiceBuilder(SERVICE_NAME, null, queryWorkflow));
     }
 
     @Test
     @DisplayName("The queryWorkflow cannot be null")
     void queryWorkflowIsNull() {
         //noinspection ConstantConditions
-        assertThrows(NullPointerException.class, () -> new GrpcServiceBuilder("TestService", ingestWorkflow, null));
+        assertThrows(NullPointerException.class, () -> new GrpcServiceBuilder(SERVICE_NAME, ingestWorkflow, null));
     }
 
     @Test
@@ -116,7 +123,6 @@ class GrpcServiceBuilderTest {
     @DisplayName("The built ServiceDescriptor includes a method with the name of the defined" + " transaction")
     void singleTransaction() {
         final var sd = builder.transaction("txA").build(metrics);
-
         assertNotNull(sd.method("txA"));
     }
 
@@ -143,5 +149,25 @@ class GrpcServiceBuilderTest {
         assertNotNull(sd.method("qA"));
         assertNotNull(sd.method("qB"));
         assertNotNull(sd.method("qC"));
+    }
+
+    @Test
+    @DisplayName("Calling `transaction` with the same name twice is idempotent")
+    void duplicateTransaction() {
+        final var sd = builder.transaction("txA")
+                .transaction("txA")
+                .build(metrics);
+
+        assertNotNull(sd.method("txA"));
+    }
+
+    @Test
+    @DisplayName("Calling `query` with the same name twice is idempotent")
+    void duplicateQuery() {
+        final var sd = builder.query("qA")
+                .query("qA")
+                .build(metrics);
+
+        assertNotNull(sd.method("qA"));
     }
 }
