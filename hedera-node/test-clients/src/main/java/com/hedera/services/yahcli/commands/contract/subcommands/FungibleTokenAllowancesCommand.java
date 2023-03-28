@@ -61,7 +61,7 @@ public class FungibleTokenAllowancesCommand implements Callable<Integer> {
         public static Type getIsSmartContract(final boolean isSmartContract) {
             return isSmartContract ? CONTRACT : EOA;
         }
-    };
+    }
 
     enum Alive {
         YES,
@@ -70,7 +70,7 @@ public class FungibleTokenAllowancesCommand implements Callable<Integer> {
         public static Alive getIsDeleted(final boolean isDeleted) {
             return isDeleted ? NO : YES;
         }
-    };
+    }
 
     record AnAccount(
             EntityNum accountEntityNum,

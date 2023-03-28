@@ -20,6 +20,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
 import java.util.HexFormat;
 import java.util.regex.Pattern;
+import org.jetbrains.annotations.NotNull;
 import picocli.CommandLine.ITypeConverter;
 import picocli.CommandLine.TypeConversionException;
 
@@ -39,7 +40,7 @@ public class HexToBytesConverter implements ITypeConverter<HexToBytesConverter.B
     public static class Bytes {
         public final @NonNull byte[] contents;
 
-        public Bytes(@NonNull final byte[] b) {
+        public Bytes(@NotNull final byte[] b) {
             if (null == b) throw new TypeConversionException("-b bytecode missing an array value (somehow)");
             contents = b;
         }

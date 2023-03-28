@@ -178,6 +178,8 @@ public class Assembly {
                 case RECOGNIZE_CODE_SEQUENCES -> Variant.RECOGNIZE_CODE_SEQUENCES.setOptionOn();
 
                 case FETCH_SELECTOR_NAMES -> Variant.FETCH_SELECTOR_NAMES.setOptionOn();
+
+                case WITH_CANNED_SIGNATURES -> Variant.WITH_CANNED_SIGNATURES.setOptionOn();
             }
         }
 

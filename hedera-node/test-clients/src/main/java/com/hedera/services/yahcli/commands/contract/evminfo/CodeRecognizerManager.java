@@ -25,8 +25,8 @@ import java.util.List;
 /** Handles all (concurrently running) code recognizers during the disassembly. */
 public class CodeRecognizerManager {
 
-    public List<CodeRecognizer> recognizers = new ArrayList<>(10);
-    public static final List<Class<? extends CodeRecognizer>> recognizerClasses;
+    protected final List<CodeRecognizer> recognizers = new ArrayList<>(10);
+    protected static final List<Class<? extends CodeRecognizer>> recognizerClasses;
 
     public class Distributor extends CodeRecognizer {
 
@@ -34,18 +34,22 @@ public class CodeRecognizerManager {
             super(assembly);
         }
 
+        @Override
         public void begin() {
             for (final var recognizer : recognizers) recognizer.begin();
         }
 
+        @Override
         public void acceptCodeLine(@NonNull final CodeLine code) {
             for (final var recognizer : recognizers) recognizer.acceptCodeLine(code);
         }
 
+        @Override
         public void acceptDataLine(@NonNull final DataPseudoOpLine data) {
             for (final var recognizer : recognizers) recognizer.acceptDataLine(data);
         }
 
+        @Override
         @NonNull
         public CodeRecognizer.Results end() {
             var result = new CodeRecognizer.Results();
@@ -56,7 +60,9 @@ public class CodeRecognizerManager {
             return result;
         }
 
-        protected void reset() {}
+        protected void reset() {
+            /* subclass might want to override this with actual work to be done */
+        }
     }
 
     public final @NonNull Distributor distributor;

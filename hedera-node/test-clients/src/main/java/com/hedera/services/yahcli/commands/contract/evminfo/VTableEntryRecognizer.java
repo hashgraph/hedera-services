@@ -23,6 +23,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -121,9 +122,6 @@ public class VTableEntryRecognizer extends CodeRecognizer {
 
         @NonNull
         Optional<State> next() {
-            if (null == nextState)
-                throw new IllegalStateException(
-                        "attempting to go to default next state where it must be computed, %s".formatted(this));
             return Optional.of(State.valueOf(nextState));
         }
 
@@ -142,9 +140,10 @@ public class VTableEntryRecognizer extends CodeRecognizer {
         record Next(@NonNull String next) {}
 
         State(Next nextState, @NonNull String... expectingMnemonic) {
+            Objects.requireNonNull(nextState);
             if (expectingMnemonic.length == 0)
                 throw new IllegalArgumentException("State must have at least one mnemonic expected");
-            this.nextState = null != nextState ? nextState.next : null;
+            this.nextState = nextState.next();
             this.expectingMnemonic = Arrays.asList(expectingMnemonic);
         }
 
@@ -168,13 +167,12 @@ public class VTableEntryRecognizer extends CodeRecognizer {
         public void transition(@NonNull VTableEntryRecognizer recognizer, @NonNull CodeLine code) {
 
             // Tracing:
-            Optional<State> nextState;
-            if (expectingMnemonic.contains(code.mnemonic())
-                    && (nextState = acceptCodeLine(recognizer, code)).isPresent()) {
+            Optional<State> next;
+            if (expectingMnemonic.contains(code.mnemonic()) && (next = acceptCodeLine(recognizer, code)).isPresent()) {
 
                 recognizer.trace("@%s: found %s, expected set %s, moving to %s"
-                        .formatted(this, code.mnemonic(), expectingMnemonic, nextState));
-                recognizer.advance(nextState.get());
+                        .formatted(this, code.mnemonic(), expectingMnemonic, next));
+                recognizer.advance(next.get());
             } else {
                 recognizer.trace("@%s: found %s, did not find expected set %s, resetting"
                         .formatted(this, code.mnemonic(), expectingMnemonic));
@@ -226,7 +224,7 @@ public class VTableEntryRecognizer extends CodeRecognizer {
         NONE,
         INTERNAL,
         LEAF
-    };
+    }
 
     Kind nodeKind;
 
@@ -260,10 +258,10 @@ public class VTableEntryRecognizer extends CodeRecognizer {
     List<MacroLine> macros = new ArrayList<>(100);
 
     @NonNull
-    List<String> trace = new ArrayList<>(100);
+    List<String> traceLines = new ArrayList<>(100);
 
     void trace(@NonNull String t) {
-        this.trace.add(t);
+        traceLines.add(t);
     }
 
     void gotSelectorNodeMatch() {
@@ -358,6 +356,6 @@ public class VTableEntryRecognizer extends CodeRecognizer {
         return new Results()
                 .withReplacements(replacements)
                 .withProperty(METHODS_PROPERTY, selectors)
-                .withProperty(METHODS_TRACE, trace);
+                .withProperty(METHODS_TRACE, traceLines);
     }
 }

@@ -113,7 +113,7 @@ public class DecompileContractCommand implements Callable<Integer> {
         RAW_DISASSEMBLY,
         SELECTORS,
         TRACE
-    };
+    }
 
     @Option(
             names = {"-f", "--flag"},

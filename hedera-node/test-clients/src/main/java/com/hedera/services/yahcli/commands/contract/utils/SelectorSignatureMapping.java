@@ -47,7 +47,6 @@ import org.jetbrains.annotations.NotNull;
  * of string data.  We don't want to have a standard Java map holding 1M boxed 4-byte keys and 1M separate strings.
  * Hence this data structure.
  *
- *
  * File has one line per known selector, each line has the format `xxxxxxxx selector(argtype,argtype,...)`, where the
  * selector is 8 characters long: the hexadecimal representation of the selector.  The lines are not sorted in any
  * particular order.
@@ -87,8 +86,6 @@ public class SelectorSignatureMapping {
     protected int[] selectors = null;
     protected int[] signatureLocator = null;
     protected List<StringBuilder> signatures;
-
-    public SelectorSignatureMapping() {}
 
     /** Returns either a valid selector->signature mapping (in first element of pair) _or_ a list of
      * parsing errors (second element of pair).  (Of course it can also throw `IOException` if anything
@@ -162,9 +159,7 @@ public class SelectorSignatureMapping {
         // Second pass: fill in the signatures
         if (parseErrors.isEmpty())
             processSelSigBytes(
-                    (lines, errors) -> {
-                        errors.addAll(mapping.addSignatures(lines));
-                    },
+                    (lines, errors) -> errors.addAll(mapping.addSignatures(lines)),
                     selectorsSignatureContentsCompressed,
                     parseErrors);
 

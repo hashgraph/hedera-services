@@ -163,7 +163,7 @@ public class SignedStateHolder {
     public enum DumpOperation {
         SUMMARIZE,
         CONTENTS
-    };
+    }
 
     @NonNull
     public static String dumpContractStorage(@NonNull DumpOperation operation, @NonNull final Path inputFile)
