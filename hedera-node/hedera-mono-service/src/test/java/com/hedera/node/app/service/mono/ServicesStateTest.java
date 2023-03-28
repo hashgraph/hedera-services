@@ -53,7 +53,6 @@ import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeStartupHelp
 import com.hedera.node.app.service.mono.sigs.EventExpansion;
 import com.hedera.node.app.service.mono.state.DualStateAccessor;
 import com.hedera.node.app.service.mono.state.forensics.HashLogger;
-import com.hedera.node.app.service.mono.state.initialization.BlocklistAccountCreator;
 import com.hedera.node.app.service.mono.state.initialization.SystemAccountsCreator;
 import com.hedera.node.app.service.mono.state.initialization.SystemFilesManager;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
@@ -208,9 +207,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
     @Mock
     private SystemFilesManager systemFilesManager;
-
-    @Mock
-    private BlocklistAccountCreator blocklistAccountCreator;
 
     @LoggingTarget
     private LogCaptor logCaptor;

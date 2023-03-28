@@ -23,6 +23,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_SYSTEM_ENTI
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
+import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.exceptions.NegativeAccountBalanceException;
@@ -54,6 +55,7 @@ import org.bouncycastle.util.encoders.Hex;
 @Singleton
 public class BlocklistAccountCreator {
     public static final String BLOCKLIST_ACCOUNT_MEMO = "Account is blocked";
+
     private static final int ZERO_BALANCE = 0;
     private final Supplier<HederaAccount> accountSupplier;
     private final EntityIdSource ids;
@@ -63,6 +65,7 @@ public class BlocklistAccountCreator {
     private final AliasManager aliasManager;
     private JKey genesisKey;
     private final List<HederaAccount> blockedAccountsCreated = new ArrayList<>();
+    private AccountNumbers accountNumbers;
 
     @Inject
     public BlocklistAccountCreator(
@@ -71,13 +74,15 @@ public class BlocklistAccountCreator {
             final BackingStore<AccountID, HederaAccount> accounts,
             final Supplier<JEd25519Key> genesisKeySource,
             final @CompositeProps PropertySource properties,
-            final AliasManager aliasManager) {
+            final AliasManager aliasManager,
+            AccountNumbers accountNumbers) {
         this.accountSupplier = accountSupplier;
         this.ids = ids;
         this.accounts = accounts;
         this.genesisKeySource = genesisKeySource;
         this.properties = properties;
         this.aliasManager = aliasManager;
+        this.accountNumbers = accountNumbers;
     }
 
     public void ensureBlockedAccounts() {
@@ -89,13 +94,13 @@ public class BlocklistAccountCreator {
                 .filter(evmAddress -> aliasManager.lookupIdBy(evmAddress).equals(MISSING_NUM))
                 .collect(Collectors.toSet());
 
-        for (var evmAddress : blockedEVMAddresses) {
-            final var genesisAccountId = AccountID.newBuilder()
-                    .setRealmNum(0)
-                    .setShardNum(0)
-                    .setAccountNum(2)
-                    .build();
+        final var genesisAccountId = AccountID.newBuilder()
+                .setRealmNum(0)
+                .setShardNum(0)
+                .setAccountNum(accountNumbers.treasury())
+                .build();
 
+        for (var evmAddress : blockedEVMAddresses) {
             final var newId = ids.newAccountId(genesisAccountId);
             if (accounts.contains(newId)) {
                 continue;
