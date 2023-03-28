@@ -59,8 +59,6 @@ public class AddressBookInitializer {
     public static final String STATE_ADDRESS_BOOK_USED = "The State Saved Address Book Was Used.";
     /** The text indicating the state address book was null in the usedAddressBook file. */
     public static final String STATE_ADDRESS_BOOK_NULL = "The State Saved Address Book Was NULL.";
-    /** The name of the address book directory to write address books to. */
-    private static final String ADDRESS_BOOK_DIRECTORY_NAME = "address_book";
     /** The file name prefix to use when creating address book files. */
     private static final String ADDRESS_BOOK_FILE_PREFIX = "usedAddressBook";
     /** The format of date and time to use when creating address book files. */
