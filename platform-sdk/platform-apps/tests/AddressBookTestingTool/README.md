@@ -40,7 +40,7 @@ private int stakingProfile = 1;
 #### Instructions
 1. Delete `sdk/data/saved` directory if it exists
 2. Ensure settings.txt has `state.saveStatePeriod,     0`
-3. Add to settings.txt has the value `state.forceUseOfConfigAddressBook, true`
+3. Add to settings.txt the value `state.forceUseOfConfigAddressBook, true`
 4. Run the app for a short time.
 
 #### Validation
