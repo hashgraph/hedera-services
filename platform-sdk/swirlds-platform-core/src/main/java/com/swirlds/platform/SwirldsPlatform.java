@@ -172,9 +172,9 @@ import com.swirlds.platform.network.unidirectional.MultiProtocolResponder;
 import com.swirlds.platform.network.unidirectional.ProtocolMapping;
 import com.swirlds.platform.network.unidirectional.SharedConnectionLocks;
 import com.swirlds.platform.network.unidirectional.UnidirectionalProtocols;
-import com.swirlds.platform.observers.AboutToAddEventObserver;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.observers.EventObserverDispatcher;
+import com.swirlds.platform.observers.PreConsensusEventObserver;
 import com.swirlds.platform.reconnect.DefaultSignedStateValidator;
 import com.swirlds.platform.reconnect.FallenBehindManagerImpl;
 import com.swirlds.platform.reconnect.ReconnectController;
@@ -1022,7 +1022,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 addedEventMetrics,
                 criticalQuorum,
                 eventIntakeMetrics,
-                (AboutToAddEventObserver) event -> {
+                (PreConsensusEventObserver) event -> {
                     sequencer.assignStreamSequenceNumber(event);
                     abortAndLogIfInterrupted(
                             preConsensusEventWriter::writeEvent,

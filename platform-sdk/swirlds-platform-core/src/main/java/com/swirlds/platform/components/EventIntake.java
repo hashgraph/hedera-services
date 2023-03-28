@@ -123,8 +123,6 @@ public class EventIntake {
             return;
         }
 
-        dispatcher.aboutToAddEvent(event);
-
         stats.doneValidation();
         logger.debug(SYNC.getMarker(), "{} sees {}", selfId, event);
         dispatcher.preConsensusEvent(event);
