@@ -79,7 +79,8 @@ public final class FileServiceImpl implements FileService {
                 new FileUpdateHandler());
     }
 
-    public FileServiceImpl(@NonNull final FileAppendHandler fileAppendHandler,
+    public FileServiceImpl(
+            @NonNull final FileAppendHandler fileAppendHandler,
             @NonNull final FileCreateHandler fileCreateHandler,
             @NonNull final FileDeleteHandler fileDeleteHandler,
             @NonNull final FileGetContentsHandler fileGetContentsHandler,

@@ -113,7 +113,7 @@ public final class Hedera {
     }
 
     public static Consumer<MerkleHederaState> registerServiceSchemasForMigration(final SemanticVersion currentVersion) {
-        //TODO: How can we get access to managed beans / dagger at this point?
+        // TODO: How can we get access to managed beans / dagger at this point?
         final List<ServiceRegistry> serviceRegistries = List.of(
                 ServiceRegistry.registryFor(new ConsensusServiceImpl()),
                 ServiceRegistry.registryFor(new ContractServiceImpl()),
