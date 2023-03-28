@@ -118,6 +118,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import javax.swing.JFrame;
 import javax.swing.UIManager;
@@ -181,6 +182,14 @@ public class Browser {
         final ConfigSource configPropertiesConfigSource = new ConfigPropertiesSource(configurationProperties);
         final ConfigSource configPropertiesAliasConfigSource = new AliasConfigSource(configPropertiesConfigSource);
 
+        // Load config.txt file, parse application jar file name, main class name, address book, and parameters
+        final ApplicationDefinition appDefinition =
+                ApplicationDefinitionLoader.load(configurationProperties, localNodesToStart);
+
+        // Load all SwirldMain instances for locally run nodes.
+        final Map<Long, SwirldMain> appMains = loadSwirldMains(appDefinition, localNodesToStart);
+
+        // Load Configuration Definitions
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
                 .withSource(settingsAliasConfigSource)
                 .withSource(configPropertiesAliasConfigSource)
@@ -202,38 +211,12 @@ public class Browser {
                 .withConfigDataType(OSHealthCheckConfig.class)
                 .withConfigDataType(WiringConfig.class);
 
-        // The following variables are not final while being initialized.
-        ApplicationDefinition appDefinitionInit = null;
-        Map<Long, SwirldMain> appMainsInit = null;
-        Configuration config = null;
-        Exception exception = null;
-        try {
-            // Load config.txt file, parse application jar file name, main class name, address book, and parameters
-            appDefinitionInit = ApplicationDefinitionLoader.load(configurationProperties, localNodesToStart);
-
-            // Load all SwirldMain instances for locally run nodes.
-            appMainsInit = loadSwirldMains(appDefinitionInit, localNodesToStart);
-
-            // We assume all locally run instances would provide the same config to the configuration builder.
-            if (appMainsInit.size() > 0) {
-                appMainsInit.get(0L).updateConfigurationBuilder(configurationBuilder);
-            }
-
-            config = configurationBuilder.build();
-        } catch (final Exception e) {
-            logger.error(EXCEPTION.getMarker(), "Failed to load application due to exception.", e);
-            exception = e;
-        } finally {
-            // this.configuration needs to be initialized before the constructor returns or throws exception.
-            this.configuration = config;
-            if (exception != null) {
-                return;
-            }
+        // Assume all locally run instances provide the same configuration definitions to the configuration builder.
+        if (appMains.size() > 0) {
+            appMains.get(0L).updateConfigurationBuilder(configurationBuilder);
         }
 
-        // Making variables final after initialization.
-        final ApplicationDefinition appDefinition = appDefinitionInit;
-        final Map<Long, SwirldMain> appMains = appMainsInit;
+        this.configuration = configurationBuilder.build();
 
         // Set the configuration on all SwirldMain instances.
         appMains.values().forEach(swirldMain -> swirldMain.setConfiguration(configuration));
@@ -364,38 +347,43 @@ public class Browser {
      */
     @NonNull
     private Map<Long, SwirldMain> loadSwirldMains(
-            @NonNull final ApplicationDefinition appDefinition, @NonNull final Set<Integer> localNodesToStart)
-            throws ConstructableRegistryException, AppLoaderException {
-
-        // Create the SwirldAppLoader
-        final SwirldAppLoader appLoader;
+            @NonNull final ApplicationDefinition appDefinition, @NonNull final Set<Integer> localNodesToStart) {
+        Objects.requireNonNull(appDefinition, "appDefinition must not be null");
+        Objects.requireNonNull(localNodesToStart, "localNodesToStart must not be null");
         try {
-            appLoader = SwirldAppLoader.loadSwirldApp(appDefinition.getMainClassName(), appDefinition.getAppJarPath());
-        } catch (final AppLoaderException e) {
-            CommonUtils.tellUserConsolePopup("ERROR", e.getMessage());
-            throw e;
-        }
-
-        // Register all RuntimeConstructable classes
-        logger.debug(STARTUP.getMarker(), "Scanning the classpath for RuntimeConstructable classes");
-        final long start = System.currentTimeMillis();
-        ConstructableRegistry.getInstance().registerConstructables("", appLoader.getClassLoader());
-        logger.debug(
-                STARTUP.getMarker(),
-                "Done with registerConstructables, time taken {}ms",
-                System.currentTimeMillis() - start);
-
-        // Create the SwirldMain instances
-        final Map<Long, SwirldMain> appMains = new HashMap<>();
-        AddressBook addressBook = appDefinition.getAddressBook();
-        for (int i = 0; i < addressBook.getSize(); i++) {
-            long id = addressBook.getId(i);
-            Address address = addressBook.getAddress(id);
-            if (localNodesToStart.contains((int) id) || address.isOwnHost()) {
-                appMains.put(id, buildAppMain(appDefinition, appLoader));
+            // Create the SwirldAppLoader
+            final SwirldAppLoader appLoader;
+            try {
+                appLoader =
+                        SwirldAppLoader.loadSwirldApp(appDefinition.getMainClassName(), appDefinition.getAppJarPath());
+            } catch (final AppLoaderException e) {
+                CommonUtils.tellUserConsolePopup("ERROR", e.getMessage());
+                throw e;
             }
+
+            // Register all RuntimeConstructable classes
+            logger.debug(STARTUP.getMarker(), "Scanning the classpath for RuntimeConstructable classes");
+            final long start = System.currentTimeMillis();
+            ConstructableRegistry.getInstance().registerConstructables("", appLoader.getClassLoader());
+            logger.debug(
+                    STARTUP.getMarker(),
+                    "Done with registerConstructables, time taken {}ms",
+                    System.currentTimeMillis() - start);
+
+            // Create the SwirldMain instances
+            final Map<Long, SwirldMain> appMains = new HashMap<>();
+            final AddressBook addressBook = appDefinition.getAddressBook();
+            for (int i = 0; i < addressBook.getSize(); i++) {
+                final long id = addressBook.getId(i);
+                final Address address = addressBook.getAddress(id);
+                if (localNodesToStart.contains((int) id) || address.isOwnHost()) {
+                    appMains.put(id, buildAppMain(appDefinition, appLoader));
+                }
+            }
+            return appMains;
+        } catch (final Exception ex) {
+            throw new RuntimeException("Error loading SwirldMains", ex);
         }
-        return appMains;
     }
 
     /**
@@ -594,6 +582,12 @@ public class Browser {
             @NonNull final Map<Long, SwirldMain> appMains,
             @NonNull final Configuration configuration,
             @NonNull final MetricsProvider metricsProvider) {
+        Objects.requireNonNull(appDefinition, "the app definition must not be null");
+        Objects.requireNonNull(crypto, "the crypto array must not be null");
+        Objects.requireNonNull(infoSwirld, "the infoSwirld must not be null");
+        Objects.requireNonNull(appMains, "the appMains map must not be null");
+        Objects.requireNonNull(configuration, "the configuration must not be null");
+        Objects.requireNonNull(metricsProvider, "the metricsProvider must not be null");
 
         final AddressBook addressBook = appDefinition.getAddressBook();
 
