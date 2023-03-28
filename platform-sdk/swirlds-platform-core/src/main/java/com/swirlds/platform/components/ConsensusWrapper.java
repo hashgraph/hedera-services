@@ -16,16 +16,20 @@
 
 package com.swirlds.platform.components;
 
+import static com.swirlds.base.ArgumentUtils.throwArgNull;
+
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.sync.Generations;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.function.Supplier;
 
 /**
  * A wrapper for the consensus algorithm that returns {@link ConsensusRound} objects instead of {@link EventImpl}
@@ -33,14 +37,14 @@ import java.util.TreeMap;
  */
 public class ConsensusWrapper {
 
-    private final Consensus consensus;
+    private final Supplier<Consensus> consensusSupplier;
 
-    public ConsensusWrapper(final Consensus consensus) {
-        this.consensus = consensus;
+    public ConsensusWrapper(@NonNull final Supplier<Consensus> consensusSupplier) {
+        this.consensusSupplier = throwArgNull(consensusSupplier, "consensusSupplier");
     }
 
     public List<ConsensusRound> addEvent(final EventImpl event, final AddressBook addressBook) {
-        final List<EventImpl> consensusEvents = consensus.addEvent(event, addressBook);
+        final List<EventImpl> consensusEvents = consensusSupplier.get().addEvent(event, addressBook);
         if (consensusEvents == null || consensusEvents.isEmpty()) {
             return null;
         }
@@ -54,7 +58,7 @@ public class ConsensusWrapper {
 
         final List<ConsensusRound> rounds = new LinkedList<>();
         for (final Map.Entry<Long, List<EventImpl>> entry : roundEvents.entrySet()) {
-            final Generations generations = new Generations(consensus);
+            final Generations generations = new Generations(consensusSupplier.get());
             rounds.add(new ConsensusRound(entry.getValue(), event, generations));
         }
 

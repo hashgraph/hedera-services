@@ -18,19 +18,20 @@ package com.swirlds.platform.event.validation;
 
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.GossipEvent;
+import java.util.function.Supplier;
 
 /**
  * Determines that ancient events are invalid
  */
 public class AncientValidator implements GossipEventValidator {
-    private final GraphGenerations generations;
+    private final Supplier<GraphGenerations> generations;
 
-    public AncientValidator(final GraphGenerations generations) {
+    public AncientValidator(final Supplier<GraphGenerations> generations) {
         this.generations = generations;
     }
 
     @Override
     public boolean isEventValid(final GossipEvent event) {
-        return !generations.isAncient(event);
+        return !generations.get().isAncient(event);
     }
 }

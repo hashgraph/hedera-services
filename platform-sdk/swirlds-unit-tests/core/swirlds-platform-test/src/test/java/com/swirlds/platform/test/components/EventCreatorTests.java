@@ -39,6 +39,7 @@ import com.swirlds.common.system.events.PlatformEvent;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.platform.components.EventCreationRules;
+import com.swirlds.platform.components.EventHandler;
 import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.transaction.TransactionPool;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
@@ -60,6 +61,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -72,8 +74,10 @@ class EventCreatorTests {
             (bytes) -> new Signature(SignatureType.RSA, new byte[SignatureType.RSA.signatureLength()]);
     private static final GraphGenerations defaultGenerations = new Generations(
             GraphGenerations.FIRST_GENERATION, GraphGenerations.FIRST_GENERATION, GraphGenerations.FIRST_GENERATION);
+    private static final Supplier<GraphGenerations> defaultGenerationsSupplier = () -> defaultGenerations;
 
     private static final TransactionSupplier defaultTransactionSupplier = () -> new SwirldTransaction[0];
+    private static final EventHandler noOpEventHandler = (event) -> {};
 
     static final TransactionPool defaultTransactionPool = mock(TransactionPool.class);
 
@@ -140,7 +144,7 @@ class EventCreatorTests {
             }
         };
 
-        final AncientParentsRule ancientParentsCheck = new AncientParentsRule(graphGenerations);
+        final AncientParentsRule ancientParentsCheck = new AncientParentsRule(() -> graphGenerations);
 
         final EventImpl oldSelfParent = mock(EventImpl.class);
         ancientEvents.add(oldSelfParent);
@@ -294,7 +298,7 @@ class EventCreatorTests {
                 selfId,
                 mockMapper(recentEvents, null),
                 noOpSigner,
-                defaultGenerations,
+                defaultGenerationsSupplier,
                 () -> transactions,
                 events::add,
                 defaultTransactionPool,
@@ -348,7 +352,7 @@ class EventCreatorTests {
                 selfId,
                 mockMapper(recentEvents, selfParentImpl),
                 noOpSigner,
-                defaultGenerations,
+                defaultGenerationsSupplier,
                 () -> transactions,
                 events::add,
                 defaultTransactionPool,
@@ -410,7 +414,7 @@ class EventCreatorTests {
                 selfId,
                 mapper,
                 noOpSigner,
-                defaultGenerations,
+                defaultGenerationsSupplier,
                 defaultTransactionSupplier,
                 (e) -> {
                     events.add(e);
@@ -452,7 +456,7 @@ class EventCreatorTests {
                 selfId,
                 mockMapper(recentEvents, null),
                 noOpSigner,
-                defaultGenerations,
+                defaultGenerationsSupplier,
                 defaultTransactionSupplier,
                 events::add,
                 defaultTransactionPool,

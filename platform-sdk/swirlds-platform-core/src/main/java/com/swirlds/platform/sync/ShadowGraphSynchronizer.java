@@ -37,6 +37,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -62,7 +63,7 @@ public class ShadowGraphSynchronizer {
      * provides the current consensus instance, a supplier is used because this instance will change after a
      * reconnect, so we have to make sure we always get the latest one
      */
-    private final GraphGenerations generations;
+    private final Supplier<GraphGenerations> generationsSupplier;
     /** called to provide the sync result when the sync is done */
     private final Consumer<SyncResult> syncDone;
     /** consumes events received by the peer */
@@ -80,7 +81,7 @@ public class ShadowGraphSynchronizer {
             final ShadowGraph shadowGraph,
             final int numberOfNodes,
             final SyncMetrics syncMetrics,
-            final GraphGenerations generations,
+            final Supplier<GraphGenerations> generationsSupplier,
             final Consumer<SyncResult> syncDone,
             final Consumer<GossipEvent> eventHandler,
             final FallenBehindManager fallenBehindManager,
@@ -90,7 +91,7 @@ public class ShadowGraphSynchronizer {
         this.shadowGraph = shadowGraph;
         this.numberOfNodes = numberOfNodes;
         this.syncMetrics = syncMetrics;
-        this.generations = generations;
+        this.generationsSupplier = generationsSupplier;
         this.syncDone = syncDone;
         this.eventHandler = eventHandler;
         this.fallenBehindManager = fallenBehindManager;
@@ -224,7 +225,9 @@ public class ShadowGraphSynchronizer {
 
     private Generations getGenerations(final long minRoundGen) {
         return new Generations(
-                minRoundGen, generations.getMinGenerationNonAncient(), generations.getMaxRoundGeneration());
+                minRoundGen,
+                generationsSupplier.get().getMinGenerationNonAncient(),
+                generationsSupplier.get().getMaxRoundGeneration());
     }
 
     private List<ShadowEvent> getTips() {

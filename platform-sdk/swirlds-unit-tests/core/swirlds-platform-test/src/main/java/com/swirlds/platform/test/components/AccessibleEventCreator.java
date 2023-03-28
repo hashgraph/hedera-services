@@ -27,6 +27,7 @@ import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.internal.EventImpl;
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
 /**
  * This class has identical behavior as {@link EventCreator} but makes a variety of methods public.
@@ -37,7 +38,7 @@ public class AccessibleEventCreator extends EventCreator {
             final NodeId selfId,
             final EventMapper eventMapper,
             final Signer signer,
-            final GraphGenerations graphGenerationsSupplier,
+            final Supplier<GraphGenerations> graphGenerationsSupplier,
             final TransactionSupplier transactionSupplier,
             final EventHandler newEventHandler,
             final TransactionPool transactionPool,

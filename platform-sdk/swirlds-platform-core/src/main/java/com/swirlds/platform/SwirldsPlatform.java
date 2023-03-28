@@ -205,10 +205,10 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /** the number of active connections this node has to other nodes */
     private final AtomicInteger activeConnectionNumber = new AtomicInteger(0);
     /**
-     * the object used to calculate consensus. it is volatile because the whole object is replaced when reading a state
-     * from disk or getting it through reconnect
+     * The object used to calculate consensus.
+     * Stored in an atomic reference since we need to swap it when we do a reconnect.
      */
-    private final Consensus consensus;
+    private final AtomicReference<Consensus> consensusRef = new AtomicReference<>();
     /** set in the constructor and given to the SwirldState object in run() */
     private final AddressBook initialAddressBook;
 
@@ -288,6 +288,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * Encapsulates gossip code.
      */
     private final GossipNetwork gossipNetwork;
+
+    private final ConsensusMetrics consensusMetrics;
 
     /**
      * the browser gives the Platform what app to run. There can be multiple Platforms on one computer.
@@ -375,7 +377,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         // stats related to the intake cycle
         final IntakeCycleStats intakeCycleStats = new IntakeCycleStats(time, platformContext.getMetrics());
 
-        final ConsensusMetrics consensusMetrics = new ConsensusMetricsImpl(this.selfId, platformContext.getMetrics());
+        consensusMetrics = new ConsensusMetricsImpl(this.selfId, platformContext.getMetrics());
         final AddedEventMetrics addedEventMetrics = new AddedEventMetrics(this.selfId, platformContext.getMetrics());
         final EventIntakeMetrics eventIntakeMetrics = new EventIntakeMetrics(platformContext.getMetrics(), time);
         final SyncMetrics syncMetrics = new SyncMetrics(platformContext.getMetrics());
@@ -541,18 +543,18 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 new TransactionMetrics(platformContext.getMetrics()));
 
         if (loadedState.signedStateFromDisk != null) {
-            consensus = new ConsensusImpl(
+            consensusRef.set(new ConsensusImpl(
                     platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                     consensusMetrics,
                     consensusRoundHandler::addMinGenInfo,
                     getAddressBook(),
-                    loadedState.signedStateFromDisk);
+                    loadedState.signedStateFromDisk));
         } else {
-            consensus = new ConsensusImpl(
+            consensusRef.set(new ConsensusImpl(
                     platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                     consensusMetrics,
                     consensusRoundHandler::addMinGenInfo,
-                    getAddressBook());
+                    getAddressBook()));
         }
 
         final CriticalQuorum criticalQuorum;
@@ -621,7 +623,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         final EventIntake eventIntake = new EventIntake(
                 selfId,
                 eventLinker,
-                consensus,
+                this::getConsensus,
                 initialAddressBook,
                 eventObserverDispatcher,
                 intakeCycleStats,
@@ -636,7 +638,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             eventCreator = new EventCreator(
                     selfId,
                     PlatformConstructor.platformSigner(crypto.getKeysAndCerts()),
-                    consensus,
+                    this::getConsensus,
                     swirldStateManager.getTransactionPool(),
                     eventIntake::addEvent,
                     eventMapper,
@@ -649,7 +651,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         final List<GossipEventValidator> validators = new ArrayList<>();
         // it is very important to discard ancient events, otherwise the deduplication will not work, since it doesn't
         // track ancient events
-        validators.add(new AncientValidator(consensus));
+        validators.add(new AncientValidator(this::getConsensus));
         validators.add(new EventDeduplication(isDuplicateChecks, eventIntakeMetrics));
         validators.add(StaticValidators::isParentDataValid);
         validators.add(new TransactionSizeValidator(settings.getMaxTransactionBytesPerEvent()));
@@ -728,7 +730,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 shadowGraph,
                 getAddressBook().getSize(),
                 syncMetrics,
-                consensus,
+                this::getConsensus,
                 eventTaskCreator::syncDone,
                 eventTaskCreator::addEvent,
                 syncManager,
@@ -772,7 +774,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     shadowGraph,
                     reconnectController,
                     reconnectThrottle,
-                    consensus,
+                    this::getConsensus,
                     notificationEngine,
                     stateManagementComponent,
                     fallenBehindManager,
@@ -1030,7 +1032,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                         // events in the signed state which will cause issues for other components that depend on it
                         signedState.getEvents().clone()),
                 // we need to provide the minGen from consensus so that expiry matches after a restart/reconnect
-                consensus.getMinRoundGeneration());
+                getConsensus().getMinRoundGeneration());
 
         // Data that is needed for the intake system to work
         for (final EventImpl e : signedState.getEvents()) {
@@ -1086,6 +1088,13 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             signedState.reserve();
             stateManagementComponent.stateToLoad(signedState, SourceOfSignedState.RECONNECT);
             signedState.release();
+
+            consensusRef.set(new ConsensusImpl(
+                    platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
+                    consensusMetrics,
+                    consensusRoundHandler::addMinGenInfo,
+                    getAddressBook(),
+                    signedState));
 
             loadIntoConsensusAndEventMapper(signedState);
             // eventLinker is not thread safe, which is not a problem regularly because it is only used by a single
@@ -1204,8 +1213,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /**
      * @return the consensus object used by this platform
      */
-    public Consensus getConsensus() {
-        return consensus;
+    public @NonNull Consensus getConsensus() {
+        return Objects.requireNonNull(consensusRef.get());
     }
 
     /**

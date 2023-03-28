@@ -112,7 +112,7 @@ public class TestIntake implements ConsensusRoundObserver, StaleEventObserver, L
         intake = new EventIntake(
                 NodeId.createMain(0), // only used for logging
                 linker,
-                consensus,
+                this::getConsensus,
                 ab,
                 dispatcher,
                 ConsensusUtils.NOOP_INTAKE_CYCLE_STATS,

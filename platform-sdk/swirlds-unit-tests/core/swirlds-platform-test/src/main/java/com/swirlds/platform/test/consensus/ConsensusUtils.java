@@ -135,7 +135,7 @@ public abstract class ConsensusUtils {
 
         final List<ConsensusRound> allConsensusRounds = new LinkedList<>();
 
-        final ConsensusWrapper wrapper = new ConsensusWrapper(consensus);
+        final ConsensusWrapper wrapper = new ConsensusWrapper(() -> consensus);
 
         for (int i = 0; i < numberOfEvents; i++) {
             final IndexedEvent genEvent = emitter.emitEvent();

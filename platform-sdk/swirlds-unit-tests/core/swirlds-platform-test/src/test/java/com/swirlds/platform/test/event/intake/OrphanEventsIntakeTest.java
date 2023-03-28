@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.test.event.intake;
 
-import static org.mockito.Mockito.mock;
-
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
@@ -49,6 +47,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 class OrphanEventsIntakeTest {
     @Test
@@ -98,13 +97,13 @@ class OrphanEventsIntakeTest {
             intake = new EventIntake(
                     NodeId.createMain(0),
                     orphanBuffer,
-                    consensus,
+                    () -> consensus,
                     generator.getAddressBook(),
                     new EventObserverDispatcher(
                             (EventAddedObserver) e -> linkedEventMap.put(e.getBaseHash(), e),
                             (ConsensusRoundObserver) rnd -> consensusEvents.addAll(rnd.getConsensusEvents())),
-                    mock(IntakeCycleStats.class),
-                    mock(ShadowGraph.class));
+                    Mockito.mock(IntakeCycleStats.class),
+                    Mockito.mock(ShadowGraph.class));
         }
 
         public void generateAndFeed(final int numEvents) {

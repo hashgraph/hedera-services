@@ -33,6 +33,7 @@ import com.swirlds.platform.event.creation.AncientParentsRule;
 import com.swirlds.platform.internal.EventImpl;
 import java.time.Instant;
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -79,7 +80,7 @@ public class EventCreator {
      * 		the ID of this node
      * @param signer
      * 		responsible for signing new events
-     * @param graphGenerations
+     * @param graphGenerationsSupplier
      * 		supplies the key generation number from the hashgraph
      * @param transactionSupplier
      * 		this method supplies transactions that should be inserted into newly created events
@@ -99,7 +100,7 @@ public class EventCreator {
     public EventCreator(
             final NodeId selfId,
             final Signer signer,
-            final GraphGenerations graphGenerations,
+            final Supplier<GraphGenerations> graphGenerationsSupplier,
             final TransactionSupplier transactionSupplier,
             final EventHandler newEventHandler,
             final EventMapper eventMapper,
@@ -109,7 +110,7 @@ public class EventCreator {
             final EventCreationRules eventCreationRules) {
         this.selfId = selfId;
         this.signer = signer;
-        this.ancientParentsCheck = new AncientParentsRule(graphGenerations);
+        this.ancientParentsCheck = new AncientParentsRule(graphGenerationsSupplier);
         this.transactionSupplier = transactionSupplier;
         this.newEventHandler = newEventHandler;
         this.eventMapper = eventMapper;

@@ -86,6 +86,7 @@ import com.swirlds.platform.threading.PauseAndClear;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Supplier;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
@@ -100,7 +101,7 @@ public class ChatterNetwork extends GossipNetwork implements Startable {
     private final ShadowGraph shadowGraph;
     private final ReconnectController reconnectController;
     private final ReconnectThrottle reconnectThrottle;
-    private final Consensus consensus;
+    private final Supplier<Consensus> consensusSupplier;
     private final NotificationEngine notificationEngine;
     private final StateManagementComponent stateManagementComponent;
     private final FallenBehindManagerImpl fallenBehindManager;
@@ -136,7 +137,7 @@ public class ChatterNetwork extends GossipNetwork implements Startable {
             @NonNull final ShadowGraph shadowGraph,
             @NonNull final ReconnectController reconnectController,
             @NonNull final ReconnectThrottle reconnectThrottle,
-            @NonNull final Consensus consensus,
+            @NonNull final Supplier<Consensus> consensusSupplier,
             @NonNull final NotificationEngine notificationEngine,
             @NonNull final StateManagementComponent stateManagementComponent,
             @NonNull final FallenBehindManagerImpl fallenBehindManager,
@@ -168,7 +169,7 @@ public class ChatterNetwork extends GossipNetwork implements Startable {
         this.shadowGraph = throwArgNull(shadowGraph, "shadowGraph");
         this.reconnectController = throwArgNull(reconnectController, "reconnectController");
         this.reconnectThrottle = throwArgNull(reconnectThrottle, "reconnectThrottle");
-        this.consensus = throwArgNull(consensus, "consensus");
+        this.consensusSupplier = throwArgNull(consensusSupplier, "consensus");
         this.notificationEngine = throwArgNull(notificationEngine, "notificationEngine");
         this.stateManagementComponent = throwArgNull(stateManagementComponent, "stateManagementComponent");
         this.fallenBehindManager = throwArgNull(fallenBehindManager, "fallenBehindManager");
@@ -203,7 +204,7 @@ public class ChatterNetwork extends GossipNetwork implements Startable {
                 List.of(
                         StaticCreationRules::nullOtherParent,
                         otherParentTracker,
-                        new AncientParentsRule(consensus),
+                        new AncientParentsRule(consensusSupplier::get),
                         criticalQuorum));
 
         chatterEventCreator = new ChatterEventCreator(
@@ -260,7 +261,7 @@ public class ChatterNetwork extends GossipNetwork implements Startable {
                     shadowGraph,
                     initialAddressBook.getSize(),
                     syncMetrics,
-                    consensus,
+                    consensusSupplier::get,
                     sr -> {},
                     eventTaskCreator::addEvent,
                     fallenBehindManager,
