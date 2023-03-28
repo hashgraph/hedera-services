@@ -21,6 +21,7 @@ import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.stream.EventStreamType;
 import com.swirlds.platform.util.EventStreamSigningUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
 import java.security.KeyPair;
 import picocli.CommandLine;
@@ -36,7 +37,7 @@ public final class EventStreamSignCommand extends SignCommand {
      */
     @Override
     public void generateSignatureFile(
-            @NonNull Path destinationDirectory, @NonNull Path fileToSign, @NonNull KeyPair keyPair) {
+            @Nullable Path destinationDirectory, @NonNull Path fileToSign, @NonNull KeyPair keyPair) {
 
         EventStreamSigningUtils.signEventStreamFile(destinationDirectory, fileToSign, keyPair);
     }

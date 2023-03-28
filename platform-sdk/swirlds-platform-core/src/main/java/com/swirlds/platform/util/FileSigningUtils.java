@@ -18,6 +18,7 @@ package com.swirlds.platform.util;
 
 import com.swirlds.common.crypto.SignatureType;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -59,16 +60,20 @@ public final class FileSigningUtils {
      * <p>
      * Creates the needed directories if they don't already exist
      *
-     * @param destinationDirectory the directory to which the signature file is saved
+     * @param destinationDirectory the directory to which the signature file is saved. If null, the signature file will
+     *                             be saved to the same directory the source file is in
      * @param sourceFile           file to be signed
      * @return signature file path
      */
     @NonNull
     public static Path buildSignatureFilePath(
-            @NonNull final Path destinationDirectory, @NonNull final Path sourceFile) {
+            @Nullable final Path destinationDirectory, @NonNull final Path sourceFile) {
 
-        Objects.requireNonNull(destinationDirectory, "destinationDirectory must not be null");
         Objects.requireNonNull(sourceFile, "sourceFile must not be null");
+
+        if (destinationDirectory == null) {
+            return sourceFile.getParent().resolve(sourceFile.getFileName() + SIGNATURE_FILE_NAME_SUFFIX);
+        }
 
         try {
             Files.createDirectories(destinationDirectory);

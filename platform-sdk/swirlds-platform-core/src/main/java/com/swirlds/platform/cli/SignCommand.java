@@ -20,6 +20,7 @@ import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.platform.util.FileSigningUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -43,9 +44,10 @@ public abstract class SignCommand extends AbstractCommand {
     private List<Path> pathsToSign = List.of(FileUtils.getAbsolutePath());
 
     /**
-     * The directory where signature files will be generated. Defaults to the current working directory
+     * The directory where signature files will be generated. Defaults to in-place signatures (null)
      */
-    private Path destinationDirectory = FileUtils.getAbsolutePath();
+    @Nullable
+    private Path destinationDirectory = null;
 
     /**
      * The path to the key file to use to generate signatures
@@ -98,8 +100,8 @@ public abstract class SignCommand extends AbstractCommand {
 
     @CommandLine.Option(
             names = {"-d", "--destination-directory"},
-            description = "Specify the destination directory where signature files will be generated. Defaults to the "
-                    + "current working directory")
+            description = "Specify the destination directory where signature files will be generated."
+                    + "If not specified, a signature file will be generated in the same directory as the source file")
     private void setDestinationDirectory(@NonNull final Path destinationDirectory) {
         this.destinationDirectory = destinationDirectory.toAbsolutePath();
     }
@@ -122,12 +124,13 @@ public abstract class SignCommand extends AbstractCommand {
     /**
      * Generate a signature file for a single source file
      *
-     * @param destinationDirectory the directory where the signature file will be generated
+     * @param destinationDirectory the directory where the signature file will be generated. null means signatures will
+     *                             be generated in the same directory as the source files
      * @param fileToSign           the file to generate a signature file for
      * @param keyPair              the key pair to use to generate the signature
      */
     public abstract void generateSignatureFile(
-            @NonNull final Path destinationDirectory, @NonNull final Path fileToSign, @NonNull final KeyPair keyPair);
+            @Nullable final Path destinationDirectory, @NonNull final Path fileToSign, @NonNull final KeyPair keyPair);
 
     /**
      * Check if a file is supported by this command

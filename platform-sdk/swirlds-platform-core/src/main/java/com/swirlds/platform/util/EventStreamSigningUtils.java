@@ -29,6 +29,7 @@ import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.stream.EventStreamType;
 import com.swirlds.common.stream.internal.InvalidStreamFileException;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
@@ -72,16 +73,16 @@ public class EventStreamSigningUtils {
     /**
      * Generates a signature file for the given event stream file
      *
-     * @param destinationDirectory the directory where the signature file will be saved
+     * @param destinationDirectory the directory where the signature file will be saved. If this is null, signature
+     *                             file will be generated in the same directory as the original file
      * @param streamFileToSign     the stream file to be signed
      * @param keyPair              the keyPair used for signing
      */
     public static void signEventStreamFile(
-            @NonNull final Path destinationDirectory,
+            @Nullable final Path destinationDirectory,
             @NonNull final Path streamFileToSign,
             @NonNull final KeyPair keyPair) {
 
-        Objects.requireNonNull(destinationDirectory, "destinationDirectory must not be null");
         Objects.requireNonNull(streamFileToSign, "streamFileToSign must not be null");
         Objects.requireNonNull(keyPair, "keyPair must not be null");
 
