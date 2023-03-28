@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.metrics.extensions;
+package com.swirlds.common.time;
 
 import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.Units;
