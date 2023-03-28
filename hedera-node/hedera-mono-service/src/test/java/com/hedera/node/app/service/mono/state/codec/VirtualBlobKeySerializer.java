@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public class VirtualBlobKeySerializer implements KeySerializer<VirtualBlobKey> {
-    static final long CLASS_ID = 0xb7b4f0d24bf1ebf2L;
+    static final long CLASS_ID = 0x6459da78c643abd6L;
     static final int CURRENT_VERSION = 1;
 
     static final long DATA_VERSION = 1;

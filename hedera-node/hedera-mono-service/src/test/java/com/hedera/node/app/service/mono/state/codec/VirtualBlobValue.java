@@ -26,7 +26,7 @@ import java.util.Arrays;
 
 public class VirtualBlobValue implements VirtualValue {
     static final int CURRENT_VERSION = 1;
-    static final long CLASS_ID = 0x7eb72381159d8402L;
+    static final long CLASS_ID = 0x7f446e8eb00fd653L;
 
     private byte[] data;
 

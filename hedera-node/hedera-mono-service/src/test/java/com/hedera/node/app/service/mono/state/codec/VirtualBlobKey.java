@@ -29,7 +29,7 @@ import java.util.Objects;
 public class VirtualBlobKey implements VirtualKey<VirtualBlobKey> {
     static final int CURRENT_VERSION = 1;
     static final int BYTES_IN_SERIALIZED_FORM = 5;
-    static final long CLASS_ID = 0x11b982c14217d523L;
+    static final long CLASS_ID = 0x408d7e7ed170419cL;
 
     private static final Type[] BLOB_TYPES = Type.values();
 
