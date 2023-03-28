@@ -33,7 +33,6 @@ import static com.swirlds.platform.SettingConstants.CSV_WRITE_FREQUENCY_DEFAULT_
 import static com.swirlds.platform.SettingConstants.DATA_STRING;
 import static com.swirlds.platform.SettingConstants.DEADLOCK_CHECK_PERIOD_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.DELAY_SHUFFLE_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.DISABLE_METRICS_OUTPUT_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.DO_UPNP_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.EMERGENCY_STATE_FILE_NAME_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.ENABLE_EVENT_STREAMING_DEFAULT_VALUE;
@@ -74,8 +73,6 @@ import static com.swirlds.platform.SettingConstants.SLEEP_CALLER_SKIPS_DEFAULT_V
 import static com.swirlds.platform.SettingConstants.SLEEP_HEARTBEAT_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SOCKET_IP_TOS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.STALE_EVENT_PREVENTION_THRESHOLD_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.STATS_BUFFER_SIZE_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.STATS_RECENT_SECONDS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.STATS_SKIP_SECONDS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.TCP_NO_DELAY_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.THREAD_DUMP_LOG_DIR_DEFAULT_VALUE;
@@ -145,18 +142,6 @@ import org.apache.logging.log4j.Logger;
  */
 @Deprecated(forRemoval = true)
 public class Settings {
-
-    // The following paths are for 4 files and 2 directories, such as:
-    // /FULL/PATH/sdk/config.txt
-    // /FULL/PATH/sdk/settings.txt
-    // /FULL/PATH/sdk/settingsUsed.txt
-    // /FULL/PATH/sdk/log4j2.xml
-    // /FULL/PATH/sdk/data/keys/
-    // /FULL/PATH/sdk/data/apps/
-
-    // useful run configuration arguments for debugging:
-    // -XX:+HeapDumpOnOutOfMemoryError
-    // -Djavax.net.debug=ssl,handshake
 
     /** use this for all logging, as controlled by the optional data/log4j2.xml file */
     private static final Logger logger = LogManager.getLogger(Settings.class);
@@ -262,10 +247,6 @@ public class Settings {
     private long callerSkipsBeforeSleep = CALLER_SKIPS_BEFORE_SLEEP_DEFAULT_VALUE;
     /** caller sleeps this many milliseconds if it failed to connect to callerSkipsBeforeSleep in a row */
     private long sleepCallerSkips = SLEEP_CALLER_SKIPS_DEFAULT_VALUE;
-    /** number of bins to store for the history (in StatsBuffer etc.) */
-    private int statsBufferSize = STATS_BUFFER_SIZE_DEFAULT_VALUE;
-    /** number of seconds covered by "recent" history (in StatsBuffer etc.) */
-    private double statsRecentSeconds = STATS_RECENT_SECONDS_DEFAULT_VALUE;
     /** number of seconds that the "all" history window skips at the start */
     private double statsSkipSeconds = STATS_SKIP_SECONDS_DEFAULT_VALUE;
     /** priority for threads that sync (in SyncCaller, SyncListener, SyncServer) */
@@ -298,11 +279,6 @@ public class Settings {
      * an empty string, the current folder selection behavior will be used (ie: the SDK base path).
      */
     private String csvOutputFolder = CSV_OUTPUT_FOLDER_DEFAULT_VALUE;
-    /**
-     * Disable all metrics-outputs. If {@code true}, this overrides all other specific settings concerning
-     * metrics-output.
-     */
-    private boolean disableMetricsOutput = DISABLE_METRICS_OUTPUT_DEFAULT_VALUE;
     /**
      * The prefix of the name of the CSV file that the platform will write statistics to. If this value is null or an
      * empty string, the platform will not write any statistics.
@@ -979,10 +955,6 @@ public class Settings {
         return csvOutputFolder;
     }
 
-    public boolean isDisableMetricsOutput() {
-        return disableMetricsOutput;
-    }
-
     public String getCsvFileName() {
         return csvFileName;
     }
@@ -993,18 +965,6 @@ public class Settings {
 
     public boolean isCsvAppend() {
         return csvAppend;
-    }
-
-    public boolean getPrometheusEndpointEnabled() {
-        return prometheusEndpointEnabled;
-    }
-
-    public int getPrometheusEndpointPortNumber() {
-        return prometheusEndpointPortNumber;
-    }
-
-    public int getPrometheusEndpointMaxBacklogAllowed() {
-        return prometheusEndpointMaxBacklogAllowed;
     }
 
     public int getEventIntakeQueueThrottleSize() {

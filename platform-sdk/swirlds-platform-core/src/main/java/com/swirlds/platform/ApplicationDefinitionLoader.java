@@ -70,8 +70,6 @@ public final class ApplicationDefinitionLoader {
         CommonUtils.throwArgNull(configurationProperties, "configurationProperties");
         CommonUtils.throwArgNull(localNodesToStart, "localNodesToStart");
 
-        final String swirldName = configurationProperties.swirldName().orElse("");
-
         final List<Address> bookData = Collections.synchronizedList(new ArrayList<>());
         configurationProperties
                 .getAddressConfigs()
@@ -83,7 +81,7 @@ public final class ApplicationDefinitionLoader {
                 .orElseThrow(() -> new ConfigurationException("application config is missing"));
 
         return new ApplicationDefinition(
-                swirldName,
+                "",
                 appStartParams.appParameters(),
                 appStartParams.appJarFilename(),
                 appStartParams.mainClassname(),

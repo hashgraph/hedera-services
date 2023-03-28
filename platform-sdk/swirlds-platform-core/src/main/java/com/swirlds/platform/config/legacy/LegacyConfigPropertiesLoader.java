@@ -21,7 +21,6 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import com.swirlds.common.internal.ConfigurationException;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.Settings;
-import com.swirlds.platform.Utilities;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -49,20 +48,6 @@ public final class LegacyConfigPropertiesLoader {
     private static final String APP_PROPERTY_NAME = "app";
 
     private static final String ADDRESS_PROPERTY_NAME = "address";
-
-    private static final String SWIRLD_PROPERTY_NAME = "swirld";
-
-    private static final String TLS_PROPERTY_NAME = "tls";
-
-    private static final String MAX_SYNCS_PROPERTY_NAME = "maxsyncs";
-
-    private static final String TRANSACTION_MAX_BYTES_PROPERTY_NAME = "transactionmaxbytes";
-
-    private static final String IP_TOS_PROPERTY_NAME = "iptos";
-
-    private static final String SAVE_STATE_PERIOD_PROPERTY_NAME = "savestateperiod";
-
-    private static final String GENESIS_FREEZE_TIME_PROPERTY_NAME = "genesisfreezetime";
 
     private static final Logger logger = LogManager.getLogger(LegacyConfigPropertiesLoader.class);
 
@@ -94,27 +79,6 @@ public final class LegacyConfigPropertiesLoader {
                         pars[i] = parsOriginalCase[i].toLowerCase(Locale.ENGLISH);
                     }
                     switch (pars[0]) {
-                        case SWIRLD_PROPERTY_NAME:
-                            setSwirldName(configurationProperties, lineParameters.length, parsOriginalCase[1]);
-                            break;
-                        case TLS_PROPERTY_NAME:
-                            setTls(configurationProperties, lineParameters.length, pars[1]);
-                            break;
-                        case MAX_SYNCS_PROPERTY_NAME:
-                            setMaxSyncs(configurationProperties, lineParameters.length, pars[1]);
-                            break;
-                        case TRANSACTION_MAX_BYTES_PROPERTY_NAME:
-                            setTransactionMaxBytes(configurationProperties, lineParameters.length, pars[1]);
-                            break;
-                        case IP_TOS_PROPERTY_NAME:
-                            setIpTos(configurationProperties, lineParameters.length, pars[1]);
-                            break;
-                        case SAVE_STATE_PERIOD_PROPERTY_NAME:
-                            setSaveStatePeriod(configurationProperties, lineParameters.length, pars[1]);
-                            break;
-                        case GENESIS_FREEZE_TIME_PROPERTY_NAME:
-                            setGenesisFreezeTime(configurationProperties, lineParameters.length, pars[1]);
-                            break;
                         case APP_PROPERTY_NAME:
                             if (configurationProperties.appConfig().isPresent()) {
                                 onError("config.txt had more than one line starting with 'app'. All but the last will"
@@ -142,7 +106,10 @@ public final class LegacyConfigPropertiesLoader {
                             }
                             break;
                         default:
-                            onError("'" + pars[0] + "' in config.txt isn't a recognized first parameter for a line");
+                            logger.error(
+                                    EXCEPTION.getMarker(),
+                                    "'{}' in config.txt isn't a recognized first parameter for a line",
+                                    pars[0]);
                             break;
                     }
                 }
@@ -176,59 +143,6 @@ public final class LegacyConfigPropertiesLoader {
         } else {
             onError(propertyName + " needs a parameter");
         }
-    }
-
-    private static void setGenesisFreezeTime(
-            final LegacyConfigProperties configProperties, final int paramLength, final String value) {
-        handleParam(
-                GENESIS_FREEZE_TIME_PROPERTY_NAME,
-                paramLength,
-                () -> configProperties.setGenesisFreezeTime(Long.parseLong(value)));
-    }
-
-    private static void setSaveStatePeriod(
-            final LegacyConfigProperties configProperties, final int paramLength, final String value) {
-        handleParam(
-                SAVE_STATE_PERIOD_PROPERTY_NAME,
-                paramLength,
-                () -> configProperties.setSaveStatePeriod(Integer.parseInt(value)));
-    }
-
-    private static void setIpTos(
-            final LegacyConfigProperties configProperties, final int paramLength, final String value) {
-        // IPv4 Type of Service (0 to 255, or -1 to not use IP_TOS)
-        handleParam(IP_TOS_PROPERTY_NAME, paramLength, () -> configProperties.setIpTos(Integer.parseInt(value)));
-    }
-
-    private static void setTransactionMaxBytes(
-            final LegacyConfigProperties configProperties, final int paramLength, final String value) {
-        // maximum number of bytes allowed per transaction
-        handleParam(
-                TRANSACTION_MAX_BYTES_PROPERTY_NAME,
-                paramLength,
-                () -> configProperties.setTransactionMaxBytes(Math.max(Integer.parseInt(value), 100)));
-    }
-
-    private static void setMaxSyncs(
-            final LegacyConfigProperties configProperties, final int paramLength, final String value) {
-        // maximum number of simultaneous syncs initiated by this member
-        // (the max that can be received will be this plus 1)
-        handleParam(
-                MAX_SYNCS_PROPERTY_NAME,
-                paramLength,
-                () -> configProperties.setMaxSyncs(Math.max(Integer.parseInt(value), 1)));
-    }
-
-    private static void setTls(
-            final LegacyConfigProperties configProperties, final int paramLength, final String value) {
-        // "TLS, ON" turns on TLS (or: true, 1, yes, t, y)
-        // "TLS, OFF" turns off TLS (or: false, 0, no, f, n)
-        handleParam(TLS_PROPERTY_NAME, paramLength, () -> configProperties.setTls(Utilities.parseBoolean(value)));
-    }
-
-    private static void setSwirldName(
-            final LegacyConfigProperties configurationProperties, final int paramLength, final String value) {
-        handleParam(SWIRLD_PROPERTY_NAME, paramLength, () -> configurationProperties.setSwirldName(value));
     }
 
     private static void onError(String message) {

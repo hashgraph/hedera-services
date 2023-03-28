@@ -50,13 +50,6 @@ class LegacyConfigPropertiesLoaderTest {
         // then
         Assertions.assertNotNull(properties, "The properties should never be null");
         Assertions.assertFalse(properties.appConfig().isPresent(), "Value must not be set for an empty file");
-        Assertions.assertFalse(properties.tls().isPresent(), "Value must not be set for an empty file");
-        Assertions.assertFalse(properties.ipTos().isPresent(), "Value must not be set for an empty file");
-        Assertions.assertFalse(properties.swirldName().isPresent(), "Value must not be set for an empty file");
-        Assertions.assertFalse(properties.maxSyncs().isPresent(), "Value must not be set for an empty file");
-        Assertions.assertFalse(properties.genesisFreezeTime().isPresent(), "Value must not be set for an empty file");
-        Assertions.assertFalse(properties.saveStatePeriod().isPresent(), "Value must not be set for an empty file");
-        Assertions.assertFalse(properties.transactionMaxBytes().isPresent(), "Value must not be set for an empty file");
         Assertions.assertEquals(
                 0, properties.getAddressConfigs().size(), "no address config should be added for an empty file");
     }
@@ -72,24 +65,6 @@ class LegacyConfigPropertiesLoaderTest {
 
         // then
         Assertions.assertNotNull(properties, "The properties should never be null");
-
-        Assertions.assertFalse(
-                properties.tls().isPresent(), "Value must not be set since it is not defined in the file");
-        Assertions.assertFalse(
-                properties.ipTos().isPresent(), "Value must not be set since it is not defined in the file");
-        Assertions.assertFalse(
-                properties.maxSyncs().isPresent(), "Value must not be set since it is not defined in the file");
-        Assertions.assertFalse(
-                properties.genesisFreezeTime().isPresent(),
-                "Value must not be set since it is not defined in the file");
-        Assertions.assertFalse(
-                properties.saveStatePeriod().isPresent(), "Value must not be set since it is not defined in the file");
-        Assertions.assertFalse(
-                properties.transactionMaxBytes().isPresent(),
-                "Value must not be set since it is not defined in the file");
-
-        Assertions.assertTrue(properties.swirldName().isPresent(), "Value must be set");
-        Assertions.assertEquals("123", properties.swirldName().get());
 
         Assertions.assertTrue(properties.appConfig().isPresent(), "Value must be set");
         Assertions.assertEquals(

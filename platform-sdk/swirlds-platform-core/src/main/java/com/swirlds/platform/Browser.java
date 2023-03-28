@@ -41,7 +41,6 @@ import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.WiringConfig;
 import com.swirlds.common.config.export.ConfigExport;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.config.sources.AliasConfigSource;
 import com.swirlds.common.config.sources.LegacyFileConfigSource;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -80,7 +79,6 @@ import com.swirlds.platform.chatter.config.ChatterConfig;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.ConfigAliases;
 import com.swirlds.platform.config.ThreadConfig;
-import com.swirlds.platform.config.legacy.ConfigPropertiesSource;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.crypto.CryptoConstants;
@@ -177,12 +175,8 @@ public class Browser {
         final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile();
         final ConfigSource settingsAliasConfigSource = ConfigAliases.addConfigAliases(settingsConfigSource);
 
-        final ConfigSource configPropertiesConfigSource = new ConfigPropertiesSource(configurationProperties);
-        final ConfigSource configPropertiesAliasConfigSource = new AliasConfigSource(configPropertiesConfigSource);
-
         this.configuration = ConfigurationBuilder.create()
                 .withSource(settingsAliasConfigSource)
-                .withSource(configPropertiesAliasConfigSource)
                 .withConfigDataType(BasicConfig.class)
                 .withConfigDataType(StateConfig.class)
                 .withConfigDataType(CryptoConfig.class)
@@ -227,19 +221,6 @@ public class Browser {
 
             // Provide swirlds.common the settings it needs via the SettingsCommon class
             Settings.populateSettingsCommon();
-
-            // Update Settings based on config.txt
-            configurationProperties.tls().ifPresent(tls -> Settings.getInstance()
-                    .setUseTLS(tls));
-            configurationProperties.maxSyncs().ifPresent(value -> Settings.getInstance()
-                    .setMaxOutgoingSyncs(value));
-            configurationProperties.transactionMaxBytes().ifPresent(value -> Settings.getInstance()
-                    .setTransactionMaxBytes(value));
-            configurationProperties.ipTos().ifPresent(ipTos -> Settings.getInstance()
-                    .setSocketIpTos(ipTos));
-            configurationProperties
-                    .saveStatePeriod()
-                    .ifPresent(value -> Settings.getInstance().getState().saveStatePeriod = value);
 
             // Write the settingsUsed.txt file
             writeSettingsUsed(configuration);
