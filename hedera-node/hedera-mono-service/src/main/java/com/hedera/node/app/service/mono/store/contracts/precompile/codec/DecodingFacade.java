@@ -163,7 +163,7 @@ public class DecodingFacade {
             @NonNull final UnaryOperator<byte[]> aliasResolver,
             @NonNull final Predicate<AccountID> exists) {
         var accountID = convertLeftPaddedAddressToAccountId(leftPaddedAddress, aliasResolver);
-        if (!exists.test(accountID) && !accountID.hasAlias()) {
+        if (!exists.test(accountID) && !accountID.getAlias().isEmpty()) {
             accountID = generateAccountIDWithAliasCalculatedFrom(accountID);
         }
         return accountID;
@@ -206,7 +206,7 @@ public class DecodingFacade {
         for (final var transfer : abiTransfers) {
             var accountID = convertLeftPaddedAddressToAccountId(transfer.get(0), aliasResolver);
             final long amount = transfer.get(1);
-            if (amount > 0 && !exists.test(accountID) && !accountID.hasAlias()) {
+            if (amount > 0 && !exists.test(accountID) && !accountID.getAlias().isEmpty()) {
                 accountID = generateAccountIDWithAliasCalculatedFrom(accountID);
             }
             // Only set the isApproval flag to true if it was sent in as a tuple parameter as "true"

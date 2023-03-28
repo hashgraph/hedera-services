@@ -258,7 +258,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
         final CryptoCreateTransactionBody opBody = spec.txns()
                 .<CryptoCreateTransactionBody, CryptoCreateTransactionBody.Builder>body(
                         CryptoCreateTransactionBody.class, b -> {
-                            if (fuzzingIdentifiers && key.hasECDSASecp256K1()) {
+                            if (fuzzingIdentifiers && !key.getECDSASecp256K1().isEmpty()) {
                                 InitialAccountIdentifiers.fuzzedFrom(key).customize(b);
                             } else {
                                 if (alias.isPresent() || evmAddress.isPresent()) {

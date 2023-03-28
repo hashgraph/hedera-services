@@ -105,7 +105,7 @@ public record InitialAccountIdentifiers(@Nullable Key key, @Nullable byte[] alia
     }
 
     private static void throwIfNotEcdsa(final Key key) {
-        if (!key.hasECDSASecp256K1()) {
+        if (key.getECDSASecp256K1().isEmpty()) {
             throw new IllegalArgumentException("Key must be an ECDSA key to imply an address");
         }
     }
