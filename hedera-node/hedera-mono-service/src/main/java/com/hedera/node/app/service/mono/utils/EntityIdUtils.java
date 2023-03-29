@@ -352,11 +352,11 @@ public final class EntityIdUtils {
         }
     }
 
-    public static boolean isValidSizeEvmAddress(final ByteString key){
+    public static boolean isValidSizeEvmAddress(final ByteString key) {
         return key.size() == EVM_ADDRESS_SIZE;
     }
 
-    public static boolean isValidSizeECDSAAddress(final ByteString key){
+    public static boolean isValidSizeECDSAAddress(final ByteString key) {
         return key.size() == ECDSA_SECP256K1_ALIAS_SIZE;
     }
 }

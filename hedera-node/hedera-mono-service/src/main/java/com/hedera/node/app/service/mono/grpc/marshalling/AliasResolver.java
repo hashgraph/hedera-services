@@ -18,8 +18,8 @@ package com.hedera.node.app.service.mono.grpc.marshalling;
 
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isValidSizeEvmAddress;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAlias;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isValidSizeEvmAddress;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.isSerializedProtoKey;
 
