@@ -37,6 +37,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
 public class TransactionRecordAsserts extends BaseErroringAssertsProvider<TransactionRecord> {
+
     static final Logger log = LogManager.getLogger(TransactionRecordAsserts.class);
     static final String RECEIPT = "receipt";
     static final String TRANSACTION_FEE = "transactionFee";
@@ -170,7 +171,7 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
     }
 
     public TransactionRecordAsserts hasMirrorIdInReceipt() {
-        this.<TransactionReceipt>registerTypedProvider("receipt", spec -> receipt -> {
+        this.<TransactionReceipt>registerTypedProvider(RECEIPT, spec -> receipt -> {
             try {
                 assertEquals(0, receipt.getContractID().getShardNum(), "Bad receipt shard");
                 assertEquals(0, receipt.getContractID().getRealmNum(), "Bad receipt realm");
