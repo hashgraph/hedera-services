@@ -37,7 +37,9 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
 public class TransactionRecordAsserts extends BaseErroringAssertsProvider<TransactionRecord> {
+
     static final Logger log = LogManager.getLogger(TransactionRecordAsserts.class);
+    public static final String RECEIPT = "receipt";
 
     public static TransactionRecordAsserts recordWith() {
         return new TransactionRecordAsserts();
@@ -119,7 +121,7 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
     }
 
     public TransactionRecordAsserts status(ResponseCodeEnum expectedStatus) {
-        this.<TransactionReceipt>registerTypedProvider("receipt", spec -> receipt -> {
+        this.<TransactionReceipt>registerTypedProvider(RECEIPT, spec -> receipt -> {
             try {
                 assertEquals(expectedStatus, receipt.getStatus(), "Bad status!");
             } catch (Throwable t) {
@@ -131,7 +133,7 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
     }
 
     public TransactionRecordAsserts serialNos(List<Long> minted) {
-        this.<TransactionReceipt>registerTypedProvider("receipt", spec -> receipt -> {
+        this.<TransactionReceipt>registerTypedProvider(RECEIPT, spec -> receipt -> {
             try {
                 assertEquals(minted, receipt.getSerialNumbersList(), "Wrong serial nos");
             } catch (Throwable t) {
@@ -143,7 +145,7 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
     }
 
     public TransactionRecordAsserts newTotalSupply(long expected) {
-        this.<TransactionReceipt>registerTypedProvider("receipt", spec -> receipt -> {
+        this.<TransactionReceipt>registerTypedProvider(RECEIPT, spec -> receipt -> {
             try {
                 assertEquals(expected, receipt.getNewTotalSupply(), "Wrong new total supply");
             } catch (Throwable t) {
@@ -155,7 +157,7 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
     }
 
     public TransactionRecordAsserts targetedContractId(final String id) {
-        this.<TransactionReceipt>registerTypedProvider("receipt", spec -> receipt -> {
+        this.<TransactionReceipt>registerTypedProvider(RECEIPT, spec -> receipt -> {
             try {
                 final var expected = TxnUtils.asContractId(id, spec);
                 assertEquals(expected, receipt.getContractID(), "Bad targeted contract");
@@ -168,7 +170,7 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
     }
 
     public TransactionRecordAsserts hasMirrorIdInReceipt() {
-        this.<TransactionReceipt>registerTypedProvider("receipt", spec -> receipt -> {
+        this.<TransactionReceipt>registerTypedProvider(RECEIPT, spec -> receipt -> {
             try {
                 assertEquals(0, receipt.getContractID().getShardNum(), "Bad receipt shard");
                 assertEquals(0, receipt.getContractID().getRealmNum(), "Bad receipt realm");
@@ -181,7 +183,7 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
     }
 
     public TransactionRecordAsserts targetedContractId(final ContractID id) {
-        this.<TransactionReceipt>registerTypedProvider("receipt", spec -> receipt -> {
+        this.<TransactionReceipt>registerTypedProvider(RECEIPT, spec -> receipt -> {
             try {
                 assertEquals(id, receipt.getContractID(), "Bad targeted contract");
             } catch (Exception t) {
@@ -193,7 +195,7 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
     }
 
     public TransactionRecordAsserts checkTopicRunningHashVersion(int versionNumber) {
-        this.<TransactionReceipt>registerTypedProvider("receipt", spec -> receipt -> {
+        this.<TransactionReceipt>registerTypedProvider(RECEIPT, spec -> receipt -> {
             try {
                 assertEquals(versionNumber, receipt.getTopicRunningHashVersion(), "Bad TopicRunningHashVerions!");
             } catch (Throwable t) {
