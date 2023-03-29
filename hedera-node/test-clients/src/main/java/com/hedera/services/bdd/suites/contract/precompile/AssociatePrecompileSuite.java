@@ -417,10 +417,11 @@ public class AssociatePrecompileSuite extends HapiSuite {
                                 .treasury(TOKEN_TREASURY)
                                 .exposingCreatedIdTo(idLit ->
                                         tokenAddress.set(idAsHeadlongAddress(HapiPropertySource.asToken(idLit)))))
-                .when(sourcing(() -> contractCall(INNER_CONTRACT, "tokenAssociate", missingAddress, tokenAddress.get())
-                        .via(txn)
-                        .gas(GAS_TO_OFFER)
-                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
+                .when(sourcing(
+                        () -> contractCall(INNER_CONTRACT, TOKEN_ASSOCIATE_FUNCTION, missingAddress, tokenAddress.get())
+                                .via(txn)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
                 .then(getTxnRecord(txn).andAllChildRecords().logged());
     }
 
