@@ -41,7 +41,7 @@ public class TipsetScoreCalculator {
     /**
      * Builds tipsets for each event. Is maintained outside this object.
      */
-    private final TipsetBuilder builder;
+    private final TipsetBuilder tipsetBuilder;
 
     /**
      * The current tipset snapshot.
@@ -87,7 +87,7 @@ public class TipsetScoreCalculator {
      * Create a new tipset window.
      *
      * @param selfId        the ID of the node tracked by this window
-     * @param builder       builds tipsets for individual events
+     * @param tipsetBuilder       builds tipsets for individual events
      * @param nodeCount     the number of nodes in the address book
      * @param nodeIdToIndex maps node ID to node index
      * @param indexToWeight maps node index to consensus weight
@@ -95,14 +95,14 @@ public class TipsetScoreCalculator {
      */
     public TipsetScoreCalculator(
             final long selfId,
-            @NonNull final TipsetBuilder builder,
+            @NonNull final TipsetBuilder tipsetBuilder,
             final int nodeCount,
             @NonNull final LongToIntFunction nodeIdToIndex,
             @NonNull final IntToLongFunction indexToWeight,
             final long totalWeight) {
 
         this.selfId = selfId;
-        this.builder = builder;
+        this.tipsetBuilder = tipsetBuilder;
         this.nodeCount = nodeCount;
         this.totalWeight = totalWeight;
         this.selfWeight = indexToWeight.applyAsLong(nodeIdToIndex.applyAsInt(selfId));
@@ -143,7 +143,7 @@ public class TipsetScoreCalculator {
             throw new IllegalArgumentException("event creator must be the same as the window ID");
         }
 
-        final Tipset eventTipset = builder.getTipset(event);
+        final Tipset eventTipset = tipsetBuilder.getTipset(event);
         if (eventTipset == null) {
             throw new IllegalArgumentException("event is not in the tipset tracker");
         }
@@ -179,7 +179,7 @@ public class TipsetScoreCalculator {
     public long getTheoreticalAdvancementScore(final List<EventFingerprint> parents) { // TODO test
         final List<Tipset> parentTipsets = new ArrayList<>(parents.size());
         for (final EventFingerprint parent : parents) {
-            parentTipsets.add(builder.getTipset(parent));
+            parentTipsets.add(tipsetBuilder.getTipset(parent));
         }
 
         // Don't bother advancing the self generation, since self advancement doesn't contribute to tipset score.
@@ -212,7 +212,7 @@ public class TipsetScoreCalculator {
      */
     public int getBullyScoreForNodeIndex(final int nodeIndex) { // TODO test
         int bullyScore = 0;
-        final long latestGeneration = builder.getLatestGenerationForNodeIndex(nodeIndex);
+        final long latestGeneration = tipsetBuilder.getLatestGenerationForNodeIndex(nodeIndex);
 
         Tipset previousTipset = snapshot;
 
