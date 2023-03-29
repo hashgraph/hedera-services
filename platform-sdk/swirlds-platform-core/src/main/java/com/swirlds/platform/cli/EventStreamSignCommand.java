@@ -49,6 +49,9 @@ public final class EventStreamSignCommand extends SignCommand {
         return EventStreamType.getInstance().isStreamFile(path.toFile());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Integer call() {
         EventStreamSigningUtils.initializeSystem();

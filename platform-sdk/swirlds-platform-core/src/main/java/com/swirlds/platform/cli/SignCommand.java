@@ -102,17 +102,14 @@ public abstract class SignCommand extends AbstractCommand {
         this.destinationDirectory = destinationDirectory.toAbsolutePath().normalize();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Integer call() {
         keyPair = FileSigningUtils.loadPfxKey(keyFilePath, keyFilePassword, keyAlias);
 
-        for (final Path path : pathsToSign) {
-            if (Files.isDirectory(path)) {
-                signAllFilesInDirectory(path);
-            } else {
-                sign(path);
-            }
-        }
+        pathsToSign.forEach(this::signFilesAtPath);
 
         return 0;
     }
@@ -139,15 +136,15 @@ public abstract class SignCommand extends AbstractCommand {
     public abstract boolean isFileSupported(@NonNull final Path path);
 
     /**
-     * Perform necessary tasks to sign a file. Generates a signature file via {@link #generateSignatureFile} if one
-     * doesn't already exist
+     * Perform necessary tasks to sign a single file. Generates a signature file via {@link #generateSignatureFile} if
+     * one doesn't already exist
      * <p>
      * If a destinationDirectory has been specified, the source file will additionally be copied to the destination
      * directory
      *
      * @param fileToSign the file to generate a signature file for
      */
-    private void sign(@NonNull final Path fileToSign) {
+    private void signFile(@NonNull final Path fileToSign) {
         final Path signatureFileDestinationPath;
         if (destinationDirectory == null) {
             // if destinationDirectory is null, then we are generating in-place signatures
@@ -183,15 +180,16 @@ public abstract class SignCommand extends AbstractCommand {
     }
 
     /**
-     * Sign all files in a directory, recursively
+     * Sign file(s) at a path. Individual files will simply be signed, and directories will have all supported files
+     * signed, recursively
      *
-     * @param directoryPath the path to the directory to sign
+     * @param path the path to sign files at
      */
-    private void signAllFilesInDirectory(@NonNull final Path directoryPath) {
-        try (final Stream<Path> stream = Files.walk(directoryPath)) {
-            stream.filter(this::isFileSupported).forEach(this::sign);
+    private void signFilesAtPath(@NonNull final Path path) {
+        try (final Stream<Path> stream = Files.walk(path)) {
+            stream.filter(this::isFileSupported).forEach(this::signFile);
         } catch (final IOException e) {
-            throw new RuntimeException("Failed to list files in directory: " + directoryPath);
+            throw new RuntimeException("Failed to list files: " + path);
         }
     }
 }
