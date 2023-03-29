@@ -20,8 +20,11 @@ import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 import static com.swirlds.platform.Utilities.isSuperMajority;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.Queue;
+import java.util.List;
 import java.util.function.IntToLongFunction;
 import java.util.function.LongToIntFunction;
 
@@ -48,12 +51,17 @@ public class TipsetScoreCalculator {
     /**
      * The N most recent snapshots.
      */
-    private Queue<Tipset> snapshotHistory = new LinkedList<>();
+    private final Deque<Tipset> snapshotHistory = new LinkedList<>();
 
     /**
      * The number of snapshots to keep in {@link #snapshotHistory}.
      */
     private final int snapshotHistorySize = 10; // TODO setting
+
+    /**
+     * The total number of nodes in the address book.
+     */
+    private final int nodeCount;
 
     /**
      * The total weight of all nodes.
@@ -93,13 +101,14 @@ public class TipsetScoreCalculator {
             @NonNull final IntToLongFunction indexToWeight,
             final long totalWeight) {
 
-        snapshot = new Tipset(nodeCount, nodeIdToIndex, indexToWeight);
-
         this.selfId = selfId;
         this.builder = builder;
+        this.nodeCount = nodeCount;
         this.totalWeight = totalWeight;
         this.selfWeight = indexToWeight.applyAsLong(nodeIdToIndex.applyAsInt(selfId));
         this.maximumPossibleScore = totalWeight - selfWeight;
+
+        this.snapshot = new Tipset(nodeCount, nodeIdToIndex, indexToWeight);
     }
 
     /**
@@ -119,11 +128,11 @@ public class TipsetScoreCalculator {
     }
 
     /**
-     * Add an event created by this node and compute the increase in tipset score. Higher score changes mean
-     * that this event caused consensus to advance more. A score change of 0 means that this event did not advance
-     * consensus. A score change close to the total weight means that this event did a very good job at advancing
-     * consensus. It's impossible to get a perfect score, since the weight of advancing self events is not included. The
-     * maximum score an event can achieve is equal to the sum of all weights minus the sum of this node's weight.
+     * Add an event created by this node and compute the increase in tipset score. Higher score changes mean that this
+     * event caused consensus to advance more. A score change of 0 means that this event did not advance consensus. A
+     * score change close to the total weight means that this event did a very good job at advancing consensus. It's
+     * impossible to get a perfect score, since the weight of advancing self events is not included. The maximum score
+     * an event can achieve is equal to the sum of all weights minus the sum of this node's weight.
      *
      * @param event the event that is being added
      * @return the change in the tipset advancement score
@@ -162,16 +171,74 @@ public class TipsetScoreCalculator {
     }
 
     /**
-     * Compute the current tipset bully score. This is a measure of how well slow node's events are being incorporated
-     * in the hashgraph by faster nodes. A high score means slow nodes are being bullied by fast nodes. A low score
-     * means slow nodes are being included in consensus. Lower scores are better.
+     * Figure out what advancement score we would get if we created an event with a given list of parents.
+     *
+     * @param parents the proposed parents of an event
+     * @return the advancement score we would get by creating an event with the given parents
+     */
+    public long getTheoreticalAdvancementScore(final List<EventFingerprint> parents) { // TODO test
+        final List<Tipset> parentTipsets = new ArrayList<>(parents.size());
+        for (final EventFingerprint parent : parents) {
+            parentTipsets.add(builder.getTipset(parent));
+        }
+
+        // Don't bother advancing the self generation, since self advancement doesn't contribute to tipset score.
+        final Tipset newTipset = Tipset.merge(parentTipsets);
+
+        return snapshot.getWeightedAdvancementCount(selfId, newTipset);
+    }
+
+    /**
+     * Compute the current maximum bully score with respect to all nodes. This is a measure of how well slow node's
+     * events are being incorporated in the hashgraph by faster nodes. A high score means slow nodes are being bullied
+     * by fast nodes. A low score means slow nodes are being included in consensus. Lower scores are better.
      *
      * @return the current tipset bully score
      */
-    public int getBullyScore() {
-        return 0; // TODO
+    public int getBullyScore() { // TODO test
+        int bullyScore = 0;
+        for (int nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++) {
+            bullyScore = Math.max(bullyScore, getBullyScoreForNodeIndex(nodeIndex));
+        }
+        return bullyScore;
     }
 
-    // FUTURE WORK: create mechanisms for computing theoretical advancement scores depending on other parent choice
+    /**
+     * Get the bully score with respect to one node. A high bully score means that we have access to events that could
+     * go into our ancestry, but for whatever reason we have decided not to put into our ancestry.
+     *
+     * @param nodeIndex the index of the node in question
+     * @return the bully score with respect to this node
+     */
+    public int getBullyScoreForNodeIndex(final int nodeIndex) { // TODO test
+        int bullyScore = 0;
+        final long latestGeneration = builder.getLatestGenerationForNodeIndex(nodeIndex);
 
+        Tipset previousTipset = snapshot;
+
+        // Iterate backwards in time until we find an event from the node being added to our ancestry, or if
+        // we find that there are no eligible nodes to be added to our ancestry.
+        final Iterator<Tipset> iterator = snapshotHistory.descendingIterator();
+        while (iterator.hasNext()) {
+            final Tipset currentTipset = iterator.next();
+
+            final long previousGeneration = previousTipset.getTipGenerationForNodeIndex(nodeIndex);
+            final long currentGeneration = currentTipset.getTipGenerationForNodeIndex(nodeIndex);
+
+            if (previousGeneration == latestGeneration || previousGeneration < currentGeneration) {
+                // We stop increasing the bully score if we observe one of the two following events:
+                //
+                // 1) we find that the latest generation provided by a node matches a snapshot's generation
+                //    (i.e. we've used all events provided by this creator as other parents)
+                // 2) we observe an advancement between snapshots, which means that we have put one of this node's
+                //    events into our ancestry.
+                break;
+            }
+
+            bullyScore++;
+            previousTipset = currentTipset;
+        }
+
+        return bullyScore;
+    }
 }

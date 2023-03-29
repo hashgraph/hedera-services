@@ -31,7 +31,17 @@ import java.util.function.LongToIntFunction;
  */
 public class TipsetBuilder {
 
+    /**
+     * Tipsets for all recent events we know about.
+     */
     private final SequenceMap<EventFingerprint, Tipset> tipsets;
+
+    /**
+     * This tipset is equivalent to a tipset that would be created by merging all tipsets of all events that
+     * this object has ever observed. If you ask this tipset for the generation for a particular node,
+     * it will return the highest generation of all events we have ever received from that node.
+     */
+    private Tipset latestGenerations;
 
     /**
      * The number of nodes.
@@ -50,6 +60,7 @@ public class TipsetBuilder {
 
     /**
      * Create a new tipset tracker.
+     *
      * @param nodeCount     the number of nodes in the address book
      * @param nodeIdToIndex maps node ID to node index
      * @param indexToWeight maps node index to consensus weight
@@ -62,6 +73,7 @@ public class TipsetBuilder {
         this.nodeCount = nodeCount;
         this.nodeIdToIndex = nodeIdToIndex;
         this.indexToWeight = indexToWeight;
+        this.latestGenerations = new Tipset(nodeCount, nodeIdToIndex, indexToWeight);
 
         tipsets = new StandardSequenceMap<>(
                 0,
@@ -72,8 +84,7 @@ public class TipsetBuilder {
     /**
      * Set the minimum generation that is not considered ancient.
      *
-     * @param minimumGenerationNonAncient
-     * 		the minimum non-ancient generation, all lower generations are ancient
+     * @param minimumGenerationNonAncient the minimum non-ancient generation, all lower generations are ancient
      */
     public void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
         tipsets.shiftWindow(minimumGenerationNonAncient);
@@ -82,10 +93,8 @@ public class TipsetBuilder {
     /**
      * Add a new event to the tracker.
      *
-     * @param eventFingerprint
-     * 		the fingerprint of the event to add
-     * @param parents
-     * 		the parents of the event being added
+     * @param eventFingerprint the fingerprint of the event to add
+     * @param parents          the parents of the event being added
      * @return the tipset for the event that was added
      */
     public Tipset addEvent(final EventFingerprint eventFingerprint, final List<EventFingerprint> parents) {
@@ -106,6 +115,7 @@ public class TipsetBuilder {
         }
 
         tipsets.put(eventFingerprint, eventTipset);
+        latestGenerations = latestGenerations.advance(eventFingerprint.creator(), eventFingerprint.generation());
 
         return eventTipset;
     }
@@ -113,12 +123,31 @@ public class TipsetBuilder {
     /**
      * Get the tipset of an event, or null if the event is not being tracked.
      *
-     * @param eventFingerprint
-     * 		the fingerprint of the event
+     * @param eventFingerprint the fingerprint of the event
      * @return the tipset of the event
      */
     public Tipset getTipset(final EventFingerprint eventFingerprint) {
         return tipsets.get(eventFingerprint);
+    }
+
+    /**
+     * Get the highest generation of all events we have received from a particular node.
+     *
+     * @param nodeId the ID of the node
+     * @return the highest generation of all events received by a node
+     */
+    public long getLatestGenerationForNodeId(final long nodeId) { // TODO test
+        return latestGenerations.getTipGenerationForNodeId(nodeId);
+    }
+
+    /**
+     * Get the highest generation of all events we have received from a particular node index.
+     *
+     * @param nodeIndex the index of the node
+     * @return the highest generation of all events received by a node index
+     */
+    public long getLatestGenerationForNodeIndex(final int nodeIndex) { // TODO test
+        return latestGenerations.getTipGenerationForNodeIndex(nodeIndex);
     }
 
     /**

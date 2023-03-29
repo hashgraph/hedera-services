@@ -104,13 +104,23 @@ public class Tipset {
     }
 
     /**
-     * Get the tip generation for a given node ID. Returns 0 if this node has not been added to the tipset.
+     * Get the tip generation for a given node ID.
      *
      * @param nodeId the node ID in question
      * @return the tip generation for the node ID
      */
-    public long getTipGeneration(final long nodeId) {
+    public long getTipGenerationForNodeId(final long nodeId) {
         return tips[nodeIdToIndex.applyAsInt(nodeId)];
+    }
+
+    /**
+     * Get the tip generation for a given node index. Returns 0 if this node has not been added to the tipset.
+     *
+     * @param index the index of the node in question
+     * @return the tip generation for the node index
+     */
+    public long getTipGenerationForNodeIndex(final int index) { // TODO test
+        return tips[index];
     }
 
     /**

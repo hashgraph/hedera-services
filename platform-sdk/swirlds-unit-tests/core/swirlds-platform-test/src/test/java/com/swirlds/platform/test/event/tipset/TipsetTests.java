@@ -40,7 +40,7 @@ class TipsetTests {
 
     private static void validateTipset(final Tipset tipset, final Map<Long, Long> expectedTipGenerations) {
         for (final Long nodeId : expectedTipGenerations.keySet()) {
-            assertEquals(expectedTipGenerations.get(nodeId), tipset.getTipGeneration(nodeId));
+            assertEquals(expectedTipGenerations.get(nodeId), tipset.getTipGenerationForNodeId(nodeId));
         }
     }
 
@@ -111,7 +111,9 @@ class TipsetTests {
         final Tipset comparisonTipset = Tipset.merge(List.of(initialTipset));
         assertEquals(initialTipset.size(), comparisonTipset.size());
         for (int creatorId = 0; creatorId < 100; creatorId++) {
-            assertEquals(initialTipset.getTipGeneration(creatorId), comparisonTipset.getTipGeneration(creatorId));
+            assertEquals(
+                    initialTipset.getTipGenerationForNodeId(creatorId),
+                    comparisonTipset.getTipGenerationForNodeId(creatorId));
         }
 
         // Cause the comparison tipset to advance in a random way
@@ -128,7 +130,7 @@ class TipsetTests {
                 // Self advancements are not counted
                 continue;
             }
-            if (initialTipset.getTipGeneration(i) < comparisonTipset.getTipGeneration(i)) {
+            if (initialTipset.getTipGenerationForNodeId(i) < comparisonTipset.getTipGenerationForNodeId(i)) {
                 expectedAdvancementCount++;
             }
         }
@@ -158,7 +160,9 @@ class TipsetTests {
         final Tipset comparisonTipset = Tipset.merge(List.of(initialTipset));
         assertEquals(initialTipset.size(), comparisonTipset.size());
         for (int creatorId = 0; creatorId < 100; creatorId++) {
-            assertEquals(initialTipset.getTipGeneration(creatorId), comparisonTipset.getTipGeneration(creatorId));
+            assertEquals(
+                    initialTipset.getTipGenerationForNodeId(creatorId),
+                    comparisonTipset.getTipGenerationForNodeId(creatorId));
         }
 
         // Cause the comparison tipset to advance in a random way
@@ -174,7 +178,7 @@ class TipsetTests {
                 // Self advancements are not counted
                 continue;
             }
-            if (initialTipset.getTipGeneration(i) < comparisonTipset.getTipGeneration(i)) {
+            if (initialTipset.getTipGenerationForNodeId(i) < comparisonTipset.getTipGenerationForNodeId(i)) {
                 expectedAdvancementCount += weights.get((long) i);
             }
         }

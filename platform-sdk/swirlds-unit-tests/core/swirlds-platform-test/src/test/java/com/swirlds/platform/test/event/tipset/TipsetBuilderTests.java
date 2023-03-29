@@ -42,7 +42,7 @@ class TipsetBuilderTests {
     private static void assertTipsetEquality(final Tipset expected, final Tipset actual, final long nodeCount) {
         assertEquals(expected.size(), actual.size());
         for (long nodeId = 0; nodeId < nodeCount; nodeId++) {
-            assertEquals(expected.getTipGeneration(nodeId), actual.getTipGeneration(nodeId));
+            assertEquals(expected.getTipGenerationForNodeId(nodeId), actual.getTipGenerationForNodeId(nodeId));
         }
     }
 
