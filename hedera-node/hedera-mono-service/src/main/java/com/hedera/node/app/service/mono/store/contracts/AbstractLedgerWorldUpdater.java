@@ -36,7 +36,7 @@ import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
-import com.hedera.node.app.service.mono.store.UpdatedAccountTrackerImpl;
+import com.hedera.node.app.service.mono.store.UpdateAccountTrackerImpl;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -117,7 +117,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
         final var address = curAliases.resolveForEvm(addressOrAlias);
 
         final var curAccounts = trackingAccounts();
-        final var newMutable = new UpdateTrackingAccount<A>(address, new UpdatedAccountTrackerImpl(curAccounts));
+        final var newMutable = new UpdateTrackingAccount<A>(address, new UpdateAccountTrackerImpl(curAccounts));
         if (trackingLedgers.areMutable()) {
             final var newAccountId = accountIdFromEvmAddress(newMutable.getAddress());
             curAccounts.create(newAccountId);
@@ -168,7 +168,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
                 return null;
             }
             final var newMutable =
-                    new UpdateTrackingAccount<>(origin, new UpdatedAccountTrackerImpl(trackingLedgers.accounts()));
+                    new UpdateTrackingAccount<>(origin, new UpdateAccountTrackerImpl(trackingLedgers.accounts()));
             return new WrappedEvmAccount(track(newMutable));
         }
     }
@@ -290,10 +290,10 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
                 // created lazy account through the HTS precompiled contract,
                 // which can occur with any transfer precompile function
                 updatedAccount =
-                        new UpdateTrackingAccount<>(address, new UpdatedAccountTrackerImpl(trackingLedgers.accounts()));
+                        new UpdateTrackingAccount<>(address, new UpdateAccountTrackerImpl(trackingLedgers.accounts()));
             } else {
                 updatedAccount =
-                        new UpdateTrackingAccount<>(origin, new UpdatedAccountTrackerImpl(trackingLedgers.accounts()));
+                        new UpdateTrackingAccount<>(origin, new UpdateAccountTrackerImpl(trackingLedgers.accounts()));
             }
             track(updatedAccount);
         }
@@ -308,7 +308,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
     }
 
     public void trackLazilyCreatedAccount(final Address address) {
-        final var newMutable = new UpdateTrackingAccount<A>(address, new UpdatedAccountTrackerImpl(trackingAccounts()));
+        final var newMutable = new UpdateTrackingAccount<A>(address, new UpdateAccountTrackerImpl(trackingAccounts()));
         track(newMutable);
     }
 

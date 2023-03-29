@@ -182,8 +182,6 @@ class UpdateTrackingAccountTest {
         assertEquals(Long.MAX_VALUE, subject.getBalance().toLong());
     }
 
-    //    void setBalancePropagatesToUsableTrackingAccounts() {
-
     @Test
     void getStorageValueRecognizesUpdatedStorage() {
         final var mockValue = UInt256.valueOf(1_234_567L);

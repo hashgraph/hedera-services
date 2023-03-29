@@ -19,7 +19,7 @@ package com.hedera.node.app.service.mono.store;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.accountIdFromEvmAddress;
 
-import com.hedera.node.app.service.evm.store.UpdatedAccountTracker;
+import com.hedera.node.app.service.evm.store.UpdateAccountTracker;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
@@ -27,10 +27,14 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import org.hyperledger.besu.datatypes.Address;
 
-public class UpdatedAccountTrackerImpl implements UpdatedAccountTracker {
+/**
+ * Implementation of the {@link UpdateAccountTracker} that provides a concrete methods for storing the changed state
+ * in the {@code trackingAccounts}
+ * */
+public class UpdateAccountTrackerImpl implements UpdateAccountTracker {
     private TransactionalLedger<AccountID, AccountProperty, HederaAccount> trackingAccounts;
 
-    public UpdatedAccountTrackerImpl(
+    public UpdateAccountTrackerImpl(
             @Nullable TransactionalLedger<AccountID, AccountProperty, HederaAccount> trackingAccounts) {
         this.trackingAccounts = trackingAccounts;
     }

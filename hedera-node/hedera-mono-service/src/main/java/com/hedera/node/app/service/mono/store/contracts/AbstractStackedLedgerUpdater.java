@@ -18,7 +18,7 @@ package com.hedera.node.app.service.mono.store.contracts;
 
 import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
-import com.hedera.node.app.service.mono.store.UpdatedAccountTrackerImpl;
+import com.hedera.node.app.service.mono.store.UpdateAccountTrackerImpl;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.worldstate.WorldView;
@@ -57,7 +57,7 @@ public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extend
         final A account = wrapped.getForMutation(address);
         return account == null
                 ? null
-                : new UpdateTrackingAccount<>(account, new UpdatedAccountTrackerImpl(trackingAccounts()));
+                : new UpdateTrackingAccount<>(account, new UpdateAccountTrackerImpl(trackingAccounts()));
     }
 
     /** {@inheritDoc} */
@@ -95,10 +95,10 @@ public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extend
                 if (mutable == null) {
                     /* We created this account, so create a new tracker for our parent. */
                     mutable = new UpdateTrackingAccount<>(
-                            updatedAccount.getAddress(), new UpdatedAccountTrackerImpl(wrapped.trackingAccounts()));
+                            updatedAccount.getAddress(), new UpdateAccountTrackerImpl(wrapped.trackingAccounts()));
                 } else {
                     /* This tracker is reusable, just update its tracking accounts to our parent's. */
-                    final var tracker = (UpdatedAccountTrackerImpl) mutable.getAccountTracker();
+                    final var tracker = (UpdateAccountTrackerImpl) mutable.getAccountTracker();
                     tracker.updateTrackingAccounts(wrapped.trackingAccounts());
                 }
                 wrapped.getUpdatedAccounts().put(mutable.getAddress(), mutable);

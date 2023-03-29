@@ -18,7 +18,16 @@ package com.hedera.node.app.service.evm.store;
 
 import org.hyperledger.besu.datatypes.Address;
 
-public interface UpdatedAccountTracker {
+/**
+ * When an account's balance is changed by an EVM call, it is necessary to ensure that any Hedera system contract running
+ * within the same frame can immediately see the change. This means that waiting for commit() to be called on a WorldUpdater
+ * is not an option; instead, the "parallel" Hedera world state must be updated immediately.
+ *
+ * <p>This class defines the callback mechanism that a mutated account uses to report its balance changes to the Hedera
+ * world state when executing an EVM transaction on a consensus node. Accounts that are "mutated" during an eth_estimateGas
+ * call running on a mirror node do not actually change, so a null implementation of the callback can be provided in such cases.
+ * */
+public interface UpdateAccountTracker {
 
     void setBalance(final Address accountAddess, final long balance);
 }

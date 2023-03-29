@@ -33,6 +33,22 @@ import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.hyperledger.besu.evm.worldstate.WorldView;
 import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
 
+/**
+ * This class implementation help for both "base" and "stacked" {@link WorldUpdater}s.
+ *
+ * <p>It tracks account changes in {@code deletedAccounts} set and {@code updatedAccounts} map.These
+ * collections are used as follows:
+ * <ol>
+ *  <li>For services, the stored accounts are added or removed from the ledger accordingly.
+ *
+ *   <li>For evm-module (i.e. mirror-node flow) the ledger's persistence role is executed by a DB
+ *       layer and {@code deletedAccounts} and {@code updatedAccounts} serve as a local cache for
+ *       for optimization purposes.
+ * </ol>
+ *
+ * @param <A> the most specialized account type to be updated
+ * @param <W> the most specialized world updater to be used
+ */
 public abstract class AbstractLedgerEvmWorldUpdater<W extends WorldView, A extends Account> implements WorldUpdater {
 
     protected final W world;

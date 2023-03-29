@@ -52,7 +52,7 @@ import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
-import com.hedera.node.app.service.mono.store.UpdatedAccountTrackerImpl;
+import com.hedera.node.app.service.mono.store.UpdateAccountTrackerImpl;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.tuweni.bytes.Bytes;
@@ -212,7 +212,7 @@ public class HederaStackedWorldStateUpdater extends AbstractStackedLedgerUpdater
         if (isTokenRedirect(address)) {
             final var proxyAccount = new HederaEvmWorldStateTokenAccount(address);
             final var newMutable =
-                    new UpdateTrackingAccount<>(proxyAccount, new UpdatedAccountTrackerImpl(trackingAccounts()));
+                    new UpdateTrackingAccount<>(proxyAccount, new UpdateAccountTrackerImpl(trackingAccounts()));
             return new WrappedEvmAccount(newMutable);
         }
         return super.getAccount(address);

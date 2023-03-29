@@ -19,7 +19,7 @@ package com.hedera.node.app.service.evm.store.models;
 import static com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 
 import com.google.common.base.Preconditions;
-import com.hedera.node.app.service.evm.store.UpdatedAccountTracker;
+import com.hedera.node.app.service.evm.store.UpdateAccountTracker;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
@@ -37,6 +37,13 @@ import org.hyperledger.besu.evm.account.AccountStorageEntry;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
 
+/**
+ * A mutable and updatable implementation of the {@link MutableAccount} interface, that tracks account updates
+ * since the creation of the updated it's linked to.
+ *
+ * Contains {@code updateAccountTracker} for immediate set of balance in the world state.
+ * Note that in practice this only track the modified account values, but doesn't remind if they were modified or not.
+ */
 public class UpdateTrackingAccount<A extends Account> implements MutableAccount, EvmAccount {
     private final Address address;
     private final Hash addressHash;
@@ -44,7 +51,7 @@ public class UpdateTrackingAccount<A extends Account> implements MutableAccount,
     private Wei balance;
     private HederaEvmEntityAccess hederaEvmEntityAccess;
     private boolean storageWasCleared = false;
-    private final UpdatedAccountTracker updatedAccountTracker;
+    private final UpdateAccountTracker updateAccountTracker;
     private final NavigableMap<UInt256, UInt256> updatedStorage;
 
     @Nullable
@@ -56,7 +63,7 @@ public class UpdateTrackingAccount<A extends Account> implements MutableAccount,
     @Nullable
     private Hash updatedCodeHash;
 
-    public UpdateTrackingAccount(final Address address, @Nullable final UpdatedAccountTracker updatedAccountTracker) {
+    public UpdateTrackingAccount(final Address address, @Nullable final UpdateAccountTracker updateAccountTracker) {
         Preconditions.checkNotNull(address);
         this.address = address;
         addressHash = Hash.hash(address);
@@ -65,18 +72,18 @@ public class UpdateTrackingAccount<A extends Account> implements MutableAccount,
         nonce = 0L;
         updatedCode = Bytes.EMPTY;
         updatedStorage = new TreeMap<>();
-        this.updatedAccountTracker = updatedAccountTracker;
+        this.updateAccountTracker = updateAccountTracker;
     }
 
     @SuppressWarnings("unchecked")
-    public UpdateTrackingAccount(final A account, @Nullable final UpdatedAccountTracker updatedAccountTracker) {
+    public UpdateTrackingAccount(final A account, @Nullable final UpdateAccountTracker updateAccountTracker) {
         Preconditions.checkNotNull(account);
         this.account = account;
         address = account.getAddress();
         this.addressHash = account instanceof UpdateTrackingAccount
                 ? ((UpdateTrackingAccount<A>) account).addressHash
                 : Hash.hash(account.getAddress());
-        this.updatedAccountTracker = updatedAccountTracker;
+        this.updateAccountTracker = updateAccountTracker;
         balance = account.getBalance();
         nonce = account.getNonce();
         updatedStorage = new TreeMap<>();
@@ -144,8 +151,8 @@ public class UpdateTrackingAccount<A extends Account> implements MutableAccount,
     @Override
     public void setBalance(final Wei value) {
         balance = value;
-        if (updatedAccountTracker != null) {
-            updatedAccountTracker.setBalance(address, value.toLong());
+        if (updateAccountTracker != null) {
+            updateAccountTracker.setBalance(address, value.toLong());
         }
     }
 
@@ -259,7 +266,7 @@ public class UpdateTrackingAccount<A extends Account> implements MutableAccount,
         this.hederaEvmEntityAccess = hederaEvmEntityAccess;
     }
 
-    public UpdatedAccountTracker getAccountTracker() {
-        return updatedAccountTracker;
+    public UpdateAccountTracker getAccountTracker() {
+        return updateAccountTracker;
     }
 }
