@@ -73,16 +73,17 @@ public class ContractBurnHTSSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ContractBurnHTSSuite.class);
 
     private static final long GAS_TO_OFFER = 4_000_000L;
-    private static final String THE_CONTRACT = "BurnToken";
+    public static final String THE_BURN_CONTRACT = "BurnToken";
 
-    private static final String ALICE = "Alice";
+    public static final String ALICE = "Alice";
     private static final String TOKEN = "Token";
     private static final String TOKEN_TREASURY = "TokenTreasury";
     private static final String MULTI_KEY = "purpose";
     private static final String CONTRACT_KEY = "Contract key";
     private static final String SUPPLY_KEY = "Supply key";
-    private static final String CREATION_TX = "creationTx";
+    public static final String CREATION_TX = "creationTx";
     private static final String BURN_AFTER_NESTED_MINT_TX = "burnAfterNestedMint";
+    public static final String BURN_TOKEN_WITH_EVENT = "burnTokenWithEvent";
 
     public static void main(String... args) {
         new ContractBurnHTSSuite().runSuiteAsync();
@@ -122,11 +123,11 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                 .supplyKey(MULTI_KEY)
                                 .adminKey(MULTI_KEY)
                                 .treasury(TOKEN_TREASURY),
-                        uploadInitCode(THE_CONTRACT),
+                        uploadInitCode(THE_BURN_CONTRACT),
                         withOpContext((spec, opLog) -> allRunFor(
                                 spec,
                                 contractCreate(
-                                                THE_CONTRACT,
+                                                THE_BURN_CONTRACT,
                                                 asHeadlongAddress(asHexedAddress(
                                                         spec.registry().getTokenID(TOKEN))))
                                         .payingWith(ALICE)
@@ -134,7 +135,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                         .gas(GAS_TO_OFFER))),
                         getTxnRecord(CREATION_TX).logged())
                 .when(
-                        contractCall(THE_CONTRACT, "burnTokenWithEvent", BigInteger.ZERO, new long[0])
+                        contractCall(THE_BURN_CONTRACT, "burnTokenWithEvent", BigInteger.ZERO, new long[0])
                                 .payingWith(ALICE)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER)
@@ -158,7 +159,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                                         .withTotalSupply(50))
                                                 .gasUsed(gasUsed))
                                         .newTotalSupply(50)),
-                        contractCall(THE_CONTRACT, "burnTokenWithEvent", BigInteger.ONE, new long[0])
+                        contractCall(THE_BURN_CONTRACT, "burnTokenWithEvent", BigInteger.ONE, new long[0])
                                 .payingWith(ALICE)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER)
@@ -185,9 +186,9 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                         .tokenTransfers(
                                                 changingFungibleBalances().including(TOKEN, TOKEN_TREASURY, -1))
                                         .newTotalSupply(49)),
-                        newKeyNamed(CONTRACT_KEY).shape(DELEGATE_CONTRACT.signedWith(THE_CONTRACT)),
+                        newKeyNamed(CONTRACT_KEY).shape(DELEGATE_CONTRACT.signedWith(THE_BURN_CONTRACT)),
                         tokenUpdate(TOKEN).supplyKey(CONTRACT_KEY),
-                        contractCall(THE_CONTRACT, "burnToken", BigInteger.ONE, new long[0])
+                        contractCall(THE_BURN_CONTRACT, "burnToken", BigInteger.ONE, new long[0])
                                 .via("burn with contract key")
                                 .gas(GAS_TO_OFFER),
                         childRecordsCheck(
@@ -220,11 +221,11 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                 .treasury(TOKEN_TREASURY),
                         mintToken(TOKEN, List.of(copyFromUtf8("First!"))),
                         mintToken(TOKEN, List.of(copyFromUtf8("Second!"))),
-                        uploadInitCode(THE_CONTRACT),
+                        uploadInitCode(THE_BURN_CONTRACT),
                         withOpContext((spec, opLog) -> allRunFor(
                                 spec,
                                 contractCreate(
-                                                THE_CONTRACT,
+                                                THE_BURN_CONTRACT,
                                                 asHeadlongAddress(asHexedAddress(
                                                         spec.registry().getTokenID(TOKEN))))
                                         .payingWith(ALICE)
@@ -236,7 +237,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
                             final var serialNumbers = new long[] {1L};
                             allRunFor(
                                     spec,
-                                    contractCall(THE_CONTRACT, "burnToken", BigInteger.ZERO, serialNumbers)
+                                    contractCall(THE_BURN_CONTRACT, "burnToken", BigInteger.ZERO, serialNumbers)
                                             .payingWith(ALICE)
                                             .alsoSigningWithFullPrefix(MULTI_KEY)
                                             .gas(GAS_TO_OFFER)

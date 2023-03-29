@@ -102,6 +102,7 @@ import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -296,8 +297,9 @@ public class SyntheticTxnFactory {
         return TransactionBody.newBuilder().setTokenMint(builder);
     }
 
-    public TransactionBody.Builder createFungibleApproval(final ApproveWrapper approveWrapper) {
-        return createNonfungibleApproval(approveWrapper, null, null);
+    public TransactionBody.Builder createFungibleApproval(
+            final ApproveWrapper approveWrapper, @NonNull final EntityId ownerId) {
+        return createNonfungibleApproval(approveWrapper, ownerId, null);
     }
 
     public TransactionBody.Builder createNonfungibleApproval(
@@ -306,11 +308,14 @@ public class SyntheticTxnFactory {
             @Nullable final EntityId operatorId) {
         final var builder = CryptoApproveAllowanceTransactionBody.newBuilder();
         if (approveWrapper.isFungible()) {
-            builder.addTokenAllowances(TokenAllowance.newBuilder()
+            var tokenAllowance = TokenAllowance.newBuilder()
                     .setTokenId(approveWrapper.tokenId())
                     .setSpender(approveWrapper.spender())
-                    .setAmount(approveWrapper.amount().longValueExact())
-                    .build());
+                    .setAmount(approveWrapper.amount().longValueExact());
+            if (ownerId != null) {
+                tokenAllowance.setOwner(ownerId.toGrpcAccountId());
+            }
+            builder.addTokenAllowances(tokenAllowance.build());
         } else {
             final var op = NftAllowance.newBuilder()
                     .setTokenId(approveWrapper.tokenId())

@@ -309,7 +309,12 @@ class GrantKycPrecompileTest {
         grantKycPrecompile.when(() -> decodeGrantTokenKyc(any(), any())).thenReturn(grantRevokeKycWrapper);
         given(syntheticTxnFactory.createGrantKyc(grantRevokeKycWrapper))
                 .willReturn(TransactionBody.newBuilder().setTokenGrantKyc(TokenGrantKycTransactionBody.newBuilder()));
-        given(sigsVerifier.hasActiveKycKey(true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
+        given(sigsVerifier.hasActiveKycKey(
+                        true,
+                        fungibleTokenAddr,
+                        fungibleTokenAddr,
+                        wrappedLedgers,
+                        HederaFunctionality.TokenGrantKycToAccount))
                 .willReturn(true);
     }
 

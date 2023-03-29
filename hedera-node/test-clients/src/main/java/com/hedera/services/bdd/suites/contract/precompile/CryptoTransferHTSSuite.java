@@ -95,7 +95,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CryptoTransferHTSSuite.class);
 
     private static final long GAS_TO_OFFER = 4_000_000L;
-    private static final long TOTAL_SUPPLY = 1_000;
+    public static final long TOTAL_SUPPLY = 1_000;
     private static final String FUNGIBLE_TOKEN = "TokenA";
     private static final String NFT_TOKEN = "Token_NFT";
 
@@ -106,14 +106,14 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE =
             KeyShape.threshOf(1, KeyShape.SIMPLE, DELEGATE_CONTRACT);
 
-    private static final String DELEGATE_KEY = "contractKey";
+    public static final String DELEGATE_KEY = "contractKey";
     private static final String CONTRACT = "CryptoTransfer";
     private static final String MULTI_KEY = "purpose";
     private static final String HTS_TRANSFER_FROM_CONTRACT = "HtsTransferFrom";
     private static final String OWNER = "Owner";
     private static final String HTS_TRANSFER_FROM = "htsTransferFrom";
     private static final String HTS_TRANSFER_FROM_NFT = "htsTransferFromNFT";
-    private static final String TRANSFER_MULTIPLE_TOKENS = "transferMultipleTokens";
+    public static final String TRANSFER_MULTIPLE_TOKENS = "transferMultipleTokens";
     private static final ByteString META1 = ByteStringUtils.wrapUnsafely("meta1".getBytes());
     private static final ByteString META2 = ByteStringUtils.wrapUnsafely("meta2".getBytes());
     private static final ByteString META3 = ByteStringUtils.wrapUnsafely("meta3".getBytes());
