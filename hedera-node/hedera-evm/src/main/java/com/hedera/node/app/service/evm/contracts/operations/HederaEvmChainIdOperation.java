@@ -27,7 +27,9 @@ import org.hyperledger.besu.evm.operation.AbstractOperation;
 import org.hyperledger.besu.evm.operation.Operation;
 
 /**
- * Add the chain id to the frame, based on {@link EvmProperties}
+ * Hedera adapted ChainIdOperation.
+ *
+ * <p>Chain ID is set by a dynamic property.
  */
 public class HederaEvmChainIdOperation extends AbstractOperation {
 
