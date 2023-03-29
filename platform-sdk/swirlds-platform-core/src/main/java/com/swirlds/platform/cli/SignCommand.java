@@ -120,14 +120,15 @@ public abstract class SignCommand extends AbstractCommand {
     /**
      * Generate a signature file for a single source file
      *
-     * @param destinationDirectory the directory where the signature file will be generated. null means signatures will
-     *                             be generated in the same directory as the source files
-     * @param fileToSign           the file to generate a signature file for
-     * @param keyPair              the key pair to use to generate the signature
+     * @param signatureFileDestination the full path where the signature file will be generated
+     * @param fileToSign               the file to generate a signature file for
+     * @param keyPair                  the key pair to use to generate the signature
      * @return true if the signature file was generated successfully, false otherwise
      */
     public abstract boolean generateSignatureFile(
-            @Nullable final Path destinationDirectory, @NonNull final Path fileToSign, @NonNull final KeyPair keyPair);
+            @NonNull final Path signatureFileDestination,
+            @NonNull final Path fileToSign,
+            @NonNull final KeyPair keyPair);
 
     /**
      * Check if a file is supported by this command
@@ -147,12 +148,28 @@ public abstract class SignCommand extends AbstractCommand {
      * @param fileToSign the file to generate a signature file for
      */
     private void sign(@NonNull final Path fileToSign) {
-        // if signature generation fails, don't continue
-        if (!generateSignatureFile(destinationDirectory, fileToSign, keyPair)) {
+        final Path signatureFileDestinationPath;
+        if (destinationDirectory == null) {
+            // if destinationDirectory is null, then we are generating in-place signatures
+            signatureFileDestinationPath = FileSigningUtils.buildSignatureFilePath(fileToSign.getParent(), fileToSign);
+        } else {
+            signatureFileDestinationPath = FileSigningUtils.buildSignatureFilePath(destinationDirectory, fileToSign);
+        }
+
+        // if signature file already exists, don't continue
+        if (Files.exists(signatureFileDestinationPath)) {
+            System.out.println(
+                    "Signature file " + signatureFileDestinationPath + " already exists. Skipping file " + fileToSign);
             return;
         }
 
-        // if destinationDirectory is null, then we are generating in-place signatures. No need to copy source files
+        // if signature generation fails, don't continue
+        if (!generateSignatureFile(signatureFileDestinationPath, fileToSign, keyPair)) {
+            // don't print anything here, as a specific error message should be printed by the signing implementation
+            return;
+        }
+
+        // if input destinationDirectory was null, then we generated in-place signatures. No need to copy source files
         if (destinationDirectory == null) {
             return;
         }

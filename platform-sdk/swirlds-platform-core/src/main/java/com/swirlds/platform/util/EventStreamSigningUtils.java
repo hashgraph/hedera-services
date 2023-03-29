@@ -20,7 +20,6 @@ import static com.swirlds.common.stream.LinkedObjectStreamUtilities.computeEntir
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.computeMetaHash;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.readFirstIntFromFile;
 import static com.swirlds.common.stream.internal.TimestampStreamFileWriter.writeSignatureFile;
-import static com.swirlds.platform.util.FileSigningUtils.buildSignatureFilePath;
 import static com.swirlds.platform.util.FileSigningUtils.signData;
 
 import com.swirlds.common.crypto.Hash;
@@ -29,7 +28,6 @@ import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.stream.EventStreamType;
 import com.swirlds.common.stream.internal.InvalidStreamFileException;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
@@ -73,14 +71,13 @@ public class EventStreamSigningUtils {
     /**
      * Generates a signature file for the given event stream file
      *
-     * @param destinationDirectory the directory where the signature file will be saved. If this is null, signature file
-     *                             will be generated in the same directory as the original file
-     * @param streamFileToSign     the stream file to be signed
-     * @param keyPair              the keyPair used for signing
+     * @param signatureFileDestination the full path where the signature file will be generated
+     * @param streamFileToSign         the stream file to be signed
+     * @param keyPair                  the keyPair used for signing
      * @return true if the signature file was generated successfully, false otherwise
      */
     public static boolean signEventStreamFile(
-            @Nullable final Path destinationDirectory,
+            @NonNull final Path signatureFileDestination,
             @NonNull final Path streamFileToSign,
             @NonNull final KeyPair keyPair) {
 
@@ -106,17 +103,15 @@ public class EventStreamSigningUtils {
             final com.swirlds.common.crypto.Signature metaHashSignature =
                     new com.swirlds.common.crypto.Signature(SignatureType.RSA, signData(metaHash.getValue(), keyPair));
 
-            final Path signatureFilePath = buildSignatureFilePath(destinationDirectory, streamFileToSign);
-
             writeSignatureFile(
                     entireHash,
                     entireHashSignature,
                     metaHash,
                     metaHashSignature,
-                    signatureFilePath.toString(),
+                    signatureFileDestination.toString(),
                     streamType);
 
-            System.out.println("Generated signature file: " + signatureFilePath);
+            System.out.println("Generated signature file: " + signatureFileDestination);
 
             return true;
         } catch (final SignatureException | InvalidStreamFileException | IOException e) {
