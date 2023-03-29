@@ -26,6 +26,9 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.AbstractOperation;
 import org.hyperledger.besu.evm.operation.Operation;
 
+/**
+ * Add the chain id to the frame, based on {@link EvmProperties}
+ */
 public class HederaEvmChainIdOperation extends AbstractOperation {
 
     final EvmProperties evmProperties;
