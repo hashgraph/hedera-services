@@ -131,6 +131,9 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     private static final String FUNGIBLE_TOKEN_FEE = "fungibleTokenFee";
     private static final String RECEIVER_SIGNATURE = "receiverSignature";
     private static final String APPROVE_TXN = "approveTxn";
+    private static final String FIRST_MEMO = "firstMemo";
+    private static final String SECOND_MEMO = "secondMemo";
+    private static final String CRYPTO_TRANSFER_TXN = "cryptoTransferTxn";
 
     public static void main(final String... args) {
         new CryptoTransferHTSSuite().runSuiteAsync();
@@ -511,7 +514,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     private HapiSpec nonNestedCryptoTransferForFungibleToken() {
-        final var cryptoTransferTxn = "cryptoTransferTxn";
+        final var cryptoTransferTxn = CRYPTO_TRANSFER_TXN;
 
         return defaultHapiSpec("NonNestedCryptoTransferForFungibleToken")
                 .given(
@@ -587,7 +590,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     private HapiSpec nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers() {
-        final var cryptoTransferTxn = "cryptoTransferTxn";
+        final var cryptoTransferTxn = CRYPTO_TRANSFER_TXN;
 
         return defaultHapiSpec("NonNestedCryptoTransferForFungibleTokenWithMultipleReceivers")
                 .given(
@@ -655,7 +658,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     private HapiSpec nonNestedCryptoTransferForNonFungibleToken() {
-        final var cryptoTransferTxn = "cryptoTransferTxn";
+        final var cryptoTransferTxn = CRYPTO_TRANSFER_TXN;
 
         return defaultHapiSpec("NonNestedCryptoTransferForNonFungibleToken")
                 .given(
@@ -671,7 +674,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                 .initialSupply(0)
                                 .treasury(TOKEN_TREASURY),
                         tokenAssociate(SENDER, List.of(NFT_TOKEN)),
-                        mintToken(NFT_TOKEN, List.of(metadata("firstMemo"), metadata("secondMemo"))),
+                        mintToken(NFT_TOKEN, List.of(metadata(FIRST_MEMO), metadata(SECOND_MEMO))),
                         tokenAssociate(RECEIVER, List.of(NFT_TOKEN)),
                         cryptoTransfer(TokenMovement.movingUnique(NFT_TOKEN, 1).between(TOKEN_TREASURY, SENDER))
                                 .payingWith(SENDER),
@@ -708,7 +711,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                         getAccountBalance(SENDER).hasTokenBalance(NFT_TOKEN, 0),
                         getTokenInfo(NFT_TOKEN).logged(),
                         childRecordsCheck(
-                                "cryptoTransferTxn",
+                                CRYPTO_TRANSFER_TXN,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -720,7 +723,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     private HapiSpec nonNestedCryptoTransferForMultipleNonFungibleTokens() {
-        final var cryptoTransferTxn = "cryptoTransferTxn";
+        final var cryptoTransferTxn = CRYPTO_TRANSFER_TXN;
 
         return defaultHapiSpec("NonNestedCryptoTransferForMultipleNonFungibleTokens")
                 .given(
@@ -739,7 +742,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                 .treasury(TOKEN_TREASURY),
                         tokenAssociate(SENDER, List.of(NFT_TOKEN)),
                         tokenAssociate(SENDER2, List.of(NFT_TOKEN)),
-                        mintToken(NFT_TOKEN, List.of(metadata("firstMemo"), metadata("secondMemo"))),
+                        mintToken(NFT_TOKEN, List.of(metadata(FIRST_MEMO), metadata(SECOND_MEMO))),
                         tokenAssociate(RECEIVER, List.of(NFT_TOKEN)),
                         tokenAssociate(RECEIVER2, List.of(NFT_TOKEN)),
                         cryptoTransfer(movingUnique(NFT_TOKEN, 1).between(TOKEN_TREASURY, SENDER))
@@ -802,7 +805,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     private HapiSpec nonNestedCryptoTransferForFungibleAndNonFungibleToken() {
-        final var cryptoTransferTxn = "cryptoTransferTxn";
+        final var cryptoTransferTxn = CRYPTO_TRANSFER_TXN;
 
         return defaultHapiSpec("NonNestedCryptoTransferForFungibleAndNonFungibleToken")
                 .given(
@@ -825,7 +828,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                 .treasury(TOKEN_TREASURY),
                         tokenAssociate(SENDER, List.of(FUNGIBLE_TOKEN)),
                         tokenAssociate(SENDER2, List.of(NFT_TOKEN)),
-                        mintToken(NFT_TOKEN, List.of(metadata("firstMemo"), metadata("secondMemo"))),
+                        mintToken(NFT_TOKEN, List.of(metadata(FIRST_MEMO), metadata(SECOND_MEMO))),
                         tokenAssociate(RECEIVER, List.of(FUNGIBLE_TOKEN)),
                         tokenAssociate(RECEIVER2, List.of(NFT_TOKEN)),
                         cryptoTransfer(moving(200, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SENDER))
@@ -905,7 +908,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     private HapiSpec nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens() {
-        final var cryptoTransferTxn = "cryptoTransferTxn";
+        final var cryptoTransferTxn = CRYPTO_TRANSFER_TXN;
 
         return defaultHapiSpec(
                         "NonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens")
@@ -927,7 +930,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                 .supplyType(TokenSupplyType.INFINITE)
                                 .initialSupply(0)
                                 .treasury(TOKEN_TREASURY),
-                        mintToken(NFT_TOKEN, List.of(metadata("firstMemo"), metadata("secondMemo"))),
+                        mintToken(NFT_TOKEN, List.of(metadata(FIRST_MEMO), metadata(SECOND_MEMO))),
                         tokenAssociate(SENDER, List.of(FUNGIBLE_TOKEN, NFT_TOKEN)),
                         tokenAssociate(SENDER2, List.of(FUNGIBLE_TOKEN, NFT_TOKEN)),
                         tokenAssociate(RECEIVER, List.of(FUNGIBLE_TOKEN, NFT_TOKEN)),
@@ -1033,7 +1036,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
         final var senderStartBalance = 200L;
         final var receiverStartBalance = 0L;
         final var toSendEachTuple = 50L;
-        final var multiKey = "purpose";
+        final var multiKey = MULTI_KEY;
         final var senderKey = "senderKey";
         final var contractKey = "contractAdminKey";
 
@@ -1061,7 +1064,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                 .supplyType(TokenSupplyType.INFINITE)
                                 .initialSupply(0)
                                 .treasury(TOKEN_TREASURY),
-                        mintToken(NFT_TOKEN, List.of(metadata("firstMemo"), metadata("secondMemo"))),
+                        mintToken(NFT_TOKEN, List.of(metadata(FIRST_MEMO), metadata(SECOND_MEMO))),
                         tokenAssociate(SENDER, List.of(FUNGIBLE_TOKEN, NFT_TOKEN)),
                         tokenAssociate(RECEIVER, List.of(FUNGIBLE_TOKEN, NFT_TOKEN)),
                         tokenAssociate(CONTRACT, List.of(FUNGIBLE_TOKEN, NFT_TOKEN)),

@@ -31,6 +31,8 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiCon
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V2;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V3;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.recipientAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.USE_CURRENTLY_CREATED_TOKEN;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.USE_EXISTING_FUNGIBLE_TOKEN;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile.decodeFungibleCreate;
@@ -121,6 +123,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.math.BigInteger;
 import java.util.Collections;
+import java.util.Deque;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -128,6 +132,7 @@ import java.util.function.UnaryOperator;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -145,6 +150,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class CreatePrecompileTest {
+    @Mock
+    private Account acc;
+
+    @Mock
+    private Deque<MessageFrame> stack;
+
+    @Mock
+    private Iterator<MessageFrame> dequeIterator;
 
     @Mock
     private GlobalDynamicProperties dynamicProperties;
@@ -355,6 +368,7 @@ class CreatePrecompileTest {
                         .build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(syntheticTxnFactory.createTokenCreate(wrapper)).willReturn(mockSynthBodyBuilder);
+        givenIfDelegateCall();
 
         subject.compute(pretendArguments, frame);
 
@@ -440,6 +454,7 @@ class CreatePrecompileTest {
                 .when(() -> decodeFungibleCreate(eq(pretendArguments), any()))
                 .thenReturn(tokenCreateWrapper);
 
+        givenIfDelegateCall();
         prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper, pretendArguments);
     }
 
@@ -467,6 +482,7 @@ class CreatePrecompileTest {
                 .willReturn(EntityId.fromGrpcAccountId(HTSTestsUtil.account));
         given(sigsVerifier.cryptoKeyIsActive(any())).willReturn(true);
 
+        givenIfDelegateCall();
         prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper, pretendArguments);
     }
 
@@ -491,6 +507,7 @@ class CreatePrecompileTest {
                 .when(() -> decodeFungibleCreateWithFees(eq(pretendArguments), any()))
                 .thenReturn(tokenCreateWrapper);
 
+        givenIfDelegateCall();
         prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper, pretendArguments);
     }
 
@@ -514,6 +531,7 @@ class CreatePrecompileTest {
         given(accounts.get(any(), eq(KEY)))
                 .willReturn(new JContractIDKey(EntityIdUtils.contractIdFromEvmAddress(HTSTestsUtil.contractAddress)));
 
+        givenIfDelegateCall();
         prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper, pretendArguments);
     }
 
@@ -545,6 +563,7 @@ class CreatePrecompileTest {
                 .when(() -> decodeFungibleCreateV2(eq(pretendArguments), any()))
                 .thenReturn(tokenCreateWrapper);
 
+        givenIfDelegateCall();
         prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper, pretendArguments);
     }
 
@@ -576,6 +595,7 @@ class CreatePrecompileTest {
                 .when(() -> decodeFungibleCreateV3(eq(pretendArguments), any()))
                 .thenReturn(tokenCreateWrapper);
 
+        givenIfDelegateCall();
         prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper, pretendArguments);
     }
 
@@ -600,6 +620,7 @@ class CreatePrecompileTest {
                 .when(() -> decodeFungibleCreateWithFeesV2(eq(pretendArguments), any()))
                 .thenReturn(tokenCreateWrapper);
 
+        givenIfDelegateCall();
         prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper, pretendArguments);
     }
 
@@ -624,6 +645,7 @@ class CreatePrecompileTest {
                 .when(() -> decodeFungibleCreateWithFeesV3(eq(pretendArguments), any()))
                 .thenReturn(tokenCreateWrapper);
 
+        givenIfDelegateCall();
         prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper, pretendArguments);
     }
 
@@ -651,6 +673,7 @@ class CreatePrecompileTest {
                 .willReturn(EntityId.fromGrpcAccountId(HTSTestsUtil.account));
         given(sigsVerifier.cryptoKeyIsActive(any())).willReturn(true);
 
+        givenIfDelegateCall();
         prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper, pretendArguments);
     }
 
@@ -678,6 +701,7 @@ class CreatePrecompileTest {
                 .willReturn(EntityId.fromGrpcAccountId(HTSTestsUtil.account));
         given(sigsVerifier.cryptoKeyIsActive(any())).willReturn(true);
 
+        givenIfDelegateCall();
         prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper, pretendArguments);
     }
 
@@ -701,6 +725,7 @@ class CreatePrecompileTest {
         given(accounts.get(any(), eq(KEY)))
                 .willReturn(new JContractIDKey(EntityIdUtils.contractIdFromEvmAddress(HTSTestsUtil.contractAddress)));
 
+        givenIfDelegateCall();
         prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper, pretendArguments);
     }
 
@@ -724,6 +749,7 @@ class CreatePrecompileTest {
         given(accounts.get(any(), eq(KEY)))
                 .willReturn(new JContractIDKey(EntityIdUtils.contractIdFromEvmAddress(HTSTestsUtil.contractAddress)));
 
+        givenIfDelegateCall();
         prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper, pretendArguments);
     }
 
@@ -738,6 +764,7 @@ class CreatePrecompileTest {
         given(wrappedLedgers.accounts()).willReturn(accounts);
         given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);
+        givenIfDelegateCall();
         final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN));
         final var tokenCreateWrapper = HTSTestsUtil.createTokenCreateWrapperWithKeys(List.of(new TokenKeyWrapper(
                 1, new KeyValueWrapper(false, null, new byte[JEd25519Key.ED25519_BYTE_LENGTH], new byte[] {}, null))));
@@ -811,6 +838,7 @@ class CreatePrecompileTest {
         given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
         given(encoder.encodeCreateFailure(INVALID_SIGNATURE)).willReturn(HTSTestsUtil.invalidSigResult);
         given(infrastructureFactory.newCreateChecks()).willReturn(createChecks);
+        givenIfDelegateCall();
 
         // when:
         final var result = subject.compute(pretendArguments, frame);
@@ -872,6 +900,7 @@ class CreatePrecompileTest {
         given(encoder.encodeCreateFailure(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE))
                 .willReturn(HTSTestsUtil.invalidFullPrefix);
         given(infrastructureFactory.newCreateChecks()).willReturn(createChecks);
+        givenIfDelegateCall();
 
         // when:
         final var result = subject.compute(pretendArguments, frame);
@@ -904,6 +933,7 @@ class CreatePrecompileTest {
                         new byte[] {},
                         null))));
 
+        givenIfDelegateCall();
         prepareAndAssertRevertReasonIsSetAndNullIsReturned(tokenCreateWrapper);
     }
 
@@ -927,6 +957,7 @@ class CreatePrecompileTest {
                         new KeyValueWrapper(
                                 false, null, new byte[JEd25519Key.ED25519_BYTE_LENGTH], new byte[] {}, null))));
 
+        givenIfDelegateCall();
         prepareAndAssertRevertReasonIsSetAndNullIsReturned(tokenCreateWrapper);
     }
 
@@ -954,6 +985,7 @@ class CreatePrecompileTest {
                                 new byte[] {},
                                 EntityIdUtils.contractIdFromEvmAddress(HTSTestsUtil.contractAddress)))));
 
+        givenIfDelegateCall();
         prepareAndAssertRevertReasonIsSetAndNullIsReturned(tokenCreateWrapper);
     }
 
@@ -972,6 +1004,7 @@ class CreatePrecompileTest {
                         new byte[] {},
                         EntityIdUtils.contractIdFromEvmAddress(HTSTestsUtil.contractAddress)))));
 
+        givenIfDelegateCall();
         prepareAndAssertRevertReasonIsSetAndNullIsReturned(tokenCreateWrapper);
     }
 
@@ -986,6 +1019,7 @@ class CreatePrecompileTest {
         final var keyMock = Mockito.mock(JKey.class);
         given(accounts.get(any(), any())).willReturn(keyMock);
 
+        givenIfDelegateCall();
         prepareAndAssertRevertReasonIsSetAndNullIsReturned(tokenCreateWrapper);
     }
 
@@ -1009,6 +1043,7 @@ class CreatePrecompileTest {
                 Collections.emptyList(),
                 null);
 
+        givenIfDelegateCall();
         prepareAndAssertRevertReasonIsSetAndNullIsReturned(invalidTokenCreate);
     }
 
@@ -1032,6 +1067,7 @@ class CreatePrecompileTest {
                 Collections.emptyList(),
                 null);
 
+        givenIfDelegateCall();
         prepareAndAssertRevertReasonIsSetAndNullIsReturned(invalidTokenCreate);
     }
 
@@ -1047,6 +1083,7 @@ class CreatePrecompileTest {
                 .willReturn(TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT);
         invalidTokenCreate.setFixedFees(List.of(fixedFeeMock));
 
+        givenIfDelegateCall();
         prepareAndAssertRevertReasonIsSetAndNullIsReturned(invalidTokenCreate);
     }
 
@@ -1064,6 +1101,7 @@ class CreatePrecompileTest {
                 new TokenCreateWrapper.RoyaltyFeeWrapper(1, 2, null, HTSTestsUtil.feeCollector),
                 new TokenCreateWrapper.RoyaltyFeeWrapper(1, 2, fixedFeeMock, HTSTestsUtil.feeCollector)));
 
+        givenIfDelegateCall();
         prepareAndAssertRevertReasonIsSetAndNullIsReturned(invalidTokenCreate);
     }
 
@@ -1533,6 +1571,7 @@ class CreatePrecompileTest {
                         .setTokenId(EntityId.fromGrpcTokenId(
                                 TokenID.newBuilder().setTokenNum(1L).build())));
         given(encoder.encodeCreateSuccess(any())).willReturn(HTSTestsUtil.successResult);
+        givenIfDelegateCall();
 
         // when:
         final var result = subject.computePrecompile(pretendArguments, frame);
@@ -1615,5 +1654,14 @@ class CreatePrecompileTest {
                 new UpdateTrackingLedgerAccount(EntityIdUtils.asTypedEvmAddress(HTSTestsUtil.account), null);
         given(mockFundingEvmAccount.getMutable()).willReturn(fundingMutableAccount);
         fundingMutableAccount.setBalance(Wei.of(FUNDING_ACCOUNT_INITIAL_BALANCE));
+    }
+
+    private void givenIfDelegateCall() {
+        given(frame.getContractAddress()).willReturn(contractAddress);
+        given(frame.getRecipientAddress()).willReturn(recipientAddress);
+        given(worldUpdater.get(recipientAddress)).willReturn(acc);
+        given(acc.getNonce()).willReturn(-1L);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(frame.getMessageFrameStack().iterator()).willReturn(dequeIterator);
     }
 }

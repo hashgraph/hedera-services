@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.LongSummaryStatistics;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -49,7 +50,7 @@ import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
  * A specialized map like disk based data store with long keys. It is assumed the keys are a single
  * sequential block of numbers that does not need to start at zero. The index from long key to disk
  * location for value is in RAM and the value data is stored in a set of files on disk.
- *
+ * <p>
  * There is an assumption that keys are a contiguous range of incrementing numbers. This allows
  * easy deletion during merging by accepting any key/value with a key outside this range is not
  * needed any more. This design comes from being used where keys are leaf paths in a binary tree.
@@ -74,6 +75,15 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
      * Also, useful for identifying what files are used by what part of the code.
      */
     private final String storeName;
+
+    /** The minimum key that is valid for this store. Set in {@link MemoryIndexDiskKeyValueStore#startWriting} to
+     * be reused in {@link MemoryIndexDiskKeyValueStore#endWriting()}
+     */
+    private final AtomicLong minValidKey;
+    /** The maximum key that is valid for this store.  Set in {@link MemoryIndexDiskKeyValueStore#startWriting} to
+     * be reused in {@link MemoryIndexDiskKeyValueStore#endWriting()}
+     */
+    private final AtomicLong maxValidKey;
 
     /**
      * Construct a new MemoryIndexDiskKeyValueStore
@@ -124,6 +134,9 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
         // create file collection
         fileCollection = new DataFileCollection<>(
                 storeDir, storeName, legacyStoreName, dataItemSerializer, combinedLoadedDataCallback);
+        // no limits for the keys on init
+        minValidKey = new AtomicLong(0);
+        maxValidKey = new AtomicLong(Long.MAX_VALUE);
     }
 
     /**
@@ -229,7 +242,13 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
      *
      * @throws IOException If there was a problem opening a writing session
      */
-    public void startWriting() throws IOException {
+    public void startWriting(final long minimumValidKey, final long maxValidIndex) throws IOException {
+        this.minValidKey.set(minimumValidKey);
+        this.maxValidKey.set(maxValidIndex);
+        // By calling `updateMinValidIndex` we compact the index if it's applicable.
+        // We need to do this before we start putting values into the index, otherwise we could put a value by
+        // index that is not yet valid.
+        index.updateValidRange(minimumValidKey, maxValidIndex);
         fileCollection.startWriting();
     }
 
@@ -250,16 +269,12 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
     /**
      * End a session of writing
      *
-     * @param minimumValidKey The minimum valid key at this point in time.
-     * @param maximumValidKey The maximum valid key at this point in time.
      * @throws IOException If there was a problem closing the writing session
      */
-    public void endWriting(final long minimumValidKey, final long maximumValidKey) throws IOException {
-        final DataFileReader<D> dataFileReader = fileCollection.endWriting(minimumValidKey, maximumValidKey);
-        // At this point we know exactly what list indices are in use and, therefore,
-        // it's a good time to free memory reserved for the unused data.
-        // By calling `updateMinValidIndex` we compact the index if it's applicable.
-        index.updateMinValidIndex(minimumValidKey);
+    public void endWriting() throws IOException {
+        final long currentMinValidKey = minValidKey.get();
+        final long currentMaxValidKey = maxValidKey.get();
+        final DataFileReader<D> dataFileReader = fileCollection.endWriting(currentMinValidKey, currentMaxValidKey);
 
         // we have updated all indexes so the data file can now be included in merges
         dataFileReader.setFileCompleted();
@@ -269,8 +284,8 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
                 storeName,
                 dataFileReader.getIndex(),
                 fileCollection.getNumOfFiles(),
-                minimumValidKey,
-                maximumValidKey);
+                currentMinValidKey,
+                currentMaxValidKey);
     }
 
     /**
@@ -361,10 +376,10 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
         }
 
         final KeyRange validKeyRange = fileCollection.getValidKeyRange();
-        final long minValidKey = validKeyRange.getMinValidKey();
-        final long maxValidKey = validKeyRange.getMaxValidKey();
+        final long currentMinValidKey = validKeyRange.getMinValidKey();
+        final long currentMaxValidKey = validKeyRange.getMaxValidKey();
 
-        for (long key = minValidKey; key <= maxValidKey; key++) {
+        for (long key = currentMinValidKey; key <= currentMaxValidKey; key++) {
             final long location = index.get(key, -1);
             if (mergedFileIds.contains(fileIndexFromDataLocation(location))) { // only entries for deleted files
                 // If we enter this "if", it means we have a corrupt index. Either we should have

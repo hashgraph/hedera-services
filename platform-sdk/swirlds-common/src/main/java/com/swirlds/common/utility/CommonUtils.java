@@ -66,16 +66,15 @@ public class CommonUtils {
     private static AudioFormat format = null;
 
     /**
-     * Normalizes the string in accordance with the Swirlds default normalization method (NFD) and returns
-     * the bytes of that normalized String encoded in the Swirlds default charset (UTF8). This is important
-     * for having a consistent method of converting Strings to bytes that will guarantee that two identical
-     * strings will have an identical byte representation
+     * Normalizes the string in accordance with the Swirlds default normalization method (NFD) and returns the bytes of
+     * that normalized String encoded in the Swirlds default charset (UTF8). This is important for having a consistent
+     * method of converting Strings to bytes that will guarantee that two identical strings will have an identical byte
+     * representation
      *
-     * @param s
-     * 		the String to be converted to bytes
+     * @param s the String to be converted to bytes
      * @return a byte representation of the String
      */
-    public static byte[] getNormalisedStringBytes(String s) {
+    public static byte[] getNormalisedStringBytes(final String s) {
         if (s == null) {
             return null;
         }
@@ -85,11 +84,10 @@ public class CommonUtils {
     /**
      * Reverse of {@link #getNormalisedStringBytes(String)}
      *
-     * @param bytes
-     * 		the bytes to convert
+     * @param bytes the bytes to convert
      * @return a String created from the input bytes
      */
-    public static String getNormalisedStringFromBytes(byte[] bytes) {
+    public static String getNormalisedStringFromBytes(final byte[] bytes) {
         return new String(bytes, DEFAULT_CHARSET);
     }
 
@@ -103,26 +101,23 @@ public class CommonUtils {
     /**
      * Make a beep sound.
      *
-     * @param pitch
-     * 		the pitch, from 0 to 127, where 60 is middle C, 61 is C#, etc.
-     * @param velocity
-     * 		the "velocity" (volume, or speed with which the note is played). 0 is silent, 127 is max.
-     * @param duration
-     * 		the number of milliseconds the sound will play
+     * @param pitch    the pitch, from 0 to 127, where 60 is middle C, 61 is C#, etc.
+     * @param velocity the "velocity" (volume, or speed with which the note is played). 0 is silent, 127 is max.
+     * @param duration the number of milliseconds the sound will play
      */
-    public static void beep(int pitch, int velocity, int duration) {
+    public static void beep(final int pitch, final int velocity, final int duration) {
         try {
             if (synthesizer == null) {
                 synthesizer = MidiSystem.getSynthesizer();
                 synthesizer.open();
             }
 
-            MidiChannel[] channels = synthesizer.getChannels();
+            final MidiChannel[] channels = synthesizer.getChannels();
 
             channels[0].noteOn(pitch, velocity);
             Thread.sleep(duration);
             channels[0].noteOff(60);
-        } catch (Exception e) {
+        } catch (final Exception e) {
         }
     }
 
@@ -143,40 +138,37 @@ public class CommonUtils {
             }
             clip.stop(); // it should have already stopped
             clip.setFramePosition(0); // for next time, start over
-        } catch (Exception e) {
+        } catch (final Exception e) {
         }
     }
 
     /**
-     * This is equivalent to System.out.println(), but is not used for debugging; it is used for production
-     * code for communicating to the user. Centralizing it here makes it easier to search for debug prints
-     * that might have slipped through before a release.
+     * This is equivalent to System.out.println(), but is not used for debugging; it is used for production code for
+     * communicating to the user. Centralizing it here makes it easier to search for debug prints that might have
+     * slipped through before a release.
      *
-     * @param msg
-     * 		the message for the user
+     * @param msg the message for the user
      */
-    public static void tellUserConsole(String msg) {
+    public static void tellUserConsole(final String msg) {
         System.out.println(msg);
     }
 
     /**
-     * This is equivalent to sending text to doing both Utilities.tellUserConsole() and writing to a popup
-     * window. It is not used for debugging; it is used for production code for communicating to the user.
+     * This is equivalent to sending text to doing both Utilities.tellUserConsole() and writing to a popup window. It is
+     * not used for debugging; it is used for production code for communicating to the user.
      *
-     * @param title
-     * 		the title of the window to pop up
-     * @param msg
-     * 		the message for the user
+     * @param title the title of the window to pop up
+     * @param msg   the message for the user
      */
-    public static void tellUserConsolePopup(String title, String msg) {
+    public static void tellUserConsolePopup(final String title, final String msg) {
         tellUserConsole("\n***** " + msg + " *****\n");
         if (!GraphicsEnvironment.isHeadless()) {
-            String[] ss = msg.split("\n");
+            final String[] ss = msg.split("\n");
             int w = 0;
-            for (String str : ss) {
+            for (final String str : ss) {
                 w = Math.max(w, str.length());
             }
-            JTextArea ta = new JTextArea(ss.length + 1, (int) (w * 0.65));
+            final JTextArea ta = new JTextArea(ss.length + 1, (int) (w * 0.65));
             ta.setText(msg);
             ta.setWrapStyleWord(true);
             ta.setLineWrap(true);
@@ -184,17 +176,18 @@ public class CommonUtils {
             ta.setEditable(false);
             ta.addHierarchyListener(
                     new HierarchyListener() { // make ta resizable
-                        public void hierarchyChanged(HierarchyEvent e) {
-                            Window window = SwingUtilities.getWindowAncestor(ta);
+                        @Override
+                        public void hierarchyChanged(final HierarchyEvent e) {
+                            final Window window = SwingUtilities.getWindowAncestor(ta);
                             if (window instanceof Dialog) {
-                                Dialog dialog = (Dialog) window;
+                                final Dialog dialog = (Dialog) window;
                                 if (!dialog.isResizable()) {
                                     dialog.setResizable(true);
                                 }
                             }
                         }
                     });
-            JScrollPane sp = new JScrollPane(ta);
+            final JScrollPane sp = new JScrollPane(ta);
             JOptionPane.showMessageDialog(null, sp, title, JOptionPane.PLAIN_MESSAGE);
         }
     }
@@ -202,10 +195,8 @@ public class CommonUtils {
     /**
      * Converts an array of bytes to a lowercase hexadecimal string.
      *
-     * @param bytes
-     * 		the array of bytes to hexadecimal
-     * @param length
-     * 		the length of the array to convert to hex
+     * @param bytes  the array of bytes to hexadecimal
+     * @param length the length of the array to convert to hex
      * @return a {@link String} containing the lowercase hexadecimal representation of the byte array
      */
     public static String hex(final byte[] bytes, final int length) {
@@ -219,8 +210,7 @@ public class CommonUtils {
     /**
      * Equivalent to calling {@link #hex(byte[], int)} with length set to bytes.length
      *
-     * @param bytes
-     * 		an array of bytes
+     * @param bytes an array of bytes
      * @return a {@link String} containing the lowercase hexadecimal representation of the byte array
      */
     public static String hex(final byte[] bytes) {
@@ -230,8 +220,7 @@ public class CommonUtils {
     /**
      * Converts a hexadecimal string back to the original array of bytes.
      *
-     * @param string
-     * 		the hexadecimal string to be converted
+     * @param string the hexadecimal string to be converted
      * @return an array of bytes
      */
     public static byte[] unhex(final String string) {
@@ -240,7 +229,7 @@ public class CommonUtils {
         }
         try {
             return Hex.decodeHex(string);
-        } catch (DecoderException e) {
+        } catch (final DecoderException e) {
             throw new IllegalArgumentException(e);
         }
     }
@@ -248,10 +237,9 @@ public class CommonUtils {
     /**
      * Throw an {@link IllegalArgumentException} if the supplied argument is {@code null}.
      *
-     * @param arg
-     * 		the argument checked
-     * @param argName
-     * 		the name of the argument
+     * @param arg     the argument checked
+     * @param argName the name of the argument
+     * @deprecated use {@link com.swirlds.base.ArgumentUtils#throwArgNull(Object, String)} instead
      */
     @Deprecated(forRemoval = true)
     public static <T> T throwArgNull(final T arg, final String argName) {
@@ -264,10 +252,8 @@ public class CommonUtils {
     /**
      * Throw an {@link IllegalArgumentException} if the supplied {@code String} is blank.
      *
-     * @param arg
-     * 		the argument checked
-     * @param argName
-     * 		the name of the argument
+     * @param arg     the argument checked
+     * @param argName the name of the argument
      * @see StringUtils#isBlank(CharSequence)
      */
     public static String throwArgBlank(final String arg, final String argName) {
@@ -281,16 +267,12 @@ public class CommonUtils {
     /**
      * Throws an exception if the value is outside of the specified range
      *
-     * @param name
-     * 		the name of the variable
-     * @param value
-     * 		the value to check
-     * @param minValue
-     * 		the minimum allowed value
-     * @param maxValue
-     * 		the maximum allowed value
+     * @param name     the name of the variable
+     * @param value    the value to check
+     * @param minValue the minimum allowed value
+     * @param maxValue the maximum allowed value
      */
-    public static void throwRangeInvalid(String name, int value, int minValue, int maxValue) {
+    public static void throwRangeInvalid(final String name, final int value, final int minValue, final int maxValue) {
         if (value < minValue || value > maxValue) {
             throw new IllegalArgumentException(String.format(
                     "The argument '%s' should have a value between %d and %d! Value provided is %d",
@@ -299,21 +281,19 @@ public class CommonUtils {
     }
 
     /**
-     * Given a name from the address book, return the corresponding alias to associate with certificates in
-     * the trust store. This is found by lowercasing all the letters, removing accents, and deleting every
-     * character other than letters and digits. A "letter" is anything in the Unicode category "letter",
-     * which includes most alphabets, as well as ideographs such as Chinese.
+     * Given a name from the address book, return the corresponding alias to associate with certificates in the trust
+     * store. This is found by lowercasing all the letters, removing accents, and deleting every character other than
+     * letters and digits. A "letter" is anything in the Unicode category "letter", which includes most alphabets, as
+     * well as ideographs such as Chinese.
      * <p>
-     * WARNING: Some versions of Java 8 have a terrible bug where even a single capital letter in an alias
-     * will prevent SSL or TLS connections from working (even though those protocols don't use the aliases).
-     * Although this ought to work fine with Chinese/Greek/Cyrillic characters, it is safer to stick with
-     * only the 26 English letters.
+     * WARNING: Some versions of Java 8 have a terrible bug where even a single capital letter in an alias will prevent
+     * SSL or TLS connections from working (even though those protocols don't use the aliases). Although this ought to
+     * work fine with Chinese/Greek/Cyrillic characters, it is safer to stick with only the 26 English letters.
      *
-     * @param name
-     * 		a name from the address book
+     * @param name a name from the address book
      * @return the corresponding alias
      */
-    public static String nameToAlias(String name) {
+    public static String nameToAlias(final String name) {
         // Convert to lowercase. The ROOT locale should work with most non-english characters. Though there
         // can be surprises. For example, in Turkey, the capital I would convert in a Turkey-specific way to
         // a "lowercase I without a dot". But ROOT would simply convert it to a lowercase I.
@@ -338,22 +318,19 @@ public class CommonUtils {
     /**
      * Convert an int to a byte array, little endian.
      *
-     * @param value
-     * 		the int to convert
+     * @param value the int to convert
      * @return the byte array
      */
-    public static byte[] intToBytes(int value) {
-        byte[] result = new byte[Integer.BYTES];
+    public static byte[] intToBytes(final int value) {
+        final byte[] result = new byte[Integer.BYTES];
         return Conversion.intToByteArray(value, 0, result, 0, Integer.BYTES);
     }
 
     /**
      * Joins multiple lists into a single list
      *
-     * @param lists
-     * 		the lists to join
-     * @param <T>
-     * 		the type of element in the list
+     * @param lists the lists to join
+     * @param <T>   the type of element in the list
      * @return the list containing all elements in the supplied lists
      */
     @SafeVarargs
@@ -364,8 +341,7 @@ public class CommonUtils {
     /**
      * Converts a {@code null} string reference to an empty string.
      *
-     * @param value
-     * 		a possibly {@code null} string reference.
+     * @param value a possibly {@code null} string reference.
      * @return the original value if not null or an empty string if null.
      */
     public static String nullToBlank(final String value) {
@@ -375,10 +351,8 @@ public class CommonUtils {
     /**
      * Combine an array of consumers into a single consumer that calls all of them
      *
-     * @param consumers
-     * 		the consumers to combine
-     * @param <T>
-     * 		the type being consumed
+     * @param consumers the consumers to combine
+     * @param <T>       the type being consumed
      * @return the combined consumer
      */
     @SafeVarargs

@@ -117,10 +117,12 @@ public class JrsRestartTestTemplate extends HapiSuite {
                 .then(withOpContext((spec, opLog) -> {
                     boolean isPostRestart = spec.setup().ciPropertiesMap().getBoolean("postRestart");
                     if (isPostRestart) {
-                        opLog.info("\n\n" + bannerWith("POST-RESTART VALIDATION PHASE"));
+                        String message = String.format("%n%n%s", bannerWith("POST-RESTART VALIDATION PHASE"));
+                        opLog.info(message);
                         allRunFor(spec, postRestartValidation());
                     } else {
-                        opLog.info("\n\n" + bannerWith("PRE-RESTART SETUP PHASE"));
+                        String message = String.format("%n%n%s", bannerWith("PRE-RESTART SETUP PHASE"));
+                        opLog.info(message);
                         allRunFor(spec, preRestartSetup());
                     }
                 }));

@@ -20,6 +20,8 @@ rootProject.name = "swirlds-platform"
 
 include(":swirlds")
 
+include(":swirlds-base")
+
 include(":swirlds-logging")
 
 include(":swirlds-common")
@@ -55,8 +57,6 @@ include(":swirlds-platform-apps:demos:HashgraphDemo")
 include(":swirlds-platform-apps:demos:HelloSwirldDemo")
 
 include(":swirlds-platform-apps:demos:StatsDemo")
-
-include(":swirlds-platform-apps:tests:GameTest")
 
 include(":swirlds-platform-apps:tests:ISSTestingTool")
 
@@ -131,6 +131,8 @@ dependencyResolutionManagement {
       // PicoCLI
       version("picocli-version", "4.6.3")
 
+      version("spotbugs-version", "4.7.3")
+
       // List of bundles provided for us. When applicable, favor using these over individual
       // libraries.
       bundle("eclipse", listOf("eclipse-collections"))
@@ -203,6 +205,9 @@ dependencyResolutionManagement {
           .versionRef("prometheus-client")
       // PicoCLI Bundle
       library("picocli", "info.picocli", "picocli").versionRef("picocli-version")
+
+      library("spotbugs-annotations", "com.github.spotbugs", "spotbugs-annotations")
+          .versionRef("spotbugs-version")
     }
 
     create("testLibs") {

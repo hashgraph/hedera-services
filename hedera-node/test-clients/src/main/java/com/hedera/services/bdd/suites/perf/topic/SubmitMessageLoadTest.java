@@ -59,6 +59,8 @@ import org.apache.logging.log4j.Logger;
 public class SubmitMessageLoadTest extends LoadTest {
 
     private static final org.apache.logging.log4j.Logger log = LogManager.getLogger(SubmitMessageLoadTest.class);
+    private static final String SUBMIT_KEY = "submitKey";
+    private static final String SENDER = "sender";
     private static String topicID = null;
     private static int messageSize = 256;
     private static String pemFile = null;
@@ -85,19 +87,19 @@ public class SubmitMessageLoadTest extends LoadTest {
         // parsing local argument specific to this test
         if (args.length > (usedArgs)) {
             messageSize = Integer.parseInt(args[usedArgs]);
-            log.info("Set messageSize as " + messageSize);
+            log.info("Set messageSize as {}", messageSize);
             usedArgs++;
         }
 
         if (args.length > (usedArgs)) {
             pemFile = args[usedArgs];
-            log.info("Set pemFile as " + pemFile);
+            log.info("Set pemFile as {}", pemFile);
             usedArgs++;
         }
 
         if (args.length > usedArgs) {
             topicID = args[usedArgs];
-            log.info("Set topicID as " + topicID);
+            log.info("Set topicID as {}", topicID);
             usedArgs++;
         }
 
@@ -122,15 +124,15 @@ public class SubmitMessageLoadTest extends LoadTest {
                                 (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
                         // if no pem file defined then create a new submitKey
                         pemFile == null
-                                ? newKeyNamed("submitKey")
+                                ? newKeyNamed(SUBMIT_KEY)
                                 : keyFromPem(pemFile)
-                                        .name("submitKey")
+                                        .name(SUBMIT_KEY)
                                         .simpleWacl()
                                         .passphrase(KeyFactory.PEM_PASSPHRASE),
                         // if just created a new key then export spec for later reuse
                         pemFile == null
-                                ? withOpContext((spec, ignore) ->
-                                        spec.keys().exportSimpleKey("topicSubmitKey.pem", "submitKey"))
+                                ? withOpContext(
+                                        (spec, ignore) -> spec.keys().exportSimpleKey("topicSubmitKey.pem", SUBMIT_KEY))
                                 : sleepFor(100),
                         logIt(ignore -> settings.toString()))
                 .when(
@@ -141,14 +143,14 @@ public class SubmitMessageLoadTest extends LoadTest {
                                         "4000",
                                         "hapi.throttling.ops.consensusSubmitMessage.capacityRequired",
                                         "1.0")),
-                        cryptoCreate("sender")
+                        cryptoCreate(SENDER)
                                 .balance(ignore -> settings.getInitialBalance())
                                 .withRecharging()
                                 .rechargeWindow(3)
                                 .hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
                         topicID == null
                                 ? createTopic("topic")
-                                        .submitKeyName("submitKey")
+                                        .submitKeyName(SUBMIT_KEY)
                                         .hasRetryPrecheckFrom(
                                                 BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
                                 : sleepFor(100),
@@ -156,7 +158,7 @@ public class SubmitMessageLoadTest extends LoadTest {
                         )
                 .then(
                         defaultLoadTest(submitBurst, settings),
-                        getAccountBalance("sender").logged());
+                        getAccountBalance(SENDER).logged());
     }
 
     private static Supplier<HapiSpecOperation> opSupplier(PerfTestLoadSettings settings) {
@@ -165,10 +167,10 @@ public class SubmitMessageLoadTest extends LoadTest {
                 : settings.getIntProperty("messageSize", messageSize)
                         - r.nextInt(settings.getHcsSubmitMessageSizeVar());
 
-        String senderId = "sender";
+        String senderId = SENDER;
         String topicId = "topic";
-        String senderKey = "sender";
-        String submitKey = "submitKey";
+        String senderKey = SENDER;
+        String submitKey = SUBMIT_KEY;
         if (settings.getTotalAccounts() > 1) {
             int s = r.nextInt(settings.getTotalAccounts());
             int re = 0;
