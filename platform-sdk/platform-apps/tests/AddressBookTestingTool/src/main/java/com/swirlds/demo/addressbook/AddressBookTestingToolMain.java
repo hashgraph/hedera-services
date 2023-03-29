@@ -46,15 +46,12 @@ import org.apache.logging.log4j.Logger;
  */
 public class AddressBookTestingToolMain implements SwirldMain {
     /** The logger for this class. */
-    @NonNull
     private static final Logger logger = LogManager.getLogger(AddressBookTestingToolMain.class);
 
     /** The default software version of this application. */
-    @NonNull
     private static final BasicSoftwareVersion softwareVersion = new BasicSoftwareVersion(1);
 
     /** The platform. */
-    @NonNull
     private Platform platform;
 
     /** The number of transactions to generate per second. */

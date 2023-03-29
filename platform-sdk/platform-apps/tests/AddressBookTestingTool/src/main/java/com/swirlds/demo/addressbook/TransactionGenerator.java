@@ -40,11 +40,9 @@ public class TransactionGenerator implements Startable {
     public TransactionGenerator(
             @NonNull final Random random,
             @NonNull final Platform platform,
-            @NonNull final int networkWideTransactionsPerSecond) {
+            final int networkWideTransactionsPerSecond) {
         Objects.requireNonNull(random, "The random number generator must not be null");
         Objects.requireNonNull(platform, "The platform must not be null");
-        Objects.requireNonNull(
-                networkWideTransactionsPerSecond, "The network-wide transactions per second must not be null");
         this.random = random;
         this.platform = platform;
 

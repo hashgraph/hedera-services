@@ -44,6 +44,7 @@ import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.utility.ByteUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Objects;
@@ -55,11 +56,10 @@ import org.apache.logging.log4j.Logger;
  */
 public class AddressBookTestingToolState extends PartialMerkleLeaf implements SwirldState, MerkleLeaf {
 
-    @NonNull
     private static final Logger logger = LogManager.getLogger(AddressBookTestingToolState.class);
 
     /** modify this value to change how updateStake behaves. */
-    private int stakingProfile = 1;
+    private static final int STAKING_PROFILE = 1;
 
     private static class ClassVersion {
         public static final int ORIGINAL = 1;
@@ -86,7 +86,6 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         Objects.requireNonNull(that, "the address book testing tool state to copy cannot be null");
         this.runningSum = that.runningSum;
         this.selfId = that.selfId;
-        this.setImmutable(true);
     }
 
     /**
@@ -106,11 +105,10 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
             @NonNull final Platform platform,
             @NonNull final SwirldDualState swirldDualState,
             @NonNull final InitTrigger trigger,
-            @NonNull final SoftwareVersion previousSoftwareVersion) {
+            @Nullable final SoftwareVersion previousSoftwareVersion) {
         Objects.requireNonNull(platform, "the platform cannot be null");
         Objects.requireNonNull(swirldDualState, "the swirld dual state cannot be null");
         Objects.requireNonNull(trigger, "the init trigger cannot be null");
-        Objects.requireNonNull(previousSoftwareVersion, "the previous software version cannot be null");
 
         logger.info(STARTUP.getMarker(), "init called in State.");
         throwIfImmutable();
@@ -199,14 +197,14 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     @NonNull
     public AddressBook updateStake(@NonNull final AddressBook addressBook) {
         Objects.requireNonNull(addressBook, "the address book cannot be null");
-        logger.info("updateStake called in State. Staking Profile: {}", stakingProfile);
-        switch (stakingProfile) {
+        logger.info("updateStake called in State. Staking Profile: {}", STAKING_PROFILE);
+        switch (STAKING_PROFILE) {
             case 1:
                 return stakingProfile1(addressBook);
             case 2:
                 return stakingProfile2(addressBook);
             default:
-                logger.info(STARTUP.getMarker(), "Staking Profile {}: no change to address book.", stakingProfile);
+                logger.info(STARTUP.getMarker(), "Staking Profile {}: no change to address book.", STAKING_PROFILE);
                 return addressBook;
         }
     }
