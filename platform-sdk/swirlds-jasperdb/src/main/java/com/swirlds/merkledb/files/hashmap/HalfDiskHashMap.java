@@ -69,8 +69,6 @@ public class HalfDiskHashMap<K extends VirtualKey<? super K>> implements AutoClo
     private static final String METADATA_FILENAME_SUFFIX = "_metadata.hdhm";
     /** Bucket index file name suffix with extension */
     private static final String BUCKET_INDEX_FILENAME_SUFFIX = "_bucket_index.ll";
-    /** Each index change includes both a bucket index and bucket location. */
-    private static final int INDEX_CHANGE_COMPONENTS = 2;
     /** Nominal value for value to say please delete from map. */
     protected static final long SPECIAL_DELETE_ME_VALUE = Long.MIN_VALUE;
     /** The amount of data used for storing key hash code */
