@@ -32,7 +32,6 @@ import com.google.common.primitives.Longs;
 import com.hedera.node.app.DaggerHederaApp;
 import com.hedera.node.app.HederaApp;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
-import com.hedera.node.app.service.mono.context.properties.SemanticVersions;
 import com.hedera.node.app.service.mono.state.migration.StateChildIndices;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -75,15 +74,9 @@ class StateLifecyclesTest extends ResponsibleVMapUser {
     void testGenesisState() {
         ClassLoaderHelper.loadClassPathDependencies();
 
-        final var currentVersion =
-                SemanticVersions.SEMANTIC_VERSIONS.deployedSoftwareVersion().getServices();
-        final var migration = Hedera.registerServiceSchemasForMigration(currentVersion);
-
-        final var merkleState = tracked(new MerkleHederaState(migration, (e, m, p) -> {}, (s, p, ds, t, v) -> {}));
+        final var merkleState = tracked(new MerkleHederaState((t, s) -> {}, (e, m, p) -> {}, (s, p, ds, t, v) -> {}));
 
         final var platform = createMockPlatformWithCrypto();
-        final var addressBook = createPretendBookFrom(platform, true);
-        given(platform.getAddressBook()).willReturn(addressBook);
         final var recordsRunningHashLeaf = new RecordsRunningHashLeaf();
         recordsRunningHashLeaf.setRunningHash(new RunningHash(EMPTY_HASH));
         merkleState.setChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH, recordsRunningHashLeaf);
