@@ -65,7 +65,7 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 
 public class Utils {
-    public static final String RESOURCE_PATH = "src/main/resource/contract/contracts/%1$s/%1$s";
+    public static final String RESOURCE_PATH = "src/main/resource/contract/contracts/%1$s/%1$s%2$s";
     public static final String UNIQUE_CLASSPATH_RESOURCE_TPL = "contract/contracts/%s/%s";
     private static final Logger log = LogManager.getLogger(Utils.class);
     private static final String JSON_EXTENSION = ".json";
@@ -205,7 +205,7 @@ public class Utils {
      */
     public static String getResourcePath(String resourceName, final String extension) {
         resourceName = resourceName.replaceAll("\\d*$", "");
-        final var path = String.format(RESOURCE_PATH + extension, resourceName);
+        final var path = String.format(RESOURCE_PATH, resourceName, extension);
         final var file = relocatedIfNotPresentInWorkingDir(new File(path));
         if (!file.exists()) {
             throw new IllegalArgumentException("Invalid argument: " + path.substring(path.lastIndexOf('/') + 1));
