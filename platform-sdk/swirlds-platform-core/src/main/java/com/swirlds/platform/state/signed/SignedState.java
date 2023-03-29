@@ -512,7 +512,7 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
     }
 
     /**
-     * Check if a signature is valid.
+     * Check if a signature is valid.  If a node has no stake, we consider the signature to be invalid.
      *
      * @param address   the address of the signer, or null if there is no signing address
      * @param signature the signature to check
@@ -522,6 +522,11 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
     private boolean isSignatureValid(final Address address, final Signature signature) {
         if (address == null) {
             // Signing node is not in the address book.
+            return false;
+        }
+
+        if (address.getStake() == 0) {
+            // Signing node has no stake.
             return false;
         }
 

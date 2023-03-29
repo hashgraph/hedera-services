@@ -48,7 +48,8 @@ public final class SignatureTransmitter {
     }
 
     /**
-     * Transmit this node's signature to other nodes for a signed state.
+     * Transmit this node's signature to other nodes for a signed state.  Signatures from zero stake nodes are
+     * transmitted and valuable for the purpose of detecting ISSes.
      *
      * @param round
      * 		the round of the state that was signed
