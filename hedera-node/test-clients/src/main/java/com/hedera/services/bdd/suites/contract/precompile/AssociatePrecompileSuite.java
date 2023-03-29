@@ -92,6 +92,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
     private static final byte[] ACCOUNT_ADDRESS =
             asAddress(AccountID.newBuilder().build());
     private static final byte[] TOKEN_ADDRESS = asAddress(TokenID.newBuilder().build());
+    private static final String TOKEN_ASSOCIATE = "tokenAssociate";
 
     public static void main(String... args) {
         new AssociatePrecompileSuite().runSuiteAsync();
@@ -199,7 +200,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
                                         THE_CONTRACT,
-                                        "tokenAssociate",
+                                        TOKEN_ASSOCIATE,
                                         HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
                                         HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .payingWith(GENESIS)
@@ -240,7 +241,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
                         cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
                         contractCall(
                                         THE_CONTRACT,
-                                        "tokenAssociate",
+                                        TOKEN_ASSOCIATE,
                                         HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
                                         HapiParserUtil.asHeadlongAddress(invalidAbiArgument))
                                 .payingWith(GENESIS)
@@ -249,7 +250,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
                                         THE_CONTRACT,
-                                        "tokenAssociate",
+                                        TOKEN_ASSOCIATE,
                                         HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
                                         HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .payingWith(GENESIS)
@@ -414,7 +415,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
                                 .treasury(TOKEN_TREASURY)
                                 .exposingCreatedIdTo(idLit ->
                                         tokenAddress.set(idAsHeadlongAddress(HapiPropertySource.asToken(idLit)))))
-                .when(sourcing(() -> contractCall(INNER_CONTRACT, "tokenAssociate", missingAddress, tokenAddress.get())
+                .when(sourcing(() -> contractCall(INNER_CONTRACT, TOKEN_ASSOCIATE, missingAddress, tokenAddress.get())
                         .via(txn)
                         .gas(GAS_TO_OFFER)
                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
