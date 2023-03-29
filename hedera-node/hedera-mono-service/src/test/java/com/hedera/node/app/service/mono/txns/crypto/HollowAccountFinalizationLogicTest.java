@@ -266,7 +266,6 @@ class HollowAccountFinalizationLogicTest {
         given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(expirableTxnRecordBuilder);
         given(expirableTxnRecordBuilder.getReceiptBuilder()).willReturn(txnReceiptBuilder);
 
-
         given(txnCtx.accessor()).willReturn(txnAccessor);
         given(spanMapAccessor.getEthTxExpansion(txnAccessor)).willReturn(new EthTxExpansion(null, OK));
         final var evmAddress2 = "evmAddress2".getBytes();

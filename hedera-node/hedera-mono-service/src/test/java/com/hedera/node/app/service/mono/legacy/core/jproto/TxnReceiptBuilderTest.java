@@ -117,5 +117,4 @@ class TxnReceiptBuilderTest {
         assertArrayEquals(serialNumbers, subject.getSerialNumbers());
         assertEquals(1, subject.getRunningHashVersion());
     }
-
 }
