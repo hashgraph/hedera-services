@@ -26,7 +26,6 @@ import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.components.transaction.TransactionPool;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
-import com.swirlds.platform.components.transaction.TransactionTracker;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.SelfEventStorage;
@@ -65,9 +64,6 @@ public class EventCreator {
     /** Stores the most recent event created by me */
     private final SelfEventStorage selfEventStorage;
 
-    /** This hashgraph's {@link TransactionTracker} */
-    private final TransactionTracker transactionTracker;
-
     /** An implementor of {@link TransactionPool} */
     private final TransactionPool transactionPool;
 
@@ -94,8 +90,6 @@ public class EventCreator {
      * 		stores the most recent event created by me
      * @param eventMapper
      * 		the object that tracks the most recent events from each node
-     * @param transactionTracker
-     * 		the object that tracks user transactions in the hashgraph
      * @param transactionPool
      * 		the TransactionPool
      * @param inFreeze
@@ -111,7 +105,6 @@ public class EventCreator {
             final EventHandler newEventHandler,
             final EventMapper eventMapper,
             final SelfEventStorage selfEventStorage,
-            final TransactionTracker transactionTracker,
             final TransactionPool transactionPool,
             final BooleanSupplier inFreeze,
             final EventCreationRules eventCreationRules) {
@@ -122,7 +115,6 @@ public class EventCreator {
         this.newEventHandler = newEventHandler;
         this.eventMapper = eventMapper;
         this.selfEventStorage = selfEventStorage;
-        this.transactionTracker = transactionTracker;
         this.transactionPool = transactionPool;
         this.inFreeze = inFreeze;
         this.eventCreationRules = eventCreationRules;
@@ -142,12 +134,8 @@ public class EventCreator {
         // We don't want to create multiple events with the same other parent, so we have to check if we
         // already created an event with this particular other parent.
         //
-        // We don't want to create an event if there are no user transactions ready to be put in an event.
-        //
         // We still want to create an event if there are state signature transactions when we are frozen.
-        if (hasOtherParentAlreadyBeenUsed(otherId)
-                && hasNoUserTransactionsReady()
-                && !hasSignatureTransactionsWhileFrozen()) {
+        if (hasOtherParentAlreadyBeenUsed(otherId) && !hasSignatureTransactionsWhileFrozen()) {
             return false;
         }
 
@@ -216,23 +204,6 @@ public class EventCreator {
      */
     protected boolean hasSignatureTransactionsWhileFrozen() {
         return transactionPool.numSignatureTransEvent() > 0 && inFreeze.getAsBoolean();
-    }
-
-    /**
-     * Checks if there are no user transactions ready to be included in an event.
-     *
-     * If there are no user transactions waiting to be included in an event, there is no reason to create an event for
-     * the purposes of user transactions.
-     *
-     * If there are user transactions waiting to be included in an event but there are user transactions in the
-     * hashgraph that have not yet reached consensus, we should not create an event in order to slow event creation. We
-     * must receive more events from peers to help the existing user transactions in the hashgraph to reach consensus.
-     * We should not overwhelm the graph with our events.
-     *
-     * @return true if there are no user transactions ready to be put into an event
-     */
-    protected boolean hasNoUserTransactionsReady() {
-        return transactionPool.numTransForEvent() == 0 || transactionTracker.getNumUserTransEvents() > 0;
     }
 
     /**

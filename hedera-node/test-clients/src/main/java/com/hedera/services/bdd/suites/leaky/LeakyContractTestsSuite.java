@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAdd
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.bdd.spec.HapiSpec.*;
+import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -33,6 +34,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ED25519_ON;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
@@ -82,6 +84,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.ACCOUNT_INFO;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.ACCOUNT_INFO_AFTER_CALL;
@@ -98,6 +101,13 @@ import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.SIM
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.TRANSFERRING_CONTRACT;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.TRANSFER_TO_CALLER;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCreateSuite.EMPTY_CONSTRUCTOR_CONTRACT;
+import static com.hedera.services.bdd.suites.contract.precompile.ApproveAllowanceSuite.ATTACK_CALL;
+import static com.hedera.services.bdd.suites.contract.precompile.ApproveAllowanceSuite.CALL_TO;
+import static com.hedera.services.bdd.suites.contract.precompile.ApproveAllowanceSuite.CONTRACTS_PERMITTED_DELEGATE_CALLERS;
+import static com.hedera.services.bdd.suites.contract.precompile.ApproveAllowanceSuite.DELEGATE_ERC_CALLEE;
+import static com.hedera.services.bdd.suites.contract.precompile.ApproveAllowanceSuite.DELEGATE_PRECOMPILE_CALLEE;
+import static com.hedera.services.bdd.suites.contract.precompile.ApproveAllowanceSuite.PRETEND_ATTACKER;
+import static com.hedera.services.bdd.suites.contract.precompile.ApproveAllowanceSuite.PRETEND_PAIR;
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.ACCOUNT_2;
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.AUTO_RENEW_PERIOD;
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.CONTRACT_ADMIN_KEY;
@@ -113,12 +123,19 @@ import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompil
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.TOKEN_CREATE_CONTRACT_AS_KEY;
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.TOKEN_NAME;
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.TOKEN_SYMBOL;
+import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.ERC_20_CONTRACT;
+import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.RECIPIENT;
+import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.TRANSFER_FROM;
+import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.TRANSFER_FROM_ACCOUNT_TXN;
 import static com.hedera.services.bdd.suites.contract.precompile.LazyCreateThroughPrecompileSuite.mirrorAddrWith;
 import static com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileSuite.GAS_TO_OFFER;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.ADMIN_KEY;
+import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.FUNGIBLE_TOKEN;
+import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.OWNER;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
 import static com.hedera.services.bdd.suites.ethereum.EthereumSuite.GAS_LIMIT;
+import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.TRANSFER_TXN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
@@ -131,6 +148,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -181,6 +200,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE =
             KeyShape.threshOf(1, KeyShape.SIMPLE, DELEGATE_CONTRACT);
     private static final String CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY = "contracts.allowAutoAssociations";
+    public static final String FALSE = "false";
 
     public static void main(String... args) {
         new LeakyContractTestsSuite().runSuiteSync();
@@ -213,7 +233,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 lazyCreateThroughPrecompileNotSupportedWhenFlagDisabled(),
                 evmLazyCreateViaSolidityCall(),
                 evmLazyCreateViaSolidityCallTooManyCreatesFails(),
-                rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled());
+                erc20TransferFromDoesNotWorkIfFlagIsDisabled(),
+                rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled(),
+                whitelistPositiveCase(),
+                whitelistNegativeCases());
     }
 
     HapiSpec payerCannotOverSendValue() {
@@ -247,9 +270,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
     private HapiSpec createTokenWithInvalidFeeCollector() {
         return propertyPreservingHapiSpec("createTokenWithInvalidFeeCollector")
-                .preserving(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED)
+                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
                 .given(
-                        overriding(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, FALSE_VALUE),
+                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ECDSA_KEY),
                         uploadInitCode(TOKEN_CREATE_CONTRACT),
@@ -295,9 +318,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final String feeCollector = ACCOUNT_2;
         final String someARAccount = "someARAccount";
         return propertyPreservingHapiSpec("createTokenWithInvalidFixedFeeWithERC721Denomination")
-                .preserving(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED)
+                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
                 .given(
-                        overriding(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, FALSE_VALUE),
+                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ECDSA_KEY),
                         cryptoCreate(feeCollector).keyShape(ED25519_ON).balance(ONE_HUNDRED_HBARS),
@@ -350,9 +373,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
         AtomicReference<String> existingToken = new AtomicReference<>();
         final String treasuryAndFeeCollectorKey = "treasuryAndFeeCollectorKey";
         return propertyPreservingHapiSpec("createTokenWithInvalidRoyaltyFee")
-                .preserving(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED)
+                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
                 .given(
-                        overriding(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, FALSE_VALUE),
+                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(CONTRACT_ADMIN_KEY),
@@ -408,9 +431,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var feeCollector = ACCOUNT_2;
         final var treasuryAndFeeCollectorKey = "treasuryAndFeeCollectorKey";
         return propertyPreservingHapiSpec("nonFungibleTokenCreateWithFeesHappyPath")
-                .preserving(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED)
+                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
                 .given(
-                        overriding(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, FALSE_VALUE),
+                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(treasuryAndFeeCollectorKey),
@@ -494,9 +517,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var arEd25519Key = "arEd25519Key";
         final var initialAutoRenewAccount = "initialAutoRenewAccount";
         return propertyPreservingHapiSpec("fungibleTokenCreateWithFeesHappyPath")
-                .preserving(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED)
+                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
                 .given(
-                        overriding(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, FALSE_VALUE),
+                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
                         newKeyNamed(arEd25519Key).shape(ED25519),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         cryptoCreate(initialAutoRenewAccount).key(arEd25519Key),
@@ -574,7 +597,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final String ACCOUNT = "account";
         return defaultHapiSpec("ETX_026_accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation")
                 .given(
-                        overriding(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, FALSE_VALUE),
+                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(ACCOUNT).key(SECP_256K1_SOURCE_KEY).balance(ONE_HUNDRED_HBARS))
                 .when(ethereumContractCreate(PAY_RECEIVABLE_CONTRACT)
@@ -585,7 +608,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         .nonce(0)
                         .gasLimit(GAS_LIMIT)
                         .hasKnownStatus(INVALID_ACCOUNT_ID))
-                .then(overriding(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, "true"));
+                .then(overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, "true"));
     }
 
     private HapiSpec transferToCaller() {
@@ -1030,7 +1053,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .preserving(ALLOW_AUTO_ASSOCIATIONS_PROPERTY, LAZY_CREATION_ENABLED)
                 .given(
                         overriding(ALLOW_AUTO_ASSOCIATIONS_PROPERTY, "true"),
-                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, "false"),
+                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, FALSE),
                         cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(FUNGIBLE_TOKEN)
@@ -1200,7 +1223,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     private HapiSpec rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled() {
         return propertyPreservingHapiSpec("rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled")
                 .preserving(CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY)
-                .given(overriding(CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY, "false"))
+                .given(overriding(CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY, FALSE))
                 .when(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .then(
                         contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
@@ -1211,6 +1234,172 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 .newMaxAutomaticAssociations(5)
                                 .hasPrecheck(NOT_SUPPORTED),
                         contractUpdate(EMPTY_CONSTRUCTOR_CONTRACT).newMemo("Hola!"));
+    }
+
+    private HapiSpec erc20TransferFromDoesNotWorkIfFlagIsDisabled() {
+        return defaultHapiSpec("erc20TransferFromDoesNotWorkIfFlagIsDisabled")
+                .given(
+                        overriding("hedera.allowances.isEnabled", FALSE),
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(RECIPIENT),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .initialSupply(10L)
+                                .maxSupply(1000L)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY),
+                        uploadInitCode(ERC_20_CONTRACT),
+                        contractCreate(ERC_20_CONTRACT),
+                        tokenAssociate(OWNER, FUNGIBLE_TOKEN),
+                        tokenAssociate(RECIPIENT, FUNGIBLE_TOKEN),
+                        tokenAssociate(ERC_20_CONTRACT, FUNGIBLE_TOKEN),
+                        cryptoTransfer(moving(10, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, OWNER)))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        ERC_20_CONTRACT,
+                                        TRANSFER_FROM,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(OWNER))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(RECIPIENT))),
+                                        BigInteger.TWO)
+                                .gas(500_000L)
+                                .via(TRANSFER_FROM_ACCOUNT_TXN)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .then(
+                        getTxnRecord(TRANSFER_FROM_ACCOUNT_TXN)
+                                .logged(), // has gasUsed little less than supplied 500K in
+                        // contractCall result
+                        overriding("hedera.allowances.isEnabled", "true"));
+    }
+
+    private HapiSpec whitelistPositiveCase() {
+        final AtomicLong whitelistedCalleeMirrorNum = new AtomicLong();
+        final AtomicReference<TokenID> tokenID = new AtomicReference<>();
+        final AtomicReference<String> attackerMirrorAddr = new AtomicReference<>();
+        final AtomicReference<String> whitelistedCalleeMirrorAddr = new AtomicReference<>();
+
+        return propertyPreservingHapiSpec("WhitelistPositiveCase")
+                .preserving(CONTRACTS_PERMITTED_DELEGATE_CALLERS)
+                .given(
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(PRETEND_ATTACKER)
+                                .exposingCreatedIdTo(id -> attackerMirrorAddr.set(asHexedSolidityAddress(id))),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .initialSupply(Long.MAX_VALUE)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .exposingCreatedIdTo(id -> tokenID.set(asToken(id))),
+                        uploadInitCode(PRETEND_PAIR),
+                        contractCreate(PRETEND_PAIR).adminKey(DEFAULT_PAYER),
+                        uploadInitCode(DELEGATE_PRECOMPILE_CALLEE),
+                        contractCreate(DELEGATE_PRECOMPILE_CALLEE)
+                                .adminKey(DEFAULT_PAYER)
+                                .exposingNumTo(num -> {
+                                    whitelistedCalleeMirrorNum.set(num);
+                                    whitelistedCalleeMirrorAddr.set(asHexedSolidityAddress(0, 0, num));
+                                }),
+                        tokenAssociate(PRETEND_PAIR, FUNGIBLE_TOKEN),
+                        tokenAssociate(DELEGATE_PRECOMPILE_CALLEE, FUNGIBLE_TOKEN))
+                .when(
+                        sourcing(() -> overriding(
+                                CONTRACTS_PERMITTED_DELEGATE_CALLERS, "" + whitelistedCalleeMirrorNum.get())),
+                        sourcing(() -> contractCall(
+                                        PRETEND_PAIR,
+                                        CALL_TO,
+                                        asHeadlongAddress(whitelistedCalleeMirrorAddr.get()),
+                                        asHeadlongAddress(asSolidityAddress(tokenID.get())),
+                                        asHeadlongAddress(attackerMirrorAddr.get()))
+                                .via(ATTACK_CALL)
+                                .gas(5_000_000L)
+                                .hasKnownStatus(SUCCESS)))
+                .then(
+                        // Because this callee is on the whitelist, the pair WILL have an allowance
+                        // here
+                        getAccountDetails(PRETEND_PAIR).has(accountDetailsWith().tokenAllowancesCount(1)),
+                        // Instead of the callee
+                        getAccountDetails(DELEGATE_PRECOMPILE_CALLEE)
+                                .has(accountDetailsWith().tokenAllowancesCount(0)));
+    }
+
+    private HapiSpec whitelistNegativeCases() {
+        final AtomicLong unlistedCalleeMirrorNum = new AtomicLong();
+        final AtomicLong whitelistedCalleeMirrorNum = new AtomicLong();
+        final AtomicReference<TokenID> tokenID = new AtomicReference<>();
+        final AtomicReference<String> attackerMirrorAddr = new AtomicReference<>();
+        final AtomicReference<String> unListedCalleeMirrorAddr = new AtomicReference<>();
+        final AtomicReference<String> whitelistedCalleeMirrorAddr = new AtomicReference<>();
+
+        return propertyPreservingHapiSpec("WhitelistNegativeCases")
+                .preserving(CONTRACTS_PERMITTED_DELEGATE_CALLERS)
+                .given(
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(PRETEND_ATTACKER)
+                                .exposingCreatedIdTo(id -> attackerMirrorAddr.set(asHexedSolidityAddress(id))),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .initialSupply(Long.MAX_VALUE)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .exposingCreatedIdTo(id -> tokenID.set(asToken(id))),
+                        uploadInitCode(PRETEND_PAIR),
+                        contractCreate(PRETEND_PAIR).adminKey(DEFAULT_PAYER),
+                        uploadInitCode(DELEGATE_ERC_CALLEE),
+                        contractCreate(DELEGATE_ERC_CALLEE)
+                                .adminKey(DEFAULT_PAYER)
+                                .exposingNumTo(num -> {
+                                    whitelistedCalleeMirrorNum.set(num);
+                                    whitelistedCalleeMirrorAddr.set(asHexedSolidityAddress(0, 0, num));
+                                }),
+                        uploadInitCode(DELEGATE_PRECOMPILE_CALLEE),
+                        contractCreate(DELEGATE_PRECOMPILE_CALLEE)
+                                .adminKey(DEFAULT_PAYER)
+                                .exposingNumTo(num -> {
+                                    unlistedCalleeMirrorNum.set(num);
+                                    unListedCalleeMirrorAddr.set(asHexedSolidityAddress(0, 0, num));
+                                }),
+                        tokenAssociate(PRETEND_PAIR, FUNGIBLE_TOKEN),
+                        tokenAssociate(DELEGATE_ERC_CALLEE, FUNGIBLE_TOKEN),
+                        tokenAssociate(DELEGATE_PRECOMPILE_CALLEE, FUNGIBLE_TOKEN))
+                .when(
+                        sourcing(() -> overriding(
+                                CONTRACTS_PERMITTED_DELEGATE_CALLERS, "" + whitelistedCalleeMirrorNum.get())),
+                        sourcing(() -> contractCall(
+                                        PRETEND_PAIR,
+                                        CALL_TO,
+                                        asHeadlongAddress(unListedCalleeMirrorAddr.get()),
+                                        asHeadlongAddress(asSolidityAddress(tokenID.get())),
+                                        asHeadlongAddress(attackerMirrorAddr.get()))
+                                .gas(5_000_000L)
+                                .hasKnownStatus(SUCCESS)),
+                        // Because this callee isn't on the whitelist, the pair won't have an
+                        // allowance here
+                        getAccountDetails(PRETEND_PAIR).has(accountDetailsWith().tokenAllowancesCount(0)),
+                        // Instead nobody gets an allowance
+                        getAccountDetails(DELEGATE_PRECOMPILE_CALLEE)
+                                .has(accountDetailsWith().tokenAllowancesCount(0)),
+                        sourcing(() -> contractCall(
+                                        PRETEND_PAIR,
+                                        CALL_TO,
+                                        asHeadlongAddress(whitelistedCalleeMirrorAddr.get()),
+                                        asHeadlongAddress(asSolidityAddress(tokenID.get())),
+                                        asHeadlongAddress(attackerMirrorAddr.get()))
+                                .gas(5_000_000L)
+                                .hasKnownStatus(SUCCESS)))
+                .then(
+                        // Even though this is on the whitelist, b/c the whitelisted contract
+                        // is going through a delegatecall "chain" via the ERC-20 call, the pair
+                        // still won't have an allowance here
+                        getAccountDetails(PRETEND_PAIR).has(accountDetailsWith().tokenAllowancesCount(0)),
+                        // Instead of the callee
+                        getAccountDetails(DELEGATE_ERC_CALLEE)
+                                .has(accountDetailsWith().tokenAllowancesCount(0)));
     }
 
     @Override

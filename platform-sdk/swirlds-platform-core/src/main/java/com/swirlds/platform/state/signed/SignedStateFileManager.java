@@ -42,7 +42,6 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -62,8 +61,6 @@ public class SignedStateFileManager implements Startable {
      * written to disk.
      */
     private Instant previousSavedStateTimestamp;
-
-    private final AtomicLong lastRoundSavedToDisk = new AtomicLong(-1);
 
     /**
      * The ID of this node.
@@ -96,6 +93,11 @@ public class SignedStateFileManager implements Startable {
      * Provides system time
      */
     private final Time time;
+
+    /**
+     * The minimum generation of non-ancient events for the oldest state snapshot on disk.
+     */
+    private long minimumGenerationNonAncientForOldestState = -1;
 
     /**
      * Creates a new instance.
@@ -134,6 +136,15 @@ public class SignedStateFileManager implements Startable {
                 .setThreadName("signed-state-file-manager")
                 .setHandler(Runnable::run)
                 .build();
+
+        final SavedStateInfo[] savedStates = getSavedStateFiles(mainClassName, selfId, swirldName);
+        if (savedStates.length > 0) {
+            final Long generationNonAncient =
+                    savedStates[savedStates.length - 1].getMetadata().minimumGenerationNonAncient();
+            if (generationNonAncient != null) {
+                minimumGenerationNonAncientForOldestState = generationNonAncient;
+            }
+        }
     }
 
     /**
@@ -190,7 +201,7 @@ public class SignedStateFileManager implements Startable {
             final long start = time.nanoTime();
             boolean success = false;
             try {
-                writeSignedStateToDisk(directory, signedState, taskDescription);
+                writeSignedStateToDisk(selfId.getId(), directory, signedState, taskDescription);
                 metrics.getWriteStateToDiskTimeMetric().update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
 
                 success = true;
@@ -234,7 +245,6 @@ public class SignedStateFileManager implements Startable {
         return saveSignedStateToDisk(
                 signedState, getSignedStateDir(signedState.getRound()), "periodic snapshot", success -> {
                     if (success) {
-                        lastRoundSavedToDisk.set(signedState.getRound());
                         deleteOldStates();
                     }
                 });
@@ -334,7 +344,6 @@ public class SignedStateFileManager implements Startable {
      */
     public synchronized void registerSignedStateFromDisk(final SignedState signedState) {
         previousSavedStateTimestamp = signedState.getConsensusTimestamp();
-        lastRoundSavedToDisk.set(signedState.getRound());
     }
 
     /**
@@ -344,7 +353,8 @@ public class SignedStateFileManager implements Startable {
         final SavedStateInfo[] savedStates = getSavedStateFiles(mainClassName, selfId, swirldName);
 
         // States are returned newest to oldest. So delete from the end of the list to delete the oldest states.
-        for (int index = savedStates.length - 1; index >= stateConfig.signedStateDisk(); index--) {
+        int index = savedStates.length - 1;
+        for (; index >= stateConfig.signedStateDisk(); index--) {
 
             final SavedStateInfo savedStateInfo = savedStates[index];
             try {
@@ -353,14 +363,24 @@ public class SignedStateFileManager implements Startable {
                 // Intentionally ignored, deleteDirectoryAndLog will log any exceptions that happen
             }
         }
+
+        // Keep the minimum generation non-ancient for the oldest state up to date
+        if (index >= 0) {
+            final SavedStateMetadata oldestStateMetadata = savedStates[index].getMetadata();
+            final long minimumGeneration = oldestStateMetadata.minimumGenerationNonAncient() == null
+                    ? -1L
+                    : oldestStateMetadata.minimumGenerationNonAncient();
+            minimumGenerationNonAncientForOldestState =
+                    Math.max(minimumGenerationNonAncientForOldestState, minimumGeneration);
+        }
     }
 
     /**
-     * Get the last round that was saved to disk.
+     * Get the minimum generation non-ancient for the oldest state on disk.
      *
-     * @return the last round that was saved to disk, or -1 if no round was recently saved to disk
+     * @return the minimum generation non-ancient for the oldest state on disk
      */
-    public long getLastRoundSavedToDisk() {
-        return lastRoundSavedToDisk.get();
+    public synchronized long getMinimumGenerationNonAncientForOldestState() {
+        return minimumGenerationNonAncientForOldestState;
     }
 }

@@ -20,7 +20,7 @@ import static com.swirlds.platform.test.PlatformStateUtils.randomPlatformState;
 
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.test.RandomUtils;
-import com.swirlds.common.test.state.DummySwirldState2;
+import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
 import java.util.Random;
@@ -32,7 +32,7 @@ public class SignedStateUtils {
     }
 
     public static SignedState randomSignedState(Random random) {
-        SwirldState state = new DummySwirldState2();
+        SwirldState state = new DummySwirldState();
         State root = new State();
         root.setSwirldState(state);
         root.setPlatformState(randomPlatformState(random, false));

@@ -18,6 +18,7 @@ package com.swirlds.logging.json;
 
 import static com.swirlds.logging.payloads.AbstractLogPayload.extractPayloadType;
 import static com.swirlds.logging.payloads.AbstractLogPayload.parsePayload;
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.swirlds.logging.payloads.LogPayload;
@@ -195,7 +196,7 @@ public class JsonLogEntry {
      */
     @Override
     public String toString() {
-        ToStringBuilder tsb = new ToStringBuilder(this)
+        ToStringBuilder tsb = new ToStringBuilder(this, SHORT_PREFIX_STYLE)
                 .append("timestamp", timestamp.toString())
                 .append("thread", thread)
                 .append("level", level)

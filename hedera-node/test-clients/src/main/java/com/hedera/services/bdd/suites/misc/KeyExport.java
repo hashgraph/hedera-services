@@ -93,9 +93,10 @@ public class KeyExport extends HapiSuite {
     private HapiSpec exportCurrentTreasuryKey() {
         KeyFactory.PEM_PASSPHRASE = "passphrase";
 
-        return defaultHapiSpec("ExportCurrentTreasuryKeyAsPem").given().when().then(withOpContext((spec, opLog) -> {
-            spec.keys().exportSimpleWacl("devGenesisKeypair.pem", GENESIS);
-        }));
+        return defaultHapiSpec("ExportCurrentTreasuryKeyAsPem")
+                .given()
+                .when()
+                .then(withOpContext((spec, opLog) -> spec.keys().exportSimpleWacl("devGenesisKeypair.pem", GENESIS)));
     }
 
     private HapiSpec exportGenesisKey() {

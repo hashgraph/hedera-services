@@ -369,7 +369,7 @@ public class HashgraphDemoMain implements SwirldMain {
      * 		these are not used
      */
     public static void main(final String[] args) {
-        Browser.launch(args);
+        Browser.parseCommandLineArgsAndLaunch(args);
     }
 
     /** Fill in the names array, with the name of each member. Also set numColumns and numMembers. */

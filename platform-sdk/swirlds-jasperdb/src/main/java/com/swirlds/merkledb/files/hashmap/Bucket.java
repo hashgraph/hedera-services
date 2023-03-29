@@ -213,7 +213,8 @@ public final class Bucket<K extends VirtualKey<? super K>> {
      * @param value the entry value, this can also be special
      *     HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE to mean delete
      */
-    public void putValue(final int keyHashCode, final K key, final long value) {
+    public void putValue(final K key, final long value) {
+        final int keyHashCode = key.hashCode();
         try {
             // scan over all existing key/value entries and see if there is already one for this
             // key. If there is then update it, otherwise we have at least worked out the entryOffset

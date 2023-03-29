@@ -44,7 +44,8 @@ public class MapPropertySource implements HapiPropertySource {
         var filteredProps = typedProps.entrySet().stream()
                 .filter(entry -> !KEYS_TO_CENSOR.contains(entry.getKey()))
                 .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
-        log.info("Initializing a MapPropertySource from " + filteredProps);
+        String message = String.format("Initializing a MapPropertySource from %s", filteredProps);
+        log.info(message);
         this.props = props;
     }
 
