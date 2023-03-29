@@ -47,6 +47,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -137,6 +138,8 @@ class RationalizationTest {
         // and:
         verify(sigFactory).resetFor(txnAccessor);
         verify(pkToSigFn).resetAllSigsToUnused();
+        // and:
+        verify(txnAccessor).setPendingCompletions(Collections.emptyList());
     }
 
     @Test
