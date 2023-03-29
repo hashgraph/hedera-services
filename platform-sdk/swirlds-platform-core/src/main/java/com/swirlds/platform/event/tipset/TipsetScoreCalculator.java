@@ -26,9 +26,9 @@ import java.util.function.IntToLongFunction;
 import java.util.function.LongToIntFunction;
 
 /**
- * A window into a node's view of tipsets.
+ * Calculates tipset scores for events created by a node.
  */
-public class TipsetWindow {
+public class TipsetScoreCalculator {
 
     /**
      * The node ID that is being tracked by this window.
@@ -36,9 +36,9 @@ public class TipsetWindow {
     private final long selfId;
 
     /**
-     * Calculates tipsets for each event. Is maintained outside this object.
+     * Builds tipsets for each event. Is maintained outside this object.
      */
-    private final TipsetCalculator calculator;
+    private final TipsetBuilder builder;
 
     /**
      * The current tipset snapshot.
@@ -78,16 +78,16 @@ public class TipsetWindow {
     /**
      * Create a new tipset window.
      *
-     * @param selfId      the ID of the node tracked by this window
-     * @param calculator       tracks tipsets for individual events
+     * @param selfId        the ID of the node tracked by this window
+     * @param builder       builds tipsets for individual events
      * @param nodeCount     the number of nodes in the address book
      * @param nodeIdToIndex maps node ID to node index
      * @param indexToWeight maps node index to consensus weight
      * @param totalWeight   the sum of all weight
      */
-    public TipsetWindow(
+    public TipsetScoreCalculator(
             final long selfId,
-            @NonNull final TipsetCalculator calculator,
+            @NonNull final TipsetBuilder builder,
             final int nodeCount,
             @NonNull final LongToIntFunction nodeIdToIndex,
             @NonNull final IntToLongFunction indexToWeight,
@@ -96,7 +96,7 @@ public class TipsetWindow {
         snapshot = new Tipset(nodeCount, nodeIdToIndex, indexToWeight);
 
         this.selfId = selfId;
-        this.calculator = calculator;
+        this.builder = builder;
         this.totalWeight = totalWeight;
         this.selfWeight = indexToWeight.applyAsLong(nodeIdToIndex.applyAsInt(selfId));
         this.maximumPossibleScore = totalWeight - selfWeight;
@@ -119,7 +119,7 @@ public class TipsetWindow {
     }
 
     /**
-     * Add an event created by this window's node and compute the increase in tipset score. Higher score changes mean
+     * Add an event created by this node and compute the increase in tipset score. Higher score changes mean
      * that this event caused consensus to advance more. A score change of 0 means that this event did not advance
      * consensus. A score change close to the total weight means that this event did a very good job at advancing
      * consensus. It's impossible to get a perfect score, since the weight of advancing self events is not included. The
@@ -128,18 +128,18 @@ public class TipsetWindow {
      * @param event the event that is being added
      * @return the change in the tipset advancement score
      */
-    public long addEvent(@NonNull final EventFingerprint event) {
+    public long addEventAndGetAdvancementScore(@NonNull final EventFingerprint event) {
         throwArgNull(event, "event");
         if (event.creator() != selfId) {
             throw new IllegalArgumentException("event creator must be the same as the window ID");
         }
 
-        final Tipset eventTipset = calculator.getTipset(event);
+        final Tipset eventTipset = builder.getTipset(event);
         if (eventTipset == null) {
             throw new IllegalArgumentException("event is not in the tipset tracker");
         }
 
-        final long score = snapshot.getAdvancementCount(selfId, eventTipset);
+        final long score = snapshot.getWeightedAdvancementCount(selfId, eventTipset);
         if (score > maximumPossibleScore) {
             throw new IllegalStateException(
                     "score " + score + " is greater than the maximum possible score " + maximumPossibleScore);

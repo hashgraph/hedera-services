@@ -29,7 +29,7 @@ import java.util.function.LongToIntFunction;
 /**
  * Computes and tracks tipsets for non-ancient events.
  */
-public class TipsetCalculator {
+public class TipsetBuilder {
 
     private final SequenceMap<EventFingerprint, Tipset> tipsets;
 
@@ -54,7 +54,7 @@ public class TipsetCalculator {
      * @param nodeIdToIndex maps node ID to node index
      * @param indexToWeight maps node index to consensus weight
      */
-    public TipsetCalculator(
+    public TipsetBuilder(
             final int nodeCount,
             @NonNull final LongToIntFunction nodeIdToIndex,
             @NonNull final IntToLongFunction indexToWeight) {

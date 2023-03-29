@@ -149,7 +149,7 @@ public class Tipset {
      * @param that   the tipset to compare to
      * @return the number of tip advancements to get from this tipset to that tipset
      */
-    public long getAdvancementCount(final long nodeId, @NonNull final Tipset that) {
+    public long getWeightedAdvancementCount(final long nodeId, @NonNull final Tipset that) {
         long count = 0;
 
         final int selfIndex = nodeIdToIndex.applyAsInt(nodeId);

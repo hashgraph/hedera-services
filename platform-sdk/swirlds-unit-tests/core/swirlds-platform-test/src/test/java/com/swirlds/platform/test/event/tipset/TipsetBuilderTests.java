@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.swirlds.platform.event.tipset.EventFingerprint;
 import com.swirlds.platform.event.tipset.Tipset;
-import com.swirlds.platform.event.tipset.TipsetCalculator;
+import com.swirlds.platform.event.tipset.TipsetBuilder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -37,7 +37,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("TipsetTracker Tests")
-class TipsetCalculatorTests {
+class TipsetBuilderTests {
 
     private static void assertTipsetEquality(final Tipset expected, final Tipset actual, final long nodeCount) {
         assertEquals(expected.size(), actual.size());
@@ -56,7 +56,7 @@ class TipsetCalculatorTests {
         final Map<Long, EventFingerprint> latestEvents = new HashMap<>();
         final Map<EventFingerprint, Tipset> expectedTipsets = new HashMap<>();
 
-        final TipsetCalculator tracker = new TipsetCalculator(nodeCount, x -> (int) x, x -> 1);
+        final TipsetBuilder tracker = new TipsetBuilder(nodeCount, x -> (int) x, x -> 1);
 
         for (int eventIndex = 0; eventIndex < 1000; eventIndex++) {
 

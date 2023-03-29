@@ -133,7 +133,7 @@ class TipsetTests {
             }
         }
 
-        assertEquals(expectedAdvancementCount, initialTipset.getAdvancementCount(nodeId, comparisonTipset));
+        assertEquals(expectedAdvancementCount, initialTipset.getWeightedAdvancementCount(nodeId, comparisonTipset));
     }
 
     @Test
@@ -179,6 +179,6 @@ class TipsetTests {
             }
         }
 
-        assertEquals(expectedAdvancementCount, initialTipset.getAdvancementCount(nodeId, comparisonTipset));
+        assertEquals(expectedAdvancementCount, initialTipset.getWeightedAdvancementCount(nodeId, comparisonTipset));
     }
 }
