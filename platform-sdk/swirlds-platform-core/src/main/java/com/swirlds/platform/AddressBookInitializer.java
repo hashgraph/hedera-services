@@ -23,6 +23,7 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.address.AddressBookValidator;
+import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -34,8 +35,10 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -56,8 +59,6 @@ public class AddressBookInitializer {
     public static final String STATE_ADDRESS_BOOK_USED = "The State Saved Address Book Was Used.";
     /** The text indicating the state address book was null in the usedAddressBook file. */
     public static final String STATE_ADDRESS_BOOK_NULL = "The State Saved Address Book Was NULL.";
-    /** The name of the address book directory to write address books to. */
-    private static final String ADDRESS_BOOK_DIRECTORY_NAME = "address_book";
     /** The file name prefix to use when creating address book files. */
     private static final String ADDRESS_BOOK_FILE_PREFIX = "usedAddressBook";
     /** The format of date and time to use when creating address book files. */
@@ -86,6 +87,8 @@ public class AddressBookInitializer {
     /** The path to the directory for writing address books. */
     @NonNull
     private final Path pathToAddressBookDirectory;
+    /** The maximum number of address book files to keep in the address book directory. */
+    private final int maxNumFiles;
     /** Indicate that the unmodified config address book must be used. */
     private final boolean useConfigAddressBook;
 
@@ -97,31 +100,30 @@ public class AddressBookInitializer {
      * @param signedState          The signed state loaded from disk.  May be null.
      * @param genesisSupplier      The swirld application state in genesis start. Must not be null.
      * @param configAddressBook    The address book derived from config.txt. Must not be null.
-     * @param parentDirectory      The parent directory of the address book directory. Must not be null.
-     * @param useConfigAddressBook Indicates if the unmodified config address book should be used.
+     * @param addressBookConfig    The configuration settings for AddressBooks.
      */
     public AddressBookInitializer(
             @NonNull final SoftwareVersion currentVersion,
             @Nullable final SignedState signedState,
             @NonNull final Supplier<SwirldState> genesisSupplier,
             @NonNull final AddressBook configAddressBook,
-            @NonNull final Path parentDirectory,
-            final boolean useConfigAddressBook) {
+            @NonNull final AddressBookConfig addressBookConfig) {
         this.currentVersion = Objects.requireNonNull(currentVersion, "The currentVersion must not be null.");
         this.genesisSupplier =
                 Objects.requireNonNull(genesisSupplier, "The genesis swirldState supplier must not be null.");
         this.configAddressBook = Objects.requireNonNull(configAddressBook, "The configAddressBook must not be null.");
-        Objects.requireNonNull(parentDirectory, "The parentDirectory must not be null.");
-        this.pathToAddressBookDirectory = parentDirectory.resolve(ADDRESS_BOOK_DIRECTORY_NAME);
+        Objects.requireNonNull(addressBookConfig, "The addressBookConfig must not be null.");
+        this.loadedSignedState = signedState;
+        this.loadedAddressBook = loadedSignedState == null ? null : loadedSignedState.getAddressBook();
+        this.pathToAddressBookDirectory = Path.of(addressBookConfig.addressBookDirectory());
         try {
             Files.createDirectories(pathToAddressBookDirectory);
         } catch (final IOException e) {
             logger.error(EXCEPTION.getMarker(), "Not able to create directory: {}", pathToAddressBookDirectory, e);
             throw new IllegalStateException("Not able to create directory: " + pathToAddressBookDirectory, e);
         }
-        this.loadedSignedState = signedState;
-        this.loadedAddressBook = loadedSignedState == null ? null : loadedSignedState.getAddressBook();
-        this.useConfigAddressBook = useConfigAddressBook;
+        this.useConfigAddressBook = addressBookConfig.forceUseOfConfigAddressBook();
+        this.maxNumFiles = addressBookConfig.maxRecordedAddressBookFiles();
 
         initialAddressBook = initialize();
     }
@@ -231,7 +233,7 @@ public class AddressBookInitializer {
      *
      * @param usedAddressBook the address book to be returned from the AddressBookInitializer.
      */
-    private void recordAddressBooks(@NonNull final AddressBook usedAddressBook) {
+    private synchronized void recordAddressBooks(@NonNull final AddressBook usedAddressBook) {
         final String date = DATE_TIME_FORMAT.format(Instant.now());
         final String addressBookFileName = ADDRESS_BOOK_FILE_PREFIX + "_v" + currentVersion + "_" + date + ".txt";
         final String addressBookDebugFileName = addressBookFileName + ".debug";
@@ -262,6 +264,23 @@ public class AddressBookInitializer {
             }
         } catch (final IOException e) {
             logger.error(EXCEPTION.getMarker(), "Not able to write address book to file. ", e);
+        }
+        cleanAddressBookDirectory();
+    }
+
+    /**
+     * Deletes the oldest address book files if there are more than the maximum number of address book files.
+     */
+    private synchronized void cleanAddressBookDirectory() {
+        try (final Stream<Path> filesStream = Files.list(pathToAddressBookDirectory)) {
+            final List<Path> files = filesStream.sorted().toList();
+            if (files.size() > maxNumFiles) {
+                for (int i = 0; i < files.size() - maxNumFiles; i++) {
+                    Files.delete(files.get(i));
+                }
+            }
+        } catch (final IOException e) {
+            logger.info(EXCEPTION.getMarker(), "Unable to list files in address book directory. ", e);
         }
     }
 

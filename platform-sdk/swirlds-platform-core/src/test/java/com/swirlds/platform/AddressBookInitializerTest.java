@@ -36,10 +36,13 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -70,8 +73,7 @@ class AddressBookInitializerTest {
                 getMockSignedState(0),
                 getMockSwirldStateSupplier(1),
                 configAddressBook,
-                testDirectory,
-                true);
+                getAddressBookConfig(true));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
         assertEquals(
                 configAddressBook,
@@ -91,8 +93,7 @@ class AddressBookInitializerTest {
                 signedState,
                 getMockSwirldStateSupplier(1),
                 configAddressBook,
-                testDirectory,
-                true);
+                getAddressBookConfig(true));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
         assertEquals(
                 configAddressBook,
@@ -113,8 +114,7 @@ class AddressBookInitializerTest {
                 getMockSignedState(0),
                 getMockSwirldStateSupplier(10),
                 configAddressBook,
-                testDirectory,
-                false);
+                getAddressBookConfig(false));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
         assertEquals(
                 expectedAddressBook,
@@ -133,8 +133,7 @@ class AddressBookInitializerTest {
                 getMockSignedState(0),
                 getMockSwirldStateSupplier(0),
                 configAddressBook,
-                testDirectory,
-                false);
+                getAddressBookConfig(false));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
         assertEquals(
                 configAddressBook,
@@ -153,8 +152,7 @@ class AddressBookInitializerTest {
                 getMockSignedState(0),
                 getMockSwirldStateSupplier(2),
                 configAddressBook,
-                testDirectory,
-                false);
+                getAddressBookConfig(false));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
         assertEquals(
                 configAddressBook,
@@ -171,16 +169,12 @@ class AddressBookInitializerTest {
         final AddressBook configAddressBook = getRandomAddressBook();
         final SoftwareVersion configSoftwareVersion = getMockSoftwareVersion(1);
         final Supplier<SwirldState> genesisSwirldState = getMockSwirldStateSupplier(1);
+        final AddressBookConfig addressBookConfig = getAddressBookConfig(false);
 
         assertThrows(
                 IllegalStateException.class,
                 () -> new AddressBookInitializer(
-                        configSoftwareVersion,
-                        signedState,
-                        genesisSwirldState,
-                        configAddressBook,
-                        testDirectory,
-                        false),
+                        configSoftwareVersion, signedState, genesisSwirldState, configAddressBook, addressBookConfig),
                 "IllegalStateException was not thrown.");
     }
 
@@ -195,8 +189,7 @@ class AddressBookInitializerTest {
                 signedState,
                 getMockSwirldStateSupplier(1),
                 configAddressBook,
-                testDirectory,
-                false);
+                getAddressBookConfig(false));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
         assertEquals(
                 signedState.getAddressBook(),
@@ -217,8 +210,7 @@ class AddressBookInitializerTest {
                 signedState,
                 getMockSwirldStateSupplier(0),
                 configAddressBook,
-                testDirectory,
-                false);
+                getAddressBookConfig(false));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
         assertEquals(
                 configAddressBook,
@@ -239,8 +231,7 @@ class AddressBookInitializerTest {
                 signedState,
                 getMockSwirldStateSupplier(2),
                 configAddressBook,
-                testDirectory,
-                false);
+                getAddressBookConfig(false));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
         assertEquals(
                 configAddressBook,
@@ -261,8 +252,7 @@ class AddressBookInitializerTest {
                 signedState,
                 getMockSwirldStateSupplier(10),
                 configAddressBook,
-                testDirectory,
-                false);
+                getAddressBookConfig(false));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
         assertNotEquals(
                 configAddressBook,
@@ -499,5 +489,21 @@ class AddressBookInitializerTest {
         assertTrue(
                 debugFileContent.contains(usedText),
                 "The usedAddressBook content is not:\n" + usedText + "\n\n debugFileContent:\n" + debugFileContent);
+    }
+
+    /**
+     * Creates an AddressBookConfig object with the given forceUseOfConfigAddressBook value.
+     *
+     * @param forceUseOfConfigAddressBook the value to use for the forceUseOfConfigAddressBook property.
+     * @return the AddressBookConfig object.
+     */
+    private AddressBookConfig getAddressBookConfig(boolean forceUseOfConfigAddressBook) {
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("addressBook.forceUseOfConfigAddressBook", forceUseOfConfigAddressBook)
+                .withValue("addressBook.addressBookDirectory", testDirectory.toString())
+                .withValue("addressBook.maxRecordedAddressBookFiles", 50)
+                .getOrCreateConfig();
+        final AddressBookConfig addressBookConfig = configuration.getConfigData(AddressBookConfig.class);
+        return addressBookConfig;
     }
 }
