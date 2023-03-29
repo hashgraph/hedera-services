@@ -39,7 +39,6 @@ import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.AppTestBase;
-import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -67,7 +66,6 @@ class WorkflowOnsetTest extends AppTestBase {
     @Mock(strictness = LENIENT)
     private OnsetChecker checker;
 
-    private SessionContext ctx;
     private Transaction tx;
     private SignatureMap signatureMap;
     private SignedTransaction signedTx;
@@ -108,7 +106,6 @@ class WorkflowOnsetTest extends AppTestBase {
         inputBuffer = Bytes.wrap(asByteArray(tx));
 
         // Create the onset object
-        ctx = new SessionContext();
         onset = new WorkflowOnset(MAX_TX_SIZE, checker);
 
         // We mocked out the checker so it always succeeds
@@ -161,7 +158,7 @@ class WorkflowOnsetTest extends AppTestBase {
         @DisplayName("A valid transaction passes parseAndCheck with a BufferedData")
         void testParseAndCheckSucceeds() throws PreCheckException {
             // Given a valid serialized transaction, when we parse and check
-            final var result = onset.parseAndCheck(ctx, inputBuffer);
+            final var result = onset.parseAndCheck(inputBuffer);
 
             // Then the parsed data is as we expected
             assertThat(result.errorCode()).isEqualTo(OK);
@@ -183,7 +180,7 @@ class WorkflowOnsetTest extends AppTestBase {
             final var byteArray = asByteArray(tx);
 
             // When we parse and check
-            final var result = onset.parseAndCheck(ctx, Bytes.wrap(byteArray));
+            final var result = onset.parseAndCheck(Bytes.wrap(byteArray));
 
             // Then the parsed data is as we expected
             assertThat(result.txBody()).isEqualTo(txBody);
@@ -209,7 +206,7 @@ class WorkflowOnsetTest extends AppTestBase {
             inputBuffer = Bytes.wrap(asByteArray(localTx));
 
             // When we parse and check
-            final var result = onset.parseAndCheck(ctx, inputBuffer);
+            final var result = onset.parseAndCheck(inputBuffer);
 
             // Then everything works because the deprecated fields are supported
             assertThat(result.txBody()).isEqualTo(txBody);
@@ -229,26 +226,15 @@ class WorkflowOnsetTest extends AppTestBase {
         @Test
         @SuppressWarnings("ConstantConditions")
         @DisplayName("`parseAndCheck` with a BufferedData rejects null args")
-        void parseAndCheckDataBufferIllegalArgs() {
-            assertThatThrownBy(() -> onset.parseAndCheck(null, inputBuffer)).isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> onset.parseAndCheck(ctx, (Bytes) null)).isInstanceOf(NullPointerException.class);
-        }
-
-        @Test
-        @SuppressWarnings("ConstantConditions")
-        @DisplayName("`parseAndCheck` with a byte[] rejects null args")
-        void parseAndCheckByteArrayIllegalArgs() {
-            assertThatThrownBy(() -> onset.parseAndCheck(null, Bytes.wrap(new byte[0])))
-                    .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> onset.parseAndCheck(ctx, (Bytes) null)).isInstanceOf(NullPointerException.class);
+        void parseAndCheckIllegalArgs() {
+            assertThatThrownBy(() -> onset.parseAndCheck(null)).isInstanceOf(NullPointerException.class);
         }
 
         @Test
         @SuppressWarnings("ConstantConditions")
         @DisplayName("`check` rejects null args")
         void checkObjectIllegalArgs() {
-            assertThatThrownBy(() -> onset.check(null, tx)).isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> onset.check(ctx, null)).isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> onset.check(null)).isInstanceOf(NullPointerException.class);
         }
     }
 
@@ -265,7 +251,7 @@ class WorkflowOnsetTest extends AppTestBase {
             inputBuffer = Bytes.wrap(randomBytes(MAX_TX_SIZE + 1));
 
             // When we parse and check, we find that the buffer has too many bytes
-            assertThatThrownBy(() -> onset.parseAndCheck(ctx, inputBuffer))
+            assertThatThrownBy(() -> onset.parseAndCheck(inputBuffer))
                     .isInstanceOf(PreCheckException.class)
                     .hasFieldOrPropertyWithValue("responseCode", TRANSACTION_OVERSIZE);
         }
@@ -280,7 +266,7 @@ class WorkflowOnsetTest extends AppTestBase {
                 inputBuffer = Bytes.wrap(invalidProtobuf());
 
                 // When we parse and check, then the parsing fails because this is an INVALID_TRANSACTION
-                assertThatThrownBy(() -> onset.parseAndCheck(ctx, inputBuffer))
+                assertThatThrownBy(() -> onset.parseAndCheck(inputBuffer))
                         .isInstanceOf(PreCheckException.class)
                         .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION);
             }
@@ -292,7 +278,7 @@ class WorkflowOnsetTest extends AppTestBase {
                 inputBuffer = Bytes.wrap(appendUnknownField(asByteArray(tx)));
 
                 // When we parse and check, then the parsing fails because has unknown fields
-                assertThatThrownBy(() -> onset.parseAndCheck(ctx, inputBuffer))
+                assertThatThrownBy(() -> onset.parseAndCheck(inputBuffer))
                         .isInstanceOf(PreCheckException.class)
                         .hasFieldOrPropertyWithValue("responseCode", TRANSACTION_HAS_UNKNOWN_FIELDS);
             }
@@ -305,7 +291,7 @@ class WorkflowOnsetTest extends AppTestBase {
                 doThrow(new PreCheckException(failureReason)).when(checker).checkTransaction(any());
 
                 // When we parse and check, then the parsing fails in checkTransactionBody
-                assertThatThrownBy(() -> onset.parseAndCheck(ctx, inputBuffer))
+                assertThatThrownBy(() -> onset.parseAndCheck(inputBuffer))
                         .isInstanceOf(PreCheckException.class)
                         .hasFieldOrPropertyWithValue("responseCode", failureReason);
             }
@@ -324,7 +310,7 @@ class WorkflowOnsetTest extends AppTestBase {
                 inputBuffer = Bytes.wrap(asByteArray(localTx));
 
                 // When we parse and check, then the parsing fails because this is an INVALID_TRANSACTION
-                assertThatThrownBy(() -> onset.parseAndCheck(ctx, inputBuffer))
+                assertThatThrownBy(() -> onset.parseAndCheck(inputBuffer))
                         .isInstanceOf(PreCheckException.class)
                         .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION);
             }
@@ -340,7 +326,7 @@ class WorkflowOnsetTest extends AppTestBase {
                 inputBuffer = Bytes.wrap(asByteArray(tx));
 
                 // When we parse and check, then the parsing fails because has unknown fields
-                assertThatThrownBy(() -> onset.parseAndCheck(ctx, inputBuffer))
+                assertThatThrownBy(() -> onset.parseAndCheck(inputBuffer))
                         .isInstanceOf(PreCheckException.class)
                         .hasFieldOrPropertyWithValue("responseCode", TRANSACTION_HAS_UNKNOWN_FIELDS);
             }
@@ -365,7 +351,7 @@ class WorkflowOnsetTest extends AppTestBase {
                 inputBuffer = Bytes.wrap(asByteArray(tx));
 
                 // When we parse and check, then the parsing fails because has unknown fields
-                assertThatThrownBy(() -> onset.parseAndCheck(ctx, inputBuffer))
+                assertThatThrownBy(() -> onset.parseAndCheck(inputBuffer))
                         .isInstanceOf(PreCheckException.class)
                         .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION_BODY);
             }
@@ -387,7 +373,7 @@ class WorkflowOnsetTest extends AppTestBase {
                 inputBuffer = Bytes.wrap(asByteArray(tx));
 
                 // When we parse and check, then the parsing fails because this is an TRANSACTION_HAS_UNKNOWN_FIELDS
-                assertThatThrownBy(() -> onset.parseAndCheck(ctx, inputBuffer))
+                assertThatThrownBy(() -> onset.parseAndCheck(inputBuffer))
                         .isInstanceOf(PreCheckException.class)
                         .hasFieldOrPropertyWithValue("responseCode", TRANSACTION_HAS_UNKNOWN_FIELDS);
             }
@@ -400,7 +386,7 @@ class WorkflowOnsetTest extends AppTestBase {
                 when(checker.checkTransactionBody(any())).thenThrow(new PreCheckException(failureReason));
 
                 // When we parse and check, then the parsing fails in checkTransactionBody
-                assertThatThrownBy(() -> onset.parseAndCheck(ctx, inputBuffer))
+                assertThatThrownBy(() -> onset.parseAndCheck(inputBuffer))
                         .isInstanceOf(PreCheckException.class)
                         .hasFieldOrPropertyWithValue("responseCode", failureReason);
             }
@@ -417,7 +403,7 @@ class WorkflowOnsetTest extends AppTestBase {
                     hapiUtils.when(() -> HapiUtils.functionOf(eq(txBody))).thenThrow(new UnknownHederaFunctionality());
 
                     // When we parse and check, then the parsing fails due to the exception
-                    assertThatThrownBy(() -> onset.parseAndCheck(ctx, inputBuffer))
+                    assertThatThrownBy(() -> onset.parseAndCheck(inputBuffer))
                             .isInstanceOf(PreCheckException.class)
                             .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION_BODY);
                 }
@@ -431,7 +417,7 @@ class WorkflowOnsetTest extends AppTestBase {
             when(checker.checkTransactionBody(any())).thenThrow(new RuntimeException("checkTransactionBody exception"));
 
             // When we parse and check, then the check fails with the runtime exception
-            assertThatThrownBy(() -> onset.parseAndCheck(ctx, inputBuffer))
+            assertThatThrownBy(() -> onset.parseAndCheck(inputBuffer))
                     .isInstanceOf(RuntimeException.class)
                     .hasMessageContaining("checkTransactionBody exception");
         }

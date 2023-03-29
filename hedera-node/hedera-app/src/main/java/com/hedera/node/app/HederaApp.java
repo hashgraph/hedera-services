@@ -22,6 +22,7 @@ import com.hedera.node.app.authorization.AuthorizerDaggerModule;
 import com.hedera.node.app.components.IngestComponent;
 import com.hedera.node.app.components.QueryComponent;
 import com.hedera.node.app.fees.AdaptedFeeCalculatorModule;
+import com.hedera.node.app.info.InfoDaggerModule;
 import com.hedera.node.app.metrics.MetricsDaggerModule;
 import com.hedera.node.app.service.mono.ServicesApp;
 import com.hedera.node.app.service.mono.config.ConfigModule;
@@ -100,7 +101,8 @@ import javax.inject.Singleton;
             AdaptedFeeCalculatorModule.class,
             HederaStateModule.class,
             MetricsDaggerModule.class,
-            AuthorizerDaggerModule.class
+            AuthorizerDaggerModule.class,
+            InfoDaggerModule.class
         })
 public interface HederaApp extends ServicesApp {
     /* Needed by ServicesState */

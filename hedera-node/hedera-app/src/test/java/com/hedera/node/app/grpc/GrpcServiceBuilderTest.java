@@ -37,8 +37,8 @@ final class GrpcServiceBuilderTest {
     private static final String SERVICE_NAME = "TestService";
 
     // These are simple no-op workflows
-    private final QueryWorkflow queryWorkflow = (session, requestBuffer, responseBuffer) -> {};
-    private final IngestWorkflow ingestWorkflow = (session, requestBuffer, responseBuffer) -> {};
+    private final QueryWorkflow queryWorkflow = (requestBuffer, responseBuffer) -> {};
+    private final IngestWorkflow ingestWorkflow = (requestBuffer, responseBuffer) -> {};
 
     private GrpcServiceBuilder builder;
     private final Metrics metrics = TestUtils.metrics();

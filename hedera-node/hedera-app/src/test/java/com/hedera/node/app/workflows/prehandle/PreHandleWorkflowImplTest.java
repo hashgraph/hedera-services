@@ -65,7 +65,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.function.Function;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.jupiter.api.BeforeEach;
@@ -145,7 +144,7 @@ class PreHandleWorkflowImplTest extends AppTestBase {
         final HederaFunctionality functionality = HederaFunctionality.CONSENSUS_CREATE_TOPIC;
         final OnsetResult onsetResult = new OnsetResult(
                 com.hedera.hapi.node.base.Transaction.newBuilder().build(), txBody, OK, signatureMap, functionality);
-        when(onset.parseAndCheck(any(), any(Bytes.class))).thenReturn(onsetResult);
+        when(onset.parseAndCheck(any(Bytes.class))).thenReturn(onsetResult);
 
         final Iterator<Transaction> iterator =
                 List.of((Transaction) transaction).iterator();
@@ -167,7 +166,7 @@ class PreHandleWorkflowImplTest extends AppTestBase {
                 DUPLICATE_TRANSACTION,
                 SignatureMap.newBuilder().build(),
                 HederaFunctionality.CRYPTO_TRANSFER);
-        given(onset.parseAndCheck(any(), any(Bytes.class))).willReturn(onsetResult);
+        given(onset.parseAndCheck(any(Bytes.class))).willReturn(onsetResult);
         given(context.getStatus()).willReturn(DUPLICATE_TRANSACTION);
         given(context.getPayerKey()).willReturn(payerKey);
         given(context.getRequiredNonPayerKeys()).willReturn(Collections.emptyList());
@@ -235,22 +234,19 @@ class PreHandleWorkflowImplTest extends AppTestBase {
         verify(transaction2).setMetadata(any());
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     void testPreHandleSuccess() {
         // when
         workflow.start(state, event);
 
         // then
-        final ArgumentCaptor<Future<TransactionMetadata>> captor = ArgumentCaptor.forClass(Future.class);
         verify(transaction).setMetadata(any());
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     void testPreHandleOnsetCatastrophicFail(@Mock WorkflowOnset localOnset) throws PreCheckException {
         // given
-        when(localOnset.parseAndCheck(any(), any(Bytes.class))).thenThrow(new PreCheckException(INVALID_TRANSACTION));
+        when(localOnset.parseAndCheck(any(Bytes.class))).thenThrow(new PreCheckException(INVALID_TRANSACTION));
         workflow = new PreHandleWorkflowImpl(dispatcher, localOnset, signaturePreparer, cryptography, RUN_INSTANTLY);
 
         // when
@@ -287,9 +283,9 @@ class PreHandleWorkflowImplTest extends AppTestBase {
         final HederaFunctionality functionality = HederaFunctionality.CONSENSUS_CREATE_TOPIC;
         final OnsetResult onsetResult =
                 new OnsetResult(txn, txBody, DUPLICATE_TRANSACTION, signatureMap, functionality);
-        when(localOnset.parseAndCheck(any(), any(Bytes.class))).thenReturn(onsetResult);
+        when(localOnset.parseAndCheck(any(Bytes.class))).thenReturn(onsetResult);
 
-        given(onset.parseAndCheck(any(), any(Bytes.class))).willReturn(onsetResult);
+        given(onset.parseAndCheck(any(Bytes.class))).willReturn(onsetResult);
         given(context.getStatus()).willReturn(DUPLICATE_TRANSACTION);
         given(context.getPayerKey()).willReturn(payerKey);
         given(context.getRequiredNonPayerKeys()).willReturn(Collections.emptyList());

@@ -19,7 +19,6 @@ package com.hedera.node.app.grpc;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.transaction.Query;
-import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -74,10 +73,9 @@ final class QueryMethod extends MethodBase {
     /** {@inheritDoc} */
     @Override
     protected void handle(
-            @NonNull final SessionContext session,
             @NonNull final Bytes requestBuffer,
             @NonNull final BufferedData responseBuffer) {
-        workflow.handleQuery(session, requestBuffer, responseBuffer);
+        workflow.handleQuery(requestBuffer, responseBuffer);
         queriesAnsweredCounter.increment();
         queriesAnsweredSpeedometer.cycle();
     }

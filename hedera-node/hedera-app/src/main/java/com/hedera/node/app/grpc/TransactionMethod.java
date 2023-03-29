@@ -17,7 +17,6 @@
 package com.hedera.node.app.grpc;
 
 import com.hedera.hapi.node.base.Transaction;
-import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -54,9 +53,8 @@ final class TransactionMethod extends MethodBase {
     /** {@inheritDoc} */
     @Override
     protected void handle(
-            @NonNull final SessionContext session,
             @NonNull final Bytes requestBuffer,
             @NonNull final BufferedData responseBuffer) {
-        workflow.submitTransaction(session, requestBuffer, responseBuffer);
+        workflow.submitTransaction(requestBuffer, responseBuffer);
     }
 }

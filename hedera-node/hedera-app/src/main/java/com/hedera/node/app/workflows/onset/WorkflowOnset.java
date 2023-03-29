@@ -29,7 +29,6 @@ import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.annotations.MaxSignedTxnSize;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
@@ -87,18 +86,15 @@ public class WorkflowOnset {
      * checks that apply to all transactions (e.g. does the transaction have a payer, are the
      * timestamps valid).
      *
-     * @param ctx the {@link SessionContext}
      * @param buffer the {@code ByteBuffer} with the serialized transaction
      * @return an {@link OnsetResult} with the parsed and checked entities
      * @throws PreCheckException if the data is not valid
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public OnsetResult parseAndCheck(@NonNull final SessionContext ctx, @NonNull final Bytes buffer)
-            throws PreCheckException {
-        requireNonNull(ctx);
+    public OnsetResult parseAndCheck(@NonNull final Bytes buffer) throws PreCheckException {
         requireNonNull(buffer);
 
-        return doParseAndCheck(ctx, buffer);
+        return doParseAndCheck(buffer);
     }
 
     /**
@@ -108,15 +104,12 @@ public class WorkflowOnset {
      * checks that apply to all transactions (e.g. does the transaction have a payer, are the
      * timestamps valid).
      *
-     * @param ctx the {@link SessionContext}
      * @param transaction the {@link Transaction} that needs to be checked
      * @return an {@link OnsetResult} with the parsed and checked entities
      * @throws PreCheckException if the data is not valid
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public OnsetResult check(@NonNull final SessionContext ctx, @NonNull final Transaction transaction)
-            throws PreCheckException {
-        requireNonNull(ctx);
+    public OnsetResult check(@NonNull final Transaction transaction) throws PreCheckException {
         requireNonNull(transaction);
 
         final var byteStream = new ByteArrayOutputStream();
@@ -127,11 +120,10 @@ public class WorkflowOnset {
             throw new PreCheckException(INVALID_TRANSACTION);
         }
 
-        return doParseAndCheck(ctx, Bytes.wrap(byteStream.toByteArray()));
+        return doParseAndCheck(Bytes.wrap(byteStream.toByteArray()));
     }
 
-    @SuppressWarnings("deprecation")
-    private OnsetResult doParseAndCheck(@NonNull final SessionContext ctx, @NonNull final Bytes txData)
+    private OnsetResult doParseAndCheck(@NonNull final Bytes txData)
             throws PreCheckException {
 
         // 0. Fail fast if there are too many transaction bytes
