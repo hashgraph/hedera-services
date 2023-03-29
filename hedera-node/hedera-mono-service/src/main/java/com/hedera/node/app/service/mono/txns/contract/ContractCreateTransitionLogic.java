@@ -246,14 +246,13 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
             // because the new contract's EVM-address-to-id link might not exist
             // any more---the new contract's constructor can SELFDESTRUCT
             final var newContractId = contractIdFromEvmAddress(newContractMirrorAddress);
-            final var contractBytecodeSidecar =
-                    op.getInitcodeSourceCase() != INITCODE
-                            ? SidecarUtils.createContractBytecodeSidecarFrom(
-                                    newContractId,
-                                    codeWithConstructorArgs.toArrayUnsafe(),
-                                    result.getOutput().toArrayUnsafe())
-                            : SidecarUtils.createContractBytecodeSidecarFrom(
-                                    newContractId, result.getOutput().toArrayUnsafe());
+            final var contractBytecodeSidecar = op.getInitcodeSourceCase() != INITCODE
+                    ? SidecarUtils.createContractBytecodeSidecarFrom(
+                            newContractId,
+                            codeWithConstructorArgs.toArrayUnsafe(),
+                            result.getOutput().toArrayUnsafe())
+                    : SidecarUtils.createContractBytecodeSidecarFrom(
+                            newContractId, result.getOutput().toArrayUnsafe());
             if (createSyntheticRecord) {
                 recordSyntheticOperation(newContractId, newEvmAddress, hapiSenderCustomizer, contractBytecodeSidecar);
                 // bytecode sidecar is already externalized if needed in {@link
