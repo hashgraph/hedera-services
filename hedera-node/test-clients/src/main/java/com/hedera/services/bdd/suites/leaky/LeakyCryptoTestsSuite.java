@@ -103,6 +103,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCre
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -333,16 +334,16 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                     final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
                     // create with ECDSA alias and no key
                     final var op =
-                            cryptoCreate(ACCOUNT).alias(ecdsaKey.toByteString()).hasPrecheck(INVALID_ALIAS_KEY);
+                            cryptoCreate(ACCOUNT).alias(ecdsaKey.toByteString()).hasPrecheck(NOT_SUPPORTED);
                     // create with EVM address alias and no key
                     final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                     final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(tmp));
-                    final var op2 = cryptoCreate(ACCOUNT).alias(evmAddress).hasPrecheck(INVALID_ALIAS_KEY);
+                    final var op2 = cryptoCreate(ACCOUNT).alias(evmAddress).hasPrecheck(NOT_SUPPORTED);
                     // create with ED alias and no key
                     final var ed25519Key = spec.registry().getKey(ED_25519_KEY);
                     final var op3 = cryptoCreate(ACCOUNT)
                             .alias(ed25519Key.toByteString())
-                            .hasPrecheck(INVALID_ALIAS_KEY);
+                            .hasPrecheck(NOT_SUPPORTED);
                     // create with evm address alias and ECDSA key
                     final var op4 = cryptoCreate(ACCOUNT)
                             .key(SECP_256K1_SOURCE_KEY)
@@ -352,12 +353,12 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                     final var op5 = cryptoCreate(ACCOUNT)
                             .key(ED_25519_KEY)
                             .alias(ed25519Key.toByteString())
-                            .hasPrecheck(INVALID_ALIAS_KEY);
+                            .hasPrecheck(NOT_SUPPORTED);
                     // create with ECDSA alias and key
                     final var op6 = cryptoCreate(ACCOUNT)
                             .key(SECP_256K1_SOURCE_KEY)
                             .alias(ecdsaKey.toByteString())
-                            .hasPrecheck(INVALID_ALIAS_KEY);
+                            .hasPrecheck(NOT_SUPPORTED);
                     // assert that an account created with ECDSA key and no alias
                     // does not automagically set alias to evm address
                     final var op7 = cryptoCreate(ACCOUNT).key(SECP_256K1_SOURCE_KEY);
@@ -532,7 +533,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                             .key(SECP_256K1_SOURCE_KEY)
                             .alias(evmAddressBytes)
                             .balance(100 * ONE_HBAR)
-                            .hasPrecheck(INVALID_ALIAS_KEY);
+                            .hasPrecheck(ALIAS_ALREADY_ASSIGNED);
 
                     allRunFor(spec, op, op2, op3, op4, op5, op6);
                     var hapiGetAccountInfo = getAliasedAccountInfo(evmAddressBytes)

@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.internal;
 
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
+
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.platform.consensus.GraphGenerations;
@@ -26,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * A consensus round with all its events.
@@ -50,10 +53,8 @@ public class ConsensusRound implements Round {
     /**
      * Create a new instance with the provided consensus events.
      *
-     * @param consensusEvents
-     * 		the events in the round, in consensus order
-     * @param generations
-     * 		the consensus generations for this round
+     * @param consensusEvents             the events in the round, in consensus order
+     * @param generations                 the consensus generations for this round
      */
     public ConsensusRound(final List<EventImpl> consensusEvents, final GraphGenerations generations) {
         this.consensusEvents = Collections.unmodifiableList(consensusEvents);
@@ -144,9 +145,13 @@ public class ConsensusRound implements Round {
 
     @Override
     public boolean equals(final Object o) {
-        if (this == o) return true;
+        if (this == o) {
+            return true;
+        }
 
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         final ConsensusRound round = (ConsensusRound) o;
 
@@ -162,6 +167,9 @@ public class ConsensusRound implements Round {
 
     @Override
     public String toString() {
-        return "round: " + roundNum + ", consensus events: " + EventUtils.toShortStrings(consensusEvents);
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+                .append("round", roundNum)
+                .append("consensus events", EventUtils.toShortStrings(consensusEvents))
+                .toString();
     }
 }

@@ -17,6 +17,7 @@
 package com.swirlds.common.metrics.platform;
 
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
@@ -77,7 +78,7 @@ public class DefaultCounter extends DefaultMetric implements Counter {
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this)
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
                 .appendSuper(super.toString())
                 .append("value", adder.sum())
                 .toString();
