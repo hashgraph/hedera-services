@@ -36,10 +36,10 @@ public final class EventStreamSignCommand extends SignCommand {
      * {@inheritDoc}
      */
     @Override
-    public void generateSignatureFile(
+    public boolean generateSignatureFile(
             @Nullable Path destinationDirectory, @NonNull Path fileToSign, @NonNull KeyPair keyPair) {
 
-        EventStreamSigningUtils.signEventStreamFile(destinationDirectory, fileToSign, keyPair);
+        return EventStreamSigningUtils.signEventStreamFile(destinationDirectory, fileToSign, keyPair);
     }
 
     /**

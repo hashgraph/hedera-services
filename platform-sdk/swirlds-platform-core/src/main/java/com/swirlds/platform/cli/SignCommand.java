@@ -71,9 +71,7 @@ public abstract class SignCommand extends AbstractCommand {
 
     @CommandLine.Parameters(description = "The path to the key file to use to generate signatures", index = "0")
     private void setKeyFile(@NonNull final Path keyFilePath) {
-        pathMustExist(keyFilePath.toAbsolutePath());
-
-        this.keyFilePath = keyFilePath;
+        this.keyFilePath = pathMustExist(keyFilePath.toAbsolutePath().normalize());
     }
 
     @CommandLine.Parameters(description = "The password to the key file", index = "1")
@@ -91,11 +89,9 @@ public abstract class SignCommand extends AbstractCommand {
             description = "The paths to what will be signed. Can contain single files, as well as directories."
                     + "Defaults to the current working directory")
     private void setPathsToSign(@NonNull final List<Path> pathsToSign) {
-        for (final Path path : pathsToSign) {
-            pathMustExist(path.toAbsolutePath());
-        }
-
-        this.pathsToSign = pathsToSign;
+        this.pathsToSign = pathsToSign.stream()
+                .map((path -> pathMustExist(path.toAbsolutePath().normalize())))
+                .toList();
     }
 
     @CommandLine.Option(
@@ -103,7 +99,7 @@ public abstract class SignCommand extends AbstractCommand {
             description = "Specify the destination directory where signature files will be generated."
                     + "If not specified, a signature file will be generated in the same directory as the source file")
     private void setDestinationDirectory(@NonNull final Path destinationDirectory) {
-        this.destinationDirectory = destinationDirectory.toAbsolutePath();
+        this.destinationDirectory = destinationDirectory.toAbsolutePath().normalize();
     }
 
     @Override
@@ -114,7 +110,7 @@ public abstract class SignCommand extends AbstractCommand {
             if (Files.isDirectory(path)) {
                 signAllFilesInDirectory(path);
             } else {
-                generateSignatureFile(destinationDirectory, path, keyPair);
+                sign(path);
             }
         }
 
@@ -128,8 +124,9 @@ public abstract class SignCommand extends AbstractCommand {
      *                             be generated in the same directory as the source files
      * @param fileToSign           the file to generate a signature file for
      * @param keyPair              the key pair to use to generate the signature
+     * @return true if the signature file was generated successfully, false otherwise
      */
-    public abstract void generateSignatureFile(
+    public abstract boolean generateSignatureFile(
             @Nullable final Path destinationDirectory, @NonNull final Path fileToSign, @NonNull final KeyPair keyPair);
 
     /**
@@ -141,14 +138,41 @@ public abstract class SignCommand extends AbstractCommand {
     public abstract boolean isFileSupported(@NonNull final Path path);
 
     /**
+     * Perform necessary tasks to sign a file. In all cases, generates a signature file via
+     * {@link #generateSignatureFile}
+     * <p>
+     * If a destinationDirectory has been specified, the source file will additionally be copied to the destination
+     * directory
+     *
+     * @param fileToSign the file to generate a signature file for
+     */
+    private void sign(@NonNull final Path fileToSign) {
+        // if signature generation fails, don't continue
+        if (!generateSignatureFile(destinationDirectory, fileToSign, keyPair)) {
+            return;
+        }
+
+        // if destinationDirectory is null, then we are generating in-place signatures. No need to copy source files
+        if (destinationDirectory == null) {
+            return;
+        }
+
+        try {
+            Files.copy(fileToSign, destinationDirectory.resolve(fileToSign.getFileName()));
+        } catch (final IOException e) {
+            System.err.println("Failed to copy source file " + fileToSign.getFileName() + " to destination directory "
+                    + destinationDirectory + ". Exception: " + e);
+        }
+    }
+
+    /**
      * Sign all files in a directory, recursively
      *
      * @param directoryPath the path to the directory to sign
      */
     private void signAllFilesInDirectory(@NonNull final Path directoryPath) {
         try (final Stream<Path> stream = Files.walk(directoryPath)) {
-            stream.filter(this::isFileSupported)
-                    .forEach(filePath -> generateSignatureFile(destinationDirectory, filePath, keyPair));
+            stream.filter(this::isFileSupported).forEach(this::sign);
         } catch (final IOException e) {
             throw new RuntimeException("Failed to list files in directory: " + directoryPath);
         }

@@ -73,12 +73,13 @@ public class EventStreamSigningUtils {
     /**
      * Generates a signature file for the given event stream file
      *
-     * @param destinationDirectory the directory where the signature file will be saved. If this is null, signature
-     *                             file will be generated in the same directory as the original file
+     * @param destinationDirectory the directory where the signature file will be saved. If this is null, signature file
+     *                             will be generated in the same directory as the original file
      * @param streamFileToSign     the stream file to be signed
      * @param keyPair              the keyPair used for signing
+     * @return true if the signature file was generated successfully, false otherwise
      */
-    public static void signEventStreamFile(
+    public static boolean signEventStreamFile(
             @Nullable final Path destinationDirectory,
             @NonNull final Path streamFileToSign,
             @NonNull final KeyPair keyPair) {
@@ -92,7 +93,7 @@ public class EventStreamSigningUtils {
                 System.err.printf(
                         "Failed to sign file [%s] with unsupported version [%s]%n",
                         streamFileToSign.getFileName(), version);
-                return;
+                return false;
             }
 
             final Hash entireHash = computeEntireHash(streamFileToSign.toFile());
@@ -116,8 +117,11 @@ public class EventStreamSigningUtils {
                     streamType);
 
             System.out.println("Generated signature file: " + signatureFilePath);
+
+            return true;
         } catch (final SignatureException | InvalidStreamFileException | IOException e) {
             System.err.println("Failed to sign file " + streamFileToSign.getFileName() + ". Exception: " + e);
+            return false;
         } catch (final InvalidKeyException | NoSuchAlgorithmException | NoSuchProviderException e) {
             throw new RuntimeException("Irrecoverable error encountered", e);
         }
