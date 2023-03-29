@@ -374,9 +374,9 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
         }
 
         this.state = Objects.requireNonNull(state);
-        final long flushThreshold = settings.getFamilyThrottleThreshold();
+        final long flushThreshold = settings.getCopyFlushThreshold();
         if (flushThreshold <= 0) {
-            // If throttle threshold is not set, use flush interval
+            // If copy size flush threshold is not set, use flush interval
             this.shouldBeFlushed.set(fastCopyVersion != 0 && fastCopyVersion % settings.getFlushInterval() == 0);
         }
         if (this.dataSourceBuilder != null && this.dataSource == null) {

@@ -242,7 +242,9 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
     }
 
     private static boolean shouldBeFlushed(DummyVirtualRoot copy) {
-        return copy.requestedToFlush() || (copy.estimatedSize() >= settings.getCopyFlushThreshold());
+        final long copyFlushThreshold = settings.getCopyFlushThreshold();
+        return (copy.requestedToFlush()) ||
+                ((copyFlushThreshold > 0) && (copy.estimatedSize() >= copyFlushThreshold));
     }
 
     /**

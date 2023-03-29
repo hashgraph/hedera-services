@@ -230,9 +230,12 @@ public class VirtualPipeline {
      * Slow down the fast copy operation if total size of all (unreleased) virtual root copies
      * in this pipeline exceeds {@link VirtualMapSettings#getFamilyThrottleThreshold()}.
      */
-    private void applyTotalSizeBackpressure() {
-        final long totalSize = currentTotalSize();
+    private void applyFamilySizeBackpressure() {
         final long sizeThreshold = VirtualMapSettingsFactory.get().getFamilyThrottleThreshold();
+        if (sizeThreshold <= 0) {
+            return;
+        }
+        final long totalSize = currentTotalSize();
         final double ratio = (double) totalSize / sizeThreshold;
         final int over100percentExcess = (int) ((ratio - 1.0) * 100);
         if (over100percentExcess < 0) {
@@ -285,7 +288,7 @@ public class VirtualPipeline {
         mostRecentCopy.set(copy);
 
         applyFlushBackpressure();
-        applyTotalSizeBackpressure();
+        applyFamilySizeBackpressure();
     }
 
     /**
@@ -459,7 +462,8 @@ public class VirtualPipeline {
      */
     private boolean copySizeToFlush(final VirtualRoot copy) {
         final VirtualMapSettings settings = VirtualMapSettingsFactory.get();
-        return copy.estimatedSize() >= settings.getCopyFlushThreshold();
+        final long copyFlushThreshold = settings.getCopyFlushThreshold();
+        return (copyFlushThreshold > 0) && (copy.estimatedSize() >= copyFlushThreshold);
     }
 
     /**

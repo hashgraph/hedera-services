@@ -259,7 +259,7 @@ public final class Bucket<K extends VirtualKey<? super K>> {
             /* We have to serialize a variable-size key to a temp byte buffer to check
             if there is going to be enough room to store it in this bucket. */
             if (keySerializer.isVariableSize()) {
-                reusableBuffer.rewind();
+                reusableBuffer.clear();
                 while (true) {
                     try {
                         keySerializer.serialize(key, reusableBuffer);

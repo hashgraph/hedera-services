@@ -964,7 +964,6 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
                         + tableConfig.getKeySerializer().getTypicalSerializedSize() // key
                         + tableConfig.getValueSerializer().getTypicalSerializedSize()); // value
         final long estimatedTotalSize = estimatedInternalsSize + estimatedLeavesSize;
-        logger.debug(MERKLE_DB.getMarker(), "Estimated flush size {}", estimatedTotalSize);
         return estimatedTotalSize;
     }
 
@@ -1373,18 +1372,18 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
                 /* Filter nothing during a full merge */
                 filesToMergeFilter = dataFileReaders -> dataFileReaders;
                 isLargeMerge = true;
-                logger.info(MERKLE_DB.getMarker(), "[{}] Starting Large Merge", tableName);
+                logger.debug(MERKLE_DB.getMarker(), "[{}] Starting Large Merge", tableName);
             } else if (isTimeForMediumMerge(now)) {
                 lastMediumMerge = now;
                 filesToMergeFilter = DataFileCommon.newestFilesSmallerThan(
                         settings.getMediumMergeCutoffMb(), settings.getMaxNumberOfFilesInMerge());
                 isMediumMerge = true;
-                logger.info(MERKLE_DB.getMarker(), "[{}] Starting Medium Merge", tableName);
+                logger.debug(MERKLE_DB.getMarker(), "[{}] Starting Medium Merge", tableName);
             } else {
                 filesToMergeFilter = DataFileCommon.newestFilesSmallerThan(
                         settings.getSmallMergeCutoffMb(), settings.getMaxNumberOfFilesInMerge());
                 isSmallMerge = true;
-                logger.info(MERKLE_DB.getMarker(), "[{}] Starting Small Merge", tableName);
+                logger.debug(MERKLE_DB.getMarker(), "[{}] Starting Small Merge", tableName);
             }
 
             // we need to merge disk files for internal hashes if they exist and pathToHashKeyValue
@@ -1468,7 +1467,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
             updateFileStats();
             // update off-heap usage statistic
             updateOffHeapStats();
-            logger.info(MERKLE_DB.getMarker(), "[{}] Finished Small Merge", tableName);
+            logger.debug(MERKLE_DB.getMarker(), "[{}] Finished Merge", tableName);
             return true;
         } catch (final InterruptedException | ClosedByInterruptException e) {
             logger.info(MERKLE_DB.getMarker(), "Interrupted while merging, this is allowed.");
