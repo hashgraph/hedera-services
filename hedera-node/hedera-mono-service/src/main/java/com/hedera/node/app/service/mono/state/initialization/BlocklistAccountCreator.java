@@ -19,6 +19,7 @@ package com.hedera.node.app.service.mono.state.initialization;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
+import static com.hedera.node.app.spi.config.PropertyNames.BLOCKLIST_FILE;
 import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
 
 import com.google.protobuf.ByteString;
@@ -47,16 +48,20 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bouncycastle.asn1.sec.SECNamedCurves;
 import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
+import org.bouncycastle.util.encoders.DecoderException;
 import org.bouncycastle.util.encoders.Hex;
 
 @Singleton
 public class BlocklistAccountCreator {
     public static final String BLOCKLIST_ACCOUNT_MEMO = "Account is blocked";
-
     private static final int ZERO_BALANCE = 0;
+    private static final Logger log = LogManager.getLogger(BlocklistAccountCreator.class);
+    private final String blocklistFileName;
     private final Supplier<HederaAccount> accountSupplier;
     private final EntityIdSource ids;
     private final BackingStore<AccountID, HederaAccount> accounts;
@@ -76,6 +81,7 @@ public class BlocklistAccountCreator {
             final @CompositeProps PropertySource properties,
             final AliasManager aliasManager,
             AccountNumbers accountNumbers) {
+        this.blocklistFileName = properties.getStringProperty(BLOCKLIST_FILE);
         this.accountSupplier = accountSupplier;
         this.ids = ids;
         this.accounts = accounts;
@@ -86,8 +92,20 @@ public class BlocklistAccountCreator {
     }
 
     public void ensureBlockedAccounts() {
-        final var blockedEVMAddresses = getPrivateKeyBlocklist().stream()
-                .map(Hex::decode)
+        final List<byte[]> blocklist;
+        try {
+            blocklist = readPrivateKeyBlocklist(blocklistFileName).stream()
+                    .map(Hex::decode)
+                    .collect(Collectors.toList());
+        } catch (DecoderException de) {
+            log.error("Failed to parse blocklist, entry not in hex format", de);
+            return;
+        } catch (Exception e) {
+            log.error("Failed to read blocklist file {}", blocklistFileName, e);
+            return;
+        }
+
+        final var blockedEVMAddresses = blocklist.stream()
                 .map(this::ecdsaPrivateToPublicKey)
                 .map(EthSigsUtils::recoverAddressFromPubKey)
                 .map(ByteString::copyFrom)
@@ -100,7 +118,7 @@ public class BlocklistAccountCreator {
                 .setAccountNum(accountNumbers.treasury())
                 .build();
 
-        for (var evmAddress : blockedEVMAddresses) {
+        for (final var evmAddress : blockedEVMAddresses) {
             final var newId = ids.newAccountId(genesisAccountId);
             if (accounts.contains(newId)) {
                 continue;
@@ -111,6 +129,12 @@ public class BlocklistAccountCreator {
             blockedAccountsCreated.add(account);
             aliasManager.link(evmAddress, EntityNum.fromAccountId(newId));
         }
+    }
+
+    private List<String> readPrivateKeyBlocklist(String fileName) {
+        final var inputStream = getClass().getClassLoader().getResourceAsStream(fileName);
+        final var reader = new BufferedReader(new InputStreamReader(inputStream));
+        return reader.lines().toList();
     }
 
     private HederaAccount blockedAccountWith(ByteString evmAddress) {
@@ -143,12 +167,6 @@ public class BlocklistAccountCreator {
                     .build());
         }
         return genesisKey;
-    }
-
-    private List<String> getPrivateKeyBlocklist() {
-        final var inputStream = getClass().getClassLoader().getResourceAsStream("evm-addresses-blocklist.txt");
-        final var reader = new BufferedReader(new InputStreamReader(inputStream));
-        return reader.lines().toList();
     }
 
     private byte[] ecdsaPrivateToPublicKey(byte[] privateKeyBytes) {
