@@ -81,6 +81,7 @@ public class EventStreamSigningUtils {
             @NonNull final Path streamFileToSign,
             @NonNull final KeyPair keyPair) {
 
+        Objects.requireNonNull(signatureFileDestination, "signatureFileDestination must not be null");
         Objects.requireNonNull(streamFileToSign, "streamFileToSign must not be null");
         Objects.requireNonNull(keyPair, "keyPair must not be null");
 

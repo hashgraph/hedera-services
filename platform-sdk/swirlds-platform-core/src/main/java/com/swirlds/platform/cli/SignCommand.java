@@ -139,8 +139,8 @@ public abstract class SignCommand extends AbstractCommand {
     public abstract boolean isFileSupported(@NonNull final Path path);
 
     /**
-     * Perform necessary tasks to sign a file. In all cases, generates a signature file via
-     * {@link #generateSignatureFile}
+     * Perform necessary tasks to sign a file. Generates a signature file via {@link #generateSignatureFile} if one
+     * doesn't already exist
      * <p>
      * If a destinationDirectory has been specified, the source file will additionally be copied to the destination
      * directory
