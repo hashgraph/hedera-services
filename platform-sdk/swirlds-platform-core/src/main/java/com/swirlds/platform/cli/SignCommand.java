@@ -96,8 +96,9 @@ public abstract class SignCommand extends AbstractCommand {
 
     @CommandLine.Option(
             names = {"-d", "--destination-directory"},
-            description = "Specify the destination directory where signature files will be generated."
-                    + "If not specified, a signature file will be generated in the same directory as the source file")
+            description = "Specify the destination directory where signature files will be generated. If specified,"
+                    + "source files will be copied to the destination directory. If not specified,"
+                    + "the signature file will simply be generated in the same directory as the source file")
     private void setDestinationDirectory(@NonNull final Path destinationDirectory) {
         this.destinationDirectory = destinationDirectory.toAbsolutePath().normalize();
     }
