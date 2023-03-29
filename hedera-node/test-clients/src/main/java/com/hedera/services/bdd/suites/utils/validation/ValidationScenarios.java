@@ -208,6 +208,7 @@ public class ValidationScenarios extends HapiSuite {
     private static final String FILE_TBD = "fileTbd";
     private static final String TOPIC_KEY = "topicKey";
     private static final String NOVEL_TOPIC_ADMIN = "novelTopicAdmin";
+    public static final String FEES_FIXED_OFFER = "fees.fixedOffer";
 
     enum Scenario {
         CRYPTO,
@@ -241,7 +242,7 @@ public class ValidationScenarios extends HapiSuite {
         readConfig();
 
         assertValidParams();
-        log.info("Using nodes " + nodes());
+        log.info("Using nodes {}", nodes());
         FinalOutcome outcome = new ValidationScenarios().runSuiteSync();
 
         printNovelUsage();
@@ -302,7 +303,7 @@ public class ValidationScenarios extends HapiSuite {
                             defaultNode(),
                             FEES_USE_FIXED_OFFER,
                             "true",
-                            "fees.fixedOffer",
+                            FEES_FIXED_OFFER,
                             "" + feeToOffer(),
                             DEFAULT_PAYER_KEY,
                             payerKeySeed()))
@@ -542,7 +543,7 @@ public class ValidationScenarios extends HapiSuite {
                             defaultNode(),
                             FEES_USE_FIXED_OFFER,
                             "true",
-                            "fees.fixedOffer",
+                            FEES_FIXED_OFFER,
                             "" + feeToOffer(),
                             DEFAULT_PAYER_KEY,
                             payerKeySeed()))
@@ -594,7 +595,7 @@ public class ValidationScenarios extends HapiSuite {
         try (BufferedWriter fout = Files.newBufferedWriter(Paths.get(loc))) {
             fout.write(lines.get(0) + "," + asColumnHeader(scenario.getScheduleDesc()) + "\n");
             for (Payment p : payments) {
-                fout.write(String.format("%s,%s\n", lines.get(i++), p.tinyBars));
+                fout.write(String.format("%s,%s%n", lines.get(i++), p.tinyBars));
             }
         } catch (IOException e) {
             log.warn("Unable to create fees CSV, skipping it!", e);
@@ -613,7 +614,7 @@ public class ValidationScenarios extends HapiSuite {
                 if (scenario.getIgnoreCostAnswer() && (p.reason == Payment.Reason.COST_ANSWER_QUERY_COST)) {
                     continue;
                 }
-                fout.write(String.format("%s,%s\n", p.opName, p.tinyBars));
+                fout.write(String.format("%s,%s%n", p.opName, p.tinyBars));
             }
         } catch (IOException e) {
             log.warn("Unable to create fees CSV, skipping it!", e);
@@ -634,7 +635,7 @@ public class ValidationScenarios extends HapiSuite {
                             defaultNode(),
                             FEES_USE_FIXED_OFFER,
                             "true",
-                            "fees.fixedOffer",
+                            FEES_FIXED_OFFER,
                             "" + feeToOffer(),
                             DEFAULT_PAYER_KEY,
                             payerKeySeed()))
@@ -679,7 +680,7 @@ public class ValidationScenarios extends HapiSuite {
                             defaultNode(),
                             FEES_USE_FIXED_OFFER,
                             "true",
-                            "fees.fixedOffer",
+                            FEES_FIXED_OFFER,
                             "" + feeToOffer(),
                             DEFAULT_PAYER_KEY,
                             payerKeySeed()))
@@ -735,7 +736,7 @@ public class ValidationScenarios extends HapiSuite {
                             defaultNode(),
                             FEES_USE_FIXED_OFFER,
                             "true",
-                            "fees.fixedOffer",
+                            FEES_FIXED_OFFER,
                             "" + feeToOffer(),
                             DEFAULT_PAYER_KEY,
                             payerKeySeed()))
@@ -824,7 +825,7 @@ public class ValidationScenarios extends HapiSuite {
                             defaultNode(),
                             FEES_USE_FIXED_OFFER,
                             "true",
-                            "fees.fixedOffer",
+                            FEES_FIXED_OFFER,
                             "" + feeToOffer(),
                             DEFAULT_PAYER_KEY,
                             payerKeySeed()))
@@ -860,7 +861,7 @@ public class ValidationScenarios extends HapiSuite {
                             defaultNode(),
                             FEES_USE_FIXED_OFFER,
                             "true",
-                            "fees.fixedOffer",
+                            FEES_FIXED_OFFER,
                             "" + feeToOffer(),
                             DEFAULT_PAYER_KEY,
                             payerKeySeed()))
@@ -895,7 +896,7 @@ public class ValidationScenarios extends HapiSuite {
                             defaultNode(),
                             FEES_USE_FIXED_OFFER,
                             "true",
-                            "fees.fixedOffer",
+                            FEES_FIXED_OFFER,
                             "" + feeToOffer(),
                             DEFAULT_PAYER_KEY,
                             payerKeySeed()))
@@ -937,7 +938,7 @@ public class ValidationScenarios extends HapiSuite {
                             defaultNode(),
                             FEES_USE_FIXED_OFFER,
                             "true",
-                            "fees.fixedOffer",
+                            FEES_FIXED_OFFER,
                             "" + feeToOffer(),
                             DEFAULT_PAYER_KEY,
                             payerKeySeed()))
@@ -974,7 +975,7 @@ public class ValidationScenarios extends HapiSuite {
                             defaultNode(),
                             FEES_USE_FIXED_OFFER,
                             "true",
-                            "fees.fixedOffer",
+                            FEES_FIXED_OFFER,
                             "" + feeToOffer(),
                             DEFAULT_PAYER_KEY,
                             payerKeySeed()))
@@ -1123,7 +1124,7 @@ public class ValidationScenarios extends HapiSuite {
                             defaultNode(),
                             FEES_USE_FIXED_OFFER,
                             "true",
-                            "fees.fixedOffer",
+                            FEES_FIXED_OFFER,
                             "" + feeToOffer(),
                             DEFAULT_PAYER_KEY,
                             payerKeySeed()))
@@ -1281,7 +1282,7 @@ public class ValidationScenarios extends HapiSuite {
                             defaultNode(),
                             FEES_USE_FIXED_OFFER,
                             "true",
-                            "fees.fixedOffer",
+                            FEES_FIXED_OFFER,
                             "" + feeToOffer(),
                             DEFAULT_PAYER_KEY,
                             payerKeySeed()))
@@ -1483,7 +1484,7 @@ public class ValidationScenarios extends HapiSuite {
                             defaultNode(),
                             FEES_USE_FIXED_OFFER,
                             "true",
-                            "fees.fixedOffer",
+                            FEES_FIXED_OFFER,
                             "" + feeToOffer(),
                             DEFAULT_PAYER_KEY,
                             payerKeySeed()))
@@ -1535,7 +1536,7 @@ public class ValidationScenarios extends HapiSuite {
                             defaultNode(),
                             FEES_USE_FIXED_OFFER,
                             "true",
-                            "fees.fixedOffer",
+                            FEES_FIXED_OFFER,
                             "" + feeToOffer(),
                             DEFAULT_PAYER_KEY,
                             payerKeySeed()))
@@ -1959,10 +1960,10 @@ public class ValidationScenarios extends HapiSuite {
     private static void printNovelUsage() {
         log.info("------------------------------------------------------------------");
         ofNullable(novelAccountUsed.get())
-                .ifPresent(s -> log.info("Novel account used (should now be deleted) was " + s));
-        ofNullable(novelFileUsed.get()).ifPresent(s -> log.info("Novel file used (should now be deleted) was " + s));
+                .ifPresent(s -> log.info("Novel account used (should now be deleted) was {}", s));
+        ofNullable(novelFileUsed.get()).ifPresent(s -> log.info("Novel file used (should now be deleted) was {}", s));
         ofNullable(novelContractUsed.get())
-                .ifPresent(s -> log.info("Novel contract used (should now be deleted) was " + s));
-        ofNullable(novelTopicUsed.get()).ifPresent(s -> log.info("Novel topic used (should now be deleted) was " + s));
+                .ifPresent(s -> log.info("Novel contract used (should now be deleted) was {}", s));
+        ofNullable(novelTopicUsed.get()).ifPresent(s -> log.info("Novel topic used (should now be deleted) was {}", s));
     }
 }

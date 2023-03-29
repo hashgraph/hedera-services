@@ -163,8 +163,9 @@ final class ConcurrentArray<T> {
             tail = other.tail;
         } else if (other.elementCount.get() > 0) {
             tail.next = other.head;
-            elementCount.addAndGet(other.size());
+            tail = other.tail;
         }
+        elementCount.addAndGet(other.size());
     }
 
     /**

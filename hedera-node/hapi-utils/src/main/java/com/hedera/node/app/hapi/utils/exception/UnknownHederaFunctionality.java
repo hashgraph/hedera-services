@@ -14,6 +14,20 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.mono.exceptions;
+package com.hedera.node.app.hapi.utils.exception;
 
-public class UnknownHederaFunctionality extends Exception {}
+/**
+ * An exception that thrown if unknown HederaFunctionality is found.
+ *
+ */
+public class UnknownHederaFunctionality extends Exception {
+
+    /**
+     * Constructs a new exception with the specified detail message.
+     *
+     * @param errMessage, the detail error message.
+     */
+    public UnknownHederaFunctionality(String errMessage) {
+        super(errMessage);
+    }
+}

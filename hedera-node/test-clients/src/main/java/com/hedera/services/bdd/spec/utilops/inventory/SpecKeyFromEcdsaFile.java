@@ -71,7 +71,7 @@ public class SpecKeyFromEcdsaFile extends UtilOp {
             final @Nullable Logger logToUse) {
         final var hexedKey = CommonUtils.hex(pubKey);
         if (logToUse != null) {
-            logToUse.info("Hex-encoded public key: " + hexedKey);
+            logToUse.info("Hex-encoded public key: {}", hexedKey);
         }
         final var key =
                 Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(pubKey)).build();
