@@ -449,7 +449,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                             loadedState.signedStateFromDisk.getConsensusTimestamp(),
                             startUpEventFrozenManager.getStartUpEventFrozenEndTime())
                     .toString());
-            startingState = loadedState.signedStateFromDisk.getState();
+            startingState = loadedState.initialState;
         } else {
             startingState = buildGenesisState(this, initialAddressBook, appVersion, genesisStateBuilder);
 
