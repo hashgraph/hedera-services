@@ -86,7 +86,7 @@ public class BusyTime {
     }
 
     /**
-     * @return the fraction of time that the thread has been busy
+     * @return the fraction of time that the thread has been busy, where 0.0 means the thread is not at all busy, and 1.0 means that the thread is 100% busy
      */
     public double getBusyFraction() {
         return accumulator.get();
