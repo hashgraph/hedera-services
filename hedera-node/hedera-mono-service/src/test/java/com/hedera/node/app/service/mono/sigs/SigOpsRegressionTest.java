@@ -403,7 +403,7 @@ class SigOpsRegressionTest {
         SigRequirements keyOrder = new SigRequirements(sigMetaLookups, mockSignatureWaivers);
 
         final var pkToSigFn = new PojoSigMapPubKeyToSigBytes(platformTxn.getSigMap());
-        expandIn(platformTxn, keyOrder, pkToSigFn);
+        expandIn(platformTxn, keyOrder, pkToSigFn, aliasManager);
     }
 
     private Rationalization invokeRationalizationScenario() {

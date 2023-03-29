@@ -36,4 +36,12 @@ public record SavedStateInfo(long round, Path stateFile) {
     public Path getDir() {
         return stateFile.toAbsolutePath().getParent();
     }
+
+    /**
+     * Parse the metadata for this saved state.
+     * @return the metadata
+     */
+    public SavedStateMetadata getMetadata() {
+        return SavedStateMetadata.parse(getDir().resolve(SavedStateMetadata.FILE_NAME));
+    }
 }

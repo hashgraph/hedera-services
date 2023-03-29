@@ -224,7 +224,8 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
                                         PAUSE_UNPAUSE_CONTRACT,
                                         PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
                                         asHeadlongAddress(asHexedAddress(vanillaTokenID.get())))
-                                .payingWith(ACCOUNT)
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
                                 .via("pauseFungibleAccountDoesNotOwnPauseKeyFailingTxn")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -233,7 +234,8 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
                                         PAUSE_UNPAUSE_CONTRACT,
                                         PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
                                         asHeadlongAddress(asHexedAddress(vanillaTokenID.get())))
-                                .payingWith(ACCOUNT)
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
                                 .via(PAUSE_FUNGIBLE_TXN)
                                 .gas(GAS_TO_OFFER),
                         getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Paused),
@@ -243,7 +245,8 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
                                         PAUSE_UNPAUSE_CONTRACT,
                                         PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
                                         asHeadlongAddress(asHexedAddress(vanillaTokenID.get())))
-                                .payingWith(ACCOUNT)
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
                                 .via("pauseFungibleAccountIsDeletedFailingTxn")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
@@ -287,7 +290,8 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
                                         PAUSE_UNPAUSE_CONTRACT,
                                         UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
                                         asHeadlongAddress(asHexedAddress(vanillaTokenID.get())))
-                                .payingWith(ACCOUNT)
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
                                 .via("unpauseFungibleAccountDoesNotOwnPauseKeyFailingTxn")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -296,7 +300,8 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
                                         PAUSE_UNPAUSE_CONTRACT,
                                         UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
                                         asHeadlongAddress(asHexedAddress(vanillaTokenID.get())))
-                                .payingWith(ACCOUNT)
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
                                 .via(UNPAUSE_FUNGIBLE_TXN)
                                 .gas(GAS_TO_OFFER))))
                 .then(
@@ -335,7 +340,8 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
                                         PAUSE_UNPAUSE_CONTRACT,
                                         PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
                                         asHeadlongAddress(asHexedAddress(vanillaTokenID.get())))
-                                .payingWith(ACCOUNT)
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
                                 .via("pauseNonFungibleAccountDoesNotOwnPauseKeyFailingTxn")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -344,7 +350,8 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
                                         PAUSE_UNPAUSE_CONTRACT,
                                         PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
                                         asHeadlongAddress(asHexedAddress(vanillaTokenID.get())))
-                                .payingWith(ACCOUNT)
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
                                 .via(PAUSE_NONFUNGIBLE_TXN)
                                 .gas(GAS_TO_OFFER),
                         getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Paused),
@@ -354,7 +361,8 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
                                         PAUSE_UNPAUSE_CONTRACT,
                                         PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
                                         asHeadlongAddress(asHexedAddress(vanillaTokenID.get())))
-                                .payingWith(ACCOUNT)
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
                                 .via("pauseNonFungibleAccountIsDeletedFailingTxn")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
@@ -400,7 +408,8 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
                                         PAUSE_UNPAUSE_CONTRACT,
                                         UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
                                         asHeadlongAddress(asHexedAddress(vanillaTokenID.get())))
-                                .payingWith(ACCOUNT)
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
                                 .via("unpauseNonFungibleAccountDoesNotOwnPauseKeyFailingTxn")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -409,7 +418,8 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
                                         PAUSE_UNPAUSE_CONTRACT,
                                         UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
                                         asHeadlongAddress(asHexedAddress(vanillaTokenID.get())))
-                                .payingWith(ACCOUNT)
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
                                 .via(UNPAUSE_NONFUNGIBLE_TXN)
                                 .gas(GAS_TO_OFFER))))
                 .then(

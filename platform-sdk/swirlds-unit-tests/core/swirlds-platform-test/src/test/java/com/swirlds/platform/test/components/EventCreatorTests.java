@@ -43,7 +43,6 @@ import com.swirlds.platform.components.EventHandler;
 import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.transaction.TransactionPool;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
-import com.swirlds.platform.components.transaction.TransactionTracker;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventConstants;
 import com.swirlds.platform.event.EventUtils;
@@ -79,12 +78,6 @@ class EventCreatorTests {
 
     private static final TransactionSupplier defaultTransactionSupplier = () -> new SwirldTransaction[0];
     private static final EventHandler noOpEventHandler = (event) -> {};
-
-    static final TransactionTracker defaultTransactionTracker = mock(TransactionTracker.class);
-
-    static {
-        when(defaultTransactionTracker.getNumUserTransEvents()).thenReturn(0L);
-    }
 
     static final TransactionPool defaultTransactionPool = mock(TransactionPool.class);
 
@@ -308,7 +301,6 @@ class EventCreatorTests {
                 defaultGenerationsSupplier,
                 () -> transactions,
                 events::add,
-                defaultTransactionTracker,
                 defaultTransactionPool,
                 () -> false,
                 defaultThrottles);
@@ -363,7 +355,6 @@ class EventCreatorTests {
                 defaultGenerationsSupplier,
                 () -> transactions,
                 events::add,
-                defaultTransactionTracker,
                 defaultTransactionPool,
                 () -> false,
                 defaultThrottles);
@@ -429,7 +420,6 @@ class EventCreatorTests {
                     events.add(e);
                     Mockito.when(mapper.getMostRecentSelfEvent()).thenReturn(e);
                 },
-                defaultTransactionTracker,
                 defaultTransactionPool,
                 () -> false,
                 defaultThrottles);
@@ -469,7 +459,6 @@ class EventCreatorTests {
                 defaultGenerationsSupplier,
                 defaultTransactionSupplier,
                 events::add,
-                defaultTransactionTracker,
                 defaultTransactionPool,
                 () -> false,
                 new EventCreationRules(List.of(mockRule)));

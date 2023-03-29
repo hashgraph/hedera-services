@@ -16,26 +16,20 @@
 
 package com.swirlds.common.system;
 
-import com.swirlds.common.Releasable;
+import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.system.events.ConsensusEvent;
+import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.events.Event;
+import com.swirlds.common.system.transaction.Transaction;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * A Swirld app is defined by creating two classes, one implementing {@link SwirldMain}, and the other
- * {@link SwirldState}, such that: <br>
- * <br>
- * <ul>
- * <li>{@code SwirldState} has a no-argument constructor (called by {@link Platform})</li>
- * <li>All {@code SwirldState} variables are thread-safe and private</li>
- * <li>All {@code SwirldState} methods are synchronized</li>
- * <li>{@code SwirldMain} never modifies an object in {@code SwirldState}</li>
- * </ul>
- * <br>
- * So, if {@code SwirldState} contains an array, and {@code SwirldMain} gets it through a getter method,
- * then the developer is responsible for making sure {@code SwirldMain} never changes the contents of that
- * array. Or the getter can simply return a deep copy of the array instead of the original.
+ * {@link SwirldState}. The class that implements the SwirldState should have a zero-argument constructor.
  */
-public sealed interface SwirldState extends MerkleNode permits SwirldState1, SwirldState2 {
+public interface SwirldState extends MerkleNode {
 
     /**
      * <p>
@@ -65,26 +59,68 @@ public sealed interface SwirldState extends MerkleNode permits SwirldState1, Swi
     }
 
     /**
-     * Given a round of consensus ordered events, update the state to reflect their effect. Events are iterated in
-     * consensus order by the {@link Round#iterator()}. Transactions in each event are iterated in consensus order by
-     * the {@link ConsensusEvent#consensusTransactionIterator()}. Transactions in a single event occur after all the
-     * transactions in the previous event and before all the transactions in the next event.
-     *
+     * Provides the application an opportunity to perform operations on transactions in an event prior to handling.
+     * Called against a given {@link Event} only once, globally (not once per state instance) This method may modify the
+     * {@link Transaction}s in the event by doing nothing, adding additional signatures, removing existing signatures,
+     * replacing signatures with versions that expand the public key from an application specific identifier to an
+     * actual public key, or attaching metadata. Additional signatures extracted from the transaction payload can also
+     * be added to the list of signatures to be verified.
      * <p>
-     * It is good if this method changes some class variables and then return. It is also OK if it spawns a number of
-     * threads that change those variables, then wait until all those threads have ended, and then return. It is even OK
-     * for it to create a pool of threads that continue to exist after it returns, as long as it ensures that those
-     * threads have finished all their changes before it returns. But it is an error for this method to spawn a thread
-     * that will make changes after the method returns and before the next time it is called. If this method creates
-     * threads that continue to exist after it returns (in a legal way), then it should clean up those resources when
-     * the object has been fully released (see documentation in {@link Releasable}). If the SwirldState extends one of
-     * the partial merkle implementations (e.g. PartialMerkleLeaf or PartialNaryMerkleInternal) then it can put that
-     * cleanup in the onDestroy() method, which is called when the object becomes fully released.
+     * If signature verification is desired, it is recommended that process be started in this method on a background
+     * thread using one of the methods below to give it time to complete before the transaction is handled
+     * post-consensus.
+     * <ul>
+     *     <li>{@link com.swirlds.common.crypto.Cryptography#verifyAsync(TransactionSignature)}</li>
+     *     <li>{@link com.swirlds.common.crypto.Cryptography#verifyAsync(List)}</li>
+     * </ul>
+     * <p>
+     * <strong>This method is always invoked on an immutable state.</strong>
      *
-     * @param round           the round of consensus ordered events to update the state with
-     * @param swirldDualState current dualState object which can be read/written by the application
+     * @param event the event to perform pre-handling on
+     * @see #handleConsensusRound(Round, SwirldDualState)
+     */
+    default void preHandle(final Event event) {}
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * The state of this object must NEVER change except inside the methods below.
+     *
+     * <ul>
+     *     <li>{@link #init(Platform, SwirldDualState, InitTrigger, SoftwareVersion)}</li>
+     *     <li>{@link #copy()}</li>
+     *     <li>{@link #handleConsensusRound(Round, SwirldDualState)}</li>
+     *  </ul>
+     * <p>
+     * If signature verification was started on a background thread in {@link #preHandle(Event)}, the process
+     * should be checked for completion. Accessing {@link TransactionSignature#getSignatureStatus()} before this
+     * process is complete will cause it to return {@code null}:
+     *
+     * <pre>
+     *     for (TransactionSignature sig : transaction.getSignatures()) {
+     *         Future&lt;Void&gt; future = sig.waitForFuture().get();
+     *     }
+     * </pre>
      */
     void handleConsensusRound(final Round round, final SwirldDualState swirldDualState);
+
+    /**
+     * Implementations of the SwirldState should always override this method in production.  The AddressBook returned
+     * should have the same Adddress entries as the configuration AddressBook, but with the stake values updated. The
+     * AddressBook previously saved in the state, if it exists, is provided for reference.
+     * <p>
+     * The default implementation of this method is provided for use in testing and to prevent compilation failure of
+     * implementing classes that have not yet implemented this method.
+     *
+     * @param configAddressBook the address book as loaded from config.txt. This address book may contain new nodes not
+     *                          present in the stateAddressBook. Must not be null.
+     * @return a copy of the configuration address book with updated stake.
+     */
+    @NonNull
+    default AddressBook updateStake(@NonNull final AddressBook configAddressBook) {
+        Objects.requireNonNull(configAddressBook, "configAddressBook must not be null");
+        return configAddressBook;
+    }
 
     /**
      * {@inheritDoc}

@@ -39,7 +39,7 @@ import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.SwirldState2;
+import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.system.transaction.Transaction;
@@ -58,7 +58,7 @@ import org.apache.logging.log4j.Logger;
  * is 100 random bytes. So StatsSigningDemoState.handleTransaction doesn't actually do anything, other than the
  * optional sequence number check.
  */
-public class StatsSigningTestingToolState extends PartialMerkleLeaf implements SwirldState2, MerkleLeaf {
+public class StatsSigningTestingToolState extends PartialMerkleLeaf implements SwirldState, MerkleLeaf {
 
     private static final long CLASS_ID = 0x79900efa3127b6eL;
     /**

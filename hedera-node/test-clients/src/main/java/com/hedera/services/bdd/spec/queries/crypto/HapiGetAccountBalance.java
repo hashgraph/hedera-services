@@ -188,8 +188,10 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
             balanceObserver.accept(actual);
         }
         if (verboseLoggingOn) {
-            log.info("Explicit token balances: "
-                    + response.getCryptogetAccountBalance().getTokenBalancesList());
+            String message = String.format(
+                    "Explicit token balances: %s",
+                    response.getCryptogetAccountBalance().getTokenBalancesList());
+            log.info(message);
         }
 
         if (assertAccountIDIsNotAlias) {
@@ -272,13 +274,16 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
         ResponseCodeEnum status =
                 response.getCryptogetAccountBalance().getHeader().getNodeTransactionPrecheckCode();
         if (status == ResponseCodeEnum.ACCOUNT_DELETED) {
-            log.info(spec.logPrefix() + repr + " was actually deleted!");
+            String message = String.format("%s%s was actually deleted!", spec.logPrefix(), repr);
+            log.info(message);
         } else {
             long balance = response.getCryptogetAccountBalance().getBalance();
             long TINYBARS_PER_HBAR = 100_000_000L;
             long hBars = balance / TINYBARS_PER_HBAR;
             if (!loggingOff) {
-                log.info(spec.logPrefix() + "balance for '" + repr + "': " + balance + " tinyBars (" + hBars + "ħ)");
+                String message =
+                        String.format("%sbalance for '%s':%d tinyBars (%dh)", spec.logPrefix(), repr, balance, hBars);
+                log.info(message);
             }
             if (yahcliLogger) {
                 COMMON_MESSAGES.info(String.format("%20s | %20d |", repr, balance));

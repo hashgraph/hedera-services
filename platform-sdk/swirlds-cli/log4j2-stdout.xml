@@ -104,7 +104,7 @@
 		<MarkerFilter marker="FILE_SIGN"              onMatch="DENY"  onMismatch="NEUTRAL"/>
 
 		<!-- Reconnect Specific -->
-		<MarkerFilter marker="TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT"      onMatch="ACCEPT"   onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT"      onMatch="ACCEPT"   onMismatch="DENY"/>
 	</Filters>
 
 	<Appenders>
@@ -197,7 +197,7 @@
 				<MarkerFilter marker="EXPIRATION"             onMatch="DENY"    onMismatch="NEUTRAL"/>
 
 				<!-- Reconnect Specific -->
-				<MarkerFilter marker="TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT"      onMatch="ACCEPT"   onMismatch="NEUTRAL"/>
+				<MarkerFilter marker="TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT"      onMatch="ACCEPT"   onMismatch="DENY"/>
 			</Filters>
 		</Console>
 
