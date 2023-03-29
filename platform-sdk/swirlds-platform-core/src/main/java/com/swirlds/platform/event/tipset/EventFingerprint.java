@@ -17,6 +17,7 @@
 package com.swirlds.platform.event.tipset;
 
 import com.swirlds.common.crypto.Hash;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Uniquely identifies an event and stores basic metadata bout it.
@@ -28,7 +29,7 @@ import com.swirlds.common.crypto.Hash;
  * @param hash
  * 		the hash of the event, expected to be unique for all events
  */
-public record EventFingerprint(long creator, long generation, Hash hash) {
+public record EventFingerprint(long creator, long generation, @NonNull Hash hash) {
 
     /**
      * {@inheritDoc}

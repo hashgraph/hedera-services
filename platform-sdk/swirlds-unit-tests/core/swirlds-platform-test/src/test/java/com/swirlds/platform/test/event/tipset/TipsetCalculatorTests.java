@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.swirlds.platform.event.tipset.EventFingerprint;
 import com.swirlds.platform.event.tipset.Tipset;
-import com.swirlds.platform.event.tipset.TipsetTracker;
+import com.swirlds.platform.event.tipset.TipsetCalculator;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -37,7 +37,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("TipsetTracker Tests")
-class TipsetTrackerTests {
+class TipsetCalculatorTests {
 
     private static void assertTipsetEquality(final Tipset expected, final Tipset actual, final long nodeCount) {
         assertEquals(expected.size(), actual.size());
@@ -49,14 +49,14 @@ class TipsetTrackerTests {
     @Test
     @DisplayName("Basic Behavior Test")
     void basicBehaviorTest() {
-        final Random random = getRandomPrintSeed();
+        final Random random = getRandomPrintSeed(0);
 
         final int nodeCount = random.nextInt(10, 20);
 
         final Map<Long, EventFingerprint> latestEvents = new HashMap<>();
         final Map<EventFingerprint, Tipset> expectedTipsets = new HashMap<>();
 
-        final TipsetTracker tracker = new TipsetTracker(nodeCount, x -> (int) x, x -> 1);
+        final TipsetCalculator tracker = new TipsetCalculator(nodeCount, x -> (int) x, x -> 1);
 
         for (int eventIndex = 0; eventIndex < 1000; eventIndex++) {
 
@@ -111,7 +111,7 @@ class TipsetTrackerTests {
             if (parentTipsets.isEmpty()) {
                 expectedTipset = new Tipset(nodeCount, x -> (int) x, x -> 1).advance(creator, generation);
             } else {
-                expectedTipset = merge(parentTipsets);
+                expectedTipset = merge(parentTipsets).advance(creator, generation);
             }
 
             expectedTipsets.put(fingerprint, expectedTipset);

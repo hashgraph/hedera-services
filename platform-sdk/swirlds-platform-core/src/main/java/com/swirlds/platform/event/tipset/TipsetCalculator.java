@@ -20,15 +20,16 @@ import static com.swirlds.platform.event.tipset.Tipset.merge;
 
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.IntToLongFunction;
 import java.util.function.LongToIntFunction;
 
 /**
- * Computes and tracks tipsets for non-ancient events. TODO consider a rename of this class
+ * Computes and tracks tipsets for non-ancient events.
  */
-public class TipsetTracker {
+public class TipsetCalculator {
 
     private final SequenceMap<EventFingerprint, Tipset> tipsets;
 
@@ -53,8 +54,10 @@ public class TipsetTracker {
      * @param nodeIdToIndex maps node ID to node index
      * @param indexToWeight maps node index to consensus weight
      */
-    public TipsetTracker(
-            final int nodeCount, final LongToIntFunction nodeIdToIndex, final IntToLongFunction indexToWeight) {
+    public TipsetCalculator(
+            final int nodeCount,
+            @NonNull final LongToIntFunction nodeIdToIndex,
+            @NonNull final IntToLongFunction indexToWeight) {
 
         this.nodeCount = nodeCount;
         this.nodeIdToIndex = nodeIdToIndex;

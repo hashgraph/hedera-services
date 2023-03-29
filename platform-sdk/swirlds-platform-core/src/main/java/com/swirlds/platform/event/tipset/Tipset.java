@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.event.tipset;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.IntToLongFunction;
@@ -48,10 +49,23 @@ public class Tipset {
      * @param nodeIdToIndex maps node ID to node index
      * @param indexToWeight maps node index to consensus weight
      */
-    public Tipset(final int nodeCount, final LongToIntFunction nodeIdToIndex, final IntToLongFunction indexToWeight) {
+    public Tipset(
+            final int nodeCount,
+            @NonNull final LongToIntFunction nodeIdToIndex,
+            @NonNull final IntToLongFunction indexToWeight) {
         this.nodeIdToIndex = nodeIdToIndex;
         this.indexToWeight = indexToWeight;
         this.tips = new long[nodeCount];
+    }
+
+    /**
+     * Build an empty tipset (i.e. where all tip weights are 0) using another tipset as a template.
+     *
+     * @param tipset the tipset to use as a template
+     * @return a new empty tipset
+     */
+    private static @NonNull Tipset buildEmptyTipset(final Tipset tipset) {
+        return new Tipset(tipset.size(), tipset.nodeIdToIndex, tipset.indexToWeight);
     }
 
     /**
@@ -69,14 +83,14 @@ public class Tipset {
      *                else this method has undefined behavior
      * @return a new tipset
      */
-    public static Tipset merge(final List<Tipset> tipsets) {
+    public static @NonNull Tipset merge(@NonNull final List<Tipset> tipsets) {
         Objects.requireNonNull(tipsets, "tipsets must not be null");
         if (tipsets.isEmpty()) {
             throw new IllegalArgumentException("Cannot merge an empty list of tipsets");
         }
 
         final int length = tipsets.get(0).tips.length;
-        final Tipset newTipset = new Tipset(length, tipsets.get(0).nodeIdToIndex, tipsets.get(0).indexToWeight);
+        final Tipset newTipset = buildEmptyTipset(tipsets.get(0));
 
         for (int index = 0; index < length; index++) {
             long max = 0;
@@ -113,7 +127,7 @@ public class Tipset {
      *
      * @return this object
      */
-    public Tipset advance(final long creatorId, final long generation) {
+    public @NonNull Tipset advance(final long creatorId, final long generation) {
         final int index = nodeIdToIndex.applyAsInt(creatorId);
         tips[index] = Math.max(tips[index], generation);
         return this;
@@ -135,7 +149,7 @@ public class Tipset {
      * @param that   the tipset to compare to
      * @return the number of tip advancements to get from this tipset to that tipset
      */
-    public long getAdvancementCount(final long nodeId, final Tipset that) {
+    public long getAdvancementCount(final long nodeId, @NonNull final Tipset that) {
         long count = 0;
 
         final int selfIndex = nodeIdToIndex.applyAsInt(nodeId);

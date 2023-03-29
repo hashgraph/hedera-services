@@ -19,6 +19,7 @@ package com.swirlds.platform.event.tipset;
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 import static com.swirlds.platform.Utilities.isSuperMajority;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.function.IntToLongFunction;
@@ -35,9 +36,9 @@ public class TipsetWindow {
     private final long selfId;
 
     /**
-     * Tracks tipsets for each event. Is maintained outside this object.
+     * Calculates tipsets for each event. Is maintained outside this object.
      */
-    private final TipsetTracker tracker;
+    private final TipsetCalculator calculator;
 
     /**
      * The current tipset snapshot.
@@ -65,7 +66,7 @@ public class TipsetWindow {
     private final long selfWeight;
 
     /**
-     * The maximum possible score for an event.
+     * The maximum possible advancement score for an event.
      */
     private final long maximumPossibleScore;
 
@@ -78,7 +79,7 @@ public class TipsetWindow {
      * Create a new tipset window.
      *
      * @param selfId      the ID of the node tracked by this window
-     * @param tracker       tracks tipsets for individual events
+     * @param calculator       tracks tipsets for individual events
      * @param nodeCount     the number of nodes in the address book
      * @param nodeIdToIndex maps node ID to node index
      * @param indexToWeight maps node index to consensus weight
@@ -86,16 +87,16 @@ public class TipsetWindow {
      */
     public TipsetWindow(
             final long selfId,
-            final TipsetTracker tracker,
+            @NonNull final TipsetCalculator calculator,
             final int nodeCount,
-            final LongToIntFunction nodeIdToIndex,
-            final IntToLongFunction indexToWeight,
+            @NonNull final LongToIntFunction nodeIdToIndex,
+            @NonNull final IntToLongFunction indexToWeight,
             final long totalWeight) {
 
         snapshot = new Tipset(nodeCount, nodeIdToIndex, indexToWeight);
 
         this.selfId = selfId;
-        this.tracker = tracker;
+        this.calculator = calculator;
         this.totalWeight = totalWeight;
         this.selfWeight = indexToWeight.applyAsLong(nodeIdToIndex.applyAsInt(selfId));
         this.maximumPossibleScore = totalWeight - selfWeight;
@@ -113,7 +114,7 @@ public class TipsetWindow {
      *
      * @return the current tipset snapshot
      */
-    public Tipset getSnapshot() {
+    public @NonNull Tipset getSnapshot() {
         return snapshot;
     }
 
@@ -127,13 +128,13 @@ public class TipsetWindow {
      * @param event the event that is being added
      * @return the change in the tipset advancement score
      */
-    public long addEvent(final EventFingerprint event) {
+    public long addEvent(@NonNull final EventFingerprint event) {
         throwArgNull(event, "event");
         if (event.creator() != selfId) {
             throw new IllegalArgumentException("event creator must be the same as the window ID");
         }
 
-        final Tipset eventTipset = tracker.getTipset(event);
+        final Tipset eventTipset = calculator.getTipset(event);
         if (eventTipset == null) {
             throw new IllegalArgumentException("event is not in the tipset tracker");
         }
