@@ -49,6 +49,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_PERIO
 import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_TOKEN_BALANCES;
 import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_NODE_BALANCE_WARN_THRESHOLD;
 import static com.hedera.node.app.spi.config.PropertyNames.BLOCKLIST_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.BLOCKLIST_FILE;
 import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_FEE_SCHEDULE_JSON_RESOURCE;
 import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_GENESIS_PUBLIC_KEY;
 import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_HAPI_PERMISSIONS_PATH;
@@ -506,7 +507,8 @@ class BootstrapPropertiesTest {
             entry(TOKENS_AUTO_CREATIONS_ENABLED, true),
             entry(WORKFLOWS_ENABLED, Set.of()),
             entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, false),
-            entry(BLOCKLIST_ENABLED, true));
+            entry(BLOCKLIST_ENABLED, true),
+            entry(BLOCKLIST_FILE, "evm-addresses-blocklist.txt"));
 
     @Test
     void containsProperty() {
