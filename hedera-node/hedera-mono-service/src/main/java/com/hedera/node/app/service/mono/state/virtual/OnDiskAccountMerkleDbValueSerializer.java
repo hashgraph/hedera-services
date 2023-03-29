@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.mono.state.virtual;
 
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -61,10 +60,10 @@ public class OnDiskAccountMerkleDbValueSerializer implements ValueSerializer<OnD
     }
 
     @Override
-    public int serialize(final OnDiskAccount value, final SerializableDataOutputStream out) throws IOException {
+    public int serialize(final OnDiskAccount value, final ByteBuffer buf) throws IOException {
         Objects.requireNonNull(value);
-        Objects.requireNonNull(out);
-        return value.serializeTo(out::writeByte, out::writeInt, out::writeLong, out::write);
+        Objects.requireNonNull(buf);
+        return value.serializeTo(buf::put, buf::putInt, buf::putLong, buf::put);
     }
 
     // Value deserializatioin

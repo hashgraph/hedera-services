@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.mono.state.virtual;
 
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -65,10 +64,10 @@ public class OnDiskTokenRelMerkleDbValueSerializer implements ValueSerializer<On
     // Value serialization
 
     @Override
-    public int serialize(final OnDiskTokenRel value, final SerializableDataOutputStream out) throws IOException {
+    public int serialize(final OnDiskTokenRel value, final ByteBuffer buf) throws IOException {
         Objects.requireNonNull(value);
-        Objects.requireNonNull(out);
-        value.serialize(out);
+        Objects.requireNonNull(buf);
+        value.serialize(buf);
         return getSerializedSize();
     }
 

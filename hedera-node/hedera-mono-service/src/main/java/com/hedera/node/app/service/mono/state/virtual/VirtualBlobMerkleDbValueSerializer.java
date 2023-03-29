@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.mono.state.virtual;
 
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -59,8 +58,8 @@ public class VirtualBlobMerkleDbValueSerializer implements ValueSerializer<Virtu
     // Value serialization
 
     @Override
-    public int serialize(final VirtualBlobValue value, final SerializableDataOutputStream out) throws IOException {
-        value.serialize(out);
+    public int serialize(final VirtualBlobValue value, final ByteBuffer buf) throws IOException {
+        value.serialize(buf);
         return Integer.BYTES + value.getData().length; // data size (int) + data
     }
 
