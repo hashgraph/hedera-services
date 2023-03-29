@@ -308,12 +308,15 @@ public class SyntheticTxnFactory {
             @Nullable final EntityId operatorId) {
         final var builder = CryptoApproveAllowanceTransactionBody.newBuilder();
         if (approveWrapper.isFungible()) {
-            builder.addTokenAllowances(TokenAllowance.newBuilder()
+            var tokenAllowance = TokenAllowance.newBuilder()
                     .setTokenId(approveWrapper.tokenId())
                     .setOwner(Objects.requireNonNull(ownerId).toGrpcAccountId())
                     .setSpender(approveWrapper.spender())
-                    .setAmount(approveWrapper.amount().longValueExact())
-                    .build());
+                    .setAmount(approveWrapper.amount().longValueExact());
+            if (ownerId != null) {
+                tokenAllowance.setOwner(ownerId.toGrpcAccountId());
+            }
+            builder.addTokenAllowances(tokenAllowance.build());
         } else {
             final var op = NftAllowance.newBuilder()
                     .setTokenId(approveWrapper.tokenId())

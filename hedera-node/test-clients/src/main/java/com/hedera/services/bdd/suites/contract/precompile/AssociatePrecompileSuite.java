@@ -78,7 +78,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
     private static final String TOKEN_TREASURY = "treasury";
     private static final String OUTER_CONTRACT = "NestedAssociateDissociate";
     private static final String INNER_CONTRACT = "AssociateDissociate";
-    private static final String THE_CONTRACT = "AssociateDissociate";
+    public static final String THE_CONTRACT = "AssociateDissociate";
     private static final String THE_GRACEFULLY_FAILING_CONTRACT = "GracefullyFailing";
     private static final String ACCOUNT = "anybody";
     private static final String FROZEN_TOKEN = "Frozen token";

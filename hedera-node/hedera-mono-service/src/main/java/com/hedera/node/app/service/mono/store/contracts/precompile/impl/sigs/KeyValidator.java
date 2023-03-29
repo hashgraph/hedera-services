@@ -19,6 +19,7 @@ package com.hedera.node.app.service.mono.store.contracts.precompile.impl.sigs;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActivationTest;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
@@ -41,5 +42,6 @@ public interface KeyValidator {
             Address target,
             KeyActivationTest activationTest,
             WorldLedgers ledgers,
-            ContractAliases aliases);
+            ContractAliases aliases,
+            HederaFunctionality function);
 }
