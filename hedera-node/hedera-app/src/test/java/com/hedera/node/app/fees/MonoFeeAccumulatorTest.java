@@ -17,7 +17,7 @@
 package com.hedera.node.app.fees;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusGetTopicInfo;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -90,7 +90,7 @@ class MonoFeeAccumulatorTest {
                 mockQuery,
                 PbjConverter.toPbj(mockTime));
 
-        assertSame(expectedFees, actualFees);
+        assertEquals(expectedFees, actualFees);
     }
 
     @Test
@@ -108,6 +108,6 @@ class MonoFeeAccumulatorTest {
         final var fee =
                 subject.computePayment(readableStoreFactory, queryFunction, mockQuery, PbjConverter.toPbj(mockTime));
 
-        assertSame(expectedFee, fee);
+        assertEquals(expectedFee, fee);
     }
 }

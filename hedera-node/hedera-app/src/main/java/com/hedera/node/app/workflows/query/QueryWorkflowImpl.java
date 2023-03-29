@@ -34,7 +34,6 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.FeeAccumulator;
-import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
@@ -140,6 +139,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         try (final var wrappedState = stateAccessor.apply(responseType)) {
             // Do some general pre-checks
             checker.checkNodeState();
+            // TODO: If ANSWER_STATE_PROOF, COST_ANSWER_STATE_PROOF are removed, this check can be removed
             if (UNSUPPORTED_RESPONSE_TYPES.contains(responseType)) {
                 throw new PreCheckException(NOT_SUPPORTED);
             }
@@ -164,9 +164,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 checker.checkPermissions(payer, function);
 
                 // 3.iii Calculate costs
-                final var feeData =
-                        feeAccumulator.computePayment(storeFactory, function, query, asTimestamp(Instant.now()));
-                fee = totalFee(feeData);
+                fee = feeAccumulator.computePayment(storeFactory, function, query, asTimestamp(Instant.now()))
+                        .totalFee();
 
                 // 3.iv Check account balances
                 checker.validateAccountBalances(payer, txBody, fee);
@@ -181,21 +180,14 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
 
             // 5. Submit payment to platform
             if (paymentRequired) {
-                final var out = new ByteArrayOutputStream();
-                try {
-                    Transaction.PROTOBUF.write(allegedPayment, new ByteArrayDataOutput(out));
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    throw new StatusRuntimeException(Status.INTERNAL);
-                }
-                submissionManager.submit(txBody, out.toByteArray());
+                final var paymentBytes = getPaymentBytes(allegedPayment);
+                submissionManager.submit(txBody, paymentBytes);
             }
 
             if (handler.needsAnswerOnlyCost(responseType)) {
                 // 6.i Estimate costs
-                final var feeData =
-                        feeAccumulator.computePayment(storeFactory, function, query, asTimestamp(Instant.now()));
-                fee = totalFee(feeData);
+                fee = feeAccumulator.computePayment(storeFactory, function, query, asTimestamp(Instant.now()))
+                        .totalFee();
 
                 final var header = createResponseHeader(responseType, validity, fee);
                 response = handler.createEmptyResponse(header);
@@ -214,16 +206,35 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             response = handler.createEmptyResponse(header);
         }
 
+        writeResponseToBuffer(response, responseBuffer);
+        logger.debug("Finished handling a query request in Query workflow");
+    }
+
+    private byte[] getPaymentBytes(Transaction allegedPayment) {
+        final var out = new ByteArrayOutputStream();
+
+        try {
+            Transaction.PROTOBUF.write(allegedPayment, new WritableStreamingData(out));
+        } catch (IOException e) {
+            logger.warn("IOException while serializing payment", e);
+            throw new StatusRuntimeException(Status.INTERNAL);
+        }
+
+        return out.toByteArray();
+
+    }
+
+    private void writeResponseToBuffer(@NonNull final Response response, @NonNull final BufferedData responseBuffer) {
         try {
             Response.PROTOBUF.write(response, responseBuffer);
-            logger.debug("Finished handling a query request in Query workflow");
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.warn("IOException while serializing response", e);
             throw new StatusRuntimeException(Status.INTERNAL);
         }
     }
 
-    private Query parseQuery(Bytes requestBuffer) {
+    @NonNull
+    private Query parseQuery(@NonNull final Bytes requestBuffer) {
         try {
             return queryParser.parseStrict(requestBuffer.toReadableSequentialData());
         } catch (IOException e) {
@@ -232,6 +243,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         }
     }
 
+    @NonNull
     private static HederaFunctionality functionOf(@NonNull final Query query) {
         try {
             return HapiUtils.functionOf(query);
@@ -240,10 +252,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         }
     }
 
-    private long totalFee(final FeeObject costs) {
-        return costs.getNetworkFee() + costs.getServiceFee() + costs.getNodeFee();
-    }
-
+    @NonNull
     private static ResponseHeader createResponseHeader(
             @NonNull final ResponseType type, @NonNull final ResponseCodeEnum responseCode, final long fee) {
         return ResponseHeader.newBuilder()
@@ -251,18 +260,5 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 .nodeTransactionPrecheckCode(responseCode)
                 .cost(fee)
                 .build();
-    }
-
-    private static final class ByteArrayDataOutput extends WritableStreamingData {
-        private final ByteArrayOutputStream out;
-
-        public ByteArrayDataOutput(ByteArrayOutputStream out) {
-            super(out);
-            this.out = out;
-        }
-
-        public Bytes getBytes() {
-            return Bytes.wrap(out.toByteArray());
-        }
     }
 }

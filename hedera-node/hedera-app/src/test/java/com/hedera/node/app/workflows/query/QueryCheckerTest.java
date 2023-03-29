@@ -34,7 +34,7 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.authorization.Authorizer;
-import com.hedera.node.app.service.mono.queries.validation.QueryFeeCheck;
+import com.hedera.node.app.fees.QueryFeeCheck;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.spi.info.CurrentPlatformStatus;
 import com.hedera.node.app.spi.info.NodeInfo;
@@ -198,8 +198,8 @@ class QueryCheckerTest {
                 .cryptoTransfer(cryptoTransfer)
                 .nodeAccountID(nodeAccountId)
                 .build();
-        when(queryFeeCheck.validateQueryPaymentTransfers2(txBody)).thenReturn(OK);
-        when(queryFeeCheck.nodePaymentValidity2(List.of(accountAmount), fee, nodeAccountId))
+        when(queryFeeCheck.validateQueryPaymentTransfers(txBody)).thenReturn(OK);
+        when(queryFeeCheck.nodePaymentValidity(List.of(accountAmount), fee, nodeAccountId))
                 .thenReturn(OK);
 
         // when
@@ -222,7 +222,7 @@ class QueryCheckerTest {
                 .cryptoTransfer(cryptoTransfer)
                 .nodeAccountID(nodeAccountId)
                 .build();
-        when(queryFeeCheck.validateQueryPaymentTransfers2(txBody)).thenReturn(INSUFFICIENT_PAYER_BALANCE);
+        when(queryFeeCheck.validateQueryPaymentTransfers(txBody)).thenReturn(INSUFFICIENT_PAYER_BALANCE);
 
         // when
         assertThatThrownBy(() -> checker.validateAccountBalances(payer, txBody, fee))
@@ -247,8 +247,8 @@ class QueryCheckerTest {
                 .cryptoTransfer(cryptoTransfer)
                 .nodeAccountID(nodeAccountId)
                 .build();
-        when(queryFeeCheck.validateQueryPaymentTransfers2(txBody)).thenReturn(OK);
-        when(queryFeeCheck.nodePaymentValidity2(List.of(accountAmount), fee, nodeAccountId))
+        when(queryFeeCheck.validateQueryPaymentTransfers(txBody)).thenReturn(OK);
+        when(queryFeeCheck.nodePaymentValidity(List.of(accountAmount), fee, nodeAccountId))
                 .thenReturn(INSUFFICIENT_TX_FEE);
 
         // when
@@ -274,9 +274,9 @@ class QueryCheckerTest {
                 .cryptoTransfer(cryptoTransfer)
                 .nodeAccountID(nodeAccountId)
                 .build();
-        when(queryFeeCheck.validateQueryPaymentTransfers2(txBody)).thenReturn(OK);
+        when(queryFeeCheck.validateQueryPaymentTransfers(txBody)).thenReturn(OK);
         when(accountNumbers.isSuperuser(4711L)).thenReturn(true);
-        when(queryFeeCheck.nodePaymentValidity2(List.of(accountAmount), fee, nodeAccountId))
+        when(queryFeeCheck.nodePaymentValidity(List.of(accountAmount), fee, nodeAccountId))
                 .thenReturn(INSUFFICIENT_TX_FEE);
 
         // when
@@ -299,8 +299,8 @@ class QueryCheckerTest {
                 .cryptoTransfer(cryptoTransfer)
                 .nodeAccountID(nodeAccountId)
                 .build();
-        when(queryFeeCheck.validateQueryPaymentTransfers2(txBody)).thenReturn(OK);
-        when(queryFeeCheck.nodePaymentValidity2(List.of(accountAmount), fee, nodeAccountId))
+        when(queryFeeCheck.validateQueryPaymentTransfers(txBody)).thenReturn(OK);
+        when(queryFeeCheck.nodePaymentValidity(List.of(accountAmount), fee, nodeAccountId))
                 .thenReturn(INSUFFICIENT_TX_FEE);
 
         // when

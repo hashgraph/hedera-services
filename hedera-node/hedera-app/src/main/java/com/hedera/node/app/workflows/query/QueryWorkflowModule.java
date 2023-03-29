@@ -20,6 +20,8 @@ import com.hedera.hapi.node.base.ResponseType;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.fees.MonoFeeAccumulator;
+import com.hedera.node.app.fees.MonoQueryFeeChecker;
+import com.hedera.node.app.fees.QueryFeeCheck;
 import com.hedera.node.app.service.consensus.impl.components.ConsensusComponent;
 import com.hedera.node.app.service.contract.impl.components.ContractComponent;
 import com.hedera.node.app.service.file.impl.components.FileComponent;
@@ -55,6 +57,10 @@ public interface QueryWorkflowModule {
     @Binds
     @Singleton
     FeeAccumulator bindFeeAccumulator(MonoFeeAccumulator feeAccumulator);
+
+    @Binds
+    @Singleton
+    QueryFeeCheck bindQueryFeeCheck(MonoQueryFeeChecker queryFeeCheck);
 
     @Provides
     @Singleton

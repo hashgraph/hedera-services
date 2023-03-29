@@ -1,0 +1,51 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
+package com.hedera.node.app.fees;
+
+import com.hedera.hapi.node.base.AccountAmount;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
+import java.util.List;
+import javax.inject.Inject;
+
+public class MonoQueryFeeChecker implements QueryFeeCheck {
+
+    private final com.hedera.node.app.service.mono.queries.validation.QueryFeeCheck delegate;
+
+    @Inject
+    public MonoQueryFeeChecker(com.hedera.node.app.service.mono.queries.validation.QueryFeeCheck delegate) {
+        this.delegate = delegate;
+    }
+
+    @Override
+    public ResponseCodeEnum validateQueryPaymentTransfers(TransactionBody pbjTxBody) {
+        final var txBody = PbjConverter.fromPbj(pbjTxBody);
+        final var result = delegate.validateQueryPaymentTransfers(txBody);
+        return PbjConverter.toPbj(result);
+    }
+
+    @Override
+    public ResponseCodeEnum nodePaymentValidity(List<AccountAmount> pbjTransfers, long fee, AccountID pbjAccountID) {
+        final var accountID = PbjConverter.fromPbj(pbjAccountID);
+        final var transfers = pbjTransfers.stream().map(PbjConverter::fromPbj).toList();
+        final var result = delegate.nodePaymentValidity(transfers, fee, accountID);
+        return PbjConverter.toPbj(result);
+    }
+}

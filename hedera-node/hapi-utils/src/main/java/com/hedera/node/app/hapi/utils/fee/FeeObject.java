@@ -16,32 +16,27 @@
 
 package com.hedera.node.app.hapi.utils.fee;
 
-public class FeeObject {
+public record FeeObject(long nodeFee, long networkFee, long serviceFee) {
 
-    private long nodeFee;
-    private long networkFee;
-    private long serviceFee;
+    // TODO: These getters need to be removed, but this will results in a lot of changes.
+    //  So, we will remove them in a separate PR.
 
-    public FeeObject(long nodeFee, long networkFee, long serviceFee) {
-        this.nodeFee = nodeFee;
-        this.networkFee = networkFee;
-        this.serviceFee = serviceFee;
-    }
-
+    @Deprecated(forRemoval = true)
     public long getNodeFee() {
         return nodeFee;
     }
 
+    @Deprecated(forRemoval = true)
     public long getNetworkFee() {
         return networkFee;
     }
 
+    @Deprecated(forRemoval = true)
     public long getServiceFee() {
         return serviceFee;
     }
 
-    @Override
-    public String toString() {
-        return "FeeObject{" + "nodeFee=" + nodeFee + ", networkFee=" + networkFee + ", serviceFee=" + serviceFee + '}';
+    public long totalFee() {
+        return nodeFee + networkFee + serviceFee;
     }
 }
