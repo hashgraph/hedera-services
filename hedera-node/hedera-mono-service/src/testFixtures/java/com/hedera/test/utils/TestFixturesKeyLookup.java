@@ -119,7 +119,7 @@ public class TestFixturesKeyLookup implements AccountAccess {
     private EntityNumVirtualKey accountNumOf(final AccountID id) {
         if (isAlias(id)) {
             final var alias = id.getAlias();
-            if (alias.size() == EVM_ADDRESS_SIZE) {
+            if (isValidSizeEvmAddress(alias)) {
                 final var evmAddress = alias.toByteArray();
                 if (isMirror(evmAddress)) {
                     return EntityNumVirtualKey.fromLong(numFromEvmAddress(evmAddress));

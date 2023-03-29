@@ -190,7 +190,7 @@ public final class EntityIdUtils {
     }
 
     public static byte[] asEvmAddress(final ContractID id) {
-        if (id.getEvmAddress().size() == EVM_ADDRESS_SIZE) {
+        if (isValidSizeEvmAddress(id.getEvmAddress())) {
             return id.getEvmAddress().toByteArray();
         } else {
             return asEvmAddress(id.getContractNum());
@@ -350,5 +350,13 @@ public final class EntityIdUtils {
         } else {
             return EntityNum.fromAccountId(idOrAlias);
         }
+    }
+
+    public static boolean isValidSizeEvmAddress(final ByteString key){
+        return key.size() == EVM_ADDRESS_SIZE;
+    }
+
+    public static boolean isValidSizeECDSAAddress(final ByteString key){
+        return key.size() == ECDSA_SECP256K1_ALIAS_SIZE;
     }
 }

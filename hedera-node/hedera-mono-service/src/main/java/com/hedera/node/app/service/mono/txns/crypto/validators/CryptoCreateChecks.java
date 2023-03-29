@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.mono.txns.crypto.validators;
 
 import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer.hasStakedId;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isValidSizeEvmAddress;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
@@ -169,7 +169,7 @@ public class CryptoCreateChecks {
         if (keyValidity != OK) {
             return keyValidity;
         }
-        if (op.getAlias().size() != EVM_ADDRESS_SIZE) {
+        if (!isValidSizeEvmAddress(op.getAlias())) {
             return INVALID_ALIAS_KEY;
         }
         if (HederaEvmContractAliases.isMirror(op.getAlias().toByteArray())) {

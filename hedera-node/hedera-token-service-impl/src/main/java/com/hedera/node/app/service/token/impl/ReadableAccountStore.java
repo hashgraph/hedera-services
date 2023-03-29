@@ -177,7 +177,7 @@ public class ReadableAccountStore implements AccountAccess {
     private Long getAccountNum(@NonNull final AccountID idOrAlias) {
         if (isAlias(idOrAlias)) {
             final var alias = idOrAlias.getAlias();
-            if (alias.size() == EVM_ADDRESS_SIZE) {
+            if (isValidSizeEvmAddress(alias)) {
                 final var evmAddress = alias.toByteArray();
                 if (isMirror(evmAddress)) {
                     return fromMirror(evmAddress);
