@@ -22,6 +22,9 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
+/**
+ * Hedera adapted version of CreateOperation.
+ */
 public class HederaEvmCreateOperation extends AbstractEvmRecordingCreateOperation {
     @Inject
     public HederaEvmCreateOperation(

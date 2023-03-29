@@ -19,8 +19,22 @@ package com.hedera.node.app.service.evm.contracts.operations;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
+/**
+ * Handles side effects for {@link AbstractEvmRecordingCreateOperation}
+ */
 public interface CreateOperationExternalizer {
+    /**
+     * Handle external side effects
+     * @param frame         current message frame
+     * @param childFrame    child message frame to be created
+     */
     void externalize(MessageFrame frame, MessageFrame childFrame);
 
+    /**
+     * Should lazy creation fail based on environment
+     * @param frame current message frame
+     * @param contractAddress the target contract address
+     * @return should it fail
+     */
     boolean shouldFailBasedOnLazyCreation(MessageFrame frame, Address contractAddress);
 }

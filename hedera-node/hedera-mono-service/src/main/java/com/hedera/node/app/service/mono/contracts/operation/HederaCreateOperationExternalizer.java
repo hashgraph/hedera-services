@@ -43,6 +43,9 @@ import javax.inject.Inject;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
+/**
+ * Externalizes and handles child record, sidecars and lazy creation logic for create operations
+ */
 public class HederaCreateOperationExternalizer implements CreateOperationExternalizer {
     protected final GlobalDynamicProperties dynamicProperties;
     private final EntityCreator creator;
@@ -62,6 +65,13 @@ public class HederaCreateOperationExternalizer implements CreateOperationExterna
         this.dynamicProperties = dynamicProperties;
     }
 
+    /**
+     * Handle the child record and hollow account completion of a create operation.
+     * Create sidecar with bytecodes of the newly created contract, if sidecards are enabled.
+     *
+     * @param frame         current message frame
+     * @param childFrame    child message frame to be created
+     */
     @Override
     public void externalize(MessageFrame frame, MessageFrame childFrame) {
         // Add an in-progress record so that if everything succeeds, we can externalize the
@@ -99,6 +109,13 @@ public class HederaCreateOperationExternalizer implements CreateOperationExterna
         }
     }
 
+    /**
+     * Fails new contract creation when lazy creation is disabled and the new contract matches the address of an existing hollow account.
+     *
+     * @param frame current message frame
+     * @param contractAddress the target contract address
+     * @return should creation fail
+     */
     @Override
     public boolean shouldFailBasedOnLazyCreation(MessageFrame frame, Address contractAddress) {
         if (!dynamicProperties.isLazyCreationEnabled()) {

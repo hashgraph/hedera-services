@@ -34,6 +34,10 @@ import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.AbstractOperation;
 import org.hyperledger.besu.evm.operation.Operation;
 
+/**
+ * Common logic for Hedera Create or Create2 operation.
+ * <p>Externalizing child records for newly created contract as well as sidecar creation using a {@link CreateOperationExternalizer}
+ */
 public abstract class AbstractEvmRecordingCreateOperation extends AbstractOperation {
     protected static final int MAX_STACK_DEPTH = 1024;
 

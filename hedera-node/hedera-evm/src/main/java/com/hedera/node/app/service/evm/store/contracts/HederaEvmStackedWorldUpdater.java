@@ -19,6 +19,9 @@ package com.hedera.node.app.service.evm.store.contracts;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
+/**
+ * Common interface for Hedera stacked world updaters, to be shared between services and mirror node.
+ */
 public interface HederaEvmStackedWorldUpdater extends WorldUpdater {
     Address priorityAddress(final Address addressOrAlias);
 

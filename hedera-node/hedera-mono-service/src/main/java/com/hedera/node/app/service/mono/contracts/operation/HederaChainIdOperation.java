@@ -26,6 +26,9 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.AbstractOperation;
 import org.hyperledger.besu.evm.operation.Operation;
 
+/**
+ * Chain id is set by a dynamic property.
+ */
 public class HederaChainIdOperation extends AbstractOperation {
 
     final GlobalDynamicProperties globalDynamicProperties;
