@@ -615,18 +615,6 @@ class MerkleHederaStateTest extends MerkleTestBase {
     }
 
     @Nested
-    @DisplayName("Handling Migrate Tests")
-    final class MigrationTest {
-        @Test
-        @DisplayName("The onMigrate handler is called when a migration happens")
-        void onMigrateCalled() {
-            assertThat(onMigrateCalled).isFalse();
-            hederaMerkle.migrate(1);
-            assertThat(onMigrateCalled).isTrue();
-        }
-    }
-
-    @Nested
     @DisplayName("Handling Pre-Handle Tests")
     final class PreHandleTest {
         @Test

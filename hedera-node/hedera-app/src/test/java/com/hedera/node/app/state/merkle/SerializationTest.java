@@ -109,7 +109,7 @@ class SerializationTest extends MerkleTestBase {
         // Register the MerkleHederaState so, when found in serialized bytes, it will register with
         // our migration callback, etc. (normally done by the Hedera main method)
         final Supplier<RuntimeConstructable> constructor = () -> new MerkleHederaState(
-                (tree, state) -> newRegistry.migrate(tree, v1, v1),
+                (tree, state) -> newRegistry.migrate((MerkleHederaState) state, v1, v1),
                 (event, meta, provider) -> {},
                 (state, platform, dualState, trigger, version) -> {});
         final var pair = new ClassConstructorPair(MerkleHederaState.class, constructor);

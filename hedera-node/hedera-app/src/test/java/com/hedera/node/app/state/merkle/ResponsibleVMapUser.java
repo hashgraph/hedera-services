@@ -17,6 +17,7 @@
 package com.hedera.node.app.state.merkle;
 
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
+import com.swirlds.common.system.Platform;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
@@ -27,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterEach;
+import org.mockito.Mockito;
 
 public abstract class ResponsibleVMapUser {
     private static final AtomicInteger numReleased = new AtomicInteger();
@@ -61,21 +63,21 @@ public abstract class ResponsibleVMapUser {
     }
 
     private void release(@NonNull final MerkleHederaState state) throws IOException {
-        //        release(state.storage());
-        //        release(state.contractStorage());
-        //
-        //        final var accounts = state.accounts();
-        //        if (accounts != null && accounts.areOnDisk()) {
-        //            release(accounts.getOnDiskAccounts());
-        //        }
-        //        final var tokenRels = state.tokenAssociations();
-        //        if (tokenRels != null && tokenRels.areOnDisk()) {
-        //            release(tokenRels.getOnDiskRels());
-        //        }
-        //        final var nfts = state.uniqueTokens();
-        //        if (nfts != null && nfts.isVirtual()) {
-        //            release(nfts.getOnDiskNfts());
-        //        }
+        release(state.getStateChildrenProvider(null).storage());
+        release(state.getStateChildrenProvider(null).contractStorage());
+
+        final var accounts = state.getStateChildrenProvider(null).accounts();
+        if (accounts != null && accounts.areOnDisk()) {
+            release(accounts.getOnDiskAccounts());
+        }
+        final var tokenRels = state.getStateChildrenProvider(null).tokenAssociations();
+        if (tokenRels != null && tokenRels.areOnDisk()) {
+            release(tokenRels.getOnDiskRels());
+        }
+        final var nfts = state.getStateChildrenProvider(null).uniqueTokens();
+        if (nfts != null && nfts.isVirtual()) {
+            release(nfts.getOnDiskNfts());
+        }
     }
 
     private void release(@Nullable final VirtualMapLike<?, ?> map) throws IOException {
