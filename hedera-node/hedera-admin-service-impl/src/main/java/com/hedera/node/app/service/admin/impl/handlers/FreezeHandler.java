@@ -66,7 +66,7 @@ public class FreezeHandler implements TransactionHandler {
      */
     @SuppressWarnings("java:S1874") // disable the warnings for use of deprecated code
     // it is necessary to check getStartHour, getStartMin, getEndHour, getEndMin, all of which are deprecated
-    // because if they are present then we set a status of INVALID_FREEZE_TRANSACTION_BODY
+    // because if any are present then we set a status of INVALID_FREEZE_TRANSACTION_BODY
     public void preHandle(
             @NonNull final PreHandleContext context, @NonNull final ReadableSpecialFileStore specialFileStore) {
         requireNonNull(context);
