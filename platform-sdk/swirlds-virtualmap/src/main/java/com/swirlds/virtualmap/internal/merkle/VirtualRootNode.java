@@ -86,6 +86,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -239,6 +240,16 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
     private final AtomicBoolean shouldBeFlushed = new AtomicBoolean(false);
 
     /**
+     * Flush threshold. If greater than zero, then this virtual root will be flushed to disk, if
+     * its estimated size exceeds the threshold. If this virtual root is explicitly requested to flush,
+     * the threshold is not taken into consideration.
+     *
+     * By default, the threshold is set to {@link VirtualMapSettings#getCopyFlushThreshold()}. The
+     * threshold is inherited by all copies.
+     */
+    private final AtomicLong flushThreshold = new AtomicLong();
+
+    /**
      * This latch is used to implement {@link #waitUntilFlushed()}.
      */
     private final CountDownLatch flushLatch = new CountDownLatch(1);
@@ -323,6 +334,7 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
         this.cache = new VirtualNodeCache<>();
         this.hasher = new VirtualHasher<>();
         this.dataSourceBuilder = enforce ? Objects.requireNonNull(dataSourceBuilder) : dataSourceBuilder;
+        this.flushThreshold.set(settings.getCopyFlushThreshold());
     }
 
     /**
@@ -346,6 +358,7 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
         this.learnerTreeView = null;
         this.maxSizeReachedTriggeringWarning = source.maxSizeReachedTriggeringWarning;
         this.pipeline = source.pipeline;
+        this.flushThreshold.set(source.flushThreshold.get());
 
         if (this.pipeline.isTerminated()) {
             throw new IllegalStateException("A fast-copy was made of a VirtualRootNode with a terminated pipeline!");
@@ -374,11 +387,7 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
         }
 
         this.state = Objects.requireNonNull(state);
-        final long flushThreshold = settings.getCopyFlushThreshold();
-        if (flushThreshold <= 0) {
-            // If copy size flush threshold is not set, use flush interval
-            this.shouldBeFlushed.set(fastCopyVersion != 0 && fastCopyVersion % settings.getFlushInterval() == 0);
-        }
+        updateShouldBeFlushed();
         if (this.dataSourceBuilder != null && this.dataSource == null) {
             this.dataSource = this.dataSourceBuilder.build(state.getLabel(), true);
         }
@@ -856,10 +865,38 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
     }
 
     /**
+     * Sets flush threshold for this virtual root. When a copy of this virtual root is created,
+     * it inherits the threshold value.
+     *
+     * If this virtual root is explicitly marked to flush using {@link #enableFlush()}, changing
+     * flush threshold doesn't have any effect.
+     *
+     * @param value The flush threshold, in bytes
+     */
+    public void setFlushThreshold(long value) {
+        flushThreshold.getAndSet(value);
+        updateShouldBeFlushed();
+    }
+
+    /**
+     * Gets flush threshold for this virtual root.
+     *
+     * @return The flush threshold, in bytes
+     */
+    long getFlushThreshold() {
+        return flushThreshold.get();
+    }
+
+    /**
      * {@inheritDoc}
      */
-    public boolean requestedToFlush() {
-        return shouldBeFlushed.get();
+    @Override
+    public boolean shouldBeFlushed() {
+        if (shouldBeFlushed.get()) {
+            return true;
+        }
+        final long threshold = flushThreshold.get();
+        return (threshold > 0) && (estimatedSize() >= threshold);
     }
 
     /**
@@ -868,6 +905,17 @@ public final class VirtualRootNode<K extends VirtualKey<? super K>, V extends Vi
     @Override
     public boolean isFlushed() {
         return flushed.get();
+    }
+
+    /**
+     * If flush threshold isn't set for this virtual root, marks the root to flush based on
+     * {@link VirtualMapSettings#getFlushInterval()} setting.
+     */
+    private void updateShouldBeFlushed() {
+        if (flushThreshold.get() <= 0) {
+            // If copy size flush threshold is not set, use flush interval
+            this.shouldBeFlushed.set(fastCopyVersion != 0 && fastCopyVersion % settings.getFlushInterval() == 0);
+        }
     }
 
     /**

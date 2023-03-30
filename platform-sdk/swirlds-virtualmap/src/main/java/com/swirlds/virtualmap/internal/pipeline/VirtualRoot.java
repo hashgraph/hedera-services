@@ -34,13 +34,13 @@ public interface VirtualRoot extends MerkleNode {
      *
      * @return true if this copy should be flushed.
      */
-    boolean requestedToFlush();
+    boolean shouldBeFlushed();
 
     /**
      * Flush the contents of this data structure to disk. Will be called at most once.
      *
      * This method is called only for the oldest released copy after it becomes immutable and before
-     * it's fully evicted from memory (when released). Copies with {@link #requestedToFlush()}
+     * it's fully evicted from memory (when released). Copies with {@link #shouldBeFlushed()}
      * returning true are guaranteed to be flushed, but other copies may be flushed, too.
      *
      * This method can be expensive and may block for a long time before returning.
@@ -56,7 +56,7 @@ public interface VirtualRoot extends MerkleNode {
 
     /**
      * Block until this copy has been flushed.
-     * May block forever if this copy returns false for {@link #requestedToFlush()}.
+     * May block forever if this copy returns false for {@link #shouldBeFlushed()}.
      *
      * @throws InterruptedException
      * 		if the calling thread is interrupted
@@ -69,7 +69,7 @@ public interface VirtualRoot extends MerkleNode {
 
     /**
      * Merge this copy into the next available newer copy. Will never be called on the mutable copy. Will not be called
-     * if {@link #requestedToFlush()} returns true.
+     * if {@link #shouldBeFlushed()} returns true.
      */
     void merge();
 

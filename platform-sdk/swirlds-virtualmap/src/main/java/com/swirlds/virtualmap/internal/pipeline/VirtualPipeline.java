@@ -67,7 +67,7 @@ import org.apache.logging.log4j.Logger;
  * <ul>
  *  <li>only immutable copies can be <strong>flushed</strong></li>
  *  <li>only the oldest released copy can be <strong>flushed</strong></li>
- *  <li>copies with {@link VirtualRoot#requestedToFlush()} returning true are guaranteed to be flushed;
+ *  <li>copies with {@link VirtualRoot#shouldBeFlushed()} returning true are guaranteed to be flushed;
  * other copies may be flushed, too</li>
  * 	<li>a copy can be either flushed or merged, but not both</li>
  * </ul>
@@ -275,7 +275,7 @@ public class VirtualPipeline {
 
         logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "Register copy {}", copy.getFastCopyVersion());
 
-        if (copy.requestedToFlush()) {
+        if (copy.shouldBeFlushed()) {
             flushBacklog.add(copy);
         }
 
@@ -430,7 +430,7 @@ public class VirtualPipeline {
      * Check if this copy should be flushed.
      */
     private boolean shouldBeFlushed(final VirtualRoot copy) {
-        return (copy.requestedToFlush() || copySizeToFlush(copy)) // copy should be flushed
+        return copy.shouldBeFlushed() // either explicitly marked to flush or based on its size
                 && (copy.isDestroyed() || copy.isDetached()); // destroyed or detached
     }
 
@@ -451,19 +451,6 @@ public class VirtualPipeline {
             totalEstimatedSize += estimatedSize;
         }
         return totalEstimatedSize;
-    }
-
-    /**
-     * Checks if copy estimated size is equal or greater than the flush threshold.
-     *
-     * @param copy
-     *      Virtual root copy to check
-     * @return {@code true if copy esimated size is grater or equal than the flush threshold
-     */
-    private boolean copySizeToFlush(final VirtualRoot copy) {
-        final VirtualMapSettings settings = VirtualMapSettingsFactory.get();
-        final long copyFlushThreshold = settings.getCopyFlushThreshold();
-        return (copyFlushThreshold > 0) && (copy.estimatedSize() >= copyFlushThreshold);
     }
 
     /**
@@ -490,8 +477,7 @@ public class VirtualPipeline {
         final VirtualRoot copy = mergeCandidate.getValue();
         final PipelineListNode<VirtualRoot> mergeTarget = mergeCandidate.getNext();
 
-        return !copy.requestedToFlush() // not explicitly requested to flush
-                && !copySizeToFlush(copy) // don't let merged copies grow too much
+        return !copy.shouldBeFlushed() // shouldn't be flushed
                 && (copy.isDestroyed() || copy.isDetached()) // copy must be destroyed or detached
                 && mergeTarget != null // target must exist
                 && mergeTarget.getValue().isImmutable(); // target must be immutable

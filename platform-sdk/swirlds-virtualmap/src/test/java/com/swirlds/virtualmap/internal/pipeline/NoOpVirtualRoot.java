@@ -59,7 +59,7 @@ public final class NoOpVirtualRoot extends PartialMerkleLeaf implements VirtualR
     }
 
     @Override
-    public boolean requestedToFlush() {
+    public boolean shouldBeFlushed() {
         return false;
     }
 

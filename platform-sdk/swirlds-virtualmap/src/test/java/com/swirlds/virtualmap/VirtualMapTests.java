@@ -1129,7 +1129,7 @@ class VirtualMapTests extends VirtualTestBase {
                 root.enableFlush();
             }
 
-            if (root.requestedToFlush()) {
+            if (root.shouldBeFlushed()) {
                 flushCount++;
             }
         }

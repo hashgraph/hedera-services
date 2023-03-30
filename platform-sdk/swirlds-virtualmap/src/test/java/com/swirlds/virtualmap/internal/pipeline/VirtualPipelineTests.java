@@ -111,7 +111,7 @@ class VirtualPipelineTests {
 
             // Flushing and merging are mutually exclusive, and only those marked
             // "shouldBeFlushed" should ever be flushed
-            if (copy.requestedToFlush()) {
+            if (copy.shouldBeFlushed()) {
                 assertFalse(copy.isMerged(), "copy should be flushed, not merged. Copy #" + copy.getCopyIndex());
             } else {
                 assertFalse(copy.isFlushed(), "copy is not marked for flushing. Copy #" + copy.getCopyIndex());
@@ -132,7 +132,7 @@ class VirtualPipelineTests {
 
             if (oldestUndestroyedFound) {
                 // The oldest undestroyed copy has been found, and it's older than this copy
-                if (copy.requestedToFlush()) {
+                if (copy.shouldBeFlushed()) {
                     assertFalse(copy.isFlushed(), "only the oldest copy can be flushed. Copy #" + copy.getCopyIndex());
                 } else {
                     if ((copy.isDestroyed() || copy.isDetached()) && copy.isImmutable()) {
@@ -149,7 +149,7 @@ class VirtualPipelineTests {
                 // The oldest undestroyed copy has not yet been encountered
                 if (copy.isDestroyed() || copy.isDetached()) {
                     if (copy.isImmutable()) {
-                        if (copy.requestedToFlush()) {
+                        if (copy.shouldBeFlushed()) {
                             interruptOnTimeout(
                                     2_000,
                                     copy::waitUntilFlushed,
@@ -387,9 +387,9 @@ class VirtualPipelineTests {
         root.flushFinishedLatch.countDown();
 
         // None of these should be flushable
-        assertFalse(copy1.requestedToFlush(), "Should not be flushable");
-        assertFalse(copy2.requestedToFlush(), "Should not be flushable");
-        assertFalse(copy3.requestedToFlush(), "Should not be flushable");
+        assertFalse(copy1.shouldBeFlushed(), "Should not be flushable");
+        assertFalse(copy2.shouldBeFlushed(), "Should not be flushable");
+        assertFalse(copy3.shouldBeFlushed(), "Should not be flushable");
 
         // I'll take the latch out of the way, so that IF copy1 were to be processed,
         // we wouldn't block it. But it won't be processed because we haven't destroyed
