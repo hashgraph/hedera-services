@@ -17,6 +17,8 @@
 package com.hedera.node.app.state.merkle;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.admin.FreezeService;
+import com.hedera.node.app.service.admin.impl.FreezeServiceImpl;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.contract.ContractService;
@@ -778,7 +780,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             @Override
             public MerkleSpecialFiles specialFiles() {
                 return ((SingletonNode<MerkleSpecialFiles>)
-                                getChild(findNodeIndex(NetworkService.NAME, NetworkServiceImpl.SPECIAL_FILES_KEY)))
+                                getChild(findNodeIndex(FreezeService.NAME, FreezeServiceImpl.SPECIAL_FILES_KEY)))
                         .getValue();
             }
 
