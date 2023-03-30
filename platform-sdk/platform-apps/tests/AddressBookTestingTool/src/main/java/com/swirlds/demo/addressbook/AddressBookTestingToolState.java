@@ -28,6 +28,7 @@ package com.swirlds.demo.addressbook;
 
 import static com.swirlds.logging.LogMarker.STARTUP;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
@@ -59,7 +60,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     private static final Logger logger = LogManager.getLogger(AddressBookTestingToolState.class);
 
     /** modify this value to change how updateStake behaves. */
-    private static final int STAKING_PROFILE = 1;
+    private int stakingBehavior = 0;
 
     private static class ClassVersion {
         public static final int ORIGINAL = 1;
@@ -76,6 +77,8 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
 
     public AddressBookTestingToolState() {
         logger.info(STARTUP.getMarker(), "New State Constructed.");
+        stakingBehavior = ConfigurationHolder.getConfigData(AddressBookTestingToolConfig.class)
+                .stakingBehavior();
     }
 
     /**
@@ -197,14 +200,14 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     @NonNull
     public AddressBook updateStake(@NonNull final AddressBook addressBook) {
         Objects.requireNonNull(addressBook, "the address book cannot be null");
-        logger.info("updateStake called in State. Staking Profile: {}", STAKING_PROFILE);
-        switch (STAKING_PROFILE) {
+        logger.info("updateStake called in State. Staking Behavior: {}", stakingBehavior);
+        switch (stakingBehavior) {
             case 1:
-                return stakingProfile1(addressBook);
+                return stakingBehavior1(addressBook);
             case 2:
-                return stakingProfile2(addressBook);
+                return stakingBehavior2(addressBook);
             default:
-                logger.info(STARTUP.getMarker(), "Staking Profile {}: no change to address book.", STAKING_PROFILE);
+                logger.info(STARTUP.getMarker(), "Staking Behavior {}: no change to address book.", stakingBehavior);
                 return addressBook;
         }
     }
@@ -216,8 +219,8 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      * @return the updated address book.
      */
     @NonNull
-    private AddressBook stakingProfile1(@NonNull final AddressBook addressBook) {
-        logger.info(STARTUP.getMarker(), "Staking Profile 1: updating all nodes to have 10 stake.");
+    private AddressBook stakingBehavior1(@NonNull final AddressBook addressBook) {
+        logger.info(STARTUP.getMarker(), "Staking Behavior 1: updating all nodes to have 10 stake.");
         for (int i = 0; i < addressBook.getSize(); i++) {
             addressBook.updateStake(i, 10);
         }
@@ -231,8 +234,8 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      * @return the updated address book.
      */
     @NonNull
-    private AddressBook stakingProfile2(@NonNull final AddressBook addressBook) {
-        logger.info(STARTUP.getMarker(), "Staking Profile 2: updating all nodes to have stake equal to their nodeId.");
+    private AddressBook stakingBehavior2(@NonNull final AddressBook addressBook) {
+        logger.info(STARTUP.getMarker(), "Staking Behavior 2: updating all nodes to have stake equal to their nodeId.");
         for (int i = 0; i < addressBook.getSize(); i++) {
             addressBook.updateStake(i, i);
         }

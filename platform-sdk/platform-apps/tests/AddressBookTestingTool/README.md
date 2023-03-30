@@ -16,31 +16,21 @@ uncomment the AddressBookTestingTool.jar
  app,    AddressBookTestingTool.jar,
 ```
 
-### AddressTestingToolMain.java
+### settings.txt
 
-If following these instructions sequentially, ensure the software version is 1.
+Add the following lines to the settings.txt file
 
-```java
-private static BasicSoftwareVersion softwareVersion = new BasicSoftwareVersion(1);
 ```
-
-### AddressTestingToolState.java
-
-If following these instructions sequentially, ensure the staking profile is 1.
-
-```java
-private int stakingProfile = 1;
+addressBookTestingTool.softwareVersion, 1
+addressBookTestingTool.stakingBehavior, 1
 ```
-
-
-
 ## Testing Genesis Behavior
 
 ### Force Use of Config Address Book on Genesis
 #### Instructions
 1. Delete `sdk/data/saved` directory if it exists
 2. Ensure settings.txt has `state.saveStatePeriod,     0`
-3. Add to settings.txt the value `state.forceUseOfConfigAddressBook, true`
+3. Add to settings.txt the value `addressBook.forceUseOfConfigAddressBook, true`
 4. Run the app for a short time.
 
 #### Validation
@@ -48,7 +38,7 @@ private int stakingProfile = 1;
 * check the swirlds.log for the text
 
 ```
-AddressBookInitializer: A setting has forced the use of the configuration address.
+AddressBookInitializer: Overriding the address book in the state with the address book from config.txt
 ```
 
 * check the directory `sdk/data/saved/address_book` for files
@@ -64,7 +54,7 @@ AddressBookInitializer: A setting has forced the use of the configuration addres
 #### Instructions
 1. Delete `sdk/data/saved` directory if it exists
 2. **Ensure settings.txt has `state.saveStatePeriod,     10` (differs from previous section)**
-3. **Ensure settings.txt has the value `state.forceUseOfConfigAddressBook, false` (differs from previous section)**
+3. **Ensure settings.txt has the value `addressBook.forceUseOfConfigAddressBook, false` (differs from previous section)**
 4. **Run the app for 20 seconds.  (differs from previous section)**
 
 #### Validation
@@ -88,7 +78,7 @@ AddressBookInitializer: The loaded signed state is null. The candidateAddressBoo
 ### No Software Upgrade, Use Saved State Address Book
 #### Instructions
 1. Ensure settings.txt has `state.saveStatePeriod,     10`
-2. Ensure settings.txt has the value `state.forceUseOfConfigAddressBook, false`
+2. Ensure settings.txt has the value `addressBook.forceUseOfConfigAddressBook, false`
 3. Run the app for 20 seconds.
 
 #### Validation
@@ -110,7 +100,7 @@ AddressBookInitializer: No Software Upgrade. Continuing with software version 1 
 ### No Software Upgrade, Force Use of Config Address Book
 #### Instructions
 1. Ensure settings.txt has `state.saveStatePeriod,     10`
-2. **Ensure settings.txt has the value `state.forceUseOfConfigAddressBook, true` (differs from previous section)**
+2. **Ensure settings.txt has the value `addressBook.forceUseOfConfigAddressBook, true` (differs from previous section)**
 3. Run the app for 20 seconds.
 
 #### Validation
@@ -118,7 +108,7 @@ AddressBookInitializer: No Software Upgrade. Continuing with software version 1 
 * check the swirlds.log for the text
 
 ```
-AddressBookInitializer: A setting has forced the use of the configuration address.
+AddressBookInitializer: Overriding the address book in the state with the address book from config.txt
 ```
 
 * check the directory `sdk/data/saved/address_book` for the latest files
@@ -132,7 +122,7 @@ AddressBookInitializer: A setting has forced the use of the configuration addres
 ### No Software Upgrade, Use Saved State Address Book, Matches Config
 #### Instructions
 1. Ensure settings.txt has `state.saveStatePeriod,     10`
-2. **Ensure settings.txt has the value `state.forceUseOfConfigAddressBook, false` (differs from previous section)**
+2. **Ensure settings.txt has the value `addressBook.forceUseOfConfigAddressBook, false` (differs from previous section)**
 3. Run the app for 20 seconds.
 
 #### Validation
@@ -153,13 +143,12 @@ AddressBookInitializer: No Software Upgrade. Continuing with software version 1 
 
 ## Testing Non-Genesis Behavior, Software Upgrade
 
-### Software Upgrade, Force Use of Config Address Book
+### Software Upgrade, Staking Behavior 2
 #### Instructions
 1. Ensure settings.txt has `state.saveStatePeriod,     10`
-2. Ensure settings.txt has the value `state.forceUseOfConfigAddressBook, false`
-3. **Increase the softwareVersion in AddressBookTestingToolMain.java to 2. (differs from previous section)**
-4. **Change the stakingProfile in AddressBookTestingToolState.java to 2. (differs from previous section)**
-5. **recompile the application: assemble ONLY!!!!.(differs from previous section)**
+2. Ensure settings.txt has the value `addressBook.forceUseOfConfigAddressBook, false`
+3. **Ensure settings.txt has the value `addressBookTestingTool.softwareVersion, 2` (differs from previous section)**
+4. **Ensure settings.txt has the value `addressBookTestingTool.stakingBehavior, 2` (differs from previous section)**
 6. Run the app for 20 seconds.
 
 #### Validation
@@ -176,4 +165,29 @@ AddressBookInitializer: Software Upgrade from version 1 to 2. The address book s
   * usedAddressBook_v1_<date>.txt.debug
     * The configuration address book is the same as what is in config.txt
     * The state saved address book is the same as what is in config.txt
+    * **the used address book matches the content of the non-debug .txt file. (differs from previous section)**
+
+
+### Software Upgrade, Force Use Of Config Address Book
+#### Instructions
+1. Ensure settings.txt has `state.saveStatePeriod,     10`
+2. **Ensure settings.txt has the value `addressBook.forceUseOfConfigAddressBook, true` (differs from previous section)**
+3. **Ensure settings.txt has the value `addressBookTestingTool.softwareVersion, 3` (differs from previous section)**
+4. **Ensure settings.txt has the value `addressBookTestingTool.stakingBehavior, 1` (differs from previous section)**
+6. Run the app for 20 seconds.
+
+#### Validation
+
+* check the swirlds.log for the text
+
+```
+AddressBookInitializer: Overriding the address book in the state with the address book from config.txt
+```
+
+* check the directory `sdk/data/saved/address_book` for the latest files
+  * usedAddressBook_v1_<date>.txt
+    * **matches the addresses in the config.txt, including stake value. (differs from previous section)**
+  * usedAddressBook_v1_<date>.txt.debug
+    * The configuration address book is the same as what is in config.txt
+    * **The state saved address book is the config.txt addresses with stake values incrementally increasing starting from 0 (differs from previous section)**
     * **the used address book matches the content of the non-debug .txt file. (differs from previous section)**

@@ -819,7 +819,7 @@ public class Address implements SelfSerializable {
         }
 
         Address address = (Address) o;
-        return equalsWithoutStake(address) && stake == address.stake;
+        return equalsWithoutStake(address) && ownHost == address.ownHost && stake == address.stake;
     }
 
     /**
@@ -831,7 +831,6 @@ public class Address implements SelfSerializable {
      */
     public boolean equalsWithoutStake(@NonNull final Address address) {
         return id == address.id
-                && ownHost == address.ownHost
                 && portInternalIpv4 == address.portInternalIpv4
                 && portExternalIpv4 == address.portExternalIpv4
                 && portInternalIpv6 == address.portInternalIpv6
