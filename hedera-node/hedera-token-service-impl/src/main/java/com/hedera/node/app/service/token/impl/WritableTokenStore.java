@@ -58,7 +58,7 @@ public class WritableTokenStore {
      * @param token - the token to be mapped onto a new {@link MerkleToken} and persisted.
      */
     public void put(@NonNull final Token token) {
-        Objects.requireNonNull(tokenState).put(EntityNum.fromLong(token.tokenNum()), Objects.requireNonNull(token));
+        Objects.requireNonNull(tokenState).put(EntityNum.fromLong(token.tokenNumber()), Objects.requireNonNull(token));
     }
 
     /**

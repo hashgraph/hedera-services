@@ -826,13 +826,13 @@ class TransactionDispatcherTest {
                                         .tokenPause(TokenPauseTransactionBody.DEFAULT)
                                         .build(),
                                 (BiConsumer<TransactionHandlers, PreHandleContext>) (handlers, meta) ->
-                                        verify(handlers.tokenPauseHandler()).preHandle(meta)),
+                                        verify(handlers.tokenPauseHandler()).preHandle(eq(meta), any())),
                         Arguments.of(
                                 TransactionBody.newBuilder()
                                         .tokenUnpause(TokenUnpauseTransactionBody.DEFAULT)
                                         .build(),
                                 (BiConsumer<TransactionHandlers, PreHandleContext>) (handlers, meta) ->
-                                        verify(handlers.tokenUnpauseHandler()).preHandle(meta)),
+                                        verify(handlers.tokenUnpauseHandler()).preHandle(eq(meta), any())),
 
                         // util
                         Arguments.of(

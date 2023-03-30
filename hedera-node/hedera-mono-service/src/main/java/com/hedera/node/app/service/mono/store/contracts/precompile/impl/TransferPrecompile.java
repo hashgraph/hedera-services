@@ -456,7 +456,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final var amount = amounts[i];
 
             var accountID = accountIDs.get(i);
-            if (amount > 0 && !exists.test(accountID) && !accountID.getAlias().isEmpty()) {
+            if (amount > 0 && !exists.test(accountID) && !accountID.hasAlias()) {
                 accountID = generateAccountIDWithAliasCalculatedFrom(accountID);
             }
 
@@ -497,8 +497,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
         final List<SyntheticTxnFactory.NftExchange> nftExchanges = new ArrayList<>();
         for (var i = 0; i < senders.size(); i++) {
-            com.hederahashgraph.api.proto.java.AccountID receiver = receivers.get(i);
-            if (!exists.test(receiver) && !receiver.getAlias().isEmpty()) {
+            var receiver = receivers.get(i);
+            if (!exists.test(receiver) && !receiver.hasAlias()) {
                 receiver = generateAccountIDWithAliasCalculatedFrom(receiver);
             }
             final var nftExchange =
