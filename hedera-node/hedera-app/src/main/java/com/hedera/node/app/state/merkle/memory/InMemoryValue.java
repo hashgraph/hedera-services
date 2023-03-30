@@ -142,7 +142,6 @@ public final class InMemoryValue<K extends Comparable<? super K>, V> extends Par
         final var primitiveKey = deserializeViaBytes(keySerdes, serializableDataInputStream);
         this.key = new InMemoryKey<>(primitiveKey);
         this.val = deserializeViaBytes(valueSerdes, serializableDataInputStream);
-        System.out.println("Deserialized in-memory " + this);
     }
 
     /** {@inheritDoc} */
@@ -152,6 +151,5 @@ public final class InMemoryValue<K extends Comparable<? super K>, V> extends Par
         final var valueSerdes = md.stateDefinition().valueCodec();
         serializeViaBytes(key.key(), keySerdes, serializableDataOutputStream);
         serializeViaBytes(val, valueSerdes, serializableDataOutputStream);
-        System.out.println("Serialized (" + key.key() + " -> " + val + ")");
     }
 }
