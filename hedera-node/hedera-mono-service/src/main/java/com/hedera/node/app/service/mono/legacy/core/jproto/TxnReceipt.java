@@ -475,6 +475,11 @@ public class TxnReceipt implements SelfSerializable {
             return this;
         }
 
+        /**
+         * In case of a top level transaction failure, all child records are reverted except those marked as nonRevertable
+         * reference: https://github.com/hashgraph/hedera-services/issues/5873
+         * @return Builder instance
+         */
         public Builder nonRevertable() {
             this.isRevertable = false;
             return this;
