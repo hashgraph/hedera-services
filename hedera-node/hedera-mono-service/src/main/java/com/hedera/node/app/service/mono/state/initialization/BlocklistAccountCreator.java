@@ -56,6 +56,9 @@ import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.util.encoders.DecoderException;
 import org.bouncycastle.util.encoders.Hex;
 
+/**
+ * Encapsulates the logic for reading blocked accounts from file and creating them.
+ */
 @Singleton
 public class BlocklistAccountCreator {
     private static final int ZERO_BALANCE = 0;
@@ -71,6 +74,10 @@ public class BlocklistAccountCreator {
     private final List<HederaAccount> blockedAccountsCreated = new ArrayList<>();
     private AccountNumbers accountNumbers;
 
+    /**
+     * @param evmAddress the EVM address of the blocked account
+     * @param memo      the memo of the blocked account
+     */
     record BlockedInfo(ByteString evmAddress, String memo) {}
 
     @Inject
@@ -92,6 +99,9 @@ public class BlocklistAccountCreator {
         this.accountNumbers = accountNumbers;
     }
 
+    /**
+     * Makes sure that all blocked accounts contained in the blocklist file are present in state, and creates them if necessary.
+     */
     public void ensureBlockedAccounts() {
         final List<BlockedInfo> blocklist;
         try {
@@ -138,6 +148,21 @@ public class BlocklistAccountCreator {
         return reader.lines().toList();
     }
 
+    /**
+     * Parses a line from the blocklist file and returns blocked account info record.
+     *
+     * The line should have the following format:
+     * <private key>,<memo>
+     *     where <private key> is a hex-encoded private key
+     *     and <memo> is a memo for the blocked account
+     *     and both values are comma-separated.
+     *
+     * The resulting blocked account info record contains the EVM address derived from the private key, and the memo.
+     *
+     * @param line line from the blocklist file
+     * @param columnCount number of comma-separated values in a line
+     * @return blocked account info record
+     */
     private BlockedInfo parseCSVLine(String line, int columnCount) {
         final var parts = line.split(",");
         if (parts.length != columnCount) {
@@ -150,6 +175,13 @@ public class BlocklistAccountCreator {
         return new BlockedInfo(ByteString.copyFrom(evmAddressBytes), parts[1]);
     }
 
+    /**
+     * Creates a blocked Hedera account with the given memo and EVM address.
+     * A blocked account has receiverSigRequired flag set to true, key set to the genesis key, and balance set to 0.
+     *
+     * @param blockedInfo record containing EVM address and memo for the blocked account
+     * @return a Hedera account with the given memo and EVM address
+     */
     private HederaAccount blockedAccountWith(BlockedInfo blockedInfo) {
         final var expiry = properties.getLongProperty(BOOTSTRAP_SYSTEM_ENTITY_EXPIRY);
         final var account = new HederaAccountCustomizer()
@@ -182,6 +214,12 @@ public class BlocklistAccountCreator {
         return genesisKey;
     }
 
+    /**
+     * Derives the ECDSA public key bytes from the given ECDSA private key bytes.
+     *
+     * @param privateKeyBytes ECDSA private key bytes
+     * @return ECDSA public key bytes
+     */
     private byte[] ecdsaPrivateToPublicKey(byte[] privateKeyBytes) {
         final var ecdsaSecp256K1Curve = SECNamedCurves.getByName("secp256k1");
         final var ecdsaSecp256K1Domain = new ECDomainParameters(
@@ -195,10 +233,18 @@ public class BlocklistAccountCreator {
         return publicParams.getQ().getEncoded(true);
     }
 
+    /**
+     * Returns a list of {@link HederaAccount}, denoting all the blocked accounts created by a previous call to {@link BlocklistAccountCreator#ensureBlockedAccounts()}.
+     *
+     * @return a list of blocked accounts created during the current run of the node
+     */
     public List<HederaAccount> getBlockedAccountsCreated() {
         return blockedAccountsCreated;
     }
 
+    /**
+     * Clears the list of blocked accounts created by a previous call to {@link BlocklistAccountCreator#ensureBlockedAccounts()}
+     */
     public void forgetCreatedBlockedAccounts() {
         blockedAccountsCreated.clear();
     }
