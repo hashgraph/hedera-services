@@ -17,7 +17,8 @@ swirld, 123
 # app,		FCMStatsTestingTool.jar,		 0,      0,         -1,               250
 # app,		PlatformTestingTool.jar, FCMFCQ-Basic-1k-10m.json
 # app,		MigrationTestingTool.jar, 4685095852903873060, 5000,	4
-# app,      ISSTestingTool.jar, 10000, 60:0-1+2+3, 120:0-1-2+3
+# app,		ISSTestingTool.jar, 10000, 60:0-1+2+3, 120:0-1-2+3
+# app,		AddressBookTestingTool.jar,
 # ** END REMOVE FROM SDK RELEASES **
 
  address,  A, Alice,    1, 127.0.0.1, 15301, 127.0.0.1, 15301
