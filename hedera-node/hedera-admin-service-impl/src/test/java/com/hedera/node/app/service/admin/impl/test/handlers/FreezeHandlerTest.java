@@ -44,7 +44,6 @@ import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Optional;
@@ -56,9 +55,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class FreezeHandlerTest {
-    @Mock
-    private PreHandleContext preHandleContext;
-
     @Mock
     ReadableSpecialFileStore specialFileStore;
 
@@ -89,9 +85,9 @@ class FreezeHandlerTest {
                         .build())
                 .build();
         final var context = new PreHandleContext(keyLookup, txn);
-        PreCheckException e = assertThrows(PreCheckException.class, () -> subject.preHandle(context, specialFileStore));
 
-        assertSame(INVALID_FREEZE_TRANSACTION_BODY, e.responseCode());
+        subject.preHandle(context, specialFileStore);
+        assertEquals(INVALID_FREEZE_TRANSACTION_BODY, context.getStatus());
     }
 
     @Test
@@ -107,10 +103,8 @@ class FreezeHandlerTest {
                     .build();
             final var context = new PreHandleContext(keyLookup, txn);
 
-            PreCheckException e =
-                    assertThrows(PreCheckException.class, () -> subject.preHandle(context, specialFileStore));
-
-            assertSame(INVALID_FREEZE_TRANSACTION_BODY, e.responseCode());
+            subject.preHandle(context, specialFileStore);
+            assertEquals(INVALID_FREEZE_TRANSACTION_BODY, context.getStatus());
         }
     }
 
@@ -132,10 +126,8 @@ class FreezeHandlerTest {
                     .build();
             final var context = new PreHandleContext(keyLookup, txn);
 
-            PreCheckException e =
-                    assertThrows(PreCheckException.class, () -> subject.preHandle(context, specialFileStore));
-
-            assertSame(FREEZE_START_TIME_MUST_BE_FUTURE, e.responseCode());
+            subject.preHandle(context, specialFileStore);
+            assertEquals(FREEZE_START_TIME_MUST_BE_FUTURE, context.getStatus());
         }
     }
 
@@ -156,10 +148,8 @@ class FreezeHandlerTest {
                     .build();
             final var context = new PreHandleContext(keyLookup, txn);
 
-            PreCheckException e =
-                    assertThrows(PreCheckException.class, () -> subject.preHandle(context, specialFileStore));
-
-            assertSame(FREEZE_UPDATE_FILE_DOES_NOT_EXIST, e.responseCode());
+            subject.preHandle(context, specialFileStore);
+            assertEquals(FREEZE_UPDATE_FILE_DOES_NOT_EXIST, context.getStatus());
         }
     }
 
@@ -186,10 +176,8 @@ class FreezeHandlerTest {
                     .build();
             final var context = new PreHandleContext(keyLookup, txn);
 
-            PreCheckException e =
-                    assertThrows(PreCheckException.class, () -> subject.preHandle(context, specialFileStore));
-
-            assertSame(FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH, e.responseCode());
+            subject.preHandle(context, specialFileStore);
+            assertEquals(FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH, context.getStatus());
         }
     }
 
@@ -280,53 +268,49 @@ class FreezeHandlerTest {
 
     @Test
     void rejectIfStartHourSet() {
+        // start hour is not supported
         TransactionBody txn = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
                 .freeze(FreezeTransactionBody.newBuilder().startHour(3).build())
                 .build();
         final var context = new PreHandleContext(keyLookup, txn);
-
-        PreCheckException e = assertThrows(PreCheckException.class, () -> subject.preHandle(context, specialFileStore));
-
-        assertSame(INVALID_FREEZE_TRANSACTION_BODY, e.responseCode());
+        subject.preHandle(context, specialFileStore);
+        assertEquals(INVALID_FREEZE_TRANSACTION_BODY, context.getStatus());
     }
 
     @Test
     void rejectIfStartMinSet() {
+        // start min is not supported
         TransactionBody txn = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
                 .freeze(FreezeTransactionBody.newBuilder().startMin(31).build())
                 .build();
         final var context = new PreHandleContext(keyLookup, txn);
-
-        PreCheckException e = assertThrows(PreCheckException.class, () -> subject.preHandle(context, specialFileStore));
-
-        assertSame(INVALID_FREEZE_TRANSACTION_BODY, e.responseCode());
+        subject.preHandle(context, specialFileStore);
+        assertEquals(INVALID_FREEZE_TRANSACTION_BODY, context.getStatus());
     }
 
     @Test
     void rejectIfEndHourSet() {
+        // end hour is not supported
         TransactionBody txn = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
                 .freeze(FreezeTransactionBody.newBuilder().endHour(3).build())
                 .build();
         final var context = new PreHandleContext(keyLookup, txn);
-
-        PreCheckException e = assertThrows(PreCheckException.class, () -> subject.preHandle(context, specialFileStore));
-
-        assertSame(INVALID_FREEZE_TRANSACTION_BODY, e.responseCode());
+        subject.preHandle(context, specialFileStore);
+        assertEquals(INVALID_FREEZE_TRANSACTION_BODY, context.getStatus());
     }
 
     @Test
     void rejectIfEndMinSet() {
+        // end min is not supported
         TransactionBody txn = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(nonAdminAccount))
                 .freeze(FreezeTransactionBody.newBuilder().endMin(16).build())
                 .build();
         final var context = new PreHandleContext(keyLookup, txn);
-
-        PreCheckException e = assertThrows(PreCheckException.class, () -> subject.preHandle(context, specialFileStore));
-
-        assertSame(INVALID_FREEZE_TRANSACTION_BODY, e.responseCode());
+        subject.preHandle(context, specialFileStore);
+        assertEquals(INVALID_FREEZE_TRANSACTION_BODY, context.getStatus());
     }
 }
