@@ -17,12 +17,14 @@
 package com.swirlds.platform.event.tipset;
 
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLogIfInterrupted;
+import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
 
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.threading.framework.QueueThread;
-import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
+import com.swirlds.common.threading.framework.BlockingQueueInserter;
+import com.swirlds.common.threading.framework.MultiQueueThread;
+import com.swirlds.common.threading.framework.config.MultiQueueThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.Startable;
 import com.swirlds.platform.internal.EventImpl;
@@ -35,20 +37,14 @@ import java.util.List;
  */
 public class TipsetIntakeAnalyzer implements Startable {
 
-    // TODO use MultiQueueThread!
-    private record IntakeTask(EventImpl event, long minimumGenerationNonAncient) {
-
-    }
-
     /**
      * The ID of this node.
      */
     private final long selfId;
 
-    /**
-     * Background work happens on this thread.
-     */
-    private final QueueThread<IntakeTask> thread;
+    private final MultiQueueThread thread;
+    private final BlockingQueueInserter<Long> minimumGenerationNonAncientInserter;
+    private final BlockingQueueInserter<EventImpl> eventInserter;
 
     /**
      * Computes and tracks tipsets for non-ancient events.
@@ -92,11 +88,15 @@ public class TipsetIntakeAnalyzer implements Startable {
                 index -> addressBook.getAddress(addressBook.getId(index)).getStake(),
                 addressBook.getTotalStake());
 
-        thread = new QueueThreadConfiguration<IntakeTask>(threadManager)
+        thread = new MultiQueueThreadConfiguration(threadManager)
                 .setThreadName("event-intake")
                 .setThreadName("tipset-analysis")
-                .setHandler(this::handle)
+                .addHandler(Long.class, this::handleMinimumGenerationNonAncient)
+                .addHandler(EventImpl.class, this::handleEvent)
                 .build();
+
+        minimumGenerationNonAncientInserter = thread.getInserter(Long.class);
+        eventInserter = thread.getInserter(EventImpl.class);
 
         tipsetScore = metrics.getOrCreate(TIPSET_SCORE_CONFIG);
     }
@@ -104,11 +104,20 @@ public class TipsetIntakeAnalyzer implements Startable {
     /**
      * Add an event to be analyzed on the background thread. Must be called on events in topological order.
      *
-     * @param event                       the event that is being added
-     * @param minimumGenerationNonAncient the minimum generation that is not ancient at the current time
+     * @param event the event that is being added
      */
-    public void addEvent(final EventImpl event, final Long minimumGenerationNonAncient) {
-        abortAndLogIfInterrupted(() -> thread.put(new IntakeTask(event, minimumGenerationNonAncient)),
+    public void addEvent(final EventImpl event) {
+        abortAndLogIfInterrupted(() -> eventInserter.put(event),
+                "interrupted while attempting to insert event into tipset intake analyzer");
+    }
+
+    /**
+     * Set the most recent minimum generation non-ancient.
+     *
+     * @param minimumGenerationNonAncient the current minimum generation non-ancient
+     */
+    public void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
+        abortAndLogIfInterrupted(() -> minimumGenerationNonAncientInserter.put(minimumGenerationNonAncient),
                 "interrupted while attempting to insert event into tipset intake analyzer");
     }
 
@@ -123,7 +132,7 @@ public class TipsetIntakeAnalyzer implements Startable {
     /**
      * Get the fingerprint of an event.
      */
-    private EventFingerprint getEventFingerprint(final EventImpl event) {
+    private EventFingerprint getEventFingerprint(@NonNull final EventImpl event) {
         return new EventFingerprint(
                 event.getCreatorId(),
                 event.getGeneration(),
@@ -133,7 +142,7 @@ public class TipsetIntakeAnalyzer implements Startable {
     /**
      * Get the fingerprints of an event's parents.
      */
-    private List<EventFingerprint> getParentFingerprints(final EventImpl event) {
+    private List<EventFingerprint> getParentFingerprints(@NonNull final EventImpl event) {
         final List<EventFingerprint> parentFingerprints = new ArrayList<>(2);
         if (event.getSelfParent() != null) {
             parentFingerprints.add(getEventFingerprint(event.getSelfParent()));
@@ -145,12 +154,11 @@ public class TipsetIntakeAnalyzer implements Startable {
     }
 
     /**
-     * Handle the next intake task.
+     * Handle an event from the queue.
+     *
+     * @param event the event to be handled
      */
-    private void handle(final IntakeTask task) {
-        tipsetBuilder.setMinimumGenerationNonAncient(task.minimumGenerationNonAncient);
-
-        final EventImpl event = task.event;
+    private void handleEvent(@NonNull final EventImpl event) {
 
         final EventFingerprint fingerprint = getEventFingerprint(event);
         final List<EventFingerprint> parentFingerprints = getParentFingerprints(event);
@@ -167,5 +175,14 @@ public class TipsetIntakeAnalyzer implements Startable {
         final double scoreRatio = score / (double) scoreCalculator.getMaximumPossibleScore();
 
         tipsetScore.update(scoreRatio);
+    }
+
+    /**
+     * Handle an updated minimum generation non-ancient from the queue
+     *
+     * @param minimumGenerationNonAncient the new minimum generation non-ancient
+     */
+    private void handleMinimumGenerationNonAncient(@NonNull final Long minimumGenerationNonAncient) {
+        tipsetBuilder.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
     }
 }
