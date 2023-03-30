@@ -50,7 +50,6 @@ import com.swirlds.common.context.internal.DefaultPlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.internal.ApplicationDefinition;
-import com.swirlds.common.internal.ConfigurationException;
 import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.Metrics;
@@ -114,9 +113,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import javax.swing.JFrame;
 import javax.swing.UIManager;
@@ -180,7 +182,15 @@ public class Browser {
         final ConfigSource configPropertiesConfigSource = new ConfigPropertiesSource(configurationProperties);
         final ConfigSource configPropertiesAliasConfigSource = new AliasConfigSource(configPropertiesConfigSource);
 
-        this.configuration = ConfigurationBuilder.create()
+        // Load config.txt file, parse application jar file name, main class name, address book, and parameters
+        final ApplicationDefinition appDefinition =
+                ApplicationDefinitionLoader.load(configurationProperties, localNodesToStart);
+
+        // Load all SwirldMain instances for locally run nodes.
+        final Map<Long, SwirldMain> appMains = loadSwirldMains(appDefinition, localNodesToStart);
+
+        // Load Configuration Definitions
+        final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
                 .withSource(settingsAliasConfigSource)
                 .withSource(configPropertiesAliasConfigSource)
                 .withConfigDataType(BasicConfig.class)
@@ -199,8 +209,17 @@ public class Browser {
                 .withConfigDataType(MetricsConfig.class)
                 .withConfigDataType(PrometheusConfig.class)
                 .withConfigDataType(OSHealthCheckConfig.class)
-                .withConfigDataType(WiringConfig.class)
-                .build();
+                .withConfigDataType(WiringConfig.class);
+
+        // Assume all locally run instances provide the same configuration definitions to the configuration builder.
+        if (appMains.size() > 0) {
+            appMains.get(0L).updateConfigurationBuilder(configurationBuilder);
+        }
+
+        this.configuration = configurationBuilder.build();
+
+        // Set the configuration on all SwirldMain instances.
+        appMains.values().forEach(swirldMain -> swirldMain.setConfiguration(configuration));
 
         ConfigurationHolder.getInstance().setConfiguration(configuration);
         CryptographyHolder.reset();
@@ -263,7 +282,7 @@ public class Browser {
                 }
                 // instantiate all Platform objects, which each instantiates a Statistics object
                 logger.debug(STARTUP.getMarker(), "About to run startPlatforms()");
-                startPlatforms(configuration, configurationProperties, localNodesToStart);
+                startPlatforms(configuration, appDefinition, appMains);
 
                 // create the browser window, which uses those Statistics objects
                 showBrowserWindow();
@@ -312,6 +331,59 @@ public class Browser {
         }
 
         logger.debug(STARTUP.getMarker(), "main() finished");
+    }
+
+    /**
+     * Load all {@link SwirldMain} instances for locally run nodes.  Locally run nodes are indicated in two possible
+     * ways.  One is through the set of local nodes to start.  The other is through {@link Address::isOwnHost} being
+     * true.
+     *
+     * @param appDefinition     the application definition
+     * @param localNodesToStart the locally run nodeIds
+     * @return a map from nodeIds to {@link SwirldMain} instances
+     * @throws AppLoaderException             if there are issues loading the user app
+     * @throws ConstructableRegistryException if there are issues registering
+     *                                        {@link com.swirlds.common.constructable.RuntimeConstructable} classes
+     */
+    @NonNull
+    private Map<Long, SwirldMain> loadSwirldMains(
+            @NonNull final ApplicationDefinition appDefinition, @NonNull final Set<Integer> localNodesToStart) {
+        Objects.requireNonNull(appDefinition, "appDefinition must not be null");
+        Objects.requireNonNull(localNodesToStart, "localNodesToStart must not be null");
+        try {
+            // Create the SwirldAppLoader
+            final SwirldAppLoader appLoader;
+            try {
+                appLoader =
+                        SwirldAppLoader.loadSwirldApp(appDefinition.getMainClassName(), appDefinition.getAppJarPath());
+            } catch (final AppLoaderException e) {
+                CommonUtils.tellUserConsolePopup("ERROR", e.getMessage());
+                throw e;
+            }
+
+            // Register all RuntimeConstructable classes
+            logger.debug(STARTUP.getMarker(), "Scanning the classpath for RuntimeConstructable classes");
+            final long start = System.currentTimeMillis();
+            ConstructableRegistry.getInstance().registerConstructables("", appLoader.getClassLoader());
+            logger.debug(
+                    STARTUP.getMarker(),
+                    "Done with registerConstructables, time taken {}ms",
+                    System.currentTimeMillis() - start);
+
+            // Create the SwirldMain instances
+            final Map<Long, SwirldMain> appMains = new HashMap<>();
+            final AddressBook addressBook = appDefinition.getAddressBook();
+            for (int i = 0; i < addressBook.getSize(); i++) {
+                final long id = addressBook.getId(i);
+                final Address address = addressBook.getAddress(id);
+                if (localNodesToStart.contains((int) id) || address.isOwnHost()) {
+                    appMains.put(id, buildAppMain(appDefinition, appLoader));
+                }
+            }
+            return appMains;
+        } catch (final Exception ex) {
+            throw new RuntimeException("Error loading SwirldMains", ex);
+        }
     }
 
     /**
@@ -504,12 +576,18 @@ public class Browser {
     }
 
     private void createLocalPlatforms(
-            final ApplicationDefinition appDefinition,
-            final Crypto[] crypto,
-            final InfoSwirld infoSwirld,
-            final SwirldAppLoader appLoader,
-            final Configuration configuration,
-            final MetricsProvider metricsProvider) {
+            @NonNull final ApplicationDefinition appDefinition,
+            @NonNull final Crypto[] crypto,
+            @NonNull final InfoSwirld infoSwirld,
+            @NonNull final Map<Long, SwirldMain> appMains,
+            @NonNull final Configuration configuration,
+            @NonNull final MetricsProvider metricsProvider) {
+        Objects.requireNonNull(appDefinition, "the app definition must not be null");
+        Objects.requireNonNull(crypto, "the crypto array must not be null");
+        Objects.requireNonNull(infoSwirld, "the infoSwirld must not be null");
+        Objects.requireNonNull(appMains, "the appMains map must not be null");
+        Objects.requireNonNull(configuration, "the configuration must not be null");
+        Objects.requireNonNull(metricsProvider, "the metricsProvider must not be null");
 
         final AddressBook addressBook = appDefinition.getAddressBook();
 
@@ -529,8 +607,7 @@ public class Browser {
                 final PlatformContext platformContext =
                         new DefaultPlatformContext(nodeId, metricsProvider, configuration);
 
-                final SwirldMain appMain = buildAppMain(appDefinition, appLoader);
-                appMain.setConfiguration(configuration);
+                SwirldMain appMain = appMains.get(address.getId());
 
                 // name of the app's SwirldMain class
                 final String mainClassName = appDefinition.getMainClassName();
@@ -613,13 +690,13 @@ public class Browser {
     /**
      * Load the signed state from the disk if it is present.
      *
-     * @param mainClassName the name of the app's SwirldMain class.
-     * @param swirldName the name of the swirld to load the state for.
-     * @param selfId the ID of the node to load the state for.
-     * @param appVersion the version of the app to use for emergency recovery.
-     * @param configAddressBook the address book to use for emergency recovery.
+     * @param mainClassName            the name of the app's SwirldMain class.
+     * @param swirldName               the name of the swirld to load the state for.
+     * @param selfId                   the ID of the node to load the state for.
+     * @param appVersion               the version of the app to use for emergency recovery.
+     * @param configAddressBook        the address book to use for emergency recovery.
      * @param emergencyRecoveryManager the emergency recovery manager to use for emergency recovery.
-     * @return  the signed state loaded from disk.
+     * @return the signed state loaded from disk.
      */
     private SignedState getUnmodifiedSignedStateFromDisk(
             @NonNull final String mainClassName,
@@ -653,27 +730,15 @@ public class Browser {
      * Instantiate and run all the local platforms specified in the given config.txt file. This method reads in and
      * parses the config.txt file.
      *
-     * @throws UnknownHostException           problems getting an IP address for another user
-     * @throws SocketException                problems getting the IP address for self
-     * @throws AppLoaderException             if there are issues loading the user app
-     * @throws ConstructableRegistryException if there are issues registering
-     *                                        {@link com.swirlds.common.constructable.RuntimeConstructable} classes
+     * @throws UnknownHostException problems getting an IP address for another user
+     * @throws SocketException      problems getting the IP address for self
      */
     private void startPlatforms(
-            final Configuration configuration,
-            final LegacyConfigProperties configurationProperties,
-            final Set<Integer> localNodesToStart)
-            throws AppLoaderException, ConstructableRegistryException {
+            @NonNull final Configuration configuration,
+            @NonNull final ApplicationDefinition appDefinition,
+            @NonNull final Map<Long, SwirldMain> appMains) {
 
-        // Load config.txt file, parse application jar file name, main class name, address book, and parameters
-        final ApplicationDefinition appDefinition;
-        final AddressBook addressBook;
-        try {
-            appDefinition = ApplicationDefinitionLoader.load(configurationProperties, localNodesToStart);
-            addressBook = appDefinition.getAddressBook();
-        } catch (final ConfigurationException ex) {
-            return;
-        }
+        final AddressBook addressBook = appDefinition.getAddressBook();
 
         // If enabled, clean out the signed state directory. Needs to be done before the platform/state is started up,
         // as we don't want to delete the temporary file directory if it ends up being put in the saved state directory.
@@ -721,31 +786,13 @@ public class Browser {
 
         logger.debug(STARTUP.getMarker(), "Starting platforms");
 
-        // Try to load the app
-        final SwirldAppLoader appLoader;
-        try {
-            appLoader = SwirldAppLoader.loadSwirldApp(appDefinition.getMainClassName(), appDefinition.getAppJarPath());
-        } catch (final AppLoaderException e) {
-            CommonUtils.tellUserConsolePopup("ERROR", e.getMessage());
-            throw e;
-        }
-
-        // Register all RuntimeConstructable classes
-        logger.debug(STARTUP.getMarker(), "Scanning the classpath for RuntimeConstructable classes");
-        final long start = System.currentTimeMillis();
-        ConstructableRegistry.getInstance().registerConstructables("", appLoader.getClassLoader());
-        logger.debug(
-                STARTUP.getMarker(),
-                "Done with registerConstructables, time taken {}ms",
-                System.currentTimeMillis() - start);
-
         // Setup metrics system
         final DefaultMetricsProvider metricsProvider = new DefaultMetricsProvider(configuration);
         final Metrics globalMetrics = metricsProvider.createGlobalMetrics();
         CryptoMetrics.registerMetrics(globalMetrics);
 
         // Create all instances for all nodes that should run locally
-        createLocalPlatforms(appDefinition, crypto, infoSwirld, appLoader, configuration, metricsProvider);
+        createLocalPlatforms(appDefinition, crypto, infoSwirld, appMains, configuration, metricsProvider);
 
         // Write all metrics information to file
         MetricsDocUtils.writeMetricsDocumentToFile(globalMetrics, getPlatforms(), configuration);
