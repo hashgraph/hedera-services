@@ -22,6 +22,8 @@ import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.state.EntityCreator.NO_CUSTOM_FEES;
 import static com.hedera.node.app.service.mono.state.initialization.TreasuryClonerTest.accountWith;
 import static com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext.MAX_PENDING_REWARDS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentCaptor.forClass;
@@ -32,10 +34,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.config.MockGlobalDynamicProps;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
+import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
@@ -77,6 +81,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.commons.codec.DecoderException;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -103,6 +109,7 @@ class MigrationRecordsManagerTest {
     private static final String MEMO = "Release 0.24.1 migration record";
     private static final String TREASURY_CLONE_MEMO = "Synthetic zero-balance treasury clone";
     private static final String SYSTEM_ACCOUNT_CREATION_MEMO = "Synthetic system creation";
+    private static final String BLOCKED_ACCOUNT_CREATION_MEMO = "Synthetic blocked account creation";
     private static final long contract1Expiry = 2000000L;
     private static final long contract2Expiry = 4000000L;
     private static final EntityId contract1Id = EntityId.fromIdentityCode(1);
@@ -112,10 +119,30 @@ class MigrationRecordsManagerTest {
     private static final JKey pretendTreasuryKey = new JEd25519Key("a123456789a123456789a123456789a1".getBytes());
     private static final long systemAccount = 3 * now.getEpochSecond();
     private static final JKey systemAccountKey = new JEd25519Key("a123456789a123456789a1234567891011a1".getBytes());
+    private static final JKey genesisKey;
+    public static final String EVM_ADDRESS_1 = "evmAddress1";
+    public static final String EVM_ADDRESS_2 = "evmAddress2";
+    public static final String MEMO_1 = "memo1";
+    public static final String MEMO_2 = "memo2";
+
+    static {
+        try {
+            genesisKey = JKey.mapKey(Key.newBuilder()
+                    .setKeyList(KeyList.newBuilder().addKeys(MiscUtils.asKeyUnchecked(systemAccountKey)))
+                    .build());
+        } catch (DecoderException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private final List<HederaAccount> treasuryClones = new ArrayList<>();
     private final List<HederaAccount> systemAccounts = new ArrayList<>();
+    private final List<HederaAccount> blocklistedAccounts = new ArrayList<>();
     private final MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
     private final AtomicInteger nextTracker = new AtomicInteger();
+
+    private final int blockedAccountNum1 = 1001;
+    private final int blockedAccountNum2 = 1002;
 
     @Mock
     private BootstrapProperties bootstrapProperties;
@@ -293,6 +320,62 @@ class MigrationRecordsManagerTest {
         assertEquals(cloneSynthBody, bodies.get(3).build());
         assertEquals(systemAccountSynthBody, bodies.get(4).build());
         assertEquals(systemAccountSynthBody, bodies.get(5).build());
+    }
+
+    @Test
+    void streamsBlocklistedAccountWhenFeatureFlagIsEnabled() throws DecoderException {
+        final var bodyCaptor = forClass(TransactionBody.Builder.class);
+        given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.BLOCKLIST_ENABLED))
+                .willReturn(true);
+        given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker800, MEMO))
+                .willReturn(pretend800);
+        given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker801, MEMO))
+                .willReturn(pretend801);
+        given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker200, BLOCKED_ACCOUNT_CREATION_MEMO))
+                .willReturn(pretend200);
+        given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker201, BLOCKED_ACCOUNT_CREATION_MEMO))
+                .willReturn(pretend201);
+        given(accountNumbers.stakingRewardAccount()).willReturn(stakingRewardAccount);
+        given(accountNumbers.nodeRewardAccount()).willReturn(nodeRewardAccount);
+        givenBlocklistedAccountsCreated();
+
+        subject.publishMigrationRecords(now);
+
+        verify(sigImpactHistorian).markEntityChanged(blockedAccountNum1);
+        verify(sigImpactHistorian).markEntityChanged(blockedAccountNum2);
+        verify(tracker200)
+                .trackAutoCreation(
+                        AccountID.newBuilder().setAccountNum(blockedAccountNum1).build());
+        verify(tracker201)
+                .trackAutoCreation(
+                        AccountID.newBuilder().setAccountNum(blockedAccountNum2).build());
+        verify(recordsHistorian).trackPrecedingChildRecord(eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend200));
+        verify(recordsHistorian).trackPrecedingChildRecord(eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend201));
+
+        final var bodies = bodyCaptor.getAllValues();
+        assertEquals(
+                expectedSyntheticBlockedAccountCreate(EVM_ADDRESS_1, MEMO_1),
+                bodies.get(0).build());
+        assertEquals(
+                expectedSyntheticBlockedAccountCreate(EVM_ADDRESS_2, MEMO_2),
+                bodies.get(1).build());
+
+        assertThat(
+                logCaptor.infoLogs(),
+                contains(
+                        Matchers.startsWith("Published synthetic CryptoCreate for staking fund account 0.0."
+                                + stakingRewardAccount),
+                        Matchers.startsWith(
+                                "Published synthetic CryptoCreate for staking fund account 0.0." + nodeRewardAccount),
+                        Matchers.startsWith(
+                                "Published synthetic CryptoCreate for blocked account 0.0." + blockedAccountNum1),
+                        Matchers.startsWith(
+                                "Published synthetic CryptoCreate for blocked account 0.0." + blockedAccountNum2)));
+
+        verify(networkCtx).markMigrationRecordsStreamed();
+        verify(systemAccountsCreator).forgetCreations();
+        verify(blocklistAccountCreator).forgetCreatedBlockedAccounts();
     }
 
     @Test
@@ -480,6 +563,19 @@ class MigrationRecordsManagerTest {
         return TransactionBody.newBuilder().setCryptoCreateAccount(txnBody).build();
     }
 
+    private TransactionBody expectedSyntheticBlockedAccountCreate(String evmAddress, String memo) {
+        final var txnBody = CryptoCreateTransactionBody.newBuilder()
+                .setKey(MiscUtils.asKeyUnchecked(genesisKey))
+                .setMemo(memo)
+                .setDeclineReward(true)
+                .setReceiverSigRequired(true)
+                .setInitialBalance(0)
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(pretendExpiry - now.getEpochSecond()))
+                .setAlias(ByteString.copyFromUtf8(evmAddress))
+                .build();
+        return TransactionBody.newBuilder().setCryptoCreateAccount(txnBody).build();
+    }
+
     private void givenSomeTreasuryClones() {
         treasuryClones.addAll(List.of(
                 accountWith(pretendExpiry, pretendTreasuryKey), accountWith(pretendExpiry, pretendTreasuryKey)));
@@ -494,6 +590,29 @@ class MigrationRecordsManagerTest {
         systemAccounts.get(0).setEntityNum(EntityNum.fromLong(100L));
         systemAccounts.get(1).setEntityNum(EntityNum.fromLong(101L));
         given(systemAccountsCreator.getSystemAccountsCreated()).willReturn(systemAccounts);
+    }
+
+    private void givenBlocklistedAccountsCreated() throws DecoderException {
+        blocklistedAccounts.addAll(List.of(
+                blockedAccount(ByteString.copyFromUtf8(EVM_ADDRESS_1), MEMO_1),
+                blockedAccount(ByteString.copyFromUtf8(EVM_ADDRESS_2), MEMO_2)));
+        blocklistedAccounts.get(0).setEntityNum(EntityNum.fromInt(blockedAccountNum1));
+        blocklistedAccounts.get(1).setEntityNum(EntityNum.fromInt(blockedAccountNum2));
+        given(blocklistAccountCreator.getBlockedAccountsCreated()).willReturn(blocklistedAccounts);
+    }
+
+    private HederaAccount blockedAccount(ByteString evmAddress, String memo) throws DecoderException {
+        return new HederaAccountCustomizer()
+                .isReceiverSigRequired(true)
+                .isDeclinedReward(true)
+                .isDeleted(false)
+                .expiry(pretendExpiry)
+                .memo(memo)
+                .isSmartContract(false)
+                .key(genesisKey)
+                .autoRenewPeriod(pretendExpiry)
+                .alias(evmAddress)
+                .customizing(new MerkleAccount());
     }
 
     private void givenFreeRenewalsOnly() {

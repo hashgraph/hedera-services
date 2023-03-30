@@ -35,6 +35,7 @@ import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.initialization.BlocklistAccountCreator;
 import com.hedera.node.app.service.mono.state.migration.MigrationRecordsManager;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
+import com.hedera.node.app.spi.config.PropertyNames;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -134,7 +135,11 @@ class ServicesTxnManagerTest {
                 recordStreaming,
                 recordsHistorian,
                 sigImpactHistorian,
-                migrationRecordsManager);
+                migrationRecordsManager,
+                blocklistAccountCreator);
+
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.BLOCKLIST_ENABLED))
+                .willReturn(true);
 
         // when:
         subject.process(accessor, consensusTime, submittingMember);
@@ -144,6 +149,7 @@ class ServicesTxnManagerTest {
         inOrder.verify(sigImpactHistorian).setChangeTime(consensusTime);
         inOrder.verify(recordsHistorian).clearHistory();
         inOrder.verify(ledger).begin();
+        inOrder.verify(blocklistAccountCreator).ensureBlockedAccounts();
         inOrder.verify(migrationRecordsManager).publishMigrationRecords(consensusTime);
         inOrder.verify(processLogic).run();
         inOrder.verify(ledger).commit();
