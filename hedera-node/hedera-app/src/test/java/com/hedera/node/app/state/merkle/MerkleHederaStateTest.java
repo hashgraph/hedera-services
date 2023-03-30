@@ -314,14 +314,14 @@ class MerkleHederaStateTest extends MerkleTestBase {
 
         @BeforeEach
         void setUp() {
-            setupAnimalMerkleMap();
+            setupAnimalVirtualMap();
             setupSingletonCountry();
 
             add(fruitMerkleMap, fruitMetadata, A_KEY, APPLE);
             add(fruitMerkleMap, fruitMetadata, B_KEY, BANANA);
-            add(animalMerkleMap, animalMetadata, C_KEY, CUTTLEFISH);
-            add(animalMerkleMap, animalMetadata, D_KEY, DOG);
-            add(animalMerkleMap, animalMetadata, F_KEY, FOX);
+            add(animalVirtualMap, animalMetadata, C_KEY, CUTTLEFISH);
+            add(animalVirtualMap, animalMetadata, D_KEY, DOG);
+            add(animalVirtualMap, animalMetadata, F_KEY, FOX);
             countrySingleton.setValue(GHANA);
         }
 
@@ -338,7 +338,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
         void unknownState() {
             // Given a HederaState with the fruit and animal and country states
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata, fruitMerkleMap);
-            hederaMerkle.putServiceStateIfAbsent(animalMetadata, animalMerkleMap);
+            hederaMerkle.putServiceStateIfAbsent(animalMetadata, animalVirtualMap);
             hederaMerkle.putServiceStateIfAbsent(countryMetadata, countrySingleton);
 
             // When we get the ReadableStates
@@ -382,7 +382,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
         void contains() {
             // Given a HederaState with the fruit and animal and country states
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata, fruitMerkleMap);
-            hederaMerkle.putServiceStateIfAbsent(animalMetadata, animalMerkleMap);
+            hederaMerkle.putServiceStateIfAbsent(animalMetadata, animalVirtualMap);
             hederaMerkle.putServiceStateIfAbsent(countryMetadata, countrySingleton);
 
             // When we get the ReadableStates and the state keys
@@ -419,7 +419,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
         void knownServiceNameUsingReadableStates() {
             // Given a HederaState with the fruit and animal and country states
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata, fruitMerkleMap);
-            hederaMerkle.putServiceStateIfAbsent(animalMetadata, animalMerkleMap);
+            hederaMerkle.putServiceStateIfAbsent(animalMetadata, animalVirtualMap);
             hederaMerkle.putServiceStateIfAbsent(countryMetadata, countrySingleton);
 
             // When we get the ReadableStates
@@ -481,14 +481,14 @@ class MerkleHederaStateTest extends MerkleTestBase {
 
         @BeforeEach
         void setUp() {
-            setupAnimalMerkleMap();
+            setupAnimalVirtualMap();
             setupSingletonCountry();
 
             add(fruitMerkleMap, fruitMetadata, A_KEY, APPLE);
             add(fruitMerkleMap, fruitMetadata, B_KEY, BANANA);
-            add(animalMerkleMap, animalMetadata, C_KEY, CUTTLEFISH);
-            add(animalMerkleMap, animalMetadata, D_KEY, DOG);
-            add(animalMerkleMap, animalMetadata, F_KEY, FOX);
+            add(animalVirtualMap, animalMetadata, C_KEY, CUTTLEFISH);
+            add(animalVirtualMap, animalMetadata, D_KEY, DOG);
+            add(animalVirtualMap, animalMetadata, F_KEY, FOX);
             countrySingleton.setValue(FRANCE);
         }
 
@@ -505,7 +505,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
         void unknownState() {
             // Given a HederaState with the fruit and animal and country states
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata, fruitMerkleMap);
-            hederaMerkle.putServiceStateIfAbsent(animalMetadata, animalMerkleMap);
+            hederaMerkle.putServiceStateIfAbsent(animalMetadata, animalVirtualMap);
             hederaMerkle.putServiceStateIfAbsent(countryMetadata, countrySingleton);
 
             // When we get the WritableStates
@@ -549,7 +549,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
         void contains() {
             // Given a HederaState with the fruit and animal and country states
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata, fruitMerkleMap);
-            hederaMerkle.putServiceStateIfAbsent(animalMetadata, animalMerkleMap);
+            hederaMerkle.putServiceStateIfAbsent(animalMetadata, animalVirtualMap);
             hederaMerkle.putServiceStateIfAbsent(countryMetadata, countrySingleton);
 
             // When we get the WritableStates and the state keys
@@ -586,7 +586,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
         void knownServiceNameUsingWritableStates() {
             // Given a HederaState with the fruit and animal and country states
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata, fruitMerkleMap);
-            hederaMerkle.putServiceStateIfAbsent(animalMetadata, animalMerkleMap);
+            hederaMerkle.putServiceStateIfAbsent(animalMetadata, animalVirtualMap);
             hederaMerkle.putServiceStateIfAbsent(countryMetadata, countrySingleton);
 
             // When we get the WritableStates
@@ -675,17 +675,17 @@ class MerkleHederaStateTest extends MerkleTestBase {
         @Test
         @DisplayName("Cannot call putServiceStateIfAbsent on original after copy")
         void addServiceOnOriginalAfterCopyThrows() {
-            setupAnimalMerkleMap();
+            setupAnimalVirtualMap();
             hederaMerkle.copy();
-            assertThatThrownBy(() -> hederaMerkle.putServiceStateIfAbsent(animalMetadata, animalMerkleMap))
+            assertThatThrownBy(() -> hederaMerkle.putServiceStateIfAbsent(animalMetadata, animalVirtualMap))
                     .isInstanceOf(MutabilityException.class);
         }
 
         @Test
         @DisplayName("Cannot call removeServiceState on original after copy")
         void removeServiceOnOriginalAfterCopyThrows() {
-            setupAnimalMerkleMap();
-            hederaMerkle.putServiceStateIfAbsent(animalMetadata, animalMerkleMap);
+            setupAnimalVirtualMap();
+            hederaMerkle.putServiceStateIfAbsent(animalMetadata, animalVirtualMap);
             hederaMerkle.copy();
             assertThatThrownBy(() -> hederaMerkle.removeServiceState(FIRST_SERVICE, ANIMAL_STATE_KEY))
                     .isInstanceOf(MutabilityException.class);

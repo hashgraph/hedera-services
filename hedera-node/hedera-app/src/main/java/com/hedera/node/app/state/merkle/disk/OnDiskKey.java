@@ -17,10 +17,9 @@
 package com.hedera.node.app.state.merkle.disk;
 
 import com.hedera.node.app.state.merkle.StateMetadata;
+import com.hedera.node.app.state.merkle.StateUtils;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
-import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
-import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
@@ -89,8 +88,8 @@ public final class OnDiskKey<K extends Comparable<? super K>> implements Virtual
 
     /** Writes the "real" key to the given stream. {@inheritDoc} */
     @Override
-    public void serialize(@NonNull final SerializableDataOutputStream serializableDataOutputStream) throws IOException {
-        codec.write(key, new WritableStreamingData(serializableDataOutputStream));
+    public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
+        StateUtils.serializeViaBytes(key, codec, out);
     }
 
     @Override
@@ -106,7 +105,7 @@ public final class OnDiskKey<K extends Comparable<? super K>> implements Virtual
     @Override
     public void deserialize(@NonNull final SerializableDataInputStream serializableDataInputStream, int ignored)
             throws IOException {
-        key = codec.parse(new ReadableStreamingData(serializableDataInputStream));
+        key = StateUtils.deserializeViaBytes(codec, serializableDataInputStream);
     }
 
     @Override

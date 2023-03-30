@@ -59,9 +59,8 @@ import java.util.Optional;
 public final class PbjConverter {
     public static @NonNull AccountID toPbj(@NonNull com.hederahashgraph.api.proto.java.AccountID accountID) {
         requireNonNull(accountID);
-        final var builder = AccountID.newBuilder()
-                .shardNum(accountID.getShardNum())
-                .realmNum(accountID.getRealmNum());
+        final var builder =
+                AccountID.newBuilder().shardNum(accountID.getShardNum()).realmNum(accountID.getRealmNum());
         if (accountID.getAccountCase() == AccountCase.ALIAS) {
             builder.alias(Bytes.wrap(accountID.getAlias().toByteArray()));
         } else {

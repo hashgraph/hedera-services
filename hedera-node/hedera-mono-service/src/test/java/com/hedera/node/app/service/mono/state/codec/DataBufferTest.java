@@ -18,8 +18,6 @@ package com.hedera.node.app.service.mono.state.codec;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
 
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import java.nio.ByteBuffer;
@@ -46,7 +44,7 @@ class DataBufferTest {
 
     @Test
     void readFullyDelegates() {
-        final var b = new byte[] { (byte) 0x01, (byte) 0x02, (byte) 0x03, (byte) 0x04, (byte) 0x05};
+        final var b = new byte[] {(byte) 0x01, (byte) 0x02, (byte) 0x03, (byte) 0x04, (byte) 0x05};
         subject = BufferedData.wrap(ByteBuffer.wrap(b));
         final var bRead = new byte[b.length];
         subject.readBytes(bRead);

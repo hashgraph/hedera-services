@@ -17,7 +17,6 @@
 package com.hedera.node.app.state.merkle;
 
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
-import com.swirlds.common.system.Platform;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
@@ -28,7 +27,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterEach;
-import org.mockito.Mockito;
 
 public abstract class ResponsibleVMapUser {
     private static final AtomicInteger numReleased = new AtomicInteger();

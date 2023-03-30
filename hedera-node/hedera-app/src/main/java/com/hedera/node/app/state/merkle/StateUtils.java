@@ -19,8 +19,15 @@ package com.hedera.node.app.state.merkle;
 import static com.swirlds.common.utility.CommonUtils.getNormalisedStringBytes;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.utility.NonCryptographicHashing;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Objects;
 
 /** Utility class for working with states. */
@@ -197,5 +204,46 @@ public final class StateUtils {
      */
     private static boolean isAsciiNumber(char ch) {
         return ch >= '0' && ch <= '9';
+    }
+
+    /**
+     * Given a {@link Codec} and a {@link SerializableDataInputStream}, reads an array length and
+     * then a {@code byte[]} array of that length from the stream; and then returns the result of
+     * parsing that {@code byte[]} into an object with the codec.
+     *
+     * @param codec a {@link Codec} to use to parse the {@code byte[]} array
+     * @param in a {@link SerializableDataInputStream} to read the array length and array from
+     * @return the result of parsing the {@code byte[]} array into an object with the codec
+     * @param <T> the type of object used by the codec
+     * @throws IOException if there is an error reading from the stream
+     */
+    public static <T> T deserializeViaBytes(
+            @NonNull final Codec<T> codec, @NonNull final SerializableDataInputStream in) throws IOException {
+        final var length = in.readInt();
+        final var paddedBytes = new byte[length + 1];
+        in.readNBytes(paddedBytes, 0, length);
+        return codec.parse(BufferedData.wrap(paddedBytes));
+    }
+
+    /**
+     * Given a {@link Codec} and a {@link SerializableDataOutputStream}, writes the given object
+     * to a {@code byte[]} array using the codec; and then writes the length of that array and the
+     * array itself to the stream.
+     *
+     * @param data the object to serialize with the codec
+     * @param codec a {@link Codec} to use to serialize the object
+     * @param out a {@link SerializableDataOutputStream} to write the array length and array to
+     * @param <T> the type of object used by the codec
+     * @throws IOException if there is an error writing to the stream
+     */
+    public static <T> void serializeViaBytes(
+            @NonNull final T data, @NonNull final Codec<T> codec, @NonNull final SerializableDataOutputStream out)
+            throws IOException {
+        final var baos = new ByteArrayOutputStream();
+        codec.write(data, new WritableStreamingData(baos));
+        baos.flush();
+        final var bytes = baos.toByteArray();
+        out.writeInt(bytes.length);
+        out.write(bytes);
     }
 }

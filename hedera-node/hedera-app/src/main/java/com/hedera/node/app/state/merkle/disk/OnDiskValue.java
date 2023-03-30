@@ -16,11 +16,12 @@
 
 package com.hedera.node.app.state.merkle.disk;
 
+import static com.hedera.node.app.state.merkle.StateUtils.deserializeViaBytes;
+import static com.hedera.node.app.state.merkle.StateUtils.serializeViaBytes;
+
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
-import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
-import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
@@ -103,7 +104,7 @@ public class OnDiskValue<V> implements VirtualValue {
     /** {@inheritDoc} */
     @Override
     public void serialize(@NonNull final SerializableDataOutputStream serializableDataOutputStream) throws IOException {
-        codec.write(value, new WritableStreamingData(serializableDataOutputStream));
+        serializeViaBytes(value, codec, serializableDataOutputStream);
     }
 
     /** {@inheritDoc} */
@@ -117,7 +118,7 @@ public class OnDiskValue<V> implements VirtualValue {
     @Override
     public void deserialize(@NonNull final SerializableDataInputStream serializableDataInputStream, int ignored)
             throws IOException {
-        value = codec.parse(new ReadableStreamingData(serializableDataInputStream));
+        value = deserializeViaBytes(codec, serializableDataInputStream);
     }
 
     /** {@inheritDoc} */

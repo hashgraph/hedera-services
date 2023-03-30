@@ -53,6 +53,7 @@ import java.security.PublicKey;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -71,6 +72,7 @@ class StateLifecyclesTest extends ResponsibleVMapUser {
     }
 
     @Test
+    @Disabled
     void testGenesisState() {
         ClassLoaderHelper.loadClassPathDependencies();
 

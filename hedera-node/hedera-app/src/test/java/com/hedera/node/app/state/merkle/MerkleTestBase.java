@@ -115,17 +115,12 @@ public class MerkleTestBase extends StateTestBase {
     // The "ANIMAL" map is part of FIRST_SERVICE
     protected String animalLabel;
     protected StateMetadata<String, String> animalMetadata;
-    protected MerkleMap<InMemoryKey<String>, InMemoryValue<String, String>> animalMerkleMap;
+    protected VirtualMap<OnDiskKey<String>, OnDiskValue<String>> animalVirtualMap;
 
     // The "SPACE" map is part of SECOND_SERVICE and uses the long-based keys
     protected String spaceLabel;
     protected StateMetadata<Long, String> spaceMetadata;
     protected MerkleMap<InMemoryKey<Long>, InMemoryValue<Long, Long>> spaceMerkleMap;
-
-    // The "STEAM" map is part of SECOND_SERVICE
-    protected String steamLabel;
-    protected StateMetadata<String, String> steamMetadata;
-    protected MerkleMap<InMemoryKey<String>, InMemoryValue<String, String>> steamMerkleMap;
 
     // The "COUNTRY" singleton is part of FIRST_SERVICE
     protected String countryLabel;
@@ -152,14 +147,14 @@ public class MerkleTestBase extends StateTestBase {
         fruitVirtualMap = createVirtualMap(fruitVirtualLabel, fruitVirtualMetadata);
     }
 
-    /** Sets up the "Animal" merkle map, label, and metadata. */
-    protected void setupAnimalMerkleMap() {
+    /** Sets up the "Animal" virtual map, label, and metadata. */
+    protected void setupAnimalVirtualMap() {
         animalLabel = StateUtils.computeLabel(FIRST_SERVICE, ANIMAL_STATE_KEY);
-        animalMerkleMap = createMerkleMap(animalLabel);
         animalMetadata = new StateMetadata<>(
                 FIRST_SERVICE,
                 new TestSchema(1),
-                StateDefinition.inMemory(ANIMAL_STATE_KEY, STRING_CODEC, STRING_CODEC));
+                StateDefinition.onDisk(ANIMAL_STATE_KEY, STRING_CODEC, STRING_CODEC, 100));
+        animalVirtualMap = createVirtualMap(animalLabel, animalMetadata);
     }
 
     /** Sets up the "Space" merkle map, label, and metadata. */
@@ -265,7 +260,6 @@ public class MerkleTestBase extends StateTestBase {
             StateMetadata<String, String> md,
             String key,
             String value) {
-        final var def = md.stateDefinition();
         final var k = new InMemoryKey<>(key);
         map.put(k, new InMemoryValue<>(md, k, value));
     }

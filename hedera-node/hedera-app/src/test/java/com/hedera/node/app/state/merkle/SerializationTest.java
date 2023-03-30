@@ -27,6 +27,10 @@ import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.state.merkle.disk.OnDiskKey;
+import com.hedera.node.app.state.merkle.disk.OnDiskKeySerializer;
+import com.hedera.node.app.state.merkle.disk.OnDiskValue;
+import com.hedera.node.app.state.merkle.disk.OnDiskValueSerializer;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.constructable.RuntimeConstructable;
@@ -114,9 +118,11 @@ class SerializationTest extends MerkleTestBase {
                 (state, platform, dualState, trigger, version) -> {});
         final var pair = new ClassConstructorPair(MerkleHederaState.class, constructor);
         registry.registerConstructable(pair);
+        setupAnimalVirtualMap();
+        registerOnDiskByMetadata(animalMetadata);
 
         final MerkleHederaState loadedTree = parseTree(serializedBytes, dir);
-        loadedTree.migrate(1);
+        newRegistry.migrate(loadedTree, null, schemaV1.getVersion());
 
         // Then, we should be able to see all our original states again
         final var states = loadedTree.createReadableStates(FIRST_SERVICE);
@@ -140,5 +146,20 @@ class SerializationTest extends MerkleTestBase {
 
         final ReadableSingletonState<String> countryState = states.getSingleton(COUNTRY_STATE_KEY);
         assertThat(countryState.get()).isEqualTo(CHAD);
+    }
+
+    private <K extends Comparable<? super K>, V> void registerOnDiskByMetadata(@NonNull final StateMetadata<K, V> md)
+            throws ConstructableRegistryException {
+        registerGeneric(OnDiskKey.class, () -> new OnDiskKey<>(md));
+        registerGeneric(OnDiskKeySerializer.class, () -> new OnDiskKeySerializer<>(md));
+        registerGeneric(OnDiskValue.class, () -> new OnDiskValue<>(md));
+        registerGeneric(OnDiskValueSerializer.class, () -> new OnDiskValueSerializer(md));
+    }
+
+    private <T extends RuntimeConstructable> void registerGeneric(
+            @NonNull final Class<T> type, @NonNull final Supplier<T> preferredConstructor)
+            throws ConstructableRegistryException {
+        final var pair = new ClassConstructorPair(type, (Supplier<RuntimeConstructable>) preferredConstructor);
+        registry.registerConstructable(pair);
     }
 }

@@ -16,9 +16,10 @@
 
 package com.hedera.node.app.state.merkle.singleton;
 
+import static com.hedera.node.app.state.merkle.StateUtils.deserializeViaBytes;
+import static com.hedera.node.app.state.merkle.StateUtils.serializeViaBytes;
+
 import com.hedera.node.app.state.merkle.StateMetadata;
-import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
-import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
@@ -103,7 +104,7 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
             throw new IllegalStateException("Metadata is null, meaning this is not a proper object");
         }
         final var valueSerdes = md.stateDefinition().valueCodec();
-        valueSerdes.write(val, new WritableStreamingData(out));
+        serializeViaBytes(val, valueSerdes, out);
     }
 
     /** {@inheritDoc} */
@@ -113,7 +114,7 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
             throw new IllegalStateException("Metadata is null, meaning this is not a proper object");
         }
         final var valueSerdes = md.stateDefinition().valueCodec();
-        this.val = valueSerdes.parse(new ReadableStreamingData(in));
+        this.val = deserializeViaBytes(valueSerdes, in);
     }
 
     /**
