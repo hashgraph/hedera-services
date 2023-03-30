@@ -186,8 +186,8 @@ import java.time.Duration;
  * @param syncAsProtocolEnabled
  *      if true, perform the sync gossip algorithm as a negotiated protocol using bidirectional connections.
  * @param hangingThreadDuration
- * 		the length of time a gossip thread is allowed to wait when it is asked to shutdown.
- * 		If a gossip thread takes longer than this period to shut down, then an error message is written to the log.
+ *      the length of time a gossip thread is allowed to wait when it is asked to shutdown.
+ *      If a gossip thread takes longer than this period to shut down, then an error message is written to the log.
  */
 @ConfigData
 public record BasicConfig(

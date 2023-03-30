@@ -59,7 +59,8 @@ public class VersionCompareHandshake implements ProtocolRunnable {
     @Override
     public void runProtocol(final Connection connection)
             throws NetworkProtocolException, IOException, InterruptedException {
-        logger.info(STARTUP.getMarker(),
+        logger.info(
+                STARTUP.getMarker(),
                 "Writing version from " + connection.getSelfId() + " to " + connection.getOtherId());
         connection.getDos().writeSerializable(version, true);
         connection.getDos().flush();

@@ -1132,9 +1132,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         if (loadedState.signedStateFromDisk != null) {
             logger.debug(STARTUP.getMarker(), () -> new SavedStateLoadedPayload(
-                    loadedState.signedStateFromDisk.getRound(),
-                    loadedState.signedStateFromDisk.getConsensusTimestamp(),
-                    startUpEventFrozenManager.getStartUpEventFrozenEndTime())
+                            loadedState.signedStateFromDisk.getRound(),
+                            loadedState.signedStateFromDisk.getConsensusTimestamp(),
+                            startUpEventFrozenManager.getStartUpEventFrozenEndTime())
                     .toString());
 
             buildEventHandlersFromState(loadedState.initialState, stateHashSignQueueThread);
@@ -1558,15 +1558,16 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         }
     }
 
+    /**
+     * Starts sync as a protocol network, with work managed by a {@link NegotiatorThread}
+     * <p>
+     * Starting sync with this method supports emergency reconnect
+     *
+     * @param connectionManagers the constructed connection managers
+     */
     private void startSyncAsProtocolNetwork(@NonNull final StaticConnectionManagers connectionManagers) {
-        final SyncPermit syncPermit = new SyncPermit(settings.getMaxOutgoingSyncs());
-
         final PeerAgnosticSyncChecks peerAgnosticSyncChecks = new PeerAgnosticSyncChecks(
-                List.of(
-                        () -> !gossipHalted.get(),
-                        () -> intakeQueue.size() <= settings.getEventIntakeQueueSize()
-                )
-        );
+                List.of(() -> !gossipHalted.get(), () -> intakeQueue.size() <= settings.getEventIntakeQueueSize()));
 
         final Duration hangingThreadDuration = platformContext
                 .getConfiguration()
@@ -1638,11 +1639,10 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                                             otherId,
                                             shadowgraphSynchronizer,
                                             fallenBehindManager,
-                                            syncPermit,
+                                            new SyncPermit(settings.getMaxOutgoingSyncs()),
                                             criticalQuorum,
                                             peerAgnosticSyncChecks,
-                                            syncMetrics
-                                    )))))
+                                            syncMetrics)))))
                     .build(true));
         }
     }
@@ -1769,7 +1769,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             if (oldStatus != newStatus) {
                 final PlatformStatus ns = newStatus;
                 logger.info(PLATFORM_STATUS.getMarker(), () -> new PlatformStatusPayload(
-                        "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), ns.name())
+                                "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), ns.name())
                         .toString());
 
                 logger.info(PLATFORM_STATUS.getMarker(), "Platform status changed to: {}", newStatus.toString());
