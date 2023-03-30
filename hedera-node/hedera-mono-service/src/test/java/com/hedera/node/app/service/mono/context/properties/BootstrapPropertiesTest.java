@@ -508,7 +508,7 @@ class BootstrapPropertiesTest {
             entry(WORKFLOWS_ENABLED, Set.of()),
             entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, true),
             entry(BLOCKLIST_ENABLED, true),
-            entry(BLOCKLIST_FILE, "evm-addresses-blocklist.txt"));
+            entry(BLOCKLIST_FILE, "evm-addresses-blocklist.csv"));
 
     @Test
     void containsProperty() {

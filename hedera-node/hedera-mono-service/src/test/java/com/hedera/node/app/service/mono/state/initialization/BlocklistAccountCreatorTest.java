@@ -144,7 +144,7 @@ public class BlocklistAccountCreatorTest {
         // given
         given(accountNumbers.treasury()).willReturn(GENESIS_ACCOUNT_NUM);
         given(genesisKeySource.get()).willReturn(pretendKey);
-        given(properties.getStringProperty(BLOCKLIST_FILE)).willReturn("evm-addresses-blocklist.txt");
+        given(properties.getStringProperty(BLOCKLIST_FILE)).willReturn("evm-addresses-blocklist.csv");
         subject = new BlocklistAccountCreator(
                 MerkleAccount::new, ids, accounts, genesisKeySource, properties, aliasManager, accountNumbers);
         given(aliasManager.lookupIdBy(any())).willReturn(MISSING_NUM);
@@ -170,7 +170,7 @@ public class BlocklistAccountCreatorTest {
         // given
         given(accountNumbers.treasury()).willReturn(GENESIS_ACCOUNT_NUM);
         given(genesisKeySource.get()).willReturn(pretendKey);
-        given(properties.getStringProperty(BLOCKLIST_FILE)).willReturn("test-blocklist.txt");
+        given(properties.getStringProperty(BLOCKLIST_FILE)).willReturn("test-blocklist.csv");
         given(aliasManager.lookupIdBy(any())).willReturn(MISSING_NUM);
         subject = new BlocklistAccountCreator(
                 MerkleAccount::new, ids, accounts, genesisKeySource, properties, aliasManager, accountNumbers);
@@ -199,9 +199,9 @@ public class BlocklistAccountCreatorTest {
     }
 
     @Test
-    void parsingBlocklistFilesThrows() {
+    void parsingNonHexEvmAddressThrows() {
         // given
-        given(properties.getStringProperty(BLOCKLIST_FILE)).willReturn("invalid-hex-blocklist.txt");
+        given(properties.getStringProperty(BLOCKLIST_FILE)).willReturn("invalid-hex-blocklist.csv");
         subject = new BlocklistAccountCreator(
                 MerkleAccount::new, ids, accounts, genesisKeySource, properties, aliasManager, accountNumbers);
 
@@ -212,5 +212,22 @@ public class BlocklistAccountCreatorTest {
         assertThat(
                 logCaptor.errorLogs(),
                 contains(Matchers.startsWith("Failed to parse blocklist, entry not in hex format")));
+    }
+
+    @Test
+    void parsingIncorrectNumberOfColumnsThrows() {
+        // given
+        given(properties.getStringProperty(BLOCKLIST_FILE)).willReturn("invalid-col-count-blocklist.csv");
+        subject = new BlocklistAccountCreator(
+                MerkleAccount::new, ids, accounts, genesisKeySource, properties, aliasManager, accountNumbers);
+
+        // when
+        subject.ensureBlockedAccounts();
+
+        // then
+        assertThat(
+                logCaptor.errorLogs(),
+                contains(Matchers.startsWith(
+                        "Failed to parse blocklist, entry does not have required number of columns")));
     }
 }

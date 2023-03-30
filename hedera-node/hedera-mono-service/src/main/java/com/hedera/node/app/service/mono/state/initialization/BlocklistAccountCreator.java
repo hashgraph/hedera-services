@@ -58,7 +58,6 @@ import org.bouncycastle.util.encoders.Hex;
 
 @Singleton
 public class BlocklistAccountCreator {
-    public static final String BLOCKLIST_ACCOUNT_MEMO = "Account is blocked";
     private static final int ZERO_BALANCE = 0;
     private static final Logger log = LogManager.getLogger(BlocklistAccountCreator.class);
     private final String blocklistFileName;
@@ -71,6 +70,8 @@ public class BlocklistAccountCreator {
     private JKey genesisKey;
     private final List<HederaAccount> blockedAccountsCreated = new ArrayList<>();
     private AccountNumbers accountNumbers;
+
+    record BlockedInfo(ByteString evmAddress, String memo) {}
 
     @Inject
     public BlocklistAccountCreator(
@@ -92,11 +93,17 @@ public class BlocklistAccountCreator {
     }
 
     public void ensureBlockedAccounts() {
-        final List<byte[]> blocklist;
+        final List<BlockedInfo> blocklist;
         try {
-            blocklist = readPrivateKeyBlocklist(blocklistFileName).stream()
-                    .map(Hex::decode)
+            final var fileLines = readPrivateKeyBlocklist(blocklistFileName);
+            final var columnCount = fileLines.get(0).split(",").length;
+            blocklist = fileLines.stream()
+                    .skip(1)
+                    .map(line -> parseCSVLine(line, columnCount))
                     .collect(Collectors.toList());
+        } catch (IllegalArgumentException iae) {
+            log.error("Failed to parse blocklist, entry does not have required number of columns", iae);
+            return;
         } catch (DecoderException de) {
             log.error("Failed to parse blocklist, entry not in hex format", de);
             return;
@@ -105,11 +112,9 @@ public class BlocklistAccountCreator {
             return;
         }
 
-        final var blockedEVMAddresses = blocklist.stream()
-                .map(this::ecdsaPrivateToPublicKey)
-                .map(EthSigsUtils::recoverAddressFromPubKey)
-                .map(ByteString::copyFrom)
-                .filter(evmAddress -> aliasManager.lookupIdBy(evmAddress).equals(MISSING_NUM))
+        final var blockedToCreate = blocklist.stream()
+                .filter(blockedAccount ->
+                        aliasManager.lookupIdBy(blockedAccount.evmAddress).equals(MISSING_NUM))
                 .collect(Collectors.toSet());
 
         final var genesisAccountId = AccountID.newBuilder()
@@ -118,12 +123,12 @@ public class BlocklistAccountCreator {
                 .setAccountNum(accountNumbers.treasury())
                 .build();
 
-        for (final var evmAddress : blockedEVMAddresses) {
+        for (final var blockedInfo : blockedToCreate) {
             final var newId = ids.newAccountId(genesisAccountId);
-            final var account = blockedAccountWith(evmAddress);
+            final var account = blockedAccountWith(blockedInfo);
             accounts.put(newId, account);
             blockedAccountsCreated.add(account);
-            aliasManager.link(evmAddress, EntityNum.fromAccountId(newId));
+            aliasManager.link(blockedInfo.evmAddress, EntityNum.fromAccountId(newId));
         }
     }
 
@@ -133,18 +138,30 @@ public class BlocklistAccountCreator {
         return reader.lines().toList();
     }
 
-    private HederaAccount blockedAccountWith(ByteString evmAddress) {
+    private BlockedInfo parseCSVLine(String line, int columnCount) {
+        final var parts = line.split(",");
+        if (parts.length != columnCount) {
+            throw new IllegalArgumentException("Invalid line in blocklist file: " + line);
+        }
+
+        final var privateKeyBytes = Hex.decode(parts[0]);
+        final var publicKeyBytes = ecdsaPrivateToPublicKey(privateKeyBytes);
+        final var evmAddressBytes = EthSigsUtils.recoverAddressFromPubKey(publicKeyBytes);
+        return new BlockedInfo(ByteString.copyFrom(evmAddressBytes), parts[1]);
+    }
+
+    private HederaAccount blockedAccountWith(BlockedInfo blockedInfo) {
         final var expiry = properties.getLongProperty(BOOTSTRAP_SYSTEM_ENTITY_EXPIRY);
         final var account = new HederaAccountCustomizer()
                 .isReceiverSigRequired(true)
                 .isDeclinedReward(true)
                 .isDeleted(false)
                 .expiry(expiry)
-                .memo(BLOCKLIST_ACCOUNT_MEMO)
+                .memo(blockedInfo.memo)
                 .isSmartContract(false)
                 .key(getGenesisKey())
                 .autoRenewPeriod(expiry)
-                .alias(evmAddress)
+                .alias(blockedInfo.evmAddress)
                 .customizing(accountSupplier.get());
         try {
             account.setBalance(ZERO_BALANCE);
