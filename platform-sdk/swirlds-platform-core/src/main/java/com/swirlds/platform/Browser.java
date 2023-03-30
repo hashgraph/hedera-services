@@ -215,7 +215,7 @@ public class Browser {
 
         // Assume all locally run instances provide the same configuration definitions to the configuration builder.
         if (appMains.size() > 0) {
-            appMains.get(0L).updateConfigurationBuilder(configurationBuilder);
+            appMains.values().iterator().next().updateConfigurationBuilder(configurationBuilder);
         }
 
         this.configuration = configurationBuilder.build();
