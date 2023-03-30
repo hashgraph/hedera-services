@@ -120,10 +120,6 @@ public class BlocklistAccountCreator {
 
         for (final var evmAddress : blockedEVMAddresses) {
             final var newId = ids.newAccountId(genesisAccountId);
-            if (accounts.contains(newId)) {
-                continue;
-            }
-
             final var account = blockedAccountWith(evmAddress);
             accounts.put(newId, account);
             blockedAccountsCreated.add(account);
