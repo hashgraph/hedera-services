@@ -63,6 +63,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.operation.Operation;
+import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -96,7 +97,10 @@ class HederaOperationUtilTest {
     private Supplier<Operation.OperationResult> executionSupplier;
 
     @Mock
-    private Map<String, PrecompiledContract> precompiledContractMap;
+    private PrecompileContractRegistry precompileContractRegistry;
+
+    @Mock
+    private PrecompiledContract precompiledContract;
 
     @Mock
     private WorldLedgers ledgers;
@@ -107,8 +111,7 @@ class HederaOperationUtilTest {
     @Test
     void shortCircuitsForPrecompileSigCheck() {
         final var degenerateResult = new Operation.OperationResult(0, null);
-        given(precompiledContractMap.containsKey(PRETEND_RECIPIENT_ADDR.toShortHexString()))
-                .willReturn(true);
+        given(precompileContractRegistry.get(PRETEND_RECIPIENT_ADDR)).willReturn(precompiledContract);
         given(executionSupplier.get()).willReturn(degenerateResult);
 
         final var result = HederaOperationUtil.addressSignatureCheckExecution(
@@ -118,7 +121,7 @@ class HederaOperationUtilTest {
                 gasSupplier,
                 executionSupplier,
                 (a, b) -> false,
-                precompiledContractMap);
+                precompileContractRegistry);
 
         assertSame(degenerateResult, result);
     }
@@ -137,7 +140,7 @@ class HederaOperationUtilTest {
                 gasSupplier,
                 executionSupplier,
                 (a, b) -> false,
-                precompiledContractMap);
+                precompileContractRegistry);
 
         // then:
         assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, result.getHaltReason());
@@ -171,7 +174,7 @@ class HederaOperationUtilTest {
                 gasSupplier,
                 executionSupplier,
                 (a, b) -> true,
-                precompiledContractMap);
+                precompileContractRegistry);
 
         // then:
         assertEquals(HederaExceptionalHaltReason.INVALID_SIGNATURE, result.getHaltReason());
@@ -207,7 +210,7 @@ class HederaOperationUtilTest {
                 gasSupplier,
                 executionSupplier,
                 (a, b) -> true,
-                precompiledContractMap);
+                precompileContractRegistry);
 
         // then:
         assertEquals(HederaExceptionalHaltReason.INVALID_SIGNATURE, result.getHaltReason());
@@ -242,7 +245,7 @@ class HederaOperationUtilTest {
                 gasSupplier,
                 executionSupplier,
                 (a, b) -> true,
-                precompiledContractMap);
+                precompileContractRegistry);
 
         // then:
         assertNull(result.getHaltReason());

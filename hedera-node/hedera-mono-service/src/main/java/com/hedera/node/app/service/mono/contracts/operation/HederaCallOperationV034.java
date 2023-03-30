@@ -21,7 +21,6 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
-import java.util.Map;
 import java.util.function.BiPredicate;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -29,7 +28,7 @@ import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.CallOperation;
-import org.hyperledger.besu.evm.precompile.PrecompiledContract;
+import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 
 /**
  * Hedera adapted version of the {@link CallOperation} for version EVM v0.34
@@ -46,19 +45,19 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 public class HederaCallOperationV034 extends CallOperation {
     private final EvmSigsVerifier sigsVerifier;
     private final BiPredicate<Address, MessageFrame> addressValidator;
-    private final Map<String, PrecompiledContract> precompiledContractMap;
+    private final PrecompileContractRegistry precompileContractRegistry;
     private final GlobalDynamicProperties globalDynamicProperties;
 
     public HederaCallOperationV034(
             final EvmSigsVerifier sigsVerifier,
             final GasCalculator gasCalculator,
             final BiPredicate<Address, MessageFrame> addressValidator,
-            final Map<String, PrecompiledContract> precompiledContractMap,
+            final PrecompileContractRegistry precompileContractRegistry,
             final GlobalDynamicProperties globalDynamicProperties) {
         super(gasCalculator);
         this.sigsVerifier = sigsVerifier;
         this.addressValidator = addressValidator;
-        this.precompiledContractMap = precompiledContractMap;
+        this.precompileContractRegistry = precompileContractRegistry;
         this.globalDynamicProperties = globalDynamicProperties;
     }
 
@@ -74,7 +73,7 @@ public class HederaCallOperationV034 extends CallOperation {
                     () -> cost(frame),
                     () -> super.execute(frame, evm),
                     addressValidator,
-                    precompiledContractMap);
+                    precompileContractRegistry);
         }
     }
 

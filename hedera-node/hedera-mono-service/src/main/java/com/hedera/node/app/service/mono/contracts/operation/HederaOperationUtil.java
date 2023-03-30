@@ -43,7 +43,6 @@ import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
-import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.BiPredicate;
 import java.util.function.LongSupplier;
@@ -54,7 +53,7 @@ import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.operation.Operation;
-import org.hyperledger.besu.evm.precompile.PrecompiledContract;
+import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 
 /** Utility methods used by Hedera adapted {@link org.hyperledger.besu.evm.operation.Operation} */
 public final class HederaOperationUtil {
@@ -79,7 +78,7 @@ public final class HederaOperationUtil {
      * @param supplierHaltGasCost Supplier for the gas cost
      * @param supplierExecution Supplier with the execution
      * @param addressValidator Address validator predicate
-     * @param precompiledContractMap Map of addresses to contracts
+     * @param precompileContractRegistry Besu registry of all precompiled contracts
      * @return The operation result of the execution
      */
     public static Operation.OperationResult addressSignatureCheckExecution(
@@ -89,9 +88,9 @@ public final class HederaOperationUtil {
             final LongSupplier supplierHaltGasCost,
             final Supplier<Operation.OperationResult> supplierExecution,
             final BiPredicate<Address, MessageFrame> addressValidator,
-            final Map<String, PrecompiledContract> precompiledContractMap) {
+            final PrecompileContractRegistry precompileContractRegistry) {
         // The Precompiled contracts verify their signatures themselves
-        if (precompiledContractMap.containsKey(address.toShortHexString())) {
+        if (precompileContractRegistry.get(address) != null) {
             return supplierExecution.get();
         }
 

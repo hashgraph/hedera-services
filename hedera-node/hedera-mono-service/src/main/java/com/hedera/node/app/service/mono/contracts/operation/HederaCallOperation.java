@@ -19,14 +19,13 @@ package com.hedera.node.app.service.mono.contracts.operation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
-import java.util.Map;
 import java.util.function.BiPredicate;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.CallOperation;
-import org.hyperledger.besu.evm.precompile.PrecompiledContract;
+import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 
 /**
  * Hedera adapted version of the {@link CallOperation}.
@@ -42,17 +41,17 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 public class HederaCallOperation extends CallOperation {
     private final EvmSigsVerifier sigsVerifier;
     private final BiPredicate<Address, MessageFrame> addressValidator;
-    private final Map<String, PrecompiledContract> precompiledContractMap;
+    private final PrecompileContractRegistry precompileContractRegistry;
 
     public HederaCallOperation(
             final EvmSigsVerifier sigsVerifier,
             final GasCalculator gasCalculator,
             final BiPredicate<Address, MessageFrame> addressValidator,
-            final Map<String, PrecompiledContract> precompiledContractMap) {
+            final PrecompileContractRegistry precompileContractRegistry) {
         super(gasCalculator);
         this.sigsVerifier = sigsVerifier;
         this.addressValidator = addressValidator;
-        this.precompiledContractMap = precompiledContractMap;
+        this.precompileContractRegistry = precompileContractRegistry;
     }
 
     @Override
@@ -64,6 +63,6 @@ public class HederaCallOperation extends CallOperation {
                 () -> cost(frame),
                 () -> super.execute(frame, evm),
                 addressValidator,
-                precompiledContractMap);
+                precompileContractRegistry);
     }
 }
