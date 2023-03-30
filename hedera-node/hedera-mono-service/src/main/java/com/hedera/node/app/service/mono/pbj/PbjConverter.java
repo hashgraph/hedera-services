@@ -46,6 +46,7 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
+import com.hederahashgraph.api.proto.java.AccountID.AccountCase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayInputStream;
@@ -58,12 +59,15 @@ import java.util.Optional;
 public final class PbjConverter {
     public static @NonNull AccountID toPbj(@NonNull com.hederahashgraph.api.proto.java.AccountID accountID) {
         requireNonNull(accountID);
-        return AccountID.newBuilder()
+        final var builder = AccountID.newBuilder()
                 .shardNum(accountID.getShardNum())
-                .realmNum(accountID.getRealmNum())
-                .accountNum(accountID.getAccountNum())
-                .alias(Bytes.wrap(accountID.getAlias().toByteArray()))
-                .build();
+                .realmNum(accountID.getRealmNum());
+        if (accountID.getAccountCase() == AccountCase.ALIAS) {
+            builder.alias(Bytes.wrap(accountID.getAlias().toByteArray()));
+        } else {
+            builder.accountNum(accountID.getAccountNum());
+        }
+        return builder.build();
     }
 
     public static @NonNull TokenID toPbj(@NonNull com.hederahashgraph.api.proto.java.TokenID tokenID) {
