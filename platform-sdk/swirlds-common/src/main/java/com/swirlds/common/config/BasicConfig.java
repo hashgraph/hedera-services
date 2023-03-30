@@ -19,6 +19,7 @@ package com.swirlds.common.config;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import java.nio.file.Path;
+import java.time.Duration;
 
 /**
  * Basic configuration data record. This record contains all general config properties that can not be defined for a
@@ -184,6 +185,9 @@ import java.nio.file.Path;
  * 		path to log4j2.xml (which might not exist)
  * @param syncAsProtocolEnabled
  *      if true, perform the sync gossip algorithm as a negotiated protocol using bidirectional connections.
+ * @param hangingThreadDuration
+ * 		the length of time a gossip thread is allowed to wait when it is asked to shutdown.
+ * 		If a gossip thread takes longer than this period to shut down, then an error message is written to the log.
  */
 @ConfigData
 public record BasicConfig(
@@ -254,4 +258,5 @@ public record BasicConfig(
         @ConfigProperty(value = "maxIncomingSyncsInc", defaultValue = "1") int maxIncomingSyncsInc,
         @ConfigProperty(value = "maxOutgoingSyncs", defaultValue = "2") int maxOutgoingSyncs,
         @ConfigProperty(value = "logPath", defaultValue = "log4j2.xml") Path logPath,
-        @ConfigProperty(value = "syncAsProtocolEnabled", defaultValue = "false") boolean syncAsProtocolEnabled) {}
+        @ConfigProperty(value = "syncAsProtocolEnabled", defaultValue = "false") boolean syncAsProtocolEnabled,
+        @ConfigProperty(defaultValue = "60s") Duration hangingThreadDuration) {}

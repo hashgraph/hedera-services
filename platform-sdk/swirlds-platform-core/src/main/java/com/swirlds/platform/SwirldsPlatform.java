@@ -420,7 +420,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private final PlatformContext platformContext;
 
     private final BasicConfig basicConfig;
-    private AtomicBoolean gossipHalted = new AtomicBoolean(false);
+    private final AtomicBoolean gossipHalted = new AtomicBoolean(false);
 
     /**
      * the browser gives the Platform what app to run. There can be multiple Platforms on one computer.
@@ -1396,7 +1396,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     .setComponent(PLATFORM_THREAD_POOL_NAME)
                     .setOtherNodeId(otherId.getId())
                     .setThreadName("ChatterReader")
-                    .setHangingThreadPeriod(chatterConfig.hangingThreadDuration())
+                    .setHangingThreadPeriod(basicConfig.hangingThreadDuration())
                     .setWork(new NegotiatorThread(
                             connectionManagers.getManager(otherId, topology.shouldConnectTo(otherId)),
                             List.of(
@@ -1504,7 +1504,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         final StaticConnectionManagers connectionManagers = startCommonNetwork();
 
         if (basicConfig.syncAsProtocolEnabled()) {
-            startSyncAsProtocolNetwork();
+            startSyncAsProtocolNetwork(connectionManagers);
             return;
         }
 
@@ -1563,10 +1563,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         }
     }
 
-    private void startSyncAsProtocolNetwork() {
-
-        final StaticConnectionManagers connectionManagers = startCommonNetwork();
-
+    private void startSyncAsProtocolNetwork(@NonNull final StaticConnectionManagers connectionManagers) {
         final SyncPermit syncPermit = new SyncPermit(settings.getMaxOutgoingSyncs());
 
         final PeerAgnosticSyncChecks peerAgnosticSyncChecks = new PeerAgnosticSyncChecks(
@@ -1585,8 +1582,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         // TODO if single node network, start dedicated thread to "sync" and create events
 
-        // TODO move this out of chatter config
-        final Duration hangingThreadDuration = platformContext.getConfiguration().getConfigData(ChatterConfig.class)
+        final Duration hangingThreadDuration = platformContext.getConfiguration().getConfigData(BasicConfig.class)
                 .hangingThreadDuration();
 
         // first create all instances because of thread safety
