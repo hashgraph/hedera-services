@@ -56,11 +56,13 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
-public class BlocklistAccountCreatorTest {
+class BlocklistAccountCreatorTest {
     private static final long GENESIS_ACCOUNT_NUM = 2L;
     private static final long FIRST_UNUSED_ID = 10_000L;
     private EntityIdSource ids;
@@ -183,10 +185,17 @@ public class BlocklistAccountCreatorTest {
         assertEquals(0, subject.getBlockedAccountsCreated().size());
     }
 
-    @Test
-    void readingBlocklistFileThrows() {
+    @ParameterizedTest
+    @CsvSource(
+            value = {
+                "non-existing.csv;Failed to read blocklist file non-existing.csv",
+                "invalid-hex-blocklist.csv;Failed to parse blocklist, entry not in hex format",
+                "invalid-col-count-blocklist.csv;Failed to parse blocklist, entry does not have required number of columns",
+            },
+            delimiter = ';')
+    void readingBlocklistFileExceptionShouldBeLogged(String blocklistFileName, String expectedLog) {
         // given
-        given(properties.getStringProperty(BLOCKLIST_FILE)).willReturn("non-existing.txt");
+        given(properties.getStringProperty(BLOCKLIST_FILE)).willReturn(blocklistFileName);
         subject = new BlocklistAccountCreator(
                 MerkleAccount::new, ids, accounts, genesisKeySource, properties, aliasManager, accountNumbers);
 
@@ -194,40 +203,6 @@ public class BlocklistAccountCreatorTest {
         subject.ensureBlockedAccounts();
 
         // then
-        assertThat(
-                logCaptor.errorLogs(), contains(Matchers.startsWith("Failed to read blocklist file non-existing.txt")));
-    }
-
-    @Test
-    void parsingNonHexEvmAddressThrows() {
-        // given
-        given(properties.getStringProperty(BLOCKLIST_FILE)).willReturn("invalid-hex-blocklist.csv");
-        subject = new BlocklistAccountCreator(
-                MerkleAccount::new, ids, accounts, genesisKeySource, properties, aliasManager, accountNumbers);
-
-        // when
-        subject.ensureBlockedAccounts();
-
-        // then
-        assertThat(
-                logCaptor.errorLogs(),
-                contains(Matchers.startsWith("Failed to parse blocklist, entry not in hex format")));
-    }
-
-    @Test
-    void parsingIncorrectNumberOfColumnsThrows() {
-        // given
-        given(properties.getStringProperty(BLOCKLIST_FILE)).willReturn("invalid-col-count-blocklist.csv");
-        subject = new BlocklistAccountCreator(
-                MerkleAccount::new, ids, accounts, genesisKeySource, properties, aliasManager, accountNumbers);
-
-        // when
-        subject.ensureBlockedAccounts();
-
-        // then
-        assertThat(
-                logCaptor.errorLogs(),
-                contains(Matchers.startsWith(
-                        "Failed to parse blocklist, entry does not have required number of columns")));
+        assertThat(logCaptor.errorLogs(), contains(Matchers.startsWith(expectedLog)));
     }
 }

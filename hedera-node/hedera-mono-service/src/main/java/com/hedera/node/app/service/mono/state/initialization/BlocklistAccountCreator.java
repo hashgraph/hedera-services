@@ -100,7 +100,7 @@ public class BlocklistAccountCreator {
             blocklist = fileLines.stream()
                     .skip(1)
                     .map(line -> parseCSVLine(line, columnCount))
-                    .collect(Collectors.toList());
+                    .toList();
         } catch (IllegalArgumentException iae) {
             log.error("Failed to parse blocklist, entry does not have required number of columns", iae);
             return;
