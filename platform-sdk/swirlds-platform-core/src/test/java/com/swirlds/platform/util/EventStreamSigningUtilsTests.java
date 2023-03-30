@@ -25,6 +25,7 @@ import static com.swirlds.platform.util.EventStreamSigningUtils.signEventStreamF
 import static com.swirlds.platform.util.FileSigningUtils.SIGNATURE_FILE_NAME_SUFFIX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.stream.EventStreamType;
 import com.swirlds.platform.internal.EventImpl;
@@ -142,7 +143,10 @@ class EventStreamSigningUtilsTests {
             throw new RuntimeException(e);
         }
 
-        signEventStreamFile(destinationDirectory, fileToSign, keyPair);
+        assertTrue(
+                signEventStreamFile(
+                        FileSigningUtils.buildSignatureFilePath(destinationDirectory, fileToSign), fileToSign, keyPair),
+                "Signing failed");
 
         final List<Path> destinationDirectoryFiles = getDestinationDirectoryFiles();
 
