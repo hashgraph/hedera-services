@@ -5,6 +5,10 @@ module com.hedera.node.app.service.admin.impl.test {
     requires org.junit.jupiter.api;
     requires org.mockito;
     requires org.mockito.junit.jupiter;
+    requires com.hedera.node.app.service.mono;
+    requires com.swirlds.common;
+    requires com.swirlds.fcqueue;
+    requires com.google.protobuf;
 
     opens com.hedera.node.app.service.admin.impl.test to
             org.junit.platform.commons,

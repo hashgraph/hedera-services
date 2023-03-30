@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.network.impl.test.serdes;
+package com.hedera.node.app.service.admin.impl.test.serdes;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.node.app.service.admin.impl.codec.MonoSpecialFilesAdapterCodec;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
 import com.hedera.node.app.service.mono.state.merkle.internals.BytesElement;
-import com.hedera.node.app.service.network.impl.serdes.MonoSpecialFilesAdapterCodec;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
@@ -39,7 +39,7 @@ import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-class MonoSpecialFilesAdapterSerdesTest {
+class MonoSpecialFilesAdapterCodecTest {
     private static final FileID SOME_FILE_ID = FileID.newBuilder().fileNum(666).build();
     private static final MerkleSpecialFiles SOME_SPECIAL_FILES = new MerkleSpecialFiles();
 

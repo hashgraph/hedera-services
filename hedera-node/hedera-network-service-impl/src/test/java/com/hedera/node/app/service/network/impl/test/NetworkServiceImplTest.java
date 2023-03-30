@@ -66,7 +66,6 @@ class NetworkServiceImplTest {
                 statesToCreate.stream().map(StateDefinition::stateKey).sorted().iterator();
         assertEquals(NetworkServiceImpl.CONTEXT_KEY, iter.next());
         assertEquals(NetworkServiceImpl.RUNNING_HASHES_KEY, iter.next());
-        assertEquals(NetworkServiceImpl.SPECIAL_FILES_KEY, iter.next());
         assertEquals(NetworkServiceImpl.STAKING_KEY, iter.next());
     }
 }
