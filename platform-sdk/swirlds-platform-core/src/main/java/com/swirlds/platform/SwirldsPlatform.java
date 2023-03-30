@@ -86,7 +86,6 @@ import com.swirlds.platform.chatter.ChatterNotifier;
 import com.swirlds.platform.chatter.ChatterSyncProtocol;
 import com.swirlds.platform.chatter.PrepareChatterEvent;
 import com.swirlds.platform.chatter.communication.ChatterProtocol;
-import com.swirlds.platform.chatter.config.ChatterConfig;
 import com.swirlds.platform.chatter.protocol.ChatterCore;
 import com.swirlds.platform.chatter.protocol.messages.ChatterEventDescriptor;
 import com.swirlds.platform.chatter.protocol.peer.PeerInstance;
@@ -188,7 +187,6 @@ import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.StateSettings;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateReference;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.stats.StatConstructor;
 import com.swirlds.platform.sync.ShadowGraph;
@@ -1387,9 +1385,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                         intakeCycle.waitForCurrentSequenceEnd();
                     });
 
-            final ChatterConfig chatterConfig =
-                    platformContext.getConfiguration().getConfigData(ChatterConfig.class);
-
             chatterThreads.add(new StoppableThreadConfiguration<>(threadManager)
                     .setPriority(Thread.NORM_PRIORITY)
                     .setNodeId(selfId.getId())
@@ -1573,17 +1568,32 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 )
         );
 
+        final Duration hangingThreadDuration = platformContext
+                .getConfiguration()
+                .getConfigData(BasicConfig.class)
+                .hangingThreadDuration();
+
+        // if this is a single node network, start dedicated thread to "sync" and create events
+        if (initialAddressBook.getSize() == 1) {
+            syncProtocolThreads.add(new StoppableThreadConfiguration<>(threadManager)
+                    .setPriority(Thread.NORM_PRIORITY)
+                    .setNodeId(selfId.getId())
+                    .setComponent(PLATFORM_THREAD_POOL_NAME)
+                    .setOtherNodeId(selfId.getId())
+                    .setThreadName("SyncProtocolReader")
+                    .setHangingThreadPeriod(hangingThreadDuration)
+                    .setWork(new SingleNodeNetworkSync(this, selfId.getId()))
+                    .build(true));
+
+            return;
+        }
+
         // If we still need an emergency recovery state, we need it via emergency reconnect.
         // Start the helper now so that it is ready to receive a connection to perform reconnect with when the
         // protocol is initiated.
         if (emergencyRecoveryManager.isEmergencyStateRequired()) {
             reconnectController.get().start();
         }
-
-        // TODO if single node network, start dedicated thread to "sync" and create events
-
-        final Duration hangingThreadDuration = platformContext.getConfiguration().getConfigData(BasicConfig.class)
-                .hangingThreadDuration();
 
         // first create all instances because of thread safety
         for (final NodeId otherId : topology.getNeighbors()) {

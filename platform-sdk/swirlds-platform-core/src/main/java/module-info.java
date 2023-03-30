@@ -126,6 +126,7 @@ module com.swirlds.platform {
     requires com.swirlds.test.framework;
     requires com.swirlds.logging;
     requires com.swirlds.cli;
+    requires com.swirlds.base;
 
     /* JDK Libraries */
     requires java.desktop;
