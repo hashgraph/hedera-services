@@ -15,7 +15,7 @@
 ##
 
 
-name: "Node: FSTS Daily (Interval: 5)"
+name: "Node: FSTS Daily (Interval: 6)"
 on:
   workflow_dispatch:
     inputs:
@@ -40,17 +40,25 @@ concurrency:
   group: ${{ github.event.inputs.concurrency-group || format('{0}-{1}-flow-jrs-daily-interval-groups', github.ref_name, github.sha) }}
 
 # Panel Definition & Timings:
-#    "configs/services/suites/daily/GCP-Daily-Services-HTS-Restart-Performance-7N-7C.json"          ----         160m
-#    "configs/services/suites/daily/GCP-Daily-Services-Comp-Reconnect-6N-1C.json"                   ----         150m
-#    "configs/services/suites/daily/GCP-Daily-Services-Comp-NI-Reconnect-Correctness-6N-1C.json"    ----         150m
+# "configs/services/suites/daily/GCP-Daily-Services-MinStake-4N.json"                           ----         50m
+# "configs/services/suites/daily/GCP-Daily-Services-SimilarStake-4N.json"                       ----         50m
+# "configs/services/suites/daily/GCP-Daily-Services-UnevenStake-4N.json"                        ----         50m
+# "configs/services/suites/daily/GCP-Daily-Services-ZeroStake-4N.json"                          ----         50m
+# "configs/services/suites/daily/GCP-Daily-Services-RestartWithNewNodes-MinStake-5N.json"       ----         30m
+# "configs/services/suites/daily/GCP-Daily-Services-RestartWithNewNodes-SimilarStake-5N.json"   ----         30m
+# "configs/services/suites/daily/GCP-Daily-Services-RestartWithNewNodes-UnevenStake-5N.json"    ----         30m
+# "configs/services/suites/daily/GCP-Daily-Services-RestartWithNewNodes-ZeroStake-5N.json"      ----         30m
 #
-#   TOTAL RUN TIME:             460 minutes, 7.8 hours
+#   TOTAL RUN TIME:             321 minutes, 5.3 hours
 #
-
+#   Two parallel jobs:
+#
+#     minstake-4n -> similarstake-4n -> unevenstake-4n -> zerostake-4n
+#     restartwithnewnodes-minstake-5n ->
 
 jobs:
-  hts-restart-performance-7n-7c:
-    name: HTS-Restart-Performance-7N-7C
+  minstake-4n:
+    name: MinStake-4N
     uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       ref: ${{ github.event.inputs.ref }}
@@ -59,7 +67,7 @@ jobs:
       slack-results-channel: hedera-regression
       slack-summary-channel: hedera-regression-summary
       use-branch-for-slack-channel: false
-      panel-config: "configs/services/suites/daily/GCP-Daily-Services-HTS-Restart-Performance-7N-7C.json"
+      panel-config: "configs/services/suites/daily/GCP-Daily-Services-MinStake-4N.json"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
       jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
@@ -70,8 +78,8 @@ jobs:
     if: ${{ !cancelled() && always() }}
 
 
-  comp-reconnect-6n-1c:
-    name: Comp-Reconnect-6N-1C
+  similarstake-4n:
+    name: SimilarStake-4N
     uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       ref: ${{ github.event.inputs.ref }}
@@ -80,7 +88,7 @@ jobs:
       slack-results-channel: hedera-regression
       slack-summary-channel: hedera-regression-summary
       use-branch-for-slack-channel: false
-      panel-config: "configs/services/suites/daily/GCP-Daily-Services-Comp-Reconnect-6N-1C.json"
+      panel-config: "configs/services/suites/daily/GCP-Daily-Services-SimilarStake-4N.json"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
       jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
@@ -88,11 +96,13 @@ jobs:
       gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
       gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+    needs:
+      - minstake-4n
     if: ${{ !cancelled() && always() }}
 
 
-  comp-ni-reconnect-correctness-6n-1c:
-    name: Comp-NI-Reconnect-Correctness-6N-1C
+  unevenstake-4n:
+    name: UnevenStake-4N
     uses: ./.github/workflows/zxc-jrs-regression.yaml
     with:
       ref: ${{ github.event.inputs.ref }}
@@ -101,7 +111,7 @@ jobs:
       slack-results-channel: hedera-regression
       slack-summary-channel: hedera-regression-summary
       use-branch-for-slack-channel: false
-      panel-config: "configs/services/suites/daily/GCP-Daily-Services-Comp-NI-Reconnect-Correctness-6N-1C.json"
+      panel-config: "configs/services/suites/daily/GCP-Daily-Services-UnevenStake-4N.json"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
       jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
@@ -109,4 +119,119 @@ jobs:
       gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
       gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+    needs:
+      - similarstake-4n
     if: ${{ !cancelled() && always() }}
+
+
+  zerostake-4n:
+    name: ZeroStake-4N
+    uses: ./.github/workflows/zxc-jrs-regression.yaml
+    with:
+      ref: ${{ github.event.inputs.ref }}
+      branch-name: ${{ github.event.inputs.branch-name }}
+      hedera-tests-enabled: true
+      slack-results-channel: hedera-regression
+      slack-summary-channel: hedera-regression-summary
+      use-branch-for-slack-channel: false
+      panel-config: "configs/services/suites/daily/GCP-Daily-Services-ZeroStake-4N.json"
+    secrets:
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+    needs:
+      - unevenstake-4n
+    if: ${{ !cancelled() && always() }}
+
+
+restartwithnewnodes-minstake-5n:
+  name: RestartWithNewNodes-MinStake-5N
+  uses: ./.github/workflows/zxc-jrs-regression.yaml
+  with:
+    ref: ${{ github.event.inputs.ref }}
+    branch-name: ${{ github.event.inputs.branch-name }}
+    hedera-tests-enabled: true
+    slack-results-channel: hedera-regression
+    slack-summary-channel: hedera-regression-summary
+    use-branch-for-slack-channel: false
+    panel-config: "configs/services/suites/daily/GCP-Daily-Services-RestartWithNewNodes-MinStake-5N.json"
+  secrets:
+    access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+    jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+    jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+    gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+    gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+    slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+  if: ${{ !cancelled() && always() }}
+
+
+restartwithnewnodes-similarstake-5n:
+  name: RestartWithNewNodes-SimilarStake-5N
+  uses: ./.github/workflows/zxc-jrs-regression.yaml
+  with:
+    ref: ${{ github.event.inputs.ref }}
+    branch-name: ${{ github.event.inputs.branch-name }}
+    hedera-tests-enabled: true
+    slack-results-channel: hedera-regression
+    slack-summary-channel: hedera-regression-summary
+    use-branch-for-slack-channel: false
+    panel-config: "configs/services/suites/daily/GCP-Daily-Services-RestartWithNewNodes-SimilarStake-5N.json"
+  secrets:
+    access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+    jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+    jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+    gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+    gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+    slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+  needs:
+    - restartwithnewnodes-minstake-5n
+  if: ${{ !cancelled() && always() }}
+
+
+restartwithnewnodes-unevenstake-5n:
+  name: RestartWithNewNodes-UnevenStake-5N
+  uses: ./.github/workflows/zxc-jrs-regression.yaml
+  with:
+    ref: ${{ github.event.inputs.ref }}
+    branch-name: ${{ github.event.inputs.branch-name }}
+    hedera-tests-enabled: true
+    slack-results-channel: hedera-regression
+    slack-summary-channel: hedera-regression-summary
+    use-branch-for-slack-channel: false
+    panel-config: "configs/services/suites/daily/GCP-Daily-Services-RestartWithNewNodes-UnevenStake-5N.json"
+  secrets:
+    access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+    jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+    jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+    gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+    gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+    slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+  needs:
+    - restartwithnewnodes-similarstake-5n
+  if: ${{ !cancelled() && always() }}
+
+
+restartwithnewnodes-zerostake-5n:
+  name: RestartWithNewNodes-ZeroStake-5N
+  uses: ./.github/workflows/zxc-jrs-regression.yaml
+  with:
+    ref: ${{ github.event.inputs.ref }}
+    branch-name: ${{ github.event.inputs.branch-name }}
+    hedera-tests-enabled: true
+    slack-results-channel: hedera-regression
+    slack-summary-channel: hedera-regression-summary
+    use-branch-for-slack-channel: false
+    panel-config: "configs/services/suites/daily/GCP-Daily-Services-RestartWithNewNodes-ZeroStake-5N.json"
+  secrets:
+    access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+    jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+    jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+    gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+    gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+    slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
+  needs:
+    - restartwithnewnodes-unevenstake-5n
+  if: ${{ !cancelled() && always() }}
