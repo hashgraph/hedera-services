@@ -36,6 +36,7 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Instant;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -67,11 +68,23 @@ public final class SignedStateFileWriter {
         final Path hashInfoFile = directory.resolve(HASH_INFO_FILE_NAME);
 
         try (final BufferedWriter writer = new BufferedWriter(new FileWriter(hashInfoFile.toFile()))) {
-            writer.write(platformInfo);
-            writer.newLine();
             writer.write(hashInfo);
-            writer.flush();
         }
+    }
+
+    /**
+     * Write the signed state metadata file
+     *
+     * @param selfId        the id of the platform
+     * @param directory     the directory to write to
+     * @param signedState   the signed state being written
+     */
+    public static void writeMetadataFile(final long selfId, final Path directory, final SignedState signedState)
+            throws IOException {
+
+        final Path metadataFile = directory.resolve(SavedStateMetadata.FILE_NAME);
+
+        SavedStateMetadata.create(signedState, selfId, Instant.now()).write(metadataFile);
     }
 
     /**
@@ -105,14 +118,16 @@ public final class SignedStateFileWriter {
     /**
      * Write all files that belong in the signed state directory into a directory.
      *
-     * @param directory   the directory where all files should be placed
-     * @param signedState the signed state being written to disk
+     * @param selfId        the id of the platform
+     * @param directory     the directory where all files should be placed
+     * @param signedState   the signed state being written to disk
      */
-    public static void writeSignedStateFilesToDirectory(final Path directory, final SignedState signedState)
-            throws IOException {
+    public static void writeSignedStateFilesToDirectory(
+            final long selfId, final Path directory, final SignedState signedState) throws IOException {
 
         writeStateFile(directory, signedState);
         writeHashInfoFile(directory, signedState.getState());
+        writeMetadataFile(selfId, directory, signedState);
         writeEmergencyRecoveryFile(directory, signedState);
         Settings.getInstance().writeSettingsUsed(directory);
     }
@@ -121,12 +136,16 @@ public final class SignedStateFileWriter {
      * Writes a SignedState to a file. Also writes auxiliary files such as "settingsUsed.txt". This is the top level
      * method called by the platform when it is ready to write a state.
      *
+     * @param selfId              the id of the platform
      * @param savedStateDirectory the directory where the state will be stored
      * @param signedState         the object to be written
      * @param taskDescription     a description of the task
      */
     public static void writeSignedStateToDisk(
-            final Path savedStateDirectory, final SignedState signedState, final String taskDescription)
+            final long selfId,
+            final Path savedStateDirectory,
+            final SignedState signedState,
+            final String taskDescription)
             throws IOException {
 
         try {
@@ -137,7 +156,7 @@ public final class SignedStateFileWriter {
                     taskDescription);
 
             executeAndRename(
-                    savedStateDirectory, directory -> writeSignedStateFilesToDirectory(directory, signedState));
+                    savedStateDirectory, directory -> writeSignedStateFilesToDirectory(selfId, directory, signedState));
 
             logger.info(
                     STATE_TO_DISK.getMarker(),

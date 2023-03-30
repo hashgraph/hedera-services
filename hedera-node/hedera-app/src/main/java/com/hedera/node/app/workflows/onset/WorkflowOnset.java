@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.onset;
 
+import static com.hedera.node.app.hapi.utils.CommonUtils.functionOf;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static java.util.Objects.requireNonNull;
@@ -24,8 +25,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
 import com.hedera.node.app.SessionContext;
-import com.hedera.node.app.service.mono.exceptions.UnknownHederaFunctionality;
-import com.hedera.node.app.service.mono.utils.MiscUtils;
+import com.hedera.node.app.hapi.utils.exception.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -156,7 +156,7 @@ public class WorkflowOnset {
         // 4. Get HederaFunctionality
         var functionality = HederaFunctionality.UNRECOGNIZED;
         try {
-            functionality = MiscUtils.functionOf(txBody);
+            functionality = functionOf(txBody);
         } catch (UnknownHederaFunctionality e) {
             if (errorCode == ResponseCodeEnum.OK) {
                 errorCode = INVALID_TRANSACTION_BODY;

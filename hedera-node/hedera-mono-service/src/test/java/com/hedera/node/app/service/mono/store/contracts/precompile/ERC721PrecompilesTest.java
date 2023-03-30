@@ -361,8 +361,8 @@ class ERC721PrecompilesTest {
         entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(token)).thenReturn(tokenAddress);
         entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(sender)).thenReturn(senderAddress);
         entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(receiver)).thenReturn(recipientAddress);
-        entityIdUtils.when(() -> EntityIdUtils.asEvmAddress(0, 0, 3)).thenReturn(RIPEMD160.toArray());
-        entityIdUtils.when(() -> EntityIdUtils.asEvmAddress(0, 0, 2)).thenReturn(RIPEMD160.toArray());
+        entityIdUtils.when(() -> EntityIdUtils.asEvmAddress(3)).thenReturn(RIPEMD160.toArray());
+        entityIdUtils.when(() -> EntityIdUtils.asEvmAddress(2)).thenReturn(RIPEMD160.toArray());
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         isApprovedForAllPrecompile = Mockito.mockStatic(IsApprovedForAllPrecompile.class);

@@ -24,10 +24,10 @@ public enum SyncFallenBehindStatus {
     OTHER_FALLEN_BEHIND;
 
     public static SyncFallenBehindStatus getStatus(final GraphGenerations self, final GraphGenerations other) {
-        if (other.getMaxRoundGeneration() < self.getMinRoundGeneration()) {
+        if (other.getMaxRoundGeneration() < self.getMinGenerationNonAncient()) {
             return OTHER_FALLEN_BEHIND;
         }
-        if (self.getMaxRoundGeneration() < other.getMinRoundGeneration()) {
+        if (self.getMaxRoundGeneration() < other.getMinGenerationNonAncient()) {
             return SELF_FALLEN_BEHIND;
         }
         return NONE_FALLEN_BEHIND;

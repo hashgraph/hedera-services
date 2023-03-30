@@ -78,6 +78,7 @@ import java.util.OptionalInt;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
@@ -461,10 +462,16 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
             }
 
             final var numActualRecords = actualRecords.size();
-            assertEquals(
-                    expectedChildRecords.size(),
-                    numActualRecords - numStakingRecords,
-                    "Wrong # of (non-staking) child records");
+            if (expectedChildRecords.size() != (numActualRecords - numStakingRecords)) {
+                final var printableActualRecords = actualRecords.stream()
+                        .filter(r -> !isEndOfStakingPeriodRecord(r))
+                        .map(TransactionRecord::toString)
+                        .collect(Collectors.joining(", "));
+                assertEquals(
+                        expectedChildRecords.size(),
+                        numActualRecords - numStakingRecords,
+                        "Wrong # of (non-staking) child records, got: " + printableActualRecords);
+            }
             for (int i = numStakingRecords; i < numActualRecords; i++) {
                 final var expectedChildRecord = expectedChildRecords.get(i - numStakingRecords);
                 final var actualChildRecord = actualRecords.get(i);

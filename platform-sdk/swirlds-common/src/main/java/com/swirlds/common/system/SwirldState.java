@@ -18,9 +18,12 @@ package com.swirlds.common.system;
 
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * A Swirld app is defined by creating two classes, one implementing {@link SwirldMain}, and the other
@@ -57,11 +60,11 @@ public interface SwirldState extends MerkleNode {
 
     /**
      * Provides the application an opportunity to perform operations on transactions in an event prior to handling.
-     * Called against a given {@link Event} only once, globally (not once per state instance) This method may modify
-     * the {@link Transaction}s in the event by doing nothing, adding additional signatures, removing existing
-     * signatures, replacing signatures with versions that expand the public key from an application specific
-     * identifier to an actual public key, or attaching metadata. Additional signatures extracted from the transaction
-     * payload can also be added to the list of signatures to be verified.
+     * Called against a given {@link Event} only once, globally (not once per state instance) This method may modify the
+     * {@link Transaction}s in the event by doing nothing, adding additional signatures, removing existing signatures,
+     * replacing signatures with versions that expand the public key from an application specific identifier to an
+     * actual public key, or attaching metadata. Additional signatures extracted from the transaction payload can also
+     * be added to the list of signatures to be verified.
      * <p>
      * If signature verification is desired, it is recommended that process be started in this method on a background
      * thread using one of the methods below to give it time to complete before the transaction is handled
@@ -73,8 +76,7 @@ public interface SwirldState extends MerkleNode {
      * <p>
      * <strong>This method is always invoked on an immutable state.</strong>
      *
-     * @param event
-     * 		the event to perform pre-handling on
+     * @param event the event to perform pre-handling on
      * @see #handleConsensusRound(Round, SwirldDualState)
      */
     default void preHandle(final Event event) {}
@@ -101,6 +103,24 @@ public interface SwirldState extends MerkleNode {
      * </pre>
      */
     void handleConsensusRound(final Round round, final SwirldDualState swirldDualState);
+
+    /**
+     * Implementations of the SwirldState should always override this method in production.  The AddressBook returned
+     * should have the same Adddress entries as the configuration AddressBook, but with the stake values updated. The
+     * AddressBook previously saved in the state, if it exists, is provided for reference.
+     * <p>
+     * The default implementation of this method is provided for use in testing and to prevent compilation failure of
+     * implementing classes that have not yet implemented this method.
+     *
+     * @param configAddressBook the address book as loaded from config.txt. This address book may contain new nodes not
+     *                          present in the stateAddressBook. Must not be null.
+     * @return a copy of the configuration address book with updated stake.
+     */
+    @NonNull
+    default AddressBook updateStake(@NonNull final AddressBook configAddressBook) {
+        Objects.requireNonNull(configAddressBook, "configAddressBook must not be null");
+        return configAddressBook;
+    }
 
     /**
      * {@inheritDoc}
