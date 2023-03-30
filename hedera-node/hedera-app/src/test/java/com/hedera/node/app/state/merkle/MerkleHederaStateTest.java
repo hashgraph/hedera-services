@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.state.merkle;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -61,9 +61,9 @@ class MerkleHederaStateTest extends MerkleTestBase {
     void setUp() {
         setupFruitMerkleMap();
         hederaMerkle = new MerkleHederaState(
-                (tree, state) -> onMigrateCalled.set(true),
-                (evt, meta, state) -> onPreHandleCalled.set(true),
-                (state, platform, dual, trigger, version) -> onHandleCalled.set(true));
+                (tree, state) -> onPreHandleCalled.set(true),
+                (evt, meta, state) -> onHandleCalled.set(true),
+                (state, platform, dual, trigger, version) -> onMigrateCalled.set(true));
     }
 
     /** Looks for a merkle node with the given label */
@@ -275,7 +275,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
                 final var md = new StateMetadata<>(
                         serviceName,
                         new TestSchema(1),
-                        StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_CODEC, STRING_CODEC));
+                        StateDefinition.<String, String>inMemory(FRUIT_STATE_KEY, STRING_CODEC, STRING_CODEC));
 
                 final var node = createMerkleMap(label);
                 map.put(serviceName, node);
@@ -647,13 +647,12 @@ class MerkleHederaStateTest extends MerkleTestBase {
             final var round = Mockito.mock(Round.class);
             final var dualState = Mockito.mock(SwirldDualState.class);
             final var state = new MerkleHederaState(
-                    (tree, st) -> onMigrateCalled.set(true),
-                    (evt, meta, provider) -> onPreHandleCalled.set(true),
-                    (s, p, d, t, v) -> {
-                        //                        assertThat(round).isSameAs(r);    ???
-                        assertThat(dualState).isSameAs(d);
+                    (tree, st) -> onPreHandleCalled.set(true),
+                    (evt, meta, provider) -> {
+                        assertThat(round).isSameAs(evt);
                         onHandleCalled.set(true);
-                    });
+                    },
+                    (s, p, d, t, v) -> {});
 
             state.handleConsensusRound(round, dualState);
             assertThat(onHandleCalled).isTrue();
