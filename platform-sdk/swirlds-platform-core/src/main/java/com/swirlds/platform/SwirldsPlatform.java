@@ -1566,6 +1566,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * @param connectionManagers the constructed connection managers
      */
     private void startSyncAsProtocolNetwork(@NonNull final StaticConnectionManagers connectionManagers) {
+        final SyncPermit syncPermit = new SyncPermit(settings.getMaxOutgoingSyncs());
+
         final PeerAgnosticSyncChecks peerAgnosticSyncChecks = new PeerAgnosticSyncChecks(
                 List.of(() -> !gossipHalted.get(), () -> intakeQueue.size() <= settings.getEventIntakeQueueSize()));
 
@@ -1639,7 +1641,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                                             otherId,
                                             shadowgraphSynchronizer,
                                             fallenBehindManager,
-                                            new SyncPermit(settings.getMaxOutgoingSyncs()),
+                                            syncPermit,
                                             criticalQuorum,
                                             peerAgnosticSyncChecks,
                                             syncMetrics)))))
