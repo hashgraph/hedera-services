@@ -149,7 +149,7 @@ class ServicesTxnManagerTest {
         inOrder.verify(sigImpactHistorian).setChangeTime(consensusTime);
         inOrder.verify(recordsHistorian).clearHistory();
         inOrder.verify(ledger).begin();
-        inOrder.verify(blocklistAccountCreator).ensureBlockedAccounts();
+        inOrder.verify(blocklistAccountCreator).createMissingAccounts();
         inOrder.verify(migrationRecordsManager).publishMigrationRecords(consensusTime);
         inOrder.verify(processLogic).run();
         inOrder.verify(ledger).commit();

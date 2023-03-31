@@ -152,7 +152,7 @@ class BlocklistAccountCreatorTest {
         given(aliasManager.lookupIdBy(any())).willReturn(MISSING_NUM);
 
         // when
-        subject.ensureBlockedAccounts();
+        subject.createMissingAccounts();
 
         // then
         final var expectedBlockedAccountsCount = 299;
@@ -176,7 +176,7 @@ class BlocklistAccountCreatorTest {
         given(aliasManager.lookupIdBy(any())).willReturn(MISSING_NUM);
         subject = new BlocklistAccountCreator(
                 MerkleAccount::new, ids, accounts, genesisKeySource, properties, aliasManager, accountNumbers);
-        subject.ensureBlockedAccounts();
+        subject.createMissingAccounts();
 
         // when
         subject.forgetCreatedBlockedAccounts();
@@ -200,7 +200,7 @@ class BlocklistAccountCreatorTest {
                 MerkleAccount::new, ids, accounts, genesisKeySource, properties, aliasManager, accountNumbers);
 
         // when
-        subject.ensureBlockedAccounts();
+        subject.createMissingAccounts();
 
         // then
         assertThat(logCaptor.errorLogs(), contains(Matchers.startsWith(expectedLog)));

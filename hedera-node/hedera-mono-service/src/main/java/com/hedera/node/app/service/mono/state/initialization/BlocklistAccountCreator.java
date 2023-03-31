@@ -71,7 +71,7 @@ public class BlocklistAccountCreator {
     private final PropertySource properties;
     private final AliasManager aliasManager;
     private JKey genesisKey;
-    private final List<HederaAccount> blockedAccountsCreated = new ArrayList<>();
+    private final List<HederaAccount> accountsCreated = new ArrayList<>();
     private AccountNumbers accountNumbers;
 
     /**
@@ -102,7 +102,7 @@ public class BlocklistAccountCreator {
     /**
      * Makes sure that all blocked accounts contained in the blocklist file are present in state, and creates them if necessary.
      */
-    public void ensureBlockedAccounts() {
+    public void createMissingAccounts() {
         final List<BlockedInfo> blocklist;
         try {
             final var fileLines = readPrivateKeyBlocklist(blocklistFileName);
@@ -137,7 +137,7 @@ public class BlocklistAccountCreator {
             final var newId = ids.newAccountId(genesisAccountId);
             final var account = blockedAccountWith(blockedInfo);
             accounts.put(newId, account);
-            blockedAccountsCreated.add(account);
+            accountsCreated.add(account);
             aliasManager.link(blockedInfo.evmAddress, EntityNum.fromAccountId(newId));
         }
     }
@@ -234,18 +234,18 @@ public class BlocklistAccountCreator {
     }
 
     /**
-     * Returns a list of {@link HederaAccount}, denoting all the blocked accounts created by a previous call to {@link BlocklistAccountCreator#ensureBlockedAccounts()}.
+     * Returns a list of {@link HederaAccount}, denoting all the blocked accounts created by a previous call to {@link BlocklistAccountCreator#createMissingAccounts()}.
      *
      * @return a list of blocked accounts created during the current run of the node
      */
     public List<HederaAccount> getBlockedAccountsCreated() {
-        return blockedAccountsCreated;
+        return accountsCreated;
     }
 
     /**
-     * Clears the list of blocked accounts created by a previous call to {@link BlocklistAccountCreator#ensureBlockedAccounts()}
+     * Clears the list of blocked accounts created by a previous call to {@link BlocklistAccountCreator#createMissingAccounts()}
      */
     public void forgetCreatedBlockedAccounts() {
-        blockedAccountsCreated.clear();
+        accountsCreated.clear();
     }
 }

@@ -104,7 +104,7 @@ public class ServicesTxnManager {
 
             if (needToPublishMigrationRecords) {
                 if (bootstrapProperties.getBooleanProperty(PropertyNames.ACCOUNTS_BLOCKLIST_ENABLED)) {
-                    blocklistAccountCreator.ensureBlockedAccounts();
+                    blocklistAccountCreator.createMissingAccounts();
                 }
 
                 // The manager will only publish migration records if the MerkleNetworkContext (in
