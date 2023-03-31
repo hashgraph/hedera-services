@@ -16,6 +16,7 @@
 
 package com.hedera.node.app;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.spi.fixtures.TestBase;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
 import com.swirlds.common.metrics.Counter;
@@ -35,10 +36,11 @@ public class AppTestBase extends TestBase implements TransactionFactory {
     /** Used as a dependency to the {@link Metrics} system. */
     private static final ScheduledExecutorService METRIC_EXECUTOR = Executors.newSingleThreadScheduledExecutor();
 
-    /**
-     * Represents "this node" in our tests.
-     */
+    /** Represents "this node" in our tests. */
     private final NodeId nodeSelfId = new NodeId(false, 7);
+    /** The AccountID of "this node" in our tests. */
+    protected final AccountID nodeSelfAccountId =
+            AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(8).build();
 
     /**
      * The gRPC system has extensive metrics. This object allows us to inspect them and make sure

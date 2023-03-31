@@ -40,7 +40,7 @@ import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.workflows.onset.WorkflowOnset;
+import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,7 +53,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class QueryCheckerTest {
 
     @Mock
-    private WorkflowOnset onset;
+    private TransactionChecker transactionChecker;
 
     @Mock
     private HederaAccountNumbers accountNumbers;
@@ -75,7 +75,8 @@ class QueryCheckerTest {
     void setup() {
         ctx = new SessionContext();
 
-        checker = new QueryChecker(onset, accountNumbers, queryFeeCheck, authorizer, cryptoTransferHandler);
+        checker =
+                new QueryChecker(transactionChecker, accountNumbers, queryFeeCheck, authorizer, cryptoTransferHandler);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -84,13 +85,16 @@ class QueryCheckerTest {
         assertThatThrownBy(
                         () -> new QueryChecker(null, accountNumbers, queryFeeCheck, authorizer, cryptoTransferHandler))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryChecker(onset, null, queryFeeCheck, authorizer, cryptoTransferHandler))
+        assertThatThrownBy(() ->
+                        new QueryChecker(transactionChecker, null, queryFeeCheck, authorizer, cryptoTransferHandler))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryChecker(onset, accountNumbers, null, authorizer, cryptoTransferHandler))
+        assertThatThrownBy(() ->
+                        new QueryChecker(transactionChecker, accountNumbers, null, authorizer, cryptoTransferHandler))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryChecker(onset, accountNumbers, queryFeeCheck, null, cryptoTransferHandler))
+        assertThatThrownBy(() -> new QueryChecker(
+                        transactionChecker, accountNumbers, queryFeeCheck, null, cryptoTransferHandler))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryChecker(onset, accountNumbers, queryFeeCheck, authorizer, null))
+        assertThatThrownBy(() -> new QueryChecker(transactionChecker, accountNumbers, queryFeeCheck, authorizer, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -126,8 +130,9 @@ class QueryCheckerTest {
     void testValidateCryptoTransferWithFailingParser() throws PreCheckException {
         // given
         final var transaction = Transaction.newBuilder().build();
-        when(onset.check(ctx, transaction)).thenThrow(new PreCheckException(INVALID_TRANSACTION));
-        final var checker = new QueryChecker(onset, accountNumbers, queryFeeCheck, authorizer, cryptoTransferHandler);
+        when(transactionChecker.check(ctx, transaction)).thenThrow(new PreCheckException(INVALID_TRANSACTION));
+        final var checker =
+                new QueryChecker(transactionChecker, accountNumbers, queryFeeCheck, authorizer, cryptoTransferHandler);
 
         // then
         assertThatThrownBy(() -> checker.validateCryptoTransfer(ctx, transaction))

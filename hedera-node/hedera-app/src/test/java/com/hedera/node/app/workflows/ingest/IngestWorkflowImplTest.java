@@ -56,8 +56,8 @@ import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
-import com.hedera.node.app.workflows.onset.OnsetResult;
-import com.hedera.node.app.workflows.onset.WorkflowOnset;
+import com.hedera.node.app.workflows.TransactionChecker;
+import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.Counter;
@@ -87,7 +87,7 @@ class IngestWorkflowImplTest extends AppTestBase {
     private IngestWorkflowImpl workflow;
 
     /**
-     * The request. For testing purposes, the bytes in this buffer are not important. The {@link WorkflowOnset} is
+     * The request. For testing purposes, the bytes in this buffer are not important. The {@link TransactionChecker} is
      * stubbed to always return a valid parsed object.
      */
     private Bytes requestBuffer;
@@ -124,7 +124,7 @@ class IngestWorkflowImplTest extends AppTestBase {
     Supplier<AutoCloseableWrapper<HederaState>> stateAccessor;
 
     @Mock(strictness = LENIENT)
-    WorkflowOnset onset;
+    TransactionChecker transactionChecker;
 
     @Mock(strictness = LENIENT)
     IngestChecker checker;
@@ -167,20 +167,19 @@ class IngestWorkflowImplTest extends AppTestBase {
         when(metrics.getOrCreate(any())).thenReturn(countSubmitted);
 
         // Mock out the onset to always return a valid parsed object
-        final var onsetResult = new OnsetResult(
+        final var onsetResult = new TransactionInfo(
                 Transaction.newBuilder().body(transactionBody).build(),
                 transactionBody,
-                OK,
                 SignatureMap.newBuilder().build(),
                 HederaFunctionality.CONSENSUS_CREATE_TOPIC);
-        when(onset.parseAndCheck(ctx, requestBuffer)).thenReturn(onsetResult);
+        when(transactionChecker.parseAndCheck(ctx, requestBuffer)).thenReturn(onsetResult);
 
         // Create the workflow we are going to test with
         workflow = new IngestWorkflowImpl(
                 nodeInfo,
                 currentPlatformStatus,
                 stateAccessor,
-                onset,
+                transactionChecker,
                 checker,
                 throttleAccumulator,
                 submissionManager,
@@ -194,20 +193,27 @@ class IngestWorkflowImplTest extends AppTestBase {
                         null,
                         currentPlatformStatus,
                         stateAccessor,
-                        onset,
+                        transactionChecker,
                         checker,
                         throttleAccumulator,
                         submissionManager,
                         metrics))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new IngestWorkflowImpl(
-                        nodeInfo, null, stateAccessor, onset, checker, throttleAccumulator, submissionManager, metrics))
+                        nodeInfo,
+                        null,
+                        stateAccessor,
+                        transactionChecker,
+                        checker,
+                        throttleAccumulator,
+                        submissionManager,
+                        metrics))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new IngestWorkflowImpl(
                         nodeInfo,
                         currentPlatformStatus,
                         null,
-                        onset,
+                        transactionChecker,
                         checker,
                         throttleAccumulator,
                         submissionManager,
@@ -227,7 +233,7 @@ class IngestWorkflowImplTest extends AppTestBase {
                         nodeInfo,
                         currentPlatformStatus,
                         stateAccessor,
-                        onset,
+                        transactionChecker,
                         null,
                         throttleAccumulator,
                         submissionManager,
@@ -237,7 +243,7 @@ class IngestWorkflowImplTest extends AppTestBase {
                         nodeInfo,
                         currentPlatformStatus,
                         stateAccessor,
-                        onset,
+                        transactionChecker,
                         checker,
                         null,
                         submissionManager,
@@ -247,7 +253,7 @@ class IngestWorkflowImplTest extends AppTestBase {
                         nodeInfo,
                         currentPlatformStatus,
                         stateAccessor,
-                        onset,
+                        transactionChecker,
                         checker,
                         throttleAccumulator,
                         null,
@@ -257,7 +263,7 @@ class IngestWorkflowImplTest extends AppTestBase {
                         nodeInfo,
                         currentPlatformStatus,
                         stateAccessor,
-                        onset,
+                        transactionChecker,
                         checker,
                         throttleAccumulator,
                         submissionManager,
@@ -353,7 +359,8 @@ class IngestWorkflowImplTest extends AppTestBase {
         @DisplayName("If the transaction fails WorkflowOnset, a failure response is returned with the right error")
         void onsetFailsWithPreCheckException(ResponseCodeEnum failureReason) throws PreCheckException, IOException {
             // Given a WorkflowOnset that will throw a PreCheckException with the given failure reason
-            when(onset.parseAndCheck(any(), any(Bytes.class))).thenThrow(new PreCheckException(failureReason));
+            when(transactionChecker.parseAndCheck(any(), any(Bytes.class)))
+                    .thenThrow(new PreCheckException(failureReason));
 
             // When the transaction is submitted
             workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
@@ -373,7 +380,7 @@ class IngestWorkflowImplTest extends AppTestBase {
         @DisplayName("If some random exception is thrown from WorkflowOnset, the exception is bubbled up")
         void randomException() throws PreCheckException {
             // Given a WorkflowOnset that will throw a RuntimeException
-            when(onset.parseAndCheck(any(), any(Bytes.class)))
+            when(transactionChecker.parseAndCheck(any(), any(Bytes.class)))
                     .thenThrow(new RuntimeException("parseAndCheck exception"));
 
             // When the transaction is submitted, then the exception is bubbled up
