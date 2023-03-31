@@ -153,6 +153,35 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
         }
     }
 
+    @Test
+    void updateListCreatedFromSnapshotPersistAndVerify() throws IOException {
+        final int sampleSize = getSampleSize();
+        try (final LongListOffHeap list = createFullyParameterizedLongListWith(
+                sampleSize / 100, // 100 chunks, 100 longs each
+                sampleSize + DEFAULT_NUM_LONGS_PER_CHUNK)) {
+            for (int i = 1; i < getSampleSize(); i++) {
+                list.put(i, i + 1);
+            }
+            final Path file = testDirectory.resolve("LongListOffHeap.ll");
+            // write longList data
+            list.writeToFile(file);
+
+            try (LongListOffHeap longListFromFile = createLongListFromFile(file)) {
+
+                for (int i = 0; i < longListFromFile.size(); i++) {
+                    assertEquals(list.get(i), longListFromFile.get(i));
+                }
+                // write longList data
+                longListFromFile.writeToFile(file);
+                try (LongListOffHeap longListFromFile2 = createLongListFromFile(file)) {
+                    for (int i = 0; i < longListFromFile2.size(); i++) {
+                        assertEquals(longListFromFile.get(i), longListFromFile2.get(i));
+                    }
+                }
+            }
+        }
+    }
+
     @ParameterizedTest
     @ValueSource(ints = {2, 3, 4, 5, 10, 50})
     void minValidIndexRespectedInForEachTest(final int countDivider) throws InterruptedException {
