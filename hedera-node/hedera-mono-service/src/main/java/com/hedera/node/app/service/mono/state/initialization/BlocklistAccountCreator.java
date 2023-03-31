@@ -27,7 +27,6 @@ import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
-import com.hedera.node.app.service.mono.exceptions.NegativeAccountBalanceException;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
@@ -61,7 +60,6 @@ import org.bouncycastle.util.encoders.Hex;
  */
 @Singleton
 public class BlocklistAccountCreator {
-    private static final int ZERO_BALANCE = 0;
     private static final Logger log = LogManager.getLogger(BlocklistAccountCreator.class);
     private final String blocklistFileName;
     private final Supplier<HederaAccount> accountSupplier;
@@ -184,7 +182,7 @@ public class BlocklistAccountCreator {
      */
     private HederaAccount blockedAccountWith(BlockedInfo blockedInfo) {
         final var expiry = properties.getLongProperty(BOOTSTRAP_SYSTEM_ENTITY_EXPIRY);
-        final var account = new HederaAccountCustomizer()
+        return new HederaAccountCustomizer()
                 .isReceiverSigRequired(true)
                 .isDeclinedReward(true)
                 .isDeleted(false)
@@ -195,12 +193,6 @@ public class BlocklistAccountCreator {
                 .autoRenewPeriod(expiry)
                 .alias(blockedInfo.evmAddress)
                 .customizing(accountSupplier.get());
-        try {
-            account.setBalance(ZERO_BALANCE);
-        } catch (final NegativeAccountBalanceException e) {
-            throw new IllegalStateException(e);
-        }
-        return account;
     }
 
     private JKey getGenesisKey() {
