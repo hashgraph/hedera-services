@@ -132,11 +132,11 @@ public class BlocklistAccountCreator {
                 .build();
 
         for (final var blockedInfo : blockedToCreate) {
-            final var newId = ids.newAccountId(genesisAccountId);
+            final var newId = ids.newAccountId(genesisAccountId); // get the next available new account ID
             final var account = blockedAccountWith(blockedInfo);
-            accounts.put(newId, account);
-            accountsCreated.add(account);
-            aliasManager.link(blockedInfo.evmAddress, EntityNum.fromAccountId(newId));
+            accounts.put(newId, account); // add the account with the corresponding newId to state
+            accountsCreated.add(account); // add the account to the list of accounts created by this class
+            aliasManager.link(blockedInfo.evmAddress, EntityNum.fromAccountId(newId)); // link the EVM address alias to the new account ID
         }
     }
 
