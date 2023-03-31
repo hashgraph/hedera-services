@@ -176,7 +176,7 @@ public abstract class AbstractAutoCreationLogic {
         final var maxAutoAssociations =
                 tokenAliasMap.getOrDefault(alias, Collections.emptySet()).size();
         customizer.maxAutomaticAssociations(maxAutoAssociations);
-        final var isAliasEVMAddress = EntityIdUtils.isValidSizeEvmAddress(alias);
+        final var isAliasEVMAddress = EntityIdUtils.isOfEvmAddressSize(alias);
         if (isAliasEVMAddress) {
             syntheticCreation = syntheticTxnFactory.createHollowAccount(alias, 0L);
             customizer.key(EMPTY_KEY);

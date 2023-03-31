@@ -19,7 +19,7 @@ package com.hedera.node.app.service.mono.grpc.marshalling;
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAlias;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isValidSizeEvmAddress;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isOfEvmAddressSize;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.isSerializedProtoKey;
 
@@ -179,7 +179,7 @@ public class AliasResolver {
         var result = Result.KNOWN_ALIAS;
         if (isAlias(idOrAlias)) {
             final var alias = idOrAlias.getAlias();
-            if (isValidSizeEvmAddress(alias)) {
+            if (isOfEvmAddressSize(alias)) {
                 final var evmAddress = alias.toByteArray();
                 if (isMirror(evmAddress)) {
                     offerMirrorId(evmAddress, resolvingAction);
@@ -207,7 +207,7 @@ public class AliasResolver {
         var result = Result.KNOWN_ALIAS;
         if (isAlias(adjust.getAccountID())) {
             final var alias = adjust.getAccountID().getAlias();
-            if (isValidSizeEvmAddress(alias)) {
+            if (isOfEvmAddressSize(alias)) {
                 final var evmAddress = alias.toByteArray();
                 if (isMirror(evmAddress)) {
                     offerMirrorId(
@@ -247,7 +247,7 @@ public class AliasResolver {
             if (assetChange > 0) {
                 if (isSerializedProtoKey(alias)) {
                     perceivedCreations++;
-                } else if (isValidSizeEvmAddress(alias)) {
+                } else if (isOfEvmAddressSize(alias)) {
                     perceivedLazyCreations++;
                 } else {
                     perceivedInvalidCreations++;

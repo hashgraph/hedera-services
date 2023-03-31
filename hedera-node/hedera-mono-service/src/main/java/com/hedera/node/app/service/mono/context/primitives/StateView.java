@@ -26,7 +26,7 @@ import static com.hedera.node.app.service.mono.txns.crypto.helpers.AllowanceHelp
 import static com.hedera.node.app.service.mono.txns.crypto.helpers.AllowanceHelpers.getNftGrantedAllowancesList;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asAccount;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asHexedEvmAddress;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isValidSizeEvmAddress;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isOfEvmAddressSize;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.readableId;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
 import static com.hedera.node.app.service.mono.utils.EvmTokenUtil.asEvmTokenInfo;
@@ -418,7 +418,7 @@ public class StateView {
                 .setMaxAutomaticTokenAssociations(account.getMaxAutomaticAssociations())
                 .setEthereumNonce(account.getEthereumNonce());
         Optional.ofNullable(account.getProxy()).map(EntityId::toGrpcAccountId).ifPresent(info::setProxyAccountID);
-        if (!isValidSizeEvmAddress(account.getAlias())) {
+        if (!isOfEvmAddressSize(account.getAlias())) {
             info.setAlias(account.getAlias());
         }
         final var tokenRels = tokenRels(this, account, maxTokensForAccountInfo);
@@ -431,7 +431,7 @@ public class StateView {
     }
 
     private String getContractAccountId(final JKey key, final AccountID accountID, final ByteString alias) {
-        if (isValidSizeEvmAddress(alias)) {
+        if (isOfEvmAddressSize(alias)) {
             return CommonUtils.hex(ByteStringUtils.unwrapUnsafelyIfPossible(alias));
         }
         // If we can recover an Ethereum EOA address from the account key, we should return that

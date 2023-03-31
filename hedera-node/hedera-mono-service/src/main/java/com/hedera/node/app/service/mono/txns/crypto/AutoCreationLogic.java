@@ -18,7 +18,7 @@ package com.hedera.node.app.service.mono.txns.crypto;
 
 import static com.hedera.node.app.service.mono.ledger.accounts.AliasManager.keyAliasToEVMAddress;
 import static com.hedera.node.app.service.mono.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isValidSizeEvmAddress;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isOfEvmAddressSize;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asPrimitiveKeyUnchecked;
 
@@ -78,7 +78,7 @@ public class AutoCreationLogic extends AbstractAutoCreationLogic {
         // If the transaction fails, we will get an opportunity to unlink this alias in
         // reclaimPendingAliases()
         aliasManager.link(alias, EntityNum.fromAccountId(newId));
-        if (!isValidSizeEvmAddress(alias)) {
+        if (!isOfEvmAddressSize(alias)) {
             final var key = asPrimitiveKeyUnchecked(alias);
             JKey jKey = asFcKeyUnchecked(key);
             aliasManager.maybeLinkEvmAddress(jKey, EntityNum.fromAccountId(newId));
@@ -98,7 +98,7 @@ public class AutoCreationLogic extends AbstractAutoCreationLogic {
                 final var alias = syntheticTxnBody.getAlias();
                 if (!alias.isEmpty()) {
                     aliasManager.unlink(alias);
-                    if (!isValidSizeEvmAddress(alias)) {
+                    if (!isOfEvmAddressSize(alias)) {
                         // if this is an alias of type ECDSA public key
                         // we should also unlink the EVM address derived from that key
                         aliasManager.forgetEvmAddress(alias);

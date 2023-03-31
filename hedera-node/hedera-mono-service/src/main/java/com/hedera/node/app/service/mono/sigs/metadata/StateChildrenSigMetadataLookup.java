@@ -126,7 +126,7 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
             final AccountID idOrAlias, final @Nullable LinkedRefs linkedRefs) {
         if (isAlias(idOrAlias)) {
             final var alias = idOrAlias.getAlias();
-            if (isValidSizeEvmAddress(alias)) {
+            if (isOfEvmAddressSize(alias)) {
                 final var evmAddress = alias.toByteArray();
                 if (aliasManager.isMirror(evmAddress)) {
                     return lookupAccountByNumber(EntityNum.fromMirror(evmAddress), linkedRefs);

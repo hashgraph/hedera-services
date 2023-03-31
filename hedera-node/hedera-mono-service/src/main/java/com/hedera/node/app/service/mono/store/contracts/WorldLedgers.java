@@ -39,8 +39,8 @@ import static com.hedera.node.app.service.mono.ledger.properties.TokenRelPropert
 import static com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.accountIdFromEvmAddress;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isValidSizeECDSAAddress;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isValidSizeEvmAddress;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isOfEcdsaAddressSize;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isOfEvmAddressSize;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.readableId;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.tokenIdFromEvmAddress;
 import static com.hedera.node.app.service.mono.utils.EvmTokenUtil.asEvmTokenInfo;
@@ -368,9 +368,9 @@ public class WorldLedgers {
             alias = staticEntityAccess.alias(address);
         }
         if (!alias.isEmpty()) {
-            if (isValidSizeEvmAddress(alias)) {
+            if (isOfEvmAddressSize(alias)) {
                 return Address.wrap(Bytes.wrap(alias.toByteArray()));
-            } else if (isValidSizeECDSAAddress(alias) && alias.startsWith(ECDSA_KEY_ALIAS_PREFIX)) {
+            } else if (isOfEcdsaAddressSize(alias) && alias.startsWith(ECDSA_KEY_ALIAS_PREFIX)) {
                 final byte[] value = recoverAddressFromPubKey(alias.substring(2).toByteArray());
                 if (value.length > 0) {
                     return Address.wrap(Bytes.wrap(value));
