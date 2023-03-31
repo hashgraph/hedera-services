@@ -35,7 +35,7 @@ import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.workflows.onset.WorkflowOnset;
+import com.hedera.node.app.workflows.TransactionChecker;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import javax.inject.Inject;
@@ -45,7 +45,7 @@ import javax.inject.Singleton;
 @Singleton
 public class QueryChecker {
 
-    private final WorkflowOnset onset;
+    private final TransactionChecker transactionChecker;
     private final HederaAccountNumbers accountNumbers;
     private final QueryFeeCheck queryFeeCheck;
     private final Authorizer authorizer;
@@ -54,7 +54,7 @@ public class QueryChecker {
     /**
      * Constructor of {@code QueryChecker}
      *
-     * @param onset the {@link WorkflowOnset} that (eventually) pre-processes the CryptoTransfer
+     * @param transactionChecker the {@link TransactionChecker} that (eventually) pre-processes the CryptoTransfer
      * @param accountNumbers the {@link HederaAccountNumbers} that contains a list of special accounts
      * @param queryFeeCheck the {@link QueryFeeCheck} that checks if fees can be paid
      * @param authorizer the {@link Authorizer} that checks, if the caller is authorized
@@ -64,12 +64,12 @@ public class QueryChecker {
      */
     @Inject
     public QueryChecker(
-            @NonNull final WorkflowOnset onset,
+            @NonNull final TransactionChecker transactionChecker,
             @NonNull final HederaAccountNumbers accountNumbers,
             @NonNull final QueryFeeCheck queryFeeCheck,
             @NonNull final Authorizer authorizer,
             @NonNull final CryptoTransferHandler cryptoTransferHandler) {
-        this.onset = requireNonNull(onset);
+        this.transactionChecker = requireNonNull(transactionChecker);
         this.accountNumbers = requireNonNull(accountNumbers);
         this.queryFeeCheck = requireNonNull(queryFeeCheck);
         this.authorizer = requireNonNull(authorizer);
@@ -89,7 +89,7 @@ public class QueryChecker {
             throws PreCheckException {
         requireNonNull(session);
         requireNonNull(txn);
-        final var onsetResult = onset.check(session, txn);
+        final var onsetResult = transactionChecker.check(session, txn);
         if (onsetResult.functionality() != CRYPTO_TRANSFER) {
             throw new PreCheckException(INSUFFICIENT_TX_FEE);
         }

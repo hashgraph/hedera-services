@@ -34,7 +34,7 @@ import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
-import com.hedera.node.app.workflows.onset.WorkflowOnset;
+import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.Counter;
@@ -53,8 +53,8 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
     private final NodeInfo nodeInfo;
     private final CurrentPlatformStatus currentPlatformStatus;
     private final Supplier<AutoCloseableWrapper<HederaState>> stateAccessor;
-    private final WorkflowOnset onset;
-    private final IngestChecker checker;
+    private final TransactionChecker transactionChecker;
+    private final IngestChecker ingestChecker;
     private final ThrottleAccumulator throttleAccumulator;
     private final SubmissionManager submissionManager;
 
@@ -67,8 +67,8 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
      * @param nodeInfo the {@link NodeInfo} of the current node
      * @param currentPlatformStatus the {@link CurrentPlatformStatus}
      * @param stateAccessor a {@link Supplier} that provides the latest immutable state
-     * @param onset the {@link WorkflowOnset} that pre-processes the bytes of a transaction
-     * @param checker the {@link IngestChecker} with specific checks of an ingest-workflow
+     * @param transactionChecker the {@link TransactionChecker} that pre-processes the bytes of a transaction
+     * @param ingestChecker the {@link IngestChecker} with specific checks of an ingest-workflow
      * @param throttleAccumulator the {@link ThrottleAccumulator} for throttling
      * @param submissionManager the {@link SubmissionManager} to submit transactions to the platform
      * @param metrics the {@link Metrics} to use for tracking metrics
@@ -79,16 +79,16 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
             @NonNull final NodeInfo nodeInfo,
             @NonNull final CurrentPlatformStatus currentPlatformStatus,
             @NonNull final Supplier<AutoCloseableWrapper<HederaState>> stateAccessor,
-            @NonNull final WorkflowOnset onset,
-            @NonNull final IngestChecker checker,
+            @NonNull final TransactionChecker transactionChecker,
+            @NonNull final IngestChecker ingestChecker,
             @NonNull final ThrottleAccumulator throttleAccumulator,
             @NonNull final SubmissionManager submissionManager,
             @NonNull final Metrics metrics) {
         this.nodeInfo = requireNonNull(nodeInfo);
         this.currentPlatformStatus = requireNonNull(currentPlatformStatus);
         this.stateAccessor = requireNonNull(stateAccessor);
-        this.onset = requireNonNull(onset);
-        this.checker = requireNonNull(checker);
+        this.transactionChecker = requireNonNull(transactionChecker);
+        this.ingestChecker = requireNonNull(ingestChecker);
         this.throttleAccumulator = requireNonNull(throttleAccumulator);
         this.submissionManager = requireNonNull(submissionManager);
 
@@ -135,11 +135,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
                 final var state = wrappedState.get();
 
                 // 1. Parse the TransactionBody and check the syntax
-                final var onsetResult = onset.parseAndCheck(ctx, requestBuffer);
-                if (onsetResult.errorCode() != ResponseCodeEnum.OK) {
-                    throw new PreCheckException(onsetResult.errorCode());
-                }
-
+                final var onsetResult = transactionChecker.parseAndCheck(ctx, requestBuffer);
                 final var txBody = onsetResult.txBody();
                 final var signatureMap = onsetResult.signatureMap();
                 final var functionality = onsetResult.functionality();
@@ -155,17 +151,17 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
                 }
 
                 // 3. Check semantics
-                checker.checkTransactionSemantics(txBody, functionality);
+                ingestChecker.checkTransactionSemantics(txBody, functionality);
 
                 // 4. Get payer account
                 final AccountID payerID =
                         txBody.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT);
 
                 // 5. Check payer's signature
-                checker.checkPayerSignature(state, onsetResult.transaction(), signatureMap, payerID);
+                ingestChecker.checkPayerSignature(state, onsetResult.transaction(), signatureMap, payerID);
 
                 // 6. Check account balance
-                checker.checkSolvency(onsetResult.transaction());
+                ingestChecker.checkSolvency(onsetResult.transaction());
 
                 // 7. Submit to platform
                 submissionManager.submit(txBody, PbjConverter.asBytes(requestBuffer));
