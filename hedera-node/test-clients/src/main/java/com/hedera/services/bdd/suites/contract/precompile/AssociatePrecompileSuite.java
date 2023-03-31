@@ -92,7 +92,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
     private static final byte[] ACCOUNT_ADDRESS =
             asAddress(AccountID.newBuilder().build());
     private static final byte[] TOKEN_ADDRESS = asAddress(TokenID.newBuilder().build());
-    private static final String TOKEN_ASSOCIATE = "tokenAssociate";
+    public static final String TOKEN_ASSOCIATE = "tokenAssociate";
 
     public static void main(String... args) {
         new AssociatePrecompileSuite().runSuiteAsync();
