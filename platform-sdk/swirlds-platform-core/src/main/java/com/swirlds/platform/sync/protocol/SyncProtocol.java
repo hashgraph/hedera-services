@@ -147,6 +147,9 @@ public class SyncProtocol implements Protocol {
         return maybeAcquiredPermit.isLockAcquired();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void initiateFailed() {
         if (maybeAcquiredPermit != null && maybeAcquiredPermit.isLockAcquired()) {
@@ -154,6 +157,9 @@ public class SyncProtocol implements Protocol {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean shouldAccept() {
         if (!peerAgnosticSyncCheck.shouldSync() || fallenBehindManager.hasFallenBehind()) {
@@ -164,14 +170,23 @@ public class SyncProtocol implements Protocol {
         return true;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean acceptOnSimultaneousInitiate() {
         return true;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public void runProtocol(final Connection connection)
+    public void runProtocol(@NonNull final Connection connection)
             throws NetworkProtocolException, IOException, InterruptedException {
+
+        throwArgNull(connection, "connection");
+
         if (maybeAcquiredPermit == null || !maybeAcquiredPermit.isLockAcquired()) {
             throw new NetworkProtocolException("sync permit not acquired prior to executing sync protocol");
         }

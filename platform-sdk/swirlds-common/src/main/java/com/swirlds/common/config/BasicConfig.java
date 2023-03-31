@@ -259,4 +259,4 @@ public record BasicConfig(
         @ConfigProperty(value = "maxOutgoingSyncs", defaultValue = "2") int maxOutgoingSyncs,
         @ConfigProperty(value = "logPath", defaultValue = "log4j2.xml") Path logPath,
         @ConfigProperty(value = "syncAsProtocolEnabled", defaultValue = "false") boolean syncAsProtocolEnabled,
-        @ConfigProperty(defaultValue = "60s") Duration hangingThreadDuration) {}
+        @ConfigProperty(value = "hangingThreadDuration", defaultValue = "60s") Duration hangingThreadDuration) {}

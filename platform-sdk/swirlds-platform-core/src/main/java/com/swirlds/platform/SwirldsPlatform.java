@@ -377,7 +377,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      */
     private final List<StoppableThread> chatterThreads = new LinkedList<>();
 
-    /** A list of threads that execute the sync protocol using bidirectional connections */
+    /**
+     * A list of threads that execute the sync protocol using bidirectional connections
+     */
     private final List<StoppableThread> syncProtocolThreads = new ArrayList<>();
 
     /**
@@ -418,6 +420,10 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     private final PlatformContext platformContext;
 
     private final BasicConfig basicConfig;
+
+    /**
+     * True if gossip has been halted
+     */
     private final AtomicBoolean gossipHalted = new AtomicBoolean(false);
 
     /**
@@ -1002,9 +1008,10 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         for (final StoppableThread thread : syncProtocolThreads) {
             thread.stop();
         }
-        if (basicConfig.syncAsProtocolEnabled()) {
-            gossipHalted.set(true);
-        } else if (syncManager != null) {
+
+        gossipHalted.set(true);
+
+        if (syncManager != null) {
             syncManager.haltRequestedObserver(reason);
         }
     }
@@ -1566,11 +1573,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * @param connectionManagers the constructed connection managers
      */
     private void startSyncAsProtocolNetwork(@NonNull final StaticConnectionManagers connectionManagers) {
-        final SyncPermit syncPermit = new SyncPermit(settings.getMaxOutgoingSyncs());
-
-        final PeerAgnosticSyncChecks peerAgnosticSyncChecks = new PeerAgnosticSyncChecks(
-                List.of(() -> !gossipHalted.get(), () -> intakeQueue.size() <= settings.getEventIntakeQueueSize()));
-
         final Duration hangingThreadDuration = platformContext
                 .getConfiguration()
                 .getConfigData(BasicConfig.class)
@@ -1583,7 +1585,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     .setNodeId(selfId.getId())
                     .setComponent(PLATFORM_THREAD_POOL_NAME)
                     .setOtherNodeId(selfId.getId())
-                    .setThreadName("SyncProtocolReader")
+                    .setThreadName("SingleNodeNetworkSync")
                     .setHangingThreadPeriod(hangingThreadDuration)
                     .setWork(new SingleNodeNetworkSync(this, selfId.getId()))
                     .build(true));
@@ -1598,14 +1600,17 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             reconnectController.get().start();
         }
 
-        // first create all instances because of thread safety
+        final PeerAgnosticSyncChecks peerAgnosticSyncChecks = new PeerAgnosticSyncChecks(
+                List.of(() -> !gossipHalted.get(), () -> intakeQueue.size() <= settings.getEventIntakeQueueSize()));
+        final SyncPermit syncPermit = new SyncPermit(settings.getMaxOutgoingSyncs());
+
         for (final NodeId otherId : topology.getNeighbors()) {
             syncProtocolThreads.add(new StoppableThreadConfiguration<>(threadManager)
                     .setPriority(Thread.NORM_PRIORITY)
                     .setNodeId(selfId.getId())
                     .setComponent(PLATFORM_THREAD_POOL_NAME)
                     .setOtherNodeId(otherId.getId())
-                    .setThreadName("SyncProtocolReader")
+                    .setThreadName("SyncProtocolWith" + otherId.getId())
                     .setHangingThreadPeriod(hangingThreadDuration)
                     .setWork(new NegotiatorThread(
                             connectionManagers.getManager(otherId, topology.shouldConnectTo(otherId)),
