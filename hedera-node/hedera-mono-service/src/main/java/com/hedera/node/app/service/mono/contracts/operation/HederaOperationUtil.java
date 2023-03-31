@@ -43,14 +43,13 @@ import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -125,7 +124,10 @@ public final class HederaOperationUtil {
      * @param sigsVerifier an instance of {@link EvmSigsVerifier} which can verify account signatures
      * @return {@code true} if the account has an active signature, {@code false} otherwise
      */
-    public static boolean isSigReqMetFor(@NonNull final Address address, @NonNull final MessageFrame frame, @NonNull final EvmSigsVerifier sigsVerifier) {
+    public static boolean isSigReqMetFor(
+            @NonNull final Address address,
+            @NonNull final MessageFrame frame,
+            @NonNull final EvmSigsVerifier sigsVerifier) {
         final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
         final var account = updater.get(address);
         final var isDelegateCall = !frame.getContractAddress().equals(frame.getRecipientAddress());

@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.contract.opcodes;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -116,11 +115,12 @@ public class SelfDestructSuite extends HapiSuite {
                         uploadInitCode(SELF_DESTRUCT_CALLABLE_CONTRACT),
                         contractCreate(SELF_DESTRUCT_CALLABLE_CONTRACT).balance(ONE_HBAR))
                 .when(sourcing(() -> contractCall(
-                                SELF_DESTRUCT_CALLABLE_CONTRACT, "destroy", mirrorAddrWith(beneficiaryId.get()))
+                                SELF_DESTRUCT_CALLABLE_CONTRACT,
+                                "destroyExplicitBeneficiary",
+                                mirrorAddrWith(beneficiaryId.get()))
                         .hasKnownStatus(INVALID_SIGNATURE)))
                 .then(
-                        getAccountInfo(BENEFICIARY)
-                                .has(accountWith().balance(ONE_HUNDRED_HBARS)),
+                        getAccountInfo(BENEFICIARY).has(accountWith().balance(ONE_HUNDRED_HBARS)),
                         getContractInfo(SELF_DESTRUCT_CALLABLE_CONTRACT)
                                 .has(contractWith().balance(ONE_HBAR)));
     }

@@ -5,6 +5,13 @@
     "type": "constructor"
   },
   {
+    "inputs": [],
+    "name": "destroy",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -12,14 +19,7 @@
         "type": "address"
       }
     ],
-    "name": "destroy",
-    "outputs": [],
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "destroy",
+    "name": "destroyExplicitBeneficiary",
     "outputs": [],
     "stateMutability": "payable",
     "type": "function"

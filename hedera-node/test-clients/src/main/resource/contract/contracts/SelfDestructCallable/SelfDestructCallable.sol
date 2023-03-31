@@ -8,7 +8,7 @@ contract SelfDestructCallable {
         selfdestruct(payable(msg.sender));
     }
 
-    function destroy(address beneficiary) public payable {
+    function destroyExplicitBeneficiary(address beneficiary) public payable {
         selfdestruct(payable(beneficiary));
     }
 }
