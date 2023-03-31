@@ -164,7 +164,7 @@ public class BlocklistAccountCreator {
      * @return blocked account info record
      */
     private BlockedInfo parseCSVLine(String line, int columnCount) {
-        final var parts = line.split(",");
+        final var parts = line.split(",", -1);
         if (parts.length != columnCount) {
             throw new IllegalArgumentException("Invalid line in blocklist file: " + line);
         }
@@ -184,17 +184,21 @@ public class BlocklistAccountCreator {
      */
     private HederaAccount blockedAccountWith(BlockedInfo blockedInfo) {
         final var expiry = properties.getLongProperty(BOOTSTRAP_SYSTEM_ENTITY_EXPIRY);
-        return new HederaAccountCustomizer()
+        var customizer = new HederaAccountCustomizer()
                 .isReceiverSigRequired(true)
                 .isDeclinedReward(true)
                 .isDeleted(false)
                 .expiry(expiry)
-                .memo(blockedInfo.memo)
                 .isSmartContract(false)
                 .key(getGenesisKey())
                 .autoRenewPeriod(expiry)
-                .alias(blockedInfo.evmAddress)
-                .customizing(accountSupplier.get());
+                .alias(blockedInfo.evmAddress);
+
+        if (!blockedInfo.memo.isEmpty()) {
+            customizer.memo(blockedInfo.memo);
+        }
+
+        return customizer.customizing(accountSupplier.get());
     }
 
     private JKey getGenesisKey() {
