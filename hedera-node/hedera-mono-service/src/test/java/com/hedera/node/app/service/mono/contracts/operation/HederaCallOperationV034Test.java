@@ -18,10 +18,12 @@ package com.hedera.node.app.service.mono.contracts.operation;
 
 import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.mono.contracts.operation.CommonCallSetup.commonSetup;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
@@ -139,7 +141,7 @@ class HederaCallOperationV034Test {
         given(acc.getBalance()).willReturn(Wei.of(100));
         given(calc.gasAvailableForChildCall(any(), anyLong(), anyBoolean())).willReturn(10L);
         given(acc.getAddress()).willReturn(Address.ZERO);
-        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any()))
+        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any(), eq(ContractCall)))
                 .willReturn(true);
         given(addressValidator.test(any(), any())).willReturn(true);
         given(globalDynamicProperties.isImplicitCreationEnabled()).willReturn(isFlagEnabled);
@@ -148,7 +150,7 @@ class HederaCallOperationV034Test {
         assertEquals(null, opRes.getHaltReason());
         assertEquals(opRes.getGasCost(), cost);
 
-        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any()))
+        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any(), eq(ContractCall)))
                 .willReturn(false);
         var invalidSignaturesRes = subject.execute(evmMsgFrame, evm);
         assertEquals(HederaExceptionalHaltReason.INVALID_SIGNATURE, invalidSignaturesRes.getHaltReason());

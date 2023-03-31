@@ -80,7 +80,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
     private static final String TOKEN_TREASURY = "treasury";
     private static final String OUTER_CONTRACT = "NestedAssociateDissociate";
     private static final String INNER_CONTRACT = "AssociateDissociate";
-    private static final String THE_CONTRACT = "AssociateDissociate";
+    public static final String THE_CONTRACT = "AssociateDissociate";
     private static final String THE_GRACEFULLY_FAILING_CONTRACT = "GracefullyFailing";
     private static final String ACCOUNT = "anybody";
     private static final String FROZEN_TOKEN = "Frozen token";
@@ -92,7 +92,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
     private static final byte[] ACCOUNT_ADDRESS =
             asAddress(AccountID.newBuilder().build());
     private static final byte[] TOKEN_ADDRESS = asAddress(TokenID.newBuilder().build());
-    private static final String TOKEN_ASSOCIATE = "tokenAssociate";
+    public static final String TOKEN_ASSOCIATE = "tokenAssociate";
 
     public static void main(String... args) {
         new AssociatePrecompileSuite().runSuiteAsync();

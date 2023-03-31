@@ -36,6 +36,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_HANDLE_MAX_
 import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ALLOW_AUTO_ASSOCIATIONS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ALLOW_CREATE2;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_CHAIN_ID;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_DEFAULT_LIFETIME;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_DYNAMIC_EVM_VERSION;
@@ -50,6 +51,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_GAS_PER
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_KV_PAIRS_AGGREGATE;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_NUM;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PERMITTED_DELEGATE_CALLERS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED;
@@ -64,6 +66,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECARS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECAR_VALIDATION_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_STORAGE_SLOT_PRICE_TIERS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_THROTTLE_THROTTLE_BY_GAS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS;
 import static com.hedera.node.app.spi.config.PropertyNames.CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_LIMIT_TOKEN_ASSOCIATIONS;
 import static com.hedera.node.app.spi.config.PropertyNames.FEES_MIN_CONGESTION_PERIOD;
@@ -216,6 +219,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     private long maxPrecedingRecords;
     private long maxFollowingRecords;
     private Set<HederaFunctionality> schedulingWhitelist;
+    private Set<HederaFunctionality> systemContractsWithTopLevelSigsAccess;
     private CongestionMultipliers congestionMultipliers;
     private int feesMinCongestionPeriod;
     private boolean areNftsEnabled;
@@ -280,6 +284,8 @@ public class GlobalDynamicProperties implements EvmProperties {
     private boolean enforceContractCreationThrottle;
     private Set<Address> permittedDelegateCallers;
     private EntityScaleFactors entityScaleFactors;
+    private long maxNumWithHapiSigsAccess;
+    private Set<Address> contractsWithSpecialHapiSigsAccess;
     private LegacyContractIdActivations legacyContractIdActivations;
 
     @Inject
@@ -344,6 +350,8 @@ public class GlobalDynamicProperties implements EvmProperties {
         schedulingMaxTxnPerSecond = properties.getLongProperty(SCHEDULING_MAX_TXN_PER_SEC);
         schedulingMaxExpirationFutureSeconds = properties.getLongProperty(SCHEDULING_MAX_EXPIRATION_FUTURE_SECS);
         schedulingWhitelist = properties.getFunctionsProperty(SCHEDULING_WHITE_LIST);
+        systemContractsWithTopLevelSigsAccess =
+                properties.getFunctionsProperty(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS);
         messageMaxBytesAllowed = properties.getIntProperty(CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED);
         maxPrecedingRecords = properties.getLongProperty(CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS);
         maxFollowingRecords = properties.getLongProperty(CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS);
@@ -424,6 +432,8 @@ public class GlobalDynamicProperties implements EvmProperties {
         entityScaleFactors = properties.getEntityScaleFactorsProperty(FEES_PERCENT_UTILIZATION_SCALE_FACTORS);
         permittedDelegateCallers = properties.getEvmAddresses(CONTRACTS_PERMITTED_DELEGATE_CALLERS);
         legacyContractIdActivations = properties.getLegacyActivationsProperty(CONTRACTS_KEYS_LEGACY_ACTIVATIONS);
+        contractsWithSpecialHapiSigsAccess = properties.getEvmAddresses(CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS);
+        maxNumWithHapiSigsAccess = properties.getLongProperty(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS);
     }
 
     public int maxTokensPerAccount() {
@@ -900,5 +910,17 @@ public class GlobalDynamicProperties implements EvmProperties {
 
     public Set<Address> permittedDelegateCallers() {
         return permittedDelegateCallers;
+    }
+
+    public Set<HederaFunctionality> systemContractsWithTopLevelSigsAccess() {
+        return systemContractsWithTopLevelSigsAccess;
+    }
+
+    public long maxNumWithHapiSigsAccess() {
+        return maxNumWithHapiSigsAccess;
+    }
+
+    public Set<Address> contractsWithSpecialHapiSigsAccess() {
+        return contractsWithSpecialHapiSigsAccess;
     }
 }
