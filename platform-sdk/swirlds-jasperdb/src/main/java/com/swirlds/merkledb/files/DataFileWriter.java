@@ -307,11 +307,11 @@ public final class DataFileWriter<D> {
         writeBytes(footerData);
         // truncate to the right size
         final long totalFileSize = mmapPositionInFile + writingMmap.position();
+        // release all the resources
+        closeMmapBuffer();
         writingChannel.truncate(totalFileSize);
         // after finishWriting(), mmapPositionInFile should be equal to the file size
         mmapPositionInFile = totalFileSize;
-        // release all the resources
-        closeMmapBuffer();
         writingChannel.force(true);
         writingChannel.close();
         writingChannel = null;
