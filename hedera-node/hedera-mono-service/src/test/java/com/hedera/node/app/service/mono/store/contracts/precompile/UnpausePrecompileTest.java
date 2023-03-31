@@ -203,7 +203,11 @@ class UnpausePrecompileTest {
 
         given(
                         sigsVerifier.hasActivePauseKey(
-                                true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
+                                true,
+                                fungibleTokenAddr,
+                                fungibleTokenAddr,
+                                wrappedLedgers,
+                                HederaFunctionality.TokenUnpause))
                 .willReturn(true);
         given(infrastructureFactory.newTokenStore(null, sideEffects, tokens, nfts, tokenRels))
                 .willReturn(tokenStore);

@@ -59,8 +59,8 @@ public class DeleteTokenPrecompileSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(DeleteTokenPrecompileSuite.class);
 
     private static final long GAS_TO_OFFER = 4_000_000L;
-    private static final String DELETE_TOKEN_CONTRACT = "DeleteTokenContract";
-    private static final String TOKEN_DELETE_FUNCTION = "tokenDelete";
+    public static final String DELETE_TOKEN_CONTRACT = "DeleteTokenContract";
+    public static final String TOKEN_DELETE_FUNCTION = "tokenDelete";
     private static final String ACCOUNT = "anybody";
     private static final String MULTI_KEY = "purpose";
     private static final String DELETE_TXN = "deleteTxn";

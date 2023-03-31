@@ -16,11 +16,13 @@
 package com.hedera.node.app.service.mono.contracts.operation;
 
 import static com.hedera.node.app.service.mono.contracts.operation.CommonCallSetup.commonSetup;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
@@ -118,7 +120,7 @@ class HederaCallOperationTest {
         given(acc.getAddress()).willReturn(Address.ZERO);
         given(
                         sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-                                Mockito.anyBoolean(), any(), any(), any()))
+                                Mockito.anyBoolean(), any(), any(), any(), eq(ContractCall)))
                 .willReturn(true);
         given(addressValidator.test(any(), any())).willReturn(true);
 
@@ -128,7 +130,7 @@ class HederaCallOperationTest {
 
         given(
                         sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-                                Mockito.anyBoolean(), any(), any(), any()))
+                                Mockito.anyBoolean(), any(), any(), any(), eq(ContractCall)))
                 .willReturn(false);
         var invalidSignaturesRes = subject.execute(evmMsgFrame, evm);
         assertEquals(

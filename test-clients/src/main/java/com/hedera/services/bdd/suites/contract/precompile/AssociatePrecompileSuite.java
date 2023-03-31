@@ -16,7 +16,10 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
+import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
@@ -37,6 +40,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
@@ -70,7 +74,6 @@ import org.jetbrains.annotations.NotNull;
 
 public class AssociatePrecompileSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(AssociatePrecompileSuite.class);
-
     private static final long GAS_TO_OFFER = 4_000_000L;
     private static final long TOTAL_SUPPLY = 1_000;
     private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE =
@@ -78,7 +81,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
     private static final String TOKEN_TREASURY = "treasury";
     private static final String OUTER_CONTRACT = "NestedAssociateDissociate";
     private static final String INNER_CONTRACT = "AssociateDissociate";
-    private static final String THE_CONTRACT = "AssociateDissociate";
+    public static final String THE_CONTRACT = "AssociateDissociate";
     private static final String THE_GRACEFULLY_FAILING_CONTRACT = "GracefullyFailing";
     private static final String ACCOUNT = "anybody";
     private static final String FROZEN_TOKEN = "Frozen token";
@@ -89,6 +92,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
     private static final String KYC_KEY = "KYC key";
     private static final byte[] ACCOUNT_ADDRESS = asAddress(AccountID.newBuilder().build());
     private static final byte[] TOKEN_ADDRESS = asAddress(TokenID.newBuilder().build());
+    public static final String TOKEN_ASSOCIATE = "tokenAssociate";
 
     public static void main(String... args) {
         new AssociatePrecompileSuite().runSuiteAsync();
@@ -117,7 +121,8 @@ public class AssociatePrecompileSuite extends HapiSuite {
     List<HapiSpec> positiveSpecs() {
         return List.of(
                 nestedAssociateWorksAsExpected(),
-                multipleAssociatePrecompileWithSignatureWorksForFungible());
+                multipleAssociatePrecompileWithSignatureWorksForFungible(),
+                associateWithMissingEvmAddressHasSaneTxnAndRecord());
     }
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
@@ -217,7 +222,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 contractCall(
                                                                 THE_CONTRACT,
-                                                                "tokenAssociate",
+                                                                TOKEN_ASSOCIATE,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
                                                                 HapiParserUtil.asHeadlongAddress(
@@ -274,7 +279,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
                                                 cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
                                                 contractCall(
                                                                 THE_CONTRACT,
-                                                                "tokenAssociate",
+                                                                TOKEN_ASSOCIATE,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
                                                                 HapiParserUtil.asHeadlongAddress(
@@ -285,7 +290,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 contractCall(
                                                                 THE_CONTRACT,
-                                                                "tokenAssociate",
+                                                                TOKEN_ASSOCIATE,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())),
                                                                 HapiParserUtil.asHeadlongAddress(
@@ -488,6 +493,41 @@ public class AssociatePrecompileSuite extends HapiSuite {
                         getAccountInfo(ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN));
     }
 
+    private HapiSpec associateWithMissingEvmAddressHasSaneTxnAndRecord() {
+        final AtomicReference<Address> tokenAddress = new AtomicReference<>();
+        final var missingAddress =
+                Address.wrap(
+                        Address.toChecksumAddress("0xabababababababababababababababababababab"));
+        final var txn = "txn";
+
+        return onlyDefaultHapiSpec("AssociateWithMissingEvmAddressHasSaneTxnAndRecord")
+                .given(
+                        cryptoCreate(TOKEN_TREASURY),
+                        uploadInitCode(INNER_CONTRACT),
+                        contractCreate(INNER_CONTRACT),
+                        tokenCreate(VANILLA_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .exposingCreatedIdTo(
+                                        idLit ->
+                                                tokenAddress.set(
+                                                        idAsHeadlongAddress(
+                                                                HapiPropertySource.asToken(
+                                                                        idLit)))))
+                .when(
+                        sourcing(
+                                () ->
+                                        contractCall(
+                                                        INNER_CONTRACT,
+                                                        "tokenAssociate",
+                                                        missingAddress,
+                                                        tokenAddress.get())
+                                                .via(txn)
+                                                .gas(GAS_TO_OFFER)
+                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
+                .then(getTxnRecord(txn).andAllChildRecords().logged());
+    }
+
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
     private HapiSpec invalidSingleAbiCallConsumesAllProvidedGas() {
         return defaultHapiSpec("InvalidSingleAbiCallConsumesAllProvidedGas")
@@ -534,7 +574,6 @@ public class AssociatePrecompileSuite extends HapiSuite {
 
     @NotNull
     public static String getNestedContractAddress(final String outerContract, final HapiSpec spec) {
-        return HapiPropertySource.asHexedSolidityAddress(
-                spec.registry().getContractId(outerContract));
+        return asHexedSolidityAddress(spec.registry().getContractId(outerContract));
     }
 }

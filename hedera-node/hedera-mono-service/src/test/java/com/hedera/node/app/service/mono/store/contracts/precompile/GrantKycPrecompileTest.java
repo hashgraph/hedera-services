@@ -278,7 +278,11 @@ class GrantKycPrecompileTest {
                                 .setTokenGrantKyc(TokenGrantKycTransactionBody.newBuilder()));
         given(
                         sigsVerifier.hasActiveKycKey(
-                                true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
+                                true,
+                                fungibleTokenAddr,
+                                fungibleTokenAddr,
+                                wrappedLedgers,
+                                HederaFunctionality.TokenGrantKycToAccount))
                 .willReturn(true);
     }
 

@@ -60,14 +60,14 @@ import org.apache.logging.log4j.Logger;
 
 public class GrantRevokeKycSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(GrantRevokeKycSuite.class);
-    private static final String GRANT_REVOKE_KYC_CONTRACT = "GrantRevokeKyc";
+    public static final String GRANT_REVOKE_KYC_CONTRACT = "GrantRevokeKyc";
     private static final String IS_KYC_GRANTED = "isKycGranted";
-    private static final String TOKEN_GRANT_KYC = "tokenGrantKyc";
-    private static final String TOKEN_REVOKE_KYC = "tokenRevokeKyc";
+    public static final String TOKEN_GRANT_KYC = "tokenGrantKyc";
+    public static final String TOKEN_REVOKE_KYC = "tokenRevokeKyc";
 
     private static final long GAS_TO_OFFER = 4_000_000L;
     private static final String ACCOUNT = "anybody";
-    private static final String SECOND_ACCOUNT = "anybodySecond";
+    public static final String SECOND_ACCOUNT = "anybodySecond";
     private static final String KYC_KEY = "kycKey";
     private static final String NON_KYC_KEY = "nonKycKey";
     private static final String TOKEN_WITHOUT_KEY = "withoutKey";

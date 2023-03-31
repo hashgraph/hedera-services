@@ -100,6 +100,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     private long maxPrecedingRecords;
     private long maxFollowingRecords;
     private Set<HederaFunctionality> schedulingWhitelist;
+    private Set<HederaFunctionality> systemContractsWithTopLevelSigsAccess;
     private CongestionMultipliers congestionMultipliers;
     private int feesMinCongestionPeriod;
     private boolean areNftsEnabled;
@@ -163,6 +164,8 @@ public class GlobalDynamicProperties implements EvmProperties {
     private boolean enforceContractCreationThrottle;
     private Set<Address> permittedDelegateCallers;
     private EntityScaleFactors entityScaleFactors;
+    private long maxNumWithHapiSigsAccess;
+    private Set<Address> contractsWithSpecialHapiSigsAccess;
     private LegacyContractIdActivations legacyContractIdActivations;
 
     @Inject
@@ -233,6 +236,8 @@ public class GlobalDynamicProperties implements EvmProperties {
         schedulingMaxExpirationFutureSeconds =
                 properties.getLongProperty(SCHEDULING_MAX_EXPIRATION_FUTURE_SECS);
         schedulingWhitelist = properties.getFunctionsProperty(SCHEDULING_WHITE_LIST);
+        systemContractsWithTopLevelSigsAccess =
+                properties.getFunctionsProperty(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS);
         messageMaxBytesAllowed = properties.getIntProperty(CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED);
         maxPrecedingRecords = properties.getLongProperty(CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS);
         maxFollowingRecords = properties.getLongProperty(CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS);
@@ -336,6 +341,10 @@ public class GlobalDynamicProperties implements EvmProperties {
         permittedDelegateCallers = properties.getEvmAddresses(CONTRACTS_PERMITTED_DELEGATE_CALLERS);
         legacyContractIdActivations =
                 properties.getLegacyActivationsProperty(CONTRACTS_KEYS_LEGACY_ACTIVATIONS);
+        contractsWithSpecialHapiSigsAccess =
+                properties.getEvmAddresses(CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS);
+        maxNumWithHapiSigsAccess =
+                properties.getLongProperty(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS);
     }
 
     public int maxTokensPerAccount() {
@@ -808,5 +817,17 @@ public class GlobalDynamicProperties implements EvmProperties {
 
     public Set<Address> permittedDelegateCallers() {
         return permittedDelegateCallers;
+    }
+
+    public Set<HederaFunctionality> systemContractsWithTopLevelSigsAccess() {
+        return systemContractsWithTopLevelSigsAccess;
+    }
+
+    public long maxNumWithHapiSigsAccess() {
+        return maxNumWithHapiSigsAccess;
+    }
+
+    public Set<Address> contractsWithSpecialHapiSigsAccess() {
+        return contractsWithSpecialHapiSigsAccess;
     }
 }

@@ -23,10 +23,7 @@ import static com.hedera.node.app.service.mono.throttling.MapAccessType.*;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_ACTION;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_BYTECODE;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_STATE_CHANGE;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
 import static java.util.Map.entry;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -109,6 +106,27 @@ class BootstrapPropertiesTest {
                     entry(AUTO_RENEW_GRANT_FREE_RENEWALS, false),
                     entry(CONTRACTS_ALLOW_CREATE2, true),
                     entry(CONTRACTS_ALLOW_AUTO_ASSOCIATIONS, false),
+                    entry(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, 10_000_000L),
+                    entry(CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS, Set.<Address>of()),
+                    entry(
+                            CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
+                            Set.of(
+                                    ContractCall,
+                                    TokenAssociateToAccount,
+                                    TokenDissociateFromAccount,
+                                    TokenFreezeAccount,
+                                    TokenUnfreezeAccount,
+                                    TokenGrantKycToAccount,
+                                    TokenRevokeKycFromAccount,
+                                    TokenAccountWipe,
+                                    TokenBurn,
+                                    TokenDelete,
+                                    TokenMint,
+                                    TokenPause,
+                                    TokenUnpause,
+                                    TokenCreate,
+                                    TokenUpdate,
+                                    CryptoTransfer)),
                     entry(CONTRACTS_DEFAULT_LIFETIME, 7890000L),
                     entry(CONTRACTS_DYNAMIC_EVM_VERSION, false),
                     entry(CONTRACTS_ENFORCE_CREATION_THROTTLE, false),

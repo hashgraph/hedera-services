@@ -41,6 +41,8 @@ import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.INVALID_
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.KEY;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
@@ -50,8 +52,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_S
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -96,6 +100,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -147,7 +152,11 @@ class TxnAwareEvmSigsVerifierTest {
         assertFailsWith(
                 () ->
                         subject.hasActiveSupplyKey(
-                                true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers),
+                                true,
+                                PRETEND_TOKEN_ADDR,
+                                PRETEND_SENDER_ADDR,
+                                ledgers,
+                                TokenCreate),
                 INVALID_TOKEN_ID);
     }
 
@@ -160,12 +169,20 @@ class TxnAwareEvmSigsVerifierTest {
         assertFailsWith(
                 () ->
                         subject.hasActiveSupplyKey(
-                                true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers),
+                                true,
+                                PRETEND_TOKEN_ADDR,
+                                PRETEND_SENDER_ADDR,
+                                ledgers,
+                                TokenCreate),
                 TOKEN_HAS_NO_SUPPLY_KEY);
     }
 
     @Test
     void testsSupplyKeyIfPresent() {
+        given(dynamicProperties.contractsWithSpecialHapiSigsAccess())
+                .willReturn(Set.of(PRETEND_SENDER_ADDR));
+        given(dynamicProperties.systemContractsWithTopLevelSigsAccess())
+                .willReturn(Set.of(TokenCreate));
         given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
         given(ledgers.tokens()).willReturn(tokensLedger);
         given(tokensLedger.exists(token)).willReturn(true);
@@ -175,9 +192,33 @@ class TxnAwareEvmSigsVerifierTest {
         given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
 
         final var verdict =
-                subject.hasActiveSupplyKey(true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers);
+                subject.hasActiveSupplyKey(
+                        true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers, TokenCreate);
 
         assertTrue(verdict);
+    }
+
+    @Test
+    void onlyUsesTopLevelSigsToTestSupplyKeyIfTokenCreateInAllowList() {
+        final ArgumentCaptor<Function<byte[], TransactionSignature>> captor =
+                forClass(Function.class);
+        given(dynamicProperties.contractsWithSpecialHapiSigsAccess())
+                .willReturn(Set.of(PRETEND_SENDER_ADDR));
+        given(dynamicProperties.systemContractsWithTopLevelSigsAccess())
+                .willReturn(Set.of(TokenUpdate));
+        given(ledgers.tokens()).willReturn(tokensLedger);
+        given(tokensLedger.exists(token)).willReturn(true);
+        given(tokensLedger.get(token, TokenProperty.SUPPLY_KEY)).willReturn(expectedKey);
+
+        given(activationTest.test(eq(expectedKey), captor.capture(), any())).willReturn(true);
+
+        final var verdict =
+                subject.hasActiveSupplyKey(
+                        true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers, TokenCreate);
+
+        assertTrue(verdict);
+        final var neverValidTest = captor.getValue();
+        assertSame(INVALID_MISSING_SIG, neverValidTest.apply(new byte[0]));
     }
 
     @Test
@@ -188,7 +229,11 @@ class TxnAwareEvmSigsVerifierTest {
                 NullPointerException.class,
                 () ->
                         subject.hasActiveSupplyKey(
-                                true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers));
+                                true,
+                                PRETEND_TOKEN_ADDR,
+                                PRETEND_SENDER_ADDR,
+                                ledgers,
+                                TokenCreate));
     }
 
     @Test
@@ -200,12 +245,20 @@ class TxnAwareEvmSigsVerifierTest {
         assertFailsWith(
                 () ->
                         subject.hasActiveFreezeKey(
-                                true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers),
+                                true,
+                                PRETEND_TOKEN_ADDR,
+                                PRETEND_SENDER_ADDR,
+                                ledgers,
+                                TokenCreate),
                 TOKEN_HAS_NO_FREEZE_KEY);
     }
 
     @Test
     void testsFreezeKeyIfPresent() {
+        given(dynamicProperties.contractsWithSpecialHapiSigsAccess())
+                .willReturn(Set.of(PRETEND_SENDER_ADDR));
+        given(dynamicProperties.systemContractsWithTopLevelSigsAccess())
+                .willReturn(Set.of(TokenCreate));
         given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
         given(ledgers.tokens()).willReturn(tokensLedger);
         given(tokensLedger.exists(token)).willReturn(true);
@@ -215,7 +268,8 @@ class TxnAwareEvmSigsVerifierTest {
         given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
 
         final var verdict =
-                subject.hasActiveFreezeKey(true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers);
+                subject.hasActiveFreezeKey(
+                        true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers, TokenCreate);
 
         assertTrue(verdict);
     }
@@ -228,7 +282,11 @@ class TxnAwareEvmSigsVerifierTest {
         assertFailsWith(
                 () ->
                         subject.hasActiveKey(
-                                true, PRETEND_ACCOUNT_ADDR, PRETEND_SENDER_ADDR, ledgers),
+                                true,
+                                PRETEND_ACCOUNT_ADDR,
+                                PRETEND_SENDER_ADDR,
+                                ledgers,
+                                TokenCreate),
                 INVALID_ACCOUNT_ID);
     }
 
@@ -241,12 +299,20 @@ class TxnAwareEvmSigsVerifierTest {
         assertFailsWith(
                 () ->
                         subject.hasActiveAdminKey(
-                                true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers),
+                                true,
+                                PRETEND_TOKEN_ADDR,
+                                PRETEND_SENDER_ADDR,
+                                ledgers,
+                                TokenCreate),
                 TOKEN_IS_IMMUTABLE);
     }
 
     @Test
     void testsAdminKeyIfPresent() {
+        given(dynamicProperties.contractsWithSpecialHapiSigsAccess())
+                .willReturn(Set.of(PRETEND_SENDER_ADDR));
+        given(dynamicProperties.systemContractsWithTopLevelSigsAccess())
+                .willReturn(Set.of(TokenCreate));
         given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
         given(ledgers.tokens()).willReturn(tokensLedger);
         given(tokensLedger.exists(token)).willReturn(true);
@@ -256,13 +322,18 @@ class TxnAwareEvmSigsVerifierTest {
         given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
 
         final var verdict =
-                subject.hasActiveAdminKey(true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers);
+                subject.hasActiveAdminKey(
+                        true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers, TokenCreate);
 
         assertTrue(verdict);
     }
 
     @Test
     void testsAccountKeyIfPresent() {
+        given(dynamicProperties.systemContractsWithTopLevelSigsAccess())
+                .willReturn(Set.of(TokenCreate));
+        given(dynamicProperties.contractsWithSpecialHapiSigsAccess())
+                .willReturn(Set.of(PRETEND_SENDER_ADDR));
         given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
         given(ledgers.accounts()).willReturn(accountsLedger);
         given(accountsLedger.exists(account)).willReturn(true);
@@ -271,13 +342,18 @@ class TxnAwareEvmSigsVerifierTest {
         given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
 
         final var verdict =
-                subject.hasActiveKey(true, PRETEND_ACCOUNT_ADDR, PRETEND_SENDER_ADDR, ledgers);
+                subject.hasActiveKey(
+                        true, PRETEND_ACCOUNT_ADDR, PRETEND_SENDER_ADDR, ledgers, TokenCreate);
 
         assertTrue(verdict);
     }
 
     @Test
     void testsAccountKeyIfPresentButInvalid() {
+        given(dynamicProperties.contractsWithSpecialHapiSigsAccess())
+                .willReturn(Set.of(PRETEND_SENDER_ADDR));
+        given(dynamicProperties.systemContractsWithTopLevelSigsAccess())
+                .willReturn(Set.of(TokenCreate));
         given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
         given(ledgers.accounts()).willReturn(accountsLedger);
         given(accountsLedger.exists(account)).willReturn(true);
@@ -286,7 +362,8 @@ class TxnAwareEvmSigsVerifierTest {
         given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(false);
 
         final var verdict =
-                subject.hasActiveKey(true, PRETEND_ACCOUNT_ADDR, PRETEND_SENDER_ADDR, ledgers);
+                subject.hasActiveKey(
+                        true, PRETEND_ACCOUNT_ADDR, PRETEND_SENDER_ADDR, ledgers, TokenCreate);
 
         assertFalse(verdict);
     }
@@ -298,7 +375,8 @@ class TxnAwareEvmSigsVerifierTest {
         given(accountsLedger.get(account, AccountProperty.KEY)).willReturn(null);
 
         final var verdict =
-                subject.hasActiveKey(true, PRETEND_ACCOUNT_ADDR, PRETEND_SENDER_ADDR, ledgers);
+                subject.hasActiveKey(
+                        true, PRETEND_ACCOUNT_ADDR, PRETEND_SENDER_ADDR, ledgers, TokenCreate);
 
         assertFalse(verdict);
     }
@@ -341,7 +419,8 @@ class TxnAwareEvmSigsVerifierTest {
         given(accountsLedger.get(account, AccountProperty.KEY)).willReturn(emptyKeyList);
 
         final var verdict =
-                subject.hasActiveKey(true, PRETEND_ACCOUNT_ADDR, PRETEND_SENDER_ADDR, ledgers);
+                subject.hasActiveKey(
+                        true, PRETEND_ACCOUNT_ADDR, PRETEND_SENDER_ADDR, ledgers, TokenCreate);
 
         assertFalse(verdict);
     }
@@ -356,7 +435,8 @@ class TxnAwareEvmSigsVerifierTest {
                         true,
                         EntityIdUtils.asTypedEvmAddress(smartContract),
                         PRETEND_SENDER_ADDR,
-                        ledgers);
+                        ledgers,
+                        TokenCreate);
 
         assertTrue(contractFlag);
         verify(activationTest, never()).test(any(), any(), any());
@@ -382,7 +462,8 @@ class TxnAwareEvmSigsVerifierTest {
                         true,
                         EntityIdUtils.asTypedEvmAddress(noSigRequired),
                         PRETEND_SENDER_ADDR,
-                        ledgers);
+                        ledgers,
+                        TokenCreate);
 
         assertTrue(noSigRequiredFlag);
         verify(activationTest, never()).test(any(), any(), any());
@@ -398,7 +479,8 @@ class TxnAwareEvmSigsVerifierTest {
                         true,
                         EntityIdUtils.asTypedEvmAddress(noSigRequired),
                         PRETEND_SENDER_ADDR,
-                        ledgers);
+                        ledgers,
+                        TokenCreate);
 
         assertTrue(noSigRequiredFlag);
         verify(activationTest, never()).test(any(), any(), any());
@@ -414,7 +496,8 @@ class TxnAwareEvmSigsVerifierTest {
                         true,
                         EntityIdUtils.asTypedEvmAddress(noSigRequired),
                         PRETEND_SENDER_ADDR,
-                        ledgers);
+                        ledgers,
+                        TokenCreate);
 
         assertTrue(noSigRequiredFlag);
         verify(activationTest, never()).test(any(), any(), any());
@@ -423,6 +506,10 @@ class TxnAwareEvmSigsVerifierTest {
     @Test
     void testsWhenReceiverSigIsRequired() {
         givenAccessorInCtx();
+        given(dynamicProperties.contractsWithSpecialHapiSigsAccess())
+                .willReturn(Set.of(PRETEND_SENDER_ADDR));
+        given(dynamicProperties.systemContractsWithTopLevelSigsAccess())
+                .willReturn(Set.of(TokenCreate));
         givenSigReqCheckable(sigRequired, true, expectedKey);
         given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
 
@@ -433,7 +520,8 @@ class TxnAwareEvmSigsVerifierTest {
                         true,
                         EntityIdUtils.asTypedEvmAddress(sigRequired),
                         PRETEND_SENDER_ADDR,
-                        ledgers);
+                        ledgers,
+                        TokenCreate);
 
         assertTrue(sigRequiredFlag);
     }
@@ -444,7 +532,11 @@ class TxnAwareEvmSigsVerifierTest {
 
         final boolean payerFlag =
                 subject.hasActiveKeyOrNoReceiverSigReq(
-                        true, EntityIdUtils.asTypedEvmAddress(payer), PRETEND_SENDER_ADDR, ledgers);
+                        true,
+                        EntityIdUtils.asTypedEvmAddress(payer),
+                        PRETEND_SENDER_ADDR,
+                        ledgers,
+                        TokenCreate);
 
         assertTrue(payerFlag);
 
@@ -479,7 +571,8 @@ class TxnAwareEvmSigsVerifierTest {
                         true,
                         EntityIdUtils.asTypedEvmAddress(smartContract),
                         EntityIdUtils.asTypedEvmAddress(smartContract),
-                        ledgers);
+                        ledgers,
+                        TokenCreate);
 
         assertTrue(verdict);
     }
@@ -538,7 +631,11 @@ class TxnAwareEvmSigsVerifierTest {
         assertFailsWith(
                 () ->
                         subject.hasActiveKycKey(
-                                true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers),
+                                true,
+                                PRETEND_TOKEN_ADDR,
+                                PRETEND_SENDER_ADDR,
+                                ledgers,
+                                TokenCreate),
                 TOKEN_HAS_NO_KYC_KEY);
     }
 
@@ -550,6 +647,10 @@ class TxnAwareEvmSigsVerifierTest {
 
     @Test
     void testsKycKeyIfPresent() {
+        given(dynamicProperties.contractsWithSpecialHapiSigsAccess())
+                .willReturn(Set.of(PRETEND_SENDER_ADDR));
+        given(dynamicProperties.systemContractsWithTopLevelSigsAccess())
+                .willReturn(Set.of(TokenCreate));
         given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
         given(ledgers.tokens()).willReturn(tokensLedger);
         given(tokensLedger.exists(token)).willReturn(true);
@@ -559,7 +660,8 @@ class TxnAwareEvmSigsVerifierTest {
         given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
 
         final var verdict =
-                subject.hasActiveKycKey(true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers);
+                subject.hasActiveKycKey(
+                        true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers, TokenCreate);
 
         assertTrue(verdict);
     }
@@ -573,13 +675,21 @@ class TxnAwareEvmSigsVerifierTest {
         assertFailsWith(
                 () ->
                         subject.hasActivePauseKey(
-                                true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers),
+                                true,
+                                PRETEND_TOKEN_ADDR,
+                                PRETEND_SENDER_ADDR,
+                                ledgers,
+                                TokenCreate),
                 TOKEN_HAS_NO_PAUSE_KEY);
     }
 
     @Test
     void testsPauseKeyIfPresent() {
         given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
+        given(dynamicProperties.contractsWithSpecialHapiSigsAccess())
+                .willReturn(Set.of(PRETEND_SENDER_ADDR));
+        given(dynamicProperties.systemContractsWithTopLevelSigsAccess())
+                .willReturn(Set.of(TokenCreate));
         given(ledgers.tokens()).willReturn(tokensLedger);
         given(tokensLedger.exists(token)).willReturn(true);
         given(tokensLedger.get(token, TokenProperty.PAUSE_KEY)).willReturn(expectedKey);
@@ -588,7 +698,8 @@ class TxnAwareEvmSigsVerifierTest {
         given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
 
         final var verdict =
-                subject.hasActivePauseKey(true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers);
+                subject.hasActivePauseKey(
+                        true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers, TokenCreate);
 
         assertTrue(verdict);
     }
@@ -602,12 +713,20 @@ class TxnAwareEvmSigsVerifierTest {
         assertFailsWith(
                 () ->
                         subject.hasActiveWipeKey(
-                                true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers),
+                                true,
+                                PRETEND_TOKEN_ADDR,
+                                PRETEND_SENDER_ADDR,
+                                ledgers,
+                                TokenCreate),
                 TOKEN_HAS_NO_WIPE_KEY);
     }
 
     @Test
     void testsWipeKeyIfPresent() {
+        given(dynamicProperties.contractsWithSpecialHapiSigsAccess())
+                .willReturn(Set.of(PRETEND_SENDER_ADDR));
+        given(dynamicProperties.systemContractsWithTopLevelSigsAccess())
+                .willReturn(Set.of(TokenCreate));
         given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
         given(ledgers.tokens()).willReturn(tokensLedger);
         given(tokensLedger.exists(token)).willReturn(true);
@@ -617,7 +736,8 @@ class TxnAwareEvmSigsVerifierTest {
         given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
 
         final var verdict =
-                subject.hasActiveWipeKey(true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers);
+                subject.hasActiveWipeKey(
+                        true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers, TokenCreate);
 
         assertTrue(verdict);
     }
@@ -660,6 +780,10 @@ class TxnAwareEvmSigsVerifierTest {
 
     @Test
     void usesLegacyActivationsWhenAvailable() {
+        given(dynamicProperties.contractsWithSpecialHapiSigsAccess())
+                .willReturn(Set.of(PRETEND_SENDER_ADDR));
+        given(dynamicProperties.systemContractsWithTopLevelSigsAccess())
+                .willReturn(Set.of(TokenCreate));
         subject =
                 new TxnAwareEvmSigsVerifier(
                         HederaKeyActivation::isActive, txnCtx, cryptoValidity, dynamicProperties);
@@ -686,9 +810,10 @@ class TxnAwareEvmSigsVerifierTest {
                 subject.hasLegacyActiveKey(
                         false,
                         PRETEND_ACCOUNT_ADDR,
-                        PRETEND_TOKEN_ADDR,
+                        PRETEND_SENDER_ADDR,
                         ledgers,
-                        legacyActivationTest));
+                        legacyActivationTest,
+                        TokenCreate));
     }
 
     @Test

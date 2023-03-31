@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTes
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.recipientAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.BurnPrecompile.decodeBurn;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.BurnPrecompile.decodeBurnV2;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -184,8 +185,7 @@ class BurnPrecompilesTest {
     void setUp() throws IOException {
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
         canonicalPrices.put(
-                HederaFunctionality.TokenBurn,
-                Map.of(SubType.TOKEN_FUNGIBLE_COMMON, BigDecimal.valueOf(0)));
+                TokenBurn, Map.of(SubType.TOKEN_FUNGIBLE_COMMON, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
         final PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(
@@ -234,7 +234,8 @@ class BurnPrecompilesTest {
                                 true,
                                 HTSTestsUtil.nonFungibleTokenAddr,
                                 HTSTestsUtil.recipientAddr,
-                                wrappedLedgers))
+                                wrappedLedgers,
+                                TokenBurn))
                 .willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
         given(
                         feeCalculator.estimatedGasPriceInTinybars(
@@ -276,7 +277,8 @@ class BurnPrecompilesTest {
                                 true,
                                 HTSTestsUtil.nonFungibleTokenAddr,
                                 HTSTestsUtil.recipientAddr,
-                                null))
+                                null,
+                                TokenBurn))
                 .willThrow(new NullPointerException());
         given(
                         feeCalculator.estimatedGasPriceInTinybars(
@@ -318,7 +320,8 @@ class BurnPrecompilesTest {
                                 true,
                                 HTSTestsUtil.nonFungibleTokenAddr,
                                 HTSTestsUtil.recipientAddr,
-                                wrappedLedgers))
+                                wrappedLedgers,
+                                TokenBurn))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(
@@ -370,7 +373,8 @@ class BurnPrecompilesTest {
                                 true,
                                 HTSTestsUtil.nonFungibleTokenAddr,
                                 HTSTestsUtil.recipientAddr,
-                                wrappedLedgers))
+                                wrappedLedgers,
+                                TokenBurn))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(
@@ -413,7 +417,8 @@ class BurnPrecompilesTest {
                                 true,
                                 HTSTestsUtil.fungibleTokenAddr,
                                 HTSTestsUtil.recipientAddr,
-                                wrappedLedgers))
+                                wrappedLedgers,
+                                TokenBurn))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(
@@ -498,7 +503,8 @@ class BurnPrecompilesTest {
                                 true,
                                 HTSTestsUtil.fungibleTokenAddr,
                                 HTSTestsUtil.recipientAddr,
-                                wrappedLedgers))
+                                wrappedLedgers,
+                                TokenBurn))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(

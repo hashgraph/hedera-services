@@ -58,6 +58,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTes
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.token;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.tokenAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.tokenTransferChanges;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
@@ -73,6 +74,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -181,7 +183,10 @@ class ERC721PrecompilesTest {
     @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private GasCalculator gasCalculator;
     @Mock private MessageFrame frame;
-    @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
+
+    @Mock(strictness = LENIENT)
+    private TxnAwareEvmSigsVerifier sigsVerifier;
+
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private EncodingFacade encoder;
     @Mock private EvmEncodingFacade evmEncoder;
@@ -1440,6 +1445,9 @@ class ERC721PrecompilesTest {
     void transferFrom() throws InvalidProtocolBufferException {
         final Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TRANSFER_FROM));
         final Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
+        given(dynamicProperties.maxNumWithHapiSigsAccess()).willReturn(Long.MAX_VALUE);
+        given(dynamicProperties.systemContractsWithTopLevelSigsAccess())
+                .willReturn(Set.of(CryptoTransfer));
         givenLedgers();
         givenPricingUtilsContext();
 
@@ -1450,9 +1458,13 @@ class ERC721PrecompilesTest {
         given(frame.getSenderAddress()).willReturn(senderAddress);
         given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody))
                 .willReturn(OK);
-        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
+        given(
+                        sigsVerifier.hasActiveKey(
+                                Mockito.anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(true);
-        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(anyBoolean(), any(), any(), any()))
+        given(
+                        sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                                anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(true);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
         given(infrastructureFactory.newImpliedTransfersMarshal(any()))
@@ -1543,7 +1555,10 @@ class ERC721PrecompilesTest {
         final Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TRANSFER_FROM));
         final Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         givenLedgers();
+        given(dynamicProperties.maxNumWithHapiSigsAccess()).willReturn(Long.MAX_VALUE);
         givenPricingUtilsContext();
+        given(dynamicProperties.systemContractsWithTopLevelSigsAccess())
+                .willReturn(Set.of(CryptoTransfer));
 
         given(frame.getContractAddress()).willReturn(contractAddr);
         given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftTransferList)))
@@ -1551,7 +1566,9 @@ class ERC721PrecompilesTest {
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
         given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody))
                 .willReturn(OK);
-        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
+        given(
+                        sigsVerifier.hasActiveKey(
+                                Mockito.anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(false);
         given(infrastructureFactory.newImpliedTransfersMarshal(any()))
                 .willReturn(impliedTransfersMarshal);

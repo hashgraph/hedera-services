@@ -68,6 +68,8 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTes
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.tokensTransferListAliasedX2;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.tokensTransferListReceiverOnly;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.tokensTransferListSenderOnly;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TransferPrecompile.addNftExchanges;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TransferPrecompile.addSignedAdjustments;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TransferPrecompile.decodeCryptoTransfer;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TransferPrecompile.decodeCryptoTransferV2;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TransferPrecompile.decodeHbarTransfers;
@@ -76,6 +78,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.T
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TransferPrecompile.decodeTransferNFTs;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TransferPrecompile.decodeTransferToken;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TransferPrecompile.decodeTransferTokens;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
@@ -94,6 +97,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -165,6 +169,7 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Predicate;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -194,7 +199,10 @@ class TransferPrecompilesTest {
     @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private GasCalculator gasCalculator;
     @Mock private MessageFrame frame;
-    @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
+
+    @Mock(strictness = LENIENT)
+    private TxnAwareEvmSigsVerifier sigsVerifier;
+
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private EncodingFacade encoder;
     @Mock private EvmEncodingFacade evmEncoder;
@@ -397,11 +405,13 @@ class TransferPrecompilesTest {
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
         given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody))
                 .willReturn(OK);
-        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
+        given(
+                        sigsVerifier.hasActiveKey(
+                                Mockito.anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(true);
         given(
                         sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-                                Mockito.anyBoolean(), any(), any(), any()))
+                                Mockito.anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(true);
         transferPrecompile
                 .when(() -> decodeTransferTokens(eq(pretendArguments), any(), any()))
@@ -548,7 +558,7 @@ class TransferPrecompilesTest {
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
         given(
                         sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-                                Mockito.anyBoolean(), any(), any(), any()))
+                                Mockito.anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(true);
         transferPrecompile
                 .when(() -> decodeTransferTokens(eq(pretendArguments), any(), any()))
@@ -630,7 +640,7 @@ class TransferPrecompilesTest {
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
         given(
                         sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-                                Mockito.anyBoolean(), any(), any(), any()))
+                                Mockito.anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(true);
         transferPrecompile
                 .when(() -> decodeTransferTokens(eq(pretendArguments), any(), any()))
@@ -706,11 +716,13 @@ class TransferPrecompilesTest {
         given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftsTransferList)))
                 .willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
-        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
+        given(
+                        sigsVerifier.hasActiveKey(
+                                Mockito.anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(true);
         given(
                         sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-                                Mockito.anyBoolean(), any(), any(), any()))
+                                Mockito.anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(true);
         transferPrecompile
                 .when(() -> decodeTransferNFTs(eq(pretendArguments), any(), any()))
@@ -792,11 +804,13 @@ class TransferPrecompilesTest {
         given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftTransferList)))
                 .willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
-        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
+        given(
+                        sigsVerifier.hasActiveKey(
+                                Mockito.anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(true);
         given(
                         sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-                                Mockito.anyBoolean(), any(), any(), any()))
+                                Mockito.anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(true);
         transferPrecompile
                 .when(() -> decodeTransferNFT(eq(pretendArguments), any(), any()))
@@ -857,16 +871,26 @@ class TransferPrecompilesTest {
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
         verify(sigsVerifier)
-                .hasActiveKey(true, senderId.asEvmAddress(), recipientAddr, wrappedLedgers);
+                .hasActiveKey(
+                        true,
+                        senderId.asEvmAddress(),
+                        recipientAddr,
+                        wrappedLedgers,
+                        CryptoTransfer);
         verify(sigsVerifier)
                 .hasActiveKeyOrNoReceiverSigReq(
-                        true, receiverId.asEvmAddress(), recipientAddr, wrappedLedgers);
+                        true,
+                        receiverId.asEvmAddress(),
+                        recipientAddr,
+                        wrappedLedgers,
+                        CryptoTransfer);
         verify(sigsVerifier, never())
                 .hasActiveKeyOrNoReceiverSigReq(
                         true,
                         EntityIdUtils.asTypedEvmAddress(feeCollector),
                         recipientAddr,
-                        wrappedLedgers);
+                        wrappedLedgers,
+                        CryptoTransfer);
     }
 
     @Test
@@ -885,11 +909,13 @@ class TransferPrecompilesTest {
         given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftTransferList)))
                 .willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
-        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
+        given(
+                        sigsVerifier.hasActiveKey(
+                                Mockito.anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(true);
         given(
                         sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-                                Mockito.anyBoolean(), any(), any(), any()))
+                                Mockito.anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(true);
         transferPrecompile
                 .when(() -> decodeCryptoTransfer(eq(pretendArguments), any(), any()))
@@ -964,11 +990,13 @@ class TransferPrecompilesTest {
         given(syntheticTxnFactory.createCryptoTransfer(Collections.emptyList()))
                 .willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
-        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
+        given(
+                        sigsVerifier.hasActiveKey(
+                                Mockito.anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(true);
         given(
                         sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-                                Mockito.anyBoolean(), any(), any(), any()))
+                                Mockito.anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(true);
         transferPrecompile
                 .when(() -> decodeCryptoTransferV2(eq(pretendArguments), any(), any()))
@@ -1046,11 +1074,13 @@ class TransferPrecompilesTest {
                                 Collections.singletonList(tokensTransferList)))
                 .willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
-        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
+        given(
+                        sigsVerifier.hasActiveKey(
+                                Mockito.anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(true);
         given(
                         sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-                                Mockito.anyBoolean(), any(), any(), any()))
+                                Mockito.anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(true);
         transferPrecompile
                 .when(() -> decodeCryptoTransferV2(eq(pretendArguments), any(), any()))
@@ -1128,11 +1158,13 @@ class TransferPrecompilesTest {
                                 Collections.singletonList(nftsTransferListAliasReceiver)))
                 .willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
-        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
+        given(
+                        sigsVerifier.hasActiveKey(
+                                Mockito.anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(true);
         given(
                         sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-                                Mockito.anyBoolean(), any(), any(), any()))
+                                Mockito.anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(true);
         transferPrecompile
                 .when(() -> decodeCryptoTransferV2(eq(pretendArguments), any(), any()))
@@ -1246,11 +1278,13 @@ class TransferPrecompilesTest {
                                 Collections.singletonList(nftsTransferListAliasReceiver)))
                 .willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
-        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
+        given(
+                        sigsVerifier.hasActiveKey(
+                                Mockito.anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(true);
         given(
                         sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-                                Mockito.anyBoolean(), any(), any(), any()))
+                                Mockito.anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(true);
         transferPrecompile
                 .when(() -> decodeCryptoTransferV2(eq(pretendArguments), any(), any()))
@@ -1330,11 +1364,13 @@ class TransferPrecompilesTest {
         given(syntheticTxnFactory.createCryptoTransfer(Collections.emptyList()))
                 .willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
-        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
+        given(
+                        sigsVerifier.hasActiveKey(
+                                Mockito.anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(true);
         given(
                         sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-                                Mockito.anyBoolean(), any(), any(), any()))
+                                Mockito.anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(true);
         transferPrecompile
                 .when(() -> decodeCryptoTransferV2(eq(pretendArguments), any(), any()))
@@ -1440,11 +1476,13 @@ class TransferPrecompilesTest {
                                 Collections.singletonList(tokensTransferListAliasedX2)))
                 .willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
-        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
+        given(
+                        sigsVerifier.hasActiveKey(
+                                Mockito.anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(true);
         given(
                         sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-                                Mockito.anyBoolean(), any(), any(), any()))
+                                Mockito.anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(true);
         transferPrecompile
                 .when(() -> decodeCryptoTransferV2(eq(pretendArguments), any(), any()))
@@ -1838,11 +1876,13 @@ class TransferPrecompilesTest {
         given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftsTransferList)))
                 .willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
-        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
+        given(
+                        sigsVerifier.hasActiveKey(
+                                Mockito.anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(true);
         given(
                         sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-                                Mockito.anyBoolean(), any(), any(), any()))
+                                Mockito.anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(true);
         transferPrecompile
                 .when(() -> decodeCryptoTransferV2(eq(pretendArguments), any(), any()))
@@ -1909,6 +1949,9 @@ class TransferPrecompilesTest {
         givenMinimalFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
+        given(dynamicProperties.maxNumWithHapiSigsAccess()).willReturn(Long.MAX_VALUE);
+        given(dynamicProperties.systemContractsWithTopLevelSigsAccess())
+                .willReturn(Set.of(CryptoTransfer));
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(infrastructureFactory.newImpliedTransfersMarshal(any()))
                 .willReturn(impliedTransfersMarshal);
@@ -1917,9 +1960,11 @@ class TransferPrecompilesTest {
 
         given(
                         sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-                                Mockito.anyBoolean(), any(), any(), any()))
+                                Mockito.anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(true);
-        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
+        given(
+                        sigsVerifier.hasActiveKey(
+                                Mockito.anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(true);
         given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody))
                 .willReturn(OK);
@@ -2627,6 +2672,9 @@ class TransferPrecompilesTest {
                                         identity(),
                                         accoundIdExists))
                 .thenCallRealMethod();
+        transferPrecompile
+                .when(() -> addSignedAdjustments(any(), any(), any(), any(), any()))
+                .thenCallRealMethod();
         final var decodedInput =
                 decodeTransferTokens(
                         POSITIVE_AMOUNTS_TRANSFER_TOKENS_INPUT, identity(), accoundIdExists);
@@ -2656,6 +2704,9 @@ class TransferPrecompilesTest {
                                         POSITIVE_AMOUNTS_TRANSFER_TOKENS_INPUT,
                                         identity(),
                                         nonExistingPredicate))
+                .thenCallRealMethod();
+        transferPrecompile
+                .when(() -> addSignedAdjustments(any(), any(), any(), any(), any()))
                 .thenCallRealMethod();
         final var decodedInput =
                 decodeTransferTokens(
@@ -2694,6 +2745,9 @@ class TransferPrecompilesTest {
                                         POSITIVE_NEGATIVE_AMOUNT_TRANSFER_TOKENS_INPUT,
                                         identity(),
                                         accoundIdExists))
+                .thenCallRealMethod();
+        transferPrecompile
+                .when(() -> addSignedAdjustments(any(), any(), any(), any(), any()))
                 .thenCallRealMethod();
         final var decodedInput =
                 decodeTransferTokens(
@@ -2744,6 +2798,9 @@ class TransferPrecompilesTest {
         transferPrecompile
                 .when(() -> decodeHbarTransfers(any(), any(), any(), any()))
                 .thenCallRealMethod();
+        transferPrecompile
+                .when(() -> addNftExchanges(any(), any(), any(), any(), any(), any()))
+                .thenCallRealMethod();
         final var decodedInput =
                 decodeTransferNFTs(TRANSFER_NFTS_INPUT, identity(), accoundIdExists);
         final var hbarTransfers = decodedInput.transferWrapper().hbarTransfers();
@@ -2769,6 +2826,9 @@ class TransferPrecompilesTest {
                         () ->
                                 decodeTransferNFTs(
                                         TRANSFER_NFTS_INPUT, identity(), nonExistingPredicate))
+                .thenCallRealMethod();
+        transferPrecompile
+                .when(() -> addNftExchanges(any(), any(), any(), any(), any(), any()))
                 .thenCallRealMethod();
         transferPrecompile
                 .when(() -> decodeTokenTransfer(any(), any(), any(), any()))

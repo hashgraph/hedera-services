@@ -38,6 +38,7 @@ package com.hedera.node.app.service.mono.contracts.operation;
  */
 
 import static com.hedera.node.app.service.mono.contracts.operation.CommonCallSetup.commonSetup;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.*;
@@ -137,7 +138,7 @@ class HederaCallCodeOperationTest {
         given(acc.getAddress()).willReturn(Address.ZERO);
         given(
                         sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-                                Mockito.anyBoolean(), any(), any(), any()))
+                                Mockito.anyBoolean(), any(), any(), any(), eq(ContractCall)))
                 .willReturn(true);
         given(addressValidator.test(any(), any())).willReturn(true);
 
@@ -171,7 +172,7 @@ class HederaCallCodeOperationTest {
         given(acc.getAddress()).willReturn(Address.ZERO);
         given(
                         sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-                                Mockito.anyBoolean(), any(), any(), any()))
+                                Mockito.anyBoolean(), any(), any(), any(), eq(ContractCall)))
                 .willReturn(false);
         given(addressValidator.test(any(), any())).willReturn(true);
 

@@ -62,11 +62,11 @@ import org.apache.logging.log4j.Logger;
 
 public class WipeTokenAccountPrecompileSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(WipeTokenAccountPrecompileSuite.class);
-    private static final String WIPE_CONTRACT = "WipeTokenAccount";
-    private static final String ADMIN_ACCOUNT = "admin";
+    public static final String WIPE_CONTRACT = "WipeTokenAccount";
+    public static final String ADMIN_ACCOUNT = "admin";
     private static final String ACCOUNT = "anybody";
     private static final String SECOND_ACCOUNT = "anybodySecond";
-    private static final String WIPE_KEY = "wipeKey";
+    public static final String WIPE_KEY = "wipeKey";
     private static final String MULTI_KEY = "purpose";
     public static final int GAS_TO_OFFER = 1_000_000;
     public static final String WIPE_FUNGIBLE_TOKEN = "wipeFungibleToken";

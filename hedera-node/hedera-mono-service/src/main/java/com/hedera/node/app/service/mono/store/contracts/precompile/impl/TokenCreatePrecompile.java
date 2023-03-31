@@ -41,6 +41,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
@@ -84,6 +85,7 @@ import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenCreate;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -402,7 +404,8 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
                         treasuryId.asEvmAddress(),
                         sigsVerifier::hasActiveKey,
                         ledgers,
-                        updater.aliases());
+                        updater.aliases(),
+                        TokenCreate);
         validateTrue(treasuryHasSigned, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, TOKEN_CREATE);
         tokenCreateOp
                 .getAdminKey()
@@ -576,19 +579,26 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
         final var key = tokenKeyWrapper.key();
         return switch (key.getKeyValueType()) {
             case INHERIT_ACCOUNT_KEY -> KeyActivationUtils.validateKey(
-                    frame, senderAddress, sigsVerifier::hasActiveKey, ledgers, updater.aliases());
+                    frame,
+                    senderAddress,
+                    sigsVerifier::hasActiveKey,
+                    ledgers,
+                    updater.aliases(),
+                    TokenCreate);
             case CONTRACT_ID -> KeyActivationUtils.validateKey(
                     frame,
                     asTypedEvmAddress(key.getContractID()),
                     sigsVerifier::hasActiveKey,
                     ledgers,
-                    updater.aliases());
+                    updater.aliases(),
+                    TokenCreate);
             case DELEGATABLE_CONTRACT_ID -> KeyActivationUtils.validateKey(
                     frame,
                     asTypedEvmAddress(key.getDelegatableContractID()),
                     sigsVerifier::hasActiveKey,
                     ledgers,
-                    updater.aliases());
+                    updater.aliases(),
+                    TokenCreate);
             case ED25519 -> validateCryptoKey(
                     new JEd25519Key(key.getEd25519Key()), sigsVerifier::cryptoKeyIsActive);
             case ECDSA_SECPK256K1 -> validateCryptoKey(

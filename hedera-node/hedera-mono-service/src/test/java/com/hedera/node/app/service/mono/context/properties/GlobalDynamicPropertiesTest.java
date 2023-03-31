@@ -73,6 +73,7 @@ class GlobalDynamicPropertiesTest {
             LegacyContractIdActivations.from("1058134by[1062784]");
     private Set<Address> permittedDelegateCallers =
             (Set<Address>) AS_EVM_ADDRESSES.apply("1062787,1461860");
+    private Set<Address> specialHapiSigsAccess = (Set<Address>) AS_EVM_ADDRESSES.apply("1062789");
     private GlobalDynamicProperties subject;
 
     @BeforeEach
@@ -229,6 +230,9 @@ class GlobalDynamicPropertiesTest {
         assertEquals(asTypedEvmAddress(accountWith(1L, 2L, 7L)), subject.fundingAccountAddress());
         assertEquals(balanceExportPaths[1], subject.pathToBalancesExportDir());
         assertEquals(Set.of(HederaFunctionality.CryptoTransfer), subject.schedulingWhitelist());
+        assertEquals(
+                Set.of(HederaFunctionality.TokenDelete),
+                subject.systemContractsWithTopLevelSigsAccess());
         assertEquals(oddCongestion, subject.congestionMultipliers());
         assertEquals(upgradeArtifactLocs[1], subject.upgradeArtifactsLoc());
         assertEquals(Set.of(SidecarType.CONTRACT_STATE_CHANGE), subject.enabledSidecars());
@@ -239,6 +243,8 @@ class GlobalDynamicPropertiesTest {
         assertEquals(evmVersions[1], subject.evmVersion());
         assertEquals(contractIdActivations, subject.legacyContractIdActivations());
         assertEquals(permittedDelegateCallers, subject.permittedDelegateCallers());
+        assertEquals(specialHapiSigsAccess, subject.contractsWithSpecialHapiSigsAccess());
+        assertEquals(94L, subject.maxNumWithHapiSigsAccess());
         assertEquals(entityScaleFactors, subject.entityScaleFactors());
     }
 
@@ -429,6 +435,11 @@ class GlobalDynamicPropertiesTest {
                         i % 2 == 0
                                 ? Set.of(HederaFunctionality.CryptoCreate)
                                 : Set.of(HederaFunctionality.CryptoTransfer));
+        given(properties.getFunctionsProperty(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS))
+                .willReturn(
+                        i % 2 == 0
+                                ? Set.of(HederaFunctionality.TokenCreate)
+                                : Set.of(HederaFunctionality.TokenDelete));
         given(properties.getCongestionMultiplierProperty(FEES_PERCENT_CONGESTION_MULTIPLIERS))
                 .willReturn(i % 2 == 0 ? evenCongestion : oddCongestion);
         given(properties.getIntProperty(FEES_MIN_CONGESTION_PERIOD)).willReturn(i + 29);
@@ -559,6 +570,10 @@ class GlobalDynamicPropertiesTest {
                 .willReturn((i + 91) % 2 == 0);
         given(properties.getEvmAddresses(CONTRACTS_PERMITTED_DELEGATE_CALLERS))
                 .willReturn(permittedDelegateCallers);
+        given(properties.getEvmAddresses(CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS))
+                .willReturn(specialHapiSigsAccess);
+        given(properties.getLongProperty(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS))
+                .willReturn(i + 93L);
     }
 
     private Set<EntityType> typesFor(final int i) {

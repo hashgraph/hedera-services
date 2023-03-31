@@ -22,6 +22,7 @@ import static com.hedera.test.utils.IdUtils.asAccountWithAlias;
 import static com.hedera.test.utils.IdUtils.asAliasAccount;
 import static com.hedera.test.utils.IdUtils.nftXfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -275,5 +276,89 @@ class BalanceChangeTest {
 
         assertEquals(2, subject.getExpectedDecimals());
         assertTrue(subject.hasExpectedDecimals());
+    }
+
+    @Test
+    void canSwitchHbarDebitToApprovedDebit() {
+        final var unapproved = BalanceChange.changingHbar(aaWith(1234, -5678L, false), payer);
+        final var approved = BalanceChange.changingHbar(aaWith(1234, -5678L, true), payer);
+
+        assertNotEquals(unapproved, approved);
+
+        unapproved.switchToApproved();
+
+        assertEquals(approved, unapproved);
+    }
+
+    @Test
+    void canSwitchFungibleDebitToApprovedDebit() {
+        final var unapproved =
+                BalanceChange.changingFtUnits(
+                        t, t.asGrpcToken(), aaWith(1234, -5678L, false), payer);
+        final var approved =
+                BalanceChange.changingFtUnits(
+                        t, t.asGrpcToken(), aaWith(1234, -5678L, true), payer);
+
+        assertNotEquals(unapproved, approved);
+
+        unapproved.switchToApproved();
+
+        assertEquals(approved, unapproved);
+    }
+
+    @Test
+    void canSwitchOwnershipChangeApproved() {
+        final var unapproved =
+                BalanceChange.changingNftOwnership(
+                        t, t.asGrpcToken(), ownershipChange(1234, 5678, 9, false), payer);
+        final var approved =
+                BalanceChange.changingNftOwnership(
+                        t, t.asGrpcToken(), ownershipChange(1234, 5678, 9, true), payer);
+
+        assertNotEquals(unapproved, approved);
+
+        unapproved.switchToApproved();
+
+        assertEquals(approved, unapproved);
+    }
+
+    @Test
+    void switchingFungibleCreditsAndAlreadyApprovedAreNoops() {
+        final var credit =
+                BalanceChange.changingFtUnits(
+                        t, t.asGrpcToken(), aaWith(1234, +5678L, false), payer);
+        final var approved =
+                BalanceChange.changingFtUnits(
+                        t, t.asGrpcToken(), aaWith(1234, -5678L, true), payer);
+
+        assertDoesNotThrow(credit::switchToApproved);
+        assertDoesNotThrow(approved::switchToApproved);
+    }
+
+    @Test
+    void switchingHbarCreditsAndAlreadyApprovedAreNoops() {
+        final var credit = BalanceChange.changingHbar(aaWith(1234, +5678L, false), payer);
+        final var approved = BalanceChange.changingHbar(aaWith(1234, -5678L, true), payer);
+
+        assertDoesNotThrow(credit::switchToApproved);
+        assertDoesNotThrow(approved::switchToApproved);
+    }
+
+    private static AccountAmount aaWith(final long num, final long amount, final boolean approval) {
+        return AccountAmount.newBuilder()
+                .setAccountID(AccountID.newBuilder().setAccountNum(num).build())
+                .setAmount(amount)
+                .setIsApproval(approval)
+                .build();
+    }
+
+    private static NftTransfer ownershipChange(
+            final long from, final long to, final long serialNo, final boolean approval) {
+        return NftTransfer.newBuilder()
+                .setSenderAccountID(AccountID.newBuilder().setAccountNum(from).build())
+                .setReceiverAccountID(AccountID.newBuilder().setAccountNum(to).build())
+                .setSerialNumber(serialNo)
+                .setIsApproval(approval)
+                .build();
     }
 }

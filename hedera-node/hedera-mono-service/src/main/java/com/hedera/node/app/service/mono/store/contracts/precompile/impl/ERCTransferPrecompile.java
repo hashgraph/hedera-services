@@ -105,7 +105,8 @@ public class ERCTransferPrecompile extends TransferPrecompile {
             final InfrastructureFactory infrastructureFactory,
             final PrecompilePricingUtils pricingUtils,
             final int functionId,
-            final boolean isLazyCreationEnabled) {
+            final boolean isLazyCreationEnabled,
+            final boolean topLevelSigsAreEnabled) {
         super(
                 ledgers,
                 updater,
@@ -116,7 +117,9 @@ public class ERCTransferPrecompile extends TransferPrecompile {
                 pricingUtils,
                 functionId,
                 callerAccount,
-                isLazyCreationEnabled);
+                isLazyCreationEnabled,
+                topLevelSigsAreEnabled,
+                false);
         this.callerAccountID = EntityIdUtils.accountIdFromEvmAddress(callerAccount);
         this.tokenID = tokenID;
         this.isFungible = isFungible;
@@ -135,7 +138,8 @@ public class ERCTransferPrecompile extends TransferPrecompile {
             final InfrastructureFactory infrastructureFactory,
             final PrecompilePricingUtils pricingUtils,
             final int functionId,
-            final boolean isLazyCreationEnabled) {
+            final boolean isLazyCreationEnabled,
+            final boolean topLevelSigsAreEnabled) {
         this(
                 null,
                 callerAccount,
@@ -149,7 +153,8 @@ public class ERCTransferPrecompile extends TransferPrecompile {
                 infrastructureFactory,
                 pricingUtils,
                 functionId,
-                isLazyCreationEnabled);
+                isLazyCreationEnabled,
+                topLevelSigsAreEnabled);
     }
 
     @Override
@@ -281,9 +286,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
 
             addSignedAdjustment(fungibleTransfers, token, to, amount.longValueExact(), false);
 
-            boolean isApproval = !from.equals(operatorId.toGrpcAccountId());
-            addSignedAdjustment(
-                    fungibleTransfers, token, from, -amount.longValueExact(), isApproval);
+            addSignedAdjustment(fungibleTransfers, token, from, -amount.longValueExact(), true);
 
             final var tokenTransferWrappers =
                     Collections.singletonList(

@@ -352,7 +352,7 @@ class ApproveAllowanceChecksTest {
     }
 
     @Test
-    void failsIfOwnerSameAsSpender() {
+    void validatesBasicsAsExpected() {
         given(tokenStore.loadPossiblyPausedToken(tokenId1)).willReturn(token1Model);
         given(tokenStore.loadPossiblyPausedToken(tokenId2)).willReturn(token2Model);
         given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
@@ -367,7 +367,7 @@ class ApproveAllowanceChecksTest {
                         .setOwner(ownerId1)
                         .setAmount(10L)
                         .build();
-        final var badTokenAllowance =
+        final var okErcAllowance =
                 TokenAllowance.newBuilder()
                         .setSpender(ownerId1)
                         .setOwner(ownerId1)
@@ -388,9 +388,9 @@ class ApproveAllowanceChecksTest {
                 SPENDER_ACCOUNT_SAME_AS_OWNER,
                 subject.validateCryptoAllowances(cryptoAllowances, owner, accountStore));
 
-        tokenAllowances.add(badTokenAllowance);
+        tokenAllowances.add(okErcAllowance);
         assertEquals(
-                SPENDER_ACCOUNT_SAME_AS_OWNER,
+                OK,
                 subject.validateFungibleTokenAllowances(
                         tokenAllowances, owner, accountStore, tokenStore));
 
@@ -759,7 +759,6 @@ class ApproveAllowanceChecksTest {
 
     @Test
     void loadsOwnerAccountNotDefaultingToPayer() {
-        given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
         given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
         given(tokenStore.hasAssociation(token1Model, owner)).willReturn(true);
         given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId1))).willReturn(owner);

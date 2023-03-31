@@ -279,7 +279,11 @@ class RevokeKycPrecompileTest {
 
         given(
                         sigsVerifier.hasActiveKycKey(
-                                true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
+                                true,
+                                fungibleTokenAddr,
+                                fungibleTokenAddr,
+                                wrappedLedgers,
+                                HederaFunctionality.TokenRevokeKycFromAccount))
                 .willReturn(true);
     }
 

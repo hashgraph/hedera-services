@@ -22,6 +22,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NO
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TransferPrecompile;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -29,6 +30,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -213,6 +215,30 @@ public class BalanceChange {
             account = Id.fromGrpcAccount(accountId);
         } else if (hasNonEmptyCounterPartyAlias()) {
             counterPartyAccountId = createdId.toGrpcAccountId();
+        }
+    }
+
+    /**
+     * If this balance change is an hbar or fungible token debit, or an NFT ownership change;
+     * <i>and</i> it is not already an approved change, converts this to an approved change.
+     *
+     * <p>We need this so that when a {@link TransferPrecompile} is running without access to the
+     * top-level {@link SignatureMap}, inside a {@code ContractCall} that previously relied on
+     * top-level signatures, it can keep working by "setting up" the {@code ContractCall} with
+     * appropriate allowances that we will use automatically.
+     */
+    public void switchToApproved() {
+        if (isApprovedAllowance) {
+            return;
+        }
+        if (token == null || nftId == null) {
+            if (originalUnits < 0L) {
+                isApprovedAllowance = true;
+                allowanceUnits = originalUnits;
+            }
+        } else {
+            isApprovedAllowance = true;
+            allowanceUnits = -1;
         }
     }
 

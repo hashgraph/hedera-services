@@ -326,7 +326,8 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
             final Id spenderId,
             final Token token,
             final ReadOnlyTokenStore tokenStore) {
-        if (ownerAccount.getId().equals(spenderId)) {
+        // ONLY reject self-approval for NFT's; else allow to match OZ ERC-20
+        if (!token.isFungibleCommon() && ownerAccount.getId().equals(spenderId)) {
             return SPENDER_ACCOUNT_SAME_AS_OWNER;
         }
         if (!tokenStore.hasAssociation(token, ownerAccount)) {
