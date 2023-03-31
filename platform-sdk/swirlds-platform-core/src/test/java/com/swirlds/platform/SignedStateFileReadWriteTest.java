@@ -281,7 +281,8 @@ class SignedStateFileReadWriteTest {
                 MAIN_CLASS_NAME,
                 SELF_ID,
                 SWIRLD_NAME,
-                (ss, path, success) -> {});
+                (ss, path, success) -> {},
+                x -> {});
         manager.start();
 
         final int rounds = 3;
