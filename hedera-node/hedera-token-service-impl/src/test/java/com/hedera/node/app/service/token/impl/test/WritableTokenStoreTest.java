@@ -37,6 +37,7 @@ class WritableTokenStoreTest extends TokenHandlerTestBase {
     void throwsIfNullValuesAsArgs() {
         assertThrows(NullPointerException.class, () -> new WritableTokenStore(null));
         assertThrows(NullPointerException.class, () -> writableStore.put(null));
+        assertThrows(NullPointerException.class, () -> writableStore.put(null));
     }
 
     @Test
