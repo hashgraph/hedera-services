@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.mono.state.initialization;
 
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
-import static com.hedera.node.app.spi.config.PropertyNames.BLOCKLIST_FILE;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_BLOCKLIST_FILE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -146,7 +146,7 @@ class BlocklistAccountCreatorTest {
         // given
         given(accountNumbers.treasury()).willReturn(GENESIS_ACCOUNT_NUM);
         given(genesisKeySource.get()).willReturn(pretendKey);
-        given(properties.getStringProperty(BLOCKLIST_FILE)).willReturn("evm-addresses-blocklist.csv");
+        given(properties.getStringProperty(ACCOUNTS_BLOCKLIST_FILE)).willReturn("evm-addresses-blocklist.csv");
         subject = new BlocklistAccountCreator(
                 MerkleAccount::new, ids, accounts, genesisKeySource, properties, aliasManager, accountNumbers);
         given(aliasManager.lookupIdBy(any())).willReturn(MISSING_NUM);
@@ -172,7 +172,7 @@ class BlocklistAccountCreatorTest {
         // given
         given(accountNumbers.treasury()).willReturn(GENESIS_ACCOUNT_NUM);
         given(genesisKeySource.get()).willReturn(pretendKey);
-        given(properties.getStringProperty(BLOCKLIST_FILE)).willReturn("test-blocklist.csv");
+        given(properties.getStringProperty(ACCOUNTS_BLOCKLIST_FILE)).willReturn("test-blocklist.csv");
         given(aliasManager.lookupIdBy(any())).willReturn(MISSING_NUM);
         subject = new BlocklistAccountCreator(
                 MerkleAccount::new, ids, accounts, genesisKeySource, properties, aliasManager, accountNumbers);
@@ -195,7 +195,7 @@ class BlocklistAccountCreatorTest {
             delimiter = ';')
     void readingBlocklistFileExceptionShouldBeLogged(String blocklistFileName, String expectedLog) {
         // given
-        given(properties.getStringProperty(BLOCKLIST_FILE)).willReturn(blocklistFileName);
+        given(properties.getStringProperty(ACCOUNTS_BLOCKLIST_FILE)).willReturn(blocklistFileName);
         subject = new BlocklistAccountCreator(
                 MerkleAccount::new, ids, accounts, genesisKeySource, properties, aliasManager, accountNumbers);
 

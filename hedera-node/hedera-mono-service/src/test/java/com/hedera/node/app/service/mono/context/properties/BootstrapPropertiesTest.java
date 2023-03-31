@@ -24,6 +24,8 @@ import static com.hedera.node.app.service.mono.throttling.MapAccessType.STORAGE_
 import static com.hedera.node.app.service.mono.throttling.MapAccessType.STORAGE_PUT;
 import static com.hedera.node.app.service.mono.throttling.MapAccessType.STORAGE_REMOVE;
 import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_ADDRESS_BOOK_ADMIN;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_BLOCKLIST_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_BLOCKLIST_FILE;
 import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_EXCHANGE_RATES_ADMIN;
 import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_FEE_SCHEDULE_ADMIN;
 import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_FREEZE_ADMIN;
@@ -48,8 +50,6 @@ import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_ENABL
 import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_PERIOD_SECS;
 import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_TOKEN_BALANCES;
 import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_NODE_BALANCE_WARN_THRESHOLD;
-import static com.hedera.node.app.spi.config.PropertyNames.BLOCKLIST_ENABLED;
-import static com.hedera.node.app.spi.config.PropertyNames.BLOCKLIST_FILE;
 import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_FEE_SCHEDULE_JSON_RESOURCE;
 import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_GENESIS_PUBLIC_KEY;
 import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_HAPI_PERMISSIONS_PATH;
@@ -507,8 +507,8 @@ class BootstrapPropertiesTest {
             entry(TOKENS_AUTO_CREATIONS_ENABLED, true),
             entry(WORKFLOWS_ENABLED, Set.of()),
             entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, true),
-            entry(BLOCKLIST_ENABLED, true),
-            entry(BLOCKLIST_FILE, "evm-addresses-blocklist.csv"));
+            entry(ACCOUNTS_BLOCKLIST_ENABLED, true),
+            entry(ACCOUNTS_BLOCKLIST_FILE, "evm-addresses-blocklist.csv"));
 
     @Test
     void containsProperty() {

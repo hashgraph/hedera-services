@@ -19,7 +19,7 @@ package com.hedera.node.app.service.mono.state.initialization;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
-import static com.hedera.node.app.spi.config.PropertyNames.BLOCKLIST_FILE;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_BLOCKLIST_FILE;
 import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
 
 import com.google.protobuf.ByteString;
@@ -89,7 +89,7 @@ public class BlocklistAccountCreator {
             final @CompositeProps PropertySource properties,
             final AliasManager aliasManager,
             AccountNumbers accountNumbers) {
-        this.blocklistFileName = properties.getStringProperty(BLOCKLIST_FILE);
+        this.blocklistFileName = properties.getStringProperty(ACCOUNTS_BLOCKLIST_FILE);
         this.accountSupplier = accountSupplier;
         this.ids = ids;
         this.accounts = accounts;

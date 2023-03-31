@@ -138,7 +138,7 @@ class ServicesTxnManagerTest {
                 migrationRecordsManager,
                 blocklistAccountCreator);
 
-        given(bootstrapProperties.getBooleanProperty(PropertyNames.BLOCKLIST_ENABLED))
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.ACCOUNTS_BLOCKLIST_ENABLED))
                 .willReturn(true);
 
         // when:

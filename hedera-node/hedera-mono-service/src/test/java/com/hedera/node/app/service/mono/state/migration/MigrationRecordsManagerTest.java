@@ -326,7 +326,7 @@ class MigrationRecordsManagerTest {
     void streamsBlocklistedAccountWhenFeatureFlagIsEnabled() throws DecoderException {
         final var bodyCaptor = forClass(TransactionBody.Builder.class);
         given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
-        given(bootstrapProperties.getBooleanProperty(PropertyNames.BLOCKLIST_ENABLED))
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.ACCOUNTS_BLOCKLIST_ENABLED))
                 .willReturn(true);
         given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker800, MEMO))
                 .willReturn(pretend800);

@@ -18,6 +18,8 @@ package com.hedera.node.app.service.mono.context.properties;
 
 import static com.hedera.node.app.service.mono.context.properties.PropUtils.loadOverride;
 import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_ADDRESS_BOOK_ADMIN;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_BLOCKLIST_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_BLOCKLIST_FILE;
 import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_EXCHANGE_RATES_ADMIN;
 import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_FEE_SCHEDULE_ADMIN;
 import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_FREEZE_ADMIN;
@@ -42,8 +44,6 @@ import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_ENABL
 import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_PERIOD_SECS;
 import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_TOKEN_BALANCES;
 import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_NODE_BALANCE_WARN_THRESHOLD;
-import static com.hedera.node.app.spi.config.PropertyNames.BLOCKLIST_ENABLED;
-import static com.hedera.node.app.spi.config.PropertyNames.BLOCKLIST_FILE;
 import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_FEE_SCHEDULE_JSON_RESOURCE;
 import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_GENESIS_PUBLIC_KEY;
 import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_HAPI_PERMISSIONS_PATH;
@@ -545,8 +545,8 @@ public final class BootstrapProperties implements PropertySource {
             ENTITIES_LIMIT_TOKEN_ASSOCIATIONS,
             UTIL_PRNG_IS_ENABLED,
             TOKENS_AUTO_CREATIONS_ENABLED,
-            BLOCKLIST_ENABLED,
-            BLOCKLIST_FILE);
+            ACCOUNTS_BLOCKLIST_ENABLED,
+            ACCOUNTS_BLOCKLIST_FILE);
 
     static final Set<String> NODE_PROPS = Set.of(
             DEV_ONLY_DEFAULT_NODE_LISTENS,
@@ -792,6 +792,6 @@ public final class BootstrapProperties implements PropertySource {
             entry(TOKENS_AUTO_CREATIONS_ENABLED, AS_BOOLEAN),
             entry(WORKFLOWS_ENABLED, AS_FUNCTIONS),
             entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, AS_BOOLEAN),
-            entry(BLOCKLIST_ENABLED, AS_BOOLEAN),
-            entry(BLOCKLIST_FILE, AS_STRING));
+            entry(ACCOUNTS_BLOCKLIST_ENABLED, AS_BOOLEAN),
+            entry(ACCOUNTS_BLOCKLIST_FILE, AS_STRING));
 }

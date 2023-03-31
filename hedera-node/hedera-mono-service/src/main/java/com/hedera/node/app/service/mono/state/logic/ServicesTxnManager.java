@@ -103,7 +103,7 @@ public class ServicesTxnManager {
             ledger.begin();
 
             if (needToPublishMigrationRecords) {
-                if (bootstrapProperties.getBooleanProperty(PropertyNames.BLOCKLIST_ENABLED)) {
+                if (bootstrapProperties.getBooleanProperty(PropertyNames.ACCOUNTS_BLOCKLIST_ENABLED)) {
                     blocklistAccountCreator.ensureBlockedAccounts();
                 }
 

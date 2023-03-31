@@ -146,7 +146,7 @@ public class MigrationRecordsManager {
         publishAccountsCreated(
                 systemAccountsCreator.getSystemAccountsCreated(), now, SYSTEM_ACCOUNT_CREATION_MEMO, "system creation");
 
-        if (bootstrapProperties.getBooleanProperty(PropertyNames.BLOCKLIST_ENABLED)) {
+        if (bootstrapProperties.getBooleanProperty(PropertyNames.ACCOUNTS_BLOCKLIST_ENABLED)) {
             publishAccountsCreated(
                     blocklistAccountCreator.getBlockedAccountsCreated(), now, BLOCKED_ACCOUNT_CREATION_MEMO, "blocked");
         }
