@@ -380,6 +380,19 @@ public class TxnReceipt implements SelfSerializable {
         private long newTotalSupply;
         private TxnId scheduledTxnId;
         private long[] serialNumbers;
+        /**
+         * Determines the effect of a {@link Builder#revert()} call on the transaction receipt builder.
+         * If this property is set to true, the receipt should be reverted when {@link Builder#revert()} is called.
+         * If it is set to false, the receipt should not be reverted, and no action should be taken.
+         * <p>
+         * Useful to set this to false via {@link Builder#nonRevertable()} for synthetic preceding child transactions,
+         * whose status does not depend on the top-level transaction's status, e.g. hollow account finalization records.
+         * <p>
+         * However, in most use cases we want the effect of {@link Builder#revert()} to be applied,
+         * so this property defaults to true;
+         * <p>
+         * reference: https://github.com/hashgraph/hedera-services/issues/5873
+         */
         private boolean isRevertable = true;
 
         public void revert() {
