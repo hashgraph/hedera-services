@@ -136,7 +136,9 @@ public class BlocklistAccountCreator {
             final var account = blockedAccountWith(blockedInfo);
             accounts.put(newId, account); // add the account with the corresponding newId to state
             accountsCreated.add(account); // add the account to the list of accounts created by this class
-            aliasManager.link(blockedInfo.evmAddress, EntityNum.fromAccountId(newId)); // link the EVM address alias to the new account ID
+            aliasManager.link(
+                    blockedInfo.evmAddress,
+                    EntityNum.fromAccountId(newId)); // link the EVM address alias to the new account ID
         }
     }
 
