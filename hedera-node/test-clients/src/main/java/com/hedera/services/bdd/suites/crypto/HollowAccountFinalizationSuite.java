@@ -701,14 +701,14 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                     // send a crypto transfer from the hollow payer
                     // also sending hbars from the other hollow account
                     final var op3 = cryptoTransfer(
-                            tinyBarsFromTo(
-                                    evmAddressFromECDSAKey(spec, ecdsaKey2),
-                                    evmAddressFromECDSAKey(spec, recipientKey),
-                                    ONE_HBAR / 4),
-                            tinyBarsFromTo(
-                                    evmAddressFromECDSAKey(spec, ecdsaKey2),
-                                    evmAddressFromECDSAKey(spec, recipientKey2),
-                                    ONE_HBAR / 4))
+                                    tinyBarsFromTo(
+                                            evmAddressFromECDSAKey(spec, ecdsaKey2),
+                                            evmAddressFromECDSAKey(spec, recipientKey),
+                                            ONE_HBAR / 4),
+                                    tinyBarsFromTo(
+                                            evmAddressFromECDSAKey(spec, ecdsaKey2),
+                                            evmAddressFromECDSAKey(spec, recipientKey2),
+                                            ONE_HBAR / 4))
                             .payingWith(SECP_256K1_SOURCE_KEY)
                             .signedBy(SECP_256K1_SOURCE_KEY, ecdsaKey2)
                             .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY, ecdsaKey2))
@@ -763,10 +763,10 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                     // send a crypto transfer from the hollow payer
                     // also sending hbars from the other hollow account
                     final var op3 = cryptoTransfer(sendFromEvmAddressFromECDSAKey(
-                            spec,
-                            spec.registry().getKey(recipientKey).toByteString(),
-                            ecdsaKey2)
-                            .toArray(Function[]::new))
+                                            spec,
+                                            spec.registry().getKey(recipientKey).toByteString(),
+                                            ecdsaKey2)
+                                    .toArray(Function[]::new))
                             .payingWith(SECP_256K1_SOURCE_KEY)
                             .signedBy(SECP_256K1_SOURCE_KEY, ecdsaKey2)
                             .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY, ecdsaKey2))
@@ -803,7 +803,7 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                 .when(createHollowAccountFrom(SECP_256K1_SOURCE_KEY))
                 .then(withOpContext((spec, opLog) -> {
                     final var op3 = cryptoTransfer(
-                            tinyBarsFromTo(LAZY_CREATE_SPONSOR, CRYPTO_TRANSFER_RECEIVER, ONE_MILLION_HBARS))
+                                    tinyBarsFromTo(LAZY_CREATE_SPONSOR, CRYPTO_TRANSFER_RECEIVER, ONE_MILLION_HBARS))
                             .payingWith(SECP_256K1_SOURCE_KEY)
                             .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
                             .hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE)
@@ -866,13 +866,13 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                     allRunFor(
                             spec,
                             contractCall(CONTRACT, TRANSFER_MULTIPLE_TOKENS, (Object) new Tuple[] {
-                                    tokenTransferList()
-                                            .forToken(token)
-                                            .withAccountAmounts(
-                                                    accountAmount(hollowAccountId, -amountToBeSent),
-                                                    accountAmount(receiverId, amountToBeSent))
-                                            .build()
-                            })
+                                        tokenTransferList()
+                                                .forToken(token)
+                                                .withAccountAmounts(
+                                                        accountAmount(hollowAccountId, -amountToBeSent),
+                                                        accountAmount(receiverId, amountToBeSent))
+                                                .build()
+                                    })
                                     .payingWith(GENESIS)
                                     .signedBy(GENESIS, SECP_256K1_SOURCE_KEY)
                                     .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
@@ -897,14 +897,6 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
         return cryptoTransfer(tinyBarsFromTo(LAZY_CREATE_SPONSOR, evmAddress, ONE_HBAR))
                 .hasKnownStatus(SUCCESS)
                 .via(txn);
-    }
-
-    private HapiCryptoTransfer sendToEvmAddressFromECDSAKey(final HapiSpec spec, final String key) {
-        final var ecdsaKey = spec.registry().getKey(key).getECDSASecp256K1().toByteArray();
-        final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
-        return cryptoTransfer(tinyBarsFromTo(LAZY_CREATE_SPONSOR, evmAddress, ONE_HBAR))
-                .hasKnownStatus(SUCCESS)
-                .via(TRANSFER_TXN);
     }
 
     private List<Function<HapiSpec, TransferList>> sendFromEvmAddressFromECDSAKey(
