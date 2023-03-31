@@ -94,3 +94,16 @@ jobs:
       concurrency-group: ${{ github.event.inputs.ref || github.sha }}-flow-jrs-daily-group-05
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+
+  interval-06:
+    name: Interval 6
+    uses: ./.github/workflows/platform-zxc-launch-jrs-workflow.yaml
+    needs:
+      - interval-05
+    with:
+      ref: ${{ github.event.inputs.ref || github.sha }}
+      branch-name: ${{ github.event.inputs.branch-name || github.ref_name }}
+      workflow-file: node-flow-fsts-daily-interval-06.yaml
+      concurrency-group: ${{ github.event.inputs.ref || github.sha }}-flow-jrs-daily-group-06
+    secrets:
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}

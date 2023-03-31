@@ -118,15 +118,16 @@ module com.swirlds.platform {
     exports com.swirlds.platform.components.transaction;
     exports com.swirlds.platform.components.transaction.system.internal;
     exports com.swirlds.platform.components.transaction.system;
+    exports com.swirlds.platform.event.preconsensus;
     exports com.swirlds.platform.sync.protocol;
 
     /* Swirlds Libraries */
     requires transitive com.swirlds.common;
+    requires com.swirlds.base;
     requires com.swirlds.common.test;
     requires com.swirlds.test.framework;
     requires com.swirlds.logging;
     requires com.swirlds.cli;
-    requires com.swirlds.base;
 
     /* JDK Libraries */
     requires java.desktop;
