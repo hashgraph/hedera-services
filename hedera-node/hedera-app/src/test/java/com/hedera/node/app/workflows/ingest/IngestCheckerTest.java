@@ -60,7 +60,8 @@ class IngestCheckerTest extends AppTestBase {
             SignatureMap.newBuilder().build();
 
     private static final EntityNum MOCK_PAYER_NUM = EntityNum.fromLong(666L);
-    private static final AccountID MOCK_PAYER_ID = AccountID.newBuilder().accountNum(MOCK_PAYER_NUM.longValue()).build();
+    private static final AccountID MOCK_PAYER_ID =
+            AccountID.newBuilder().accountNum(MOCK_PAYER_NUM.longValue()).build();
     private static final AccountID MOCK_NODE_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(3L).build();
 
@@ -81,7 +82,8 @@ class IngestCheckerTest extends AppTestBase {
     void setUp() {
         final var txBody = TransactionBody.newBuilder()
                 .uncheckedSubmit(UncheckedSubmitBody.newBuilder().build())
-                .transactionID(TransactionID.newBuilder().accountID(MOCK_PAYER_ID).build())
+                .transactionID(
+                        TransactionID.newBuilder().accountID(MOCK_PAYER_ID).build())
                 .build();
         final var signedTx = SignedTransaction.newBuilder()
                 .bodyBytes(asBytes(TransactionBody.PROTOBUF, txBody))
@@ -98,16 +100,14 @@ class IngestCheckerTest extends AppTestBase {
         given(signaturePreparer.syncGetPayerSigStatus(any())).willReturn(INVALID_SIGNATURE);
 
         assertFailsWithPrecheck(
-                INVALID_SIGNATURE,
-                () -> subject.checkPayerSignature(state, tx, MOCK_SIGNATURE_MAP, MOCK_PAYER_ID));
+                INVALID_SIGNATURE, () -> subject.checkPayerSignature(state, tx, MOCK_SIGNATURE_MAP, MOCK_PAYER_ID));
     }
 
     @Test
     void happyPathWithValidPayerSignatureStatus() {
         given(signaturePreparer.syncGetPayerSigStatus(any())).willReturn(OK);
 
-        assertDoesNotThrow(
-                () -> subject.checkPayerSignature(state, tx, MOCK_SIGNATURE_MAP, MOCK_PAYER_ID));
+        assertDoesNotThrow(() -> subject.checkPayerSignature(state, tx, MOCK_SIGNATURE_MAP, MOCK_PAYER_ID));
     }
 
     @Test
@@ -134,8 +134,7 @@ class IngestCheckerTest extends AppTestBase {
         given(solvencyPrecheck.solvencyOfVerifiedPayer(captor.capture(), eq(false)))
                 .willReturn(solvencySummary);
 
-        assertFailsWithInsufficientBalance(
-                ResponseCodeEnum.INSUFFICIENT_TX_FEE, 123L, () -> subject.checkSolvency(tx));
+        assertFailsWithInsufficientBalance(ResponseCodeEnum.INSUFFICIENT_TX_FEE, 123L, () -> subject.checkSolvency(tx));
         final var accessor = captor.getValue();
         assertEquals(MOCK_PAYER_ID, toPbj(accessor.getPayer()));
     }

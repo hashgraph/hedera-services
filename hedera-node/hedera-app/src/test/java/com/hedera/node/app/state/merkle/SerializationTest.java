@@ -116,6 +116,7 @@ class SerializationTest extends MerkleTestBase {
         registry.registerConstructable(pair);
 
         final MerkleHederaState loadedTree = parseTree(serializedBytes, dir);
+        newRegistry.migrate(loadedTree, null, schemaV1.getVersion());
         loadedTree.migrate(1);
 
         // Then, we should be able to see all our original states again

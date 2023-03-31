@@ -59,9 +59,8 @@ import java.util.Optional;
 public final class PbjConverter {
     public static @NonNull AccountID toPbj(@NonNull com.hederahashgraph.api.proto.java.AccountID accountID) {
         requireNonNull(accountID);
-        final var builder = AccountID.newBuilder()
-                .shardNum(accountID.getShardNum())
-                .realmNum(accountID.getRealmNum());
+        final var builder =
+                AccountID.newBuilder().shardNum(accountID.getShardNum()).realmNum(accountID.getRealmNum());
         if (accountID.getAccountCase() == AccountCase.ALIAS) {
             builder.alias(Bytes.wrap(accountID.getAlias().toByteArray()));
         } else {
@@ -1244,7 +1243,9 @@ public final class PbjConverter {
     public static @NonNull Key fromGrpcKey(@NonNull final com.hederahashgraph.api.proto.java.Key grpcKey) {
         try (final var bais =
                 new ByteArrayInputStream(Objects.requireNonNull(grpcKey).toByteArray())) {
-            return Key.PROTOBUF.parse(new ReadableStreamingData(bais));
+            final var stream = new ReadableStreamingData(bais);
+            stream.limit(bais.available());
+            return Key.PROTOBUF.parse(stream);
         } catch (final IOException e) {
             // Should be impossible, so just propagate an exception
             throw new IllegalStateException("Invalid conversion to PBJ for Key", e);
