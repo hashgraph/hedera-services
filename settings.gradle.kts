@@ -30,7 +30,7 @@ plugins {
   id("com.gradle.enterprise").version("3.11.4")
   // Use GIT plugin to clone HAPI protobuf files
   // See documentation https://melix.github.io/includegit-gradle-plugin/latest/index.html
-  id("me.champeau.includegit").version("0.1.5")
+  id("me.champeau.includegit").version("0.1.6")
 }
 
 include(":hedera-node")
@@ -299,7 +299,6 @@ dependencyResolutionManagement {
       library("mockito-inline", "org.mockito", "mockito-inline").versionRef("mockito-version")
       library("mockito-jupiter", "org.mockito", "mockito-junit-jupiter")
           .versionRef("mockito-version")
-      library("mockito-inline", "org.mockito", "mockito-inline").versionRef("mockito-version")
       library("picocli", "info.picocli", "picocli").versionRef("picocli-version")
       library("snakeyaml", "org.yaml", "snakeyaml").versionRef("snakeyaml-version")
       library("testcontainers-core", "org.testcontainers", "testcontainers")

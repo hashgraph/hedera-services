@@ -92,7 +92,7 @@ class IngestCheckerTest extends AppTestBase {
                 .signedTransactionBytes(asBytes(SignedTransaction.PROTOBUF, signedTx))
                 .build();
 
-        subject = new IngestChecker(MOCK_NODE_ACCOUNT_ID.accountNumOrThrow(), solvencyPrecheck, signaturePreparer);
+        subject = new IngestChecker(MOCK_NODE_ACCOUNT_ID, solvencyPrecheck, signaturePreparer);
     }
 
     @Test

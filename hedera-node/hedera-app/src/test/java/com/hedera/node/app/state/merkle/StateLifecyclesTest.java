@@ -29,6 +29,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.DaggerHederaApp;
 import com.hedera.node.app.HederaApp;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
@@ -150,7 +151,7 @@ class StateLifecyclesTest extends ResponsibleVMapUser {
                 .platform(platform)
                 .crypto(CryptographyHolder.get())
                 .consoleCreator((ignore, visible) -> null)
-                .selfId(platform.getSelfId().getId())
+                .selfId(AccountID.newBuilder().accountNum(platform.getSelfId().getId()).build())
                 .staticAccountMemo("memo")
                 .maxSignedTxnSize(MAX_SIGNED_TXN_SIZE)
                 .bootstrapProps(new BootstrapProperties())

@@ -16,21 +16,6 @@
 
 package com.hedera.node.app.workflows.query;
 
-import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_CREATE_TOPIC;
-import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
-import static com.hedera.hapi.node.base.HederaFunctionality.GET_ACCOUNT_DETAILS;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.mockito.Mock.Strictness.LENIENT;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.when;
-
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.SignatureMap;
@@ -46,15 +31,29 @@ import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.workflows.TransactionChecker;
-import com.hedera.node.app.workflows.onset.OnsetResult;
+import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import java.util.List;
+import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_CREATE_TOPIC;
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
+import static com.hedera.hapi.node.base.HederaFunctionality.GET_ACCOUNT_DETAILS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class QueryCheckerTest {
@@ -123,9 +122,9 @@ class QueryCheckerTest {
         final var txBody = TransactionBody.newBuilder().build();
         final var signatureMap = SignatureMap.newBuilder().build();
         final var onsetResult =
-                new OnsetResult(Transaction.newBuilder().build(), txBody, OK, signatureMap, CRYPTO_TRANSFER);
+                new TransactionInfo(Transaction.newBuilder().build(), txBody, signatureMap, CRYPTO_TRANSFER);
         final var transaction = Transaction.newBuilder().build();
-        when(onset.check(ctx, transaction)).thenReturn(onsetResult);
+        when(transactionChecker.check(ctx, transaction)).thenReturn(onsetResult);
 
         // when
         final var result = checker.validateCryptoTransfer(ctx, transaction);
@@ -154,10 +153,10 @@ class QueryCheckerTest {
         final var txBody = TransactionBody.newBuilder().build();
         final var signatureMap = SignatureMap.newBuilder().build();
         final var onsetResult =
-                new OnsetResult(Transaction.newBuilder().build(), txBody, OK, signatureMap, CONSENSUS_CREATE_TOPIC);
+                new TransactionInfo(Transaction.newBuilder().build(), txBody, signatureMap, CONSENSUS_CREATE_TOPIC);
         final var transaction = Transaction.newBuilder().build();
-        when(onset.check(ctx, transaction)).thenReturn(onsetResult);
-        final var checker = new QueryChecker(onset, accountNumbers, queryFeeCheck, authorizer, cryptoTransferHandler);
+        when(transactionChecker.check(ctx, transaction)).thenReturn(onsetResult);
+        final var checker = new QueryChecker(transactionChecker, accountNumbers, queryFeeCheck, authorizer, cryptoTransferHandler);
 
         // then
         assertThatThrownBy(() -> checker.validateCryptoTransfer(ctx, transaction))
@@ -171,13 +170,13 @@ class QueryCheckerTest {
         final var txBody = TransactionBody.newBuilder().build();
         final var signatureMap = SignatureMap.newBuilder().build();
         final var onsetResult =
-                new OnsetResult(Transaction.newBuilder().build(), txBody, OK, signatureMap, CRYPTO_TRANSFER);
+                new TransactionInfo(Transaction.newBuilder().build(), txBody, signatureMap, CRYPTO_TRANSFER);
         final var transaction = Transaction.newBuilder().build();
-        when(onset.check(ctx, transaction)).thenReturn(onsetResult);
+        when(transactionChecker.check(ctx, transaction)).thenReturn(onsetResult);
         doThrow(new PreCheckException(INVALID_ACCOUNT_AMOUNTS))
                 .when(cryptoTransferHandler)
                 .validate(txBody);
-        final var checker = new QueryChecker(onset, accountNumbers, queryFeeCheck, authorizer, cryptoTransferHandler);
+        final var checker = new QueryChecker(transactionChecker, accountNumbers, queryFeeCheck, authorizer, cryptoTransferHandler);
 
         // then
         assertThatThrownBy(() -> checker.validateCryptoTransfer(ctx, transaction))
