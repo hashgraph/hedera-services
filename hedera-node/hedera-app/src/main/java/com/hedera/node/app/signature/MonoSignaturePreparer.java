@@ -37,6 +37,7 @@ import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.TransactionSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -115,7 +116,7 @@ public class MonoSignaturePreparer implements SignaturePreparer {
     @Override
     public TransactionSignature prepareSignature(
             final @NonNull HederaState state,
-            final @NonNull byte[] txBodyBytes,
+            final @NonNull Bytes txBodyBytes,
             final @NonNull SignatureMap signatureMap,
             final @NonNull AccountID accountID) {
         throw new UnsupportedOperationException("Not implemented");
@@ -125,7 +126,7 @@ public class MonoSignaturePreparer implements SignaturePreparer {
     @Override
     public Map<HederaKey, TransactionSignature> prepareSignatures(
             @NonNull HederaState state,
-            @NonNull byte[] txBodyBytes,
+            @NonNull Bytes txBodyBytes,
             @NonNull SignatureMap signatureMap,
             @NonNull List<HederaKey> keys) {
         throw new UnsupportedOperationException("Not implemented");

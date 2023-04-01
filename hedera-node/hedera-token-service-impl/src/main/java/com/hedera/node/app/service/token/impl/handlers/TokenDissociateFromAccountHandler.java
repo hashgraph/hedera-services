@@ -16,17 +16,16 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.hapi.node.token.TokenDissociateTransactionBody;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static java.util.Objects.requireNonNull;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -44,11 +43,8 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
      * transaction, returning the metadata required to, at minimum, validate the signatures of all
      * required signing keys.
      *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
      * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@link #handle(TransactionMetadata)}
+     *     passed to {@link #handle(TokenDissociateTransactionBody)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void preHandle(@NonNull final PreHandleContext context) {
@@ -62,14 +58,11 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
     /**
      * This method is called during the handle workflow. It executes the actual transaction.
      *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @param metadata the {@link TransactionMetadata} that was generated during pre-handle.
+     * @param tx the transaction to handle
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(@NonNull final TransactionMetadata metadata) {
-        requireNonNull(metadata);
+    public void handle(@NonNull final TokenDissociateTransactionBody tx) {
+        requireNonNull(tx);
         throw new UnsupportedOperationException("Not implemented");
     }
 }

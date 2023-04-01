@@ -29,7 +29,7 @@ import com.hedera.node.app.service.mono.state.logic.StandardProcessLogic;
 import com.hedera.node.app.service.mono.txns.ProcessLogic;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.SwirldsTxnAccessor;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -47,7 +47,7 @@ public class AdaptedMonoProcessLogic implements ProcessLogic {
 
     @Override
     public void incorporateConsensusTxn(final ConsensusTransaction platformTxn, final long submittingMember) {
-        if (platformTxn.getMetadata() instanceof TransactionMetadata metadata) {
+        if (platformTxn.getMetadata() instanceof PreHandleResult metadata) {
             final var accessor = adaptForMono(platformTxn, metadata);
             platformTxn.setMetadata(accessor);
         }
@@ -56,7 +56,7 @@ public class AdaptedMonoProcessLogic implements ProcessLogic {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     private SwirldsTxnAccessor adaptForMono(
-            final ConsensusTransaction platformTxn, final TransactionMetadata metadata) {
+            final ConsensusTransaction platformTxn, final PreHandleResult metadata) {
         try {
             final var accessor = PlatformTxnAccessor.from(platformTxn.getContents());
             // TODO - recompute required keys and compare with metadata

@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -30,6 +28,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import static java.util.Objects.requireNonNull;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -58,9 +57,6 @@ public class CryptoGetLiveHashHandler extends FreeQueryHandler {
      * This method is called during the query workflow. It validates the query, but does not
      * determine the response yet.
      *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
      * @param query the {@link Query} that should be validated
      * @throws NullPointerException if one of the arguments is {@code null}
      * @throws PreCheckException if validation fails
@@ -73,9 +69,6 @@ public class CryptoGetLiveHashHandler extends FreeQueryHandler {
     /**
      * This method is called during the query workflow. It determines the requested value(s) and
      * returns the appropriate response.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
      *
      * @param query the {@link Query} with the request
      * @param header the {@link ResponseHeader} that should be used, if the request was successful

@@ -30,7 +30,7 @@ import com.hedera.node.app.service.mono.state.logic.StandardProcessLogic;
 import com.hedera.node.app.service.mono.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
@@ -78,7 +78,7 @@ class AdaptedMonoProcessLogicTest {
 
         final var noopTxn = Transaction.newBuilder().build();
         final var cryptoSigs = List.of(signature);
-        final var meta = new TransactionMetadata(
+        final var meta = new PreHandleResult(
                 null, null, null, ResponseCodeEnum.OK, PAYER_KEY, OTHER_PARTY_KEYS, cryptoSigs, null);
 
         given(platformTxn.getMetadata()).willReturn(meta);
@@ -101,7 +101,7 @@ class AdaptedMonoProcessLogicTest {
 
         final var noopTxn = Transaction.newBuilder().build();
         final var cryptoSigs = List.of(signature);
-        final var meta = new TransactionMetadata(
+        final var meta = new PreHandleResult(
                 null, null, null, ResponseCodeEnum.INVALID_ACCOUNT_ID, PAYER_KEY, OTHER_PARTY_KEYS, cryptoSigs, null);
 
         given(platformTxn.getMetadata()).willReturn(meta);
@@ -124,7 +124,7 @@ class AdaptedMonoProcessLogicTest {
 
         final var noopTxn = Transaction.newBuilder().build();
         final var cryptoSigs = List.of(signature);
-        final var meta = new TransactionMetadata(
+        final var meta = new PreHandleResult(
                 null, null, null, ResponseCodeEnum.INVALID_ACCOUNT_ID, null, OTHER_PARTY_KEYS, cryptoSigs, null);
 
         given(platformTxn.getMetadata()).willReturn(meta);
@@ -149,7 +149,7 @@ class AdaptedMonoProcessLogicTest {
                 .setSignedTransactionBytes(ByteString.copyFrom("NONSENSE".getBytes()))
                 .build();
         final var cryptoSigs = List.of(signature);
-        final var meta = new TransactionMetadata(
+        final var meta = new PreHandleResult(
                 null, null, null, ResponseCodeEnum.INVALID_ACCOUNT_ID, null, OTHER_PARTY_KEYS, cryptoSigs, null);
 
         given(platformTxn.getMetadata()).willReturn(meta);

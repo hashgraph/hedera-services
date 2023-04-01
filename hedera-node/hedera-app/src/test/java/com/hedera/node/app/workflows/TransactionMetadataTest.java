@@ -14,27 +14,26 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.test.meta;
+package com.hedera.node.app.workflows;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.workflows.prehandle.PreHandleResult;
+import com.swirlds.common.crypto.TransactionSignature;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import java.util.List;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
-
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.SignatureMap;
-import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.swirlds.common.crypto.TransactionSignature;
-import java.util.List;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TransactionMetadataTest {
@@ -59,11 +58,11 @@ class TransactionMetadataTest {
         when(context.getPayerKey()).thenReturn(payerKey);
         when(context.getRequiredNonPayerKeys()).thenReturn(List.of(otherKey));
         final var signatureMap = SignatureMap.newBuilder().build();
-        final var innerMetadata = new TransactionMetadata(null, null, null, OK, null, null, List.of(), null);
+        final var innerMetadata = new PreHandleResult(null, null, null, OK, null, null, List.of(), null);
         final var expectedSigs = List.of(payerSignature, otherSignature);
 
         // when
-        final var metadata = new TransactionMetadata(context, signatureMap, expectedSigs, innerMetadata);
+        final var metadata = new PreHandleResult(context, signatureMap, expectedSigs, innerMetadata);
 
         // then
         assertThat(metadata.txnBody()).isEqualTo(txBody);
@@ -85,20 +84,20 @@ class TransactionMetadataTest {
         final List<TransactionSignature> signatures = List.of();
 
         // then
-        assertThatCode(() -> new TransactionMetadata(context, signatureMap, signatures, null))
+        assertThatCode(() -> new PreHandleResult(context, signatureMap, signatures, null))
                 .doesNotThrowAnyException();
-        assertThatThrownBy(() -> new TransactionMetadata(null, signatureMap, signatures, null))
+        assertThatThrownBy(() -> new PreHandleResult(null, signatureMap, signatures, null))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new TransactionMetadata(context, null, signatures, null))
+        assertThatThrownBy(() -> new PreHandleResult(context, null, signatures, null))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new TransactionMetadata(context, signatureMap, null, null))
+        assertThatThrownBy(() -> new PreHandleResult(context, signatureMap, null, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void testErrorConstructor() {
         // when
-        final var metadata = new TransactionMetadata(INVALID_ACCOUNT_ID);
+        final var metadata = new PreHandleResult(INVALID_ACCOUNT_ID);
 
         // then
         assertThat(metadata.txnBody()).isNull();
@@ -112,6 +111,6 @@ class TransactionMetadataTest {
     @SuppressWarnings("ConstantConditions")
     @Test
     void testErrorConstructorWithInvalidArguments() {
-        assertThatThrownBy(() -> new TransactionMetadata(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new PreHandleResult(null)).isInstanceOf(NullPointerException.class);
     }
 }

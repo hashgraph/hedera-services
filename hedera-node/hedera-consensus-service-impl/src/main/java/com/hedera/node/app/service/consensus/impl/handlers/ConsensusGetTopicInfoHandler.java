@@ -16,14 +16,6 @@
 
 package com.hedera.node.app.service.consensus.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
-import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
-import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
-import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -48,6 +40,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
+import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
+import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
+import static java.util.Objects.requireNonNull;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONSENSUS_GET_TOPIC_INFO}.
@@ -85,9 +84,6 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
      * This method is called during the query workflow. It validates the query, but does not
      * determine the response yet.
      *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
      * @param query the {@link Query} that should be validated
      * @throws NullPointerException if one of the arguments is {@code null}
      * @throws PreCheckException if validation fails
@@ -107,9 +103,6 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
     /**
      * This method is called during the query workflow. It determines the requested value(s) and
      * returns the appropriate response.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
      *
      * @param query        the {@link Query} with the request
      * @param header       the {@link ResponseHeader} that should be used, if the request was successful

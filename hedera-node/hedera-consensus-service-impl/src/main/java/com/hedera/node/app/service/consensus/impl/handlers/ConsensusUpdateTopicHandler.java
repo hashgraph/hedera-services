@@ -16,15 +16,6 @@
 
 package com.hedera.node.app.service.consensus.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.node.app.spi.exceptions.HandleStatusException.validateFalse;
-import static com.hedera.node.app.spi.exceptions.HandleStatusException.validateTrue;
-import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TopicID;
@@ -36,7 +27,6 @@ import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusUpdateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.UpdateTopicRecordBuilder;
 import com.hedera.node.app.spi.meta.HandleContext;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -45,6 +35,14 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.node.app.spi.exceptions.HandleStatusException.validateFalse;
+import static com.hedera.node.app.spi.exceptions.HandleStatusException.validateTrue;
+import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
+import static java.util.Objects.requireNonNull;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONSENSUS_UPDATE_TOPIC}.
@@ -60,11 +58,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
      * This method is called during the pre-handle workflow.
      *
      * <p>Typically, this method validates the {@link TransactionBody} semantically, gathers all
-     * required keys, warms the cache, and creates the {@link TransactionMetadata} that is used in
-     * the handle stage.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
+     * required keys, warms the cache.
      *
      * @param context the {@link PreHandleContext} which collects all information that will be
      *                passed to {@code #handle()}

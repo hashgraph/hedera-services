@@ -35,6 +35,7 @@ import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -46,7 +47,7 @@ import javax.inject.Singleton;
  * handle-transaction requests to the appropriate handler
  *
  * <p>For handle, mostly just supports the limited form of the Consensus Service handlers
- * described in https://github.com/hashgraph/hedera-services/issues/4945, while still trying to
+ * described in <a href="https://github.com/hashgraph/hedera-services/issues/4945">4945</a>, while still trying to
  * make a bit of progress toward the general implementation.
  */
 @Singleton
@@ -122,7 +123,7 @@ public class TransactionDispatcher {
      */
     //    @SuppressWarnings("java:S1479") // ignore too many branches warning
     public void dispatchPreHandle(
-            @NonNull final ReadableStoreFactory storeFactory, @NonNull final PreHandleContext context) {
+            @NonNull final ReadableStoreFactory storeFactory, @NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(storeFactory);
         requireNonNull(context);
 
@@ -215,7 +216,14 @@ public class TransactionDispatcher {
     }
 
     private PreHandleDispatcher setupPreHandleDispatcher(@NonNull final ReadableStoreFactory storeFactory) {
-        return context -> dispatchPreHandle(storeFactory, context);
+        // TODO Not sure about this try / catch block
+        return context -> {
+            try {
+                dispatchPreHandle(storeFactory, context);
+            } catch (PreCheckException e) {
+                throw new RuntimeException(e);
+            }
+        };
     }
 
     private void dispatchConsensusDeleteTopic(

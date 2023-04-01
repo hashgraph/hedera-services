@@ -16,19 +16,18 @@
 
 package com.hedera.node.app.service.schedule.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SCHEDULE_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ScheduleID;
+import com.hedera.hapi.node.scheduled.ScheduleDeleteTransactionBody;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
+import static java.util.Objects.requireNonNull;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#SCHEDULE_DELETE}.
@@ -46,11 +45,8 @@ public class ScheduleDeleteHandler implements TransactionHandler {
      * <p>Pre-handles a {@link HederaFunctionality#SCHEDULE_DELETE} transaction, returning the
      * metadata required to, at minimum, validate the signatures of all required signing keys.
      *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
      * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@link #handle(TransactionMetadata)}
+     *     passed to {@link #handle(ScheduleDeleteTransactionBody)}
      * @param scheduleStore the {@link ReadableScheduleStore} that contains all scheduled-data
      * @throws NullPointerException if one of the arguments is {@code null}
      */
@@ -87,14 +83,11 @@ public class ScheduleDeleteHandler implements TransactionHandler {
     /**
      * This method is called during the handle workflow. It executes the actual transaction.
      *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @param metadata the {@link TransactionMetadata} that was generated during pre-handle.
+     * @param tx the transaction to handle
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(@NonNull final TransactionMetadata metadata) {
-        requireNonNull(metadata);
+    public void handle(@NonNull final ScheduleDeleteTransactionBody tx) {
+        requireNonNull(tx);
         throw new UnsupportedOperationException("Not implemented");
     }
 }

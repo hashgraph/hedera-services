@@ -16,21 +16,20 @@
 
 package com.hedera.node.app.service.schedule.impl.handlers;
 
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.node.app.service.schedule.impl.Utils.asOrdinary;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.node.app.service.schedule.impl.Utils.asOrdinary;
+import static java.util.Objects.requireNonNull;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -50,7 +49,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
      * metadata required to, at minimum, validate the signatures of all required signing keys.
      *
      * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@link #handle(TransactionMetadata)}
+     *     passed to {@link #handle(ScheduleCreateTransactionBody)}
      * @param dispatcher the {@link PreHandleDispatcher} that can be used to pre-handle the inner
      *     txn
      * @throws NullPointerException if one of the arguments is {@code null}
@@ -86,14 +85,11 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
     /**
      * This method is called during the handle workflow. It executes the actual transaction.
      *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @param metadata the {@link TransactionMetadata} that was generated during pre-handle.
+     * @param tx the transaction to handle
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(@NonNull final TransactionMetadata metadata) {
-        requireNonNull(metadata);
+    public void handle(@NonNull final ScheduleCreateTransactionBody tx) {
+        requireNonNull(tx);
         throw new UnsupportedOperationException("Not implemented");
     }
 }
