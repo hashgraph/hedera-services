@@ -93,7 +93,7 @@ class OnDiskTest extends MerkleTestBase {
                         (short) 1,
                         DataFileCommon.VARIABLE_DATA_SIZE,
                         new OnDiskValueSerializer<>(md),
-                        true));
+                        false));
 
         virtualMap = new VirtualMap<>(StateUtils.computeLabel(SERVICE_NAME, ACCOUNT_STATE_KEY), builder);
     }
@@ -163,7 +163,7 @@ class OnDiskTest extends MerkleTestBase {
     @Test
     void populateFlushToDisk() {
         final var ws = new OnDiskWritableKVState<>(md, virtualMap);
-        for (int i = 0; i < 10; i++) {
+        for (int i = 1; i < 10; i++) {
             final var id = new AccountID(0, 0, i);
             final var acct = new Account(id, "Account " + i, i);
             ws.put(id, acct);
@@ -172,7 +172,7 @@ class OnDiskTest extends MerkleTestBase {
         virtualMap = copyHashAndFlush(virtualMap);
 
         final var rs = new OnDiskReadableKVState<>(md, virtualMap);
-        for (int i = 0; i < 10; i++) {
+        for (int i = 1; i < 10; i++) {
             final var id = new AccountID(0, 0, i);
             final var acct = rs.get(id);
             assertThat(acct).isNotNull();

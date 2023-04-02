@@ -16,11 +16,12 @@
 
 package com.hedera.node.app.state.merkle.disk;
 
+import static com.hedera.node.app.state.merkle.StateUtils.readFromStream;
+import static com.hedera.node.app.state.merkle.StateUtils.writeToStream;
+
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
-import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
-import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
@@ -97,27 +98,32 @@ public class OnDiskValue<V> implements VirtualValue {
     @Override
     public void serialize(@NonNull final ByteBuffer byteBuffer) throws IOException {
         final var output = BufferedData.wrap(byteBuffer);
+        output.skip(4);
         codec.write(value, output);
+        final var pos = output.position();
+        output.position(0);
+        output.writeInt((int) pos - 4);
+        output.position(pos);
     }
 
     /** {@inheritDoc} */
     @Override
-    public void serialize(@NonNull final SerializableDataOutputStream serializableDataOutputStream) throws IOException {
-        codec.write(value, new WritableStreamingData(serializableDataOutputStream));
+    public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
+        writeToStream(out, codec, value);
     }
 
     /** {@inheritDoc} */
     @Override
     public void deserialize(@NonNull final ByteBuffer byteBuffer, int ignored) throws IOException {
         final var input = BufferedData.wrap(byteBuffer);
+        input.skip(4); // skip the length
         value = codec.parse(input);
     }
 
     /** {@inheritDoc} */
     @Override
-    public void deserialize(@NonNull final SerializableDataInputStream serializableDataInputStream, int ignored)
-            throws IOException {
-        value = codec.parse(new ReadableStreamingData(serializableDataInputStream));
+    public void deserialize(@NonNull final SerializableDataInputStream in, int ignored) throws IOException {
+        value = readFromStream(in, codec);
     }
 
     /** {@inheritDoc} */

@@ -16,11 +16,12 @@
 
 package com.hedera.node.app.state.merkle.disk;
 
+import static com.hedera.node.app.state.merkle.StateUtils.readFromStream;
+import static com.hedera.node.app.state.merkle.StateUtils.writeToStream;
+
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
-import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
-import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
@@ -89,24 +90,31 @@ public final class OnDiskKey<K extends Comparable<? super K>> implements Virtual
 
     /** Writes the "real" key to the given stream. {@inheritDoc} */
     @Override
-    public void serialize(@NonNull final SerializableDataOutputStream serializableDataOutputStream) throws IOException {
-        codec.write(key, new WritableStreamingData(serializableDataOutputStream));
+    public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
+        writeToStream(out, codec, key);
     }
 
     @Override
     public void serialize(@NonNull final ByteBuffer byteBuffer) throws IOException {
-        codec.write(key, BufferedData.wrap(byteBuffer));
+        final var output = BufferedData.wrap(byteBuffer);
+        output.skip(4);
+        codec.write(key, output);
+        final var pos = output.position();
+        output.position(0);
+        output.writeInt((int) pos - 4);
+        output.position(pos);
     }
 
     @Override
     public void deserialize(@NonNull final ByteBuffer byteBuffer, int ignored) throws IOException {
-        key = codec.parse(BufferedData.wrap(byteBuffer));
+        final var buf = BufferedData.wrap(byteBuffer);
+        buf.skip(4);
+        key = codec.parse(buf);
     }
 
     @Override
-    public void deserialize(@NonNull final SerializableDataInputStream serializableDataInputStream, int ignored)
-            throws IOException {
-        key = codec.parse(new ReadableStreamingData(serializableDataInputStream));
+    public void deserialize(@NonNull final SerializableDataInputStream in, int ignored) throws IOException {
+        key = readFromStream(in, codec);
     }
 
     @Override

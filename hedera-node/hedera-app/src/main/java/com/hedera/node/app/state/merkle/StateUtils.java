@@ -19,14 +19,42 @@ package com.hedera.node.app.state.merkle;
 import static com.swirlds.common.utility.CommonUtils.getNormalisedStringBytes;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
+import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.utility.NonCryptographicHashing;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Objects;
 
 /** Utility class for working with states. */
 public final class StateUtils {
     /** Prevent instantiation */
     private StateUtils() {}
+
+    public static <T> int writeToStream(
+            @NonNull final OutputStream out, @NonNull final Codec<T> codec, @NonNull final T object)
+            throws IOException {
+        final var byteStream = new ByteArrayOutputStream();
+        codec.write(object, new WritableStreamingData(byteStream));
+
+        final var stream = new WritableStreamingData(out);
+        stream.writeInt(byteStream.size());
+        stream.writeBytes(byteStream.toByteArray());
+        return byteStream.size();
+    }
+
+    @NonNull
+    public static <T> T readFromStream(@NonNull final InputStream in, @NonNull final Codec<T> codec)
+            throws IOException {
+        final var stream = new ReadableStreamingData(in);
+        final var size = stream.readInt();
+        stream.limit(size + Integer.BYTES); // +4 for the size
+        return codec.parse(stream);
+    }
 
     /**
      * Verifies the service name meets all the validation requirements.
