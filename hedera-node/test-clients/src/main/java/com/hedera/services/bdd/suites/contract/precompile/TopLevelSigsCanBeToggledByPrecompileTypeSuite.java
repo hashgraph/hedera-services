@@ -44,7 +44,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asHexedAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.precompile.AssociatePrecompileSuite.THE_CONTRACT;
-import static com.hedera.services.bdd.suites.contract.precompile.AssociatePrecompileSuite.TOKEN_ASSOCIATE;
+import static com.hedera.services.bdd.suites.contract.precompile.AssociatePrecompileSuite.TOKEN_ASSOCIATE_FUNCTION;
 import static com.hedera.services.bdd.suites.contract.precompile.ContractBurnHTSSuite.ALICE;
 import static com.hedera.services.bdd.suites.contract.precompile.ContractBurnHTSSuite.BURN_TOKEN_WITH_EVENT;
 import static com.hedera.services.bdd.suites.contract.precompile.ContractBurnHTSSuite.CREATION_TX;
@@ -409,7 +409,10 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
                 .when(
                         // Trying to associate with top-level signatures should fail
                         sourcing(() -> contractCall(
-                                        THE_CONTRACT, TOKEN_ASSOCIATE, accountAddress.get(), tokenAddress.get())
+                                        THE_CONTRACT,
+                                        TOKEN_ASSOCIATE_FUNCTION,
+                                        accountAddress.get(),
+                                        tokenAddress.get())
                                 .gas(GAS_TO_OFFER)
                                 .alsoSigningWithFullPrefix(accountToBeAssociated)
                                 .via(failedAssociateTxn)
@@ -418,7 +421,10 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
                         overriding("contracts.allowSystemUseOfHapiSigs", "TokenAssociateToAccount"),
                         // Now the same call should succeed
                         sourcing(() -> contractCall(
-                                        THE_CONTRACT, TOKEN_ASSOCIATE, accountAddress.get(), tokenAddress.get())
+                                        THE_CONTRACT,
+                                        TOKEN_ASSOCIATE_FUNCTION,
+                                        accountAddress.get(),
+                                        tokenAddress.get())
                                 .gas(GAS_TO_OFFER)
                                 .alsoSigningWithFullPrefix(accountToBeAssociated)
                                 .via(succeededAssociateTxn)

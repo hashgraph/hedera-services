@@ -38,7 +38,6 @@ package com.hedera.node.app.service.mono.contracts.operation;
  *
  */
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.*;

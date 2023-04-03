@@ -91,7 +91,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
             asAddress(AccountID.newBuilder().build());
     private static final byte[] TOKEN_ADDRESS = asAddress(TokenID.newBuilder().build());
     private static final String INVALID_SINGLE_ABI_CALL_TXN = "Invalid Single Abi Call txn";
-    private static final String TOKEN_ASSOCIATE_FUNCTION = "tokenAssociate";
+    public static final String TOKEN_ASSOCIATE_FUNCTION = "tokenAssociate";
     private static final String VANILLA_TOKEN_ASSOCIATE_TXN = "vanillaTokenAssociateTxn";
 
     public static void main(String... args) {
