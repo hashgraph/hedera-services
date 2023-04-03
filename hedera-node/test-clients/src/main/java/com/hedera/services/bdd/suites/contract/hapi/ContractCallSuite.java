@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAdd
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -48,6 +49,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomC
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
@@ -109,6 +111,7 @@ import com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -119,6 +122,7 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -244,7 +248,37 @@ public class ContractCallSuite extends HapiSuite {
                 workingHoursDemo(),
                 lpFarmSimulation(),
                 nestedContractCannotOverSendValue(),
-                depositMoreThanBalanceFailsGracefully());
+                depositMoreThanBalanceFailsGracefully(),
+                lowLevelEcrecCallBehavior());
+    }
+
+    private HapiSpec lowLevelEcrecCallBehavior() {
+        final var TEST_CONTRACT = "TestContract";
+        return onlyDefaultHapiSpec("LowLevelEcrecCallBehavior")
+                .given(
+                        uploadInitCode(TEST_CONTRACT),
+                        contractCreate(TEST_CONTRACT,
+                                idAsHeadlongAddress(AccountID.newBuilder().setAccountNum(2).build()),
+                                BigInteger.ONE).balance(ONE_HBAR),
+                        // A payer account we can use when calling ECREC that won't accidentally provide
+                        // the 0.0.1 signature (since its key starts the same as 0.0.2, the default payer)
+                        cryptoCreate("somebody"),
+                        balanceSnapshot("start", "0.0.1")
+                )
+                .when().then(
+                        // At first we'll set 0.0.1 receiverSigRequired=true, so that the ECREC call will fail
+                        // because it won't be able to provide the signature
+                        cryptoUpdate("0.0.1").receiverSigRequired(true).signedBy(GENESIS),
+                        contractCall(TEST_CONTRACT, "lowLevelECREC")
+                                .payingWith("somebody")
+                                .hasKnownStatus(INVALID_SIGNATURE),
+                        // Now we reset 0.0.1 receiverSigRequired=false, so that the ECREC call will succeed
+                        cryptoUpdate("0.0.1").receiverSigRequired(false).signedBy(GENESIS),
+                        contractCall(TEST_CONTRACT, "lowLevelECREC")
+                                .payingWith("somebody")
+                                .hasKnownStatus(SUCCESS),
+                        // And the value sent with the low-level call will indeed be received by 0.0.1
+                        getAccountBalance("0.0.1").hasTinyBars(changeFromSnapshot("start", +1)));
     }
 
     private HapiSpec depositMoreThanBalanceFailsGracefully() {
