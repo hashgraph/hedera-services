@@ -168,7 +168,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     private static final String WITH_SPENDER = "WITH_SPENDER";
     private static final String DO_SPECIFIC_APPROVAL = "doSpecificApproval";
     private static final String NFT_TOKEN_MINT = "nftTokenMint";
-    static final String TRANSFER_SIGNATURE = "Transfer(address,address,uint256)";
+    public static final String TRANSFER_SIGNATURE = "Transfer(address,address,uint256)";
 
     public static void main(String... args) {
         new ERCPrecompileSuite().runSuiteAsync();

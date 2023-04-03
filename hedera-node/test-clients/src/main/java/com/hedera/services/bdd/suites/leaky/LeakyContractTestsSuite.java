@@ -132,6 +132,7 @@ import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSu
 import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.RECIPIENT;
 import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.TRANSFER_FROM;
 import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.TRANSFER_FROM_ACCOUNT_TXN;
+import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.TRANSFER_SIGNATURE;
 import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.TRANSFER_SIG_NAME;
 import static com.hedera.services.bdd.suites.contract.precompile.LazyCreateThroughPrecompileSuite.mirrorAddrWith;
 import static com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileSuite.GAS_TO_OFFER;
