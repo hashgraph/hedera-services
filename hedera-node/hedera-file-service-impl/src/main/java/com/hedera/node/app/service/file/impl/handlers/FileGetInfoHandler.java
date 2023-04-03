@@ -18,32 +18,39 @@ package com.hedera.node.app.service.file.impl.handlers;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.QueryHeader;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.file.FileGetInfoResponse;
+import com.hedera.hapi.node.transaction.Query;
+import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hederahashgraph.api.proto.java.*;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#FileGetInfo}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#FILE_GET_INFO}.
  */
 @Singleton
 public class FileGetInfoHandler extends PaidQueryHandler {
     @Inject
-    public FileGetInfoHandler() {}
+    public FileGetInfoHandler() {
+        // Exists for injection
+    }
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
-        return query.getFileGetInfo().getHeader();
+        return query.fileGetInfoOrThrow().header();
     }
 
     @Override
     public Response createEmptyResponse(@NonNull final ResponseHeader header) {
-        final var response = FileGetInfoResponse.newBuilder().setHeader(header);
-        return Response.newBuilder().setFileGetInfo(response).build();
+        final var response = FileGetInfoResponse.newBuilder().header(header);
+        return Response.newBuilder().fileGetInfo(response).build();
     }
 
     /**

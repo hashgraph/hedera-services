@@ -16,12 +16,19 @@
 
 package com.hedera.node.app.state;
 
+import com.hedera.node.app.state.merkle.MerkleRecordCache;
 import dagger.Module;
 import dagger.Provides;
 import javax.inject.Singleton;
 
 @Module
 public interface HederaStateModule {
+    @Provides
+    @Singleton
+    static RecordCache provideRecordCache() {
+        return new MerkleRecordCache();
+    }
+
     @Provides
     @Singleton
     static WorkingStateAccessor provideWorkingStateAccessor() {

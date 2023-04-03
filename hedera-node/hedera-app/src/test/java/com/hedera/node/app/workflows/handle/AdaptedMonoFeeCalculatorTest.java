@@ -26,14 +26,12 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.hashgraph.pbj.runtime.io.Bytes;
 import com.hedera.node.app.fees.MonoGetTopicInfoUsage;
 import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
-import com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
 import com.hedera.node.app.service.mono.fees.calculation.RenewAssessment;
@@ -49,6 +47,7 @@ import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.WorkingStateAccessor;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -91,8 +90,8 @@ class AdaptedMonoFeeCalculatorTest {
             true,
             Bytes.wrap("MOCK_RUNNING_HASH".getBytes()),
             "MOCK_MEMO",
-            PbjKeyConverter.fromGrpcKey(A_COMPLEX_KEY),
-            PbjKeyConverter.fromGrpcKey(B_COMPLEX_KEY));
+            A_COMPLEX_KEY,
+            B_COMPLEX_KEY);
 
     private static final TransactionBody MOCK_TXN = TransactionBody.newBuilder()
             .setConsensusUpdateTopic(ConsensusUpdateTopicTransactionBody.newBuilder()

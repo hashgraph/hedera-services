@@ -29,6 +29,8 @@ public class EntityNumValue implements VirtualValue {
     public static final String CANNOT_DESERIALIZE_INTO_AN_IMMUTABLE_ENTITY_NUM_VALUE =
             "Cannot deserialize into an immutable EntityNumValue";
 
+    public static final EntityNumValue DEFAULT = new EntityNumValue(0);
+
     private long num;
 
     private boolean isImmutable = false;

@@ -19,10 +19,11 @@ package com.hedera.node.app.workflows.handle;
 import static com.hedera.node.app.service.mono.utils.RationalizedSigMeta.forPayerAndOthers;
 import static com.hedera.node.app.service.mono.utils.RationalizedSigMeta.forPayerOnly;
 import static com.hedera.node.app.service.mono.utils.RationalizedSigMeta.noneAvailable;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
 import com.hedera.node.app.service.mono.state.logic.StandardProcessLogic;
 import com.hedera.node.app.service.mono.txns.ProcessLogic;
@@ -63,7 +64,7 @@ public class AdaptedMonoProcessLogic implements ProcessLogic {
             final var preHandleStatus = metadata.status();
             final var payerKey = metadata.payerKey();
             if (payerKey != null) {
-                if (preHandleStatus != OK) {
+                if (preHandleStatus != ResponseCodeEnum.OK) {
                     accessor.setSigMeta(forPayerOnly((JKey) payerKey, metadata.cryptoSignatures(), accessor));
                 } else {
                     accessor.setSigMeta(forPayerAndOthers(
@@ -73,7 +74,7 @@ public class AdaptedMonoProcessLogic implements ProcessLogic {
                 accessor.setSigMeta(noneAvailable());
             }
             // Prevent the mono-service worfklow from rationalizing sigs
-            accessor.setExpandedSigStatus(preHandleStatus);
+            accessor.setExpandedSigStatus(PbjConverter.fromPbj(preHandleStatus));
             accessor.setLinkedRefs(new LinkedRefs());
             return accessor;
         } catch (final InvalidProtocolBufferException e) {

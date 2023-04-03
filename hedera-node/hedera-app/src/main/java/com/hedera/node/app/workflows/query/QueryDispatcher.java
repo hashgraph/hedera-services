@@ -18,21 +18,21 @@ package com.hedera.node.app.workflows.query;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.transaction.Query;
+import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.spi.meta.QueryContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.Response;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.ResponseHeader;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * A {@code QueryDispatcher} provides functionality to forward validate, and reply-query requests to the appropriate
- * handler
+ * A {@code QueryDispatcher} provides functionality to forward validate, and reply-query requests to
+ * the appropriate handler
  */
 @Singleton
 public class QueryDispatcher {
@@ -61,48 +61,50 @@ public class QueryDispatcher {
      */
     @NonNull
     public QueryHandler getHandler(@NonNull final Query query) {
-        return switch (query.getQueryCase()) {
-            case CONSENSUSGETTOPICINFO -> handlers.consensusGetTopicInfoHandler();
+        return switch (query.query().kind()) {
+            case CONSENSUS_GET_TOPIC_INFO -> handlers.consensusGetTopicInfoHandler();
 
-            case GETBYSOLIDITYID -> handlers.contractGetBySolidityIDHandler();
-            case CONTRACTCALLLOCAL -> handlers.contractCallLocalHandler();
-            case CONTRACTGETINFO -> handlers.contractGetInfoHandler();
-            case CONTRACTGETBYTECODE -> handlers.contractGetBytecodeHandler();
-            case CONTRACTGETRECORDS -> handlers.contractGetRecordsHandler();
+            case GET_BY_SOLIDITY_ID -> handlers.contractGetBySolidityIDHandler();
+            case CONTRACT_CALL_LOCAL -> handlers.contractCallLocalHandler();
+            case CONTRACT_GET_INFO -> handlers.contractGetInfoHandler();
+            case CONTRACT_GET_BYTECODE -> handlers.contractGetBytecodeHandler();
+            case CONTRACT_GET_RECORDS -> handlers.contractGetRecordsHandler();
 
-            case CRYPTOGETACCOUNTBALANCE -> handlers.cryptoGetAccountBalanceHandler();
-            case CRYPTOGETINFO -> handlers.cryptoGetAccountInfoHandler();
-            case CRYPTOGETACCOUNTRECORDS -> handlers.cryptoGetAccountRecordsHandler();
-            case CRYPTOGETLIVEHASH -> handlers.cryptoGetLiveHashHandler();
-            case CRYPTOGETPROXYSTAKERS -> handlers.cryptoGetStakersHandler();
+            case CRYPTOGET_ACCOUNT_BALANCE -> handlers.cryptoGetAccountBalanceHandler();
+            case CRYPTO_GET_INFO -> handlers.cryptoGetAccountInfoHandler();
+            case CRYPTO_GET_ACCOUNT_RECORDS -> handlers.cryptoGetAccountRecordsHandler();
+            case CRYPTO_GET_LIVE_HASH -> handlers.cryptoGetLiveHashHandler();
+            case CRYPTO_GET_PROXY_STAKERS -> handlers.cryptoGetStakersHandler();
 
-            case FILEGETCONTENTS -> handlers.fileGetContentsHandler();
-            case FILEGETINFO -> handlers.fileGetInfoHandler();
+            case FILE_GET_CONTENTS -> handlers.fileGetContentsHandler();
+            case FILE_GET_INFO -> handlers.fileGetInfoHandler();
 
-            case ACCOUNTDETAILS -> handlers.networkGetAccountDetailsHandler();
-            case GETBYKEY -> handlers.networkGetByKeyHandler();
-            case NETWORKGETVERSIONINFO -> handlers.networkGetVersionInfoHandler();
-            case NETWORKGETEXECUTIONTIME -> handlers.networkGetExecutionTimeHandler();
-            case TRANSACTIONGETRECEIPT -> handlers.networkTransactionGetReceiptHandler();
-            case TRANSACTIONGETRECORD -> handlers.networkTransactionGetRecordHandler();
+            case ACCOUNT_DETAILS -> handlers.networkGetAccountDetailsHandler();
+            case GET_BY_KEY -> handlers.networkGetByKeyHandler();
+            case NETWORK_GET_VERSION_INFO -> handlers.networkGetVersionInfoHandler();
+            case NETWORK_GET_EXECUTION_TIME -> handlers.networkGetExecutionTimeHandler();
+            case TRANSACTION_GET_RECEIPT -> handlers.networkTransactionGetReceiptHandler();
+            case TRANSACTION_GET_RECORD -> handlers.networkTransactionGetRecordHandler();
 
-            case SCHEDULEGETINFO -> handlers.scheduleGetInfoHandler();
+            case SCHEDULE_GET_INFO -> handlers.scheduleGetInfoHandler();
 
-            case TOKENGETINFO -> handlers.tokenGetInfoHandler();
-            case TOKENGETACCOUNTNFTINFOS -> handlers.tokenGetAccountNftInfosHandler();
-            case TOKENGETNFTINFO -> handlers.tokenGetNftInfoHandler();
-            case TOKENGETNFTINFOS -> handlers.tokenGetNftInfosHandler();
+            case TOKEN_GET_INFO -> handlers.tokenGetInfoHandler();
+            case TOKEN_GET_ACCOUNT_NFT_INFOS -> handlers.tokenGetAccountNftInfosHandler();
+            case TOKEN_GET_NFT_INFO -> handlers.tokenGetNftInfoHandler();
+            case TOKEN_GET_NFT_INFOS -> handlers.tokenGetNftInfosHandler();
 
-            case TRANSACTIONGETFASTRECORD -> throw new UnsupportedOperationException(GET_FAST_RECORD_IS_NOT_SUPPORTED);
-            case QUERY_NOT_SET -> throw new UnsupportedOperationException(QUERY_NOT_SET);
+            case TRANSACTION_GET_FAST_RECORD -> throw new UnsupportedOperationException(
+                    GET_FAST_RECORD_IS_NOT_SUPPORTED);
+            case UNSET -> throw new UnsupportedOperationException(QUERY_NOT_SET);
         };
     }
 
     /**
      * Validates the query by dispatching the query to its specific handlers.
      *
-     * @param storeFactory the {@link ReadableStoreFactory} that keeps all stores which are eventually needed
-     * @param query the {@link Query} of the request
+     * @param storeFactory the {@link ReadableStoreFactory} that keeps all stores which are eventually
+     *                     needed
+     * @param query        the {@link Query} of the request
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public ResponseCodeEnum validate(@NonNull final ReadableStoreFactory storeFactory, @NonNull final Query query)
@@ -110,48 +112,49 @@ public class QueryDispatcher {
         requireNonNull(storeFactory);
         requireNonNull(query);
 
-        return switch (query.getQueryCase()) {
-            case CONSENSUSGETTOPICINFO -> handlers.consensusGetTopicInfoHandler()
+        return switch (query.query().kind()) {
+            case CONSENSUS_GET_TOPIC_INFO -> handlers.consensusGetTopicInfoHandler()
                     .validate(query, storeFactory.createTopicStore());
 
-            case GETBYSOLIDITYID -> handlers.contractGetBySolidityIDHandler().validate(query);
-            case CONTRACTCALLLOCAL -> handlers.contractCallLocalHandler().validate(query);
-            case CONTRACTGETINFO -> handlers.contractGetInfoHandler().validate(query);
-            case CONTRACTGETBYTECODE -> handlers.contractGetBytecodeHandler().validate(query);
-            case CONTRACTGETRECORDS -> handlers.contractGetRecordsHandler().validate(query);
+            case GET_BY_SOLIDITY_ID -> handlers.contractGetBySolidityIDHandler().validate(query);
+            case CONTRACT_CALL_LOCAL -> handlers.contractCallLocalHandler().validate(query);
+            case CONTRACT_GET_INFO -> handlers.contractGetInfoHandler().validate(query);
+            case CONTRACT_GET_BYTECODE -> handlers.contractGetBytecodeHandler().validate(query);
+            case CONTRACT_GET_RECORDS -> handlers.contractGetRecordsHandler().validate(query);
 
-            case CRYPTOGETACCOUNTBALANCE -> handlers.cryptoGetAccountBalanceHandler()
+            case CRYPTOGET_ACCOUNT_BALANCE -> handlers.cryptoGetAccountBalanceHandler()
                     .validate(query);
-            case CRYPTOGETINFO -> handlers.cryptoGetAccountInfoHandler().validate(query);
-            case CRYPTOGETACCOUNTRECORDS -> handlers.cryptoGetAccountRecordsHandler()
+            case CRYPTO_GET_INFO -> handlers.cryptoGetAccountInfoHandler().validate(query);
+            case CRYPTO_GET_ACCOUNT_RECORDS -> handlers.cryptoGetAccountRecordsHandler()
                     .validate(query);
-            case CRYPTOGETLIVEHASH -> handlers.cryptoGetLiveHashHandler().validate(query);
-            case CRYPTOGETPROXYSTAKERS -> handlers.cryptoGetStakersHandler().validate(query);
+            case CRYPTO_GET_LIVE_HASH -> handlers.cryptoGetLiveHashHandler().validate(query);
+            case CRYPTO_GET_PROXY_STAKERS -> handlers.cryptoGetStakersHandler().validate(query);
 
-            case FILEGETCONTENTS -> handlers.fileGetContentsHandler().validate(query);
-            case FILEGETINFO -> handlers.fileGetInfoHandler().validate(query);
+            case FILE_GET_CONTENTS -> handlers.fileGetContentsHandler().validate(query);
+            case FILE_GET_INFO -> handlers.fileGetInfoHandler().validate(query);
 
-            case ACCOUNTDETAILS -> handlers.networkGetAccountDetailsHandler().validate(query);
-            case GETBYKEY -> handlers.networkGetByKeyHandler().validate(query);
-            case NETWORKGETVERSIONINFO -> handlers.networkGetVersionInfoHandler()
+            case ACCOUNT_DETAILS -> handlers.networkGetAccountDetailsHandler().validate(query);
+            case GET_BY_KEY -> handlers.networkGetByKeyHandler().validate(query);
+            case NETWORK_GET_VERSION_INFO -> handlers.networkGetVersionInfoHandler()
                     .validate(query);
-            case NETWORKGETEXECUTIONTIME -> handlers.networkGetExecutionTimeHandler()
+            case NETWORK_GET_EXECUTION_TIME -> handlers.networkGetExecutionTimeHandler()
                     .validate(query);
-            case TRANSACTIONGETRECEIPT -> handlers.networkTransactionGetReceiptHandler()
+            case TRANSACTION_GET_RECEIPT -> handlers.networkTransactionGetReceiptHandler()
                     .validate(query);
-            case TRANSACTIONGETRECORD -> handlers.networkTransactionGetRecordHandler()
+            case TRANSACTION_GET_RECORD -> handlers.networkTransactionGetRecordHandler()
                     .validate(query);
 
-            case SCHEDULEGETINFO -> handlers.scheduleGetInfoHandler().validate(query);
+            case SCHEDULE_GET_INFO -> handlers.scheduleGetInfoHandler().validate(query);
 
-            case TOKENGETINFO -> handlers.tokenGetInfoHandler().validate(query);
-            case TOKENGETACCOUNTNFTINFOS -> handlers.tokenGetAccountNftInfosHandler()
+            case TOKEN_GET_INFO -> handlers.tokenGetInfoHandler().validate(query);
+            case TOKEN_GET_ACCOUNT_NFT_INFOS -> handlers.tokenGetAccountNftInfosHandler()
                     .validate(query);
-            case TOKENGETNFTINFO -> handlers.tokenGetNftInfoHandler().validate(query);
-            case TOKENGETNFTINFOS -> handlers.tokenGetNftInfosHandler().validate(query);
+            case TOKEN_GET_NFT_INFO -> handlers.tokenGetNftInfoHandler().validate(query);
+            case TOKEN_GET_NFT_INFOS -> handlers.tokenGetNftInfosHandler().validate(query);
 
-            case TRANSACTIONGETFASTRECORD -> throw new UnsupportedOperationException(GET_FAST_RECORD_IS_NOT_SUPPORTED);
-            case QUERY_NOT_SET -> throw new UnsupportedOperationException(QUERY_NOT_SET);
+            case TRANSACTION_GET_FAST_RECORD -> throw new UnsupportedOperationException(
+                    GET_FAST_RECORD_IS_NOT_SUPPORTED);
+            case UNSET -> throw new UnsupportedOperationException(QUERY_NOT_SET);
         };
     }
 
@@ -174,48 +177,49 @@ public class QueryDispatcher {
         requireNonNull(header);
         requireNonNull(queryContext);
 
-        return switch (query.getQueryCase()) {
-            case CONSENSUSGETTOPICINFO -> handlers.consensusGetTopicInfoHandler()
+        return switch (query.query().kind()) {
+            case CONSENSUS_GET_TOPIC_INFO -> handlers.consensusGetTopicInfoHandler()
                     .findResponse(query, header, storeFactory.createTopicStore(), queryContext);
 
-            case GETBYSOLIDITYID -> handlers.contractGetBySolidityIDHandler().findResponse(query, header);
-            case CONTRACTCALLLOCAL -> handlers.contractCallLocalHandler().findResponse(query, header);
-            case CONTRACTGETINFO -> handlers.contractGetInfoHandler().findResponse(query, header);
-            case CONTRACTGETBYTECODE -> handlers.contractGetBytecodeHandler().findResponse(query, header);
-            case CONTRACTGETRECORDS -> handlers.contractGetRecordsHandler().findResponse(query, header);
+            case GET_BY_SOLIDITY_ID -> handlers.contractGetBySolidityIDHandler().findResponse(query, header);
+            case CONTRACT_CALL_LOCAL -> handlers.contractCallLocalHandler().findResponse(query, header);
+            case CONTRACT_GET_INFO -> handlers.contractGetInfoHandler().findResponse(query, header);
+            case CONTRACT_GET_BYTECODE -> handlers.contractGetBytecodeHandler().findResponse(query, header);
+            case CONTRACT_GET_RECORDS -> handlers.contractGetRecordsHandler().findResponse(query, header);
 
-            case CRYPTOGETACCOUNTBALANCE -> handlers.cryptoGetAccountBalanceHandler()
+            case CRYPTOGET_ACCOUNT_BALANCE -> handlers.cryptoGetAccountBalanceHandler()
                     .findResponse(query, header);
-            case CRYPTOGETINFO -> handlers.cryptoGetAccountInfoHandler().findResponse(query, header);
-            case CRYPTOGETACCOUNTRECORDS -> handlers.cryptoGetAccountRecordsHandler()
+            case CRYPTO_GET_INFO -> handlers.cryptoGetAccountInfoHandler().findResponse(query, header);
+            case CRYPTO_GET_ACCOUNT_RECORDS -> handlers.cryptoGetAccountRecordsHandler()
                     .findResponse(query, header);
-            case CRYPTOGETLIVEHASH -> handlers.cryptoGetLiveHashHandler().findResponse(query, header);
-            case CRYPTOGETPROXYSTAKERS -> handlers.cryptoGetStakersHandler().findResponse(query, header);
+            case CRYPTO_GET_LIVE_HASH -> handlers.cryptoGetLiveHashHandler().findResponse(query, header);
+            case CRYPTO_GET_PROXY_STAKERS -> handlers.cryptoGetStakersHandler().findResponse(query, header);
 
-            case FILEGETCONTENTS -> handlers.fileGetContentsHandler().findResponse(query, header);
-            case FILEGETINFO -> handlers.fileGetInfoHandler().findResponse(query, header);
+            case FILE_GET_CONTENTS -> handlers.fileGetContentsHandler().findResponse(query, header);
+            case FILE_GET_INFO -> handlers.fileGetInfoHandler().findResponse(query, header);
 
-            case ACCOUNTDETAILS -> handlers.networkGetAccountDetailsHandler().findResponse(query, header);
-            case GETBYKEY -> handlers.networkGetByKeyHandler().findResponse(query, header);
-            case NETWORKGETVERSIONINFO -> handlers.networkGetVersionInfoHandler()
+            case ACCOUNT_DETAILS -> handlers.networkGetAccountDetailsHandler().findResponse(query, header);
+            case GET_BY_KEY -> handlers.networkGetByKeyHandler().findResponse(query, header);
+            case NETWORK_GET_VERSION_INFO -> handlers.networkGetVersionInfoHandler()
                     .findResponse(query, header);
-            case NETWORKGETEXECUTIONTIME -> handlers.networkGetExecutionTimeHandler()
+            case NETWORK_GET_EXECUTION_TIME -> handlers.networkGetExecutionTimeHandler()
                     .findResponse(query, header);
-            case TRANSACTIONGETRECEIPT -> handlers.networkTransactionGetReceiptHandler()
+            case TRANSACTION_GET_RECEIPT -> handlers.networkTransactionGetReceiptHandler()
                     .findResponse(query, header);
-            case TRANSACTIONGETRECORD -> handlers.networkTransactionGetRecordHandler()
+            case TRANSACTION_GET_RECORD -> handlers.networkTransactionGetRecordHandler()
                     .findResponse(query, header);
 
-            case SCHEDULEGETINFO -> handlers.scheduleGetInfoHandler().findResponse(query, header);
+            case SCHEDULE_GET_INFO -> handlers.scheduleGetInfoHandler().findResponse(query, header);
 
-            case TOKENGETINFO -> handlers.tokenGetInfoHandler().findResponse(query, header);
-            case TOKENGETACCOUNTNFTINFOS -> handlers.tokenGetAccountNftInfosHandler()
+            case TOKEN_GET_INFO -> handlers.tokenGetInfoHandler().findResponse(query, header);
+            case TOKEN_GET_ACCOUNT_NFT_INFOS -> handlers.tokenGetAccountNftInfosHandler()
                     .findResponse(query, header);
-            case TOKENGETNFTINFO -> handlers.tokenGetNftInfoHandler().findResponse(query, header);
-            case TOKENGETNFTINFOS -> handlers.tokenGetNftInfosHandler().findResponse(query, header);
+            case TOKEN_GET_NFT_INFO -> handlers.tokenGetNftInfoHandler().findResponse(query, header);
+            case TOKEN_GET_NFT_INFOS -> handlers.tokenGetNftInfosHandler().findResponse(query, header);
 
-            case TRANSACTIONGETFASTRECORD -> throw new UnsupportedOperationException(GET_FAST_RECORD_IS_NOT_SUPPORTED);
-            case QUERY_NOT_SET -> throw new UnsupportedOperationException(QUERY_NOT_SET);
+            case TRANSACTION_GET_FAST_RECORD -> throw new UnsupportedOperationException(
+                    GET_FAST_RECORD_IS_NOT_SUPPORTED);
+            case UNSET -> throw new UnsupportedOperationException(QUERY_NOT_SET);
         };
     }
 }
