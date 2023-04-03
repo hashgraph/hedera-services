@@ -159,7 +159,7 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
         try (final LongListOffHeap list = createFullyParameterizedLongListWith(
                 sampleSize / 100, // 100 chunks, 100 longs each
                 sampleSize + DEFAULT_NUM_LONGS_PER_CHUNK)) {
-            for (int i = 1; i < getSampleSize(); i++) {
+            for (int i = 0; i < getSampleSize(); i++) {
                 list.put(i, i + 1);
             }
             final Path file = testDirectory.resolve("LongListOffHeap.ll");
