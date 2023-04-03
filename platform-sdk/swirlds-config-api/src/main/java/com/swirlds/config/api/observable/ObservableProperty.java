@@ -45,7 +45,8 @@ public interface ObservableProperty<T> {
 
     /**
      * Returns true if the property is currently set. This is true if any {@link com.swirlds.config.api.source.ConfigSource}
-     * provides the property (by its name).
+     * provided the property (by its name). Since the sources will be checked periodically the result of this method
+     * might change over time.
      *
      * @return true if the property is set
      */
