@@ -135,7 +135,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                         .gas(GAS_TO_OFFER))),
                         getTxnRecord(CREATION_TX).logged())
                 .when(
-                        contractCall(THE_BURN_CONTRACT, "burnTokenWithEvent", BigInteger.ZERO, new long[0])
+                        contractCall(THE_BURN_CONTRACT, BURN_TOKEN_WITH_EVENT, BigInteger.ZERO, new long[0])
                                 .payingWith(ALICE)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER)
@@ -159,7 +159,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                                         .withTotalSupply(50))
                                                 .gasUsed(gasUsed))
                                         .newTotalSupply(50)),
-                        contractCall(THE_BURN_CONTRACT, "burnTokenWithEvent", BigInteger.ONE, new long[0])
+                        contractCall(THE_BURN_CONTRACT, BURN_TOKEN_WITH_EVENT, BigInteger.ONE, new long[0])
                                 .payingWith(ALICE)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER)

@@ -58,7 +58,7 @@ import org.hyperledger.besu.datatypes.Address;
 
 @Singleton
 public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
-    private static final Function<byte[], TransactionSignature> NO_TOP_LEVEL_SIGS = (ignored) -> INVALID_MISSING_SIG;
+    private static final Function<byte[], TransactionSignature> NO_TOP_LEVEL_SIGS = ignored -> INVALID_MISSING_SIG;
     private final ActivationTest activationTest;
     private final TransactionContext txnCtx;
     private final GlobalDynamicProperties dynamicProperties;

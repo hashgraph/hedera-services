@@ -72,6 +72,11 @@ import org.apache.logging.log4j.Logger;
 public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ContractKeysStillWorkAsExpectedSuite.class);
     public static final String CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS = "contracts.maxNumWithHapiSigsAccess";
+    private static final String CONTRACT_KEYS_WORK_AS_EXPECTED_FOR_FUNGIBLE_TOKEN_MGMT =
+            "ContractKeysWorkAsExpectedForFungibleTokenMgmt";
+    private static final String FUNGIBLE_TOKEN = "token";
+    private static final String CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS = "contracts.withSpecialHapiSigsAccess";
+    private static final String CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS = "contracts.allowSystemUseOfHapiSigs";
 
     public static void main(String... args) {
         new ContractKeysStillWorkAsExpectedSuite().runSuiteSync();
@@ -200,7 +205,7 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
         final AtomicReference<Address> bSenderAddr = new AtomicReference<>();
         final AtomicReference<Address> bReceiverAddr = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec("ContractKeysWorkAsExpectedForFungibleTokenMgmt")
+        return propertyPreservingHapiSpec(CONTRACT_KEYS_WORK_AS_EXPECTED_FOR_FUNGIBLE_TOKEN_MGMT)
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
                         // No top-level signatures are available to any contract
@@ -404,8 +409,8 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
     }
 
     private HapiSpec canStillTransferByVirtueOfContractIdInEOAThreshold() {
-        final var fungibleToken = "token";
-        final var managementContract = "DoTokenManagement";
+        final var fungibleToken = FUNGIBLE_TOKEN;
+        final var managementContract = WELL_KNOWN_TREASURY_CONTRACT;
         final AtomicReference<Address> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<Address> controlledSpenderAddr = new AtomicReference<>();
         final AtomicReference<Address> receiverAddr = new AtomicReference<>();
@@ -414,18 +419,18 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
         final var receiver = "receiver";
         final var controlledSpenderKey = "controlledSpenderKey";
 
-        return propertyPreservingHapiSpec("ContractKeysWorkAsExpectedForFungibleTokenMgmt")
+        return propertyPreservingHapiSpec(CONTRACT_KEYS_WORK_AS_EXPECTED_FOR_FUNGIBLE_TOKEN_MGMT)
                 .preserving(
                         CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
-                        "contracts.withSpecialHapiSigsAccess",
-                        "contracts.allowSystemUseOfHapiSigs")
+                        CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS,
+                        CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
                 .given(
                         overridingThree(
                                 CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
                                 "0",
-                                "contracts.withSpecialHapiSigsAccess",
+                                CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS,
                                 "",
-                                "contracts.allowSystemUseOfHapiSigs",
+                                CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
                                 ""),
                         uploadInitCode(managementContract),
                         // Create an immutable contract with a method
@@ -466,26 +471,26 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
     }
 
     private HapiSpec contractKeysWorkAsExpectedForFungibleTokenMgmt() {
-        final var fungibleToken = "token";
-        final var managementContract = "DoTokenManagement";
+        final var fungibleToken = FUNGIBLE_TOKEN;
+        final var managementContract = WELL_KNOWN_TREASURY_CONTRACT;
         final var mgmtContractAsKey = "mgmtContractAsKey";
         final var tmpAdminKey = "tmpAdminKey";
         final var associatedAccount = "associatedAccount";
         final AtomicReference<Address> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<Address> accountAddr = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec("ContractKeysWorkAsExpectedForFungibleTokenMgmt")
+        return propertyPreservingHapiSpec(CONTRACT_KEYS_WORK_AS_EXPECTED_FOR_FUNGIBLE_TOKEN_MGMT)
                 .preserving(
                         CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
-                        "contracts.withSpecialHapiSigsAccess",
-                        "contracts.allowSystemUseOfHapiSigs")
+                        CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS,
+                        CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
                 .given(
                         overridingThree(
                                 CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
                                 "0",
-                                "contracts.withSpecialHapiSigsAccess",
+                                CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS,
                                 "",
-                                "contracts.allowSystemUseOfHapiSigs",
+                                CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
                                 ""),
                         uploadInitCode(managementContract),
                         newKeyNamed(tmpAdminKey),
@@ -525,15 +530,15 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
     }
 
     private HapiSpec contractKeysStillHaveSpecificityNoMatterTopLevelSignatures() {
-        final var fungibleToken = "token";
-        final var managementContract = "DoTokenManagement";
+        final var fungibleToken = FUNGIBLE_TOKEN;
+        final var managementContract = WELL_KNOWN_TREASURY_CONTRACT;
         final var otherContractAsKey = "otherContractAsKey";
         final var tmpAdminKey = "tmpAdminKey";
         final var associatedAccount = "associatedAccount";
         final AtomicReference<Address> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<Address> accountAddr = new AtomicReference<>();
 
-        return defaultHapiSpec("ContractKeysWorkAsExpectedForFungibleTokenMgmt")
+        return defaultHapiSpec(CONTRACT_KEYS_WORK_AS_EXPECTED_FOR_FUNGIBLE_TOKEN_MGMT)
                 .given(
                         uploadInitCode(managementContract, PAY_RECEIVABLE_CONTRACT),
                         newKeyNamed(tmpAdminKey),

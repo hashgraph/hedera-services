@@ -110,6 +110,7 @@ import org.apache.logging.log4j.Logger;
 
 public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TopLevelSigsCanBeToggledByPrecompileTypeSuite.class);
+    private static final String CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS = "contracts.allowSystemUseOfHapiSigs";
 
     public static void main(String... args) {
         new TopLevelSigsCanBeToggledByPrecompileTypeSuite().runSuiteSync();
@@ -130,7 +131,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
     }
 
     private HapiSpec canToggleTopLevelSigUsageForWipePrecompile() {
-        final String ALLOW_SYSTEM_USE_OF_HAPI_SIGS = "contracts.allowSystemUseOfHapiSigs";
+        final String ALLOW_SYSTEM_USE_OF_HAPI_SIGS = CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS;
         final var failedWipeTxn = "failedWipeTxn";
         final var succeededWipeTxn = "succeededWipeTxn";
 
@@ -192,7 +193,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
     }
 
     private HapiSpec canToggleTopLevelSigUsageForUpdatePrecompile() {
-        final String ALLOW_SYSTEM_USE_OF_HAPI_SIGS = "contracts.allowSystemUseOfHapiSigs";
+        final String ALLOW_SYSTEM_USE_OF_HAPI_SIGS = CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS;
         final var failedUpdateTxn = "failedUpdateTxn";
         final var succeededUpdateTxn = "succeededUpdateTxn";
 
@@ -300,7 +301,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
     }
 
     private HapiSpec canToggleTopLevelSigUsageForPauseAndUnpausePrecompile() {
-        final String ALLOW_SYSTEM_USE_OF_HAPI_SIGS = "contracts.allowSystemUseOfHapiSigs";
+        final String ALLOW_SYSTEM_USE_OF_HAPI_SIGS = CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS;
         final var failedPauseTxn = "failedPauseTxn";
         final var failedUnpauseTxn = "failedUnpauseTxn";
         final var succeededPauseTxn = "succeededPauseTxn";
@@ -396,7 +397,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
         final AtomicReference<Address> accountAddress = new AtomicReference<>();
         final AtomicReference<Address> tokenAddress = new AtomicReference<>();
         return propertyPreservingHapiSpec("CanToggleTopLevelSigUsageForAssociatePrecompile")
-                .preserving("contracts.allowSystemUseOfHapiSigs")
+                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
                 .given(
                         uploadInitCode(THE_CONTRACT),
                         contractCreate(THE_CONTRACT),
@@ -405,7 +406,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
                                 .exposingEvmAddressTo(accountAddress::set),
                         tokenCreate(tokenToAssociate).exposingAddressTo(tokenAddress::set),
                         // First revoke use of top-level signatures from all precompiles
-                        overriding("contracts.allowSystemUseOfHapiSigs", ""))
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, ""))
                 .when(
                         // Trying to associate with top-level signatures should fail
                         sourcing(() -> contractCall(
@@ -418,7 +419,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
                                 .via(failedAssociateTxn)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         // But now restore use of top-level signatures for the associate precompile
-                        overriding("contracts.allowSystemUseOfHapiSigs", "TokenAssociateToAccount"),
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, "TokenAssociateToAccount"),
                         // Now the same call should succeed
                         sourcing(() -> contractCall(
                                         THE_CONTRACT,
@@ -438,7 +439,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
     }
 
     private HapiSpec canToggleTopLevelSigUsageForBurnPrecompile() {
-        final String ALLOW_SYSTEM_USE_OF_HAPI_SIGS = "contracts.allowSystemUseOfHapiSigs";
+        final String ALLOW_SYSTEM_USE_OF_HAPI_SIGS = CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS;
         final var failedBurnTxn = "failedBurnTxn";
         final var succeededBurnTxn = "succeededBurnTxn";
 
@@ -495,7 +496,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
     }
 
     private HapiSpec canToggleTopLevelSigUsageForMintPrecompile() {
-        final String ALLOW_SYSTEM_USE_OF_HAPI_SIGS = "contracts.allowSystemUseOfHapiSigs";
+        final String ALLOW_SYSTEM_USE_OF_HAPI_SIGS = CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS;
         final var tokenToMint = "tokenToMint";
         final var failedMintTxn = "failedMintTxn";
         final var succeededMintTxn = "succeededMintTxn";
@@ -551,7 +552,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
     }
 
     private HapiSpec canToggleTopLevelSigUsageForDeletePrecompile() {
-        final String ALLOW_SYSTEM_USE_OF_HAPI_SIGS = "contracts.allowSystemUseOfHapiSigs";
+        final String ALLOW_SYSTEM_USE_OF_HAPI_SIGS = CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS;
         final var failedDeleteTxn = "failedDeleteTxn";
         final var succeededDeleteTxn = "succeededDeleteTxn";
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
@@ -607,7 +608,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
     }
 
     private HapiSpec canToggleTopLevelSigUsageForFreezeAndUnfreezePrecompile() {
-        final String ALLOW_SYSTEM_USE_OF_HAPI_SIGS = "contracts.allowSystemUseOfHapiSigs";
+        final String ALLOW_SYSTEM_USE_OF_HAPI_SIGS = CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS;
         final var failedFreezeTxn = "failedFreezeTxn";
         final var failedUnfreezeTxn = "failedUnfreezeTxn";
         final var succeededFreezeTxn = "succeededFreezeTxn";
@@ -700,7 +701,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
     }
 
     private HapiSpec canToggleTopLevelSigUsageForGrantKycAndRevokeKycPrecompile() {
-        final String ALLOW_SYSTEM_USE_OF_HAPI_SIGS = "contracts.allowSystemUseOfHapiSigs";
+        final String ALLOW_SYSTEM_USE_OF_HAPI_SIGS = CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS;
         final var failedGrantTxn = "failedGrantTxn";
         final var failedRevokeTxn = "failedRevokeTxn";
         final var succeededGrantTxn = "succeededGrantTxn";

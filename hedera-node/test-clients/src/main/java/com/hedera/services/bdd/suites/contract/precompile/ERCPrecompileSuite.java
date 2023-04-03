@@ -119,7 +119,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     private static final String TOKEN_NAME = "TokenA";
     private static final ByteString FIRST_META = ByteString.copyFrom(FIRST.getBytes(StandardCharsets.UTF_8));
     private static final ByteString SECOND_META = ByteString.copyFrom(FIRST.getBytes(StandardCharsets.UTF_8));
-    private static final String TRANSFER_SIG_NAME = "transferSig";
+    public static final String TRANSFER_SIG_NAME = "transferSig";
     public static final String ERC_20_CONTRACT = "ERC20Contract";
     private static final String ERC_721_CONTRACT = "ERC721Contract";
     private static final String NAME_TXN = "nameTxn";
@@ -138,7 +138,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     private static final String TOTAL_SUPPLY = "totalSupply";
     private static final String BALANCE_OF = "balanceOf";
     private static final String TRANSFER = "transfer";
-    private static final String APPROVE = "approve";
+    public static final String APPROVE = "approve";
     private static final String OWNER_OF = "ownerOf";
     private static final String TOKEN_URI = "tokenURI";
     private static final String TOKEN = "token";
@@ -168,6 +168,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     private static final String DO_SPECIFIC_APPROVAL = "doSpecificApproval";
     private static final String NFT_TOKEN_MINT = "nftTokenMint";
     public static final String TRANSFER_SIGNATURE = "Transfer(address,address,uint256)";
+    private static final String NESTED_ERC_20_CONTRACT = "NestedERC20Contract";
 
     public static void main(String... args) {
         new ERCPrecompileSuite().runSuiteAsync();
@@ -205,8 +206,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                 erc20TransferFrom(),
                 erc20TransferFromSelf(),
                 getErc20TokenNameExceedingLimits(),
-                transferErc20TokenFromContractWithNoApproval(),
-                transferErc20TokenFromContractWithApproval());
+                transferErc20TokenFromContractWithNoApproval());
     }
 
     List<HapiSpec> erc721() {
@@ -618,7 +618,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     private HapiSpec transferErc20TokenReceiverContract() {
-        final var nestedContract = "NestedERC20Contract";
+        final var nestedContract = NESTED_ERC_20_CONTRACT;
 
         return defaultHapiSpec("ERC_20_TRANSFER_RECEIVER_CONTRACT")
                 .given(
@@ -776,7 +776,7 @@ public class ERCPrecompileSuite extends HapiSuite {
 
     private HapiSpec transferErc20TokenFromContractWithNoApproval() {
         final var transferFromOtherContractWithSignaturesTxn = "transferFromOtherContractWithSignaturesTxn";
-        final var nestedContract = "NestedERC20Contract";
+        final var nestedContract = NESTED_ERC_20_CONTRACT;
 
         return defaultHapiSpec("ERC_20_TRANSFER_FROM_CONTRACT_WITH_NO_APPROVAL")
                 .given(
@@ -844,7 +844,7 @@ public class ERCPrecompileSuite extends HapiSuite {
 
     private HapiSpec transferErc20TokenFromContractWithApproval() {
         final var transferFromOtherContractWithSignaturesTxn = "transferFromOtherContractWithSignaturesTxn";
-        final var nestedContract = "NestedERC20Contract";
+        final var nestedContract = NESTED_ERC_20_CONTRACT;
 
         return defaultHapiSpec("ERC_20_TRANSFER_FROM_CONTRACT_WITH_APPROVAL")
                 .given(
