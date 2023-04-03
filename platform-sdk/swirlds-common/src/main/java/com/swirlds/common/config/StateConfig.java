@@ -18,6 +18,7 @@ package com.swirlds.common.config;
 
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
+import java.nio.file.Path;
 
 /**
  * Config that control the SignedStateManager and SignedStateFileManager behaviors.
@@ -91,13 +92,10 @@ import com.swirlds.config.api.ConfigProperty;
  * 		If true, then enable extra debug code that tracks signed states. Very useful for debugging state leaks.
  * 		This debug code is relatively expensive (it takes and stores stack traces when operations are
  * 		performed on signed state objects).
- * @param forceUseOfConfigAddressBook
- *         If true, then the address book from the config file will be used instead of the address book from the
- *         signed state and the swirld state will not be queried for any address book updates.
  */
 @ConfigData("state")
 public record StateConfig(
-        @ConfigProperty(defaultValue = "data/saved") String savedStateDirectory,
+        @ConfigProperty(defaultValue = "data/saved") Path savedStateDirectory,
         @ConfigProperty(defaultValue = "") String mainClassNameOverride,
         @ConfigProperty(defaultValue = "false") boolean cleanSavedStateDirectory,
         @ConfigProperty(defaultValue = "20") int stateSavingQueueSize,
@@ -116,8 +114,7 @@ public record StateConfig(
         @ConfigProperty(defaultValue = "5") int debugHashDepth,
         @ConfigProperty(defaultValue = "1000") int maxAgeOfFutureStateSignatures,
         @ConfigProperty(defaultValue = "26") int roundsToKeepForSigning,
-        @ConfigProperty(defaultValue = "false") boolean signedStateSentinelEnabled,
-        @ConfigProperty(defaultValue = "true") boolean forceUseOfConfigAddressBook) {
+        @ConfigProperty(defaultValue = "false") boolean signedStateSentinelEnabled) {
 
     /**
      * Get the main class name that should be used for signed states.

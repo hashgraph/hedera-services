@@ -42,6 +42,7 @@ import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.Settings;
 import com.swirlds.platform.crypto.PlatformSigner;
+import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
@@ -574,6 +575,7 @@ class StateManagementComponentTests {
                 stateHasEnoughSignaturesConsumer::consume,
                 issConsumer::consume,
                 (msg) -> {},
-                (msg, t, code) -> {});
+                (msg, t, code) -> {},
+                mock(PreConsensusEventWriter.class));
     }
 }

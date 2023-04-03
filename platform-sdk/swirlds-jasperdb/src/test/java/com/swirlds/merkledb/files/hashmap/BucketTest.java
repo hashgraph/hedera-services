@@ -86,7 +86,7 @@ class BucketTest {
         // insert keys and check
         for (int i = 0; i < 10; i++) {
             final VirtualLongKey key = testKeys[i];
-            bucket.putValue(key.hashCode(), key, key.getKeyAsLong() + 100);
+            bucket.putValue(key, key.getKeyAsLong() + 100);
             assertEquals(i + 1, bucket.getBucketEntryCount(), "Check we have correct count");
             // check that all keys added so far are there
             for (int j = 0; j <= i; j++) {
@@ -95,15 +95,15 @@ class BucketTest {
         }
         assertEquals(10, bucket.getBucketEntryCount(), "Check we have correct count");
         // now update, check and put back
-        bucket.putValue(testKeys[5].hashCode(), testKeys[5], 1234);
+        bucket.putValue(testKeys[5], 1234);
         assertEquals(
                 1234, bucket.findValue(testKeys[5].hashCode(), testKeys[5], -1), "Should get expected value of 1234");
-        bucket.putValue(testKeys[5].hashCode(), testKeys[5], 115);
+        bucket.putValue(testKeys[5], 115);
         for (int j = 0; j < 10; j++) {
             checkKey(bucket, testKeys[j]);
         }
         // now delete last key and check
-        bucket.putValue(testKeys[9].hashCode(), testKeys[9], SPECIAL_DELETE_ME_VALUE);
+        bucket.putValue(testKeys[9], SPECIAL_DELETE_ME_VALUE);
         assertEquals(9, bucket.getBucketEntryCount(), "Check we have correct count");
         for (int j = 0; j < 9; j++) {
             checkKey(bucket, testKeys[j]);
@@ -113,7 +113,7 @@ class BucketTest {
                 bucket.findValue(testKeys[9].hashCode(), testKeys[9], -1),
                 "Should not find entry 10 any more we deleted it");
         // now delete a middle, index 5
-        bucket.putValue(testKeys[5].hashCode(), testKeys[5], SPECIAL_DELETE_ME_VALUE);
+        bucket.putValue(testKeys[5], SPECIAL_DELETE_ME_VALUE);
         assertEquals(8, bucket.getBucketEntryCount(), "Check we have correct count");
         for (int j = 0; j < 5; j++) {
             checkKey(bucket, testKeys[j]);
@@ -126,7 +126,7 @@ class BucketTest {
                 bucket.findValue(testKeys[5].hashCode(), testKeys[5], -1),
                 "Should not find entry 5 any more we deleted it");
         // now delete first, index 0
-        bucket.putValue(testKeys[0].hashCode(), testKeys[0], SPECIAL_DELETE_ME_VALUE);
+        bucket.putValue(testKeys[0], SPECIAL_DELETE_ME_VALUE);
         assertEquals(7, bucket.getBucketEntryCount(), "Check we have correct count");
         for (int j = 1; j < 5; j++) {
             checkKey(bucket, testKeys[j]);
@@ -139,8 +139,8 @@ class BucketTest {
                 bucket.findValue(testKeys[0].hashCode(), testKeys[0], -1),
                 "Should not find entry 0 any more we deleted it");
         // add two more entries and check
-        bucket.putValue(testKeys[10].hashCode(), testKeys[10], 120);
-        bucket.putValue(testKeys[11].hashCode(), testKeys[11], 121);
+        bucket.putValue(testKeys[10], 120);
+        bucket.putValue(testKeys[11], 121);
         assertEquals(9, bucket.getBucketEntryCount(), "Check we have correct count");
         for (int j = 1; j < 5; j++) {
             checkKey(bucket, testKeys[j]);
@@ -152,9 +152,9 @@ class BucketTest {
             checkKey(bucket, testKeys[j]);
         }
         // put 0, 5 and 9 back in, and check we have full range
-        bucket.putValue(testKeys[0].hashCode(), testKeys[0], 110);
-        bucket.putValue(testKeys[5].hashCode(), testKeys[5], 115);
-        bucket.putValue(testKeys[9].hashCode(), testKeys[9], 119);
+        bucket.putValue(testKeys[0], 110);
+        bucket.putValue(testKeys[5], 115);
+        bucket.putValue(testKeys[9], 119);
         assertEquals(12, bucket.getBucketEntryCount(), "Check we have correct count");
         for (int j = 0; j < 12; j++) {
             checkKey(bucket, testKeys[j]);
@@ -177,7 +177,7 @@ class BucketTest {
         // insert keys and check
         for (int i = 0; i < testKeys.length; i++) {
             final VirtualLongKey key = testKeys[i];
-            bucket.putValue(key.hashCode(), key, key.getKeyAsLong() + 100);
+            bucket.putValue(key, key.getKeyAsLong() + 100);
             assertEquals(i + 1, bucket.getBucketEntryCount(), "Check we have correct count");
             // check that all keys added so far are there
             for (int j = 0; j <= i; j++) {
@@ -203,7 +203,7 @@ class BucketTest {
         // insert keys and check
         for (int i = 0; i < testKeys.length; i++) {
             final VirtualLongKey key = testKeys[i];
-            bucket.putValue(key.hashCode(), key, key.getKeyAsLong() + 100);
+            bucket.putValue(key, key.getKeyAsLong() + 100);
             assertEquals(i + 1, bucket.getBucketEntryCount(), "Check we have correct count");
             // check that all keys added so far are there
             for (int j = 0; j <= i; j++) {
@@ -246,7 +246,7 @@ class BucketTest {
         assertEquals(emptyBucketRepr, bucket.toString(), "Empty bucket should represent as expected");
 
         final ExampleLongKeyFixedSize key = new ExampleLongKeyFixedSize(2056);
-        bucket.putValue(key.hashCode(), key, 5124);
+        bucket.putValue(key, 5124);
         bucket.setBucketIndex(0);
         final String nonEmptyBucketRepr = "Bucket{bucketIndex=0, entryCount=1, size=32\n"
                 + "    ENTRY[0] value= 5124 keyHashCode=2056 keyVer=3054"
