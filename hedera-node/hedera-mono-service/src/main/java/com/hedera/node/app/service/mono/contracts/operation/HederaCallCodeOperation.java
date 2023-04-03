@@ -41,14 +41,13 @@ package com.hedera.node.app.service.mono.contracts.operation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
-import java.util.Map;
 import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.CallCodeOperation;
-import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 /**
  * Hedera adapted version of the {@link CallCodeOperation}.
@@ -64,17 +63,17 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 public class HederaCallCodeOperation extends CallCodeOperation {
     private final EvmSigsVerifier sigsVerifier;
     private final BiPredicate<Address, MessageFrame> addressValidator;
-    private final Map<String, PrecompiledContract> precompiledContractMap;
+    private final Predicate<Address> precompileDetector;
 
     public HederaCallCodeOperation(
             final EvmSigsVerifier sigsVerifier,
             final GasCalculator gasCalculator,
             final BiPredicate<Address, MessageFrame> addressValidator,
-            final Map<String, PrecompiledContract> precompiledContractMap) {
+            final Predicate<Address> precompileDetector) {
         super(gasCalculator);
         this.sigsVerifier = sigsVerifier;
         this.addressValidator = addressValidator;
-        this.precompiledContractMap = precompiledContractMap;
+        this.precompileDetector = precompileDetector;
     }
 
     @Override
@@ -86,7 +85,7 @@ public class HederaCallCodeOperation extends CallCodeOperation {
                 () -> cost(frame),
                 () -> super.execute(frame, evm),
                 addressValidator,
-                precompiledContractMap,
+                precompileDetector,
                 () -> isStatic(frame));
     }
 }

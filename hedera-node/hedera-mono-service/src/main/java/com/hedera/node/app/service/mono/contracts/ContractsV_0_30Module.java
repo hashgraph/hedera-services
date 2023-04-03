@@ -46,7 +46,9 @@ import java.math.BigInteger;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import javax.inject.Named;
 import javax.inject.Singleton;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
@@ -143,8 +145,8 @@ public interface ContractsV_0_30Module {
             final EvmSigsVerifier sigsVerifier,
             final GasCalculator gasCalculator,
             @V_0_30 final BiPredicate<Address, MessageFrame> addressValidator,
-            final Map<String, PrecompiledContract> precompiledContractMap) {
-        return new HederaCallCodeOperation(sigsVerifier, gasCalculator, addressValidator, precompiledContractMap);
+            final @Named("PrecompileDetector") Predicate<Address> precompileDetector) {
+        return new HederaCallCodeOperation(sigsVerifier, gasCalculator, addressValidator, precompileDetector);
     }
 
     @Provides
@@ -155,8 +157,8 @@ public interface ContractsV_0_30Module {
             final EvmSigsVerifier sigsVerifier,
             final GasCalculator gasCalculator,
             @V_0_30 final BiPredicate<Address, MessageFrame> addressValidator,
-            final Map<String, PrecompiledContract> precompiledContractMap) {
-        return new HederaCallOperation(sigsVerifier, gasCalculator, addressValidator, precompiledContractMap);
+            final @Named("PrecompileDetector") Predicate<Address> precompileDetector) {
+        return new HederaCallOperation(sigsVerifier, gasCalculator, addressValidator, precompileDetector);
     }
 
     @Provides
@@ -175,8 +177,8 @@ public interface ContractsV_0_30Module {
     static Operation bindStaticCallOperation(
             final GasCalculator gasCalculator,
             @V_0_30 final BiPredicate<Address, MessageFrame> addressValidator,
-            final Map<String, PrecompiledContract> precompiledContractMap) {
-        return new HederaStaticCallOperation(gasCalculator, addressValidator, precompiledContractMap);
+            final @Named("PrecompileDetector") Predicate<Address> precompileDetector) {
+        return new HederaStaticCallOperation(gasCalculator, addressValidator, precompileDetector);
     }
 
     @Provides
@@ -257,9 +259,11 @@ public interface ContractsV_0_30Module {
     @Provides
     @Singleton
     @V_0_30
-    static PrecompileContractRegistry providePrecompiledContractRegistry(GasCalculator gasCalculator) {
+    static PrecompileContractRegistry providePrecompiledContractRegistry(
+            GasCalculator gasCalculator, final Map<String, PrecompiledContract> hederaPrecompiles) {
         final var precompileContractRegistry = new PrecompileContractRegistry();
         MainnetPrecompiledContracts.populateForIstanbul(precompileContractRegistry, gasCalculator);
+        hederaPrecompiles.forEach((k, v) -> precompileContractRegistry.put(Address.fromHexString(k), v));
         return precompileContractRegistry;
     }
 }

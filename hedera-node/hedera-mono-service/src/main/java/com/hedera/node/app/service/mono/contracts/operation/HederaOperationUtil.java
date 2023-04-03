@@ -44,11 +44,11 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.tuweni.bytes.Bytes32;
@@ -56,7 +56,6 @@ import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.operation.Operation;
-import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 /** Utility methods used by Hedera adapted {@link org.hyperledger.besu.evm.operation.Operation} */
 public final class HederaOperationUtil {
@@ -81,7 +80,7 @@ public final class HederaOperationUtil {
      * @param supplierHaltGasCost    Supplier for the gas cost
      * @param supplierExecution      Supplier with the execution
      * @param addressValidator       Address validator predicate
-     * @param precompiledContractMap Map of addresses to contracts
+     * @param precompileDetector     A predicate that determines if an address is a precompile address
      * @param supplierIsChildStatic  Supplier for is child static check
      * @return The operation result of the execution
      */
@@ -92,10 +91,11 @@ public final class HederaOperationUtil {
             final LongSupplier supplierHaltGasCost,
             final Supplier<Operation.OperationResult> supplierExecution,
             final BiPredicate<Address, MessageFrame> addressValidator,
-            final Map<String, PrecompiledContract> precompiledContractMap,
+            final Predicate<Address> precompileDetector,
             final BooleanSupplier supplierIsChildStatic) {
-        // The Precompiled contracts verify their signatures themselves
-        if (precompiledContractMap.containsKey(address.toShortHexString())) {
+        // Addresses mapping to  lower than 0.0.800 are never calling the Hedera account.
+        // Short circuit and approve.
+        if (precompileDetector.test(address)) {
             return supplierExecution.get();
         }
         if (Boolean.FALSE.equals(addressValidator.test(address, frame))) {

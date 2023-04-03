@@ -30,8 +30,8 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
-import java.util.Map;
 import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -39,7 +39,6 @@ import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -74,7 +73,7 @@ class HederaCallOperationV034Test {
     private BiPredicate<Address, MessageFrame> addressValidator;
 
     @Mock
-    private Map<String, PrecompiledContract> precompiledContractMap;
+    private Predicate<Address> precompileDetector;
 
     @Mock
     private GlobalDynamicProperties globalDynamicProperties;
@@ -88,7 +87,7 @@ class HederaCallOperationV034Test {
     @BeforeEach
     void setup() {
         subject = new HederaCallOperationV034(
-                sigsVerifier, calc, addressValidator, precompiledContractMap, globalDynamicProperties);
+                sigsVerifier, calc, addressValidator, precompileDetector, globalDynamicProperties);
     }
 
     @Test
@@ -146,7 +145,7 @@ class HederaCallOperationV034Test {
         given(globalDynamicProperties.isImplicitCreationEnabled()).willReturn(isFlagEnabled);
 
         var opRes = subject.execute(evmMsgFrame, evm);
-        assertEquals(null, opRes.getHaltReason());
+        assertNull(opRes.getHaltReason());
         assertEquals(opRes.getGasCost(), cost);
 
         given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any()))
@@ -237,7 +236,7 @@ class HederaCallOperationV034Test {
         given(aliases.isMirror(any(Address.class))).willReturn(false);
 
         var opRes = subject.execute(evmMsgFrame, evm);
-        assertEquals(null, opRes.getHaltReason());
+        assertNull(opRes.getHaltReason());
         assertEquals(opRes.getGasCost(), cost);
     }
 

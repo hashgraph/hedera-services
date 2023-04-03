@@ -17,14 +17,13 @@
 package com.hedera.node.app.service.mono.contracts.operation;
 
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
-import java.util.Map;
 import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.StaticCallOperation;
-import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 /**
  * Hedera adapted version of the {@link StaticCallOperation}.
@@ -35,15 +34,15 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
  */
 public class HederaStaticCallOperation extends StaticCallOperation {
     private final BiPredicate<Address, MessageFrame> addressValidator;
-    private final Map<String, PrecompiledContract> precompiledContractMap;
+    final Predicate<Address> precompileDetector;
 
     public HederaStaticCallOperation(
             final GasCalculator gasCalculator,
             final BiPredicate<Address, MessageFrame> addressValidator,
-            final Map<String, PrecompiledContract> precompiledContractMap) {
+            final Predicate<Address> precompileDetector) {
         super(gasCalculator);
         this.addressValidator = addressValidator;
-        this.precompiledContractMap = precompiledContractMap;
+        this.precompileDetector = precompileDetector;
     }
 
     @Override
@@ -55,7 +54,7 @@ public class HederaStaticCallOperation extends StaticCallOperation {
                 () -> cost(frame),
                 () -> super.execute(frame, evm),
                 addressValidator,
-                precompiledContractMap,
+                precompileDetector,
                 () -> isStatic(frame));
     }
 }

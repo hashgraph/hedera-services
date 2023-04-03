@@ -60,10 +60,13 @@ import dagger.multibindings.StringKey;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
+import javax.inject.Named;
 import javax.inject.Provider;
 import javax.inject.Qualifier;
 import javax.inject.Singleton;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.contractvalidation.ContractValidationRule;
 import org.hyperledger.besu.evm.contractvalidation.MaxCodeSizeRule;
@@ -210,5 +213,14 @@ public interface ContractsModule {
             final AliasManager aliasManager) {
         return () -> new CallLocalEvmTxProcessor(
                 codeCache, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, aliasManager);
+    }
+
+    @Provides
+    @Singleton
+    @Named("PrecompileDetector")
+    static Predicate<Address> providePrecompileDetector() {
+        // Addresses mapping to lower than 0.0.800 are never calling the Hedera account.
+        // Short circuit and approve.
+        return (Address address) -> address.numberOfLeadingZeroBytes() >= 18 && address.toInt() < 800;
     }
 }

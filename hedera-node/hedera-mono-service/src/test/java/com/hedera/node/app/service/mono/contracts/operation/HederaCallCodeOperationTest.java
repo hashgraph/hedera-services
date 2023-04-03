@@ -47,8 +47,8 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
-import java.util.Map;
 import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -56,7 +56,6 @@ import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -89,7 +88,7 @@ class HederaCallCodeOperationTest {
     private BiPredicate<Address, MessageFrame> addressValidator;
 
     @Mock
-    private Map<String, PrecompiledContract> precompiledContractMap;
+    private Predicate<Address> precompileDetector;
 
     private final long cost = 100L;
 
@@ -97,7 +96,7 @@ class HederaCallCodeOperationTest {
 
     @BeforeEach
     void setup() {
-        subject = new HederaCallCodeOperation(sigsVerifier, calc, addressValidator, precompiledContractMap);
+        subject = new HederaCallCodeOperation(sigsVerifier, calc, addressValidator, precompileDetector);
         commonSetup(evmMsgFrame, worldUpdater, acc);
     }
 
