@@ -250,7 +250,7 @@ public final class Bucket<K extends VirtualKey<? super K>> {
             // handle UPDATE
             if (result.found) {
                 // yay! we found it, so update value
-                setValue(result.entryOffset, value);
+                bucketBuffer.putLong(result.entryOffset + ENTRY_VALUE_OFFSET, value);
                 return;
             }
             /* We have to serialize a variable-size key to a temp byte buffer to check
@@ -398,26 +398,6 @@ public final class Bucket<K extends VirtualKey<? super K>> {
     private K getKey(int entryOffset) throws IOException {
         bucketBuffer.position(entryOffset + ENTRY_KEY_OFFSET);
         return keySerializer.deserialize(bucketBuffer, keySerializationVersion);
-    }
-
-    /**
-     * Read a value for a given entry
-     *
-     * @param entryOffset the offset for the entry
-     * @return the value stored in given entry
-     */
-    private long getValue(int entryOffset) {
-        return bucketBuffer.getLong(entryOffset + ENTRY_VALUE_OFFSET);
-    }
-
-    /**
-     * Read a value for a given entry
-     *
-     * @param entryOffset the offset for the entry
-     * @param value the value to set for entry
-     */
-    private void setValue(int entryOffset, long value) {
-        bucketBuffer.putLong(entryOffset + ENTRY_VALUE_OFFSET, value);
     }
 
     /** toString for debugging */
