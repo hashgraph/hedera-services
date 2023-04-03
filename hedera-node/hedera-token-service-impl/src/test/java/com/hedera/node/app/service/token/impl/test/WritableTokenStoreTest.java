@@ -25,6 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.test.handlers.TokenHandlerTestBase;
+import java.util.Collections;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -47,7 +49,31 @@ class WritableTokenStoreTest extends TokenHandlerTestBase {
     }
 
     @Test
-    void commitsTokenChanges() {
+    void getReturnsImmutableToken() {
+        token = createToken();
+        writableStore.put(token);
+
+        final var maybeReadToken = writableStore.get(tokenEntityNum.longValue());
+
+        assertTrue(maybeReadToken.isPresent());
+        final var readToken = maybeReadToken.get();
+        assertEquals(token, readToken);
+    }
+
+    @Test
+    void getForModifyReturnsImmutableToken() {
+        token = createToken();
+        writableStore.put(token);
+
+        final var maybeReadToken = writableStore.getForModify(tokenEntityNum.longValue());
+
+        assertTrue(maybeReadToken.isPresent());
+        final var readToken = maybeReadToken.get();
+        assertEquals(token, readToken);
+    }
+
+    @Test
+    void commitsTokenChangesToState() {
         token = createToken();
         assertFalse(writableTokenState.contains(tokenEntityNum));
 
@@ -59,14 +85,13 @@ class WritableTokenStoreTest extends TokenHandlerTestBase {
     }
 
     @Test
-    void getReturnsToken() {
+    void getsSizeOfState() {
         token = createToken();
+        assertEquals(0, writableStore.sizeOfState());
+        assertEquals(Collections.EMPTY_SET, writableStore.modifiedTokens());
         writableStore.put(token);
 
-        final var maybeReadToken = writableStore.get(tokenEntityNum.longValue());
-
-        assertTrue(maybeReadToken.isPresent());
-        final var readToken = maybeReadToken.get();
-        assertEquals(token, readToken);
+        assertEquals(1, writableStore.sizeOfState());
+        assertEquals(Set.of(tokenEntityNum), writableStore.modifiedTokens());
     }
 }
