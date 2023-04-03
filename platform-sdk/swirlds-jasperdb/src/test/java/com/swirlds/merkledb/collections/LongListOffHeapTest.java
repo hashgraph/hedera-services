@@ -166,13 +166,16 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
             // write longList data
             list.writeToFile(file);
 
+            // restoring the list from the file
             try (LongListOffHeap longListFromFile = createLongListFromFile(file)) {
 
                 for (int i = 0; i < longListFromFile.size(); i++) {
                     assertEquals(list.get(i), longListFromFile.get(i));
                 }
-                // write longList data
+                // write longList data again
                 longListFromFile.writeToFile(file);
+
+                // restoring the list from the file again
                 try (LongListOffHeap longListFromFile2 = createLongListFromFile(file)) {
                     for (int i = 0; i < longListFromFile2.size(); i++) {
                         assertEquals(longListFromFile.get(i), longListFromFile2.get(i));

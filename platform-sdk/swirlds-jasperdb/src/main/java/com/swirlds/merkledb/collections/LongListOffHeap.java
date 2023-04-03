@@ -169,8 +169,10 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> {
             for (int i = firstChunkWithDataIndex; i < totalNumOfChunks; i++) {
                 final ByteBuffer byteBuffer = chunkList.get(i);
                 final ByteBuffer nonNullBuffer = requireNonNullElse(byteBuffer, emptyBuffer);
+                // Slice so we don't mess with the byte buffer pointers.
+                // Also, the slice size has to be equal to the size of the buffer
                 final ByteBuffer buf =
-                        nonNullBuffer.slice(0, nonNullBuffer.capacity()); // slice so we don't mess with state
+                        nonNullBuffer.slice(0, nonNullBuffer.capacity());
                 if (i == firstChunkWithDataIndex) {
                     // writing starts from the first valid index in the first valid chunk
                     final int firstValidIndexInChunk = toIntExact(currentMinValidIndex % numLongsPerChunk);
