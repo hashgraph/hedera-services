@@ -962,7 +962,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         transactionSubmitter = new SwirldTransactionSubmitter(
                 currentPlatformStatus::get,
                 PlatformConstructor.settingsProvider(),
-                getSelfAddress().isZeroStake(),
                 swirldStateManager::submitTransaction,
                 new TransactionMetrics(metrics));
 
