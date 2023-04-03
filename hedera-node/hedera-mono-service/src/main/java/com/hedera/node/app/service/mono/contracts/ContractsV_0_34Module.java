@@ -226,8 +226,9 @@ public interface ContractsV_0_34Module {
             GasCalculator gasCalculator,
             final TransactionContext txnCtx,
             /* Deliberately import the V_0_30 validator, we still want self-destructs to fail if the beneficiary is invalid */
-            @ContractsModule.V_0_30 BiPredicate<Address, MessageFrame> addressValidator) {
-        return new HederaSelfDestructOperation(gasCalculator, txnCtx, addressValidator);
+            @ContractsModule.V_0_30 BiPredicate<Address, MessageFrame> addressValidator,
+            final EvmSigsVerifier sigsVerifier) {
+        return new HederaSelfDestructOperation(gasCalculator, txnCtx, addressValidator, sigsVerifier);
     }
 
     @Provides

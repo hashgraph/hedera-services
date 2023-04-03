@@ -22,7 +22,6 @@ import static com.swirlds.platform.recovery.RecoveryTestUtils.generateRandomEven
 import static com.swirlds.platform.recovery.RecoveryTestUtils.writeRandomEventStream;
 import static com.swirlds.platform.util.EventStreamSigningUtils.initializeSystem;
 import static com.swirlds.platform.util.EventStreamSigningUtils.signEventStreamFile;
-import static com.swirlds.platform.util.EventStreamSigningUtils.signEventStreamFilesInDirectory;
 import static com.swirlds.platform.util.FileSigningUtils.SIGNATURE_FILE_NAME_SUFFIX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -144,7 +143,10 @@ class EventStreamSigningUtilsTests {
             throw new RuntimeException(e);
         }
 
-        signEventStreamFile(destinationDirectory, fileToSign, keyPair);
+        assertTrue(
+                signEventStreamFile(
+                        FileSigningUtils.buildSignatureFilePath(destinationDirectory, fileToSign), fileToSign, keyPair),
+                "Signing failed");
 
         final List<Path> destinationDirectoryFiles = getDestinationDirectoryFiles();
 
@@ -161,43 +163,5 @@ class EventStreamSigningUtilsTests {
         // validate the stream file and sig file via the standard method
         validateFileAndSignature(
                 fileToSign.toFile(), signatureFile.toFile(), keyPair.getPublic(), EventStreamType.getInstance());
-    }
-
-    @Test
-    @DisplayName("Sign stream files in directory")
-    void signStreamFiles() {
-        createStreamFiles();
-
-        final List<Path> filesToSign;
-        try (final Stream<Path> stream = Files.walk(toSignDirectory)) {
-            filesToSign = stream.filter(
-                            filePath -> EventStreamType.getInstance().isStreamFile(filePath.toString()))
-                    .toList();
-        } catch (final IOException e) {
-            throw new RuntimeException("Failed to list files in directory: " + toSignDirectory, e);
-        }
-
-        signEventStreamFilesInDirectory(toSignDirectory, destinationDirectory, keyPair);
-
-        final List<Path> destinationDirectoryFiles = getDestinationDirectoryFiles();
-
-        assertNotNull(destinationDirectoryFiles, "Expected signature file to be created");
-        assertEquals(
-                filesToSign.size(),
-                destinationDirectoryFiles.size(),
-                "Expected correct number of signature files to be created");
-
-        for (final Path originalFile : filesToSign) {
-            final Path expectedFile =
-                    destinationDirectory.resolve(originalFile.getFileName() + SIGNATURE_FILE_NAME_SUFFIX);
-
-            assertTrue(
-                    destinationDirectoryFiles.contains(expectedFile),
-                    "Expected signature file to be created for " + originalFile.getFileName());
-
-            // validate the stream file and sig file via the standard method
-            validateFileAndSignature(
-                    originalFile.toFile(), expectedFile.toFile(), keyPair.getPublic(), EventStreamType.getInstance());
-        }
     }
 }
