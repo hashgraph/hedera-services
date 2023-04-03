@@ -117,10 +117,8 @@ public class ERCPrecompileSuite extends HapiSuite {
     public static final String RECIPIENT = "recipient";
     private static final String FIRST = "FIRST";
     private static final String TOKEN_NAME = "TokenA";
-    private static final ByteString FIRST_META =
-            ByteString.copyFrom(FIRST.getBytes(StandardCharsets.UTF_8));
-    private static final ByteString SECOND_META =
-            ByteString.copyFrom(FIRST.getBytes(StandardCharsets.UTF_8));
+    private static final ByteString FIRST_META = ByteString.copyFrom(FIRST.getBytes(StandardCharsets.UTF_8));
+    private static final ByteString SECOND_META = ByteString.copyFrom(FIRST.getBytes(StandardCharsets.UTF_8));
     public static final String TRANSFER_SIG_NAME = "transferSig";
     public static final String ERC_20_CONTRACT = "ERC20Contract";
     private static final String ERC_721_CONTRACT = "ERC721Contract";
