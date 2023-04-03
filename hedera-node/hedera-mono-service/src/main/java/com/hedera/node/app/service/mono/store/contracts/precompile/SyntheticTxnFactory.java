@@ -313,9 +313,6 @@ public class SyntheticTxnFactory {
                     .setOwner(Objects.requireNonNull(ownerId).toGrpcAccountId())
                     .setSpender(approveWrapper.spender())
                     .setAmount(approveWrapper.amount().longValueExact());
-            if (ownerId != null) {
-                tokenAllowance.setOwner(ownerId.toGrpcAccountId());
-            }
             builder.addTokenAllowances(tokenAllowance.build());
         } else {
             final var op = NftAllowance.newBuilder()
