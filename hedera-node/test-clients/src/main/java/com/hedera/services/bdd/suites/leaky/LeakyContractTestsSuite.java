@@ -280,7 +280,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var transferFromOtherContractWithSignaturesTxn = "transferFromOtherContractWithSignaturesTxn";
         final var nestedContract = "NestedERC20Contract";
 
-        return defaultHapiSpec("ERC_20_TRANSFER_FROM_CONTRACT_WITH_APPROVAL")
+        return propertyPreservingHapiSpec("TransferErc20TokenFromContractWithApproval")
+                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(10 * ONE_MILLION_HBARS),
@@ -402,7 +403,6 @@ public class LeakyContractTestsSuite extends HapiSuite {
     }
 
     private HapiSpec transferDontWorkWithoutTopLevelSignatures() {
-        final String ALLOW_SYSTEM_USE_OF_HAPI_SIGS = CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS;
         final var transferTokenTxn = "transferTokenTxn";
         final var transferTokensTxn = "transferTokensTxn";
         final var transferNFTTxn = "transferNFTTxn";
@@ -413,10 +413,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaNftID = new AtomicReference<>();
         return propertyPreservingHapiSpec("transferWorksWithTopLevelSignatures")
-                .preserving(ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
+                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
                 .given(
                         // disable top level signatures for all functions
-                        overriding(ALLOW_SYSTEM_USE_OF_HAPI_SIGS, ""),
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, ""),
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
@@ -542,7 +542,6 @@ public class LeakyContractTestsSuite extends HapiSuite {
     }
 
     private HapiSpec transferWorksWithTopLevelSignatures() {
-        final String ALLOW_SYSTEM_USE_OF_HAPI_SIGS = CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS;
         final var transferTokenTxn = "transferTokenTxn";
         final var transferTokensTxn = "transferTokensTxn";
         final var transferNFTTxn = "transferNFTTxn";
@@ -553,11 +552,11 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaNftID = new AtomicReference<>();
         return propertyPreservingHapiSpec("transferWorksWithTopLevelSignatures")
-                .preserving(ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
+                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
                 .given(
                         // enable top level signatures for
                         // transferToken/transferTokens/transferNft/transferNfts
-                        overriding(ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CRYPTO_TRANSFER),
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CRYPTO_TRANSFER),
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
