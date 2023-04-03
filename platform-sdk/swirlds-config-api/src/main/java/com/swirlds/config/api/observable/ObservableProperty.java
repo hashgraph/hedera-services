@@ -61,7 +61,7 @@ public interface ObservableProperty<T> {
      * @return a functional interface that can be used to handle a property that is not set.
      */
     @NonNull
-    OrNotSet isSet(Consumer<T> consumer);
+    OrNotSet isSet(@NonNull Consumer<T> consumer);
 
     /**
      * Returns the current value of the property. {@code null} is allowed as value.
