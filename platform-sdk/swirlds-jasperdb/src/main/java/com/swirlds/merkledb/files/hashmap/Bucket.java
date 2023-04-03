@@ -76,12 +76,14 @@ public final class Bucket<K extends VirtualKey<? super K>> {
     private static final AtomicInteger LARGEST_SIZE_OF_BUCKET_CREATED = new AtomicInteger(0);
 
     private int keySerializationVersion;
+
     /**
      * Byte buffer that holds this bucket data, including bucket index, size in bytes, number of
      * entries, and entry data. Buffer is expanded as needed, when new entries are added. Buffer
      * limit is kept equal to the bucket size in bytes.
      */
     private ByteBuffer bucketBuffer;
+
     private KeySerializer<K> keySerializer;
     private ByteBuffer reusableBuffer;
 
@@ -453,8 +455,7 @@ public final class Bucket<K extends VirtualKey<? super K>> {
      * is found, "found" is false, "entryOffset" is the total size of the bucket buffer,
      * "entryIndex" and "entryValue" are undefined.
      */
-    private record FindResult(int entryOffset, int entryIndex, boolean found, long entryValue) {
-    }
+    private record FindResult(int entryOffset, int entryIndex, boolean found, long entryValue) {}
 
     /** Get bucket buffer for tests */
     ByteBuffer getBucketBuffer() {
