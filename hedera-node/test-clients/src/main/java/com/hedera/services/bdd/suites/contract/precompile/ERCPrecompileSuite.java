@@ -119,7 +119,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     private static final String TOKEN_NAME = "TokenA";
     private static final ByteString FIRST_META = ByteString.copyFrom(FIRST.getBytes(StandardCharsets.UTF_8));
     private static final ByteString SECOND_META = ByteString.copyFrom(FIRST.getBytes(StandardCharsets.UTF_8));
-    private static final String TRANSFER_SIG_NAME = "transferSig";
+    public static final String TRANSFER_SIG_NAME = "transferSig";
     public static final String ERC_20_CONTRACT = "ERC20Contract";
     private static final String ERC_721_CONTRACT = "ERC721Contract";
     private static final String NAME_TXN = "nameTxn";
@@ -138,7 +138,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     private static final String TOTAL_SUPPLY = "totalSupply";
     private static final String BALANCE_OF = "balanceOf";
     private static final String TRANSFER = "transfer";
-    private static final String APPROVE = "approve";
+    public static final String APPROVE = "approve";
     private static final String OWNER_OF = "ownerOf";
     private static final String TOKEN_URI = "tokenURI";
     private static final String TOKEN = "token";
@@ -167,7 +167,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     private static final String WITH_SPENDER = "WITH_SPENDER";
     private static final String DO_SPECIFIC_APPROVAL = "doSpecificApproval";
     private static final String NFT_TOKEN_MINT = "nftTokenMint";
-    static final String TRANSFER_SIGNATURE = "Transfer(address,address,uint256)";
+    public static final String TRANSFER_SIGNATURE = "Transfer(address,address,uint256)";
 
     public static void main(String... args) {
         new ERCPrecompileSuite().runSuiteAsync();
@@ -205,8 +205,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                 erc20TransferFrom(),
                 erc20TransferFromSelf(),
                 getErc20TokenNameExceedingLimits(),
-                transferErc20TokenFromContractWithNoApproval(),
-                transferErc20TokenFromContractWithApproval());
+                transferErc20TokenFromContractWithNoApproval());
     }
 
     List<HapiSpec> erc721() {
@@ -840,131 +839,6 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 transferFromOtherContractWithSignaturesTxn,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith().status(SPENDER_DOES_NOT_HAVE_ALLOWANCE)));
-    }
-
-    private HapiSpec transferErc20TokenFromContractWithApproval() {
-        final var transferFromOtherContractWithSignaturesTxn = "transferFromOtherContractWithSignaturesTxn";
-        final var nestedContract = "NestedERC20Contract";
-
-        return defaultHapiSpec("ERC_20_TRANSFER_FROM_CONTRACT_WITH_APPROVAL")
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(ACCOUNT).balance(10 * ONE_MILLION_HBARS),
-                        cryptoCreate(RECIPIENT),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .initialSupply(35)
-                                .treasury(TOKEN_TREASURY)
-                                .adminKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY),
-                        uploadInitCode(ERC_20_CONTRACT, nestedContract),
-                        newKeyNamed(TRANSFER_SIG_NAME).shape(SIMPLE.signedWith(ON)),
-                        contractCreate(ERC_20_CONTRACT).adminKey(TRANSFER_SIG_NAME),
-                        contractCreate(nestedContract).adminKey(TRANSFER_SIG_NAME),
-                        overriding("contracts.allowSystemUseOfHapiSigs", "CryptoTransfer"))
-                .when(withOpContext((spec, opLog) -> allRunFor(
-                        spec,
-                        tokenAssociate(ACCOUNT, List.of(FUNGIBLE_TOKEN)),
-                        tokenAssociate(RECIPIENT, List.of(FUNGIBLE_TOKEN)),
-                        tokenAssociate(ERC_20_CONTRACT, List.of(FUNGIBLE_TOKEN)),
-                        tokenAssociate(nestedContract, List.of(FUNGIBLE_TOKEN)),
-                        cryptoTransfer(TokenMovement.moving(20, FUNGIBLE_TOKEN)
-                                        .between(TOKEN_TREASURY, ERC_20_CONTRACT))
-                                .payingWith(ACCOUNT),
-                        contractCall(
-                                        ERC_20_CONTRACT,
-                                        APPROVE,
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getContractId(ERC_20_CONTRACT))),
-                                        BigInteger.valueOf(20))
-                                .gas(1_000_000)
-                                .payingWith(ACCOUNT)
-                                .alsoSigningWithFullPrefix(TRANSFER_SIG_NAME),
-                        contractCall(
-                                        ERC_20_CONTRACT,
-                                        TRANSFER_FROM,
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getContractId(ERC_20_CONTRACT))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getContractId(nestedContract))),
-                                        BigInteger.valueOf(5))
-                                .via(TRANSFER_TXN)
-                                .alsoSigningWithFullPrefix(TRANSFER_SIG_NAME)
-                                .hasKnownStatus(SUCCESS),
-                        contractCall(
-                                        ERC_20_CONTRACT,
-                                        TRANSFER_FROM,
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getContractId(ERC_20_CONTRACT))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getContractId(nestedContract))),
-                                        BigInteger.valueOf(5))
-                                .payingWith(ACCOUNT)
-                                .alsoSigningWithFullPrefix(TRANSFER_SIG_NAME)
-                                .via(transferFromOtherContractWithSignaturesTxn))))
-                .then(
-                        getContractInfo(ERC_20_CONTRACT).saveToRegistry(ERC_20_CONTRACT),
-                        getContractInfo(nestedContract).saveToRegistry(nestedContract),
-                        withOpContext((spec, log) -> {
-                            final var sender = spec.registry()
-                                    .getContractInfo(ERC_20_CONTRACT)
-                                    .getContractID();
-                            final var receiver = spec.registry()
-                                    .getContractInfo(nestedContract)
-                                    .getContractID();
-
-                            var transferRecord = getTxnRecord(TRANSFER_TXN)
-                                    .hasPriority(recordWith()
-                                            .contractCallResult(resultWith()
-                                                    .logs(inOrder(logWith()
-                                                            .withTopicsInOrder(List.of(
-                                                                    eventSignatureOf(TRANSFER_SIGNATURE),
-                                                                    parsedToByteString(sender.getContractNum()),
-                                                                    parsedToByteString(receiver.getContractNum())))
-                                                            .longValue(5)))))
-                                    .andAllChildRecords();
-
-                            var transferFromOtherContractWithSignaturesTxnRecord = getTxnRecord(
-                                            transferFromOtherContractWithSignaturesTxn)
-                                    .hasPriority(recordWith()
-                                            .contractCallResult(resultWith()
-                                                    .logs(inOrder(logWith()
-                                                            .withTopicsInOrder(List.of(
-                                                                    eventSignatureOf(TRANSFER_SIGNATURE),
-                                                                    parsedToByteString(sender.getContractNum()),
-                                                                    parsedToByteString(receiver.getContractNum())))
-                                                            .longValue(5)))))
-                                    .andAllChildRecords();
-
-                            allRunFor(spec, transferRecord, transferFromOtherContractWithSignaturesTxnRecord);
-                        }),
-                        childRecordsCheck(
-                                TRANSFER_TXN,
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(resultWith()
-                                                .contractCallResult(htsPrecompileResult()
-                                                        .forFunction(FunctionType.ERC_TRANSFER)
-                                                        .withErcFungibleTransferStatus(true)))),
-                        childRecordsCheck(
-                                transferFromOtherContractWithSignaturesTxn,
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(resultWith()
-                                                .contractCallResult(htsPrecompileResult()
-                                                        .forFunction(FunctionType.ERC_TRANSFER)
-                                                        .withErcFungibleTransferStatus(true)))),
-                        getAccountBalance(ERC_20_CONTRACT).hasTokenBalance(FUNGIBLE_TOKEN, 10),
-                        getAccountBalance(nestedContract).hasTokenBalance(FUNGIBLE_TOKEN, 10));
     }
 
     private HapiSpec erc20Allowance() {
