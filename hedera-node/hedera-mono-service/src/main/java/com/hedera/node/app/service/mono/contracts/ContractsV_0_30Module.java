@@ -222,8 +222,9 @@ public interface ContractsV_0_30Module {
     static Operation bindSelfDestructOperation(
             GasCalculator gasCalculator,
             final TransactionContext txnCtx,
-            @V_0_30 BiPredicate<Address, MessageFrame> addressValidator) {
-        return new HederaSelfDestructOperation(gasCalculator, txnCtx, addressValidator);
+            @V_0_30 BiPredicate<Address, MessageFrame> addressValidator,
+            final EvmSigsVerifier evmSigsVerifier) {
+        return new HederaSelfDestructOperation(gasCalculator, txnCtx, addressValidator, evmSigsVerifier);
     }
 
     @Provides
