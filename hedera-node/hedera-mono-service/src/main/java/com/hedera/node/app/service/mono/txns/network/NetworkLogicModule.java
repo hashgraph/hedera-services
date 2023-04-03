@@ -27,7 +27,10 @@ import com.swirlds.common.system.SwirldDualState;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoMap;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.List;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import javax.inject.Singleton;
 
@@ -48,7 +51,9 @@ public final class NetworkLogicModule {
     @Provides
     @IntoMap
     @FunctionKey(Freeze)
-    public static List<TransitionLogic> provideFreezeLogic(final FreezeTransitionLogic freezeLogic) {
+    public static List<TransitionLogic> provideFreezeLogic(
+            final FreezeTransitionLogic freezeLogic,
+            @NonNull final BooleanSupplier isRecordingFacilityMocks) {
         return List.of(freezeLogic);
     }
 

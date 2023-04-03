@@ -499,10 +499,6 @@ class FreezeTransitionLogicTest {
         op.setEndMin(20);
     }
 
-    private void plusInvalidTime(final FreezeTransactionBody.Builder op) {
-        op.setStartHour(24).setStartMin(15).setEndHour(15).setEndMin(20);
-    }
-
     private void setValidFreezeStartTimeStamp(final FreezeTransactionBody.Builder op) {
         op.setStartTime(Timestamp.newBuilder()
                 .setSeconds(VALID_START_TIME.getEpochSecond())

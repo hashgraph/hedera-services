@@ -17,13 +17,32 @@
 package com.hedera.node.app.service.mono.state.logic;
 
 import com.hedera.node.app.service.mono.txns.ProcessLogic;
+import com.hedera.node.app.service.mono.utils.MiscUtils;
 import dagger.Binds;
 import dagger.Module;
+import dagger.Provides;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import javax.inject.Singleton;
+import java.util.function.BooleanSupplier;
 
 @Module
 public interface ProcessLogicModule {
-    @Binds
+    @Provides
     @Singleton
-    ProcessLogic provideProcessLogic(StandardProcessLogic standardProcessLogic);
+    static BooleanSupplier provideFacilityRecordingTest() {
+        return MiscUtils::isRecordingFacilityMocks;
+    }
+
+    @Provides
+    @Singleton
+    static ProcessLogic provideProcessLogic(
+            @NonNull final StandardProcessLogic standardProcessLogic,
+            @NonNull final BooleanSupplier isRecordingFacilityMocks) {
+        if (isRecordingFacilityMocks.getAsBoolean()) {
+            return new TxnRecordingProcessLogic(standardProcessLogic);
+        } else {
+            return standardProcessLogic;
+        }
+    }
 }

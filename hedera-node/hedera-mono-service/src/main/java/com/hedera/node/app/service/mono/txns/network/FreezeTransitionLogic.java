@@ -72,7 +72,7 @@ public class FreezeTransitionLogic implements TransitionLogic {
 
     @Override
     public void doStateTransition() {
-        final var op = txnCtx.accessor().getTxn().getFreeze();
+        final var op = inContextOp();
 
         assertValidityAtCons(op);
 
@@ -98,6 +98,10 @@ public class FreezeTransitionLogic implements TransitionLogic {
                 upgradeActions.scheduleFreezeOnlyAt(timestampToInstant(op.getStartTime()));
                 break;
         }
+    }
+
+    protected FreezeTransactionBody inContextOp() {
+        return txnCtx.accessor().getTxn().getFreeze();
     }
 
     @Override

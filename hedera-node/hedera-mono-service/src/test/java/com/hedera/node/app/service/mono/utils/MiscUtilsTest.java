@@ -51,6 +51,7 @@ import static com.hedera.node.app.service.mono.utils.MiscUtils.describe;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.functionalityOfQuery;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.getTxnStat;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.isGasThrottled;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.isRecordingFacilityMocks;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.isSchedulable;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.nonNegativeNanosOffset;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.perm64;
@@ -230,6 +231,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class})
 class MiscUtilsTest {
+    @Test
+    void detectsMockFacilitiesRecordingMode() {
+        System.setProperty("recording.mockFacilities", "true");
+        assertTrue(isRecordingFacilityMocks());
+        System.setProperty("recording.mockFacilities", "false");
+        assertFalse(isRecordingFacilityMocks());
+    }
+
     @Test
     void canGetListOfAccessTypes() {
         final var expected = List.of(ACCOUNTS_GET, ACCOUNTS_GET, ACCOUNTS_GET, STORAGE_REMOVE);

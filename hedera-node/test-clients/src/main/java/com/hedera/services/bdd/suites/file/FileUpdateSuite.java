@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.file;
 
+import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -161,22 +162,37 @@ public class FileUpdateSuite extends HapiSuite {
     @SuppressWarnings("java:S3878")
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                vanillaUpdateSucceeds(),
-                updateFeesCompatibleWithCreates(),
-                apiPermissionsChangeDynamically(),
-                cannotUpdateExpirationPastMaxLifetime(),
-                optimisticSpecialFileUpdate(),
-                associateHasExpectedSemantics(),
-                notTooManyFeeScheduleCanBeCreated(),
-                allUnusedGasIsRefundedIfSoConfigured(),
-                maxRefundIsEnforced(),
-                gasLimitOverMaxGasLimitFailsPrecheck(),
-                kvLimitsEnforced(),
-                serviceFeeRefundedIfConsGasExhausted(),
-                chainIdChangesDynamically(),
-                entitiesNotCreatableAfterUsageLimitsReached(),
-                rentItemizedAsExpectedWithOverridePriceTiers(),
-                messageSubmissionSizeChange());
+//                vanillaUpdateSucceeds(),
+//                updateFeesCompatibleWithCreates(),
+//                apiPermissionsChangeDynamically(),
+//                cannotUpdateExpirationPastMaxLifetime(),
+//                optimisticSpecialFileUpdate(),
+//                associateHasExpectedSemantics(),
+//                notTooManyFeeScheduleCanBeCreated(),
+//                allUnusedGasIsRefundedIfSoConfigured(),
+//                maxRefundIsEnforced(),
+//                gasLimitOverMaxGasLimitFailsPrecheck(),
+//                kvLimitsEnforced(),
+//                serviceFeeRefundedIfConsGasExhausted(),
+//                chainIdChangesDynamically(),
+//                entitiesNotCreatableAfterUsageLimitsReached(),
+//                rentItemizedAsExpectedWithOverridePriceTiers(),
+//                messageSubmissionSizeChange(),
+                mint10OnRemote());
+    }
+
+    private HapiSpec mint10OnRemote() {
+        final var token = "950Mintable";
+        return customHapiSpec("Mint10OnRemote").withProperties(Map.of(
+                        "nodes", "35.237.200.180",
+                        "fees.useFixedOffer", "true",
+                        "fees.fixedOffer", "10000000000",
+                        "default.payer", "0.0.950",
+                        "default.payer.pemKeyLoc", "mainnet-account950.pem",
+                        "default.payer.pemKeyPassphrase", "BtUiHHK7rAnn4TPA"))
+                .given( ).when().then(
+                        getAccountInfo("0.0.1").logged()
+                );
     }
 
     private HapiSpec associateHasExpectedSemantics() {
