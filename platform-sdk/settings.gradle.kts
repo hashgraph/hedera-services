@@ -58,6 +58,8 @@ include(":swirlds-platform-apps:demos:HelloSwirldDemo")
 
 include(":swirlds-platform-apps:demos:StatsDemo")
 
+include(":swirlds-platform-apps:tests:AddressBookTestingTool")
+
 include(":swirlds-platform-apps:tests:ISSTestingTool")
 
 include(":swirlds-platform-apps:tests:MigrationTestingTool")
