@@ -24,7 +24,6 @@ import static com.swirlds.platform.AddressBookInitializer.STATE_ADDRESS_BOOK_USE
 import static com.swirlds.platform.AddressBookInitializer.USED_ADDRESS_BOOK_HEADER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
@@ -69,7 +68,9 @@ class AddressBookInitializerTest {
         clearTestDirectory();
         final AddressBook configAddressBook = getRandomAddressBook();
         final AddressBookInitializer initializer = new AddressBookInitializer(
-                getMockSoftwareVersion(1), getMockSignedState(0), configAddressBook, getAddressBookConfig(true));
+                getMockSoftwareVersion(2),
+                // no software upgrade
+                false, getMockSignedState(0), configAddressBook, getAddressBookConfig(true));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
         assertEquals(
                 configAddressBook,
@@ -85,7 +86,9 @@ class AddressBookInitializerTest {
         final AddressBook configAddressBook = getRandomAddressBook();
         SignedState signedState = getMockSignedState(1);
         final AddressBookInitializer initializer = new AddressBookInitializer(
-                getMockSoftwareVersion(1), signedState, configAddressBook, getAddressBookConfig(true));
+                getMockSoftwareVersion(2),
+                // no software upgrade
+                false, signedState, configAddressBook, getAddressBookConfig(true));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
         assertEquals(
                 configAddressBook,
@@ -101,7 +104,9 @@ class AddressBookInitializerTest {
         clearTestDirectory();
         final AddressBook configAddressBook = getRandomAddressBook();
         final AddressBookInitializer initializer = new AddressBookInitializer(
-                getMockSoftwareVersion(1), getMockSignedState(0), configAddressBook, getAddressBookConfig(false));
+                getMockSoftwareVersion(2),
+                // no software upgrade
+                false, getMockSignedState(0), configAddressBook, getAddressBookConfig(false));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
         assertEquals(
                 configAddressBook,
@@ -116,7 +121,9 @@ class AddressBookInitializerTest {
         clearTestDirectory();
         final AddressBook configAddressBook = getRandomAddressBook();
         final AddressBookInitializer initializer = new AddressBookInitializer(
-                getMockSoftwareVersion(1), getMockSignedState(0), configAddressBook, getAddressBookConfig(false));
+                getMockSoftwareVersion(2),
+                // no software upgrade
+                false, getMockSignedState(0), configAddressBook, getAddressBookConfig(false));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
         assertEquals(
                 configAddressBook,
@@ -131,7 +138,9 @@ class AddressBookInitializerTest {
         clearTestDirectory();
         final AddressBook configAddressBook = getRandomAddressBook();
         final AddressBookInitializer initializer = new AddressBookInitializer(
-                getMockSoftwareVersion(1), getMockSignedState(0), configAddressBook, getAddressBookConfig(false));
+                getMockSoftwareVersion(2),
+                // no software upgrade
+                false, getMockSignedState(0), configAddressBook, getAddressBookConfig(false));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
         assertEquals(
                 configAddressBook,
@@ -163,7 +172,11 @@ class AddressBookInitializerTest {
         final SignedState signedState = getMockSignedState(2);
         final AddressBook configAddressBook = copyWithStakeChanges(signedState.getAddressBook(), 10);
         final AddressBookInitializer initializer = new AddressBookInitializer(
-                getMockSoftwareVersion(2), signedState, configAddressBook, getAddressBookConfig(false));
+                getMockSoftwareVersion(2),
+                // no software upgrade
+                false,
+                signedState,
+                 configAddressBook, getAddressBookConfig(false));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
         assertEquals(
                 signedState.getAddressBook(),
@@ -180,7 +193,11 @@ class AddressBookInitializerTest {
         final SignedState signedState = getMockSignedState(2, 0);
         final AddressBook configAddressBook = copyWithStakeChanges(signedState.getAddressBook(), 10);
         final AddressBookInitializer initializer = new AddressBookInitializer(
-                getMockSoftwareVersion(3), signedState, configAddressBook, getAddressBookConfig(false));
+                getMockSoftwareVersion(3),
+                // software upgrade
+                true,
+                signedState,
+                 configAddressBook, getAddressBookConfig(false));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
         assertEquals(
                 configAddressBook,
@@ -197,7 +214,11 @@ class AddressBookInitializerTest {
         final SignedState signedState = getMockSignedState(2, 2);
         final AddressBook configAddressBook = copyWithStakeChanges(signedState.getAddressBook(), 3);
         final AddressBookInitializer initializer = new AddressBookInitializer(
-                getMockSoftwareVersion(3), signedState, configAddressBook, getAddressBookConfig(false));
+                getMockSoftwareVersion(3),
+                // software upgrade
+                true,
+                signedState,
+                 configAddressBook, getAddressBookConfig(false));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
         assertEquals(
                 configAddressBook,
@@ -214,7 +235,11 @@ class AddressBookInitializerTest {
         final SignedState signedState = getMockSignedState(2);
         final AddressBook configAddressBook = copyWithStakeChanges(signedState.getAddressBook(), 5);
         final AddressBookInitializer initializer = new AddressBookInitializer(
-                getMockSoftwareVersion(3), signedState, configAddressBook, getAddressBookConfig(false));
+                getMockSoftwareVersion(3),
+                // software upgrade
+                true,
+                signedState,
+                 configAddressBook, getAddressBookConfig(false));
         final AddressBook inititializedAddressBook = initializer.getInitialAddressBook();
         assertNotEquals(
                 configAddressBook,
