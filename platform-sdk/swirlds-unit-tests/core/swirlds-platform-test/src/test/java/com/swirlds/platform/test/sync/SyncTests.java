@@ -613,27 +613,29 @@ public class SyncTests {
 
         executor.setGenerationDefinitions((caller, listener) -> {
             long listenerMaxGen = SyncUtils.getMaxGen(listener.getShadowGraph().getTips());
-
-            // Expire everything below the listener's max gen on the caller
-            // so that the listener's maxGen == caller's minGen
-            caller.expireBelow(listenerMaxGen);
-
-            listenerMaxGen = SyncUtils.getMaxGen(listener.getShadowGraph().getTips());
-            long callerMinGen = SyncUtils.getMinGen(caller.getShadowGraph()
-                    .findAncestors(caller.getShadowGraph().getTips(), (e) -> true));
-
-            assertEquals(listenerMaxGen, callerMinGen, "listener max gen and caller min gen should be equal.");
-
-            long callerMaxGen = SyncUtils.getMaxGen(caller.getShadowGraph().getTips());
+            // make the min non-ancient gen slightly below the max gen
+            long listenerMinNonAncient = listenerMaxGen - (listenerMaxGen/10);
             long listenerMinGen = SyncUtils.getMinGen(listener.getShadowGraph()
                     .findAncestors(listener.getShadowGraph().getTips(), (e) -> true));
 
-            when(caller.getConsensus().getMaxRoundGeneration()).thenReturn(callerMaxGen);
-            when(caller.getConsensus().getMinRoundGeneration()).thenReturn(callerMinGen);
-            when(caller.getConsensus().getMinGenerationNonAncient()).thenReturn(callerMinGen);
+            // Expire everything below the listener's min non-ancient gen on the caller
+            // so that the listener's maxGen == caller's min non-ancient gen
+            caller.expireBelow(listenerMinNonAncient);
+
+            long callerMaxGen = SyncUtils.getMaxGen(caller.getShadowGraph().getTips());
+            // make the min non-ancient gen slightly below the max gen
+            long callerMinNonAncient = callerMaxGen - (callerMaxGen/10);
+            long callerMinGen = SyncUtils.getMinGen(caller.getShadowGraph()
+                    .findAncestors(caller.getShadowGraph().getTips(), (e) -> true));
+
+            assertEquals(listenerMinNonAncient, callerMinGen, "listener max gen and caller min gen should be equal.");
+
             when(listener.getConsensus().getMaxRoundGeneration()).thenReturn(listenerMaxGen);
+            when(listener.getConsensus().getMinGenerationNonAncient()).thenReturn(listenerMinNonAncient);
             when(listener.getConsensus().getMinRoundGeneration()).thenReturn(listenerMinGen);
-            when(listener.getConsensus().getMinGenerationNonAncient()).thenReturn(listenerMinGen);
+            when(caller.getConsensus().getMaxRoundGeneration()).thenReturn(callerMaxGen);
+            when(caller.getConsensus().getMinGenerationNonAncient()).thenReturn(callerMinNonAncient);
+            when(caller.getConsensus().getMinRoundGeneration()).thenReturn(callerMinGen);
         });
 
         executor.execute();
