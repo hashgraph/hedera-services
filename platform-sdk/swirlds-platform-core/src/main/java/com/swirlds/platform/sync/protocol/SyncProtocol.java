@@ -34,6 +34,7 @@ import com.swirlds.platform.sync.SyncException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.List;
+import java.util.function.LongSupplier;
 
 /**
  * Executes the sync protocol where events are exchanged with a peer and all events are sent and received in topological
@@ -70,6 +71,8 @@ public class SyncProtocol implements Protocol {
      */
     private final PeerAgnosticSyncChecks peerAgnosticSyncCheck;
 
+    private final LongSupplier sleepAfterSyncSupplier;
+
     /**
      * Metrics tracking syncing
      */
@@ -98,6 +101,7 @@ public class SyncProtocol implements Protocol {
             @NonNull final SyncPermit initiateSyncPermit,
             @NonNull final CriticalQuorum criticalQuorum,
             @NonNull final PeerAgnosticSyncChecks peerAgnosticSyncCheck,
+            @NonNull final LongSupplier sleepAfterSyncSupplier,
             @NonNull final SyncMetrics syncMetrics) {
 
         this.peerId = throwArgNull(peerId, "peerId");
@@ -106,6 +110,7 @@ public class SyncProtocol implements Protocol {
         this.initiateSyncPermit = throwArgNull(initiateSyncPermit, "initiateSyncPermit");
         this.criticalQuorum = throwArgNull(criticalQuorum, "criticalQuorum");
         this.peerAgnosticSyncCheck = throwArgNull(peerAgnosticSyncCheck, "peerAgnosticSyncCheck");
+        this.sleepAfterSyncSupplier = throwArgNull(sleepAfterSyncSupplier, "sleepAfterSyncSupplier");
         this.syncMetrics = throwArgNull(syncMetrics, "syncMetrics");
     }
 
@@ -192,11 +197,20 @@ public class SyncProtocol implements Protocol {
         }
         try {
             synchronizer.synchronize(connection);
+
+            final long sleepAfterSyncDuration = sleepAfterSyncSupplier.getAsLong();
+            if (sleepAfterSyncDuration > 0) {
+                Thread.sleep(sleepAfterSyncDuration);
+            }
         } catch (final ParallelExecutionException | SyncException e) {
             if (Utilities.isRootCauseSuppliedType(e, IOException.class)) {
                 throw new IOException(e);
             }
             throw new NetworkProtocolException(e);
+        } finally {
+            if (maybeAcquiredPermit.isLockAcquired()) {
+                maybeAcquiredPermit.close();
+            }
         }
     }
 }

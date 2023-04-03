@@ -601,14 +601,14 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 selfId,
                 initialAddressBook.getSize(),
                 settings.getNumConnections(),
-                !settings.getChatter().isChatterUsed());
+                !settings.getChatter().isChatterUsed() && !basicConfig.syncAsProtocolEnabled());
 
         fallenBehindManager = new FallenBehindManagerImpl(
                 selfId,
                 topology.getConnectionGraph(),
                 this::checkPlatformStatus,
                 () -> {
-                    if (!settings.getChatter().isChatterUsed()) {
+                    if (!settings.getChatter().isChatterUsed() && !basicConfig.syncAsProtocolEnabled()) {
                         return;
                     }
                     reconnectController.get().start();
@@ -1308,7 +1308,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 eventTaskCreator::addEvent,
                 syncManager,
                 shadowgraphExecutor,
-                true,
+                // TODO: how to make this configured based on state of sync-as-protocol configuration?
+                false,
                 () -> {});
 
         final Runnable stopGossip = settings.getChatter().isChatterUsed()
@@ -1380,7 +1381,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 this,
                 socketFactory,
                 initialAddressBook,
-                !settings.getChatter().isChatterUsed(),
+                !settings.getChatter().isChatterUsed() && !basicConfig.syncAsProtocolEnabled(),
                 appVersion);
         final StaticConnectionManagers connectionManagers = new StaticConnectionManagers(topology, connectionCreator);
         final InboundConnectionHandler inboundConnectionHandler = new InboundConnectionHandler(
@@ -1389,7 +1390,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 initialAddressBook,
                 connectionManagers::newConnection,
                 StaticSettingsProvider.getSingleton(),
-                !settings.getChatter().isChatterUsed(),
+                !settings.getChatter().isChatterUsed() && !basicConfig.syncAsProtocolEnabled(),
                 appVersion);
         // allow other members to create connections to me
         final Address address = getSelfAddress();
@@ -1715,6 +1716,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                                             syncPermit,
                                             criticalQuorum,
                                             peerAgnosticSyncChecks,
+                                            this::getSleepAfterSync,
                                             syncMetrics)))))
                     .build(true));
         }
