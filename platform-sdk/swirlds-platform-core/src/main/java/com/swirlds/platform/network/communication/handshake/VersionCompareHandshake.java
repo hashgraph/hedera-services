@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.network.communication.handshake;
 
-import static com.swirlds.logging.LogMarker.STARTUP;
-
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.utility.CommonUtils;
@@ -30,8 +28,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Exchanges software versions with the peer, either throws a {@link HandshakeException} or logs an error if the
- * versions do not match
+ * Exchanges software versions with the peer, either throws a {@link HandshakeException} or logs an error if the versions
+ * do not match
  */
 public class VersionCompareHandshake implements ProtocolRunnable {
     private static final Logger logger = LogManager.getLogger(VersionCompareHandshake.class);
@@ -46,9 +44,11 @@ public class VersionCompareHandshake implements ProtocolRunnable {
     }
 
     /**
-     * @param version         the version of software this node is running
-     * @param throwOnMismatch if set to true, the protocol will throw an exception on a version mismatch. if set to
-     *                        false, it will log an error and continue
+     * @param version
+     * 		the version of software this node is running
+     * @param throwOnMismatch
+     * 		if set to true, the protocol will throw an exception on a version mismatch. if set to false, it will log an
+     * 		error and continue
      */
     public VersionCompareHandshake(final SoftwareVersion version, final boolean throwOnMismatch) {
         CommonUtils.throwArgNull(version, "version");
@@ -59,9 +59,6 @@ public class VersionCompareHandshake implements ProtocolRunnable {
     @Override
     public void runProtocol(final Connection connection)
             throws NetworkProtocolException, IOException, InterruptedException {
-        logger.info(
-                STARTUP.getMarker(),
-                "Writing version from " + connection.getSelfId() + " to " + connection.getOtherId());
         connection.getDos().writeSerializable(version, true);
         connection.getDos().flush();
         final SelfSerializable peerVersion = connection.getDis().readSerializable();

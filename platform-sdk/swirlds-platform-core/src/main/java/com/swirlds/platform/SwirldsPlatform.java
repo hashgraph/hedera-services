@@ -1649,7 +1649,11 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                     .setOtherNodeId(selfId.getId())
                     .setThreadName("SingleNodeNetworkSync")
                     .setHangingThreadPeriod(hangingThreadDuration)
-                    .setWork(new SingleNodeNetworkSync(this, selfId.getId()))
+                    .setWork(new SingleNodeNetworkSync(
+                            this::checkPlatformStatus,
+                            this::getEventTaskCreator,
+                            this::getSleepAfterSync,
+                            selfId.getId()))
                     .build(true));
 
             return;

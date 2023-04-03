@@ -18,16 +18,29 @@ package com.swirlds.platform;
 
 import com.swirlds.base.ArgumentUtils;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
+import com.swirlds.platform.components.EventTaskCreator;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 
 /**
  * An {@link InterruptableRunnable} that imitates sync on a single node network
  */
 public class SingleNodeNetworkSync implements InterruptableRunnable {
     /**
-     * The platform that this sync is for
+     * A runnable which kicks off the periodic reevaluation of the platform status
      */
-    private final SwirldsPlatform platform;
+    private final Runnable statusChecker;
+
+    /**
+     * A supplier of the event task creator
+     */
+    private final Supplier<EventTaskCreator> eventTaskCreatorSupplier;
+
+    /**
+     * A supplier of the amount of time to sleep after creating an event
+     */
+    private final LongSupplier sleepTimeSupplier;
 
     /**
      * The id of the single running node
@@ -37,13 +50,24 @@ public class SingleNodeNetworkSync implements InterruptableRunnable {
     /**
      * Constructor
      *
-     * @param platform the platform that this sync is for
-     * @param selfId   the id of the single running node
+     * @param statusChecker            runnable to check status of the platform
+     * @param eventTaskCreatorSupplier supplier of event task creator
+     * @param sleepTimeSupplier        supplier of the amount of time to sleep after creating an event
+     * @param selfId                   the id of the single running node
      */
-    public SingleNodeNetworkSync(@NonNull final SwirldsPlatform platform, final long selfId) {
-        ArgumentUtils.throwArgNull(platform, "platform must not be null");
+    public SingleNodeNetworkSync(
+            @NonNull final Runnable statusChecker,
+            @NonNull final Supplier<EventTaskCreator> eventTaskCreatorSupplier,
+            @NonNull final LongSupplier sleepTimeSupplier,
+            final long selfId) {
 
-        this.platform = platform;
+        ArgumentUtils.throwArgNull(statusChecker, "statusChecker");
+        ArgumentUtils.throwArgNull(eventTaskCreatorSupplier, "eventTaskCreatorSupplier");
+        ArgumentUtils.throwArgNull(sleepTimeSupplier, "sleepTimeSupplier");
+
+        this.statusChecker = statusChecker;
+        this.eventTaskCreatorSupplier = eventTaskCreatorSupplier;
+        this.sleepTimeSupplier = sleepTimeSupplier;
         this.selfId = selfId;
     }
 
@@ -52,14 +76,21 @@ public class SingleNodeNetworkSync implements InterruptableRunnable {
      * <p>
      * Checks platform status, and then creates an event which is immediately added to the hashgraph. This is like
      * "syncing" with self, and then creating an event with otherParent being self.
+     * <p>
+     * After creating the event, this method sleeps for the amount of time returned by the sleep time supplier, or 50
+     * milliseconds if returned duration is 0
      */
     @Override
     public void run() throws InterruptedException {
-        platform.checkPlatformStatus();
-        platform.getEventTaskCreator().createEvent(selfId);
+        statusChecker.run();
+        eventTaskCreatorSupplier.get().createEvent(selfId);
 
-        if (platform.getSleepAfterSync() > 0) {
-            Thread.sleep(platform.getSleepAfterSync());
+        final long sleepTime = sleepTimeSupplier.getAsLong();
+        if (sleepTime > 0) {
+            Thread.sleep(sleepTime);
+        } else {
+            // if no sleep time is defined, sleep for a short time anyway
+            Thread.sleep(50);
         }
     }
 }
