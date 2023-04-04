@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.mono.state.initialization;
 
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
-import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_BLOCKLIST_FILE;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_BLOCKLIST_RESOURCE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -146,7 +146,7 @@ class BlocklistAccountCreatorTest {
         // given
         given(accountNumbers.treasury()).willReturn(GENESIS_ACCOUNT_NUM);
         given(genesisKeySource.get()).willReturn(pretendKey);
-        given(properties.getStringProperty(ACCOUNTS_BLOCKLIST_FILE)).willReturn("evm-addresses-blocklist.csv");
+        given(properties.getStringProperty(ACCOUNTS_BLOCKLIST_RESOURCE)).willReturn("evm-addresses-blocklist.csv");
         subject = new BlocklistAccountCreator(
                 MerkleAccount::new, ids, accounts, genesisKeySource, properties, aliasManager, accountNumbers);
         given(aliasManager.lookupIdBy(any())).willReturn(MISSING_NUM);
@@ -172,7 +172,7 @@ class BlocklistAccountCreatorTest {
         // given
         given(accountNumbers.treasury()).willReturn(GENESIS_ACCOUNT_NUM);
         given(genesisKeySource.get()).willReturn(pretendKey);
-        given(properties.getStringProperty(ACCOUNTS_BLOCKLIST_FILE)).willReturn("test-blocklist.csv");
+        given(properties.getStringProperty(ACCOUNTS_BLOCKLIST_RESOURCE)).willReturn("test-blocklist.csv");
         given(aliasManager.lookupIdBy(any())).willReturn(MISSING_NUM);
         subject = new BlocklistAccountCreator(
                 MerkleAccount::new, ids, accounts, genesisKeySource, properties, aliasManager, accountNumbers);
@@ -188,14 +188,14 @@ class BlocklistAccountCreatorTest {
     @ParameterizedTest
     @CsvSource(
             value = {
-                "non-existing.csv;Failed to read blocklist file non-existing.csv",
+                "non-existing.csv;Failed to read blocklist resource non-existing.csv",
                 "invalid-hex-blocklist.csv;Failed to parse blocklist, entry not in hex format",
                 "invalid-col-count-blocklist.csv;Failed to parse blocklist, entry does not have required number of columns",
             },
             delimiter = ';')
-    void readingBlocklistFileExceptionShouldBeLogged(String blocklistFileName, String expectedLog) {
+    void readingblocklistResourceExceptionShouldBeLogged(String blocklistResourceName, String expectedLog) {
         // given
-        given(properties.getStringProperty(ACCOUNTS_BLOCKLIST_FILE)).willReturn(blocklistFileName);
+        given(properties.getStringProperty(ACCOUNTS_BLOCKLIST_RESOURCE)).willReturn(blocklistResourceName);
         subject = new BlocklistAccountCreator(
                 MerkleAccount::new, ids, accounts, genesisKeySource, properties, aliasManager, accountNumbers);
 

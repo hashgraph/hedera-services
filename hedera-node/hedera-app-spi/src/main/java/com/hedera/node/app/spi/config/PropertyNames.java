@@ -248,5 +248,5 @@ public class PropertyNames {
     public static final String WORKFLOWS_ENABLED = "hedera.workflows.enabled";
     public static final String VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB = "virtualdatasource.jasperdbToMerkledb";
     public static final String ACCOUNTS_BLOCKLIST_ENABLED = "accounts.blocklist.enabled";
-    public static final String ACCOUNTS_BLOCKLIST_FILE = "accounts.blocklist.file";
+    public static final String ACCOUNTS_BLOCKLIST_RESOURCE = "accounts.blocklist.resource";
 }

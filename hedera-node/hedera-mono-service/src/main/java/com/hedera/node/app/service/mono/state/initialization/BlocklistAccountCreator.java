@@ -19,7 +19,7 @@ package com.hedera.node.app.service.mono.state.initialization;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
-import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_BLOCKLIST_FILE;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_BLOCKLIST_RESOURCE;
 import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
 
 import com.google.protobuf.ByteString;
@@ -63,7 +63,7 @@ import org.bouncycastle.util.encoders.Hex;
 @Singleton
 public class BlocklistAccountCreator {
     private static final Logger log = LogManager.getLogger(BlocklistAccountCreator.class);
-    private final String blocklistFileName;
+    private final String blocklistResourceName;
     private final Supplier<HederaAccount> accountSupplier;
     private final EntityIdSource ids;
     private final BackingStore<AccountID, HederaAccount> accounts;
@@ -89,7 +89,7 @@ public class BlocklistAccountCreator {
             final @NonNull @CompositeProps PropertySource properties,
             final @NonNull AliasManager aliasManager,
             final @NonNull AccountNumbers accountNumbers) {
-        this.blocklistFileName = properties.getStringProperty(ACCOUNTS_BLOCKLIST_FILE);
+        this.blocklistResourceName = properties.getStringProperty(ACCOUNTS_BLOCKLIST_RESOURCE);
         this.accountSupplier = Objects.requireNonNull(accountSupplier);
         this.ids = Objects.requireNonNull(ids);
         this.accounts = Objects.requireNonNull(accounts);
@@ -100,12 +100,12 @@ public class BlocklistAccountCreator {
     }
 
     /**
-     * Makes sure that all blocked accounts contained in the blocklist file are present in state, and creates them if necessary.
+     * Makes sure that all blocked accounts contained in the blocklist resource are present in state, and creates them if necessary.
      */
     public void createMissingAccounts() {
         final List<BlockedInfo> blocklist;
         try {
-            final var fileLines = readPrivateKeyBlocklist(blocklistFileName);
+            final var fileLines = readPrivateKeyBlocklist(blocklistResourceName);
             final var columnCount = fileLines.get(0).split(",").length;
             blocklist = fileLines.stream()
                     .skip(1)
@@ -118,7 +118,7 @@ public class BlocklistAccountCreator {
             log.error("Failed to parse blocklist, entry not in hex format", de);
             return;
         } catch (Exception e) {
-            log.error("Failed to read blocklist file {}", blocklistFileName, e);
+            log.error("Failed to read blocklist resource {}", blocklistResourceName, e);
             return;
         }
 
@@ -152,7 +152,7 @@ public class BlocklistAccountCreator {
     }
 
     /**
-     * Parses a line from the blocklist file and returns blocked account info record.
+     * Parses a line from the blocklist resource and returns blocked account info record.
      *
      * The line should have the following format:
      * <private key>,<memo>
@@ -162,7 +162,7 @@ public class BlocklistAccountCreator {
      *
      * The resulting blocked account info record contains the EVM address derived from the private key, and the memo.
      *
-     * @param line line from the blocklist file
+     * @param line line from the blocklist resource
      * @param columnCount number of comma-separated values in a line
      * @return blocked account info record
      */
@@ -170,7 +170,7 @@ public class BlocklistAccountCreator {
     private BlockedInfo parseCSVLine(final @NonNull String line, int columnCount) {
         final var parts = line.split(",", -1);
         if (parts.length != columnCount) {
-            throw new IllegalArgumentException("Invalid line in blocklist file: " + line);
+            throw new IllegalArgumentException("Invalid line in blocklist resource: " + line);
         }
 
         final var privateKeyBytes = Hex.decode(parts[0]);
