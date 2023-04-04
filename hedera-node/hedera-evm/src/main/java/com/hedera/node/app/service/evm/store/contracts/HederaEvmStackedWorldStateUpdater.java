@@ -18,7 +18,7 @@ package com.hedera.node.app.service.evm.store.contracts;
 
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
-import com.hedera.node.app.service.evm.store.models.UpdatedHederaEvmAccount;
+import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.account.Account;
@@ -60,7 +60,7 @@ public class HederaEvmStackedWorldStateUpdater
     public EvmAccount getAccount(final Address address) {
         if (isTokenRedirect(address)) {
             final var proxyAccount = new HederaEvmWorldStateTokenAccount(address);
-            final var newMutable = new UpdatedHederaEvmAccount<>(proxyAccount);
+            final var newMutable = new UpdateTrackingAccount<>(proxyAccount, null);
             newMutable.setEvmEntityAccess(hederaEvmEntityAccess);
             return new WrappedEvmAccount(newMutable);
         }
