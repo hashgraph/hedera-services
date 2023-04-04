@@ -219,8 +219,10 @@ public interface ContractsModule {
     @Singleton
     @Named("PrecompileDetector")
     static Predicate<Address> providePrecompileDetector() {
-        // Addresses mapping to lower than 0.0.800 are never calling the Hedera account.
-        // Short circuit and approve.
-        return (Address address) -> address.numberOfLeadingZeroBytes() >= 18 && address.getInt(16) < 800;
+        // Addresses mapping to 0.0.0 < x < 0.0.751 are never calling the Hedera account.
+        return address -> {
+            final var numberOfLeadingZeroBytes = address.numberOfLeadingZeroBytes();
+            return numberOfLeadingZeroBytes >= 18 && numberOfLeadingZeroBytes < Address.SIZE && Integer.compareUnsigned(address.getInt(16), 750) <= 0;
+        };
     }
 }

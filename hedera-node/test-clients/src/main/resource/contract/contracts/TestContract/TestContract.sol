@@ -24,7 +24,7 @@ contract TestContract {
         bytes32 r = bytes32("r");
         bytes32 s = bytes32("s");
         (bool success, ) = address(0x01).call(
-            abi.encodeWithSignature("ecrecover(bytes32,uint8,bytes32,bytes32)", hash, v, r, s));    
+            abi.encodeWithSignature("ecrecover(bytes32,uint8,bytes32,bytes32)", hash, v, r, s));
         require(success);
     }
 
@@ -35,6 +35,16 @@ contract TestContract {
         bytes32 s = bytes32("s");
         (bool success, ) = address(0x01).call{value: 1}(
             abi.encodeWithSignature("ecrecover(bytes32,uint8,bytes32,bytes32)", hash, v, r, s));
+        require(success);
+    }
+
+    function callSpecific(address _toCall) external     {
+        (bool success, ) = _toCall.call("boo(uint256)");
+        require(success);
+    }
+
+    function callSpecificWithValue(address _toCall) external payable {
+        (bool success, ) = _toCall.call("boo(uint256)");
         require(success);
     }
 }

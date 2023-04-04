@@ -249,25 +249,23 @@ public class ContractCallSuite extends HapiSuite {
                 lpFarmSimulation(),
                 nestedContractCannotOverSendValue(),
                 depositMoreThanBalanceFailsGracefully(),
-                lowLevelEcrecCallBehavior());
+                lowLevelEcrecCallBehavior(),
+                callingAddress0FailsWithInvalidSolidityAddress(),
+                callToSystemEntity());
     }
 
     private HapiSpec lowLevelEcrecCallBehavior() {
         final var TEST_CONTRACT = "TestContract";
-        return onlyDefaultHapiSpec("LowLevelEcrecCallBehavior")
+        return defaultHapiSpec("LowLevelEcrecCallBehavior")
                 .given(
                         uploadInitCode(TEST_CONTRACT),
                         contractCreate(TEST_CONTRACT,
                                 idAsHeadlongAddress(AccountID.newBuilder().setAccountNum(2).build()),
                                 BigInteger.ONE).balance(ONE_HBAR),
-                        // A payer account we can use when calling ECREC that won't accidentally provide
-                        // the 0.0.1 signature (since its key starts the same as 0.0.2, the default payer)
                         cryptoCreate("somebody"),
                         balanceSnapshot("start", "0.0.1")
                 )
                 .when().then(
-                        // At first we'll set 0.0.1 receiverSigRequired=true, so that the ECREC call will fail
-                        // because it won't be able to provide the signature
                         cryptoUpdate("0.0.1").receiverSigRequired(true).signedBy(GENESIS),
                         contractCall(TEST_CONTRACT, "lowLevelECREC")
                                 .payingWith("somebody")
@@ -275,7 +273,6 @@ public class ContractCallSuite extends HapiSuite {
                         contractCall(TEST_CONTRACT, "lowLevelECRECWithValue")
                                 .payingWith("somebody")
                                 .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION),
-                        // Now we reset 0.0.1 receiverSigRequired=false, so that the ECREC call will succeed
                         cryptoUpdate("0.0.1").receiverSigRequired(false).signedBy(GENESIS),
                         contractCall(TEST_CONTRACT, "lowLevelECREC")
                                 .payingWith("somebody")
@@ -285,6 +282,23 @@ public class ContractCallSuite extends HapiSuite {
                                 .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION),
                         // And the value sent with the low-level call will indeed be received by 0.0.1
                         getAccountBalance("0.0.1").hasTinyBars(changeFromSnapshot("start", +0)));
+    }
+
+    private HapiSpec callToSystemEntity() {
+        final var TEST_CONTRACT = "TestContract";
+        return defaultHapiSpec("callToSystemEntity")
+                .given(
+                        uploadInitCode(TEST_CONTRACT),
+                        contractCreate(TEST_CONTRACT,
+                                idAsHeadlongAddress(AccountID.newBuilder().setAccountNum(2).build()),
+                                BigInteger.ONE).balance(ONE_HBAR)
+                )
+                .when().then(
+                        contractCall(TEST_CONTRACT, "callSpecificWithValue", idAsHeadlongAddress(AccountID.newBuilder().setAccountNum(5L).build()))
+                                .sending(555)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        contractCall(TEST_CONTRACT, "callSpecific", idAsHeadlongAddress(AccountID.newBuilder().setAccountNum(5L).build()))
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
     }
 
     private HapiSpec depositMoreThanBalanceFailsGracefully() {
@@ -1108,6 +1122,19 @@ public class ContractCallSuite extends HapiSuite {
                 .given(uploadInitCode(contract), contractCreate(contract).gas(300_000))
                 .when(contractCall(contract, "light").via("lightTxn").scrambleTxnBody(tx -> tx))
                 .then(getTxnRecord("lightTxn").logged());
+    }
+
+    HapiSpec callingAddress0FailsWithInvalidSolidityAddress() {
+        final var CALL_0_CONTRACT = "RevertingContract";
+        return defaultHapiSpec("callingAddress0FailsWithInvalidSolidityAddress")
+                .given(
+                        uploadInitCode(CALL_0_CONTRACT),
+                        contractCreate(CALL_0_CONTRACT, BigInteger.valueOf(5555L)))
+                .when(contractCall(CALL_0_CONTRACT, "callingWrongAddress")
+                        .via(PAY_TXN)
+                        .hasKnownStatus(INVALID_SOLIDITY_ADDRESS))
+                .then(getTxnRecord(PAY_TXN)
+                        .logged());
     }
 
     HapiSpec depositSuccess() {

@@ -16,6 +16,32 @@
     "type": "constructor"
   },
   {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_toCall",
+        "type": "address"
+      }
+    ],
+    "name": "callSpecific",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_toCall",
+        "type": "address"
+      }
+    ],
+    "name": "callSpecificWithValue",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "foo",
     "outputs": [

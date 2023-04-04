@@ -98,13 +98,13 @@ public final class HederaOperationUtil {
             final BiPredicate<Address, MessageFrame> addressValidator,
             final Predicate<Address> precompileDetector,
             final BooleanSupplier supplierIsChildStatic) {
-        // Addresses mapping to  lower than 0.0.800 are never calling the Hedera account.
+        // Addresses mapping to lower than 0.0.800 are never calling the Hedera account.
         // Short circuit and approve.
         if (precompileDetector.test(address)) {
+            // cannot send value to _most_ protected addresses.
             if (value.isZero() || address.getInt(16) == HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS_INT) {
                 return supplierExecution.get();
             } else {
-                // cannot send balance to _most_ protected addresses.
                 return new Operation.OperationResult(
                         supplierHaltGasCost.getAsLong(), ExceptionalHaltReason.PRECOMPILE_ERROR);
             }
