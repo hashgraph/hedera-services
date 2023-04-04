@@ -93,48 +93,54 @@ class BlocklistAccountCreatorTest {
 
     @BeforeEach
     void setUp() throws DecoderException {
-        ids = new EntityIdSource() {
-            long nextId = FIRST_UNUSED_ID;
+        ids =
+                new EntityIdSource() {
+                    long nextId = FIRST_UNUSED_ID;
 
-            @Override
-            public AccountID newAccountId(AccountID newAccountSponsor) {
-                return AccountID.newBuilder().setAccountNum(nextId++).build();
-            }
+                    @Override
+                    public AccountID newAccountId() {
+                        return AccountID.newBuilder().setAccountNum(newAccountNumber()).build();
+                    }
 
-            @Override
-            public TopicID newTopicId(final AccountID sponsor) {
-                return null;
-            }
+                    @Override
+                    public long newAccountNumber() {
+                        return nextId++;
+                    }
 
-            @Override
-            public ContractID newContractId(AccountID newContractSponsor) {
-                return null;
-            }
+                    @Override
+                    public TopicID newTopicId(final AccountID sponsor) {
+                        return null;
+                    }
 
-            @Override
-            public FileID newFileId(AccountID newFileSponsor) {
-                return null;
-            }
+                    @Override
+                    public ContractID newContractId(AccountID newContractSponsor) {
+                        return null;
+                    }
 
-            @Override
-            public TokenID newTokenId(AccountID sponsor) {
-                return null;
-            }
+                    @Override
+                    public FileID newFileId(AccountID newFileSponsor) {
+                        return null;
+                    }
 
-            @Override
-            public ScheduleID newScheduleId(AccountID sponsor) {
-                return null;
-            }
+                    @Override
+                    public TokenID newTokenId(AccountID sponsor) {
+                        return null;
+                    }
 
-            @Override
-            public void reclaimLastId() {}
+                    @Override
+                    public ScheduleID newScheduleId(AccountID sponsor) {
+                        return null;
+                    }
 
-            @Override
-            public void reclaimProvisionalIds() {}
+                    @Override
+                    public void reclaimLastId() {}
 
-            @Override
-            public void resetProvisionalIds() {}
-        };
+                    @Override
+                    public void reclaimProvisionalIds() {}
+
+                    @Override
+                    public void resetProvisionalIds() {}
+                };
 
         genesisKey = JKey.mapKey(Key.newBuilder()
                 .setKeyList(KeyList.newBuilder().addKeys(MiscUtils.asKeyUnchecked(pretendKey)))
