@@ -82,6 +82,7 @@ public class HederaCallCodeOperation extends CallCodeOperation {
                 sigsVerifier,
                 frame,
                 to(frame),
+                value(frame),
                 () -> cost(frame),
                 () -> super.execute(frame, evm),
                 addressValidator,

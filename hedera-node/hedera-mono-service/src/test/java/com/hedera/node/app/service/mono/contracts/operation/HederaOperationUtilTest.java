@@ -63,6 +63,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.operation.Operation;
@@ -118,6 +119,7 @@ class HederaOperationUtilTest {
                 sigsVerifier,
                 messageFrame,
                 PRETEND_RECIPIENT_ADDR,
+                Wei.ZERO,
                 gasSupplier,
                 executionSupplier,
                 (a, b) -> false,
@@ -137,6 +139,7 @@ class HederaOperationUtilTest {
                 sigsVerifier,
                 messageFrame,
                 PRETEND_RECIPIENT_ADDR,
+                Wei.ZERO,
                 gasSupplier,
                 executionSupplier,
                 (a, b) -> true,
@@ -157,6 +160,7 @@ class HederaOperationUtilTest {
                 sigsVerifier,
                 messageFrame,
                 Address.ZERO,
+                Wei.ZERO,
                 gasSupplier,
                 executionSupplier,
                 (a, b) -> false,
@@ -190,6 +194,7 @@ class HederaOperationUtilTest {
                 sigsVerifier,
                 messageFrame,
                 Address.ZERO,
+                Wei.ZERO,
                 gasSupplier,
                 executionSupplier,
                 (a, b) -> true,
@@ -227,6 +232,7 @@ class HederaOperationUtilTest {
                 sigsVerifier,
                 messageFrame,
                 Address.ZERO,
+                Wei.ZERO,
                 gasSupplier,
                 executionSupplier,
                 (a, b) -> true,
@@ -264,6 +270,7 @@ class HederaOperationUtilTest {
                 sigsVerifier,
                 messageFrame,
                 Address.ZERO,
+                Wei.ZERO,
                 gasSupplier,
                 executionSupplier,
                 (a, b) -> true,

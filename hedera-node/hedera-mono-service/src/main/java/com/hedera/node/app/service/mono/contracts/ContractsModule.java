@@ -221,6 +221,6 @@ public interface ContractsModule {
     static Predicate<Address> providePrecompileDetector() {
         // Addresses mapping to lower than 0.0.800 are never calling the Hedera account.
         // Short circuit and approve.
-        return (Address address) -> address.numberOfLeadingZeroBytes() >= 18 && address.toInt() < 800;
+        return (Address address) -> address.numberOfLeadingZeroBytes() >= 18 && address.getInt(16) < 800;
     }
 }

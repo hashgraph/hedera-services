@@ -51,6 +51,7 @@ public class HederaStaticCallOperation extends StaticCallOperation {
                 null,
                 frame,
                 to(frame),
+                value(frame),
                 () -> cost(frame),
                 () -> super.execute(frame, evm),
                 addressValidator,

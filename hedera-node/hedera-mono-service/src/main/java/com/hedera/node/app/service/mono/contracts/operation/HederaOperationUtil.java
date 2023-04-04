@@ -43,6 +43,7 @@ import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
+import com.hedera.node.app.service.mono.store.contracts.precompile.HTSPrecompiledContract;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.TreeMap;
 import java.util.function.BiPredicate;
@@ -54,6 +55,8 @@ import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.operation.Operation;
 
@@ -74,20 +77,22 @@ public final class HederaOperationUtil {
      * true, verification of the provided signature is performed. If the signature is not active,
      * the execution is halted with {@link HederaExceptionalHaltReason#INVALID_SIGNATURE}.
      *
-     * @param sigsVerifier           The signature
-     * @param frame                  The current message frame
-     * @param address                The target address
-     * @param supplierHaltGasCost    Supplier for the gas cost
-     * @param supplierExecution      Supplier with the execution
-     * @param addressValidator       Address validator predicate
-     * @param precompileDetector     A predicate that determines if an address is a precompile address
-     * @param supplierIsChildStatic  Supplier for is child static check
+     * @param sigsVerifier          The signature
+     * @param frame                 The current message frame
+     * @param address               The target address
+     * @param value                 The value to be transferred as part of the call
+     * @param supplierHaltGasCost   Supplier for the gas cost
+     * @param supplierExecution     Supplier with the execution
+     * @param addressValidator      Address validator predicate
+     * @param precompileDetector    A predicate that determines if an address is a precompile address
+     * @param supplierIsChildStatic Supplier for is child static check
      * @return The operation result of the execution
      */
     public static Operation.OperationResult addressSignatureCheckExecution(
             final EvmSigsVerifier sigsVerifier,
             final MessageFrame frame,
             final Address address,
+            final Wei value,
             final LongSupplier supplierHaltGasCost,
             final Supplier<Operation.OperationResult> supplierExecution,
             final BiPredicate<Address, MessageFrame> addressValidator,
@@ -96,7 +101,13 @@ public final class HederaOperationUtil {
         // Addresses mapping to  lower than 0.0.800 are never calling the Hedera account.
         // Short circuit and approve.
         if (precompileDetector.test(address)) {
-            return supplierExecution.get();
+            if (value.isZero() || address.getInt(16) == HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS_INT) {
+                return supplierExecution.get();
+            } else {
+                // cannot send balance to _most_ protected addresses.
+                return new Operation.OperationResult(
+                        supplierHaltGasCost.getAsLong(), ExceptionalHaltReason.PRECOMPILE_ERROR);
+            }
         }
         if (Boolean.FALSE.equals(addressValidator.test(address, frame))) {
             return new Operation.OperationResult(

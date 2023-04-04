@@ -80,6 +80,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIForContract;
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -122,7 +123,6 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -271,14 +271,20 @@ public class ContractCallSuite extends HapiSuite {
                         cryptoUpdate("0.0.1").receiverSigRequired(true).signedBy(GENESIS),
                         contractCall(TEST_CONTRACT, "lowLevelECREC")
                                 .payingWith("somebody")
-                                .hasKnownStatus(INVALID_SIGNATURE),
+                                .hasKnownStatus(SUCCESS),
+                        contractCall(TEST_CONTRACT, "lowLevelECRECWithValue")
+                                .payingWith("somebody")
+                                .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION),
                         // Now we reset 0.0.1 receiverSigRequired=false, so that the ECREC call will succeed
                         cryptoUpdate("0.0.1").receiverSigRequired(false).signedBy(GENESIS),
                         contractCall(TEST_CONTRACT, "lowLevelECREC")
                                 .payingWith("somebody")
                                 .hasKnownStatus(SUCCESS),
+                        contractCall(TEST_CONTRACT, "lowLevelECRECWithValue")
+                                .payingWith("somebody")
+                                .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION),
                         // And the value sent with the low-level call will indeed be received by 0.0.1
-                        getAccountBalance("0.0.1").hasTinyBars(changeFromSnapshot("start", +1)));
+                        getAccountBalance("0.0.1").hasTinyBars(changeFromSnapshot("start", +0)));
     }
 
     private HapiSpec depositMoreThanBalanceFailsGracefully() {

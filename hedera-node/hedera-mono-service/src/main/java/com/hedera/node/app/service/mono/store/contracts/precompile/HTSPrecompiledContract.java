@@ -128,6 +128,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
     private static final Logger log = LogManager.getLogger(HTSPrecompiledContract.class);
 
     public static final String HTS_PRECOMPILED_CONTRACT_ADDRESS = "0x167";
+    public static final int HTS_PRECOMPILED_CONTRACT_ADDRESS_INT = Integer.decode(HTS_PRECOMPILED_CONTRACT_ADDRESS);
     public static final ContractID HTS_PRECOMPILE_MIRROR_ID = contractIdFromEvmAddress(
             Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArrayUnsafe());
     public static final EntityId HTS_PRECOMPILE_MIRROR_ENTITY_ID =
