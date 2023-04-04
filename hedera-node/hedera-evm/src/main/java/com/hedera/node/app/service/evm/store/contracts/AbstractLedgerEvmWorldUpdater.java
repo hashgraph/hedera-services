@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.evm.store.contracts;
 
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
-import com.hedera.node.app.service.evm.store.models.UpdatedHederaEvmAccount;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import java.util.ArrayList;
