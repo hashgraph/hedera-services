@@ -192,8 +192,6 @@ class ContractsModuleTest {
     @Test
     void logOperationsAreProvided() {
         for (var evm : List.of(subject.evmV_0_30(), subject.evmV_0_34())) {
-            //            Bytes testCode = Bytes.fromHexString("0xA0A1A2A3A4");
-            //            Code legacyCode = CodeFactory.createCode(testCode, 0, false);
             Operation[] operations = evm.getOperationsUnsafe();
             final var log0 = operations[0xa0];
             final var log1 = operations[0xa1];

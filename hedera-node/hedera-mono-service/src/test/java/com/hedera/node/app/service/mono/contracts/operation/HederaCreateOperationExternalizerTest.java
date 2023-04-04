@@ -60,7 +60,6 @@ import java.util.List;
 import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.code.CodeFactory;
 import org.hyperledger.besu.evm.frame.MessageFrame;
