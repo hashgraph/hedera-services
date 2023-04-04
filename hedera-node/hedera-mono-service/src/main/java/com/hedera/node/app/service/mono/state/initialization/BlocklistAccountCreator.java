@@ -100,9 +100,10 @@ public class BlocklistAccountCreator {
         final List<BlockedInfo> blocklist;
         try {
             final var fileLines = readPrivateKeyBlocklist(blocklistResourceName);
-            final var columnCount = fileLines.get(0).split(",").length;
-            blocklist = fileLines.stream()
-                    .skip(1)
+            final var columnHeaderLine = fileLines.get(0);
+            final var blocklistLines = fileLines.subList(1, fileLines.size());
+            final var columnCount = columnHeaderLine.split(",").length;
+            blocklist = blocklistLines.stream()
                     .map(line -> parseCSVLine(line, columnCount))
                     .toList();
         } catch (IllegalArgumentException iae) {
