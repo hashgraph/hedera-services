@@ -41,7 +41,7 @@ public interface ObservableConfiguration extends Configuration {
      * @return the observable property
      */
     @NonNull
-    <T> ObservableProperty getObservableProperty(@NonNull String key, @NonNull Class<T> type);
+    <T> ObservableProperty<T> getObservableProperty(@NonNull String key, @NonNull Class<T> type);
 
     /**
      * Once an {@link ObservableProperty} is requested by calling {@link #getObservableProperty(String, Class)} the
