@@ -138,10 +138,10 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
     private static final LongAdder COUNT_OF_OPEN_DATABASES = new LongAdder();
 
     private static final FunctionGauge.Config<Long> COUNT_OF_OPEN_DATABASES_CONFIG = new FunctionGauge.Config<>(
-            JasperDbStatistics.STAT_CATEGORY,
-            "jpdb_count",
-            Long.class,
-            VirtualDataSourceJasperDB::getCountOfOpenDatabases)
+                    JasperDbStatistics.STAT_CATEGORY,
+                    "jpdb_count",
+                    Long.class,
+                    VirtualDataSourceJasperDB::getCountOfOpenDatabases)
             .withDescription("the number of JPDB instances that have been created but not released")
             .withFormat("%d");
 
@@ -436,12 +436,12 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
 
         this.internalHashStoreDisk = hasDiskStoreForInternalHashes
                 ? new MemoryIndexDiskKeyValueStore<>(
-                dbPaths.internalHashStoreDiskDirectory,
-                label + "_internalhashes",
-                label + ":internalHashes",
-                virtualInternalRecordSerializer,
-                null,
-                pathToDiskLocationInternalNodes)
+                        dbPaths.internalHashStoreDiskDirectory,
+                        label + "_internalhashes",
+                        label + ":internalHashes",
+                        virtualInternalRecordSerializer,
+                        null,
+                        pathToDiskLocationInternalNodes)
                 : null;
         // Create Key to Path store
         final LoadedDataCallback loadedDataCallback;

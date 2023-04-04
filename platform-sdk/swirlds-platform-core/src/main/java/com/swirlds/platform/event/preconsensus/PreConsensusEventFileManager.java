@@ -19,9 +19,9 @@ package com.swirlds.platform.event.preconsensus;
 import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.base.time.Time;
 import com.swirlds.common.utility.BinarySearch;
 import com.swirlds.common.utility.RandomAccessDeque;
 import com.swirlds.common.utility.Units;

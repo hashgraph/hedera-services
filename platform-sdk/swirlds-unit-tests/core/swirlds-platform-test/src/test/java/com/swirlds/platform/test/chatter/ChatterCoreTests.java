@@ -55,17 +55,13 @@ public class ChatterCoreTests {
         final ChatterCore<GossipEvent> chatterCore = new ChatterCore<>(
                 TimeFactory.getOsTime(),
                 GossipEvent.class,
-                (m) -> {
-                },
+                (m) -> {},
                 chatterSettings,
-                (id, l) -> {
-                },
+                (id, l) -> {},
                 new NoOpMetrics());
 
-        chatterCore.newPeerInstance(0L, e -> {
-        });
-        chatterCore.newPeerInstance(1L, e -> {
-        });
+        chatterCore.newPeerInstance(0L, e -> {});
+        chatterCore.newPeerInstance(1L, e -> {});
 
         final GossipEventBuilder builder = GossipEventBuilder.builder().setRandom(random);
 

@@ -46,8 +46,8 @@ class EventTaskDispatcherTest {
     void test() {
         final EventCreator creator = mock(EventCreator.class);
         final EventValidator validator = mock(EventValidator.class);
-        @SuppressWarnings("unchecked") final Consumer<GossipEvent> intake = (Consumer<GossipEvent>) mock(
-                Consumer.class);
+        @SuppressWarnings("unchecked")
+        final Consumer<GossipEvent> intake = (Consumer<GossipEvent>) mock(Consumer.class);
 
         final EventTaskDispatcher dispatcher = new EventTaskDispatcher(
                 TimeFactory.getOsTime(),

@@ -52,8 +52,7 @@ import java.util.function.BiConsumer;
  * Event intake with consensus and shadowgraph, used for testing
  */
 public class TestIntake implements ConsensusRoundObserver, StaleEventObserver, LoadableFromSignedState {
-    private static final BiConsumer<Long, Long> NOOP_MINGEN = (l1, l2) -> {
-    };
+    private static final BiConsumer<Long, Long> NOOP_MINGEN = (l1, l2) -> {};
 
     private final AddressBook ab;
     private final BiConsumer<Long, Long> minGenConsumer;

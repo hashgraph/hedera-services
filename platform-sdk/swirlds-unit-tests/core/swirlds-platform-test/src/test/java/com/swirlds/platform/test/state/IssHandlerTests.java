@@ -71,8 +71,7 @@ class IssHandlerTests {
                 selfId,
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {
-                });
+                (r, type, otherId) -> {});
 
         dispatchBuilder.start();
 
@@ -117,8 +116,7 @@ class IssHandlerTests {
                 selfId,
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {
-                });
+                (r, type, otherId) -> {});
 
         dispatchBuilder.start();
 
@@ -169,8 +167,7 @@ class IssHandlerTests {
                 selfId,
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {
-                });
+                (r, type, otherId) -> {});
 
         dispatchBuilder.start();
 
@@ -219,8 +216,7 @@ class IssHandlerTests {
                 selfId,
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {
-                });
+                (r, type, otherId) -> {});
 
         dispatchBuilder.start();
 
@@ -264,8 +260,7 @@ class IssHandlerTests {
                 selfId,
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {
-                });
+                (r, type, otherId) -> {});
 
         dispatchBuilder.start();
 
@@ -317,8 +312,7 @@ class IssHandlerTests {
                 selfId,
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {
-                });
+                (r, type, otherId) -> {});
 
         dispatchBuilder.start();
 
@@ -361,8 +355,7 @@ class IssHandlerTests {
                 selfId,
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {
-                });
+                (r, type, otherId) -> {});
 
         dispatchBuilder.start();
 
@@ -407,8 +400,7 @@ class IssHandlerTests {
                 selfId,
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {
-                });
+                (r, type, otherId) -> {});
 
         dispatchBuilder.start();
 
@@ -460,8 +452,7 @@ class IssHandlerTests {
                 selfId,
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {
-                });
+                (r, type, otherId) -> {});
 
         dispatchBuilder.start();
 
@@ -511,8 +502,7 @@ class IssHandlerTests {
                 selfId,
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {
-                });
+                (r, type, otherId) -> {});
 
         dispatchBuilder.start();
 
@@ -557,8 +547,7 @@ class IssHandlerTests {
                 selfId,
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {
-                });
+                (r, type, otherId) -> {});
 
         dispatchBuilder.start();
 
@@ -610,8 +599,7 @@ class IssHandlerTests {
                 selfId,
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {
-                });
+                (r, type, otherId) -> {});
 
         dispatchBuilder.start();
 
@@ -663,8 +651,7 @@ class IssHandlerTests {
                 selfId,
                 haltRequestedConsumer,
                 fatalErrorConsumer,
-                (r, type, otherId) -> {
-                });
+                (r, type, otherId) -> {});
 
         dispatchBuilder.start();
 
@@ -704,10 +691,8 @@ class IssHandlerTests {
                 dispatchBuilder,
                 stateConfig,
                 0L,
-                (reason) -> {
-                },
-                (msg, t, code) -> {
-                },
+                (reason) -> {},
+                (msg, t, code) -> {},
                 issConsumer);
 
         assertEquals(0, selfIssCount.get(), "incorrect self ISS count");

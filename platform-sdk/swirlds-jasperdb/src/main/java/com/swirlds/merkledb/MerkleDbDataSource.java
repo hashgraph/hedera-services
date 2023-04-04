@@ -108,10 +108,10 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
     private static final LongAdder COUNT_OF_OPEN_DATABASES = new LongAdder();
 
     private static final FunctionGauge.Config<Long> COUNT_OF_OPEN_DATABASES_CONFIG = new FunctionGauge.Config<>(
-            MerkleDbStatistics.STAT_CATEGORY,
-            "merkledb_count",
-            Long.class,
-            MerkleDbDataSource::getCountOfOpenDatabases)
+                    MerkleDbStatistics.STAT_CATEGORY,
+                    "merkledb_count",
+                    Long.class,
+                    MerkleDbDataSource::getCountOfOpenDatabases)
             .withDescription("the number of MerkleDb instances that have been created but not" + " released")
             .withFormat("%d");
 
@@ -358,12 +358,12 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
         hasDiskStoreForInternalHashes = tableConfig.getInternalHashesRamToDiskThreshold() < Long.MAX_VALUE;
         internalHashStoreDisk = hasDiskStoreForInternalHashes
                 ? new MemoryIndexDiskKeyValueStore<>(
-                dbPaths.internalHashStoreDiskDirectory,
-                tableName + "_internalhashes",
-                tableName + ":internalHashes",
-                internalRecordSerializer,
-                null,
-                pathToDiskLocationInternalNodes)
+                        dbPaths.internalHashStoreDiskDirectory,
+                        tableName + "_internalhashes",
+                        tableName + ":internalHashes",
+                        internalRecordSerializer,
+                        null,
+                        pathToDiskLocationInternalNodes)
                 : null;
 
         // key to path store
@@ -1097,7 +1097,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
 
     private void updateOffHeapStats() {
         final int totalOffHeapMemoryConsumption = updateOffHeapStat(
-                pathToDiskLocationInternalNodes, v -> statistics.setOffHeapMemoryInternalNodesListInMB(v))
+                        pathToDiskLocationInternalNodes, v -> statistics.setOffHeapMemoryInternalNodesListInMB(v))
                 + updateOffHeapStat(pathToDiskLocationLeafNodes, v -> statistics.setOffHeapMemoryLeafNodesListInMB(v))
                 + updateOffHeapStat(longKeyToPath, v -> statistics.setOffHeapMemoryKeyToPathListInMB(v));
         statistics.setOffHeapMemoryDataSourceInMB(totalOffHeapMemoryConsumption);
