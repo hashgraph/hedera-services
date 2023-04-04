@@ -26,6 +26,7 @@ import com.swirlds.virtualmap.internal.pipeline.VirtualRoot;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
@@ -356,6 +357,71 @@ public abstract class VirtualMapBench extends BaseBench {
         }
 
         logger.info("Created {} copies in {} ms", numFiles, System.currentTimeMillis() - start);
+
+        // Ensure the map is done with hashing/merging/flushing
+        final var finalMap = flushMap(virtualMap);
+
+        verifyMap(map, finalMap);
+
+        afterTest(() -> {
+            finalMap.release();
+            finalMap.getDataSource().close();
+        });
+    }
+
+    /**
+     * [Read-update or create-write][Remove expired] cycle. Single-threaded.
+     */
+    @Benchmark
+    public void delete() throws Exception {
+        beforeTest("delete");
+
+        logger.info(RUN_DELIMITER);
+
+        final long[] map = new long[verify ? maxKey : 0];
+        VirtualMap<BenchmarkKey, BenchmarkValue> virtualMap = createMap(map);
+
+        final int EXPIRY_DELAY = 180_000;
+        record Expirable(long time, long id) {}
+        final ArrayDeque<Expirable> expirables = new ArrayDeque<>();
+
+        long start = System.currentTimeMillis();
+        enableSnapshots();
+        for (int i = 0; i < numFiles; i++) {
+            // Add/update new values
+            for (int j = 0; j < numRecords; ++j) {
+                final long id = Utils.randomLong(maxKey);
+                final BenchmarkKey key = new BenchmarkKey(id);
+                BenchmarkValue value = virtualMap.getForModify(key);
+                final long val = nextValue();
+                if (value != null) {
+                    value.update(l -> l + val);
+                    if (verify) map[(int) id] += val;
+                } else {
+                    value = new BenchmarkValue(val);
+                    virtualMap.put(key, value);
+                    if (verify) map[(int) id] = val;
+                }
+                expirables.addLast(new Expirable(System.currentTimeMillis() + EXPIRY_DELAY, id));
+            }
+
+            // Remove expired values
+            final long curTime = System.currentTimeMillis();
+            for (; ; ) {
+                Expirable entry = expirables.peekFirst();
+                if (entry == null || entry.time > curTime) {
+                    break;
+                }
+                virtualMap.remove(new BenchmarkKey(entry.id));
+                if (verify) map[(int) entry.id] = 0L;
+                expirables.removeFirst();
+            }
+            logger.info("Copy {} done, map size {}", i, virtualMap.size());
+
+            virtualMap = copyMap(virtualMap);
+        }
+
+        logger.info("Updated {} copies in {} ms", numFiles, System.currentTimeMillis() - start);
 
         // Ensure the map is done with hashing/merging/flushing
         final var finalMap = flushMap(virtualMap);
