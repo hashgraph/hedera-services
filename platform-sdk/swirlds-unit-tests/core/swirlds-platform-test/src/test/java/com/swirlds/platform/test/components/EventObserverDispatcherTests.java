@@ -21,8 +21,10 @@ import static com.swirlds.platform.test.observers.ObservationType.PRE_CONSENSUS;
 import static com.swirlds.platform.test.observers.ObservationType.STALE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.mock;
 
 import com.swirlds.platform.internal.ConsensusRound;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.sync.Generations;
 import com.swirlds.platform.test.event.SimpleEvent;
@@ -71,7 +73,9 @@ class EventObserverDispatcherTests {
         dispatchAndCheck(STALE, e1, stale, addedStale);
 
         e2.setLastInRoundReceived(true);
-        dispatchAndCheckConsensus(new ConsensusRound(List.of(e1, e2), Generations.GENESIS_GENERATIONS));
+
+        dispatchAndCheckConsensus(
+                new ConsensusRound(List.of(e1, e2), mock(EventImpl.class), Generations.GENESIS_GENERATIONS));
     }
 
     private void dispatchAndCheckConsensus(final ConsensusRound consensusRound, final SimpleEventTracker... yes) {

@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTes
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.recipientAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.BurnPrecompile.decodeBurn;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.BurnPrecompile.decodeBurnV2;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -242,8 +243,7 @@ class BurnPrecompilesTest {
     @BeforeEach
     void setUp() throws IOException {
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
-        canonicalPrices.put(
-                HederaFunctionality.TokenBurn, Map.of(SubType.TOKEN_FUNGIBLE_COMMON, BigDecimal.valueOf(0)));
+        canonicalPrices.put(TokenBurn, Map.of(SubType.TOKEN_FUNGIBLE_COMMON, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
         final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
                 assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
@@ -281,7 +281,7 @@ class BurnPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         given(sigsVerifier.hasActiveSupplyKey(
-                        true, HTSTestsUtil.nonFungibleTokenAddr, HTSTestsUtil.recipientAddr, wrappedLedgers))
+                        true, HTSTestsUtil.nonFungibleTokenAddr, HTSTestsUtil.recipientAddr, wrappedLedgers, TokenBurn))
                 .willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
                 .willReturn(1L);
@@ -313,7 +313,7 @@ class BurnPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         given(sigsVerifier.hasActiveSupplyKey(
-                        true, HTSTestsUtil.nonFungibleTokenAddr, HTSTestsUtil.recipientAddr, null))
+                        true, HTSTestsUtil.nonFungibleTokenAddr, HTSTestsUtil.recipientAddr, null, TokenBurn))
                 .willThrow(new NullPointerException());
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
                 .willReturn(1L);
@@ -346,7 +346,7 @@ class BurnPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         given(sigsVerifier.hasActiveSupplyKey(
-                        true, HTSTestsUtil.nonFungibleTokenAddr, HTSTestsUtil.recipientAddr, wrappedLedgers))
+                        true, HTSTestsUtil.nonFungibleTokenAddr, HTSTestsUtil.recipientAddr, wrappedLedgers, TokenBurn))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
@@ -387,7 +387,7 @@ class BurnPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         given(sigsVerifier.hasActiveSupplyKey(
-                        true, HTSTestsUtil.nonFungibleTokenAddr, HTSTestsUtil.recipientAddr, wrappedLedgers))
+                        true, HTSTestsUtil.nonFungibleTokenAddr, HTSTestsUtil.recipientAddr, wrappedLedgers, TokenBurn))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
@@ -421,7 +421,7 @@ class BurnPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         given(sigsVerifier.hasActiveSupplyKey(
-                        true, HTSTestsUtil.fungibleTokenAddr, HTSTestsUtil.recipientAddr, wrappedLedgers))
+                        true, HTSTestsUtil.fungibleTokenAddr, HTSTestsUtil.recipientAddr, wrappedLedgers, TokenBurn))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
@@ -487,7 +487,7 @@ class BurnPrecompilesTest {
         given(syntheticTxnFactory.createBurn(HTSTestsUtil.fungibleBurnMaxAmount))
                 .willReturn(mockSynthBodyBuilder);
         given(sigsVerifier.hasActiveSupplyKey(
-                        true, HTSTestsUtil.fungibleTokenAddr, HTSTestsUtil.recipientAddr, wrappedLedgers))
+                        true, HTSTestsUtil.fungibleTokenAddr, HTSTestsUtil.recipientAddr, wrappedLedgers, TokenBurn))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
