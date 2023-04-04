@@ -16,6 +16,7 @@
 
 package com.swirlds.platform;
 
+import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
@@ -118,12 +119,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import javax.swing.JFrame;
 import javax.swing.UIManager;
@@ -358,8 +360,8 @@ public class Browser {
     @NonNull
     private Map<Long, SwirldMain> loadSwirldMains(
             @NonNull final ApplicationDefinition appDefinition, @NonNull final Set<Integer> localNodesToStart) {
-        Objects.requireNonNull(appDefinition, "appDefinition must not be null");
-        Objects.requireNonNull(localNodesToStart, "localNodesToStart must not be null");
+        throwArgNull(appDefinition, "appDefinition must not be null");
+        throwArgNull(localNodesToStart, "localNodesToStart must not be null");
         try {
             // Create the SwirldAppLoader
             final SwirldAppLoader appLoader;
@@ -585,19 +587,19 @@ public class Browser {
         }
     }
 
-    private List<SwirldsPlatform> createLocalPlatforms(
+    private Collection<SwirldsPlatform> createLocalPlatforms(
             @NonNull final ApplicationDefinition appDefinition,
             @NonNull final Crypto[] crypto,
             @NonNull final InfoSwirld infoSwirld,
             @NonNull final Map<Long, SwirldMain> appMains,
             @NonNull final Configuration configuration,
             @NonNull final MetricsProvider metricsProvider) {
-        Objects.requireNonNull(appDefinition, "the app definition must not be null");
-        Objects.requireNonNull(crypto, "the crypto array must not be null");
-        Objects.requireNonNull(infoSwirld, "the infoSwirld must not be null");
-        Objects.requireNonNull(appMains, "the appMains map must not be null");
-        Objects.requireNonNull(configuration, "the configuration must not be null");
-        Objects.requireNonNull(metricsProvider, "the metricsProvider must not be null");
+        throwArgNull(appDefinition, "the app definition must not be null");
+        throwArgNull(crypto, "the crypto array must not be null");
+        throwArgNull(infoSwirld, "the infoSwirld must not be null");
+        throwArgNull(appMains, "the appMains map must not be null");
+        throwArgNull(configuration, "the configuration must not be null");
+        throwArgNull(metricsProvider, "the metricsProvider must not be null");
 
         final List<SwirldsPlatform> platforms = new ArrayList<>();
 
@@ -685,7 +687,7 @@ public class Browser {
             }
         }
 
-        return platforms;
+        return Collections.unmodifiableList(platforms);
     }
 
     /**
@@ -792,7 +794,7 @@ public class Browser {
         CryptoMetrics.registerMetrics(globalMetrics);
 
         // Create all instances for all nodes that should run locally
-        final List<SwirldsPlatform> platforms =
+        final Collection<SwirldsPlatform> platforms =
                 createLocalPlatforms(appDefinition, crypto, infoSwirld, appMains, configuration, metricsProvider);
 
         // Write all metrics information to file
