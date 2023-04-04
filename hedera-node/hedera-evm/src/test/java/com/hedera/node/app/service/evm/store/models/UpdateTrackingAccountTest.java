@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.mono.store.contracts;
+package com.hedera.node.app.service.evm.store.models;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -22,17 +22,11 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount;
 import com.hedera.node.app.service.evm.store.contracts.WorldStateAccount;
-import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
-import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
-import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
-import com.hedera.node.app.service.mono.state.migration.HederaAccount;
-import com.hedera.node.app.service.mono.utils.EntityIdUtils;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -46,42 +40,26 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class UpdateTrackingLedgerAccountTest {
+class UpdateTrackingAccountTest {
     private static final long newBalance = 200_000L;
     private static final long initialBalance = 100_000L;
-    private static final AccountID targetId = IdUtils.asAccount("0.0.12345");
-    private static final Address targetAddress = EntityIdUtils.asTypedEvmAddress(targetId);
+    private static final Address targetAddress = Address.fromHexString("0x000000000000000000000000000000000000066e");
 
     @Mock
-    private EntityAccess entityAccess;
+    private HederaEvmEntityAccess entityAccess;
 
-    @Mock
-    private TransactionalLedger<AccountID, AccountProperty, HederaAccount> trackingAccounts;
-
-    @Mock
-    NodeLocalProperties properties;
-
-    private CodeCache codeCache;
+    private AbstractCodeCache codeCache;
 
     @BeforeEach
     void setUp() {
-        codeCache = new CodeCache(properties, entityAccess);
+        codeCache = new AbstractCodeCache(12, entityAccess);
     }
 
-    @Test
-    void mirrorsBalanceChangesInNonNullTrackingAccounts() {
-        final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
-        final var subject = new UpdateTrackingLedgerAccount<>(account, trackingAccounts);
-
-        subject.setBalance(Wei.of(newBalance));
-
-        assertEquals(newBalance, subject.getBalance().toLong());
-        verify(trackingAccounts).set(targetId, AccountProperty.BALANCE, newBalance);
-    }
+    //    void mirrorsBalanceChangesInNonNullTrackingAccounts()
 
     @Test
     void missingWrappedAccountIsNotATokenProxy() {
-        final var subject = new UpdateTrackingLedgerAccount<>(targetAddress, null);
+        final var subject = new UpdateTrackingAccount<>(targetAddress, null);
 
         assertFalse(subject.wrappedAccountIsTokenProxy());
     }
@@ -90,7 +68,7 @@ class UpdateTrackingLedgerAccountTest {
     void wrappedTokenProxyIsRecognized() {
         final var tokenProxyAccount = new HederaEvmWorldStateTokenAccount(targetAddress);
 
-        final var subject = new UpdateTrackingLedgerAccount<>(tokenProxyAccount, null);
+        final var subject = new UpdateTrackingAccount<>(tokenProxyAccount, null);
 
         assertTrue(subject.wrappedAccountIsTokenProxy());
     }
@@ -99,7 +77,7 @@ class UpdateTrackingLedgerAccountTest {
     void justPropagatesBalanceChangeWithNullTrackingAccounts() {
         final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
 
-        final var subject = new UpdateTrackingLedgerAccount<>(account, null);
+        final var subject = new UpdateTrackingAccount<>(account, null);
 
         subject.setBalance(Wei.of(newBalance));
 
@@ -111,8 +89,8 @@ class UpdateTrackingLedgerAccountTest {
     void reusesAddressHashWhenConstructedWithTracker() {
         final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
 
-        final var base = new UpdateTrackingLedgerAccount<>(account, null);
-        final var subject = new UpdateTrackingLedgerAccount<>(base, null);
+        final var base = new UpdateTrackingAccount<>(account, null);
+        final var subject = new UpdateTrackingAccount<>(base, null);
         assertSame(subject.getAddressHash(), base.getAddressHash());
     }
 
@@ -120,7 +98,7 @@ class UpdateTrackingLedgerAccountTest {
     void recognizesUpdatedCode() {
         final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
 
-        final var subject = new UpdateTrackingLedgerAccount<>(account, null);
+        final var subject = new UpdateTrackingAccount<>(account, null);
 
         assertFalse(subject.codeWasUpdated());
         subject.setCode(Bytes.minimalBytes(1234L));
@@ -134,7 +112,7 @@ class UpdateTrackingLedgerAccountTest {
 
         final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
 
-        final var subject = new UpdateTrackingLedgerAccount<>(account, null);
+        final var subject = new UpdateTrackingAccount<>(account, null);
 
         assertEquals(Hash.hash(mockCode), subject.getCodeHash());
     }
@@ -145,7 +123,7 @@ class UpdateTrackingLedgerAccountTest {
 
         final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
 
-        final var subject = new UpdateTrackingLedgerAccount<>(account, null);
+        final var subject = new UpdateTrackingAccount<>(account, null);
         subject.setCode(mockCode);
 
         final var firstCodeHash = subject.getCodeHash();
@@ -159,14 +137,14 @@ class UpdateTrackingLedgerAccountTest {
         given(entityAccess.fetchCodeIfPresent(targetAddress)).willReturn(Bytes.EMPTY);
 
         final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
-        final var subject = new UpdateTrackingLedgerAccount<>(account, null);
+        final var subject = new UpdateTrackingAccount<>(account, null);
 
         assertFalse(subject.hasCode());
     }
 
     @Test
     void hasCodeUsesUpdatedCodeIfSet() {
-        final var subject = new UpdateTrackingLedgerAccount<>(targetAddress, null);
+        final var subject = new UpdateTrackingAccount<>(targetAddress, null);
 
         assertFalse(subject.hasCode());
         subject.setCode(Bytes.minimalBytes(1234L));
@@ -176,7 +154,7 @@ class UpdateTrackingLedgerAccountTest {
     @Test
     void doesNotSupportStreamingStorageEntries() {
         final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
-        final var subject = new UpdateTrackingLedgerAccount<>(account, null);
+        final var subject = new UpdateTrackingAccount<>(account, null);
 
         assertThrows(
                 UnsupportedOperationException.class, () -> subject.storageEntriesFrom(Bytes32.ZERO, Integer.MAX_VALUE));
@@ -185,7 +163,7 @@ class UpdateTrackingLedgerAccountTest {
     @Test
     void canClearStorage() {
         final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
-        final var subject = new UpdateTrackingLedgerAccount<>(account, null);
+        final var subject = new UpdateTrackingAccount<>(account, null);
 
         subject.setStorageValue(UInt256.ONE, UInt256.ONE);
         assertFalse(subject.getStorageWasCleared());
@@ -197,28 +175,18 @@ class UpdateTrackingLedgerAccountTest {
     @Test
     void setBalanceOkWithNullTrackingAccounts() {
         final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
-        final var subject = new UpdateTrackingLedgerAccount<>(account, null);
+        final var subject = new UpdateTrackingAccount<>(account, null);
 
         subject.setBalance(Wei.of(Long.MAX_VALUE));
 
         assertEquals(Long.MAX_VALUE, subject.getBalance().toLong());
-    }
-
-    @Test
-    void setBalancePropagatesToUsableTrackingAccounts() {
-        final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
-        final var subject = new UpdateTrackingLedgerAccount<>(account, trackingAccounts);
-
-        subject.setBalance(Wei.of(Long.MAX_VALUE));
-        assertEquals(Long.MAX_VALUE, subject.getBalance().toLong());
-        verify(trackingAccounts).set(targetId, AccountProperty.BALANCE, Long.MAX_VALUE);
     }
 
     @Test
     void getStorageValueRecognizesUpdatedStorage() {
         final var mockValue = UInt256.valueOf(1_234_567L);
         final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
-        final var subject = new UpdateTrackingLedgerAccount<>(account, trackingAccounts);
+        final var subject = new UpdateTrackingAccount<>(account, null);
 
         subject.setStorageValue(UInt256.ONE, mockValue);
         assertSame(mockValue, subject.getStorageValue(UInt256.ONE));
@@ -228,7 +196,7 @@ class UpdateTrackingLedgerAccountTest {
     void getStorageValueRecognizesClearedStorage() {
         final var mockValue = UInt256.valueOf(1_234_567L);
         final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
-        final var subject = new UpdateTrackingLedgerAccount<>(account, trackingAccounts);
+        final var subject = new UpdateTrackingAccount<>(account, null);
 
         subject.setStorageValue(UInt256.ONE, mockValue);
         subject.clearStorage();
@@ -237,7 +205,7 @@ class UpdateTrackingLedgerAccountTest {
 
     @Test
     void nonTrackingAccountAlwaysReturnsZeroStorageValue() {
-        final var subject = new UpdateTrackingLedgerAccount<>(targetAddress, trackingAccounts);
+        final var subject = new UpdateTrackingAccount<>(targetAddress, null);
 
         assertSame(UInt256.ZERO, subject.getStorageValue(UInt256.ONE));
     }
@@ -248,7 +216,7 @@ class UpdateTrackingLedgerAccountTest {
         given(entityAccess.getStorage(targetAddress, UInt256.ONE)).willReturn(mockValue);
 
         final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
-        final var subject = new UpdateTrackingLedgerAccount<>(account, null);
+        final var subject = new UpdateTrackingAccount<>(account, null);
 
         assertSame(mockValue, subject.getStorageValue(UInt256.ONE));
     }
@@ -259,7 +227,7 @@ class UpdateTrackingLedgerAccountTest {
         given(entityAccess.getStorage(targetAddress, UInt256.ONE)).willReturn(mockValue);
 
         final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
-        final var subject = new UpdateTrackingLedgerAccount<>(account, null);
+        final var subject = new UpdateTrackingAccount<>(account, null);
 
         assertSame(mockValue, subject.getOriginalStorageValue(UInt256.ONE));
     }
@@ -267,7 +235,7 @@ class UpdateTrackingLedgerAccountTest {
     @Test
     void clearedTrackingAccountDelegatesToGetOriginalStorage() {
         final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
-        final var subject = new UpdateTrackingLedgerAccount<>(account, null);
+        final var subject = new UpdateTrackingAccount<>(account, null);
         subject.clearStorage();
 
         assertSame(UInt256.ZERO, subject.getOriginalStorageValue(UInt256.ONE));
@@ -275,34 +243,34 @@ class UpdateTrackingLedgerAccountTest {
 
     @Test
     void nonTrackingAlwaysHasZeroOriginalStorage() {
-        final var subject = new UpdateTrackingLedgerAccount<>(targetAddress, null);
+        final var subject = new UpdateTrackingAccount<>(targetAddress, null);
         assertSame(UInt256.ZERO, subject.getOriginalStorageValue(UInt256.ONE));
     }
 
     @Test
     void getMutableReturnsSelf() {
         final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
-        final var subject = new UpdateTrackingLedgerAccount<>(account, null);
+        final var subject = new UpdateTrackingAccount<>(account, null);
 
         assertSame(subject, subject.getMutable());
     }
 
     @Test
     void toStringWorksAsExpected() {
-        final var expectedNoUpdatedStorageOrCode = "0x0000000000000000000000000000000000003039 -> {nonce:0,"
+        final var expectedNoUpdatedStorageOrCode = "0x000000000000000000000000000000000000066e -> {nonce:0,"
                 + " balance:0x00000000000000000000000000000000000000000000000000000000000186a0,"
                 + " code:[not updated], storage:[not updated] }";
-        final var expectedUpdatedStorageNotCode = "0x0000000000000000000000000000000000003039 -> {nonce:0,"
+        final var expectedUpdatedStorageNotCode = "0x000000000000000000000000000000000000066e -> {nonce:0,"
                 + " balance:0x00000000000000000000000000000000000000000000000000000000000186a0,"
                 + " code:[not updated], "
                 + "storage:{0x0000000000000000000000000000000000000000000000000000000000000001=0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff}"
                 + " }";
-        final var expectedUpdatedCodeClearedStorage = "0x0000000000000000000000000000000000003039 -> {nonce:0,"
+        final var expectedUpdatedCodeClearedStorage = "0x000000000000000000000000000000000000066e -> {nonce:0,"
                 + " balance:0x00000000000000000000000000000000000000000000000000000000000186a0,"
                 + " code:0x04d2, storage:[cleared] }";
 
         final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
-        final var subject = new UpdateTrackingLedgerAccount<>(account, null);
+        final var subject = new UpdateTrackingAccount<>(account, null);
 
         assertEquals(expectedNoUpdatedStorageOrCode, subject.toString());
 
