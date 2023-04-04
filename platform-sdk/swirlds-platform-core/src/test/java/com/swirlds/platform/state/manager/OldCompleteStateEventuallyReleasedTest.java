@@ -90,7 +90,7 @@ class OldCompleteStateEventuallyReleasedTest extends AbstractSignedStateManagerT
 
         signedStates.put(0L, stateFromDisk);
         highestRound.set(0);
-        manager.addCompleteSignedState(stateFromDisk);
+        manager.addState(stateFromDisk);
 
         // Create a series of signed states. Don't add any signatures. Self signatures will be automatically added.
         final int count = roundsToKeepForSigning * 100;

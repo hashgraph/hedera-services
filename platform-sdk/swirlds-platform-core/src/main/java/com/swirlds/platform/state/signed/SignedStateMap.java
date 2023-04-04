@@ -151,7 +151,7 @@ public class SignedStateMap {
      * @return an {@link AutoCloseableWrapper} with the first matching signed state with the specified reservation take
      * out on it, or an {@link AutoCloseableWrapper} with null if none was found
      */
-    public synchronized @NonNull AutoCloseableWrapper<SignedState> find(
+    public synchronized @NonNull AutoCloseableWrapper<SignedState> find( // TODO remove
             @NonNull final Predicate<SignedState> predicate) {
         for (final SignedState signedState : map.values()) {
             if (predicate.test(signedState)) {

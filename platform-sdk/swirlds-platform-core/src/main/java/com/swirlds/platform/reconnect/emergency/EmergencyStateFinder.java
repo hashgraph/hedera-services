@@ -19,6 +19,7 @@ package com.swirlds.platform.reconnect.emergency;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.state.signed.SignedState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 @FunctionalInterface
 public interface EmergencyStateFinder {
@@ -26,7 +27,7 @@ public interface EmergencyStateFinder {
     /**
      * <p>
      * Finds a signed state for the given round number and hash even if it is not fully signed, or a later round that is
-     * signed by more than half the network stake. If such a state is not available, return null.
+     * signed by more than half the network stake. If such a state is not available, return a wrapper around null.
      * </p>
      *
      * <p>
@@ -35,7 +36,7 @@ public interface EmergencyStateFinder {
      *
      * @param round the round of the state to find
      * @param hash  the hash of the state to find
-     * @return the requested state, or a later state that is fully signed, or null if no such state is available
+     * @return the requested state, or a later state that is fully signed, or a null wrappernull if no such state is available
      */
-    AutoCloseableWrapper<SignedState> find(final long round, final Hash hash);
+    @NonNull AutoCloseableWrapper<SignedState> find(final long round, @NonNull final Hash hash);
 }

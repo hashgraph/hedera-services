@@ -108,7 +108,7 @@ public class SequentialSignaturesRestartTest extends AbstractSignedStateManagerT
 
         signedStates.put(firstRound, stateFromDisk);
         highestRound.set(firstRound);
-        manager.addCompleteSignedState(stateFromDisk);
+        manager.addState(stateFromDisk);
 
         // Create a series of signed states.
         final int count = 100;

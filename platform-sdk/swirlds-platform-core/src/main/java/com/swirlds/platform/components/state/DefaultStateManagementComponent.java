@@ -347,7 +347,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         signatureTransmitter.transmitSignature(
                 signedState.getRound(), signature, signedState.getState().getHash());
 
-        signedStateManager.addUnsignedState(signedState);
+        signedStateManager.addState(signedState);
     }
 
     /**
@@ -375,38 +375,59 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 stateSignatureTransaction.getRound(), creatorId, stateSignatureTransaction.getStateHash());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public AutoCloseableWrapper<SignedState> getLatestSignedState() {
         return signedStateManager.getLatestSignedState();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public AutoCloseableWrapper<SignedState> getLatestImmutableState() {
         return signedStateManager.getLatestImmutableState();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public long getLastCompleteRound() {
         return signedStateManager.getLastCompleteRound();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<SignedStateInfo> getSignedStateInfo() {
         return signedStateManager.getSignedStateInfo();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void stateToLoad(final SignedState signedState, final SourceOfSignedState sourceOfSignedState) {
         signedState.setGarbageCollector(signedStateGarbageCollector);
         newSignedStateBeingTracked(signedState, sourceOfSignedState);
-        signedStateManager.addCompleteSignedState(signedState);
+        signedStateManager.addState(signedState);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void roundAppliedToState(final long round) {
         consensusHashManager.roundCompleted(round);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void start() {
         signedStateGarbageCollector.start();
@@ -418,6 +439,9 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void stop() {
         signedStateFileManager.stop();
@@ -427,6 +451,9 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         signedStateGarbageCollector.stop();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void onFatalError() {
         if (stateConfig.dumpStateOnFatal()) {
@@ -439,9 +466,20 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         }
     }
 
+    // TODO extract for unit tests
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public AutoCloseableWrapper<SignedState> find(final long round, final Hash hash) {
-        return signedStateManager.find(round, hash);
+    public @NonNull AutoCloseableWrapper<SignedState> find(final long round, @NonNull final Hash hash) {
+        return signedStateManager.findState((final SignedState signedState) -> {
+                    if (signedState.isComplete() && signedState.getRound() > round) {
+                        return true;
+                    }
+                    return signedState.getRound() == round && hash.equals(signedState.getState().getHash());
+                }
+        );
     }
 
     /**
