@@ -105,6 +105,7 @@ public abstract class BaseBench {
         try {
             final ConstructableRegistry registry = ConstructableRegistry.getInstance();
             registry.registerConstructables("com.swirlds.virtualmap");
+            registry.registerConstructables("com.swirlds.merkledb");
             registry.registerConstructables("com.swirlds.benchmark");
             registry.registerConstructables("com.swirlds.common.crypto");
         } catch (ConstructableRegistryException ex) {
