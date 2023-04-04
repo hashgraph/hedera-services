@@ -33,11 +33,9 @@ import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
-import com.swirlds.test.framework.TestQualifierTags;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("SignedStateManager: Add Incomplete State Test")
@@ -55,8 +53,6 @@ class AddIncompleteStateTest extends AbstractSignedStateManagerTest {
             .setStakeDistributionStrategy(RandomAddressBookGenerator.StakeDistributionStrategy.BALANCED)
             .setSequentialIds(true)
             .build();
-
-    private final long selfId = addressBook.getId(0);
 
     private final long firstRound = 50;
 
@@ -87,11 +83,10 @@ class AddIncompleteStateTest extends AbstractSignedStateManagerTest {
     }
 
     @Test
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Add Incomplete State Test")
     void addIncompleteStateTest() {
 
-        SignedStateManager manager = new SignedStateManagerBuilder(addressBook, stateConfig, selfId)
+        SignedStateManager manager = new SignedStateManagerBuilder(stateConfig)
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();

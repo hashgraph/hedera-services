@@ -29,10 +29,8 @@ import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
-import com.swirlds.test.framework.TestQualifierTags;
 import java.util.HashMap;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("SignedStateManager: Sequential Signatures Test")
@@ -50,8 +48,6 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
             .setStakeDistributionStrategy(RandomAddressBookGenerator.StakeDistributionStrategy.BALANCED)
             .setSequentialIds(true)
             .build();
-
-    private final long selfId = addressBook.getId(0);
 
     /**
      * Called on each state as it gets too old without collecting enough signatures.
@@ -81,9 +77,8 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
 
     @Test
     @DisplayName("Sequential Signatures Test")
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     void sequentialSignaturesTest() throws InterruptedException {
-        final SignedStateManager manager = new SignedStateManagerBuilder(addressBook, stateConfig, selfId)
+        final SignedStateManager manager = new SignedStateManagerBuilder(stateConfig)
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();

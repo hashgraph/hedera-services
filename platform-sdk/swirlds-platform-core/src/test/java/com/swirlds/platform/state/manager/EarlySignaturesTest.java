@@ -48,8 +48,6 @@ public class EarlySignaturesTest extends AbstractSignedStateManagerTest {
             .setSequentialIds(true)
             .build();
 
-    private final long selfId = addressBook.getId(0);
-
     /**
      * Called on each state as it gets too old without collecting enough signatures.
      * <p>
@@ -80,7 +78,7 @@ public class EarlySignaturesTest extends AbstractSignedStateManagerTest {
     void earlySignaturesTest() throws InterruptedException {
         final int count = 100;
         final int futureSignatures = stateConfig.maxAgeOfFutureStateSignatures();
-        SignedStateManager manager = new SignedStateManagerBuilder(addressBook, stateConfig, selfId)
+        SignedStateManager manager = new SignedStateManagerBuilder(stateConfig)
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();

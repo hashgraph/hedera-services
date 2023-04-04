@@ -35,17 +35,11 @@ public class SignedStateMetrics {
     private static final String CATEGORY = "platform";
     private static final String MILLISECONDS = TimeUnit.UNIT_MILLISECONDS.getAbbreviation();
 
-    private static final RunningAverageMetric.Config FRESH_STATES_CONFIG = new RunningAverageMetric.Config(
-                    CATEGORY, "freshUnsignedStates")
-            .withDescription("Average Number Of Fresh States Awaiting Signatures")
+    private static final RunningAverageMetric.Config UNSIGNED_STATES_CONFIG = new RunningAverageMetric.Config(
+                    CATEGORY, "unsignedStates")
+            .withDescription("Average Number Of Unsigned States Awaiting Signatures")
             .withFormat(FORMAT_10_2);
-    private final RunningAverageMetric freshStates;
-
-    private static final RunningAverageMetric.Config STALE_STATES_CONFIG = new RunningAverageMetric.Config(
-                    CATEGORY, "staleUnsignedStates")
-            .withDescription("Average Number Of Stale States Awaiting Signatures")
-            .withFormat(FORMAT_10_2);
-    private final RunningAverageMetric staleStates;
+    private final RunningAverageMetric unsignedStates;
 
     private static final RunningAverageMetric.Config AVERAGE_TIME_TO_FULLY_SIGN_STATE = new RunningAverageMetric.Config(
                     CATEGORY, "averageTimeToFullySignState")
@@ -130,17 +124,10 @@ public class SignedStateMetrics {
     private final RunningAverageMetric stateToDiskTime;
 
     /**
-     * Get a metric tracking fresh unsigned states.
+     * Get a metric tracking unsigned states.
      */
-    public RunningAverageMetric getFreshStatesMetric() {
-        return freshStates;
-    }
-
-    /**
-     * Get a metric tracking stale unsigned states.
-     */
-    public RunningAverageMetric getStaleStatesMetric() {
-        return staleStates;
+    public RunningAverageMetric getUnsignedStatesMetric() {
+        return unsignedStates;
     }
 
     /**
@@ -236,8 +223,7 @@ public class SignedStateMetrics {
      * 		a reference to the metrics-system
      */
     public SignedStateMetrics(final Metrics metrics) {
-        freshStates = metrics.getOrCreate(FRESH_STATES_CONFIG);
-        staleStates = metrics.getOrCreate(STALE_STATES_CONFIG);
+        unsignedStates = metrics.getOrCreate(UNSIGNED_STATES_CONFIG);
         averageTimeToFullySignState = metrics.getOrCreate(AVERAGE_TIME_TO_FULLY_SIGN_STATE);
         totalNeverSignedStates = metrics.getOrCreate(TOTAL_NEVER_SIGNED_STATES_CONFIG);
         totalNeverSignedDiskStates = metrics.getOrCreate(TOTAL_NEVER_SIGNED_DISK_STATES_CONFIG);

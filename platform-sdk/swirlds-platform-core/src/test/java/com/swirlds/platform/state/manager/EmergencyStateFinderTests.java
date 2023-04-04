@@ -38,12 +38,11 @@ public class EmergencyStateFinderTests extends AbstractSignedStateManagerTest {
             .setStakeDistributionStrategy(RandomAddressBookGenerator.StakeDistributionStrategy.BALANCED)
             .setSequentialIds(true)
             .build();
-    private final long selfId = addressBook.getId(0);
 
     @DisplayName("Emergency State Finder Test")
     @Test
     void testFind() {
-        final SignedStateManager manager = new SignedStateManagerBuilder(addressBook, stateConfig, selfId).build();
+        final SignedStateManager manager = new SignedStateManagerBuilder(stateConfig).build();
 
         final int roundAgeToSign = 3;
 

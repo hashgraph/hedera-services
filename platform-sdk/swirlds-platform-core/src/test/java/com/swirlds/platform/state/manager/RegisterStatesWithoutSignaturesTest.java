@@ -29,10 +29,8 @@ import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
-import com.swirlds.test.framework.TestQualifierTags;
 import java.util.HashMap;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("SignedStateManager: Register States Without Signatures Test")
@@ -47,8 +45,6 @@ public class RegisterStatesWithoutSignaturesTest extends AbstractSignedStateMana
             .setSize(4)
             .setSequentialIds(false)
             .build();
-
-    final long selfId = addressBook.getId(0);
 
     /**
      * Called on each state as it gets too old without collecting enough signatures.
@@ -84,10 +80,9 @@ public class RegisterStatesWithoutSignaturesTest extends AbstractSignedStateMana
      * Keep adding new states to the manager but never sign any of them (other than self signatures).
      */
     @Test
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Register States Without Signatures")
     void registerStatesWithoutSignatures() throws InterruptedException {
-        final SignedStateManager manager = new SignedStateManagerBuilder(addressBook, stateConfig, selfId)
+        final SignedStateManager manager = new SignedStateManagerBuilder(stateConfig)
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();
