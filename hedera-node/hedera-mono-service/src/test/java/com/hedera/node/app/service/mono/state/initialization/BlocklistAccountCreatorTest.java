@@ -92,54 +92,53 @@ class BlocklistAccountCreatorTest {
 
     @BeforeEach
     void setUp() throws DecoderException {
-        ids =
-                new EntityIdSource() {
-                    long nextId = FIRST_UNUSED_ID;
+        ids = new EntityIdSource() {
+            long nextId = FIRST_UNUSED_ID;
 
-                    @Override
-                    public AccountID newAccountId() {
-                        return AccountID.newBuilder().setAccountNum(newAccountNumber()).build();
-                    }
+            @Override
+            public AccountID newAccountId() {
+                return AccountID.newBuilder().setAccountNum(newAccountNumber()).build();
+            }
 
-                    @Override
-                    public long newAccountNumber() {
-                        return nextId++;
-                    }
+            @Override
+            public long newAccountNumber() {
+                return nextId++;
+            }
 
-                    @Override
-                    public TopicID newTopicId(final AccountID sponsor) {
-                        return null;
-                    }
+            @Override
+            public TopicID newTopicId(final AccountID sponsor) {
+                return null;
+            }
 
-                    @Override
-                    public ContractID newContractId(AccountID newContractSponsor) {
-                        return null;
-                    }
+            @Override
+            public ContractID newContractId(AccountID newContractSponsor) {
+                return null;
+            }
 
-                    @Override
-                    public FileID newFileId(AccountID newFileSponsor) {
-                        return null;
-                    }
+            @Override
+            public FileID newFileId(AccountID newFileSponsor) {
+                return null;
+            }
 
-                    @Override
-                    public TokenID newTokenId(AccountID sponsor) {
-                        return null;
-                    }
+            @Override
+            public TokenID newTokenId(AccountID sponsor) {
+                return null;
+            }
 
-                    @Override
-                    public ScheduleID newScheduleId(AccountID sponsor) {
-                        return null;
-                    }
+            @Override
+            public ScheduleID newScheduleId(AccountID sponsor) {
+                return null;
+            }
 
-                    @Override
-                    public void reclaimLastId() {}
+            @Override
+            public void reclaimLastId() {}
 
-                    @Override
-                    public void reclaimProvisionalIds() {}
+            @Override
+            public void reclaimProvisionalIds() {}
 
-                    @Override
-                    public void resetProvisionalIds() {}
-                };
+            @Override
+            public void resetProvisionalIds() {}
+        };
 
         genesisKey = JKey.mapKey(Key.newBuilder()
                 .setKeyList(KeyList.newBuilder().addKeys(MiscUtils.asKeyUnchecked(pretendKey)))
@@ -150,17 +149,9 @@ class BlocklistAccountCreatorTest {
     void successfullyEnsuresBlockedAccounts() {
         // given
         given(genesisKeySource.get()).willReturn(pretendKey);
-        given(properties.getStringProperty(ACCOUNTS_BLOCKLIST_RESOURCE))
-                .willReturn("evm-addresses-blocklist.csv");
-        subject =
-                new BlocklistAccountCreator(
-                        MerkleAccount::new,
-                        ids,
-                        accounts,
-                        genesisKeySource,
-                        properties,
-                        aliasManager,
-                        accountNumbers);
+        given(properties.getStringProperty(ACCOUNTS_BLOCKLIST_RESOURCE)).willReturn("evm-addresses-blocklist.csv");
+        subject = new BlocklistAccountCreator(
+                MerkleAccount::new, ids, accounts, genesisKeySource, properties, aliasManager, accountNumbers);
         given(aliasManager.lookupIdBy(any())).willReturn(MISSING_NUM);
 
         // when
