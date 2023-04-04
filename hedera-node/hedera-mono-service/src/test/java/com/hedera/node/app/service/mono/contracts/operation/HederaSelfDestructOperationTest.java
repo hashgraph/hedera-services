@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.contracts.operation;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -103,7 +104,8 @@ class HederaSelfDestructOperationTest {
                 .willReturn(beneficiaryMirrorAddress);
         given(frame.getContractAddress()).willReturn(eip1014Address);
         given(account.getAddress()).willReturn(beneficiaryMirror);
-        given(evmSigsVerifier.hasActiveKeyOrNoReceiverSigReq(false, beneficiaryMirror, eip1014Address, null))
+        given(evmSigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                        false, beneficiaryMirror, eip1014Address, null, ContractCall))
                 .willReturn(true);
 
         final var opResult = subject.execute(frame, evm);
@@ -180,7 +182,8 @@ class HederaSelfDestructOperationTest {
         given(frame.getRecipientAddress()).willReturn(eip1014Address);
         given(frame.getContractAddress()).willReturn(eip1014Address);
         given(worldUpdater.contractOwnsNfts(eip1014Address)).willReturn(false);
-        given(evmSigsVerifier.hasActiveKeyOrNoReceiverSigReq(false, beneficiaryMirror, eip1014Address, null))
+        given(evmSigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                        false, beneficiaryMirror, eip1014Address, null, ContractCall))
                 .willReturn(false);
         given(worldUpdater.get(beneficiaryMirror)).willReturn(account);
         given(account.getAddress()).willReturn(beneficiaryMirror);
@@ -200,7 +203,8 @@ class HederaSelfDestructOperationTest {
         given(frame.getRecipientAddress()).willReturn(eip1014Address);
         given(frame.getContractAddress()).willReturn(Address.ALTBN128_MUL);
         given(worldUpdater.contractOwnsNfts(eip1014Address)).willReturn(false);
-        given(evmSigsVerifier.hasActiveKeyOrNoReceiverSigReq(true, beneficiaryMirror, eip1014Address, null))
+        given(evmSigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                        true, beneficiaryMirror, eip1014Address, null, ContractCall))
                 .willReturn(false);
         given(worldUpdater.get(beneficiaryMirror)).willReturn(account);
         given(account.getAddress()).willReturn(beneficiaryMirror);

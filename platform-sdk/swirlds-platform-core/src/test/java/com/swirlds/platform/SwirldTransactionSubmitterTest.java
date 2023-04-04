@@ -38,7 +38,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class SwirldTransactionSubmitterTest {
@@ -70,7 +69,7 @@ class SwirldTransactionSubmitterTest {
         platformStatus = PlatformStatus.ACTIVE;
 
         transactionSubmitter = new SwirldTransactionSubmitter(
-                this::getPlatformStatus, settings, false, (t) -> true, mock(TransactionMetrics.class));
+                this::getPlatformStatus, settings, (t) -> true, mock(TransactionMetrics.class));
     }
 
     private PlatformStatus getPlatformStatus() {
@@ -105,23 +104,6 @@ class SwirldTransactionSubmitterTest {
             assertFalse(
                     transactionSubmitter.submitTransaction(TransactionUtils.randomSwirldTransaction(random)),
                     "Transactions should not be accepted when the platform is not ACTIVE.");
-        }
-    }
-
-    @ParameterizedTest
-    @MethodSource("zeroStakeParams")
-    @DisplayName("Transaction denied on zero-stake node")
-    void testZeroStake(final boolean isZeroStakeNode) {
-        transactionSubmitter = new SwirldTransactionSubmitter(
-                this::getPlatformStatus, settings, isZeroStakeNode, (t) -> true, mock(TransactionMetrics.class));
-        if (isZeroStakeNode) {
-            assertFalse(
-                    transactionSubmitter.submitTransaction(TransactionUtils.randomSwirldTransaction(random)),
-                    "Transactions should not be accepted on mirror or zero-stake nodes.");
-        } else {
-            assertTrue(
-                    transactionSubmitter.submitTransaction(TransactionUtils.randomSwirldTransaction(random)),
-                    "Transactions should be accepted on non-mirror and staked nodes.");
         }
     }
 
