@@ -32,6 +32,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.generateAccountIDWithAliasCalculatedFrom;
 import static com.hedera.node.app.service.mono.txns.span.SpanMapManager.reCalculateXferMeta;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -71,6 +72,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -123,12 +125,16 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     private final Address senderAddress;
     private final ImpliedTransfersMarshal impliedTransfersMarshal;
     private final boolean isLazyCreationEnabled;
+    private final boolean topLevelSigsAreEnabled;
     private ResponseCodeEnum impliedValidity;
     private ImpliedTransfers impliedTransfers;
     private HederaTokenStore hederaTokenStore;
     protected CryptoTransferWrapper transferOp;
     private AbstractAutoCreationLogic autoCreationLogic;
     private int numLazyCreates;
+
+    // Non-final for testing purposes
+    private boolean canFallbackToApprovals;
 
     public TransferPrecompile(
             final WorldLedgers ledgers,
@@ -140,7 +146,9 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final PrecompilePricingUtils pricingUtils,
             final int functionId,
             final Address senderAddress,
-            final boolean isLazyCreationEnabled) {
+            final boolean isLazyCreationEnabled,
+            final boolean topLevelSigsAreEnabled,
+            final boolean canFallbackToApprovals) {
         super(ledgers, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils);
         this.updater = updater;
         this.sigsVerifier = sigsVerifier;
@@ -148,6 +156,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         this.senderAddress = senderAddress;
         this.impliedTransfersMarshal = infrastructureFactory.newImpliedTransfersMarshal(ledgers.customFeeSchedules());
         this.isLazyCreationEnabled = isLazyCreationEnabled;
+        this.topLevelSigsAreEnabled = topLevelSigsAreEnabled;
+        this.canFallbackToApprovals = canFallbackToApprovals;
     }
 
     protected void initializeHederaTokenStore() {
@@ -228,13 +238,26 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                     // allowance
                     continue;
                 }
-                final var hasSenderSig = KeyActivationUtils.validateKey(
+                final var senderHasSignedOrIsMsgSenderInFrame = KeyActivationUtils.validateKey(
                         frame,
                         change.getAccount().asEvmAddress(),
                         sigsVerifier::hasActiveKey,
                         ledgers,
-                        updater.aliases());
-                validateTrue(hasSenderSig, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, TRANSFER);
+                        updater.aliases(),
+                        CryptoTransfer);
+                // If the transfer doesn't have explicit sender authorization via msg.sender,
+                // AND cannot use top-level signatures, then even if it did not claim to have
+                // an approval, let it try to succeed via an approval IF this precompile is
+                // one of the HAPI-style transfer precompiles
+                if (!senderHasSignedOrIsMsgSenderInFrame && !topLevelSigsAreEnabled && canFallbackToApprovals) {
+                    change.switchToApproved();
+                    continue;
+                } else {
+                    validateTrue(
+                            senderHasSignedOrIsMsgSenderInFrame,
+                            INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE,
+                            TRANSFER);
+                }
             }
             if (!change.isForCustomFee()) {
                 /* Only process receiver sig requirements for that are not custom fee payments (custom fees are never
@@ -247,14 +270,16 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                             counterPartyAddress,
                             sigsVerifier::hasActiveKeyOrNoReceiverSigReq,
                             ledgers,
-                            updater.aliases());
+                            updater.aliases(),
+                            CryptoTransfer);
                 } else if (units > 0) {
                     hasReceiverSigIfReq = KeyActivationUtils.validateKey(
                             frame,
                             change.getAccount().asEvmAddress(),
                             sigsVerifier::hasActiveKeyOrNoReceiverSigReq,
                             ledgers,
-                            updater.aliases());
+                            updater.aliases(),
+                            CryptoTransfer);
                 }
                 validateTrue(hasReceiverSigIfReq, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, TRANSFER);
             }
@@ -452,6 +477,20 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         final var amounts = (long[]) decodedArguments.get(2);
 
         final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
+        addSignedAdjustments(fungibleTransfers, accountIDs, exists, tokenType, amounts);
+
+        final var tokenTransferWrappers =
+                Collections.singletonList(new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
+
+        return new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), tokenTransferWrappers);
+    }
+
+    public static void addSignedAdjustments(
+            final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers,
+            final List<AccountID> accountIDs,
+            final Predicate<AccountID> exists,
+            final TokenID tokenType,
+            final long[] amounts) {
         for (int i = 0; i < accountIDs.size(); i++) {
             final var amount = amounts[i];
 
@@ -462,11 +501,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
             DecodingFacade.addSignedAdjustment(fungibleTransfers, tokenType, accountID, amount, false);
         }
-
-        final var tokenTransferWrappers =
-                Collections.singletonList(new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
-
-        return new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), tokenTransferWrappers);
     }
 
     public static CryptoTransferWrapper decodeTransferToken(
@@ -496,6 +530,20 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         final var serialNumbers = ((long[]) decodedArguments.get(3));
 
         final List<SyntheticTxnFactory.NftExchange> nftExchanges = new ArrayList<>();
+        addNftExchanges(nftExchanges, senders, receivers, serialNumbers, tokenID, exists);
+
+        final var tokenTransferWrappers =
+                Collections.singletonList(new TokenTransferWrapper(nftExchanges, NO_FUNGIBLE_TRANSFERS));
+        return new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), tokenTransferWrappers);
+    }
+
+    public static void addNftExchanges(
+            final List<SyntheticTxnFactory.NftExchange> nftExchanges,
+            final List<AccountID> senders,
+            final List<AccountID> receivers,
+            final long[] serialNumbers,
+            final TokenID tokenID,
+            final Predicate<AccountID> exists) {
         for (var i = 0; i < senders.size(); i++) {
             var receiver = receivers.get(i);
             if (!exists.test(receiver) && !receiver.hasAlias()) {
@@ -505,10 +553,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                     new SyntheticTxnFactory.NftExchange(serialNumbers[i], tokenID, senders.get(i), receiver);
             nftExchanges.add(nftExchange);
         }
-
-        final var tokenTransferWrappers =
-                Collections.singletonList(new TokenTransferWrapper(nftExchanges, NO_FUNGIBLE_TRANSFERS));
-        return new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), tokenTransferWrappers);
     }
 
     public static CryptoTransferWrapper decodeTransferNFT(
@@ -607,5 +651,9 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                 .setAmount(amount)
                 .setIsApproval(isApproval)
                 .build();
+    }
+
+    public void setCanFallbackToApprovals(final boolean canFallbackToApprovals) {
+        this.canFallbackToApprovals = canFallbackToApprovals;
     }
 }
