@@ -18,6 +18,7 @@ package com.swirlds.common.config;
 
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
+import java.nio.file.Path;
 
 /**
  * Config that control the SignedStateManager and SignedStateFileManager behaviors.
@@ -94,7 +95,7 @@ import com.swirlds.config.api.ConfigProperty;
  */
 @ConfigData("state")
 public record StateConfig(
-        @ConfigProperty(defaultValue = "data/saved") String savedStateDirectory,
+        @ConfigProperty(defaultValue = "data/saved") Path savedStateDirectory,
         @ConfigProperty(defaultValue = "") String mainClassNameOverride,
         @ConfigProperty(defaultValue = "false") boolean cleanSavedStateDirectory,
         @ConfigProperty(defaultValue = "20") int stateSavingQueueSize,

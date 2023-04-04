@@ -18,19 +18,21 @@ package com.hedera.node.app.workflows.handle;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalStaticProperties;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.txns.TransitionLogicLookup;
 import com.hedera.node.app.service.mono.txns.TransitionRunner;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -54,7 +56,9 @@ public class AdaptedMonoTransitionRunner extends TransitionRunner {
             @NonNull final WritableStoreFactory storeFactory) {
         super(ids, txnCtx, lookup);
         this.dispatcher = Objects.requireNonNull(dispatcher);
-        this.functionsToDispatch = Objects.requireNonNull(staticProperties).workflowsEnabled();
+        this.functionsToDispatch = Objects.requireNonNull(staticProperties).workflowsEnabled().stream()
+                .map(PbjConverter::toPbj)
+                .collect(Collectors.toSet());
         this.writableStoreFactory = Objects.requireNonNull(storeFactory);
     }
 
@@ -63,13 +67,13 @@ public class AdaptedMonoTransitionRunner extends TransitionRunner {
      */
     @Override
     public boolean tryTransition(final @NonNull TxnAccessor accessor) {
-        final var function = accessor.getFunction();
+        final var function = PbjConverter.toPbj(accessor.getFunction());
         if (functionsToDispatch.contains(function)) {
             try {
-                dispatcher.dispatchHandle(function, accessor.getTxn(), writableStoreFactory);
+                dispatcher.dispatchHandle(function, PbjConverter.toPbj(accessor.getTxn()), writableStoreFactory);
                 txnCtx.setStatus(SUCCESS);
             } catch (final HandleStatusException e) {
-                super.resolveFailure(e.getStatus(), accessor, e);
+                super.resolveFailure(PbjConverter.fromPbj(e.getStatus()), accessor, e);
             }
             return true;
         } else {

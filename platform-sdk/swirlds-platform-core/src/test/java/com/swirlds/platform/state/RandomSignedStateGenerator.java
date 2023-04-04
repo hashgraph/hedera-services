@@ -63,6 +63,7 @@ public class RandomSignedStateGenerator {
     private Map<Long, Signature> signatures;
     private boolean protectionEnabled = false;
     private Hash stateHash = null;
+    private Integer roundsNonAncient = null;
 
     /**
      * Create a new signed state generator with a random seed.
@@ -159,9 +160,19 @@ public class RandomSignedStateGenerator {
             freezeStateInstance = freezeState;
         }
 
+        final int roundsNonAncientInstance;
+        if (roundsNonAncient == null) {
+            roundsNonAncientInstance = 26;
+        } else {
+            roundsNonAncientInstance = roundsNonAncient;
+        }
+
         final List<MinGenInfo> minGenInfoInstance;
         if (minGenInfo == null) {
-            minGenInfoInstance = List.of();
+            minGenInfoInstance = new ArrayList<>();
+            for (int i = 0; i < roundsNonAncientInstance; i++) {
+                minGenInfoInstance.add(new MinGenInfo(roundInstance - i, 0L));
+            }
         } else {
             minGenInfoInstance = minGenInfo;
         }
@@ -183,7 +194,8 @@ public class RandomSignedStateGenerator {
                 .setEvents(eventsInstance)
                 .setConsensusTimestamp(consensusTimestampInstance)
                 .setMinGenInfo(minGenInfoInstance)
-                .setCreationSoftwareVersion(softwareVersionInstance);
+                .setCreationSoftwareVersion(softwareVersionInstance)
+                .setRoundsNonAncient(roundsNonAncientInstance);
 
         final SignedState signedState = new SignedState(stateInstance, freezeStateInstance);
 
@@ -392,6 +404,16 @@ public class RandomSignedStateGenerator {
      */
     public RandomSignedStateGenerator setProtectionEnabled(final boolean protectionEnabled) {
         this.protectionEnabled = protectionEnabled;
+        return this;
+    }
+
+    /**
+     * Set the number of non-ancient rounds.
+     *
+     * @return this object
+     */
+    public RandomSignedStateGenerator setRoundsNonAncient(final int roundsNonAncient) {
+        this.roundsNonAncient = roundsNonAncient;
         return this;
     }
 }

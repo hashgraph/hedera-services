@@ -203,7 +203,7 @@ public abstract class AbstractAutoCreationLogic {
             fee += getLazyCreationFinalizationFee();
         }
 
-        final var newId = ids.newAccountId(syntheticCreation.getTransactionID().getAccountID());
+        final var newId = ids.newAccountId();
         accountsLedger.create(newId);
         replaceAliasAndSetBalanceOnChange(change, newId);
 

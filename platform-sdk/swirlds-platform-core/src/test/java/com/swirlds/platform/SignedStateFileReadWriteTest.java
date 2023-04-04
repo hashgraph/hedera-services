@@ -108,7 +108,6 @@ class SignedStateFileReadWriteTest {
         final String hashInfoString = new MerkleTreeVisualizer(state)
                 .setDepth(StateSettings.getDebugHashDepth())
                 .render();
-        final String platformInfoString = state.getPlatformState().getInfoString();
 
         final StringBuilder sb = new StringBuilder();
         try (final BufferedReader br = new BufferedReader(new FileReader(hashInfoFile.toFile()))) {
@@ -117,7 +116,6 @@ class SignedStateFileReadWriteTest {
 
         final String fileString = sb.toString();
         assertTrue(fileString.contains(hashInfoString), "hash info string not found");
-        assertTrue(fileString.contains(platformInfoString), "platform info string not found");
     }
 
     @Test
@@ -154,8 +152,7 @@ class SignedStateFileReadWriteTest {
         final Path settingsUsedFile = directory.resolve("settingsUsed.txt");
 
         throwIfFileExists(stateFile, hashInfoFile, settingsUsedFile, directory);
-
-        writeSignedStateToDisk(directory, signedState, "test");
+        writeSignedStateToDisk(0, directory, signedState, "test");
 
         assertTrue(exists(stateFile), "state file should exist");
         assertTrue(exists(hashInfoFile), "hash info file should exist");
@@ -284,13 +281,14 @@ class SignedStateFileReadWriteTest {
                 MAIN_CLASS_NAME,
                 SELF_ID,
                 SWIRLD_NAME,
-                (ss, path, success) -> {});
+                (ss, path, success) -> {},
+                x -> {});
         manager.start();
 
         final int rounds = 3;
 
         // Save a few states to the directory
-        for (int round = 0; round < rounds; round++) {
+        for (int round = 1; round <= rounds; round++) {
             final SignedState signedState =
                     new RandomSignedStateGenerator().setRound(round).build();
 
@@ -300,7 +298,7 @@ class SignedStateFileReadWriteTest {
         // The states should have been written by now
         AssertionUtils.assertEventuallyDoesNotThrow(
                 () -> {
-                    for (int round = 0; round < rounds; round++) {
+                    for (int round = 1; round <= rounds; round++) {
                         final Path stateFile = getSignedStateDirectory(MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME, round)
                                 .resolve("SignedState.swh");
                         assertTrue(Files.exists(stateFile), "Signed state file " + stateFile + " does not exist");
@@ -340,7 +338,7 @@ class SignedStateFileReadWriteTest {
         assertEquals(2, Files.walk(getSignedStatesBaseDirectory(), 1).count(), "too many files in directory");
 
         // Each of the states should still be present
-        for (int round = 0; round < rounds; round++) {
+        for (int round = 1; round <= rounds; round++) {
             final Path stateFile = getSignedStateDirectory(MAIN_CLASS_NAME, SELF_ID, SWIRLD_NAME, round)
                     .resolve("SignedState.swh");
             assertTrue(Files.exists(stateFile), "Signed state file " + stateFile + " does not exist");

@@ -92,7 +92,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     private static final String MULTI_KEY = "multiKey";
     private static final String UPDATE_KEY_FUNC = "tokenUpdateKeys";
     private static final String GET_KEY_FUNC = "getKeyFromToken";
-    private static final String TOKEN_UPDATE_CONTRACT = "UpdateTokenInfoContract";
+    public static final String TOKEN_UPDATE_CONTRACT = "UpdateTokenInfoContract";
     private static final String UPDATE_TXN = "updateTxn";
     private static final String GET_KYC_KEY_TXN = "getKycTokenKeyTxn";
     private static final String GET_ADMIN_KEY_TXN = "getAdminTokenKeyTxn";
@@ -105,13 +105,13 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     private static final long DEFAULT_AMOUNT_TO_SEND = 20 * ONE_HBAR;
     private static final String ED25519KEY = "ed25519key";
     private static final String ECDSA_KEY = "ecdsa";
-    private static final String TOKEN_UPDATE_AS_KEY = "tokenCreateContractAsKey";
+    public static final String TOKEN_UPDATE_AS_KEY = "tokenCreateContractAsKey";
     private static final String DELEGATE_KEY = "tokenUpdateAsKeyDelegate";
     private static final String ACCOUNT_TO_ASSOCIATE = "account3";
     private static final String ACCOUNT_TO_ASSOCIATE_KEY = "associateKey";
-    private static final String CUSTOM_NAME = "customName";
-    private static final String CUSTOM_SYMBOL = "Ω";
-    private static final String CUSTOM_MEMO = "Omega";
+    public static final String CUSTOM_NAME = "customName";
+    public static final String CUSTOM_SYMBOL = "Ω";
+    public static final String CUSTOM_MEMO = "Omega";
     private static final long ADMIN_KEY_TYPE = 1L;
     private static final long KYC_KEY_TYPE = 2L;
     private static final long FREEZE_KEY_TYPE = 4L;
@@ -211,7 +211,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .via(UPDATE_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
-                                .payingWith(ACCOUNT)
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
                                         TOKEN_UPDATE_CONTRACT,
@@ -237,7 +238,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                         CUSTOM_MEMO)
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
-                                .payingWith(ACCOUNT),
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT),
                         newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT.signedWith(TOKEN_UPDATE_CONTRACT)),
                         newKeyNamed(TOKEN_UPDATE_AS_KEY).shape(CONTRACT.signedWith(TOKEN_UPDATE_CONTRACT)))))
                 .then(
@@ -307,8 +309,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .via("noAdminKey")
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
-                                .payingWith(ACCOUNT)
-                                .alsoSigningWithFullPrefix(newTokenTreasury)
+                                .signedBy(GENESIS, ACCOUNT, newTokenTreasury)
+                                .alsoSigningWithFullPrefix(ACCOUNT, newTokenTreasury)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
                                         TOKEN_UPDATE_CONTRACT,
@@ -319,8 +321,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .via("tokenUpdateTxn")
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
-                                .alsoSigningWithFullPrefix(newTokenTreasury)
-                                .payingWith(ACCOUNT))))
+                                .signedBy(GENESIS, ACCOUNT, newTokenTreasury)
+                                .alsoSigningWithFullPrefix(ACCOUNT, newTokenTreasury))))
                 .then(
                         childRecordsCheck(
                                 "noAdminKey",
@@ -373,7 +375,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .via(UPDATE_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
-                                .payingWith(ACCOUNT)
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
                                         TOKEN_UPDATE_CONTRACT,
@@ -386,7 +389,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .via(tooLongSymbolTxn)
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
-                                .payingWith(ACCOUNT)
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(withOpContext((spec, opLog) -> allRunFor(
                         spec,
@@ -490,7 +494,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .via(NO_FEE_SCHEDULE_KEY_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
-                                .payingWith(ACCOUNT)
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
                                         TOKEN_UPDATE_CONTRACT,
@@ -512,7 +517,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .via(NO_SUPPLY_KEY_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
-                                .payingWith(ACCOUNT)
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
                                         TOKEN_UPDATE_CONTRACT,
@@ -534,7 +540,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .via(NO_WIPE_KEY_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
-                                .payingWith(ACCOUNT)
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
                                         TOKEN_UPDATE_CONTRACT,
@@ -556,7 +563,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .via(NO_PAUSE_KEY_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
-                                .payingWith(ACCOUNT)
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
                                         TOKEN_UPDATE_CONTRACT,
@@ -578,7 +586,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .via(NO_FREEZE_KEY_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
-                                .payingWith(ACCOUNT)
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
                                         TOKEN_UPDATE_CONTRACT,
@@ -600,7 +609,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .via(NO_KYC_KEY_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
-                                .payingWith(ACCOUNT)
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(withOpContext((spec, ignore) -> allRunFor(
                         spec,
@@ -724,7 +734,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                                 asAddress(spec.registry().getContractId(TOKEN_UPDATE_CONTRACT))))
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
-                                .payingWith(ACCOUNT),
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT),
                         newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT.signedWith(TOKEN_UPDATE_CONTRACT)),
                         newKeyNamed(TOKEN_UPDATE_AS_KEY).shape(CONTRACT.signedWith(TOKEN_UPDATE_CONTRACT)),
                         contractCall(
@@ -914,7 +925,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 .via(UPDATE_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .sending(DEFAULT_AMOUNT_TO_SEND)
-                                .payingWith(ACCOUNT),
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT),
                         newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT.signedWith(TOKEN_UPDATE_CONTRACT)),
                         newKeyNamed(TOKEN_UPDATE_AS_KEY).shape(CONTRACT.signedWith(TOKEN_UPDATE_CONTRACT)))))
                 .then(withOpContext((spec, opLog) -> allRunFor(

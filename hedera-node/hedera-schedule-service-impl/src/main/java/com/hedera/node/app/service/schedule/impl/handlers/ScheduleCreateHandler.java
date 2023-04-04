@@ -17,9 +17,13 @@
 package com.hedera.node.app.service.schedule.impl.handlers;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.node.app.service.mono.utils.MiscUtils.asOrdinary;
+import static com.hedera.node.app.service.schedule.impl.Utils.asOrdinary;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
@@ -30,19 +34,20 @@ import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#ScheduleCreate}.
+ * HederaFunctionality#SCHEDULE_CREATE}.
  */
 @Singleton
 public class ScheduleCreateHandler extends AbstractScheduleHandler implements TransactionHandler {
     @Inject
-    public ScheduleCreateHandler() {}
+    public ScheduleCreateHandler() {
+        // Exists for injection
+    }
 
     /**
      * This method is called during the pre-handle workflow.
      *
-     * <p>Pre-handles a {@link
-     * com.hederahashgraph.api.proto.java.HederaFunctionality#ScheduleCreate} transaction, returning
-     * the metadata required to, at minimum, validate the signatures of all required signing keys.
+     * <p>Pre-handles a {@link HederaFunctionality#SCHEDULE_CREATE} transaction, returning the
+     * metadata required to, at minimum, validate the signatures of all required signing keys.
      *
      * @param context the {@link PreHandleContext} which collects all information that will be
      *     passed to {@link #handle(TransactionMetadata)}
@@ -53,14 +58,16 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
     public void preHandle(@NonNull final PreHandleContext context, @NonNull final PreHandleDispatcher dispatcher) {
         requireNonNull(context);
         final var txn = context.getTxn();
-        final var op = txn.getScheduleCreate();
+        final var op = txn.scheduleCreateOrThrow();
 
         if (op.hasAdminKey()) {
-            final var key = asHederaKey(op.getAdminKey());
+            final var key = asHederaKey(op.adminKeyOrThrow());
             key.ifPresent(context::addToReqNonPayerKeys);
         }
 
-        final var scheduledTxn = asOrdinary(op.getScheduledTransactionBody(), txn.getTransactionID());
+        final var scheduledTxn = asOrdinary(
+                op.scheduledTransactionBodyOrElse(SchedulableTransactionBody.DEFAULT),
+                txn.transactionIDOrElse(TransactionID.DEFAULT));
 
         /* We need to always add the custom payer to the sig requirements even if it equals the to level transaction
         payer. It is still part of the "other" parties, and we need to know to store it's key with the
@@ -68,12 +75,11 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         the same payer, which would cause the custom payers signature to not get stored and then a ScheduleSign
         would not execute the transaction without and extra signature from the custom payer.*/
         final var payerForNested = op.hasPayerAccountID()
-                ? op.getPayerAccountID()
-                : txn.getTransactionID().getAccountID();
+                ? op.payerAccountIDOrElse(AccountID.DEFAULT)
+                : txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT);
 
         // FUTURE: Once we allow schedule transactions to be scheduled inside, we need a check here
-        // to see
-        // if provided payer is same as payer in the inner transaction.
+        // to see if provided payer is same as payer in the inner transaction.
         preHandleScheduledTxn(context, scheduledTxn, payerForNested, dispatcher);
     }
 

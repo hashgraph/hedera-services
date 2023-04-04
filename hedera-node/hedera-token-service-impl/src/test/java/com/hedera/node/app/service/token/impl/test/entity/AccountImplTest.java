@@ -24,11 +24,11 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.google.protobuf.ByteString;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.node.app.service.token.impl.entity.AccountBuilderImpl;
 import com.hedera.node.app.service.token.impl.entity.AccountImpl;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hederahashgraph.api.proto.java.Key;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,7 +36,7 @@ import org.junit.jupiter.api.Test;
 class AccountImplTest {
     private AccountImpl subject;
     private final HederaKey key = asHederaKey(Key.newBuilder()
-                    .setEd25519(ByteString.copyFromUtf8("01234567890123456789012345678911"))
+                    .ed25519(Bytes.wrap("01234567890123456789012345678911"))
                     .build())
             .get();
 

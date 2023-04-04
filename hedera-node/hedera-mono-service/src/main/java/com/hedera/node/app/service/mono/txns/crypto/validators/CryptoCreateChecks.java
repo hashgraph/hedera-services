@@ -16,11 +16,11 @@
 
 package com.hedera.node.app.service.mono.txns.crypto.validators;
 
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer.hasStakedId;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asFcKeyUnchecked;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
@@ -37,7 +37,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.STAKING_NOT_ENABLED;
 
-import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -47,7 +46,6 @@ import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import java.util.Arrays;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -77,17 +75,14 @@ public class CryptoCreateChecks {
 
     @SuppressWarnings("java:S1874")
     public ResponseCodeEnum cryptoCreateValidation(final CryptoCreateTransactionBody op) {
-
-        var memoValidity = validator.memoCheck(op.getMemo());
+        final var memoValidity = validator.memoCheck(op.getMemo());
         if (memoValidity != OK) {
             return memoValidity;
         }
-
-        var kayAliasAndEvmAddressCombinationsValidity = validateKeyAliasAndEvmAddressCombinations(op);
-        if (kayAliasAndEvmAddressCombinationsValidity != OK) {
-            return kayAliasAndEvmAddressCombinationsValidity;
+        final var keyAliasAndEvmAddressCombinationsValidity = validateKeyAliasAndEvmAddressCombinations(op);
+        if (keyAliasAndEvmAddressCombinationsValidity != OK) {
+            return keyAliasAndEvmAddressCombinationsValidity;
         }
-
         if (op.getInitialBalance() < 0L) {
             return INVALID_INITIAL_BALANCE;
         }
@@ -136,34 +131,16 @@ public class CryptoCreateChecks {
         return OK;
     }
 
-    private ResponseCodeEnum validateEcdsaKey(final ByteString ecdsaKey, final byte[] evmAddress) {
-        if (ecdsaKey.isEmpty()) {
-            return INVALID_ADMIN_KEY;
-        }
-        final var recoveredEvmAddress = recoverAddressFromPubKey(ecdsaKey.toByteArray());
-        if (!Arrays.equals(recoveredEvmAddress, evmAddress)) {
-            return INVALID_ALIAS_KEY;
-        }
-        return OK;
-    }
-
     private boolean tooManyAutoAssociations(final int n) {
         return n > MAX_CHARGEABLE_AUTO_ASSOCIATIONS
                 || (dynamicProperties.areTokenAssociationsLimited() && n > dynamicProperties.maxTokensPerAccount());
-    }
-
-    private ResponseCodeEnum isUsedAsAliasCheck(final ByteString alias) {
-        if (!aliasManager.lookupIdBy(alias).equals(MISSING_NUM)) {
-            return INVALID_ALIAS_KEY;
-        }
-        return OK;
     }
 
     private ResponseCodeEnum validateKeyAliasAndEvmAddressCombinations(final CryptoCreateTransactionBody op) {
         if (onlyKeyProvided(op)) {
             return validateKey(op);
         } else if (onlyAliasProvided(op)) {
-            return INVALID_ALIAS_KEY;
+            return dynamicProperties.isCryptoCreateWithAliasEnabled() ? INVALID_ALIAS_KEY : NOT_SUPPORTED;
         } else if (keyAndAliasProvided(op)) {
             return validateKeyAndAliasProvidedCase(op);
         } else {
@@ -185,28 +162,22 @@ public class CryptoCreateChecks {
     }
 
     private ResponseCodeEnum validateKeyAndAliasProvidedCase(final CryptoCreateTransactionBody op) {
+        if (!dynamicProperties.isCryptoCreateWithAliasEnabled()) {
+            return NOT_SUPPORTED;
+        }
         final var keyValidity = validateKey(op);
         if (keyValidity != OK) {
             return keyValidity;
         }
-
         if (op.getAlias().size() != EVM_ADDRESS_SIZE) {
             return INVALID_ALIAS_KEY;
         }
-
-        if (!dynamicProperties.isCryptoCreateWithAliasEnabled()) {
-            return NOT_SUPPORTED;
-        }
-
         if (HederaEvmContractAliases.isMirror(op.getAlias().toByteArray())) {
             return INVALID_ALIAS_KEY;
         }
-
-        var isEvmAddressUsedCheck = isUsedAsAliasCheck(op.getAlias());
-        if (isEvmAddressUsedCheck != OK) {
-            return isEvmAddressUsedCheck;
+        if (!aliasManager.lookupIdBy(op.getAlias()).equals(MISSING_NUM)) {
+            return ALIAS_ALREADY_ASSIGNED;
         }
-
-        return validateEcdsaKey(op.getKey().getECDSASecp256K1(), op.getAlias().toByteArray());
+        return OK;
     }
 }

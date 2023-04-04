@@ -16,14 +16,14 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.test.factories.scenarios.TokenBurnScenarios.BURN_FOR_TOKEN_WITHOUT_SUPPLY;
 import static com.hedera.test.factories.scenarios.TokenBurnScenarios.BURN_WITH_MISSING_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenBurnScenarios.BURN_WITH_SUPPLY_KEYED_TOKEN;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_SUPPLY_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
-import static com.hedera.test.utils.KeyUtils.sanityRestored;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hedera.test.utils.KeyUtils.sanityRestoredToPbj;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,9 +46,9 @@ public class TokenBurnHandlerParityTest extends ParityTestBase {
 
         assertFalse(context.failed());
         assertEquals(OK, context.getStatus());
-        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
         assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(TOKEN_SUPPLY_KT.asKey()));
+        assertThat(sanityRestoredToPbj(context.getRequiredNonPayerKeys()), contains(TOKEN_SUPPLY_KT.asPbjKey()));
     }
 
     @Test
@@ -60,7 +60,7 @@ public class TokenBurnHandlerParityTest extends ParityTestBase {
 
         assertTrue(context.failed());
         assertEquals(INVALID_TOKEN_ID, context.getStatus());
-        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
         assertEquals(0, context.getRequiredNonPayerKeys().size());
     }
 
@@ -73,7 +73,7 @@ public class TokenBurnHandlerParityTest extends ParityTestBase {
 
         assertFalse(context.failed());
         assertEquals(OK, context.getStatus());
-        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
         assertEquals(0, context.getRequiredNonPayerKeys().size());
     }
 }

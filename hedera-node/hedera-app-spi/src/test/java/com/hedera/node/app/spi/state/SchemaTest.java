@@ -19,9 +19,9 @@ package com.hedera.node.app.spi.state;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
-import com.hederahashgraph.api.proto.java.SemanticVersion;
 import java.util.ArrayList;
 import java.util.Collections;
 import org.junit.jupiter.api.Disabled;
@@ -104,7 +104,7 @@ class SchemaTest extends StateTestBase {
     void version() {
         final var schema1 = new TestSchema(1);
         assertThat(schema1.getVersion())
-                .isEqualTo(SemanticVersion.newBuilder().setMajor(1).build());
+                .isEqualTo(SemanticVersion.newBuilder().major(1).build());
     }
 
     @Test

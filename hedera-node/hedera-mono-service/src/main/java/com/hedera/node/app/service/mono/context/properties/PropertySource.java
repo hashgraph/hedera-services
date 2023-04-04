@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.context.properties;
 
+import static com.hedera.node.app.service.mono.utils.MiscUtils.csvSet;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 
@@ -72,7 +73,7 @@ public interface PropertySource {
                 }
             })
             .collect(toMap(e -> Long.parseLong(e[0]), e -> Long.parseLong(e[1])));
-    Function<String, Object> AS_FUNCTIONS = s -> asEnumSet(HederaFunctionality.class, HederaFunctionality::valueOf, s);
+    Function<String, Object> AS_FUNCTIONS = s -> csvSet(s, HederaFunctionality::valueOf, HederaFunctionality.class);
     Function<String, Object> AS_CONGESTION_MULTIPLIERS = CongestionMultipliers::from;
 
     Function<String, Object> AS_LEGACY_ACTIVATIONS = LegacyContractIdActivations::from;

@@ -31,8 +31,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
+import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
@@ -144,9 +146,8 @@ class HollowAccountFinalizationLogicTest {
 
     @Test
     void finalizesHollowAccountPresentInPendingFinalizations() {
-        final var keyBytes = "dksoa".getBytes();
+        final var keyBytes = "dksoadksoadksoadksoadksoadksoa123".getBytes();
         final var key = new JECDSASecp256k1Key(keyBytes);
-        final var evmAddress = "addres".getBytes();
         final var hollowNum = EntityNum.fromLong(5L);
 
         given(swirldsTxnAccessor.getPendingCompletions()).willReturn(List.of(new PendingCompletion(hollowNum, key)));
@@ -158,6 +159,7 @@ class HollowAccountFinalizationLogicTest {
         given(syntheticTxnFactory.updateHollowAccount(hollowNum, asKeyUnchecked(key)))
                 .willReturn(txnBodyBuilder);
         given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(expirableTxnRecordBuilder);
+        given(expirableTxnRecordBuilder.getReceiptBuilder()).willReturn(txnReceiptBuilder);
 
         final var result = subject.perform();
 
@@ -165,8 +167,12 @@ class HollowAccountFinalizationLogicTest {
         verify(hederaAccount).setAccountKey(key);
         verify(creator).createSuccessfulSyntheticRecord(any(), any(), any());
         verify(sigImpactHistorian).markEntityChanged(hollowNum.longValue());
+        final var evmAddress = EthSigsUtils.recoverAddressFromPubKey(keyBytes);
+        verify(sigImpactHistorian).markAliasChanged(ByteString.copyFrom(evmAddress));
         verify(recordsHistorian)
                 .trackPrecedingChildRecord(DEFAULT_SOURCE_ID, txnBodyBuilder, expirableTxnRecordBuilder);
+        verify(expirableTxnRecordBuilder).getReceiptBuilder();
+        verify(txnReceiptBuilder).nonRevertable();
     }
 
     @Test
@@ -188,6 +194,7 @@ class HollowAccountFinalizationLogicTest {
         given(syntheticTxnFactory.updateHollowAccount(hollowNum, asKeyUnchecked(key)))
                 .willReturn(txnBodyBuilder);
         given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(expirableTxnRecordBuilder);
+        given(expirableTxnRecordBuilder.getReceiptBuilder()).willReturn(txnReceiptBuilder);
 
         final var result = subject.perform();
 
@@ -197,6 +204,8 @@ class HollowAccountFinalizationLogicTest {
         verify(sigImpactHistorian).markEntityChanged(hollowNum.longValue());
         verify(recordsHistorian)
                 .trackPrecedingChildRecord(DEFAULT_SOURCE_ID, txnBodyBuilder, expirableTxnRecordBuilder);
+        verify(expirableTxnRecordBuilder).getReceiptBuilder();
+        verify(txnReceiptBuilder).nonRevertable();
     }
 
     @Test
@@ -255,6 +264,7 @@ class HollowAccountFinalizationLogicTest {
         given(syntheticTxnFactory.updateHollowAccount(hollowNum, asKeyUnchecked(key)))
                 .willReturn(txnBodyBuilder);
         given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(expirableTxnRecordBuilder);
+        given(expirableTxnRecordBuilder.getReceiptBuilder()).willReturn(txnReceiptBuilder);
 
         given(txnCtx.accessor()).willReturn(txnAccessor);
         given(spanMapAccessor.getEthTxExpansion(txnAccessor)).willReturn(new EthTxExpansion(null, OK));
@@ -284,6 +294,8 @@ class HollowAccountFinalizationLogicTest {
         verify(sigImpactHistorian).markEntityChanged(hollowNum2.longValue());
         verify(recordsHistorian, times(2))
                 .trackPrecedingChildRecord(DEFAULT_SOURCE_ID, txnBodyBuilder, expirableTxnRecordBuilder);
+        verify(expirableTxnRecordBuilder, times(2)).getReceiptBuilder();
+        verify(txnReceiptBuilder, times(2)).nonRevertable();
     }
 
     @Test

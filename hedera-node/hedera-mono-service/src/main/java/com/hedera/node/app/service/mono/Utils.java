@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.mono.legacy.core.jproto.JKey.mapKey;
 
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.Key;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
 import org.apache.commons.codec.DecoderException;
 
@@ -35,6 +36,22 @@ public class Utils {
 
     // This method shouldn't be here. It needs to find a new home.
     public static Optional<HederaKey> asHederaKey(final Key key) {
+        try {
+            // Need to move JKey after refactoring, adding equals & hashcode into this package
+            final var fcKey = mapKey(key);
+            if (!fcKey.isValid()) {
+                return Optional.empty();
+            }
+            return Optional.of(fcKey);
+        } catch (DecoderException ignore) {
+            return Optional.empty();
+        }
+    }
+
+    public static Optional<HederaKey> asHederaKey(@Nullable final com.hedera.hapi.node.base.Key key) {
+        if (key == null) {
+            return Optional.empty();
+        }
         try {
             // Need to move JKey after refactoring, adding equals & hashcode into this package
             final var fcKey = mapKey(key);

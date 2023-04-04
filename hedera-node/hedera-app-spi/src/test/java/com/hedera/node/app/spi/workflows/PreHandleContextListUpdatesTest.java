@@ -16,13 +16,13 @@
 
 package com.hedera.node.app.spi.workflows;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withFailureReason;
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -32,19 +32,19 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
-import com.google.protobuf.ByteString;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
+import com.hedera.hapi.node.base.ThresholdKey;
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
-import com.hederahashgraph.api.proto.java.ThresholdKey;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,30 +54,30 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class PreHandleContextListUpdatesTest {
-    public static final com.hederahashgraph.api.proto.java.Key A_COMPLEX_KEY =
-            com.hederahashgraph.api.proto.java.Key.newBuilder()
-                    .setThresholdKey(ThresholdKey.newBuilder()
-                            .setThreshold(2)
-                            .setKeys(KeyList.newBuilder()
-                                    .addKeys(com.hederahashgraph.api.proto.java.Key.newBuilder()
-                                            .setEd25519(
-                                                    ByteString.copyFrom("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes())))
-                                    .addKeys(com.hederahashgraph.api.proto.java.Key.newBuilder()
-                                            .setEd25519(ByteString.copyFrom(
-                                                    "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".getBytes())))))
-                    .build();
+    public static final Key A_COMPLEX_KEY = Key.newBuilder()
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(2)
+                    .keys(KeyList.newBuilder()
+                            .keys(
+                                    Key.newBuilder()
+                                            .ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+                                            .build(),
+                                    Key.newBuilder()
+                                            .ed25519(Bytes.wrap("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"))
+                                            .build())))
+            .build();
     private Timestamp consensusTimestamp =
-            Timestamp.newBuilder().setSeconds(1_234_567L).build();
+            Timestamp.newBuilder().seconds(1_234_567L).build();
     private Key key = A_COMPLEX_KEY;
-    private AccountID payer = AccountID.newBuilder().setAccountNum(3L).build();
+    private AccountID payer = AccountID.newBuilder().accountNum(3L).build();
+    private Long payerNum = 3L;
 
     @Mock
     private HederaKey payerKey;
 
-    final AccountID otherAccountId =
-            AccountID.newBuilder().setAccountNum(12345L).build();
+    final AccountID otherAccountId = AccountID.newBuilder().accountNum(12345L).build();
     final ContractID otherContractId =
-            ContractID.newBuilder().setContractNum(123456L).build();
+            ContractID.newBuilder().contractNum(123456L).build();
 
     @Mock
     private HederaKey otherKey;
@@ -224,20 +224,20 @@ class PreHandleContextListUpdatesTest {
         assertEquals(payerKey, subject.getPayerKey());
         assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
 
-        subject.addNonPayerKey(AccountID.getDefaultInstance());
+        subject.addNonPayerKey(AccountID.newBuilder().build());
         assertEquals(payerKey, subject.getPayerKey());
         assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
 
-        subject.addNonPayerKeyIfReceiverSigRequired(AccountID.getDefaultInstance(), INVALID_ACCOUNT_ID);
+        subject.addNonPayerKeyIfReceiverSigRequired(AccountID.newBuilder().build(), INVALID_ACCOUNT_ID);
         assertEquals(payerKey, subject.getPayerKey());
         assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
         assertEquals(OK, subject.getStatus());
 
-        subject.addNonPayerKey(AccountID.getDefaultInstance());
+        subject.addNonPayerKey(AccountID.newBuilder().build());
         assertEquals(payerKey, subject.getPayerKey());
         assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
 
-        subject.addNonPayerKeyIfReceiverSigRequired(AccountID.getDefaultInstance(), INVALID_ACCOUNT_ID);
+        subject.addNonPayerKeyIfReceiverSigRequired(AccountID.newBuilder().build(), INVALID_ACCOUNT_ID);
         assertEquals(payerKey, subject.getPayerKey());
         assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
         assertEquals(OK, subject.getStatus());
@@ -320,7 +320,7 @@ class PreHandleContextListUpdatesTest {
         given(accountAccess.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
 
         subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer)
-                .addNonPayerKey(AccountID.newBuilder().setAccountNum(0L).build());
+                .addNonPayerKey(AccountID.newBuilder().accountNum(0L).build());
 
         assertEquals(payerKey, subject.getPayerKey());
         assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
@@ -340,8 +340,7 @@ class PreHandleContextListUpdatesTest {
 
     @Test
     void doesntFailForAliasedAccount() {
-        final var alias =
-                AccountID.newBuilder().setAlias(ByteString.copyFromUtf8("test")).build();
+        final var alias = AccountID.newBuilder().alias(Bytes.wrap("test")).build();
         given(accountAccess.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
         given(accountAccess.getKey(alias)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
 
@@ -354,9 +353,7 @@ class PreHandleContextListUpdatesTest {
 
     @Test
     void doesntFailForAliasedContract() {
-        final var alias = ContractID.newBuilder()
-                .setEvmAddress(ByteString.copyFromUtf8("test"))
-                .build();
+        final var alias = ContractID.newBuilder().evmAddress(Bytes.wrap("test")).build();
         given(accountAccess.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
         given(accountAccess.getKey(alias)).willReturn(new KeyOrLookupFailureReason(otherKey, null));
 
@@ -369,8 +366,7 @@ class PreHandleContextListUpdatesTest {
 
     @Test
     void failsForInvalidAlias() {
-        final var alias =
-                AccountID.newBuilder().setAlias(ByteString.copyFromUtf8("test")).build();
+        final var alias = AccountID.newBuilder().alias(Bytes.wrap("test")).build();
         given(accountAccess.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
         given(accountAccess.getKey(alias)).willReturn(new KeyOrLookupFailureReason(null, INVALID_ACCOUNT_ID));
 
@@ -417,16 +413,15 @@ class PreHandleContextListUpdatesTest {
     }
 
     private TransactionBody createAccountTransaction() {
-        final var transactionID =
-                TransactionID.newBuilder().setAccountID(payer).setTransactionValidStart(consensusTimestamp);
+        final var transactionID = TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
         final var createTxnBody = CryptoCreateTransactionBody.newBuilder()
-                .setKey(key)
-                .setReceiverSigRequired(true)
-                .setMemo("Create Account")
+                .key(key)
+                .receiverSigRequired(true)
+                .memo("Create Account")
                 .build();
         return TransactionBody.newBuilder()
-                .setTransactionID(transactionID)
-                .setCryptoCreateAccount(createTxnBody)
+                .transactionID(transactionID)
+                .cryptoCreateAccount(createTxnBody)
                 .build();
     }
 }

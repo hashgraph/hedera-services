@@ -17,11 +17,11 @@
 package com.hedera.node.app.workflows.prehandle;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.node.app.service.mono.context.StateChildrenProvider;
 import com.hedera.node.app.service.mono.context.properties.GlobalStaticProperties;
 import com.hedera.node.app.service.mono.sigs.EventExpansion;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -59,14 +59,14 @@ public class AdaptedMonoEventExpansion {
                 if (typesForWorkflows.contains(accessor.getFunction())) {
                     forWorkflows.add(txn);
                 } else {
-                    eventExpansion.expandSingle(txn, (MerkleHederaState) state);
+                    eventExpansion.expandSingle(txn, (StateChildrenProvider) state);
                 }
             } catch (final InvalidProtocolBufferException e) {
                 log.warn("Unable to parse preHandle transaction", e);
             }
         });
         if (!forWorkflows.isEmpty()) {
-            ((PreHandleWorkflowImpl) preHandleWorkflow).preHandle(forWorkflows.iterator(), state);
+            forWorkflows.forEach(txn -> ((PreHandleWorkflowImpl) preHandleWorkflow).preHandle(state, txn));
         }
     }
 }
