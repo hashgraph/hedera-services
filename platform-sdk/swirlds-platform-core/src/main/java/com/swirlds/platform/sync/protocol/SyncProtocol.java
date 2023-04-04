@@ -115,22 +115,6 @@ public class SyncProtocol implements Protocol {
     }
 
     /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean shouldInitiate() {
-        if (!peerAgnosticSyncCheck.shouldSync() || fallenBehindManager.hasFallenBehind()) {
-            return false;
-        }
-
-        if (peerNeededForFallenBehind() || criticalQuorum.isInCriticalQuorum(peerId.getId())) {
-            return tryAcquirePermit();
-        }
-
-        return false;
-    }
-
-    /**
      * Checks whether the peer must be contacted to determine if we have fallen behind
      *
      * @return true if the peer is needed for fallen behind, else false
@@ -156,6 +140,22 @@ public class SyncProtocol implements Protocol {
      * {@inheritDoc}
      */
     @Override
+    public boolean shouldInitiate() {
+        if (!peerAgnosticSyncCheck.shouldSync() || fallenBehindManager.hasFallenBehind()) {
+            return false;
+        }
+
+        if (peerNeededForFallenBehind() || criticalQuorum.isInCriticalQuorum(peerId.getId())) {
+            return tryAcquirePermit();
+        }
+
+        return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void initiateFailed() {
         if (maybeAcquiredPermit != null && maybeAcquiredPermit.isLockAcquired()) {
             maybeAcquiredPermit.close();
@@ -171,8 +171,11 @@ public class SyncProtocol implements Protocol {
             syncMetrics.updateRejectedSyncRatio(true);
             return false;
         }
-        syncMetrics.updateRejectedSyncRatio(false);
-        return true;
+
+        final boolean permitAcquired = tryAcquirePermit();
+        syncMetrics.updateRejectedSyncRatio(!permitAcquired);
+
+        return permitAcquired;
     }
 
     /**
@@ -201,12 +204,14 @@ public class SyncProtocol implements Protocol {
             if (Utilities.isRootCauseSuppliedType(e, IOException.class)) {
                 throw new IOException(e);
             }
+
             throw new NetworkProtocolException(e);
         } finally {
             if (maybeAcquiredPermit.isLockAcquired()) {
                 maybeAcquiredPermit.close();
             }
 
+            // TODO: should the sleep be in the `try` after `synchronize`, or here?
             final long sleepAfterSyncDuration = sleepAfterSyncSupplier.getAsLong();
             if (sleepAfterSyncDuration > 0) {
                 Thread.sleep(sleepAfterSyncDuration);
