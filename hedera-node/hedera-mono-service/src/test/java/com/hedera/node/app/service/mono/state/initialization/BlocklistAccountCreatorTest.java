@@ -189,7 +189,7 @@ class BlocklistAccountCreatorTest {
     @CsvSource(
             value = {
                 "non-existing.csv;Failed to read blocklist resource non-existing.csv",
-                "invalid-hex-blocklist.csv;Failed to parse blocklist, entry not in hex format",
+                "invalid-hex-blocklist.csv;Failed to parse blocklist",
                 "invalid-col-count-blocklist.csv;Failed to parse blocklist",
             },
             delimiter = ';')

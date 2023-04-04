@@ -109,9 +109,6 @@ public class BlocklistAccountCreator {
         } catch (IllegalArgumentException iae) {
             log.error("Failed to parse blocklist", iae);
             return;
-        } catch (DecoderException de) {
-            log.error("Failed to parse blocklist, entry not in hex format", de);
-            return;
         } catch (Exception e) {
             log.error("Failed to read blocklist resource {}", blocklistResourceName, e);
             return;
@@ -168,7 +165,13 @@ public class BlocklistAccountCreator {
             throw new IllegalArgumentException("Invalid line in blocklist resource: " + line);
         }
 
-        final var privateKeyBytes = Hex.decode(parts[0]);
+        final byte[] privateKeyBytes;
+        try {
+            privateKeyBytes = Hex.decode(parts[0]);
+        } catch (DecoderException de) {
+            throw new IllegalArgumentException("Failed to decode line " + line, de);
+        }
+
         final var publicKeyBytes = ecdsaPrivateToPublicKey(privateKeyBytes);
         final var evmAddressBytes = EthSigsUtils.recoverAddressFromPubKey(publicKeyBytes);
         return new BlockedInfo(ByteString.copyFrom(evmAddressBytes), parts[1]);
