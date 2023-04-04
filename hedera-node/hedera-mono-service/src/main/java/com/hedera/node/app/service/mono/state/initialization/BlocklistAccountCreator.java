@@ -43,6 +43,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -54,8 +55,6 @@ import org.apache.logging.log4j.Logger;
 import org.bouncycastle.asn1.sec.SECNamedCurves;
 import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
-import org.bouncycastle.util.encoders.DecoderException;
-import org.bouncycastle.util.encoders.Hex;
 
 /**
  * Encapsulates the logic for reading blocked accounts from file and creating them.
@@ -167,9 +166,9 @@ public class BlocklistAccountCreator {
 
         final byte[] privateKeyBytes;
         try {
-            privateKeyBytes = Hex.decode(parts[0]);
-        } catch (DecoderException de) {
-            throw new IllegalArgumentException("Failed to decode line " + line, de);
+            privateKeyBytes = HexFormat.of().parseHex(parts[0]);
+        } catch (IllegalArgumentException iae) {
+            throw new IllegalArgumentException("Failed to decode line " + line, iae);
         }
 
         final var publicKeyBytes = ecdsaPrivateToPublicKey(privateKeyBytes);
