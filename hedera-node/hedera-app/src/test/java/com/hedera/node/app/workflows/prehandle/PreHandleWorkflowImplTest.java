@@ -42,7 +42,6 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.signature.SignaturePreparer;
 import com.hedera.node.app.spi.fixtures.state.MapReadableStates;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -244,7 +243,7 @@ class PreHandleWorkflowImplTest extends AppTestBase {
         workflow.start(state, event);
 
         // then
-        final ArgumentCaptor<Future<TransactionMetadata>> captor = ArgumentCaptor.forClass(Future.class);
+        final ArgumentCaptor<Future<PreHandleResult>> captor = ArgumentCaptor.forClass(Future.class);
         verify(transaction).setMetadata(any());
     }
 
@@ -259,7 +258,7 @@ class PreHandleWorkflowImplTest extends AppTestBase {
         workflow.start(state, event);
 
         // then
-        final ArgumentCaptor<TransactionMetadata> captor = ArgumentCaptor.forClass(TransactionMetadata.class);
+        final ArgumentCaptor<PreHandleResult> captor = ArgumentCaptor.forClass(PreHandleResult.class);
         verify(transaction).setMetadata(captor.capture());
         AssertionsForClassTypes.assertThat(captor.getValue())
                 .hasFieldOrPropertyWithValue("status", INVALID_TRANSACTION);

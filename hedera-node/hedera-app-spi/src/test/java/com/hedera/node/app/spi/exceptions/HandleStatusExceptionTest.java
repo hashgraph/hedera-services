@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.exceptions;
+package com.hedera.node.app.spi.workflows;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
 import static org.junit.jupiter.api.Assertions.*;

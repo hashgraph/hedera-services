@@ -140,7 +140,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void handleNotImplemented() {
-        assertThrows(UnsupportedOperationException.class, () -> subject.handle(metaToHandle));
+        assertThrows(UnsupportedOperationException.class, () -> subject.handle());
     }
 
     private TransactionBody cryptoUpdateTransaction(final AccountID payerId, final AccountID accountToUpdate) {
