@@ -16,11 +16,14 @@
 
 package com.hedera.node.app.spi.state;
 
-import com.hedera.node.app.spi.fixtures.state.*;
+import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
+import com.hedera.node.app.spi.fixtures.state.MapReadableStates;
+import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
+import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class StateTestBase extends TestBase {
+public class StateTestBase extends com.hedera.node.app.spi.fixtures.state.StateTestBase {
     @NonNull
     protected MapReadableKVState<String, String> readableFruitState() {
         return MapReadableKVState.<String, String>builder(FRUIT_STATE_KEY)

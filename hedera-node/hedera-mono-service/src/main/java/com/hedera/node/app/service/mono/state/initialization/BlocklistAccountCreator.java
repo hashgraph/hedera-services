@@ -118,14 +118,8 @@ public class BlocklistAccountCreator {
                         aliasManager.lookupIdBy(blockedAccount.evmAddress).equals(MISSING_NUM))
                 .collect(Collectors.toSet());
 
-        final var genesisAccountId = AccountID.newBuilder()
-                .setRealmNum(0)
-                .setShardNum(0)
-                .setAccountNum(accountNumbers.treasury())
-                .build();
-
         for (final var blockedInfo : blockedToCreate) {
-            final var newId = ids.newAccountId(genesisAccountId); // get the next available new account ID
+            final var newId = ids.newAccountId(); // get the next available new account ID
             final var account = blockedAccountWith(blockedInfo);
             accounts.put(newId, account); // add the account with the corresponding newId to state
             accountsCreated.add(account); // add the account to the list of accounts created by this class

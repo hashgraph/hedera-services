@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
  * within a {@link com.hedera.node.app.HederaApp} instance, which is important while we are relying
  * heavily on adapters around {@code mono-service} components.
  */
-public class MerkleMapLikeAdapter {
+public final class MerkleMapLikeAdapter {
     private MerkleMapLikeAdapter() {
         throw new UnsupportedOperationException("Utility Class");
     }

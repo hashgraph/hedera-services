@@ -1,5 +1,3 @@
-import gradle.kotlin.dsl.accessors._34a132ac50631db3ea5353237b274f3d.extraJavaModuleInfo
-
 /*
  * Copyright 2016-2022 Hedera Hashgraph, LLC
  *

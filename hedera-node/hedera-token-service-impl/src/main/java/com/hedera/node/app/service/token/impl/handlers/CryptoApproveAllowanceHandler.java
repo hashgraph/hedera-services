@@ -16,10 +16,13 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
+import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -29,18 +32,18 @@ import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoApproveAllowance}.
+ * HederaFunctionality#CRYPTO_APPROVE_ALLOWANCE}.
  */
 @Singleton
 public class CryptoApproveAllowanceHandler implements TransactionHandler {
     @Inject
-    public CryptoApproveAllowanceHandler() {}
+    public CryptoApproveAllowanceHandler() {
+        // Exists for injection
+    }
 
     /**
-     * Pre-handles a {@link
-     * com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoApproveAllowance} transaction,
-     * returning the metadata required to, at minimum, validate the signatures of all required
-     * signing keys.
+     * Pre-handles a {@link HederaFunctionality#CRYPTO_APPROVE_ALLOWANCE} transaction, returning the
+     * metadata required to, at minimum, validate the signatures of all required signing keys.
      *
      * @param context the {@link PreHandleContext} which collects all information that will be
      *     passed to {@link #handle(TransactionMetadata)}
@@ -48,24 +51,24 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
      */
     public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
-        final var op = context.getTxn().getCryptoApproveAllowance();
+        final var op = context.getTxn().cryptoApproveAllowanceOrThrow();
         var failureStatus = INVALID_ALLOWANCE_OWNER_ID;
 
-        for (final var allowance : op.getCryptoAllowancesList()) {
-            context.addNonPayerKey(allowance.getOwner(), failureStatus);
+        for (final var allowance : op.cryptoAllowancesOrElse(emptyList())) {
+            context.addNonPayerKey(allowance.ownerOrElse(AccountID.DEFAULT), failureStatus);
         }
-        for (final var allowance : op.getTokenAllowancesList()) {
-            context.addNonPayerKey(allowance.getOwner(), failureStatus);
+        for (final var allowance : op.tokenAllowancesOrElse(emptyList())) {
+            context.addNonPayerKey(allowance.ownerOrElse(AccountID.DEFAULT), failureStatus);
         }
-        for (final var allowance : op.getNftAllowancesList()) {
-            final var ownerId = allowance.getOwner();
+        for (final var allowance : op.nftAllowancesOrElse(emptyList())) {
+            final var ownerId = allowance.ownerOrElse(AccountID.DEFAULT);
             // If a spender who is granted approveForAll from owner and is granting
             // allowance for a serial to another spender, need signature from the approveForAll
             // spender
-            var operatorId = allowance.hasDelegatingSpender() ? allowance.getDelegatingSpender() : ownerId;
+            var operatorId = allowance.delegatingSpenderOrElse(ownerId);
             // If approveForAll is set to true, need signature from owner
             // since only the owner can grant approveForAll
-            if (allowance.getApprovedForAll().getValue()) {
+            if (allowance.hasApprovedForAll() && allowance.approvedForAllOrThrow()) {
                 operatorId = ownerId;
             }
             if (operatorId != ownerId) {

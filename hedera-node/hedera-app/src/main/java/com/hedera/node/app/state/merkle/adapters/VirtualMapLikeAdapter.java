@@ -42,7 +42,7 @@ import org.apache.commons.lang3.tuple.Pair;
  * within a {@link com.hedera.node.app.HederaApp} instance, which is important while we are relying
  * heavily on adapters around {@code mono-service} components.
  */
-public class VirtualMapLikeAdapter {
+public final class VirtualMapLikeAdapter {
     private VirtualMapLikeAdapter() {
         throw new UnsupportedOperationException("Utility Class");
     }

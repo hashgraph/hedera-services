@@ -61,18 +61,18 @@ public abstract class ResponsibleVMapUser {
     }
 
     private void release(@NonNull final MerkleHederaState state) throws IOException {
-        release(state.storage());
-        release(state.contractStorage());
+        release(state.getStateChildrenProvider(null).storage());
+        release(state.getStateChildrenProvider(null).contractStorage());
 
-        final var accounts = state.accounts();
+        final var accounts = state.getStateChildrenProvider(null).accounts();
         if (accounts != null && accounts.areOnDisk()) {
             release(accounts.getOnDiskAccounts());
         }
-        final var tokenRels = state.tokenAssociations();
+        final var tokenRels = state.getStateChildrenProvider(null).tokenAssociations();
         if (tokenRels != null && tokenRels.areOnDisk()) {
             release(tokenRels.getOnDiskRels());
         }
-        final var nfts = state.uniqueTokens();
+        final var nfts = state.getStateChildrenProvider(null).uniqueTokens();
         if (nfts != null && nfts.isVirtual()) {
             release(nfts.getOnDiskNfts());
         }

@@ -27,7 +27,6 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
-import com.hedera.node.app.service.mono.exceptions.NegativeAccountBalanceException;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
@@ -97,8 +96,13 @@ class BlocklistAccountCreatorTest {
             long nextId = FIRST_UNUSED_ID;
 
             @Override
-            public AccountID newAccountId(AccountID newAccountSponsor) {
-                return AccountID.newBuilder().setAccountNum(nextId++).build();
+            public AccountID newAccountId() {
+                return AccountID.newBuilder().setAccountNum(newAccountNumber()).build();
+            }
+
+            @Override
+            public long newAccountNumber() {
+                return nextId++;
             }
 
             @Override
@@ -142,9 +146,8 @@ class BlocklistAccountCreatorTest {
     }
 
     @Test
-    void successfullyEnsuresBlockedAccounts() throws NegativeAccountBalanceException {
+    void successfullyEnsuresBlockedAccounts() {
         // given
-        given(accountNumbers.treasury()).willReturn(GENESIS_ACCOUNT_NUM);
         given(genesisKeySource.get()).willReturn(pretendKey);
         given(properties.getStringProperty(ACCOUNTS_BLOCKLIST_RESOURCE)).willReturn("evm-addresses-blocklist.csv");
         subject = new BlocklistAccountCreator(
@@ -170,7 +173,6 @@ class BlocklistAccountCreatorTest {
     @Test
     void forgetCreatedBlockedAccountsWorksAsExpected() {
         // given
-        given(accountNumbers.treasury()).willReturn(GENESIS_ACCOUNT_NUM);
         given(genesisKeySource.get()).willReturn(pretendKey);
         given(properties.getStringProperty(ACCOUNTS_BLOCKLIST_RESOURCE)).willReturn("test-blocklist.csv");
         given(aliasManager.lookupIdBy(any())).willReturn(MISSING_NUM);

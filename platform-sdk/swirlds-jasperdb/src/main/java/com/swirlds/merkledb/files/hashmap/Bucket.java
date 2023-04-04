@@ -22,7 +22,6 @@ import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.KEY_HASHCODE_SI
 import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE;
 import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.VALUE_SIZE;
 
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.utility.Units;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.virtualmap.VirtualKey;
@@ -43,14 +42,13 @@ import org.apache.logging.log4j.Logger;
  *   <li><b>int</b> - Bucket index in map hash index</li>
  *   <li><b>int</b> - Bucket size, total number of bytes taken by bucket including header</li>
  *   <li><b>int</b> - Number of entries in this bucket</li>
- *   <li><b>Entry[]</b> - array of entries</li>
  * </ul>
  *
- * Each Entry contains:
+ * Then comes an array of entries. Each Entry contains:
  *
  * <ul>
- *   <li><b>KEY_HASHCODE_SIZE(int/long)</b> - key hash code</li>
- *   <li><b>value</b> - the value of the key/value pair. It is here because it is fixed size</li>
+ *   <li><b>hash code</b> - key hash code (int)</li>
+ *   <li><b>value</b> - the long value. It is here because it is fixed size (long)</li>
  *   <li><b>key data</b> - can be fixed size of entryKeySize or variable size</li>
  * </ul>
  */
@@ -72,11 +70,20 @@ public final class Bucket<K extends VirtualKey<? super K>> {
     private static final int BUCKET_HEADER_SIZE = BUCKET_ENTRY_COUNT_OFFSET + BUCKET_ENTRY_COUNT_SIZE;
 
     private static final int ENTRY_VALUE_OFFSET = KEY_HASHCODE_SIZE;
+    private static final int ENTRY_KEY_OFFSET = KEY_HASHCODE_SIZE + VALUE_SIZE;
+
     /** Keep track of the largest bucket we have ever created for logging */
     private static final AtomicInteger LARGEST_SIZE_OF_BUCKET_CREATED = new AtomicInteger(0);
 
     private int keySerializationVersion;
+
+    /**
+     * Byte buffer that holds this bucket data, including bucket index, size in bytes, number of
+     * entries, and entry data. Buffer is expanded as needed, when new entries are added. Buffer
+     * limit is kept equal to the bucket size in bytes.
+     */
     private ByteBuffer bucketBuffer;
+
     private KeySerializer<K> keySerializer;
     private ByteBuffer reusableBuffer;
 
@@ -107,8 +114,7 @@ public final class Bucket<K extends VirtualKey<? super K>> {
         // reset size
         setSize(BUCKET_HEADER_SIZE);
         // reset buffer
-        bucketBuffer.position(0);
-        bucketBuffer.limit(bucketBuffer.capacity());
+        bucketBuffer.clear();
         return this;
     }
 
@@ -200,7 +206,7 @@ public final class Bucket<K extends VirtualKey<? super K>> {
         final FindResult found = findEntryOffset(keyHashCode, key);
         if (found.found) {
             // yay! we found it
-            return getValue(found.entryOffset);
+            return found.entryValue;
         } else {
             return notFoundValue;
         }
@@ -233,34 +239,26 @@ public final class Bucket<K extends VirtualKey<? super K>> {
                         // move all entries after this one up
                         final int offsetOfNextEntry = result.entryOffset + entrySize;
                         final int sizeOfEntriesToMove = currentSize - offsetOfNextEntry;
-                        //  FUTURE WORK For Java 17 do this
-                        // https://github.com/swirlds/swirlds-platform/issues/4090
-                        // bucketBuffer.put(result.entryOffset,bucketBuffer,offsetOfNextEntry,sizeOfEntriesToMove);
-                        final byte[] bucketBytes = bucketBuffer.array();
-                        System.arraycopy(
-                                bucketBytes, offsetOfNextEntry, bucketBytes, result.entryOffset, sizeOfEntriesToMove);
+                        bucketBuffer.put(result.entryOffset, bucketBuffer, offsetOfNextEntry, sizeOfEntriesToMove);
                     }
                     // decrement count
                     decrementBucketEntryCount();
                     // update size by removing entry size from size
                     setSize(currentSize - entrySize);
                     // we are done deleting
-                    return;
-                } else {
-                    // was not found, and we are deleting so nothing to do
-                    return;
                 }
+                return;
             }
             // handle UPDATE
             if (result.found) {
                 // yay! we found it, so update value
-                setValue(result.entryOffset, value);
+                bucketBuffer.putLong(result.entryOffset + ENTRY_VALUE_OFFSET, value);
                 return;
             }
             /* We have to serialize a variable-size key to a temp byte buffer to check
             if there is going to be enough room to store it in this bucket. */
             if (keySerializer.isVariableSize()) {
-                reusableBuffer.rewind();
+                reusableBuffer.clear();
                 while (true) {
                     try {
                         keySerializer.serialize(key, reusableBuffer);
@@ -281,12 +279,6 @@ public final class Bucket<K extends VirtualKey<? super K>> {
                 // write the key
                 reusableBuffer.flip();
                 bucketBuffer.put(reusableBuffer);
-                // shrink reusable buffer, if possible
-                if (keySizeBytes < reusableBuffer.capacity() / 2) {
-                    reusableBuffer = ByteBuffer.allocate(reusableBuffer.capacity() / 2);
-                }
-                // increment count and update size
-                incrementBucketEntryCount();
             } else {
                 final int newSize =
                         result.entryOffset + KEY_HASHCODE_SIZE + VALUE_SIZE + keySerializer.getSerializedSize();
@@ -297,9 +289,9 @@ public final class Bucket<K extends VirtualKey<? super K>> {
                 bucketBuffer.putInt(keyHashCode);
                 bucketBuffer.putLong(value);
                 keySerializer.serialize(key, bucketBuffer);
-                // increment count
-                incrementBucketEntryCount();
             }
+            // increment count
+            incrementBucketEntryCount();
         } catch (IOException e) {
             logger.error(EXCEPTION.getMarker(), "Failed putting key={} value={} in a bucket", key, value, e);
             throw new UncheckedIOException(e);
@@ -313,27 +305,18 @@ public final class Bucket<K extends VirtualKey<? super K>> {
      */
     public void putAllData(ByteBuffer dataBuffer) {
         ensureCapacity(dataBuffer.limit());
-        /* FUTURE WORK - https://github.com/swirlds/swirlds-platform/issues/3939 Maybe we should wrap not copy buffer */
         bucketBuffer.rewind().put(dataBuffer);
     }
 
     /**
-     * Write the complete data bytes for this bucket to a output stream.
+     * Write the complete data bytes for this bucket to a byte buffer
      *
-     * @param outputStream The stream to write to
+     * @param buffer The byte buffer to write to
      * @return the number of bytes written
-     * @throws IOException If there was a problem writing
      */
-    public int writeToOutputStream(final SerializableDataOutputStream outputStream) throws IOException {
-        final int bucketSize = getSize();
-        outputStream.write(bucketBuffer.array(), 0, bucketSize);
-        return bucketSize;
-    }
-
     public int writeToByteBuffer(final ByteBuffer buffer) {
-        final int bucketSize = getSize();
-        buffer.put(ByteBuffer.wrap(bucketBuffer.array(), 0, bucketSize));
-        return bucketSize;
+        buffer.put(bucketBuffer.rewind());
+        return getSize();
     }
 
     // =================================================================================================================
@@ -341,7 +324,7 @@ public final class Bucket<K extends VirtualKey<? super K>> {
 
     /**
      * Expand the capacity of this bucket to make sure it is at least big enough to contain
-     * neededSize
+     * neededSize and sets bucket buffer limit to the requested size.
      */
     private void ensureCapacity(int neededSize) {
         int capacity = bucketBuffer.capacity();
@@ -354,6 +337,7 @@ public final class Bucket<K extends VirtualKey<? super K>> {
             newBucketBuffer.put(bucketBuffer);
             bucketBuffer = newBucketBuffer;
         }
+        bucketBuffer.limit(neededSize);
     }
 
     /**
@@ -370,22 +354,26 @@ public final class Bucket<K extends VirtualKey<? super K>> {
         final int entryCount = getBucketEntryCount();
         int entryOffset = BUCKET_HEADER_SIZE;
         for (int i = 0; i < entryCount; i++) {
-            final int readHashCode = bucketBuffer.getInt(entryOffset);
+            bucketBuffer.position(entryOffset);
+            final int readHashCode = bucketBuffer.getInt();
             if (readHashCode == keyHashCode) {
+                final long readValue = bucketBuffer.getLong();
                 // now check the full key
-                bucketBuffer.position(entryOffset + KEY_HASHCODE_SIZE + VALUE_SIZE);
                 if (keySerializer.equals(bucketBuffer, keySerializationVersion, key)) {
                     // yay! we found it
-                    return new FindResult(entryOffset, i, true);
+                    return new FindResult(entryOffset, i, true, readValue);
                 }
             }
-            // now read the key size so we can jump
-            /* FUTURE WORK - https://github.com/swirlds/swirlds-platform/issues/3932 */
-            int keySize = getKeySize(entryOffset);
-            // move to next entry
-            entryOffset += KEY_HASHCODE_SIZE + VALUE_SIZE + keySize;
+            // Move entry offset to the next entry. No need to do this for the last entry
+            if (i < entryCount - 1) {
+                // now read the key size so we can jump
+                int keySize = getKeySize(entryOffset);
+                // move to next entry
+                entryOffset += KEY_HASHCODE_SIZE + VALUE_SIZE + keySize;
+            }
         }
-        return new FindResult(entryOffset, -1, false);
+        // Entry is not found. Return the current size of the buffer as the offset
+        return new FindResult(getSize(), -1, false, 0);
     }
 
     /**
@@ -398,7 +386,7 @@ public final class Bucket<K extends VirtualKey<? super K>> {
         if (!keySerializer.isVariableSize()) {
             return keySerializer.getSerializedSize();
         }
-        bucketBuffer.position(entryOffset + KEY_HASHCODE_SIZE + VALUE_SIZE);
+        bucketBuffer.position(entryOffset + ENTRY_KEY_OFFSET);
         return keySerializer.deserializeKeySize(bucketBuffer);
     }
 
@@ -410,28 +398,8 @@ public final class Bucket<K extends VirtualKey<? super K>> {
      * @throws IOException If there was a problem reading or deserializing the key
      */
     private K getKey(int entryOffset) throws IOException {
-        bucketBuffer.position(entryOffset + Integer.BYTES);
+        bucketBuffer.position(entryOffset + ENTRY_KEY_OFFSET);
         return keySerializer.deserialize(bucketBuffer, keySerializationVersion);
-    }
-
-    /**
-     * Read a value for a given entry
-     *
-     * @param entryOffset the offset for the entry
-     * @return the value stored in given entry
-     */
-    private long getValue(int entryOffset) {
-        return bucketBuffer.getLong(entryOffset + ENTRY_VALUE_OFFSET);
-    }
-
-    /**
-     * Read a value for a given entry
-     *
-     * @param entryOffset the offset for the entry
-     * @param value the value to set for entry
-     */
-    private void setValue(int entryOffset, long value) {
-        bucketBuffer.putLong(entryOffset + ENTRY_VALUE_OFFSET, value);
     }
 
     /** toString for debugging */
@@ -480,18 +448,14 @@ public final class Bucket<K extends VirtualKey<? super K>> {
     // =================================================================================================================
     // FindResult class
 
-    /** Simple struct style data class for allowing return of two things */
-    private static class FindResult {
-        public final int entryOffset;
-        public final int entryIndex;
-        public final boolean found;
-
-        public FindResult(final int entryOffset, final int entryIndex, final boolean found) {
-            this.entryOffset = entryOffset;
-            this.entryIndex = entryIndex;
-            this.found = found;
-        }
-    }
+    /**
+     * Simple record for entry lookup results. If an entry is found, "found" is set to true,
+     * "entryOffset" is the entry offset in bytes in the bucket buffer, "entryIndex" is the
+     * entry index in the array of entries, and "entryValue" is the entry value. If no entity
+     * is found, "found" is false, "entryOffset" is the total size of the bucket buffer,
+     * "entryIndex" and "entryValue" are undefined.
+     */
+    private record FindResult(int entryOffset, int entryIndex, boolean found, long entryValue) {}
 
     /** Get bucket buffer for tests */
     ByteBuffer getBucketBuffer() {

@@ -16,28 +16,31 @@
 
 package com.hedera.node.app.service.contract.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.contract.ContractUpdateTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#ContractUpdate}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONTRACT_UPDATE}.
  */
 @Singleton
 public class ContractUpdateHandler implements TransactionHandler {
     @Inject
-    public ContractUpdateHandler() {}
+    public ContractUpdateHandler() {
+        // Exists for injection
+    }
 
     /**
      * This method is called during the pre-handle workflow.
@@ -55,17 +58,17 @@ public class ContractUpdateHandler implements TransactionHandler {
      */
     public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
-        final var op = context.getTxn().getContractUpdateInstance();
+        final var op = context.getTxn().contractUpdateInstanceOrThrow();
 
         if (isAdminSigRequired(op)) {
-            context.addNonPayerKey(op.getContractID());
+            context.addNonPayerKey(op.contractIDOrElse(ContractID.DEFAULT));
         }
         if (hasCryptoAdminKey(op)) {
-            final var key = asHederaKey(op.getAdminKey());
+            final var key = asHederaKey(op.adminKeyOrThrow());
             key.ifPresent(context::addToReqNonPayerKeys);
         }
-        if (op.hasAutoRenewAccountId() && !op.getAutoRenewAccountId().equals(AccountID.getDefaultInstance())) {
-            context.addNonPayerKey(op.getAutoRenewAccountId(), INVALID_AUTORENEW_ACCOUNT);
+        if (op.hasAutoRenewAccountId() && !op.autoRenewAccountIdOrThrow().equals(AccountID.DEFAULT)) {
+            context.addNonPayerKey(op.autoRenewAccountIdOrThrow(), INVALID_AUTORENEW_ACCOUNT);
         }
     }
 
@@ -75,11 +78,11 @@ public class ContractUpdateHandler implements TransactionHandler {
                 || op.hasProxyAccountID()
                 || op.hasAutoRenewPeriod()
                 || op.hasFileID()
-                || op.getMemo().length() > 0;
+                || op.memoOrElse("").length() > 0;
     }
 
     private boolean hasCryptoAdminKey(final ContractUpdateTransactionBody op) {
-        return op.hasAdminKey() && !op.getAdminKey().hasContractID();
+        return op.hasAdminKey() && !op.adminKeyOrThrow().hasContractID();
     }
 
     /**

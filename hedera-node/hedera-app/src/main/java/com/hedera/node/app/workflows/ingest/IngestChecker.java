@@ -16,12 +16,19 @@
 
 package com.hedera.node.app.workflows.ingest;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
 import static com.hedera.node.app.service.mono.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.annotations.NodeSelfId;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.txns.submission.SolvencyPrecheck;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
@@ -29,20 +36,18 @@ import com.hedera.node.app.signature.SignaturePreparer;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 import javax.inject.Inject;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * The {@code IngestChecker} contains checks that are specific to the ingest workflow
  */
 public class IngestChecker {
+
+    private static final Logger logger = LogManager.getLogger(IngestChecker.class);
 
     private final AccountID nodeAccountID;
     private final SolvencyPrecheck solvencyPrecheck;
@@ -51,14 +56,14 @@ public class IngestChecker {
     /**
      * Constructor of the {@code IngestChecker}
      *
-     * @param nodeAccountID     the {@link AccountID} of the <em>node</em>
-     * @param solvencyPrecheck  the {@link SolvencyPrecheck} that checks payer balance
+     * @param nodeAccountID the {@link AccountID} of the <em>node</em>
+     * @param solvencyPrecheck the {@link SolvencyPrecheck} that checks payer balance
      * @param signaturePreparer the {@link SignaturePreparer} that prepares signature data
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject
     public IngestChecker(
-            @NonNull final AccountID nodeAccountID,
+            @NonNull @NodeSelfId final AccountID nodeAccountID,
             @NonNull final SolvencyPrecheck solvencyPrecheck,
             @NonNull final SignaturePreparer signaturePreparer) {
         this.nodeAccountID = requireNonNull(nodeAccountID);
@@ -81,12 +86,12 @@ public class IngestChecker {
         requireNonNull(txBody);
         requireNonNull(functionality);
 
-        if (!Objects.equals(nodeAccountID, txBody.getNodeAccountID())) {
+        if (!Objects.equals(nodeAccountID, txBody.nodeAccountID())) {
             throw new PreCheckException(INVALID_NODE_ACCOUNT);
         }
 
-        var txnId = txBody.getTransactionID();
-        if (txnId.getScheduled() || txnId.getNonce() != USER_TRANSACTION_NONCE) {
+        var txnId = txBody.transactionID();
+        if (txnId.scheduled() || txnId.nonce() != USER_TRANSACTION_NONCE) {
             throw new PreCheckException(TRANSACTION_ID_FIELD_NOT_ALLOWED);
         }
     }
@@ -128,31 +133,14 @@ public class IngestChecker {
     public void checkSolvency(@NonNull final Transaction transaction) throws PreCheckException {
         final var accessor = SignedTxnAccessor.uncheckedFrom(transaction);
         final var payerNum = EntityNum.fromAccountId(accessor.getPayer());
-        final var payerStatus = solvencyPrecheck.payerAccountStatus(payerNum);
+        final var payerStatus = solvencyPrecheck.payerAccountStatus2(payerNum);
         if (payerStatus != OK) {
             throw new PreCheckException(payerStatus);
         }
         final var solvencySummary = solvencyPrecheck.solvencyOfVerifiedPayer(accessor, false);
-        if (solvencySummary.getValidity() != OK) {
-            throw new InsufficientBalanceException(solvencySummary.getValidity(), solvencySummary.getRequiredFee());
-        }
-    }
-
-    /**
-     * Extracts a {@code byte[]} from a {@link ByteBuffer}. The {@code byte[]} may contain a copy or point to the data
-     * of the {@code ByteBuffer} directly, i.e. the content should not be modified.
-     *
-     * @param buffer the {@link ByteBuffer} from which to extract the data
-     * @return the {@code byte[]} with the data
-     */
-    public byte[] extractByteArray(@NonNull final ByteBuffer buffer) {
-        requireNonNull(buffer);
-        if (buffer.hasArray()) {
-            return buffer.array();
-        } else {
-            final var byteArray = new byte[buffer.limit()];
-            buffer.get(byteArray);
-            return byteArray;
+        final var validity = PbjConverter.toPbj(solvencySummary.getValidity());
+        if (validity != OK) {
+            throw new InsufficientBalanceException(validity, solvencySummary.getRequiredFee());
         }
     }
 }

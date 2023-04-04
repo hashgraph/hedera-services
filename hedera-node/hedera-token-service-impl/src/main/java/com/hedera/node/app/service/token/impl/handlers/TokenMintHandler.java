@@ -18,6 +18,8 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -28,17 +30,18 @@ import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#TokenMint}.
+ * HederaFunctionality#TOKEN_MINT}.
  */
 @Singleton
 public class TokenMintHandler implements TransactionHandler {
     @Inject
-    public TokenMintHandler() {}
+    public TokenMintHandler() {
+        // Exists for injection
+    }
 
     /**
-     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#TokenMint}
-     * transaction, returning the metadata required to, at minimum, validate the signatures of all
-     * required signing keys.
+     * Pre-handles a {@link HederaFunctionality#TOKEN_MINT} transaction, returning the metadata
+     * required to, at minimum, validate the signatures of all required signing keys.
      *
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
@@ -50,9 +53,9 @@ public class TokenMintHandler implements TransactionHandler {
      */
     public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore) {
         requireNonNull(context);
-        final var op = context.getTxn().getTokenMint();
+        final var op = context.getTxn().tokenMintOrThrow();
 
-        final var tokenMeta = tokenStore.getTokenMeta(op.getToken());
+        final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
 
         if (tokenMeta.failed()) {
             context.status(tokenMeta.failureReason());
