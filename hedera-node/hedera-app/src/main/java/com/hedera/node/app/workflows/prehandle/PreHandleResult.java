@@ -40,7 +40,7 @@ import java.util.List;
  * @param payer payer for the transaction
  * @param status {@link ResponseCodeEnum} status of the transaction
  * @param payerKey payer key required to sign the transaction. It is null if payer is missing
- * @param innerMetadata {@link PreHandleResult} of the inner transaction (where appropriate)
+ * @param innerResult {@link PreHandleResult} of the inner transaction (where appropriate)
  */
 public record PreHandleResult(
         @Nullable TransactionBody txnBody,
@@ -50,7 +50,7 @@ public record PreHandleResult(
         @Nullable HederaKey payerKey,
         @NonNull List<HederaKey> otherPartyKeys,
         @Nullable List<TransactionSignature> cryptoSignatures,
-        @Nullable PreHandleResult innerMetadata) {
+        @Nullable PreHandleResult innerResult) {
 
     public PreHandleResult {
         requireNonNull(status);
@@ -60,7 +60,7 @@ public record PreHandleResult(
             @NonNull final PreHandleContext context,
             @NonNull final SignatureMap signatureMap,
             @NonNull final List<TransactionSignature> cryptoSignatures,
-            @Nullable final PreHandleResult innerMetadata) {
+            @Nullable final PreHandleResult innerResult) {
         this(
                 requireNonNull(context).getTxn(),
                 requireNonNull(signatureMap),
@@ -69,7 +69,7 @@ public record PreHandleResult(
                 context.getPayerKey(),
                 context.getRequiredNonPayerKeys(),
                 requireNonNull(cryptoSignatures),
-                innerMetadata);
+                innerResult);
     }
 
     public PreHandleResult(@NonNull final ResponseCodeEnum status) {
