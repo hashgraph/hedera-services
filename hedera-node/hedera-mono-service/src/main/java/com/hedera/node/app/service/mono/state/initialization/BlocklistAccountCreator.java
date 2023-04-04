@@ -106,7 +106,7 @@ public class BlocklistAccountCreator {
                     .map(line -> parseCSVLine(line, columnCount))
                     .toList();
         } catch (IllegalArgumentException iae) {
-            log.error("Failed to parse blocklist, entry does not have required number of columns", iae);
+            log.error("Failed to parse blocklist", iae);
             return;
         } catch (DecoderException de) {
             log.error("Failed to parse blocklist, entry not in hex format", de);

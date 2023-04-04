@@ -190,7 +190,7 @@ class BlocklistAccountCreatorTest {
             value = {
                 "non-existing.csv;Failed to read blocklist resource non-existing.csv",
                 "invalid-hex-blocklist.csv;Failed to parse blocklist, entry not in hex format",
-                "invalid-col-count-blocklist.csv;Failed to parse blocklist, entry does not have required number of columns",
+                "invalid-col-count-blocklist.csv;Failed to parse blocklist",
             },
             delimiter = ';')
     void readingblocklistResourceExceptionShouldBeLogged(String blocklistResourceName, String expectedLog) {
