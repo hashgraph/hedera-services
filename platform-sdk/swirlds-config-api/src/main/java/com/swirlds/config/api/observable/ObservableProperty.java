@@ -30,7 +30,7 @@ import java.util.function.Consumer;
 public interface ObservableProperty<T> {
 
     /**
-     * Helper interface to handle properties that are not set. See {@link #isSet(Consumer)} for more details.
+     * Helper interface to handle properties that are not set. See {@link #ifSet(Consumer)} for more details.
      */
     @FunctionalInterface
     public static interface OrNotSet {
@@ -61,7 +61,7 @@ public interface ObservableProperty<T> {
      * @return a functional interface that can be used to handle a property that is not set.
      */
     @NonNull
-    OrNotSet isSet(@NonNull Consumer<T> consumer);
+    OrNotSet ifSet(@NonNull Consumer<T> consumer);
 
     /**
      * Returns the current value of the property. {@code null} is allowed as value.

@@ -33,12 +33,12 @@ public class Sample {
 
     public void sample3(final ObservableConfiguration configuration) {
         final ObservableProperty<Integer> fooProperty = configuration.getObservableProperty("foo", Integer.class);
-        fooProperty.isSet(value -> System.out.println("Current value is " + value));
+        fooProperty.ifSet(value -> System.out.println("Current value is " + value));
     }
 
     public void sample4(final ObservableConfiguration configuration) {
         final ObservableProperty<Integer> fooProperty = configuration.getObservableProperty("foo", Integer.class);
-        fooProperty.isSet(value -> System.out.println("Current value is " + value))
+        fooProperty.ifSet(value -> System.out.println("Current value is " + value))
                 .orElse(() -> System.out.println("Property is not set"));
     }
 
@@ -48,13 +48,13 @@ public class Sample {
             @Override
             public void onStart(@NonNull final ObservableProperty<Integer> property,
                     @NonNull final Observation observation) {
-                property.isSet(value -> System.out.println("Current value is " + value))
+                property.ifSet(value -> System.out.println("Current value is " + value))
                         .orElse(() -> System.out.println("Property is not set"));
             }
 
             @Override
             public void onUpdate(@NonNull final ObservableProperty<Integer> property) {
-                property.isSet(value -> System.out.println("Current value is " + value))
+                property.ifSet(value -> System.out.println("Current value is " + value))
                         .orElse(() -> System.out.println("Property is not set"));
             }
 
