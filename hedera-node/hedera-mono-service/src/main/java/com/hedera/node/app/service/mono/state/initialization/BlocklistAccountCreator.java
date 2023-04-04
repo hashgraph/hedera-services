@@ -38,11 +38,13 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
@@ -76,25 +78,25 @@ public class BlocklistAccountCreator {
      * @param evmAddress the EVM address of the blocked account
      * @param memo      the memo of the blocked account
      */
-    record BlockedInfo(ByteString evmAddress, String memo) {}
+    record BlockedInfo(@NonNull ByteString evmAddress, @NonNull String memo) {}
 
     @Inject
     public BlocklistAccountCreator(
-            final Supplier<HederaAccount> accountSupplier,
-            final EntityIdSource ids,
-            final BackingStore<AccountID, HederaAccount> accounts,
-            final Supplier<JEd25519Key> genesisKeySource,
-            final @CompositeProps PropertySource properties,
-            final AliasManager aliasManager,
-            AccountNumbers accountNumbers) {
+            final @NonNull Supplier<HederaAccount> accountSupplier,
+            final @NonNull EntityIdSource ids,
+            final @NonNull BackingStore<AccountID, HederaAccount> accounts,
+            final @NonNull Supplier<JEd25519Key> genesisKeySource,
+            final @NonNull @CompositeProps PropertySource properties,
+            final @NonNull AliasManager aliasManager,
+            final @NonNull AccountNumbers accountNumbers) {
         this.blocklistFileName = properties.getStringProperty(ACCOUNTS_BLOCKLIST_FILE);
-        this.accountSupplier = accountSupplier;
-        this.ids = ids;
-        this.accounts = accounts;
-        this.genesisKeySource = genesisKeySource;
-        this.properties = properties;
-        this.aliasManager = aliasManager;
-        this.accountNumbers = accountNumbers;
+        this.accountSupplier = Objects.requireNonNull(accountSupplier);
+        this.ids = Objects.requireNonNull(ids);
+        this.accounts = Objects.requireNonNull(accounts);
+        this.genesisKeySource = Objects.requireNonNull(genesisKeySource);
+        this.properties = Objects.requireNonNull(properties);
+        this.aliasManager = Objects.requireNonNull(aliasManager);
+        this.accountNumbers = Objects.requireNonNull(accountNumbers);
     }
 
     /**
@@ -142,7 +144,8 @@ public class BlocklistAccountCreator {
         }
     }
 
-    private List<String> readPrivateKeyBlocklist(String fileName) {
+    @NonNull
+    private List<String> readPrivateKeyBlocklist(final @NonNull String fileName) {
         final var inputStream = getClass().getClassLoader().getResourceAsStream(fileName);
         final var reader = new BufferedReader(new InputStreamReader(inputStream));
         return reader.lines().toList();
@@ -163,7 +166,8 @@ public class BlocklistAccountCreator {
      * @param columnCount number of comma-separated values in a line
      * @return blocked account info record
      */
-    private BlockedInfo parseCSVLine(String line, int columnCount) {
+    @NonNull
+    private BlockedInfo parseCSVLine(final @NonNull String line, int columnCount) {
         final var parts = line.split(",", -1);
         if (parts.length != columnCount) {
             throw new IllegalArgumentException("Invalid line in blocklist file: " + line);
@@ -182,7 +186,8 @@ public class BlocklistAccountCreator {
      * @param blockedInfo record containing EVM address and memo for the blocked account
      * @return a Hedera account with the given memo and EVM address
      */
-    private HederaAccount blockedAccountWith(BlockedInfo blockedInfo) {
+    @NonNull
+    private HederaAccount blockedAccountWith(final @NonNull BlockedInfo blockedInfo) {
         final var expiry = properties.getLongProperty(BOOTSTRAP_SYSTEM_ENTITY_EXPIRY);
         var customizer = new HederaAccountCustomizer()
                 .isReceiverSigRequired(true)

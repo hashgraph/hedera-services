@@ -31,7 +31,9 @@ import com.hedera.node.app.service.mono.state.initialization.BlocklistAccountCre
 import com.hedera.node.app.service.mono.state.migration.MigrationRecordsManager;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.node.app.spi.config.PropertyNames;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -70,8 +72,8 @@ public class ServicesTxnManager {
             final RecordStreaming recordStreaming,
             final BlockManager blockManager,
             final RewardCalculator rewardCalculator,
-            final BootstrapProperties bootstrapProperties,
-            final BlocklistAccountCreator blocklistAccountCreator) {
+            final @NonNull BootstrapProperties bootstrapProperties,
+            final @NonNull BlocklistAccountCreator blocklistAccountCreator) {
         this.txnCtx = txnCtx;
         this.ledger = ledger;
         this.recordCache = recordCache;
@@ -83,8 +85,8 @@ public class ServicesTxnManager {
         this.scopedTriggeredProcessing = scopedTriggeredProcessing;
         this.blockManager = blockManager;
         this.rewardCalculator = rewardCalculator;
-        this.bootstrapProperties = bootstrapProperties;
-        this.blocklistAccountCreator = blocklistAccountCreator;
+        this.bootstrapProperties = Objects.requireNonNull(bootstrapProperties);
+        this.blocklistAccountCreator = Objects.requireNonNull(blocklistAccountCreator);
     }
 
     private boolean needToPublishMigrationRecords = true;
