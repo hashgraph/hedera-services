@@ -24,6 +24,8 @@ import static com.hedera.node.app.service.mono.throttling.MapAccessType.STORAGE_
 import static com.hedera.node.app.service.mono.throttling.MapAccessType.STORAGE_PUT;
 import static com.hedera.node.app.service.mono.throttling.MapAccessType.STORAGE_REMOVE;
 import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_ADDRESS_BOOK_ADMIN;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_BLOCKLIST_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_BLOCKLIST_RESOURCE;
 import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_EXCHANGE_RATES_ADMIN;
 import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_FEE_SCHEDULE_ADMIN;
 import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_FREEZE_ADMIN;
@@ -525,7 +527,9 @@ class BootstrapPropertiesTest {
             entry(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION, true),
             entry(TOKENS_AUTO_CREATIONS_ENABLED, true),
             entry(WORKFLOWS_ENABLED, Set.of()),
-            entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, true));
+            entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, true),
+            entry(ACCOUNTS_BLOCKLIST_ENABLED, true),
+            entry(ACCOUNTS_BLOCKLIST_RESOURCE, "evm-addresses-blocklist.csv"));
 
     @Test
     void containsProperty() {
