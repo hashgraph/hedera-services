@@ -18,6 +18,7 @@ package com.hedera.node.app.service.evm.store.contracts;
 
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -56,6 +57,8 @@ public abstract class AbstractLedgerEvmWorldUpdater<W extends WorldView, A exten
     protected Map<Address, UpdateTrackingAccount<A>> updatedAccounts = new HashMap<>();
     private HederaEvmEntityAccess hederaEvmEntityAccess;
 
+    private TokenAccessor tokenAccessor;
+
     protected Set<Address> deletedAccounts = new HashSet<>();
 
     protected AbstractLedgerEvmWorldUpdater(final W world, final AccountAccessor accountAccessor) {
@@ -64,9 +67,13 @@ public abstract class AbstractLedgerEvmWorldUpdater<W extends WorldView, A exten
     }
 
     protected AbstractLedgerEvmWorldUpdater(
-            final W world, final AccountAccessor accountAccessor, final HederaEvmEntityAccess hederaEvmEntityAccess) {
+            final W world,
+            final AccountAccessor accountAccessor,
+            final TokenAccessor tokenAccessor,
+            final HederaEvmEntityAccess hederaEvmEntityAccess) {
         this(world, accountAccessor);
         this.hederaEvmEntityAccess = hederaEvmEntityAccess;
+        this.tokenAccessor = tokenAccessor;
     }
 
     /**
@@ -168,5 +175,9 @@ public abstract class AbstractLedgerEvmWorldUpdater<W extends WorldView, A exten
         updatedAccounts.put(address, account);
         deletedAccounts.remove(address);
         return account;
+    }
+
+    public TokenAccessor tokenAccessor() {
+        return this.tokenAccessor;
     }
 }

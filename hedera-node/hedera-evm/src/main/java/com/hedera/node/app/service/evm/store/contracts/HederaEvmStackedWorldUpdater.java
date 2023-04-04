@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,32 +14,16 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.evm.contracts.execution;
+package com.hedera.node.app.service.evm.store.contracts;
 
-import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
-public interface EvmProperties {
+/**
+ * Common interface for Hedera stacked world updaters, to be shared between services and mirror node.
+ */
+public interface HederaEvmStackedWorldUpdater extends WorldUpdater {
+    Address priorityAddress(final Address addressOrAlias);
 
-    /**
-     * @return the chain ID in bytes32 format.
-     */
-    Bytes32 chainIdBytes32();
-
-    String evmVersion();
-
-    Address fundingAccountAddress();
-
-    boolean dynamicEvmVersion();
-
-    int maxGasRefundPercentage();
-
-    boolean isRedirectTokenCallsEnabled();
-
-    boolean isLazyCreationEnabled();
-
-    /**
-     * Enables or disables Create2 operation.
-     */
-    boolean isCreate2Enabled();
+    Address newAliasedContractAddress(final Address sponsor, final Address alias);
 }

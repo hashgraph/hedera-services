@@ -18,6 +18,8 @@ package com.hedera.node.app.service.mono.context.properties;
 
 import static com.hedera.node.app.service.mono.context.properties.PropUtils.loadOverride;
 import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_ADDRESS_BOOK_ADMIN;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_BLOCKLIST_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_BLOCKLIST_RESOURCE;
 import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_EXCHANGE_RATES_ADMIN;
 import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_FEE_SCHEDULE_ADMIN;
 import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_FREEZE_ADMIN;
@@ -548,7 +550,9 @@ public final class BootstrapProperties implements PropertySource {
             HEDERA_ALLOWANCES_IS_ENABLED,
             ENTITIES_LIMIT_TOKEN_ASSOCIATIONS,
             UTIL_PRNG_IS_ENABLED,
-            TOKENS_AUTO_CREATIONS_ENABLED);
+            TOKENS_AUTO_CREATIONS_ENABLED,
+            ACCOUNTS_BLOCKLIST_ENABLED,
+            ACCOUNTS_BLOCKLIST_RESOURCE);
 
     static final Set<String> NODE_PROPS = Set.of(
             DEV_ONLY_DEFAULT_NODE_LISTENS,
@@ -796,5 +800,7 @@ public final class BootstrapProperties implements PropertySource {
             entry(UTIL_PRNG_IS_ENABLED, AS_BOOLEAN),
             entry(TOKENS_AUTO_CREATIONS_ENABLED, AS_BOOLEAN),
             entry(WORKFLOWS_ENABLED, AS_FUNCTIONS),
-            entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, AS_BOOLEAN));
+            entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, AS_BOOLEAN),
+            entry(ACCOUNTS_BLOCKLIST_ENABLED, AS_BOOLEAN),
+            entry(ACCOUNTS_BLOCKLIST_RESOURCE, AS_STRING));
 }
