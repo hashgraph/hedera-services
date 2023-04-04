@@ -293,8 +293,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         final var recordBuilder = subject.newRecordBuilder();
 
         final var msg = assertThrows(
-                HandleException.class,
-                () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
+                HandleException.class, () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
         assertEquals(ResponseCodeEnum.INVALID_TOPIC_MESSAGE, msg.getStatus());
     }
 
@@ -309,8 +308,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         config = new ConsensusServiceConfig(10, 5);
 
         final var msg = assertThrows(
-                HandleException.class,
-                () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
+                HandleException.class, () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
         assertEquals(ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE, msg.getStatus());
     }
 
@@ -323,8 +321,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         final var recordBuilder = subject.newRecordBuilder();
 
         final var msg = assertThrows(
-                HandleException.class,
-                () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
+                HandleException.class, () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
         assertEquals(ResponseCodeEnum.INVALID_TOPIC_ID, msg.getStatus());
     }
 
@@ -343,8 +340,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         final var recordBuilder = subject.newRecordBuilder();
 
         final var msg = assertThrows(
-                HandleException.class,
-                () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
+                HandleException.class, () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
         assertEquals(ResponseCodeEnum.INVALID_CHUNK_NUMBER, msg.getStatus());
     }
 
@@ -357,8 +353,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         final var recordBuilder = subject.newRecordBuilder();
 
         final var msg = assertThrows(
-                HandleException.class,
-                () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
+                HandleException.class, () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
         assertEquals(ResponseCodeEnum.INVALID_CHUNK_NUMBER, msg.getStatus());
     }
 
@@ -373,8 +368,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         final var recordBuilder = subject.newRecordBuilder();
 
         final var msg = assertThrows(
-                HandleException.class,
-                () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
+                HandleException.class, () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
         assertEquals(ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID, msg.getStatus());
     }
 
@@ -389,8 +383,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         final var recordBuilder = subject.newRecordBuilder();
 
         final var msg = assertThrows(
-                HandleException.class,
-                () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
+                HandleException.class, () -> subject.handle(handleContext, txn, config, recordBuilder, writableStore));
         assertEquals(ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID, msg.getStatus());
     }
 
