@@ -21,9 +21,9 @@ import static org.hyperledger.besu.evm.operation.SStoreOperation.FRONTIER_MINIMU
 
 import com.hedera.node.app.service.evm.contracts.operations.HederaBalanceOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaDelegateCallOperation;
+import com.hedera.node.app.service.evm.contracts.operations.HederaEvmChainIdOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaEvmCreate2Operation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaEvmCreateOperation;
-import com.hedera.node.app.service.evm.contracts.operations.HederaEvmChainIdOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeCopyOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeHashOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeSizeOperation;
