@@ -174,17 +174,17 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
             // 4. Eventually prepare and verify signatures of inner transaction
             final var innerContext = context.getInnerContext();
-            PreHandleResult innerMetadata = null;
+            PreHandleResult innerResult = null;
             if (innerContext != null) {
                 // VERIFY: the txBytes used for inner transactions is the same as the outer transaction
                 final var innerPayerSignature = verifyPayerSignature(state, innerContext, txBytes, signatureMap);
                 final var innerOtherSignatures = verifyOtherSignatures(state, innerContext, txBytes, signatureMap);
-                innerMetadata =
+                innerResult =
                         createResult(innerContext, signatureMap, innerPayerSignature, innerOtherSignatures, null);
             }
 
             // 5. Return PreHandleResult
-            return createResult(context, signatureMap, payerSignature, otherSignatures, innerMetadata);
+            return createResult(context, signatureMap, payerSignature, otherSignatures, innerResult);
 
         } catch (PreCheckException preCheckException) {
             return createInvalidResult(preCheckException.responseCode());
@@ -231,14 +231,14 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             @NonNull final SignatureMap signatureMap,
             @Nullable final TransactionSignature payerSignature,
             @NonNull final Map<HederaKey, TransactionSignature> otherSignatures,
-            @Nullable final PreHandleResult innerMetadata) {
+            @Nullable final PreHandleResult innerResult) {
         final var otherSigs = otherSignatures.values();
         final var allSigs = new ArrayList<TransactionSignature>(otherSigs.size() + 1);
         if (payerSignature != null) {
             allSigs.add(payerSignature);
         }
         allSigs.addAll(otherSigs);
-        return new PreHandleResult(context, signatureMap, allSigs, innerMetadata);
+        return new PreHandleResult(context, signatureMap, allSigs, innerResult);
     }
 
     @NonNull

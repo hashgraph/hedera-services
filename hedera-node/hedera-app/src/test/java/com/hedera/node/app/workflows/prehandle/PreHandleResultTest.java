@@ -58,11 +58,11 @@ class PreHandleResultTest {
         when(context.getPayerKey()).thenReturn(payerKey);
         when(context.getRequiredNonPayerKeys()).thenReturn(List.of(otherKey));
         final var signatureMap = SignatureMap.newBuilder().build();
-        final var innerMetadata = new PreHandleResult(null, null, null, OK, null, null, List.of(), null);
+        final var innerResult = new PreHandleResult(null, null, null, OK, null, null, List.of(), null);
         final var expectedSigs = List.of(payerSignature, otherSignature);
 
         // when
-        final var metadata = new PreHandleResult(context, signatureMap, expectedSigs, innerMetadata);
+        final var metadata = new PreHandleResult(context, signatureMap, expectedSigs, innerResult);
 
         // then
         assertThat(metadata.txnBody()).isEqualTo(txBody);
