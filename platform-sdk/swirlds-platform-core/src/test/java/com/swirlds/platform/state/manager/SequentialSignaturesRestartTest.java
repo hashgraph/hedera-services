@@ -122,7 +122,7 @@ public class SequentialSignaturesRestartTest extends AbstractSignedStateManagerT
             signedStates.put((long) round, signedState);
             highestRound.set(round);
 
-            manager.addUnsignedState(signedState);
+            manager.addState(signedState);
 
             // Add some signatures to one of the previous states
             final long roundToSign = round - roundAgeToSign;

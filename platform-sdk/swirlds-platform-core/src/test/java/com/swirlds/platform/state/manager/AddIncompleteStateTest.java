@@ -17,6 +17,7 @@
 package com.swirlds.platform.state.manager;
 
 import static com.swirlds.common.test.RandomUtils.randomHash;
+import static com.swirlds.platform.reconnect.emergency.EmergencyReconnectTeacher.emergencyStateCriteria;
 import static com.swirlds.platform.state.manager.SignedStateManagerTestUtils.buildFakeSignature;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -114,7 +115,8 @@ class AddIncompleteStateTest extends AbstractSignedStateManagerTest {
         assertNull(manager.getLatestSignedState().get());
         assertEquals(-1, manager.getLastCompleteRound());
 
-        try (final AutoCloseableWrapper<SignedState> wrapper = manager.find(stateFromDisk.getRound(), stateHash)) {
+        try (final AutoCloseableWrapper<SignedState> wrapper =
+                manager.find(emergencyStateCriteria(stateFromDisk.getRound(), stateHash))) {
             assertNotNull(wrapper.get(), "Should have returned a state");
             assertEquals(stateFromDisk, wrapper.get(), "Should have returned the state from disk");
         }

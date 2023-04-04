@@ -17,6 +17,7 @@
 package com.swirlds.platform.reconnect.emergency;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.platform.reconnect.emergency.EmergencyReconnectTeacher.emergencyStateCriteria;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -210,7 +211,7 @@ public class EmergencyReconnectTests {
 
     private void assertTeacherSearchedForState(final EmergencyRecoveryFile emergencyRecoveryFile) {
         verify(signedStateManager, times(1).description("Teacher did not search for the correct state"))
-                .find(emergencyRecoveryFile.round(), emergencyRecoveryFile.hash());
+                .find(emergencyStateCriteria(emergencyRecoveryFile.round(), emergencyRecoveryFile.hash()));
     }
 
     private ReconnectController createReconnectController(
@@ -292,7 +293,8 @@ public class EmergencyReconnectTests {
 
     private void mockTeacherHasCompatibleState(
             final EmergencyRecoveryFile emergencyRecoveryFile, final SignedState teacherState) {
-        when(signedStateManager.find(emergencyRecoveryFile.round(), emergencyRecoveryFile.hash()))
+        when(signedStateManager.find(
+                        emergencyStateCriteria(emergencyRecoveryFile.round(), emergencyRecoveryFile.hash())))
                 .thenAnswer(i -> {
                     teacherState.reserve();
                     return new AutoCloseableWrapper<>(teacherState, teacherState::release);
@@ -310,7 +312,7 @@ public class EmergencyReconnectTests {
     }
 
     private void mockTeacherDoesNotHaveCompatibleState() {
-        when(signedStateManager.find(anyLong(), any())).thenReturn(new AutoCloseableWrapper<>(null, () -> {}));
+        when(signedStateManager.find(any())).thenReturn(new AutoCloseableWrapper<>(null, () -> {}));
     }
 
     private Callable<Void> doLearner(final EmergencyReconnectProtocol learnerProtocol, final Connection connection) {

@@ -110,7 +110,7 @@ public class EarlySignaturesTest extends AbstractSignedStateManagerTest {
             signedStates.put((long) round, signedState);
             highestRound.set(round);
 
-            manager.addUnsignedState(signedState);
+            manager.addState(signedState);
 
             // Add some signatures to one of the previous states, but only if that round need signatures.
             final long roundToSign = round - roundAgeToSign;

@@ -22,7 +22,6 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.stream.HashSigner;
 import com.swirlds.common.system.NodeId;
@@ -65,6 +64,7 @@ import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.util.HashLogger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -466,20 +466,13 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         }
     }
 
-    // TODO extract for unit tests
-
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
-    public @NonNull AutoCloseableWrapper<SignedState> find(final long round, @NonNull final Hash hash) {
-        return signedStateManager.findState((final SignedState signedState) -> {
-                    if (signedState.isComplete() && signedState.getRound() > round) {
-                        return true;
-                    }
-                    return signedState.getRound() == round && hash.equals(signedState.getState().getHash());
-                }
-        );
+    public AutoCloseableWrapper<SignedState> find(final @NonNull Predicate<SignedState> criteria) {
+        return signedStateManager.find(criteria);
     }
 
     /**

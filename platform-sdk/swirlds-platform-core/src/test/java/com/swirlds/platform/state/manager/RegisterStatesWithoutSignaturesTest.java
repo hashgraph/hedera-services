@@ -99,7 +99,7 @@ public class RegisterStatesWithoutSignaturesTest extends AbstractSignedStateMana
             signedStates.put((long) round, signedState);
             highestRound.set(round);
 
-            manager.addUnsignedState(signedState);
+            manager.addState(signedState);
 
             try (final AutoCloseableWrapper<SignedState> lastState = manager.getLatestImmutableState()) {
                 assertSame(signedState, lastState.get(), "last signed state has unexpected value");

@@ -37,8 +37,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * <p>
@@ -64,9 +62,7 @@ import org.apache.logging.log4j.Logger;
  * </li>
  * </ul>
  */
-public class SignedStateManager {
-
-    private static final Logger logger = LogManager.getLogger(SignedStateManager.class);
+public class SignedStateManager implements SignedStateFinder {
 
     /**
      * The latest signed state. May be unhashed. May or may not have all of its signatures.
@@ -88,8 +84,7 @@ public class SignedStateManager {
     /**
      * A signature that was received when there was no state with a matching round.
      */
-    private record SavedSignature(long round, long memberId, Signature signature) {
-    }
+    private record SavedSignature(long round, long memberId, Signature signature) {}
 
     /**
      * Signatures for rounds in the future.
@@ -295,7 +290,8 @@ public class SignedStateManager {
      * @return a wrapper around the first state encountered that causes the criteria to pass, or a wrapper around null
      * if no state causes the criteria to pass.
      */
-    public synchronized @NonNull AutoCloseableWrapper<SignedState> findState( // TODO test
+    @Override
+    public synchronized @NonNull AutoCloseableWrapper<SignedState> find( // TODO test
             @NonNull final Predicate<SignedState> criteria) {
 
         final List<SignedState> allStates = new ArrayList<>();
