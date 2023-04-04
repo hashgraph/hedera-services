@@ -179,7 +179,7 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
      * @param payerAccount Account of the payer for the approveAllowance txn
      * @param accountStore account store
      * @param tokenStore read only token store
-     * @return
+     * @return response code
      */
     ResponseCodeEnum validateFungibleTokenAllowances(
             final List<TokenAllowance> tokenAllowances,
@@ -225,7 +225,7 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
      * @param payerAccount payer for approveAllowance txn
      * @param accountStore account store
      * @param tokenStore token store
-     * @return
+     * @return response code
      */
     ResponseCodeEnum validateNftAllowances(
             final List<NftAllowance> nftAllowancesList,
@@ -309,7 +309,8 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
 
     private ResponseCodeEnum validateTokenBasics(
             final Account ownerAccount, final Id spenderId, final Token token, final ReadOnlyTokenStore tokenStore) {
-        if (ownerAccount.getId().equals(spenderId)) {
+        // ONLY reject self-approval for NFT's; else allow to match OZ ERC-20
+        if (!token.isFungibleCommon() && ownerAccount.getId().equals(spenderId)) {
             return SPENDER_ACCOUNT_SAME_AS_OWNER;
         }
         if (!tokenStore.hasAssociation(token, ownerAccount)) {

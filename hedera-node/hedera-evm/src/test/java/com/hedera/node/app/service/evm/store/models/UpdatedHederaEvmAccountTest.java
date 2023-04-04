@@ -19,10 +19,10 @@ package com.hedera.node.app.service.evm.store.models;
 import static org.apache.tuweni.units.bigints.UInt256.MIN_VALUE;
 import static org.apache.tuweni.units.bigints.UInt256.ZERO;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
-import java.util.Collections;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
@@ -41,14 +41,14 @@ class UpdatedHederaEvmAccountTest {
     private static final long newBalance = 200_000L;
     private static final int newNonce = 2;
     private final Address address = Address.fromHexString("0x000000000000000000000000000000000000077e");
-    private UpdatedHederaEvmAccount subject;
+    private UpdateTrackingAccount subject;
 
     @Mock
     private HederaEvmEntityAccess hederaEvmEntityAccess;
 
     @BeforeEach
     void setUp() {
-        subject = new UpdatedHederaEvmAccount(address);
+        subject = new UpdateTrackingAccount(address, null);
         subject.setBalance(Wei.ONE);
         subject.setNonce(1L);
         subject.setEvmEntityAccess(hederaEvmEntityAccess);
@@ -56,14 +56,13 @@ class UpdatedHederaEvmAccountTest {
 
     @Test
     void testConstructor() {
-        UpdatedHederaEvmAccount newSubject = new UpdatedHederaEvmAccount(newAddress);
+        UpdateTrackingAccount newSubject = new UpdateTrackingAccount(newAddress, null);
         assertEquals(newSubject.getAddress(), newAddress);
     }
 
     @Test
     void addressChanges() {
-        subject.setAddress(newAddress);
-        assertEquals(newAddress, subject.getAddress());
+        assertEquals(address, subject.getAddress());
     }
 
     @Test
@@ -107,13 +106,13 @@ class UpdatedHederaEvmAccountTest {
 
     @Test
     void getOriginalStorageValue() {
-        subject = new UpdatedHederaEvmAccount(address);
+        subject = new UpdateTrackingAccount(address, null);
         assertEquals(ZERO, subject.getOriginalStorageValue(MIN_VALUE));
     }
 
     @Test
     void storageEntriesFrom() {
-        assertEquals(Collections.emptyNavigableMap(), subject.storageEntriesFrom(Bytes32.ZERO, 0));
+        assertThrows(UnsupportedOperationException.class, () -> subject.storageEntriesFrom(Bytes32.ZERO, 0));
     }
 
     @Test

@@ -287,7 +287,12 @@ class WipeFungiblePrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        given(sigsVerifier.hasActiveWipeKey(true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
+        given(sigsVerifier.hasActiveWipeKey(
+                        true,
+                        fungibleTokenAddr,
+                        fungibleTokenAddr,
+                        wrappedLedgers,
+                        HederaFunctionality.TokenAccountWipe))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
@@ -381,7 +386,12 @@ class WipeFungiblePrecompileTest {
                 .when(() -> decodeWipe(eq(pretendArguments), any()))
                 .thenReturn(fungibleWipeMaxAmount);
         given(syntheticTxnFactory.createWipe(fungibleWipeMaxAmount)).willReturn(mockSynthBodyBuilder);
-        given(sigsVerifier.hasActiveWipeKey(true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
+        given(sigsVerifier.hasActiveWipeKey(
+                        true,
+                        fungibleTokenAddr,
+                        fungibleTokenAddr,
+                        wrappedLedgers,
+                        HederaFunctionality.TokenAccountWipe))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))

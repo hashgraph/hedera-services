@@ -20,6 +20,7 @@ import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
+import com.swirlds.base.functions.ThrowingConsumer;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.PlatformContext;
@@ -47,6 +48,7 @@ import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.stats.CycleTimingStat;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -112,6 +114,11 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
     private final RoundAppliedToStateConsumer roundAppliedToStateConsumer;
 
     /**
+     * A method that blocks until an event becomes durable.
+     */
+    final ThrowingConsumer<EventImpl, InterruptedException> waitForEventDurability;
+
+    /**
      * The number of non-ancient rounds.
      */
     private final int roundsNonAncient;
@@ -129,21 +136,23 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
      * @param eventStreamManager       the event stream manager to send consensus events to
      * @param stateHashSignQueue       the queue thread that handles hashing and collecting signatures of new
      *                                 self-signed states
+     * @param waitForEventDurability   a method that blocks until an event becomes durable.
      * @param enterFreezePeriod        puts the system in a freeze state when executed
      * @param softwareVersion          the current version of the software
      */
     public ConsensusRoundHandler(
-            final PlatformContext platformContext,
-            final ThreadManager threadManager,
+            @NonNull final PlatformContext platformContext,
+            @NonNull final ThreadManager threadManager,
             final long selfId,
-            final SettingsProvider settings,
-            final SwirldStateManager swirldStateManager,
-            final ConsensusHandlingMetrics consensusHandlingMetrics,
-            final EventStreamManager<EventImpl> eventStreamManager,
-            final BlockingQueue<SignedState> stateHashSignQueue,
-            final Runnable enterFreezePeriod,
-            final RoundAppliedToStateConsumer roundAppliedToStateConsumer,
-            final SoftwareVersion softwareVersion) {
+            @NonNull final SettingsProvider settings,
+            @NonNull final SwirldStateManager swirldStateManager,
+            @NonNull final ConsensusHandlingMetrics consensusHandlingMetrics,
+            @NonNull final EventStreamManager<EventImpl> eventStreamManager,
+            @NonNull final BlockingQueue<SignedState> stateHashSignQueue,
+            @NonNull final ThrowingConsumer<EventImpl, InterruptedException> waitForEventDurability,
+            @NonNull final Runnable enterFreezePeriod,
+            @NonNull final RoundAppliedToStateConsumer roundAppliedToStateConsumer,
+            @NonNull final SoftwareVersion softwareVersion) {
 
         this.roundAppliedToStateConsumer = roundAppliedToStateConsumer;
 
@@ -180,6 +189,8 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
                 .getConfiguration()
                 .getConfigData(ConsensusConfig.class)
                 .roundsNonAncient();
+
+        this.waitForEventDurability = waitForEventDurability;
     }
 
     /**
@@ -317,9 +328,11 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
         final CycleTimingStat consensusTimingStat = consensusHandlingMetrics.getConsCycleStat();
         consensusTimingStat.startCycle();
 
-        propagateConsensusData(round);
+        waitForEventDurability.accept(round.getKeystoneEvent());
 
         consensusTimingStat.setTimePoint(1);
+
+        propagateConsensusData(round);
 
         if (round.getEventCount() > 0) {
             consensusHandlingMetrics.recordConsensusTime(round.getLastEvent().getLastTransTime());
