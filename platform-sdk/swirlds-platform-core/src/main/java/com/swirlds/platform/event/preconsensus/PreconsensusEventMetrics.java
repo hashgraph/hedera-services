@@ -61,9 +61,9 @@ public class PreconsensusEventMetrics {
     private final RunningAverageMetric preconsensusEventAverageFileSpan;
 
     private static final RunningAverageMetric.Config PRECONSENSUS_EVENT_AVERAGE_UN_UTILIZED_FILE_SPAN_CONFIG =
-            new RunningAverageMetric.Config(CATEGORY, "preconsensusEventAverageUnInitializedFileSpan")
+            new RunningAverageMetric.Config(CATEGORY, "preconsensusEventAverageUnutilizedFileSpan")
                     .withUnit("generations")
-                    .withDescription("The average un-utilized generational span of preconsensus event files. "
+                    .withDescription("The average unutilized generational span of preconsensus event files. "
                             + "Only reflects files written since the last restart. Smaller is better.");
     private final RunningAverageMetric preconsensusEventAverageUnUtilizedFileSpan;
 

@@ -47,6 +47,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.T
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile.decodeNonFungibleCreateWithFees;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile.decodeNonFungibleCreateWithFeesV2;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile.decodeNonFungibleCreateWithFeesV3;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static java.util.function.UnaryOperator.identity;
@@ -778,7 +779,7 @@ class CreatePrecompileTest {
                         .build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
-        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
+        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any(), eq(TokenCreate)))
                 .willReturn(true);
         final var validator = Mockito.mock(Function.class);
         given(createChecks.validatorForConsTime(any())).willReturn(validator);
@@ -888,7 +889,7 @@ class CreatePrecompileTest {
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(syntheticTxnFactory.createTokenCreate(tokenCreateWrapper)).willReturn(mockSynthBodyBuilder);
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
-        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
+        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any(), eq(TokenCreate)))
                 .willReturn(true);
         final var tokenCreateValidator = Mockito.mock(Function.class);
         given(createChecks.validatorForConsTime(any())).willReturn(tokenCreateValidator);
@@ -1552,7 +1553,7 @@ class CreatePrecompileTest {
         given(syntheticTxnFactory.createTokenCreate(tokenCreateWrapper)).willReturn(mockSynthBodyBuilder);
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
         given(mockSynthBodyBuilder.getTokenCreation()).willReturn(tokenCreateTransactionBody);
-        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
+        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any(), eq(TokenCreate)))
                 .willReturn(true);
         final var tokenCreateValidator = Mockito.mock(Function.class);
         given(createChecks.validatorForConsTime(any())).willReturn(tokenCreateValidator);

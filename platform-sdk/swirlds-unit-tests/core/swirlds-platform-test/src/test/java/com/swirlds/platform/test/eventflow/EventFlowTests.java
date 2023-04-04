@@ -628,6 +628,7 @@ class EventFlowTests {
                 consStats,
                 eventStreamManager,
                 signedStateTracker,
+                e -> {},
                 () -> {},
                 (round) -> {},
                 SoftwareVersion.NO_VERSION);

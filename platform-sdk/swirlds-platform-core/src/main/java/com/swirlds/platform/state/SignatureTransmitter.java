@@ -48,7 +48,8 @@ public final class SignatureTransmitter {
     }
 
     /**
-     * Transmit this node's signature to other nodes for a signed state.
+     * Transmit this node's signature to other nodes for a signed state.  Signatures from zero stake nodes are
+     * transmitted and valuable for the purpose of detecting ISSes.
      *
      * @param round
      * 		the round of the state that was signed
@@ -58,20 +59,11 @@ public final class SignatureTransmitter {
      * 		the hash of the state that was signed
      */
     public void transmitSignature(final long round, final Signature signature, final Hash stateHash) {
-        if (isZeroStake()) {
-            // If this node has no stake, there is no point in signing
-            return;
-        }
-
         final SystemTransaction signatureTransaction = new StateSignatureTransaction(round, signature, stateHash);
         final boolean success = prioritySystemTransactionSubmitter.submit(signatureTransaction);
 
         if (!success) {
             logger.error(EXCEPTION.getMarker(), "failed to create signed state transaction");
         }
-    }
-
-    private boolean isZeroStake() {
-        return addressBook.getAddress(selfId.getId()).isZeroStake();
     }
 }
