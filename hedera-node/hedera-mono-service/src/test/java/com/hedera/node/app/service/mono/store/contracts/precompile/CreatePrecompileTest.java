@@ -72,6 +72,7 @@ import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHal
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
+import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -101,7 +102,6 @@ import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.AccountStore;
 import com.hedera.node.app.service.mono.store.TypedTokenStore;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
-import com.hedera.node.app.service.mono.store.contracts.UpdateTrackingLedgerAccount;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.KeyValueWrapper;
@@ -257,8 +257,8 @@ class CreatePrecompileTest {
     private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
     private HTSPrecompiledContract subject;
-    private UpdateTrackingLedgerAccount senderMutableAccount;
-    private UpdateTrackingLedgerAccount fundingMutableAccount;
+    private UpdateTrackingAccount senderMutableAccount;
+    private UpdateTrackingAccount fundingMutableAccount;
     private MockedStatic<TokenCreatePrecompile> tokenCreatePrecompile;
 
     private static final long TEST_SERVICE_FEE = 100L;
@@ -1642,7 +1642,7 @@ class CreatePrecompileTest {
 
         final var mockSenderEvmAccount = Mockito.mock(EvmAccount.class);
         given(worldUpdater.getAccount(HTSTestsUtil.senderAddress)).willReturn(mockSenderEvmAccount);
-        senderMutableAccount = new UpdateTrackingLedgerAccount(HTSTestsUtil.senderAddress, null);
+        senderMutableAccount = new UpdateTrackingAccount(HTSTestsUtil.senderAddress, null);
         given(mockSenderEvmAccount.getMutable()).willReturn(senderMutableAccount);
         senderMutableAccount.setBalance(Wei.of(SENDER_INITIAL_BALANCE));
 
@@ -1651,8 +1651,7 @@ class CreatePrecompileTest {
         given(worldUpdater.getAccount(
                         Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress()))
                 .willReturn(mockFundingEvmAccount);
-        fundingMutableAccount =
-                new UpdateTrackingLedgerAccount(EntityIdUtils.asTypedEvmAddress(HTSTestsUtil.account), null);
+        fundingMutableAccount = new UpdateTrackingAccount(EntityIdUtils.asTypedEvmAddress(HTSTestsUtil.account), null);
         given(mockFundingEvmAccount.getMutable()).willReturn(fundingMutableAccount);
         fundingMutableAccount.setBalance(Wei.of(FUNDING_ACCOUNT_INITIAL_BALANCE));
     }

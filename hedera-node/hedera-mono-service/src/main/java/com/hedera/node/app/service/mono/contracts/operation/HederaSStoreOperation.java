@@ -22,9 +22,9 @@ import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 
 import com.google.common.annotations.VisibleForTesting;
-import java.util.function.Supplier;
 import com.google.common.base.Suppliers;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import java.util.function.Supplier;
 import javax.inject.Inject;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.evm.EVM;
