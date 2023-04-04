@@ -179,8 +179,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
                 // VERIFY: the txBytes used for inner transactions is the same as the outer transaction
                 final var innerPayerSignature = verifyPayerSignature(state, innerContext, txBytes, signatureMap);
                 final var innerOtherSignatures = verifyOtherSignatures(state, innerContext, txBytes, signatureMap);
-                innerResult =
-                        createResult(innerContext, signatureMap, innerPayerSignature, innerOtherSignatures, null);
+                innerResult = createResult(innerContext, signatureMap, innerPayerSignature, innerOtherSignatures, null);
             }
 
             // 5. Return PreHandleResult
