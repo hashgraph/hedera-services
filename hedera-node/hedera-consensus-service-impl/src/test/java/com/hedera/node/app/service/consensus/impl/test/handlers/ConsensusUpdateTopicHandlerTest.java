@@ -44,7 +44,7 @@ import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
-import com.hedera.node.app.spi.workflows.HandleStatusException;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -119,7 +119,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
 
         final var op = OP_BUILDER.topicID(wellKnownId()).adminKey(key).build();
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
-        willThrow(new HandleStatusException(ResponseCodeEnum.BAD_ENCODING))
+        willThrow(new HandleException(ResponseCodeEnum.BAD_ENCODING))
                 .given(attributeValidator)
                 .validateKey(key);
 
@@ -149,7 +149,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
 
         final var op = OP_BUILDER.topicID(wellKnownId()).submitKey(key).build();
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
-        willThrow(new HandleStatusException(ResponseCodeEnum.BAD_ENCODING))
+        willThrow(new HandleException(ResponseCodeEnum.BAD_ENCODING))
                 .given(attributeValidator)
                 .validateKey(key);
 
@@ -180,7 +180,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var op =
                 OP_BUILDER.topicID(wellKnownId()).memo("Please mind the vase").build();
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
-        willThrow(new HandleStatusException(ResponseCodeEnum.MEMO_TOO_LONG))
+        willThrow(new HandleException(ResponseCodeEnum.MEMO_TOO_LONG))
                 .given(attributeValidator)
                 .validateMemo(op.memo());
 
@@ -211,7 +211,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         final var impliedMeta = new ExpiryMeta(123L, NA, NA, NA, NA);
-        willThrow(new HandleStatusException(ResponseCodeEnum.INVALID_EXPIRATION_TIME))
+        willThrow(new HandleException(ResponseCodeEnum.INVALID_EXPIRATION_TIME))
                 .given(expiryValidator)
                 .resolveUpdateAttempt(currentExpiryMeta, impliedMeta);
 
@@ -251,7 +251,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         final var impliedMeta = new ExpiryMeta(NA, 123L, NA, NA, NA);
-        willThrow(new HandleStatusException(ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE))
+        willThrow(new HandleException(ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE))
                 .given(expiryValidator)
                 .resolveUpdateAttempt(currentExpiryMeta, impliedMeta);
 
@@ -290,7 +290,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         final var impliedMeta = new ExpiryMeta(NA, NA, autoRenewId.accountNum());
-        willThrow(new HandleStatusException(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT))
+        willThrow(new HandleException(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT))
                 .given(expiryValidator)
                 .resolveUpdateAttempt(currentExpiryMeta, impliedMeta);
 
@@ -336,7 +336,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
     }
 
     public static void assertFailsWith(final ResponseCodeEnum status, final Runnable something) {
-        final var ex = assertThrows(HandleStatusException.class, something::run);
+        final var ex = assertThrows(HandleException.class, something::run);
         assertEquals(status, ex.getStatus());
     }
 

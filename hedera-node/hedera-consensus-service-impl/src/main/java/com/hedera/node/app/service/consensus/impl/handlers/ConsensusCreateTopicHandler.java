@@ -37,7 +37,7 @@ import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRe
 import com.hedera.node.app.service.consensus.impl.records.CreateTopicRecordBuilder;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
-import com.hedera.node.app.spi.workflows.HandleStatusException;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -109,7 +109,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
 
         /* Validate if the current topic can be created */
         if (topicStore.sizeOfState() >= consensusServiceConfig.maxTopics()) {
-            throw new HandleStatusException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+            throw new HandleException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
         }
 
         /* Validate the topic memo */
@@ -145,11 +145,11 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
 
             /* --- Build the record with newly created topic --- */
             recordBuilder.setCreatedTopic(topic.topicNumber());
-        } catch (final HandleStatusException e) {
+        } catch (final HandleException e) {
             if (e.getStatus() == INVALID_EXPIRATION_TIME) {
                 // Since for some reason TopicCreateTransactionBody does not have an expiration time,
                 // it makes more sense to propagate AUTORENEW_DURATION_NOT_IN_RANGE
-                throw new HandleStatusException(AUTORENEW_DURATION_NOT_IN_RANGE);
+                throw new HandleException(AUTORENEW_DURATION_NOT_IN_RANGE);
             }
             throw e;
         }

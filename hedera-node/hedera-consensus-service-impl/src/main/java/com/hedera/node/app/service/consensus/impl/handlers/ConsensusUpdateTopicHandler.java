@@ -21,8 +21,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
-import static com.hedera.node.app.spi.workflows.HandleStatusException.validateFalse;
-import static com.hedera.node.app.spi.workflows.HandleStatusException.validateTrue;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;

@@ -26,7 +26,7 @@ import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.txns.TransitionLogicLookup;
 import com.hedera.node.app.service.mono.txns.TransitionRunner;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
-import com.hedera.node.app.spi.workflows.HandleStatusException;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -72,7 +72,7 @@ public class AdaptedMonoTransitionRunner extends TransitionRunner {
             try {
                 dispatcher.dispatchHandle(function, PbjConverter.toPbj(accessor.getTxn()), writableStoreFactory);
                 txnCtx.setStatus(SUCCESS);
-            } catch (final HandleStatusException e) {
+            } catch (final HandleException e) {
                 super.resolveFailure(PbjConverter.fromPbj(e.getStatus()), accessor, e);
             }
             return true;
