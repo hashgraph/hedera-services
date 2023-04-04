@@ -16,6 +16,7 @@
 
 package com.hedera.node.app;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.annotations.MaxSignedTxnSize;
 import com.hedera.node.app.annotations.NodeSelfId;
 import com.hedera.node.app.authorization.AuthorizerDaggerModule;
@@ -129,7 +130,7 @@ public interface HederaApp extends ServicesApp {
         Builder consoleCreator(StateModule.ConsoleCreator consoleCreator);
 
         @BindsInstance
-        Builder selfId(@NodeSelfId final long selfId);
+        Builder selfId(@NodeSelfId final AccountID selfId);
 
         @BindsInstance
         Builder staticAccountMemo(@StaticAccountMemo String accountMemo);

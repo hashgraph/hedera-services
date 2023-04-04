@@ -180,29 +180,13 @@ public class SyncTestExecutor {
             long callerMinGen = SyncUtils.getMinGen(caller.getShadowGraph().findAncestors(callerTips, (e) -> true));
             long callerMaxGen = SyncUtils.getMaxGen(callerTips);
 
-            long listenerMinNonAncientGen = listenerMinGen;
-            double listenerDif = listenerMaxGen - listenerMinGen;
-            if (listenerDif >= 3) {
-                listenerMinNonAncientGen += Math.floor(listenerDif / 3);
-            } else if (listenerDif == 2) {
-                listenerMinNonAncientGen++;
-            }
-
-            long callerMinNonAncientGen = callerMinGen;
-            double callerDif = callerMaxGen - callerMinGen;
-            if (callerDif >= 3) {
-                callerMinNonAncientGen += Math.floor(callerDif / 3);
-            } else if (callerDif == 2) {
-                callerMinNonAncientGen++;
-            }
-
             when(caller.getConsensus().getMaxRoundGeneration()).thenReturn(callerMaxGen);
             when(caller.getConsensus().getMinRoundGeneration()).thenReturn(callerMinGen);
-            when(caller.getConsensus().getMinGenerationNonAncient()).thenReturn(callerMinNonAncientGen);
+            when(caller.getConsensus().getMinGenerationNonAncient()).thenReturn(callerMinGen);
 
             when(listener.getConsensus().getMaxRoundGeneration()).thenReturn(listenerMaxGen);
             when(listener.getConsensus().getMinRoundGeneration()).thenReturn(listenerMinGen);
-            when(listener.getConsensus().getMinGenerationNonAncient()).thenReturn(listenerMinNonAncientGen);
+            when(listener.getConsensus().getMinGenerationNonAncient()).thenReturn(listenerMinGen);
         };
     }
 

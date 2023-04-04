@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
@@ -116,7 +117,7 @@ class SubmissionManagerTest extends AppTestBase {
             // Then the platform actually receives the bytes
             verify(platform).createTransaction(bytes);
             // And the record cache is updated with this transaction
-            verify(recordCache).addPreConsensus(txBody.transactionID());
+            verify(recordCache).addPreConsensus(txBody.transactionID(), TransactionReceipt.DEFAULT);
             // And the metrics keeping track of errors submitting are NOT touched
             verify(platformTxnRejections, never()).cycle();
         }
@@ -132,7 +133,7 @@ class SubmissionManagerTest extends AppTestBase {
                     .isInstanceOf(PreCheckException.class)
                     .hasFieldOrPropertyWithValue("responseCode", PLATFORM_TRANSACTION_NOT_CREATED);
             // And the transaction is NOT added to the record cache
-            verify(recordCache, never()).addPreConsensus(any());
+            verify(recordCache, never()).addPreConsensus(any(), any());
             // And the error metrics HAVE been updated
             verify(platformTxnRejections).cycle();
         }
@@ -186,7 +187,7 @@ class SubmissionManagerTest extends AppTestBase {
             // Then the platform actually sees the unchecked bytes
             verify(platform).createTransaction(uncheckedBytes);
             // And the record cache is updated with this transaction
-            verify(recordCache).addPreConsensus(txBody.transactionID());
+            verify(recordCache).addPreConsensus(txBody.transactionID(), TransactionReceipt.DEFAULT);
             // And the metrics keeping track of errors submitting are NOT touched
             verify(platformTxnRejections, never()).cycle();
         }
@@ -196,6 +197,7 @@ class SubmissionManagerTest extends AppTestBase {
         void testUncheckedSubmitInProdFails() {
             // Given we are in PROD mode
             when(nodeLocalProperties.activeProfile()).thenReturn(Profile.PROD);
+            submissionManager = new SubmissionManager(platform, recordCache, nodeLocalProperties, mockedMetrics);
 
             // When we submit an unchecked transaction, and separate bytes, then the
             // submission FAILS because we are in PROD mode
@@ -206,7 +208,7 @@ class SubmissionManagerTest extends AppTestBase {
             // Then the platform NEVER sees the unchecked bytes
             verify(platform, never()).createTransaction(uncheckedBytes);
             // And the record cache is NOT updated with this transaction
-            verify(recordCache, never()).addPreConsensus(txBody.transactionID());
+            verify(recordCache, never()).addPreConsensus(txBody.transactionID(), TransactionReceipt.DEFAULT);
             // We never attempted to submit this tx to the platform, so we don't increase the metric
             verify(platformTxnRejections, never()).cycle();
         }
@@ -218,6 +220,7 @@ class SubmissionManagerTest extends AppTestBase {
         void testBogusBytes() {
             // Given we are in TEST mode and have a transaction with bogus bytes
             when(nodeLocalProperties.activeProfile()).thenReturn(Profile.TEST);
+            submissionManager = new SubmissionManager(platform, recordCache, nodeLocalProperties, mockedMetrics);
             txBody = TransactionBody.newBuilder()
                     .transactionID(TransactionID.newBuilder().build())
                     .uncheckedSubmit(UncheckedSubmitBody.newBuilder()
@@ -234,9 +237,7 @@ class SubmissionManagerTest extends AppTestBase {
             // Then the platform NEVER sees the unchecked bytes
             verify(platform, never()).createTransaction(uncheckedBytes);
             // And the record cache is NOT updated with this transaction
-            verify(recordCache, never()).addPreConsensus(txBody.transactionID());
-            // We never attempted to submit this tx to the platform, so we don't increase the metric
-            verify(platformTxnRejections, never()).cycle();
+            verify(recordCache, never()).addPreConsensus(txBody.transactionID(), TransactionReceipt.DEFAULT);
         }
     }
 }

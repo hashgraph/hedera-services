@@ -16,11 +16,11 @@
 
 package com.hedera.node.app.state.merkle.disk;
 
+import static com.hedera.node.app.state.merkle.StateUtils.writeToStream;
+
 import com.hedera.node.app.state.merkle.StateMetadata;
-import com.hedera.node.app.state.merkle.data.MeteredOutputStream;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
-import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -111,7 +111,7 @@ public final class OnDiskKeySerializer<K extends Comparable<? super K>>
     @Override
     public int deserializeKeySize(@NonNull final ByteBuffer byteBuffer) {
         try {
-            return codec.measure(BufferedData.wrap(byteBuffer));
+            return codec.measure(BufferedData.wrap(byteBuffer)) + 4;
         } catch (IOException e) {
             // Maybe log here?
             return -1;
@@ -120,7 +120,9 @@ public final class OnDiskKeySerializer<K extends Comparable<? super K>>
 
     @Override
     public OnDiskKey<K> deserialize(@NonNull final ByteBuffer byteBuffer, final long ignored) throws IOException {
-        final var k = codec.parse(BufferedData.wrap(byteBuffer));
+        final var buff = BufferedData.wrap(byteBuffer);
+        buff.skip(4); // skip the length we wrote
+        final var k = codec.parse(buff);
         Objects.requireNonNull(k);
         return new OnDiskKey<>(md, k);
     }
@@ -128,10 +130,7 @@ public final class OnDiskKeySerializer<K extends Comparable<? super K>>
     @Override
     public int serialize(@Nullable final OnDiskKey<K> key, @NonNull final SerializableDataOutputStream out)
             throws IOException {
-        final var metered = new MeteredOutputStream(out);
-        final var k = Objects.requireNonNull(Objects.requireNonNull(key).getKey());
-        codec.write(k, new WritableStreamingData(metered));
-        return metered.getCountWritten();
+        return writeToStream(out, codec, Objects.requireNonNull(key).getKey());
     }
 
     @Override

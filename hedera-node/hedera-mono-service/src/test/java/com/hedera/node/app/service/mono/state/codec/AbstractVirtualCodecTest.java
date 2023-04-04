@@ -111,6 +111,7 @@ abstract class AbstractVirtualCodecTest<T> {
         final T instance;
         final var bais = new ByteArrayInputStream(serialized);
         final var in = new ReadableStreamingData(bais);
+        in.limit(serialized.length);
         try {
             instance = subject.parse(in);
         } catch (IOException e) {

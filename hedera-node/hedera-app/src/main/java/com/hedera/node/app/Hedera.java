@@ -23,6 +23,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOTAL_TINY_BAR
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.grpc.GrpcServiceBuilder;
 import com.hedera.node.app.service.admin.FreezeService;
 import com.hedera.node.app.service.admin.impl.FreezeServiceImpl;
@@ -690,6 +691,7 @@ public final class Hedera implements SwirldMain {
         if (daggerApp == null) {
             stateChildren = state.getStateChildrenProvider(platform);
             final var nodeAddress = stateChildren.addressBook().getAddress(selfId);
+            final var nodeSelfAccount = parseAccount(nodeAddress.getMemo());
             final var initialHash =
                     stateChildren.runningHashLeaf().getRunningHash().getHash();
             // Fully qualified so as to not confuse javadoc
@@ -701,7 +703,7 @@ public final class Hedera implements SwirldMain {
                     .consoleCreator(SwirldsGui::createConsole)
                     .maxSignedTxnSize(MAX_SIGNED_TXN_SIZE)
                     .crypto(CryptographyHolder.get())
-                    .selfId(selfId)
+                    .selfId(nodeSelfAccount)
                     .build();
         }
     }
@@ -720,5 +722,18 @@ public final class Hedera implements SwirldMain {
 
     private boolean isDowngrade(SerializableSemVers deployedVersion, SoftwareVersion deserializedVersion) {
         return deployedVersion.isBefore(deserializedVersion);
+    }
+
+    private AccountID parseAccount(@NonNull final String string) {
+        try {
+            final var parts = string.split("\\.");
+            return AccountID.newBuilder()
+                    .shardNum(Long.parseLong(parts[0]))
+                    .realmNum(Long.parseLong(parts[1]))
+                    .accountNum(Long.parseLong(parts[2]))
+                    .build();
+        } catch (final NumberFormatException | ArrayIndexOutOfBoundsException e) {
+            throw new IllegalArgumentException(String.format("'%s' is not a dot-separated triplet", string));
+        }
     }
 }

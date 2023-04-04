@@ -49,7 +49,7 @@ public class IngestChecker {
 
     private static final Logger logger = LogManager.getLogger(IngestChecker.class);
 
-    private final long nodeAccountID;
+    private final AccountID nodeAccountID;
     private final SolvencyPrecheck solvencyPrecheck;
     private final SignaturePreparer signaturePreparer;
 
@@ -63,7 +63,7 @@ public class IngestChecker {
      */
     @Inject
     public IngestChecker(
-            @NonNull @NodeSelfId final long nodeAccountID,
+            @NonNull @NodeSelfId final AccountID nodeAccountID,
             @NonNull final SolvencyPrecheck solvencyPrecheck,
             @NonNull final SignaturePreparer signaturePreparer) {
         this.nodeAccountID = requireNonNull(nodeAccountID);

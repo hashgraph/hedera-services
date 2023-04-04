@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.prehandle;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -28,9 +29,9 @@ import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.onset.WorkflowOnset;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.TransactionSignature;
@@ -55,7 +56,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
     private static final Logger LOG = LogManager.getLogger(PreHandleWorkflowImpl.class);
 
-    private final WorkflowOnset onset;
+    private final TransactionChecker transactionChecker;
     private final TransactionDispatcher dispatcher;
     private final SignaturePreparer signaturePreparer;
     private final Cryptography cryptography;
@@ -67,7 +68,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
      * @param exe the {@link ExecutorService} to use when submitting new tasks
      * @param dispatcher the {@link TransactionDispatcher} that will call transaction-specific
      * {@code preHandle()}-methods
-     * @param onset the {@link WorkflowOnset} that pre-processes the {@link byte[]} of a transaction
+     * @param transactionChecker the {@link TransactionChecker} that pre-processes the {@link byte[]} of a transaction
      * @param signaturePreparer the {@link SignaturePreparer} to prepare signatures
      * @param cryptography the {@link Cryptography} component used to verify signatures
      * @throws NullPointerException if any of the parameters is {@code null}
@@ -76,12 +77,12 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     public PreHandleWorkflowImpl(
             @NonNull final ExecutorService exe,
             @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final WorkflowOnset onset,
+            @NonNull final TransactionChecker transactionChecker,
             @NonNull final SignaturePreparer signaturePreparer,
             @NonNull final Cryptography cryptography) {
         requireNonNull(exe);
         this.dispatcher = requireNonNull(dispatcher);
-        this.onset = requireNonNull(onset);
+        this.transactionChecker = requireNonNull(transactionChecker);
         this.signaturePreparer = requireNonNull(signaturePreparer);
         this.cryptography = requireNonNull(cryptography);
         this.runner = runnable -> CompletableFuture.runAsync(runnable, exe);
@@ -90,12 +91,12 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     // Used only for testing
     PreHandleWorkflowImpl(
             @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final WorkflowOnset onset,
+            @NonNull final TransactionChecker transactionChecker,
             @NonNull final SignaturePreparer signaturePreparer,
             @NonNull final Cryptography cryptography,
             @NonNull final Function<Runnable, CompletableFuture<Void>> runner) {
         this.dispatcher = requireNonNull(dispatcher);
-        this.onset = requireNonNull(onset);
+        this.transactionChecker = requireNonNull(transactionChecker);
         this.signaturePreparer = requireNonNull(signaturePreparer);
         this.cryptography = requireNonNull(cryptography);
         this.runner = requireNonNull(runner);
@@ -147,14 +148,14 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             final var txBytes = Bytes.wrap(platformTx.getContents());
 
             // 1. Parse the Transaction and check the syntax
-            final var onsetResult = onset.parseAndCheck(txBytes);
+            final var onsetResult = transactionChecker.parseAndCheck(txBytes);
             txBody = onsetResult.txBody();
 
             // 2. Call PreTransactionHandler to do transaction-specific checks, get list of required
             // keys, and prefetch required data
             final var storeFactory = new ReadableStoreFactory(state);
             final var accountStore = storeFactory.createAccountStore();
-            final var context = new PreHandleContext(accountStore, txBody, onsetResult.errorCode());
+            final var context = new PreHandleContext(accountStore, txBody, OK);
             dispatcher.dispatchPreHandle(storeFactory, context);
 
             // 3. Prepare and verify signature-data
