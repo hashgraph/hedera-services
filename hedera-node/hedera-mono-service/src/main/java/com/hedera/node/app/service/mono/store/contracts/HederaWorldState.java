@@ -28,6 +28,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.contracts.WorldStateAccount;
+import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer;
@@ -220,8 +221,8 @@ public class HederaWorldState implements HederaMutableWorldState {
 
         @SuppressWarnings("unchecked")
         private void addAllStorageUpdatesToStateChanges() {
-            for (UpdateTrackingLedgerAccount<? extends Account> uta :
-                    (Collection<UpdateTrackingLedgerAccount<? extends Account>>) this.getTouchedAccounts()) {
+            for (UpdateTrackingAccount<? extends Account> uta :
+                    (Collection<UpdateTrackingAccount<? extends Account>>) this.getTouchedAccounts()) {
                 final var storageUpdates = uta.getUpdatedStorage().entrySet();
                 if (!storageUpdates.isEmpty()) {
                     final Map<Bytes, Pair<Bytes, Bytes>> accountChanges =
@@ -291,7 +292,7 @@ public class HederaWorldState implements HederaMutableWorldState {
             final HederaWorldState wrapped = (HederaWorldState) wrappedWorldView();
             final var entityAccess = wrapped.entityAccess;
             final var impactHistorian = wrapped.sigImpactHistorian;
-            final var updatedAccounts = getUpdatedAccounts();
+            final var updatedAccounts = getUpdatedAccountsCollection();
 
             trackNewlyCreatedAccounts(
                     entityAccess,
@@ -323,7 +324,7 @@ public class HederaWorldState implements HederaMutableWorldState {
                 final List<ContractID> provisionalCreations,
                 final SigImpactHistorian impactHistorian,
                 final Collection<Address> deletedAddresses,
-                final Collection<UpdateTrackingLedgerAccount<Account>> updatedAccounts) {
+                final Collection<UpdateTrackingAccount<Account>> updatedAccounts) {
             deletedAddresses.forEach(address -> {
                 final var accountId = accountIdFromEvmAddress(address);
                 validateTrue(impactHistorian != null, FAIL_INVALID);
@@ -356,13 +357,12 @@ public class HederaWorldState implements HederaMutableWorldState {
         }
 
         private void commitSizeLimitedStorageTo(
-                final EntityAccess entityAccess,
-                final Collection<UpdateTrackingLedgerAccount<Account>> updatedAccounts) {
+                final EntityAccess entityAccess, final Collection<UpdateTrackingAccount<Account>> updatedAccounts) {
             for (final var updatedAccount : updatedAccounts) {
                 // We don't check updatedAccount.getStorageWasCleared(), because we only purge
                 // storage
                 // slots when a contract has expired and is being permanently removed from state
-                final var accountId = updatedAccount.getAccountId();
+                final var accountId = accountIdFromEvmAddress(updatedAccount.getAddress());
                 final var kvUpdates = updatedAccount.getUpdatedStorage();
                 if (!kvUpdates.isEmpty()) {
                     kvUpdates.forEach((key, value) -> entityAccess.putStorage(accountId, key, value));
@@ -371,7 +371,8 @@ public class HederaWorldState implements HederaMutableWorldState {
             entityAccess.flushStorage(trackingAccounts());
             for (final var updatedAccount : updatedAccounts) {
                 if (updatedAccount.codeWasUpdated()) {
-                    entityAccess.storeCode(updatedAccount.getAccountId(), updatedAccount.getCode());
+                    final var accountId = accountIdFromEvmAddress(updatedAccount.getAddress());
+                    entityAccess.storeCode(accountId, updatedAccount.getCode());
                 }
             }
         }

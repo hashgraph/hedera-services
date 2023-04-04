@@ -47,11 +47,13 @@ import static com.hedera.node.app.service.mono.utils.EntityIdUtils.contractIdFro
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmStackedWorldUpdater;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount;
+import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
+import com.hedera.node.app.service.mono.store.UpdateAccountTrackerImpl;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.tuweni.bytes.Bytes;
@@ -210,7 +212,8 @@ public class HederaStackedWorldStateUpdater extends AbstractStackedLedgerUpdater
         final var address = aliases().resolveForEvm(addressOrAlias);
         if (isTokenRedirect(address)) {
             final var proxyAccount = new HederaEvmWorldStateTokenAccount(address);
-            final var newMutable = new UpdateTrackingLedgerAccount<>(proxyAccount, trackingAccounts());
+            final var newMutable =
+                    new UpdateTrackingAccount<>(proxyAccount, new UpdateAccountTrackerImpl(trackingAccounts()));
             return new WrappedEvmAccount(newMutable);
         }
         return super.getAccount(address);

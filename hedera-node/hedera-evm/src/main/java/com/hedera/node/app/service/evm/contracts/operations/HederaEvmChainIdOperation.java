@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.mono.contracts.operation;
+package com.hedera.node.app.service.evm.contracts.operations;
 
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import javax.inject.Inject;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -27,20 +27,21 @@ import org.hyperledger.besu.evm.operation.AbstractOperation;
 import org.hyperledger.besu.evm.operation.Operation;
 
 /**
- * Chain id is set by a dynamic property.
+ * Hedera adapted ChainIdOperation.
+ *
+ * <p>Chain ID is set by a dynamic property.
  */
-public class HederaChainIdOperation extends AbstractOperation {
+public class HederaEvmChainIdOperation extends AbstractOperation {
 
-    final GlobalDynamicProperties globalDynamicProperties;
+    final EvmProperties evmProperties;
     final Operation.OperationResult successResponse;
     private final OperationResult oogResponse;
     private final long gasCost;
 
     @Inject
-    public HederaChainIdOperation(
-            final GasCalculator gasCalculator, final GlobalDynamicProperties globalDynamicProperties) {
+    public HederaEvmChainIdOperation(final GasCalculator gasCalculator, final EvmProperties evmProperties) {
         super(0x46, "CHAINID", 0, 1, 1, gasCalculator);
-        this.globalDynamicProperties = globalDynamicProperties;
+        this.evmProperties = evmProperties;
         this.gasCost = gasCalculator.getBaseTierGasCost();
         this.successResponse = new OperationResult(gasCost, null);
         this.oogResponse = new OperationResult(gasCost, INSUFFICIENT_GAS);
@@ -50,7 +51,7 @@ public class HederaChainIdOperation extends AbstractOperation {
         if (frame.getRemainingGas() < gasCost) {
             return oogResponse;
         }
-        frame.pushStackItem(globalDynamicProperties.chainIdBytes32());
+        frame.pushStackItem(evmProperties.chainIdBytes32());
         return successResponse;
     }
 }

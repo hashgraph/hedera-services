@@ -23,6 +23,7 @@ import com.hedera.node.app.service.evm.contracts.operations.HederaBalanceOperati
 import com.hedera.node.app.service.evm.contracts.operations.HederaDelegateCallOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaEvmCreate2Operation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaEvmCreateOperation;
+import com.hedera.node.app.service.evm.contracts.operations.HederaEvmChainIdOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeCopyOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeHashOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeSizeOperation;
@@ -31,7 +32,6 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.contracts.ContractsModule.V_0_34;
 import com.hedera.node.app.service.mono.contracts.operation.HederaCallCodeOperation;
 import com.hedera.node.app.service.mono.contracts.operation.HederaCallOperationV034;
-import com.hedera.node.app.service.mono.contracts.operation.HederaChainIdOperation;
 import com.hedera.node.app.service.mono.contracts.operation.HederaLogOperation;
 import com.hedera.node.app.service.mono.contracts.operation.HederaPrngSeedOperator;
 import com.hedera.node.app.service.mono.contracts.operation.HederaSLoadOperation;
@@ -122,7 +122,7 @@ public interface ContractsV_0_34Module {
     @Singleton
     @IntoSet
     @V_0_34
-    Operation bindChainIdOperation(HederaChainIdOperation chainIdOperation);
+    Operation bindChainIdOperation(HederaEvmChainIdOperation chainIdOperation);
 
     @Binds
     @Singleton
