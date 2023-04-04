@@ -78,7 +78,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
 
     private final FeeAccumulator feeAccumulator;
     private final Codec<Query> queryParser;
-    private final QueryMetrics queryMetrics;
 
     /**
      * Constructor of {@code QueryWorkflowImpl}
@@ -89,7 +88,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
      * @param submissionManager the {@link SubmissionManager} to submit transactions to the platform
      * @param checker the {@link QueryChecker} with specific checks of an ingest-workflow
      * @param dispatcher the {@link QueryDispatcher} that will call query-specific methods
-     * @param queryMetrics collection of metrics related to queries
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject
@@ -99,7 +97,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             @NonNull final SubmissionManager submissionManager,
             @NonNull final QueryChecker checker,
             @NonNull final QueryDispatcher dispatcher,
-            @NonNull final QueryMetrics queryMetrics,
             @NonNull final FeeAccumulator feeAccumulator,
             @NonNull final Codec<Query> queryParser) {
         this.stateAccessor = requireNonNull(stateAccessor);
@@ -109,7 +106,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         this.dispatcher = requireNonNull(dispatcher);
         this.feeAccumulator = requireNonNull(feeAccumulator);
         this.queryParser = requireNonNull(queryParser);
-        this.queryMetrics = requireNonNull(queryMetrics);
     }
 
     @Override
@@ -124,7 +120,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         logger.debug("Received query: {}", query);
 
         final var function = functionOf(query);
-        queryMetrics.countReceived(function);
 
         final var handler = dispatcher.getHandler(query);
         final var queryHeader = handler.extractHeader(query);
@@ -196,8 +191,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 final var header = createResponseHeader(responseType, validity, fee);
                 response = dispatcher.getResponse(storeFactory, query, header);
             }
-
-            queryMetrics.countAnswered(function);
         } catch (InsufficientBalanceException e) {
             final var header = createResponseHeader(responseType, e.responseCode(), e.getEstimatedFee());
             response = handler.createEmptyResponse(header);
