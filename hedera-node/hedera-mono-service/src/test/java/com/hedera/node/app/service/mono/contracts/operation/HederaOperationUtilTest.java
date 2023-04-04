@@ -38,6 +38,7 @@ package com.hedera.node.app.service.mono.contracts.operation;
  *
  */
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
@@ -181,7 +182,8 @@ class HederaOperationUtilTest {
         given(messageFrame.getWorldUpdater()).willReturn(hederaWorldUpdater);
         given(hederaWorldUpdater.get(Address.ZERO)).willReturn(worldStateAccount);
         given(worldStateAccount.getAddress()).willReturn(Address.ZERO);
-        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(true, mockTarget, Address.ALTBN128_ADD, ledgers))
+        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                        true, mockTarget, Address.ALTBN128_ADD, ledgers, ContractCall))
                 .willReturn(false);
         given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
         given(hederaWorldUpdater.trackingLedgers()).willReturn(ledgers);
@@ -204,7 +206,8 @@ class HederaOperationUtilTest {
         verify(messageFrame).getWorldUpdater();
         verify(hederaWorldUpdater).get(Address.ZERO);
         verify(worldStateAccount).getAddress();
-        verify(sigsVerifier).hasActiveKeyOrNoReceiverSigReq(true, mockTarget, PRETEND_RECIPIENT_ADDR, ledgers);
+        verify(sigsVerifier)
+                .hasActiveKeyOrNoReceiverSigReq(true, mockTarget, PRETEND_RECIPIENT_ADDR, ledgers, ContractCall);
         verify(gasSupplier).getAsLong();
         verify(executionSupplier, never()).get();
     }
@@ -218,7 +221,8 @@ class HederaOperationUtilTest {
         given(messageFrame.getWorldUpdater()).willReturn(hederaWorldUpdater);
         given(hederaWorldUpdater.get(Address.ZERO)).willReturn(worldStateAccount);
         given(worldStateAccount.getAddress()).willReturn(Address.ZERO);
-        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(false, mockTarget, Address.ALTBN128_MUL, ledgers))
+        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                        false, mockTarget, Address.ALTBN128_MUL, ledgers, ContractCall))
                 .willReturn(false);
         given(gasSupplier.getAsLong()).willReturn(expectedHaltGas);
         given(hederaWorldUpdater.trackingLedgers()).willReturn(ledgers);
@@ -241,7 +245,8 @@ class HederaOperationUtilTest {
         verify(messageFrame).getWorldUpdater();
         verify(hederaWorldUpdater).get(Address.ZERO);
         verify(worldStateAccount).getAddress();
-        verify(sigsVerifier).hasActiveKeyOrNoReceiverSigReq(false, mockTarget, PRETEND_CONTRACT_ADDR, ledgers);
+        verify(sigsVerifier)
+                .hasActiveKeyOrNoReceiverSigReq(false, mockTarget, PRETEND_CONTRACT_ADDR, ledgers, ContractCall);
         verify(gasSupplier).getAsLong();
         verify(executionSupplier, never()).get();
     }
@@ -255,7 +260,8 @@ class HederaOperationUtilTest {
         given(hederaWorldUpdater.trackingLedgers()).willReturn(ledgers);
         given(hederaWorldUpdater.get(Address.ZERO)).willReturn(worldStateAccount);
         given(worldStateAccount.getAddress()).willReturn(Address.ZERO);
-        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(true, mockTarget, PRETEND_RECIPIENT_ADDR, ledgers))
+        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                        true, mockTarget, PRETEND_RECIPIENT_ADDR, ledgers, ContractCall))
                 .willReturn(true);
         long expectedSuccessfulGas = 100L;
         given(executionSupplier.get()).willReturn(new Operation.OperationResult(expectedSuccessfulGas, null));
@@ -278,7 +284,8 @@ class HederaOperationUtilTest {
         verify(messageFrame).getWorldUpdater();
         verify(hederaWorldUpdater).get(Address.ZERO);
         verify(worldStateAccount).getAddress();
-        verify(sigsVerifier).hasActiveKeyOrNoReceiverSigReq(true, mockTarget, PRETEND_RECIPIENT_ADDR, ledgers);
+        verify(sigsVerifier)
+                .hasActiveKeyOrNoReceiverSigReq(true, mockTarget, PRETEND_RECIPIENT_ADDR, ledgers, ContractCall);
         verify(gasSupplier, never()).getAsLong();
         verify(executionSupplier).get();
     }
