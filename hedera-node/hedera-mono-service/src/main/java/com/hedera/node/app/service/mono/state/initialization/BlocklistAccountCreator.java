@@ -74,12 +74,6 @@ public class BlocklistAccountCreator {
     private final List<HederaAccount> accountsCreated = new ArrayList<>();
     private AccountNumbers accountNumbers;
 
-    /**
-     * @param evmAddress the EVM address of the blocked account
-     * @param memo      the memo of the blocked account
-     */
-    record BlockedInfo(@NonNull ByteString evmAddress, @NonNull String memo) {}
-
     @Inject
     public BlocklistAccountCreator(
             final @NonNull Supplier<HederaAccount> accountSupplier,
@@ -251,4 +245,10 @@ public class BlocklistAccountCreator {
     public void forgetCreatedBlockedAccounts() {
         accountsCreated.clear();
     }
+
+    /**
+     * @param evmAddress the EVM address of the blocked account
+     * @param memo      the memo of the blocked account
+     */
+    record BlockedInfo(@NonNull ByteString evmAddress, @NonNull String memo) {}
 }
