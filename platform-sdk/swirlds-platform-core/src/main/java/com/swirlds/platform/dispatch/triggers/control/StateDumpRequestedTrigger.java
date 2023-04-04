@@ -24,6 +24,8 @@ import com.swirlds.platform.dispatch.types.TriggerTwo;
 @FunctionalInterface
 public interface StateDumpRequestedTrigger extends TriggerTwo<String, Boolean> {
 
+
+    // TODO make it so this can dump different rounds
     /**
      * Request that the most recent signed state be dumped to disk.
      *
