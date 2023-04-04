@@ -17,6 +17,8 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -69,7 +71,12 @@ public abstract class AbstractFreezeUnfreezePrecompile extends AbstractWritePrec
         final var tokenId = Id.fromGrpcToken(freezeUnfreezeOp.token());
         final var accountId = Id.fromGrpcAccount(freezeUnfreezeOp.account());
         final var hasRequiredSigs = KeyActivationUtils.validateKey(
-                frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveFreezeKey, ledgers, aliases);
+                frame,
+                tokenId.asEvmAddress(),
+                sigsVerifier::hasActiveFreezeKey,
+                ledgers,
+                aliases,
+                hasFreezeLogic ? TokenFreezeAccount : TokenUnfreezeAccount);
         validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
         /* --- Build the necessary infrastructure to execute the transaction --- */

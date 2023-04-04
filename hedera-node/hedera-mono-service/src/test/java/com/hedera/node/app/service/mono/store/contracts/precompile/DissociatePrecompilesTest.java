@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiCon
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKENS;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.DissociatePrecompile.decodeDissociate;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.MultiDissociatePrecompile.decodeMultipleDissociations;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
@@ -232,8 +233,7 @@ class DissociatePrecompilesTest {
     @BeforeEach
     void setUp() throws IOException {
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
-        canonicalPrices.put(
-                HederaFunctionality.TokenDissociateFromAccount, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
+        canonicalPrices.put(TokenDissociateFromAccount, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
         final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
                 assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
@@ -271,7 +271,12 @@ class DissociatePrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        given(sigsVerifier.hasActiveKey(false, HTSTestsUtil.accountAddr, HTSTestsUtil.senderAddr, wrappedLedgers))
+        given(sigsVerifier.hasActiveKey(
+                        false,
+                        HTSTestsUtil.accountAddr,
+                        HTSTestsUtil.senderAddr,
+                        wrappedLedgers,
+                        TokenDissociateFromAccount))
                 .willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
         given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
         dissociatePrecompile
@@ -309,7 +314,12 @@ class DissociatePrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        given(sigsVerifier.hasActiveKey(false, HTSTestsUtil.accountAddr, HTSTestsUtil.senderAddr, wrappedLedgers))
+        given(sigsVerifier.hasActiveKey(
+                        false,
+                        HTSTestsUtil.accountAddr,
+                        HTSTestsUtil.senderAddr,
+                        wrappedLedgers,
+                        TokenDissociateFromAccount))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
@@ -357,7 +367,12 @@ class DissociatePrecompilesTest {
                 .thenReturn(HTSTestsUtil.multiDissociateOp);
         given(syntheticTxnFactory.createDissociate(HTSTestsUtil.multiDissociateOp))
                 .willReturn(mockSynthBodyBuilder);
-        given(sigsVerifier.hasActiveKey(false, HTSTestsUtil.accountAddr, HTSTestsUtil.senderAddr, wrappedLedgers))
+        given(sigsVerifier.hasActiveKey(
+                        false,
+                        HTSTestsUtil.accountAddr,
+                        HTSTestsUtil.senderAddr,
+                        wrappedLedgers,
+                        TokenDissociateFromAccount))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))

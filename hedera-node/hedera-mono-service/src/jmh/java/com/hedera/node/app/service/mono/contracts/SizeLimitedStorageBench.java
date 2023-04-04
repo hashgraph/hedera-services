@@ -130,9 +130,9 @@ public class SizeLimitedStorageBench {
     private void registerConstructables() {
         try {
             Constructables.registerForAccounts();
-            Constructables.registerForJasperDb();
             Constructables.registerForMerkleMap();
             Constructables.registerForVirtualMap();
+            Constructables.registerForVirtualDataSource();
             Constructables.registerForContractStorage();
         } catch (final ConstructableRegistryException e) {
             throw new IllegalStateException(e);
