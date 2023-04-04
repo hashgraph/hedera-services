@@ -98,7 +98,7 @@ class HederaCreate2OperationTest {
     void computesExpectedTargetAddress() {
         final var expectedAddress = Address.BLS12_G1ADD;
         final var canonicalSource = Address.BLS12_G1MULTIEXP;
-        final var besuOp = new Create2Operation(gasCalculator);
+        final var besuOp = new Create2Operation(gasCalculator, 48 * 1024);
 
         givenMemoryStackItems();
         given(frame.getStackItem(3)).willReturn(salt);

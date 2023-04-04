@@ -42,17 +42,7 @@ public class HederaCreateOperation extends AbstractRecordingCreateOperation {
             final SyntheticTxnFactory syntheticTxnFactory,
             final RecordsHistorian recordsHistorian,
             final GlobalDynamicProperties dynamicProperties) {
-        super(
-                0xF0,
-                "ħCREATE",
-                3,
-                1,
-                1,
-                gasCalculator,
-                creator,
-                syntheticTxnFactory,
-                recordsHistorian,
-                dynamicProperties);
+        super(0xF0, "ħCREATE", 3, 1, gasCalculator, creator, syntheticTxnFactory, recordsHistorian, dynamicProperties);
     }
 
     @Override

@@ -36,7 +36,7 @@ public class HederaChainIdOperation extends AbstractOperation {
     @Inject
     public HederaChainIdOperation(
             final GasCalculator gasCalculator, final GlobalDynamicProperties globalDynamicProperties) {
-        super(0x46, "CHAINID", 0, 1, 1, gasCalculator);
+        super(0x46, "CHAINID", 0, 1, gasCalculator);
         this.globalDynamicProperties = globalDynamicProperties;
         this.gasCost = gasCalculator.getBaseTierGasCost();
         this.successResponse = new OperationResult(gasCost, null);

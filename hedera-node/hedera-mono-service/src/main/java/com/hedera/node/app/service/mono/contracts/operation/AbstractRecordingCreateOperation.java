@@ -43,7 +43,6 @@ import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.account.MutableAccount;
@@ -73,13 +72,12 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
             final String name,
             final int stackItemsConsumed,
             final int stackItemsProduced,
-            final int opSize,
             final GasCalculator gasCalculator,
             final EntityCreator creator,
             final SyntheticTxnFactory syntheticTxnFactory,
             final RecordsHistorian recordsHistorian,
             final GlobalDynamicProperties dynamicProperties) {
-        super(opcode, name, stackItemsConsumed, stackItemsProduced, opSize, gasCalculator);
+        super(opcode, name, stackItemsConsumed, stackItemsProduced, gasCalculator);
         this.creator = creator;
         this.recordsHistorian = recordsHistorian;
         this.syntheticTxnFactory = syntheticTxnFactory;
@@ -183,7 +181,7 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
                 .sender(frame.getRecipientAddress())
                 .value(value)
                 .apparentValue(value)
-                .code(CodeFactory.createCode(inputData, Hash.EMPTY, 0, false))
+                .code(CodeFactory.createCode(inputData, 0, false))
                 .blockValues(frame.getBlockValues())
                 .depth(frame.getMessageStackDepth() + 1)
                 .completer(child -> complete(frame, child))
@@ -237,7 +235,7 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
             if (dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_BYTECODE)) {
                 final var contractBytecodeSidecar = SidecarUtils.createContractBytecodeSidecarFrom(
                         createdContractId,
-                        childFrame.getCode().getContainerBytes().toArrayUnsafe(),
+                        childFrame.getCode().getBytes().toArrayUnsafe(),
                         updater.get(childFrame.getContractAddress()).getCode().toArrayUnsafe());
                 updater.manageInProgressRecord(
                         recordsHistorian, childRecord, syntheticOp, List.of(contractBytecodeSidecar));

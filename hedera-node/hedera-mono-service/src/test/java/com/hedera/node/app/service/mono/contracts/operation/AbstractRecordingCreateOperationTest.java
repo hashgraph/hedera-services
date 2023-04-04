@@ -284,6 +284,8 @@ class AbstractRecordingCreateOperationTest {
         givenSpawnPrereqs();
         givenBuilderPrereqs();
         givenUpdaterWithAliases(EntityIdUtils.parseAccount("0.0.1234"), nonEmptyKey);
+        final var initCode = "initCode".getBytes();
+        given(frame.readMemory(anyLong(), anyLong())).willReturn(Bytes.wrap(initCode));
         given(updater.customizerForPendingCreation()).willReturn(contractCustomizer);
         given(updater.idOfLastNewAddress()).willReturn(lastAllocated);
         given(syntheticTxnFactory.contractCreation(contractCustomizer)).willReturn(mockCreation);
@@ -384,6 +386,8 @@ class AbstractRecordingCreateOperationTest {
         final var frameCaptor = ArgumentCaptor.forClass(MessageFrame.class);
         givenSpawnPrereqs();
         givenBuilderPrereqs();
+        final var initCode = "initCode".getBytes();
+        given(frame.readMemory(anyLong(), anyLong())).willReturn(Bytes.wrap(initCode));
         given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
         final var hollowAccountId = EntityIdUtils.parseAccount("0.0.5678");
         givenUpdaterWithAliases(hollowAccountId, EMPTY_KEY);
@@ -423,6 +427,8 @@ class AbstractRecordingCreateOperationTest {
     void hasExpectedHollowAccountCompletionWithoutLazyCreationEnabled() {
         given(frame.stackSize()).willReturn(3);
         given(frame.getStackItem(anyInt())).willReturn(Bytes.ofUnsignedLong(1));
+        final var initCode = "initCode".getBytes();
+        given(frame.readMemory(anyLong(), anyLong())).willReturn(Bytes.wrap(initCode));
         given(frame.getRemainingGas()).willReturn(Subject.PRETEND_GAS_COST);
         given(frame.getRecipientAddress()).willReturn(recipient);
         given(frame.getWorldUpdater()).willReturn(updater);
@@ -452,6 +458,8 @@ class AbstractRecordingCreateOperationTest {
         givenSpawnPrereqs();
         givenBuilderPrereqs();
         givenUpdaterWithAliases(EntityIdUtils.parseAccount("0.0.1234"), nonEmptyKey);
+        final var initCode = "initCode".getBytes();
+        given(frame.readMemory(anyLong(), anyLong())).willReturn(Bytes.wrap(initCode));
 
         assertSameResult(EMPTY_HALT_RESULT, subject.execute(frame, evm));
 
@@ -545,7 +553,6 @@ class AbstractRecordingCreateOperationTest {
                     name,
                     stackItemsConsumed,
                     stackItemsProduced,
-                    opSize,
                     gasCalculator,
                     creator,
                     syntheticTxnFactory,

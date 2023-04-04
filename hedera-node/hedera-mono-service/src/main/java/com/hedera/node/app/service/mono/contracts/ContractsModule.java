@@ -83,6 +83,9 @@ public interface ContractsModule {
     @Qualifier
     @interface V_0_34 {}
 
+    @Qualifier
+    @interface V_0_38 {}
+
     @Binds
     @Singleton
     ContractStorageLimits provideContractStorageLimits(UsageLimits usageLimits);
