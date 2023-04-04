@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.spi.validation;
 
+import com.hedera.hapi.node.base.Key;
 import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.Key;
 
 /**
  * A type that any {@link TransactionHandler} can use to validate entity

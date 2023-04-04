@@ -39,6 +39,7 @@ configurations.all {
 dependencies {
   annotationProcessor(libs.dagger.compiler)
 
+  api(project(":hedera-node:hapi"))
   api(project(":hedera-node:hedera-evm"))
   api(project(":hedera-node:hedera-app-spi"))
   api(project(":hedera-node:hedera-admin-service"))

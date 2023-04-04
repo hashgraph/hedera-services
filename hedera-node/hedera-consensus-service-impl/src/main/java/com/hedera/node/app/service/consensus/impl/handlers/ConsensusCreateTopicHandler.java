@@ -16,17 +16,21 @@
 
 package com.hedera.node.app.service.consensus.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.RUNNING_HASH_BYTE_ARRAY_SIZE;
-import static com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter.fromGrpcKey;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.Duration;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.hashgraph.pbj.runtime.io.Bytes;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
@@ -37,21 +41,20 @@ import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#ConsensusCreateTopic}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONSENSUS_CREATE_TOPIC}.
  */
 @Singleton
 public class ConsensusCreateTopicHandler implements TransactionHandler {
     @Inject
-    public ConsensusCreateTopicHandler() {}
+    public ConsensusCreateTopicHandler() {
+        // Exists for injection
+    }
 
     /**
      * This method is called during the pre-handle workflow.
@@ -69,12 +72,12 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
      */
     public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
-        final var op = context.getTxn().getConsensusCreateTopic();
-        final var adminKey = asHederaKey(op.getAdminKey());
+        final var op = context.getTxn().consensusCreateTopicOrThrow();
+        final var adminKey = asHederaKey(op.adminKeyOrElse(Key.DEFAULT));
         adminKey.ifPresent(context::addToReqNonPayerKeys);
 
         if (op.hasAutoRenewAccount()) {
-            final var autoRenewAccount = op.getAutoRenewAccount();
+            final var autoRenewAccount = op.autoRenewAccountOrThrow();
             context.addNonPayerKey(autoRenewAccount, ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
         }
     }
@@ -98,12 +101,12 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
 
         /* Validate admin and submit keys and set them */
         if (op.hasAdminKey()) {
-            handleContext.attributeValidator().validateKey(op.getAdminKey());
-            builder.adminKey(fromGrpcKey(op.getAdminKey()));
+            handleContext.attributeValidator().validateKey(op.adminKey());
+            builder.adminKey(op.adminKey());
         }
         if (op.hasSubmitKey()) {
-            handleContext.attributeValidator().validateKey(op.getSubmitKey());
-            builder.submitKey(fromGrpcKey(op.getSubmitKey()));
+            handleContext.attributeValidator().validateKey(op.submitKey());
+            builder.submitKey(op.submitKey());
         }
 
         /* Validate if the current topic can be created */
@@ -112,18 +115,18 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         }
 
         /* Validate the topic memo */
-        handleContext.attributeValidator().validateMemo(op.getMemo());
-        builder.memo(op.getMemo());
+        handleContext.attributeValidator().validateMemo(op.memo());
+        builder.memo(op.memo());
 
         final var impliedExpiry = handleContext.consensusNow().getEpochSecond()
-                + op.getAutoRenewPeriod().getSeconds();
+                + op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds();
         final var entityExpiryMeta = new ExpiryMeta(
                 impliedExpiry,
-                op.getAutoRenewPeriod().getSeconds(),
+                op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds(),
                 // Shard and realm will be ignored if num is NA
-                op.getAutoRenewAccount().getShardNum(),
-                op.getAutoRenewAccount().getRealmNum(),
-                op.hasAutoRenewAccount() ? op.getAutoRenewAccount().getAccountNum() : NA);
+                op.hasAutoRenewAccount() ? op.autoRenewAccount().shardNum() : NA,
+                op.hasAutoRenewAccount() ? op.autoRenewAccount().realmNum() : NA,
+                op.hasAutoRenewAccount() ? op.autoRenewAccount().accountNumOrElse(NA) : NA);
 
         try {
             final var effectiveExpiryMeta =

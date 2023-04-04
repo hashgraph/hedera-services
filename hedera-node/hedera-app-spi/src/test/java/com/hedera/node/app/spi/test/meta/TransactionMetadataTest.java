@@ -16,19 +16,19 @@
 
 package com.hedera.node.app.spi.test.meta;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -45,7 +45,7 @@ class TransactionMetadataTest {
     private HederaKey otherKey;
 
     private final TransactionBody txBody = TransactionBody.newBuilder().build();
-    private final AccountID payer = AccountID.newBuilder().setAccountNum(42L).build();
+    private final AccountID payer = AccountID.newBuilder().accountNum(42L).build();
 
     @Test
     void testPreHandleContextConstructor(

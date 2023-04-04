@@ -16,10 +16,12 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -30,7 +32,7 @@ import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#TokenUpdate}.
+ * HederaFunctionality#TOKEN_UPDATE}.
  *
  * <p><b>NOTE:</b> this class intentionally changes the following error response codes relative to
  * SigRequirements:
@@ -45,10 +47,12 @@ import javax.inject.Singleton;
 @Singleton
 public class TokenUpdateHandler implements TransactionHandler {
     @Inject
-    public TokenUpdateHandler() {}
+    public TokenUpdateHandler() {
+        // Exists for injection
+    }
 
     /**
-     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#TokenUpdate}
+     * Pre-handles a {@link HederaFunctionality#TOKEN_UPDATE}
      * transaction, returning the metadata required to, at minimum, validate the signatures of all
      * required signing keys.
      *
@@ -62,8 +66,8 @@ public class TokenUpdateHandler implements TransactionHandler {
      */
     public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore) {
         requireNonNull(context);
-        final var op = context.getTxn().getTokenUpdate();
-        final var tokenId = op.getToken();
+        final var op = context.getTxn().tokenUpdateOrThrow();
+        final var tokenId = op.tokenOrElse(TokenID.DEFAULT);
 
         final var tokenMeta = tokenStore.getTokenMeta(tokenId);
         if (tokenMeta.failed()) {
@@ -74,13 +78,13 @@ public class TokenUpdateHandler implements TransactionHandler {
         final var adminKey = tokenMetadata.adminKey();
         adminKey.ifPresent(context::addToReqNonPayerKeys);
         if (op.hasAutoRenewAccount()) {
-            context.addNonPayerKey(op.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
+            context.addNonPayerKey(op.autoRenewAccountOrThrow(), INVALID_AUTORENEW_ACCOUNT);
         }
         if (op.hasTreasury()) {
-            context.addNonPayerKey(op.getTreasury());
+            context.addNonPayerKey(op.treasuryOrThrow());
         }
         if (op.hasAdminKey()) {
-            final var newAdminKey = asHederaKey(op.getAdminKey());
+            final var newAdminKey = asHederaKey(op.adminKeyOrThrow());
             newAdminKey.ifPresent(context::addToReqNonPayerKeys);
         }
     }

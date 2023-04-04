@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.spi.state;
 
+import com.hedera.pbj.runtime.Codec;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -23,8 +24,8 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * @param stateKey The "state key" that uniquely identifies this {@link ReadableKVState} within the
  *     {@link Schema} which are scoped to the service implementation. The key is therefore not
  *     globally unique, only unique within the service implementation itself.
- * @param keySerdes The {@link Serdes} to use for parsing and writing keys in the registered state
- * @param valueSerdes The {@link Serdes} to use for parsing and writing values in the registered
+ * @param keyCodec The {@link Codec} to use for parsing and writing keys in the registered state
+ * @param valueCodec The {@link Codec} to use for parsing and writing values in the registered
  *     state
  * @param maxKeysHint A hint as to the maximum number of keys to be stored in this state. This value
  *     CANNOT CHANGE from one schema version to another. If it is changed, you will need to do a
@@ -35,8 +36,8 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  */
 public record StateDefinition<K extends Comparable<? super K>, V>(
         @NonNull String stateKey,
-        @Nullable Serdes<K> keySerdes,
-        @NonNull Serdes<V> valueSerdes,
+        @Nullable Codec<K> keyCodec,
+        @NonNull Codec<V> valueCodec,
         int maxKeysHint,
         boolean onDisk,
         boolean singleton) {
@@ -52,8 +53,8 @@ public record StateDefinition<K extends Comparable<? super K>, V>(
             throw new IllegalArgumentException("You must specify the maxKeysHint when onDisk. Please see docs.");
         }
 
-        if (!singleton && keySerdes == null) {
-            throw new NullPointerException("keySerdes must be specified when not using singleton types");
+        if (!singleton && keyCodec == null) {
+            throw new NullPointerException("keyCodec must be specified when not using singleton types");
         }
     }
 
@@ -61,23 +62,23 @@ public record StateDefinition<K extends Comparable<? super K>, V>(
      * Convenience method for creating a {@link StateDefinition} for in-memory k/v states.
      *
      * @param stateKey The state key
-     * @param keySerdes The serdes for the key
-     * @param valueSerdes The serdes for the value
+     * @param keyCodec The codec for the key
+     * @param valueCodec The codec for the value
      * @return An instance of {@link StateDefinition}
      * @param <K> The key type
      * @param <V> The value type
      */
     public static <K extends Comparable<? super K>, V> StateDefinition<K, V> inMemory(
-            @NonNull final String stateKey, @NonNull final Serdes<K> keySerdes, @NonNull final Serdes<V> valueSerdes) {
-        return new StateDefinition<>(stateKey, keySerdes, valueSerdes, NO_MAX, false, false);
+            @NonNull final String stateKey, @NonNull final Codec<K> keyCodec, @NonNull final Codec<V> valueCodec) {
+        return new StateDefinition<>(stateKey, keyCodec, valueCodec, NO_MAX, false, false);
     }
 
     /**
      * Convenience method for creating a {@link StateDefinition} for on-disk k/v states.
      *
      * @param stateKey The state key
-     * @param keySerdes The serdes for the key
-     * @param valueSerdes The serdes for the value
+     * @param keyCodec The codec for the key
+     * @param valueCodec The codec for the value
      * @param maxKeysHint A hint as to the maximum number of keys to be stored in this state. This
      *     value * CANNOT CHANGE from one schema version to another. If it is changed, you will need
      *     to do a * long-form migration to a new state.
@@ -87,23 +88,23 @@ public record StateDefinition<K extends Comparable<? super K>, V>(
      */
     public static <K extends Comparable<? super K>, V> StateDefinition<K, V> onDisk(
             @NonNull final String stateKey,
-            @NonNull final Serdes<K> keySerdes,
-            @NonNull final Serdes<V> valueSerdes,
+            @NonNull final Codec<K> keyCodec,
+            @NonNull final Codec<V> valueCodec,
             final int maxKeysHint) {
-        return new StateDefinition<>(stateKey, keySerdes, valueSerdes, maxKeysHint, true, false);
+        return new StateDefinition<>(stateKey, keyCodec, valueCodec, maxKeysHint, true, false);
     }
 
     /**
      * Convenience method for creating a {@link StateDefinition} for singleton states.
      *
      * @param stateKey The state key
-     * @param valueSerdes The serdes for the singleton value
+     * @param valueCodec The codec for the singleton value
      * @return An instance of {@link StateDefinition}
      * @param <K> The key type
      * @param <V> The value type
      */
     public static <K extends Comparable<K>, V> StateDefinition<K, V> singleton(
-            @NonNull final String stateKey, @NonNull final Serdes<V> valueSerdes) {
-        return new StateDefinition<>(stateKey, null, valueSerdes, NO_MAX, false, true);
+            @NonNull final String stateKey, @NonNull final Codec<V> valueCodec) {
+        return new StateDefinition<>(stateKey, null, valueCodec, NO_MAX, false, true);
     }
 }

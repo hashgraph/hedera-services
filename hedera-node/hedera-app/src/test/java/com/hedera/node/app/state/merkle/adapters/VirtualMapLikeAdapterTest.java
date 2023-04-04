@@ -26,7 +26,9 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
+import com.hedera.node.app.service.mono.state.codec.MonoMapCodecAdapter;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
@@ -34,13 +36,11 @@ import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKeySerializer;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.app.spi.state.serdes.MonoMapSerdesAdapter;
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskKeySerializer;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.hedera.node.app.state.merkle.disk.OnDiskValueSerializer;
-import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.metrics.Metrics;
@@ -152,7 +152,7 @@ class VirtualMapLikeAdapterTest {
     }
 
     private static final SemanticVersion CURRENT_VERSION =
-            SemanticVersion.newBuilder().setMinor(34).build();
+            SemanticVersion.newBuilder().minor(34).build();
 
     private Schema justNftsSchema() {
         return new Schema(CURRENT_VERSION) {
@@ -169,10 +169,10 @@ class VirtualMapLikeAdapterTest {
     }
 
     private StateDefinition<UniqueTokenKey, UniqueTokenValue> onDiskNftsDef() {
-        final var keySerdes = MonoMapSerdesAdapter.serdesForVirtualKey(
+        final var keySerdes = MonoMapCodecAdapter.codecForVirtualKey(
                 UniqueTokenKey.CURRENT_VERSION, UniqueTokenKey::new, new UniqueTokenKeySerializer());
         final var valueSerdes =
-                MonoMapSerdesAdapter.serdesForVirtualValue(UniqueTokenValue.CURRENT_VERSION, UniqueTokenValue::new);
+                MonoMapCodecAdapter.codecForVirtualValue(UniqueTokenValue.CURRENT_VERSION, UniqueTokenValue::new);
         return StateDefinition.onDisk(NFTS_KEY, keySerdes, valueSerdes, 1_024);
     }
 }

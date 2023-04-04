@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.spi.exceptions;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
 import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;

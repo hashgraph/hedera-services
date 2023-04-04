@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.spi.exceptions;
 
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 
 /**
  * A runtime exception that wraps a {@link ResponseCodeEnum} status. Thrown by

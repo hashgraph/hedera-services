@@ -16,26 +16,32 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
+import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#TokenFeeScheduleUpdate}.
+ * HederaFunctionality#TOKEN_FEE_SCHEDULE_UPDATE}.
  */
 @Singleton
 public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
     @Inject
-    public TokenFeeScheduleUpdateHandler() {}
+    public TokenFeeScheduleUpdateHandler() {
+        // Exists for injection
+    }
 
     /**
      * This method is called during the pre-handle workflow.
@@ -54,8 +60,8 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
      */
     public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore) {
         requireNonNull(context);
-        final var op = context.getTxn().getTokenFeeScheduleUpdate();
-        final var tokenId = op.getTokenId();
+        final var op = context.getTxn().tokenFeeScheduleUpdateOrThrow();
+        final var tokenId = op.tokenIdOrElse(TokenID.DEFAULT);
         final var tokenMeta = tokenStore.getTokenMeta(tokenId);
         if (tokenMeta.failed()) {
             context.status(tokenMeta.failureReason());
@@ -64,8 +70,8 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
             final var feeScheduleKey = tokenMetadata.feeScheduleKey();
             if (feeScheduleKey.isPresent()) {
                 context.addToReqNonPayerKeys(feeScheduleKey.get());
-                for (final var customFee : op.getCustomFeesList()) {
-                    final var collector = customFee.getFeeCollectorAccountId();
+                for (final var customFee : op.customFeesOrElse(emptyList())) {
+                    final var collector = customFee.feeCollectorAccountIdOrElse(AccountID.DEFAULT);
                     context.addNonPayerKeyIfReceiverSigRequired(collector, INVALID_CUSTOM_FEE_COLLECTOR);
                 }
             }

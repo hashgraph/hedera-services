@@ -3,7 +3,6 @@ module com.hedera.node.app.service.token.impl {
     requires org.apache.commons.lang3;
     requires com.google.common;
     requires com.hedera.node.app.service.mono;
-    requires com.hedera.hashgraph.protobuf.java.api;
     requires com.google.protobuf;
     requires com.hedera.node.app.service.evm;
     requires com.hedera.node.app.spi;
@@ -11,6 +10,9 @@ module com.hedera.node.app.service.token.impl {
     requires com.swirlds.jasperdb;
     requires dagger;
     requires javax.inject;
+    requires com.hedera.pbj.runtime;
+    requires com.github.spotbugs.annotations;
+    requires transitive com.hedera.node.hapi;
 
     provides com.hedera.node.app.service.token.TokenService with
             com.hedera.node.app.service.token.impl.TokenServiceImpl;
@@ -20,15 +22,9 @@ module com.hedera.node.app.service.token.impl {
             com.hedera.node.app;
     exports com.hedera.node.app.service.token.impl.entity to
             com.hedera.node.app.service.token.impl.test;
-    exports com.hedera.node.app.service.token.impl.util to
-            com.hedera.node.app.service.token.impl.test;
     exports com.hedera.node.app.service.token.impl.handlers to
             com.hedera.node.app.service.token.impl.test,
             com.hedera.node.app;
-
-    opens com.hedera.node.app.service.token.impl.util to
-            com.hedera.node.app.service.token.impl.test;
-
     exports com.hedera.node.app.service.token.impl.components;
     exports com.hedera.node.app.service.token.impl.serdes;
 }
