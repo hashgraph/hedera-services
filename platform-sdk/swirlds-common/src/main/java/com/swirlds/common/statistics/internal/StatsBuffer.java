@@ -19,24 +19,23 @@ package com.swirlds.common.statistics.internal;
 import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.base.time.TimeFacade;
+import com.swirlds.base.time.TimeFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntBinaryOperator;
 import java.util.function.IntUnaryOperator;
 
 /**
- * Keep a running history of a double value vs. time. History is divided into at most maxbins different
- * bins. It records the min and max value, and the min and max time, for each bin.
- *
- * There are many class variables. Other classes should only read, not write, those variables and the
- * elements of their arrays. This is not thread safe. There must never be one thread reading these variables
- * while another thread is calling any of the methods.
+ * Keep a running history of a double value vs. time. History is divided into at most maxbins different bins. It records
+ * the min and max value, and the min and max time, for each bin.
+ * <p>
+ * There are many class variables. Other classes should only read, not write, those variables and the elements of their
+ * arrays. This is not thread safe. There must never be one thread reading these variables while another thread is
+ * calling any of the methods.
  */
 public class StatsBuffer {
 
     /**
-     * if the value is less than max, return value + 1;
-     * else return this value
+     * if the value is less than max, return value + 1; else return this value
      */
     private static final IntBinaryOperator INC_BY_ONE_WITHIN_MAX = (value, max) -> {
         if (value < max) {
@@ -127,28 +126,23 @@ public class StatsBuffer {
     private long numLastBin = 0;
 
     /**
-     * Store a history of samples combined into at most maxBins bins. If recentSeconds is zero, then all of
-     * history is stored, with an equal number of samples in each bin. Otherwise, only the last
-     * recentSeconds seconds of history is stored, with maxBins different bins each covering an equal
-     * fraction of that period.
+     * Store a history of samples combined into at most maxBins bins. If recentSeconds is zero, then all of history is
+     * stored, with an equal number of samples in each bin. Otherwise, only the last recentSeconds seconds of history is
+     * stored, with maxBins different bins each covering an equal fraction of that period.
+     * <p>
+     * If recentSeconds &gt; 0, then empty bins are not stored, so some of the older bins (more than recentSeconds old)
+     * can continue to exist until enough newer bins are collected to discard them.
+     * <p>
+     * The maxBins must be even. If it's odd, it will be incremented, so passing in 99 is the same as passing in 100.
      *
-     * If recentSeconds &gt; 0, then empty bins are not stored, so some of the older bins (more than
-     * recentSeconds old) can continue to exist until enough newer bins are collected to discard them.
-     *
-     * The maxBins must be even. If it's odd, it will be incremented, so passing in 99 is the same as
-     * passing in 100.
-     *
-     * @param maxBins
-     * 		the maximum number of bins to store (must be even)
-     * @param recentSeconds
-     * 		the max period of time covered by all the stored data, in seconds (or 0 if covering all of
-     * 		history)
-     * @param startDelay
-     * 		record() will ignore all inputs for the first startDelay seconds, starting from the first
-     * 		time it's called
+     * @param maxBins       the maximum number of bins to store (must be even)
+     * @param recentSeconds the max period of time covered by all the stored data, in seconds (or 0 if covering all of
+     *                      history)
+     * @param startDelay    record() will ignore all inputs for the first startDelay seconds, starting from the first
+     *                      time it's called
      */
     public StatsBuffer(final int maxBins, final double recentSeconds, final double startDelay) {
-        this(maxBins, recentSeconds, startDelay, TimeFacade.getOsTime());
+        this(maxBins, recentSeconds, startDelay, TimeFactory.getOsTime());
     }
 
     public StatsBuffer(final int maxBins, final double recentSeconds, final double startDelay, final Time time) {
@@ -177,8 +171,7 @@ public class StatsBuffer {
     /**
      * return the average of all x values in bin i, where i=0 is the oldest and i=numBins-1 is the newest.
      *
-     * @param i
-     * 		the index for the bin
+     * @param i the index for the bin
      * @return the average
      */
     public double xAvg(final int i) {
@@ -189,8 +182,7 @@ public class StatsBuffer {
     /**
      * return the average of all y values in bin i, where i=0 is the oldest and i=numBins-1 is the newest.
      *
-     * @param i
-     * 		the index for the bin
+     * @param i the index for the bin
      * @return the average
      */
     public double yAvg(final int i) {
@@ -201,8 +193,7 @@ public class StatsBuffer {
     /**
      * return the min of all x values in bin i, where i=0 is the oldest and i=numBins-1 is the newest.
      *
-     * @param i
-     * 		the index for the bin
+     * @param i the index for the bin
      * @return the average
      */
     public double xMin(final int i) {
@@ -213,8 +204,7 @@ public class StatsBuffer {
     /**
      * return the min of all y values in bin i, where i=0 is the oldest and i=numBins-1 is the newest.
      *
-     * @param i
-     * 		the index for the bin
+     * @param i the index for the bin
      * @return the average
      */
     public double yMin(final int i) {
@@ -225,8 +215,7 @@ public class StatsBuffer {
     /**
      * return the max of all x values in bin i, where i=0 is the oldest and i=numBins-1 is the newest.
      *
-     * @param i
-     * 		the index for the bin
+     * @param i the index for the bin
      * @return the average
      */
     public double xMax(final int i) {
@@ -237,8 +226,7 @@ public class StatsBuffer {
     /**
      * return the max of all y values in bin i, where i=0 is the oldest and i=numBins-1 is the newest.
      *
-     * @param i
-     * 		the index for the bin
+     * @param i the index for the bin
      * @return the average
      */
     public double yMax(final int i) {
@@ -247,11 +235,9 @@ public class StatsBuffer {
     }
 
     /**
-     * return the standard deviation of all y values in bin i, where i=0 is the oldest and i=numBins-1 is
-     * the newest.
+     * return the standard deviation of all y values in bin i, where i=0 is the oldest and i=numBins-1 is the newest.
      *
-     * @param i
-     * 		the index for the bin
+     * @param i the index for the bin
      * @return the average
      */
     public double yStd(final int i) {
@@ -368,10 +354,8 @@ public class StatsBuffer {
     /**
      * Merge the given (age,value) into the latest existing bin.
      *
-     * @param x
-     * 		the x value to store (time in seconds)
-     * @param y
-     * 		the y value to store
+     * @param x the x value to store (time in seconds)
+     * @param y the y value to store
      */
     private void addToBin(final double x, final double y) {
         numLastBin++;
@@ -388,10 +372,8 @@ public class StatsBuffer {
     /**
      * Create a new bin at the given index in all the arrays, holding only the given (x, y) sample.
      *
-     * @param x
-     * 		the x value to store (time in seconds)
-     * @param y
-     * 		the y value to store
+     * @param x the x value to store (time in seconds)
+     * @param y the y value to store
      */
     public void createBin(final double x, final double y) {
         // index in arrays for the new bin, right after the last bin, with wrapping
@@ -415,8 +397,7 @@ public class StatsBuffer {
     /**
      * record the given y value, associated with an x value equal to the time right now
      *
-     * @param y
-     * 		the value to be recorded
+     * @param y the value to be recorded
      */
     public void recordValue(final double y) {
         final double x = xNow();

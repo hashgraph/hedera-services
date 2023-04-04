@@ -19,13 +19,13 @@ package com.swirlds.common.statistics;
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.base.time.TimeFacade;
+import com.swirlds.base.time.TimeFactory;
 import com.swirlds.common.statistics.internal.StatsBuffer;
 
 /**
- * This class measures how many times per second the cycle() method is called. It is recalculated every
- * period, where its period is 0.1 seconds by default. If instantiated with gamma=0.9, then half the
- * weighting comes from the last 7 periods. If 0.99 it's 70 periods, 0.999 is 700, etc.
+ * This class measures how many times per second the cycle() method is called. It is recalculated every period, where
+ * its period is 0.1 seconds by default. If instantiated with gamma=0.9, then half the weighting comes from the last 7
+ * periods. If 0.99 it's 70 periods, 0.999 is 700, etc.
  * <p>
  * The timer starts at instantiation, and can be reset with the reset() method.
  *
@@ -85,41 +85,36 @@ public class StatsSpeedometer implements StatsBuffered {
     }
 
     /**
-     * Instantiate a Speedometer with the given halfLife and start the measurements right now. This will
-     * calculate exponentially weighted averages of the number of times update() is called per second. Where
-     * the exponential weighting has a half life of halfLife seconds. This will record the history, so it is
-     * the same as using the constructor new StatsSpeedometer(halfLife, true).
+     * Instantiate a Speedometer with the given halfLife and start the measurements right now. This will calculate
+     * exponentially weighted averages of the number of times update() is called per second. Where the exponential
+     * weighting has a half life of halfLife seconds. This will record the history, so it is the same as using the
+     * constructor new StatsSpeedometer(halfLife, true).
      *
-     * @param halfLife
-     * 		half of the exponential weighting comes from the last halfLife seconds
+     * @param halfLife half of the exponential weighting comes from the last halfLife seconds
      */
     public StatsSpeedometer(final double halfLife) {
         this(halfLife, true);
     }
 
     /**
-     * Instantiate a Speedometer with the given halfLife and start the measurements right now. This will
-     * calculate exponentially weighted averages of the number of times update() is called per second. Where
-     * the exponential weighting has a half life of halfLife seconds.
+     * Instantiate a Speedometer with the given halfLife and start the measurements right now. This will calculate
+     * exponentially weighted averages of the number of times update() is called per second. Where the exponential
+     * weighting has a half life of halfLife seconds.
      *
-     * @param halfLife
-     * 		half of the exponential weighting comes from the last halfLife seconds
-     * @param saveHistory
-     * 		true if a StatsBuffer of recent and all history should be created and used
+     * @param halfLife    half of the exponential weighting comes from the last halfLife seconds
+     * @param saveHistory true if a StatsBuffer of recent and all history should be created and used
      */
     @SuppressWarnings("removal")
     public StatsSpeedometer(final double halfLife, final boolean saveHistory) {
-        this(halfLife, saveHistory, TimeFacade.getOsTime());
+        this(halfLife, saveHistory, TimeFactory.getOsTime());
     }
 
     /**
-     * This constructor behaves exactly as the regular one, but permits to inject a {@link Time}.
-     * It should only be used internally.
+     * This constructor behaves exactly as the regular one, but permits to inject a {@link Time}. It should only be used
+     * internally.
      *
-     * @param halfLife
-     * 		half of the exponential weighting comes from the last halfLife seconds
-     * @param time
-     * 		the {@code Clock} implementation, typically a mock when testing
+     * @param halfLife half of the exponential weighting comes from the last halfLife seconds
+     * @param time     the {@code Clock} implementation, typically a mock when testing
      * @deprecated this constructor should only be used internally and will become non-public at some point
      */
     @Deprecated(forRemoval = true)
@@ -128,13 +123,11 @@ public class StatsSpeedometer implements StatsBuffered {
     }
 
     /**
-     * This constructor behaves exactly as the regular one, but permits to inject a {@link Time}.
-     * It should only be used internally.
+     * This constructor behaves exactly as the regular one, but permits to inject a {@link Time}. It should only be used
+     * internally.
      *
-     * @param halfLife
-     * 		half of the exponential weighting comes from the last halfLife seconds
-     * @param time
-     * 		the {@code Clock} implementation, typically a mock when testing
+     * @param halfLife half of the exponential weighting comes from the last halfLife seconds
+     * @param time     the {@code Clock} implementation, typically a mock when testing
      * @deprecated this constructor should only be used internally and will become non-public at some point
      */
     @Deprecated(forRemoval = true)
@@ -147,13 +140,12 @@ public class StatsSpeedometer implements StatsBuffered {
     }
 
     /**
-     * Start over on the measurements and counts, to get an exponentially-weighted average number of calls
-     * to cycle() per second, with the weighting having a half life of halfLife seconds. This is equivalent
-     * to instantiating a new Speedometer. This will also record a history of values, so calling this is the
-     * same as calling reset(halfLife, true).
+     * Start over on the measurements and counts, to get an exponentially-weighted average number of calls to cycle()
+     * per second, with the weighting having a half life of halfLife seconds. This is equivalent to instantiating a new
+     * Speedometer. This will also record a history of values, so calling this is the same as calling reset(halfLife,
+     * true).
      *
-     * @param halfLife
-     * 		half of the exponential weighting comes from the last halfLife seconds
+     * @param halfLife half of the exponential weighting comes from the last halfLife seconds
      */
     @Override
     public void reset(final double halfLife) {
@@ -161,14 +153,12 @@ public class StatsSpeedometer implements StatsBuffered {
     }
 
     /**
-     * Start over on the measurements and counts, to get an exponentially-weighted average number of calls
-     * to cycle() per second, with the weighting having a half life of halfLife seconds. This is equivalent
-     * to instantiating a new Speedometer. If halfLife < 0.01 then 0.01 will be used.
+     * Start over on the measurements and counts, to get an exponentially-weighted average number of calls to cycle()
+     * per second, with the weighting having a half life of halfLife seconds. This is equivalent to instantiating a new
+     * Speedometer. If halfLife < 0.01 then 0.01 will be used.
      *
-     * @param halfLife
-     * 		half of the exponential weighting comes from the last halfLife seconds
-     * @param saveHistory
-     * 		true if a StatsBuffer of recent and all history should be created and used
+     * @param halfLife    half of the exponential weighting comes from the last halfLife seconds
+     * @param saveHistory true if a StatsBuffer of recent and all history should be created and used
      */
     private void reset(final double halfLife, final boolean saveHistory) {
 
@@ -188,8 +178,8 @@ public class StatsSpeedometer implements StatsBuffered {
     }
 
     /**
-     * Get the average number of times per second the cycle() method was called. This is an
-     * exponentially-weighted average of recent timings.
+     * Get the average number of times per second the cycle() method was called. This is an exponentially-weighted
+     * average of recent timings.
      *
      * @return the estimated number of calls to cycle() per second, recently
      */
@@ -208,20 +198,17 @@ public class StatsSpeedometer implements StatsBuffered {
     }
 
     /**
-     * calling update(N) is equivalent to calling cycle() N times almost simultaneously. Calling cycle() is
-     * equivalent to calling update(1). Calling update(0) will update the estimate of the cycles per second
-     * by looking at the current time (to update the seconds) without incrementing the count of the cycles.
-     * So calling update(0) repeatedly with no calls to cycle() will cause the cycles per second estimate to
-     * go asymptotic to zero.
+     * calling update(N) is equivalent to calling cycle() N times almost simultaneously. Calling cycle() is equivalent
+     * to calling update(1). Calling update(0) will update the estimate of the cycles per second by looking at the
+     * current time (to update the seconds) without incrementing the count of the cycles. So calling update(0)
+     * repeatedly with no calls to cycle() will cause the cycles per second estimate to go asymptotic to zero.
      * <p>
-     * The speedometer initially keeps a simple, uniformly-weighted average of the number of calls to
-     * cycle() per second since the start of the run. Over time, that makes each new call to cycle() have
-     * less weight (because there are more of them). Eventually, the weight of a new call drops below the
-     * weight it would have under the exponentially-weighted average. At that point, it switches to the
-     * exponentially-weighted average.
+     * The speedometer initially keeps a simple, uniformly-weighted average of the number of calls to cycle() per second
+     * since the start of the run. Over time, that makes each new call to cycle() have less weight (because there are
+     * more of them). Eventually, the weight of a new call drops below the weight it would have under the
+     * exponentially-weighted average. At that point, it switches to the exponentially-weighted average.
      *
-     * @param numCycles
-     * 		number of cycles to record
+     * @param numCycles number of cycles to record
      * @return estimated number of calls to cycle() per second
      */
     public synchronized double update(final double numCycles) {
@@ -231,8 +218,7 @@ public class StatsSpeedometer implements StatsBuffered {
     /**
      * The same as update(numCycles), except this will only record a new data point if recordData==true
      *
-     * @param numCycles
-     * 		number of cycles to record
+     * @param numCycles number of cycles to record
      * @return estimated number of calls to cycle() per second
      */
     private synchronized double update(final double numCycles, final boolean recordData) {

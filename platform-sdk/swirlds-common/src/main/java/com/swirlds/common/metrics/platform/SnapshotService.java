@@ -20,7 +20,7 @@ import static com.swirlds.common.metrics.platform.DefaultMetrics.calculateMetric
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.base.time.TimeFacade;
+import com.swirlds.base.time.TimeFactory;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.utility.Startable;
@@ -40,17 +40,17 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Service that creates new snapshots in regular intervals and sends a {@link SnapshotEvent}.
- * This is in particular used to write metrics-data to different file formats.
+ * Service that creates new snapshots in regular intervals and sends a {@link SnapshotEvent}. This is in particular used
+ * to write metrics-data to different file formats.
  * <p>
- * This class contains only the general functionality, handling the data is left to the different
- * receivers of {@code SnapshotEvents}.
+ * This class contains only the general functionality, handling the data is left to the different receivers of {@code
+ * SnapshotEvents}.
  * <p>
- * This class uses a provided {@link java.util.concurrent.ExecutorService} that triggers the snapshot creation.
- * The frequency of these write operations can be configured with {@link MetricsConfig#getMetricsSnapshotDuration()}.
+ * This class uses a provided {@link java.util.concurrent.ExecutorService} that triggers the snapshot creation. The
+ * frequency of these write operations can be configured with {@link MetricsConfig#getMetricsSnapshotDuration()}.
  * <p>
- * The service is not automatically started, but has to be started manually with {@link #start()}. When done,
- * the service can be shutdown with {@link #shutdown()}.
+ * The service is not automatically started, but has to be started manually with {@link #start()}. When done, the
+ * service can be shutdown with {@link #shutdown()}.
  *
  * @see LegacyCsvWriter
  * @see com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint
@@ -72,18 +72,14 @@ public class SnapshotService implements Startable {
      * <p>
      * The service is created, but not automatically started. It can be started with {@link #start()}.
      *
-     * @param globalMetrics
-     * 		a list of {@link Metric}-instances which values need to be written
-     * @param executor
-     * 		the {@link ScheduledExecutorService} that will be used to schedule the writer-tasks
-     * @param interval
-     * 		interval between snapshot generations
-     * @throws IllegalArgumentException
-     * 		if any of the arguments is {@code null} or {@code globalMetrics} is not global
+     * @param globalMetrics a list of {@link Metric}-instances which values need to be written
+     * @param executor      the {@link ScheduledExecutorService} that will be used to schedule the writer-tasks
+     * @param interval      interval between snapshot generations
+     * @throws IllegalArgumentException if any of the arguments is {@code null} or {@code globalMetrics} is not global
      */
     public SnapshotService(
             final DefaultMetrics globalMetrics, final ScheduledExecutorService executor, final Duration interval) {
-        this(globalMetrics, executor, interval, TimeFacade.getOsTime());
+        this(globalMetrics, executor, interval, TimeFactory.getOsTime());
     }
 
     // This method is just for testing and will be removed from the public API at some point.
@@ -106,10 +102,8 @@ public class SnapshotService implements Startable {
     /**
      * Add a platform-specific {@link com.swirlds.common.metrics.Metrics} to the {@code SnapshotService}
      *
-     * @param platformMetrics
-     * 		the {@link DefaultMetric} to add
-     * @throws IllegalArgumentException
-     * 		if {@code platformMetrics} is {@code null} or not platform-specific
+     * @param platformMetrics the {@link DefaultMetric} to add
+     * @throws IllegalArgumentException if {@code platformMetrics} is {@code null} or not platform-specific
      */
     public void addPlatformMetric(final DefaultMetrics platformMetrics) {
         throwArgNull(platformMetrics, "platformMetric");
@@ -124,10 +118,8 @@ public class SnapshotService implements Startable {
     /**
      * Remove a platform-specific {@link com.swirlds.common.metrics.Metrics} from the {@code SnapshotService}
      *
-     * @param platformMetrics
-     * 		the {@link DefaultMetric} to remove
-     * @throws IllegalArgumentException
-     * 		if {@code platformMetrics} is {@code null} or not platform-specific
+     * @param platformMetrics the {@link DefaultMetric} to remove
+     * @throws IllegalArgumentException if {@code platformMetrics} is {@code null} or not platform-specific
      */
     public void removePlatformMetric(final DefaultMetrics platformMetrics) {
         throwArgNull(platformMetrics, "platformMetric");
@@ -151,8 +143,7 @@ public class SnapshotService implements Startable {
     /**
      * Starts the service
      *
-     * @throws IllegalStateException
-     * 		if the service is running or was even shutdown already
+     * @throws IllegalStateException if the service is running or was even shutdown already
      */
     @Override
     public void start() {
@@ -178,8 +169,7 @@ public class SnapshotService implements Startable {
     /**
      * Adds a subscriber that will receive snapshots in regular intervals.
      *
-     * @param subscriber
-     * 		the new {@code subscriber}
+     * @param subscriber the new {@code subscriber}
      * @return a {@link Runnable} that, when called, unsubscribes the subscriber
      */
     public Runnable subscribe(final Consumer<? super SnapshotEvent> subscriber) {

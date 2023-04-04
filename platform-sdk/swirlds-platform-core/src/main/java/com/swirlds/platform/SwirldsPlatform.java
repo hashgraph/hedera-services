@@ -26,7 +26,7 @@ import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.base.time.TimeFacade;
+import com.swirlds.base.time.TimeFactory;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.OSHealthCheckConfig;
@@ -414,7 +414,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     /**
      * This should be used when reading time.
      */
-    private final Time time = TimeFacade.getOsTime();
+    private final Time time = TimeFactory.getOsTime();
 
     /**
      * The platform context for this platform. Should be used to access basic services
@@ -1029,7 +1029,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
 
         final PreConsensusEventFileManager fileManager;
         try {
-            fileManager = new PreConsensusEventFileManager(platformContext, TimeFacade.getOsTime(), selfId.getId());
+            fileManager = new PreConsensusEventFileManager(platformContext, TimeFactory.getOsTime(), selfId.getId());
         } catch (final IOException e) {
             throw new UncheckedIOException("unable load preconsensus files", e);
         }
@@ -1513,7 +1513,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 chatterEventMapper::getMostRecentEvent,
                 eventCreationRules,
                 CryptographyHolder.get(),
-                TimeFacade.getOsTime());
+                TimeFactory.getOsTime());
 
         if (isStartedFromGenesis()) {
             // if we are starting from genesis, we will create a genesis event, which is the only event that will

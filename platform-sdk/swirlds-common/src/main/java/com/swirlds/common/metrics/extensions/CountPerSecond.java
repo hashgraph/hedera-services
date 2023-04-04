@@ -21,7 +21,7 @@ import static com.swirlds.common.utility.CommonUtils.throwArgBlank;
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.base.time.TimeFacade;
+import com.swirlds.base.time.TimeFactory;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
 import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.metrics.Metric;
@@ -42,12 +42,12 @@ public class CountPerSecond {
     private final IntegerPairAccumulator<Double> accumulator;
 
     /**
-     * The default constructor, uses the {@link TimeFacade#getOsTime()}
+     * The default constructor, uses the {@link TimeFactory#getOsTime()}
      *
      * @param config the configuration for this metric
      */
     public CountPerSecond(final Metrics metrics, final CountPerSecond.Config config) {
-        this(metrics, config, TimeFacade.getOsTime());
+        this(metrics, config, TimeFactory.getOsTime());
     }
 
     /**
@@ -59,7 +59,7 @@ public class CountPerSecond {
     public CountPerSecond(final Metrics metrics, final CountPerSecond.Config config, final Time time) {
         this.time = time;
         this.accumulator = metrics.getOrCreate(new IntegerPairAccumulator.Config<>(
-                        config.getCategory(), config.getName(), Double.class, this::perSecond)
+                config.getCategory(), config.getName(), Double.class, this::perSecond)
                 .withDescription(config.getDescription())
                 .withUnit(config.getUnit())
                 .withFormat(config.getFormat())

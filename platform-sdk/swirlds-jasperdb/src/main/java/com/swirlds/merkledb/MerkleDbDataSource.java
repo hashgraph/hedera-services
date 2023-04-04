@@ -25,7 +25,7 @@ import static com.swirlds.logging.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.KeyRange.INVALID_KEY_RANGE;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
-import com.swirlds.base.time.TimeFacade;
+import com.swirlds.base.time.TimeFactory;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
@@ -95,9 +95,9 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
     private static final Logger logger = LogManager.getLogger(MerkleDbDataSource.class);
 
     /**
-     * Since {@code com.swirlds.platform.Browser} populates settings, and it is loaded before any
-     * application classes that might instantiate a data source, the {@link MerkleDbSettingsFactory}
-     * holder will have been configured by the time this static initializer runs.
+     * Since {@code com.swirlds.platform.Browser} populates settings, and it is loaded before any application classes
+     * that might instantiate a data source, the {@link MerkleDbSettingsFactory} holder will have been configured by the
+     * time this static initializer runs.
      */
     private static final MerkleDbSettings settings = MerkleDbSettingsFactory.get();
 
@@ -108,10 +108,10 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
     private static final LongAdder COUNT_OF_OPEN_DATABASES = new LongAdder();
 
     private static final FunctionGauge.Config<Long> COUNT_OF_OPEN_DATABASES_CONFIG = new FunctionGauge.Config<>(
-                    MerkleDbStatistics.STAT_CATEGORY,
-                    "merkledb_count",
-                    Long.class,
-                    MerkleDbDataSource::getCountOfOpenDatabases)
+            MerkleDbStatistics.STAT_CATEGORY,
+            "merkledb_count",
+            Long.class,
+            MerkleDbDataSource::getCountOfOpenDatabases)
             .withDescription("the number of MerkleDb instances that have been created but not" + " released")
             .withFormat("%d");
 
@@ -122,8 +122,8 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
     }
 
     /**
-     * The number of threads to use for merging thread pool. THIS IS ALWAYS 1. As merging is not
-     * designed for multiple merges happening concurrently.
+     * The number of threads to use for merging thread pool. THIS IS ALWAYS 1. As merging is not designed for multiple
+     * merges happening concurrently.
      */
     private static final int NUMBER_OF_MERGING_THREADS = 1;
 
@@ -153,15 +153,15 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
     private final LongList pathToDiskLocationLeafNodes;
 
     /**
-     * In memory off-heap store for internal node hashes. This data is never stored on disk so on
-     * load from disk, this will be empty. That should cause all internal node hashes to have to be
-     * computed on the first round which will be expensive.
+     * In memory off-heap store for internal node hashes. This data is never stored on disk so on load from disk, this
+     * will be empty. That should cause all internal node hashes to have to be computed on the first round which will be
+     * expensive.
      */
     private final HashList internalHashStoreRam;
 
     /**
-     * On disk store for internal hashes. Can be null if all hashes are being stored in ram by
-     * setting internalHashesRamToDiskThreshold to Long.MAX_VALUE.
+     * On disk store for internal hashes. Can be null if all hashes are being stored in ram by setting
+     * internalHashesRamToDiskThreshold to Long.MAX_VALUE.
      */
     private final MemoryIndexDiskKeyValueStore<VirtualInternalRecord> internalHashStoreDisk;
 
@@ -169,14 +169,13 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
     private final boolean hasDiskStoreForInternalHashes;
 
     /**
-     * In memory off-heap store for key to path map, this is used when isLongKeyMode=true and keys
-     * are longs
+     * In memory off-heap store for key to path map, this is used when isLongKeyMode=true and keys are longs
      */
     private final LongList longKeyToPath;
 
     /**
-     * Mixed disk and off-heap memory store for key to path map, this is used if
-     * isLongKeyMode=false, and we have complex keys.
+     * Mixed disk and off-heap memory store for key to path map, this is used if isLongKeyMode=false, and we have
+     * complex keys.
      */
     private final HalfDiskHashMap<K> objectKeyToPath;
 
@@ -184,16 +183,15 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
     private final MemoryIndexDiskKeyValueStore<VirtualLeafRecord<K, V>> pathToHashKeyValue;
 
     /**
-     * Cache size for reading virtual leaf records. Initialized in data source creation time from
-     * JasperDB settings. If the value is zero, leaf records cache isn't used.
+     * Cache size for reading virtual leaf records. Initialized in data source creation time from JasperDB settings. If
+     * the value is zero, leaf records cache isn't used.
      */
     private final int leafRecordCacheSize;
 
     /**
-     * Virtual leaf records cache. It's a simple array indexed by leaf keys % cache size. Cache
-     * eviction is not needed, as array size is fixed and can be configured in JasperDB settings.
-     * Index conflicts are resolved in a very straightforward way: whatever entry is read last, it's
-     * put to the cache.
+     * Virtual leaf records cache. It's a simple array indexed by leaf keys % cache size. Cache eviction is not needed,
+     * as array size is fixed and can be configured in JasperDB settings. Index conflicts are resolved in a very
+     * straightforward way: whatever entry is read last, it's put to the cache.
      */
     @SuppressWarnings("rawtypes")
     private final VirtualLeafRecord[] leafRecordCache;
@@ -217,9 +215,8 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
     private final AtomicBoolean snapshotInProgress = new AtomicBoolean(false);
 
     /**
-     * A lock for snapshots / flushes synchronization. Snapshots must be protected against
-     * concurrent saves of new data. Snapshots can not start while an existing save is happening and
-     * save can not start while a snapshot is active.
+     * A lock for snapshots / flushes synchronization. Snapshots must be protected against concurrent saves of new data.
+     * Snapshots can not start while an existing save is happening and save can not start while a snapshot is active.
      */
     private final ReentrantLock flushLock = new ReentrantLock();
 
@@ -229,8 +226,8 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
     private MerkleDbStatistics statistics;
 
     /**
-     * When we register stats for the first instance, also register the global stats. If true then
-     * this is the first time stats are being registered for an instance.
+     * When we register stats for the first instance, also register the global stats. If true then this is the first
+     * time stats are being registered for an instance.
      */
     private static final AtomicBoolean firstStatRegistration = new AtomicBoolean(true);
 
@@ -248,7 +245,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
     /** A nanosecond-precise Clock */
-    private final Clock clock = TimeFacade.getNanoClock();
+    private final Clock clock = TimeFactory.getNanoClock();
 
     public MerkleDbDataSource(
             final MerkleDb database,
@@ -361,12 +358,12 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
         hasDiskStoreForInternalHashes = tableConfig.getInternalHashesRamToDiskThreshold() < Long.MAX_VALUE;
         internalHashStoreDisk = hasDiskStoreForInternalHashes
                 ? new MemoryIndexDiskKeyValueStore<>(
-                        dbPaths.internalHashStoreDiskDirectory,
-                        tableName + "_internalhashes",
-                        tableName + ":internalHashes",
-                        internalRecordSerializer,
-                        null,
-                        pathToDiskLocationInternalNodes)
+                dbPaths.internalHashStoreDiskDirectory,
+                tableName + "_internalhashes",
+                tableName + ":internalHashes",
+                internalRecordSerializer,
+                null,
+                pathToDiskLocationInternalNodes)
                 : null;
 
         // key to path store
@@ -444,9 +441,8 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
     }
 
     /**
-     * Start background compaction process, if it is not already running. Stop background merging,
-     * interrupting the current merge if one is happening. This will not corrupt the database but
-     * will leave files around.
+     * Start background compaction process, if it is not already running. Stop background merging, interrupting the
+     * current merge if one is happening. This will not corrupt the database but will leave files around.
      */
     @Override
     public void startBackgroundCompaction() {
@@ -487,8 +483,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
     }
 
     /**
-     * Get the count of open database instances. This is databases that have been opened but not yet
-     * closed.
+     * Get the count of open database instances. This is databases that have been opened but not yet closed.
      *
      * @return Count of open databases.
      */
@@ -507,27 +502,25 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
     }
 
     /**
-     * Waits for the current flush (if active) to complete and prevents new flushes from happening
-     * until {@link #flushUnlock()}} is called. This method is used by MerkleDb to make sure all
-     * data sources in a single database are in consistent state before taking a snapshot.
+     * Waits for the current flush (if active) to complete and prevents new flushes from happening until {@link
+     * #flushUnlock()}} is called. This method is used by MerkleDb to make sure all data sources in a single database
+     * are in consistent state before taking a snapshot.
      */
     void flushLock() {
         flushLock.lock();
     }
 
     /**
-     * Resumes data source flushes. This method is used by MerkleDb after database snapshot is
-     * taken.
+     * Resumes data source flushes. This method is used by MerkleDb after database snapshot is taken.
      */
     void flushUnlock() {
         flushLock.unlock();
     }
 
     /**
-     * Pauses merging of all data file collections used by this data source. It may not stop merging
-     * immediately, but as soon as merging process needs to update data source state, which is
-     * critical for snapshots (e.g. update an index), it will be stopped until {@link
-     * #resumeMerging()}} is called.
+     * Pauses merging of all data file collections used by this data source. It may not stop merging immediately, but as
+     * soon as merging process needs to update data source state, which is critical for snapshots (e.g. update an
+     * index), it will be stopped until {@link #resumeMerging()}} is called.
      */
     void pauseMerging() throws IOException {
         if (hasDiskStoreForInternalHashes) {
@@ -552,21 +545,20 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
 
     /**
      * Save a batch of data to data store.
+     * <p>
+     * If you call this method where not all data is provided to cover the change in firstLeafPath and lastLeafPath,
+     * then any reads after this call may return rubbish or throw obscure exceptions for any internals or leaves that
+     * have not been written. For example, if you were to grow the tree by more than 2x, and then called this method in
+     * batches, be aware that if you were to query for some record between batches that hadn't yet been saved, you will
+     * encounter problems.
      *
-     * If you call this method where not all data is provided to cover the change in
-     * firstLeafPath and lastLeafPath, then any reads after this call may return rubbish or throw
-     * obscure exceptions for any internals or leaves that have not been written. For example, if
-     * you were to grow the tree by more than 2x, and then called this method in batches, be aware
-     * that if you were to query for some record between batches that hadn't yet been saved, you
-     * will encounter problems.
-     *
-     * @param firstLeafPath the tree path for first leaf
-     * @param lastLeafPath the tree path for last leaf
-     * @param internalRecords stream of records for internal nodes, it is assumed this is sorted by
-     *     path and each path only appears once.
+     * @param firstLeafPath            the tree path for first leaf
+     * @param lastLeafPath             the tree path for last leaf
+     * @param internalRecords          stream of records for internal nodes, it is assumed this is sorted by path and
+     *                                 each path only appears once.
      * @param leafRecordsToAddOrUpdate stream of new leaf nodes and updated leaf nodes
-     * @param leafRecordsToDelete stream of new leaf nodes to delete, The leaf record's key and path
-     *     have to be populated, all other data can be null.
+     * @param leafRecordsToDelete      stream of new leaf nodes to delete, The leaf record's key and path have to be
+     *                                 populated, all other data can be null.
      * @throws IOException If there was a problem saving changes to data source
      */
     @Override
@@ -869,8 +861,8 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
     }
 
     /**
-     * Write a snapshot of the current state of the database at this moment in time. This will block
-     * till the snapshot is completely created.
+     * Write a snapshot of the current state of the database at this moment in time. This will block till the snapshot
+     * is completely created.
      *
      *
      * <b> Only one snapshot can happen at a time, this will throw an IllegalStateException if
@@ -879,10 +871,8 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
      * <b> IMPORTANT, after this is completed the caller owns the directory. It is responsible
      * for deleting it when it is no longer needed. </b>
      *
-     * @param snapshotDirectory Directory to put snapshot into, it will be created if it doesn't
-     *     exist.
-     * @throws IOException If there was a problem writing the current database out to the given
-     *     directory
+     * @param snapshotDirectory Directory to put snapshot into, it will be created if it doesn't exist.
+     * @throws IOException           If there was a problem writing the current database out to the given directory
      * @throws IllegalStateException If there is already a snapshot happening
      */
     @SuppressWarnings("ConstantConditions")
@@ -1003,8 +993,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
     }
 
     /**
-     * Table config for this data source. Includes key and value serializers, internal nodes
-     * RAM/disk threshold, etc.
+     * Table config for this data source. Includes key and value serializers, internal nodes RAM/disk threshold, etc.
      *
      * @return Table config
      */
@@ -1086,8 +1075,8 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
     // private methods
 
     /**
-     * Update all the file size and count statistics, called by save and merge as those are the only
-     * two places where files are added or removed.
+     * Update all the file size and count statistics, called by save and merge as those are the only two places where
+     * files are added or removed.
      */
     private void updateFileStats() {
         if (internalHashStoreDisk != null) {
@@ -1108,7 +1097,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
 
     private void updateOffHeapStats() {
         final int totalOffHeapMemoryConsumption = updateOffHeapStat(
-                        pathToDiskLocationInternalNodes, v -> statistics.setOffHeapMemoryInternalNodesListInMB(v))
+                pathToDiskLocationInternalNodes, v -> statistics.setOffHeapMemoryInternalNodesListInMB(v))
                 + updateOffHeapStat(pathToDiskLocationLeafNodes, v -> statistics.setOffHeapMemoryLeafNodesListInMB(v))
                 + updateOffHeapStat(longKeyToPath, v -> statistics.setOffHeapMemoryKeyToPathListInMB(v));
         statistics.setOffHeapMemoryDataSourceInMB(totalOffHeapMemoryConsumption);
@@ -1150,13 +1139,12 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
     }
 
     /**
-     * Run a runnable on background thread using snapshot ExecutorService, counting down latch when
-     * done.
+     * Run a runnable on background thread using snapshot ExecutorService, counting down latch when done.
      *
-     * @param shouldRun when true, run runnable otherwise just countdown latch
+     * @param shouldRun      when true, run runnable otherwise just countdown latch
      * @param countDownLatch latch to count down when done
-     * @param taskName the name of the task for logging
-     * @param runnable the code to run
+     * @param taskName       the name of the task for logging
+     * @param runnable       the code to run
      */
     private void runWithSnapshotExecutor(
             final boolean shouldRun,
@@ -1290,13 +1278,12 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
 
     /**
      * Invalidates the given key in virtual leaf record cache, if the cache is enabled.
-     *
-     * If the key is deleted, it's still updated in the cache. It means no record with the given
-     * key exists in the data source, so further lookups for the key are skipped.
-     *
-     * Cache index is calculated as the key's hash code % cache size. The cache is only updated,
-     * if the current record at this index has the given key. If the key is different, no update is
-     * performed.
+     * <p>
+     * If the key is deleted, it's still updated in the cache. It means no record with the given key exists in the data
+     * source, so further lookups for the key are skipped.
+     * <p>
+     * Cache index is calculated as the key's hash code % cache size. The cache is only updated, if the current record
+     * at this index has the given key. If the key is different, no update is performed.
      *
      * @param key Virtual leaf record key
      */
@@ -1313,18 +1300,17 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
     }
 
     /**
-     * Start a Merge if needed, this is called by default every 30 seconds if a merge is not already
-     * running. This implements the logic for how often and with what files we merge.
+     * Start a Merge if needed, this is called by default every 30 seconds if a merge is not already running. This
+     * implements the logic for how often and with what files we merge.
      *
      * <b> IMPORTANT: This method is called on a thread that can be interrupted, so it needs to
      * gracefully stop when it is interrupted. </b>
      *
      * <b> IMPORTANT: The set of files we merge must always be contiguous in order of time
-     * contained data created. As merged files have a later index but old data the index can not be
-     * used alone to work out order of files to merge. </b>
+     * contained data created. As merged files have a later index but old data the index can not be used alone to work
+     * out order of files to merge. </b>
      *
-     * @return true if merging completed successfully, false if it was interrupted or an exception
-     *     occurred.
+     * @return true if merging completed successfully, false if it was interrupted or an exception occurred.
      */
     @SuppressWarnings({"rawtypes", "unchecked", "ConstantConditions"})
     boolean doMerge() {

@@ -21,7 +21,7 @@ import static com.swirlds.platform.test.event.preconsensus.AsyncPreConsensusEven
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.base.time.TimeFacade;
+import com.swirlds.base.time.TimeFactory;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
@@ -126,7 +126,7 @@ class SyncPreConsensusEventWriterTests {
         final PlatformContext platformContext = buildContext();
 
         final PreConsensusEventFileManager fileManager =
-                new PreConsensusEventFileManager(platformContext, TimeFacade.getOsTime(), 0);
+                new PreConsensusEventFileManager(platformContext, TimeFactory.getOsTime(), 0);
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreConsensusEventWriter writer = new SyncPreConsensusEventWriter(platformContext, fileManager);
@@ -187,7 +187,7 @@ class SyncPreConsensusEventWriterTests {
         final PlatformContext platformContext = buildContext();
 
         final PreConsensusEventFileManager fileManager =
-                new PreConsensusEventFileManager(platformContext, TimeFacade.getOsTime(), 0);
+                new PreConsensusEventFileManager(platformContext, TimeFactory.getOsTime(), 0);
 
         final PreConsensusEventWriter writer = new SyncPreConsensusEventWriter(platformContext, fileManager);
 
@@ -253,7 +253,7 @@ class SyncPreConsensusEventWriterTests {
         final PlatformContext platformContext = buildContext();
 
         final PreConsensusEventFileManager fileManager =
-                new PreConsensusEventFileManager(platformContext, TimeFacade.getOsTime(), 0);
+                new PreConsensusEventFileManager(platformContext, TimeFactory.getOsTime(), 0);
 
         final PreConsensusEventWriter writer = new SyncPreConsensusEventWriter(platformContext, fileManager);
 
@@ -308,7 +308,7 @@ class SyncPreConsensusEventWriterTests {
         final PlatformContext platformContext = buildContext();
 
         final PreConsensusEventFileManager fileManager =
-                new PreConsensusEventFileManager(platformContext, TimeFacade.getOsTime(), 0);
+                new PreConsensusEventFileManager(platformContext, TimeFactory.getOsTime(), 0);
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreConsensusEventWriter writer = new SyncPreConsensusEventWriter(platformContext, fileManager);
@@ -361,7 +361,7 @@ class SyncPreConsensusEventWriterTests {
         final PlatformContext platformContext = buildContext();
 
         final PreConsensusEventFileManager fileManager =
-                new PreConsensusEventFileManager(platformContext, TimeFacade.getOsTime(), 0);
+                new PreConsensusEventFileManager(platformContext, TimeFactory.getOsTime(), 0);
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreConsensusEventWriter writer = new SyncPreConsensusEventWriter(platformContext, fileManager);
@@ -430,7 +430,7 @@ class SyncPreConsensusEventWriterTests {
         final PlatformContext platformContext = buildContext();
 
         final PreConsensusEventFileManager fileManager =
-                new PreConsensusEventFileManager(platformContext, TimeFacade.getOsTime(), 0);
+                new PreConsensusEventFileManager(platformContext, TimeFactory.getOsTime(), 0);
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreConsensusEventWriter writer = new SyncPreConsensusEventWriter(platformContext, fileManager);

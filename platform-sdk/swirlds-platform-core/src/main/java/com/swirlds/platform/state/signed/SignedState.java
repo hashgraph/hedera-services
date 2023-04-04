@@ -20,7 +20,7 @@ import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.SIGNED_STATE;
 
-import com.swirlds.base.time.TimeFacade;
+import com.swirlds.base.time.TimeFactory;
 import com.swirlds.common.Reservable;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -126,11 +126,9 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
     /**
      * Instantiate a signed state.
      *
-     * @param state
-     * 		a fast copy of the state resulting from all transactions in consensus order from all
-     * 		events with received rounds up through the round this SignedState represents
-     * @param freezeState
-     * 		specifies whether this state is the last one saved before the freeze
+     * @param state       a fast copy of the state resulting from all transactions in consensus order from all events
+     *                    with received rounds up through the round this SignedState represents
+     * @param freezeState specifies whether this state is the last one saved before the freeze
      */
     public SignedState(final State state, final boolean freezeState) {
         this(state);
@@ -149,7 +147,7 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
         this.state = state;
 
         if (Settings.getInstance().getState().signedStateSentinelEnabled) {
-            history = new SignedStateHistory(TimeFacade.getOsTime());
+            history = new SignedStateHistory(TimeFactory.getOsTime());
             history.recordAction(SignedStateHistory.SignedStateAction.CREATION, getReservationCount());
         } else {
             history = null;

@@ -19,7 +19,7 @@ package com.swirlds.platform.test.consensus;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.base.time.TimeFacade;
+import com.swirlds.base.time.TimeFactory;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.system.NodeId;
@@ -52,7 +52,8 @@ import java.util.function.BiConsumer;
  * Event intake with consensus and shadowgraph, used for testing
  */
 public class TestIntake implements ConsensusRoundObserver, StaleEventObserver, LoadableFromSignedState {
-    private static final BiConsumer<Long, Long> NOOP_MINGEN = (l1, l2) -> {};
+    private static final BiConsumer<Long, Long> NOOP_MINGEN = (l1, l2) -> {
+    };
 
     private final AddressBook ab;
     private final BiConsumer<Long, Long> minGenConsumer;
@@ -70,7 +71,7 @@ public class TestIntake implements ConsensusRoundObserver, StaleEventObserver, L
     }
 
     public TestIntake(final AddressBook ab, final BiConsumer<Long, Long> minGenConsumer) {
-        this(ab, minGenConsumer, TimeFacade.getOsTime());
+        this(ab, minGenConsumer, TimeFactory.getOsTime());
     }
 
     public TestIntake(final AddressBook ab, final Time time) {
@@ -82,14 +83,12 @@ public class TestIntake implements ConsensusRoundObserver, StaleEventObserver, L
     }
 
     public TestIntake(final AddressBook ab, final ConsensusConfig consensusConfig) {
-        this(ab, NOOP_MINGEN, TimeFacade.getOsTime(), consensusConfig);
+        this(ab, NOOP_MINGEN, TimeFactory.getOsTime(), consensusConfig);
     }
 
     /**
-     * @param ab
-     * 		the address book used by this intake
-     * @param minGenConsumer
-     * 		the consumer of minimum generations per round
+     * @param ab             the address book used by this intake
+     * @param minGenConsumer the consumer of minimum generations per round
      */
     public TestIntake(
             final AddressBook ab,
@@ -122,8 +121,7 @@ public class TestIntake implements ConsensusRoundObserver, StaleEventObserver, L
     /**
      * Link an event to its parents and add it to consensus and shadowgraph
      *
-     * @param event
-     * 		the event to add
+     * @param event the event to add
      */
     public void addEvent(final GossipEvent event) {
         intake.addUnlinkedEvent(event);
@@ -132,9 +130,9 @@ public class TestIntake implements ConsensusRoundObserver, StaleEventObserver, L
 
     /**
      * Same as {@link #addEvent(GossipEvent)}
-     *
-     * Note: this event won't be the one inserted, intake will create a new instance that will wrap the
-     * {@link com.swirlds.common.system.events.BaseEvent}
+     * <p>
+     * Note: this event won't be the one inserted, intake will create a new instance that will wrap the {@link
+     * com.swirlds.common.system.events.BaseEvent}
      */
     public void addEvent(final EventImpl event) {
         intake.addUnlinkedEvent(event.getBaseEvent());

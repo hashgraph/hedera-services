@@ -18,13 +18,13 @@ package com.swirlds.platform.test;
 
 import static org.mockito.Mockito.mock;
 
-import com.swirlds.base.time.TimeFacade;
+import com.swirlds.base.time.TimeFactory;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.platform.intake.IntakeCycleStats;
 
 public class NoOpIntakeCycleStats extends IntakeCycleStats {
     public NoOpIntakeCycleStats() {
-        super(TimeFacade.getOsTime(), mock(Metrics.class));
+        super(TimeFactory.getOsTime(), mock(Metrics.class));
     }
 
     @Override

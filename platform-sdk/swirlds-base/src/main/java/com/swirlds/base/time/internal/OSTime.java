@@ -17,7 +17,7 @@
 package com.swirlds.base.time.internal;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.base.time.TimeFacade;
+import com.swirlds.base.time.TimeFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
@@ -60,6 +60,6 @@ public final class OSTime implements Time {
     @NonNull
     @Override
     public Instant now() {
-        return Instant.now(TimeFacade.getNanoClock());
+        return Instant.now(TimeFactory.getNanoClock());
     }
 }

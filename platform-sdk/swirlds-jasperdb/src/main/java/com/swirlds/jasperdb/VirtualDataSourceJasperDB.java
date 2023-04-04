@@ -23,7 +23,7 @@ import static com.swirlds.logging.LogMarker.ERROR;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.JASPER_DB;
 
-import com.swirlds.base.time.TimeFacade;
+import com.swirlds.base.time.TimeFactory;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
@@ -105,10 +105,8 @@ import org.apache.logging.log4j.Logger;
  * is working correctly, then it will always write data before reading it! If it does not, random looking errors
  * may result.
  *
- * @param <K>
- * 		type for keys
- * @param <V>
- * 		type for values
+ * @param <K> type for keys
+ * @param <V> type for values
  */
 @SuppressWarnings({"DuplicatedCode"})
 public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extends VirtualValue>
@@ -127,9 +125,9 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
     private static final int NUMBER_OF_MERGING_THREADS = 1;
 
     /**
-     * Since {@code com.swirlds.platform.Browser} populates settings, and it is loaded before
-     * any application classes that might instantiate a data source, the {@link JasperDbSettingsFactory}
-     * holder will have been configured by the time this static initializer runs.
+     * Since {@code com.swirlds.platform.Browser} populates settings, and it is loaded before any application classes
+     * that might instantiate a data source, the {@link JasperDbSettingsFactory} holder will have been configured by the
+     * time this static initializer runs.
      */
     private static final JasperDbSettings settings = JasperDbSettingsFactory.get();
 
@@ -140,10 +138,10 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
     private static final LongAdder COUNT_OF_OPEN_DATABASES = new LongAdder();
 
     private static final FunctionGauge.Config<Long> COUNT_OF_OPEN_DATABASES_CONFIG = new FunctionGauge.Config<>(
-                    JasperDbStatistics.STAT_CATEGORY,
-                    "jpdb_count",
-                    Long.class,
-                    VirtualDataSourceJasperDB::getCountOfOpenDatabases)
+            JasperDbStatistics.STAT_CATEGORY,
+            "jpdb_count",
+            Long.class,
+            VirtualDataSourceJasperDB::getCountOfOpenDatabases)
             .withDescription("the number of JPDB instances that have been created but not released")
             .withFormat("%d");
 
@@ -190,8 +188,8 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
     private final LongList longKeyToPath;
 
     /**
-     * Mixed disk and off-heap memory store for key to path map, this is used if isLongKeyMode=false,
-     * and we have complex keys.
+     * Mixed disk and off-heap memory store for key to path map, this is used if isLongKeyMode=false, and we have
+     * complex keys.
      */
     private final HalfDiskHashMap<K> objectKeyToPath;
 
@@ -201,16 +199,15 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
     private final MemoryIndexDiskKeyValueStore<VirtualLeafRecord<K, V>> pathToHashKeyValue;
 
     /**
-     * Cache size for reading virtual leaf records. Initialized in data source creation time from
-     * JasperDB settings. If the value is zero, leaf records cache isn't used.
+     * Cache size for reading virtual leaf records. Initialized in data source creation time from JasperDB settings. If
+     * the value is zero, leaf records cache isn't used.
      */
     private final int leafRecordCacheSize;
 
     /**
-     * Virtual leaf records cache. It's a simple array indexed by leaf keys % cache size. Cache
-     * eviction is not needed, as array size is fixed and can be configured in JasperDB settings.
-     * Index conflicts are resolved in a very straightforward way: whatever entry is read last,
-     * it's put to the cache.
+     * Virtual leaf records cache. It's a simple array indexed by leaf keys % cache size. Cache eviction is not needed,
+     * as array size is fixed and can be configured in JasperDB settings. Index conflicts are resolved in a very
+     * straightforward way: whatever entry is read last, it's put to the cache.
      */
     @SuppressWarnings("rawtypes")
     private final VirtualLeafRecord[] leafRecordCache;
@@ -248,18 +245,16 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
 
     /**
      * A semaphore to sync data source snapshots and store compactions.
-     *
-     * One of the goals is to lock the snapshot thread as little as possible. Compaction can
-     * be paused and resumed at any moment. That's why the semaphore is acquired for the whole
-     * run of snapshot(), while during compaction it is acquired and released for very short
-     * periods: when indices are updated and when merged files are removed. If compaction threads
-     * are doing anything else, e.g. iterating through files to merge, it can be run in parallel
-     * to snapshotting, until compaction thread starts updating store index.
-     *
-     * Since compaction thread can be paused at various points, it's possible that snapshot will
-     * capture files that are already merged (no index entries pointing to them). Some index
-     * entries can be updated to use the new file, some can point to old files, but since both
-     * old and new files are in the snapshot, it shouldn't be a problem.
+     * <p>
+     * One of the goals is to lock the snapshot thread as little as possible. Compaction can be paused and resumed at
+     * any moment. That's why the semaphore is acquired for the whole run of snapshot(), while during compaction it is
+     * acquired and released for very short periods: when indices are updated and when merged files are removed. If
+     * compaction threads are doing anything else, e.g. iterating through files to merge, it can be run in parallel to
+     * snapshotting, until compaction thread starts updating store index.
+     * <p>
+     * Since compaction thread can be paused at various points, it's possible that snapshot will capture files that are
+     * already merged (no index entries pointing to them). Some index entries can be updated to use the new file, some
+     * can point to old files, but since both old and new files are in the snapshot, it shouldn't be a problem.
      */
     private final Semaphore mergingPaused = new Semaphore(1);
 
@@ -276,11 +271,11 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
     /**
      * a nanosecond-precise Clock
      */
-    private final Clock clock = TimeFacade.getNanoClock();
+    private final Clock clock = TimeFactory.getNanoClock();
 
     /**
-     * When we register stats for the first instance, also register the global stats. If true
-     * then this is the first time stats are being registered for an instance.
+     * When we register stats for the first instance, also register the global stats. If true then this is the first
+     * time stats are being registered for an instance.
      */
     private static boolean firstStatRegistration = true;
 
@@ -308,32 +303,26 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
      * minimal amount of RAM then set internalHashesRamToDiskThreshold to 0 and preferDiskBasedIndexes to true.
      * </p>
      *
-     * @param virtualLeafRecordSerializer
-     * 		Serializer for converting raw data to/from VirtualLeafRecords
-     * 		<b>IMPORTANT, Only changeable for first database creation today.</b>
-     * @param virtualInternalRecordSerializer
-     * 		Serializer for converting raw data to/from VirtualInternalRecords
-     * 		<b>IMPORTANT, Only changeable for first database creation today.</b>
-     * @param keySerializer
-     * 		Serializer for converting raw data to/from keys
-     * 		<b>IMPORTANT, Only changeable for first database creation today.</b>
-     * @param storageDir
-     * 		directory to store data files in
-     * @param label
-     * 		label for the database for use in logs and stats
-     * @param maxNumOfKeys
-     * 		the maximum number of unique keys. This is used for calculating in memory index sizes.
-     * 		<b>IMPORTANT, Only changeable for first database creation today.</b>
-     * @param mergingEnabled
-     * 		When true a background thread is starting for merging
-     * @param internalHashesRamToDiskThreshold
-     * 		When path value at which we switch from hashes in ram to stored on disk
-     * 		<b>IMPORTANT, Only changeable for first database creation today.</b>
-     * @param preferDiskBasedIndexes
-     * 		When true we will use disk based indexes rather than ram where possible. This will come with a significant
-     * 		performance cost, especially for writing. It is possible to load a data source that was written with memory
-     * 		indexes with disk based indexes and via versa. The main use case for this being true is loading a snapshot
-     * 		for reading with minimal ram usage.
+     * @param virtualLeafRecordSerializer      Serializer for converting raw data to/from VirtualLeafRecords
+     *                                         <b>IMPORTANT, Only changeable for first database creation today.</b>
+     * @param virtualInternalRecordSerializer  Serializer for converting raw data to/from VirtualInternalRecords
+     *                                         <b>IMPORTANT, Only changeable for first database creation today.</b>
+     * @param keySerializer                    Serializer for converting raw data to/from keys
+     *                                         <b>IMPORTANT, Only changeable for first database creation today.</b>
+     * @param storageDir                       directory to store data files in
+     * @param label                            label for the database for use in logs and stats
+     * @param maxNumOfKeys                     the maximum number of unique keys. This is used for calculating in memory
+     *                                         index sizes.
+     *                                         <b>IMPORTANT, Only changeable for first database creation today.</b>
+     * @param mergingEnabled                   When true a background thread is starting for merging
+     * @param internalHashesRamToDiskThreshold When path value at which we switch from hashes in ram to stored on disk
+     *                                         <b>IMPORTANT, Only changeable for first database creation today.</b>
+     * @param preferDiskBasedIndexes           When true we will use disk based indexes rather than ram where possible.
+     *                                         This will come with a significant performance cost, especially for
+     *                                         writing. It is possible to load a data source that was written with
+     *                                         memory indexes with disk based indexes and via versa. The main use case
+     *                                         for this being true is loading a snapshot for reading with minimal ram
+     *                                         usage.
      */
     public VirtualDataSourceJasperDB(
             final VirtualLeafRecordSerializer<K, V> virtualLeafRecordSerializer,
@@ -447,12 +436,12 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
 
         this.internalHashStoreDisk = hasDiskStoreForInternalHashes
                 ? new MemoryIndexDiskKeyValueStore<>(
-                        dbPaths.internalHashStoreDiskDirectory,
-                        label + "_internalhashes",
-                        label + ":internalHashes",
-                        virtualInternalRecordSerializer,
-                        null,
-                        pathToDiskLocationInternalNodes)
+                dbPaths.internalHashStoreDiskDirectory,
+                label + "_internalhashes",
+                label + ":internalHashes",
+                virtualInternalRecordSerializer,
+                null,
+                pathToDiskLocationInternalNodes)
                 : null;
         // Create Key to Path store
         final LoadedDataCallback loadedDataCallback;
@@ -609,25 +598,20 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
     /**
      * Save a batch of data to data store.
      * <p>
-     * If you call this method where not all data is provided to cover the change in firstLeafPath and
-     * lastLeafPath, then any reads after this call may return rubbish or throw obscure exceptions for
-     * any internals or leaves that have not been written. For example, if you were to grow the tree
-     * by more than 2x, and then called this method in batches, be aware that if you were to query
-     * for some record between batches that hadn't yet been saved, you will encounter problems.
+     * If you call this method where not all data is provided to cover the change in firstLeafPath and lastLeafPath,
+     * then any reads after this call may return rubbish or throw obscure exceptions for any internals or leaves that
+     * have not been written. For example, if you were to grow the tree by more than 2x, and then called this method in
+     * batches, be aware that if you were to query for some record between batches that hadn't yet been saved, you will
+     * encounter problems.
      *
-     * @param firstLeafPath
-     * 		the tree path for first leaf
-     * @param lastLeafPath
-     * 		the tree path for last leaf
-     * @param internalRecords
-     * 		stream of records for internal nodes, it is assumed this is sorted by path and each path only appears once.
-     * @param leafRecordsToAddOrUpdate
-     * 		stream of new leaf nodes and updated leaf nodes
-     * @param leafRecordsToDelete
-     * 		stream of new leaf nodes to delete, The leaf record's key and path have to be populated, all other data can
-     * 		be null.
-     * @throws IOException
-     * 		If there was a problem saving changes to data source
+     * @param firstLeafPath            the tree path for first leaf
+     * @param lastLeafPath             the tree path for last leaf
+     * @param internalRecords          stream of records for internal nodes, it is assumed this is sorted by path and
+     *                                 each path only appears once.
+     * @param leafRecordsToAddOrUpdate stream of new leaf nodes and updated leaf nodes
+     * @param leafRecordsToDelete      stream of new leaf nodes to delete, The leaf record's key and path have to be
+     *                                 populated, all other data can be null.
+     * @throws IOException If there was a problem saving changes to data source
      */
     @Override
     public void saveRecords(
@@ -676,11 +660,9 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
     /**
      * Load a leaf record by key
      *
-     * @param key
-     * 		they to the leaf to load record for
+     * @param key they to the leaf to load record for
      * @return loaded record or null if not found
-     * @throws IOException
-     * 		If there was a problem reading record from db
+     * @throws IOException If there was a problem reading record from db
      */
     @Override
     @SuppressWarnings("unchecked")
@@ -761,11 +743,9 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
     /**
      * Load a leaf record by path
      *
-     * @param path
-     * 		the path for the leaf we are loading
+     * @param path the path for the leaf we are loading
      * @return loaded record or null if not found
-     * @throws IOException
-     * 		If there was a problem reading record from db
+     * @throws IOException If there was a problem reading record from db
      */
     @Override
     public VirtualLeafRecord<K, V> loadLeafRecord(final long path) throws IOException {
@@ -780,11 +760,9 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
     /**
      * Find the path of the given key
      *
-     * @param key
-     * 		the key for a path
+     * @param key the key for a path
      * @return the path or INVALID_PATH if not stored
-     * @throws IOException
-     * 		If there was a problem locating the key
+     * @throws IOException If there was a problem locating the key
      */
     @Override
     @SuppressWarnings("unchecked")
@@ -816,11 +794,9 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
     /**
      * Load hash for a leaf node with given path
      *
-     * @param path
-     * 		the path to get hash for
+     * @param path the path to get hash for
      * @return loaded hash or null if hash is not stored
-     * @throws IOException
-     * 		if there was a problem loading hash
+     * @throws IOException if there was a problem loading hash
      */
     @Override
     public Hash loadLeafHash(final long path) throws IOException {
@@ -973,20 +949,17 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
      * Write a snapshot of the current state of the database at this moment in time. This will block till the snapshot
      * is completely created.
      * <p><b>
-     * Only one snapshot can happen at a time, this will throw an IllegalStateException if another snapshot is
-     * currently happening.
+     * Only one snapshot can happen at a time, this will throw an IllegalStateException if another snapshot is currently
+     * happening.
      * </b></p>
      * <p><b>
-     * IMPORTANT, after this is completed the caller owns the directory. It is responsible for deleting it when it
-     * is no longer needed.
+     * IMPORTANT, after this is completed the caller owns the directory. It is responsible for deleting it when it is no
+     * longer needed.
      * </b></p>
      *
-     * @param snapshotDirectory
-     * 		Directory to put snapshot into, it will be created if it doesn't exist.
-     * @throws IOException
-     * 		If there was a problem writing the current database out to the given directory
-     * @throws IllegalStateException
-     * 		If there is already a snapshot happening
+     * @param snapshotDirectory Directory to put snapshot into, it will be created if it doesn't exist.
+     * @throws IOException           If there was a problem writing the current database out to the given directory
+     * @throws IllegalStateException If there is already a snapshot happening
      */
     @SuppressWarnings("ConstantConditions")
     @Override
@@ -1168,14 +1141,10 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
     /**
      * Run a runnable on background thread using snapshot ExecutorService, counting down latch when done.
      *
-     * @param shouldRun
-     * 		when true, run runnable otherwise just countdown latch
-     * @param countDownLatch
-     * 		latch to count down when done
-     * @param taskName
-     * 		the name of the task for logging
-     * @param runnable
-     * 		the code to run
+     * @param shouldRun      when true, run runnable otherwise just countdown latch
+     * @param countDownLatch latch to count down when done
+     * @param taskName       the name of the task for logging
+     * @param runnable       the code to run
      */
     private void runWithSnapshotExecutor(
             final boolean shouldRun,
@@ -1240,16 +1209,14 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
 
     /**
      * Invalidates the given key in virtual leaf record cache, if the cache is enabled.
+     * <p>
+     * If the key is deleted, it's still updated in the cache. It means no record with the given key exists in the data
+     * source, so further lookups for the key are skipped.
+     * <p>
+     * Cache index is calculated as the key's hash code % cache size. The cache is only updated, if the current record
+     * at this index has the given key. If the key is different, no update is performed.
      *
-     * If the key is deleted, it's still updated in the cache. It means no record
-     * with the given key exists in the data source, so further lookups for the key are skipped.
-     *
-     * Cache index is calculated as the key's hash code % cache size. The cache is only updated,
-     * if the current record at this index has the given key. If the key is different, no update
-     * is performed.
-     *
-     * @param key
-     * 		Virtual leaf record key
+     * @param key Virtual leaf record key
      */
     @SuppressWarnings("unchecked")
     private void invalidateReadCache(final K key) {
@@ -1333,8 +1300,8 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey<? super K>, V extend
      * Start a Merge if needed, this is called by default every 30 seconds if a merge is not already running. This
      * implements the logic for how often and with what files we merge.
      * <p><b>
-     * IMPORTANT: This method is called on a thread that can be interrupted, so it needs to gracefully stop when it
-     * is interrupted.
+     * IMPORTANT: This method is called on a thread that can be interrupted, so it needs to gracefully stop when it is
+     * interrupted.
      * </b></p>
      * <p><b>
      * IMPORTANT: The set of files we merge must always be contiguous in order of time contained data created. As merged

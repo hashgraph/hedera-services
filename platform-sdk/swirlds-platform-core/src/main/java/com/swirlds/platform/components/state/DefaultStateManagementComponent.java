@@ -19,7 +19,7 @@ package com.swirlds.platform.components.state;
 import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
-import com.swirlds.base.time.TimeFacade;
+import com.swirlds.base.time.TimeFactory;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
@@ -190,7 +190,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         this.signedStateMetrics = new SignedStateMetrics(context.getMetrics());
         this.signedStateGarbageCollector = new SignedStateGarbageCollector(threadManager, signedStateMetrics);
         this.stateConfig = context.getConfiguration().getConfigData(StateConfig.class);
-        this.signedStateSentinel = new SignedStateSentinel(threadManager, TimeFacade.getOsTime());
+        this.signedStateSentinel = new SignedStateSentinel(threadManager, TimeFactory.getOsTime());
 
         dispatchBuilder = new DispatchBuilder(context.getConfiguration().getConfigData(DispatchConfiguration.class));
 
@@ -204,7 +204,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 context,
                 threadManager,
                 signedStateMetrics,
-                TimeFacade.getOsTime(),
+                TimeFactory.getOsTime(),
                 mainClassName,
                 selfId,
                 swirldName,
@@ -231,14 +231,14 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 combinedStateLacksSignaturesConsumer);
 
         consensusHashManager = new ConsensusHashManager(
-                TimeFacade.getOsTime(),
+                TimeFactory.getOsTime(),
                 dispatchBuilder,
                 addressBook,
                 context.getConfiguration().getConfigData(ConsensusConfig.class),
                 stateConfig);
 
         final IssHandler issHandler = new IssHandler(
-                TimeFacade.getOsTime(),
+                TimeFactory.getOsTime(),
                 dispatchBuilder,
                 stateConfig,
                 selfId.getId(),

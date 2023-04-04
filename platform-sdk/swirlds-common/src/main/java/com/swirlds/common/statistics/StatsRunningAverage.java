@@ -17,16 +17,15 @@
 package com.swirlds.common.statistics;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.base.time.TimeFacade;
+import com.swirlds.base.time.TimeFactory;
 import com.swirlds.common.statistics.internal.StatsBuffer;
 import com.swirlds.logging.LogMarker;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * This class maintains a running average of some numeric value. It is exponentially weighted in time, with
- * a given half life. If it is always given the same value, then that value will be the average, regardless
- * of the timing.
+ * This class maintains a running average of some numeric value. It is exponentially weighted in time, with a given half
+ * life. If it is always given the same value, then that value will be the average, regardless of the timing.
  *
  * @deprecated Use {@link com.swirlds.common.metrics.RunningAverageMetric} instead
  */
@@ -95,26 +94,23 @@ public class StatsRunningAverage implements StatsBuffered {
     }
 
     /**
-     * Instantiate a RunningAverage with the given halfLife and start the measurements right now. This will
-     * calculate exponentially weighted averages of the values passed to recordValue(), where the
-     * exponential weighting has a half life of halfLife seconds.
+     * Instantiate a RunningAverage with the given halfLife and start the measurements right now. This will calculate
+     * exponentially weighted averages of the values passed to recordValue(), where the exponential weighting has a half
+     * life of halfLife seconds.
      *
-     * @param halfLife
-     * 		half of the exponential weighting comes from the last halfLife seconds
+     * @param halfLife half of the exponential weighting comes from the last halfLife seconds
      */
     @SuppressWarnings("removal")
     public StatsRunningAverage(final double halfLife) {
-        this(halfLife, TimeFacade.getOsTime());
+        this(halfLife, TimeFactory.getOsTime());
     }
 
     /**
-     * This constructor behaves exactly as the regular one, but permits to inject a {@link Time}.
-     * It should only be used internally.
+     * This constructor behaves exactly as the regular one, but permits to inject a {@link Time}. It should only be used
+     * internally.
      *
-     * @param halfLife
-     * 		half of the exponential weighting comes from the last halfLife seconds
-     * @param time
-     * 		the {@code Clock} implementation, typically a mock when testing
+     * @param halfLife half of the exponential weighting comes from the last halfLife seconds
+     * @param time     the {@code Clock} implementation, typically a mock when testing
      * @deprecated this constructor should only be used internally and will become non-public at some point
      */
     @Deprecated(forRemoval = true)
@@ -124,12 +120,11 @@ public class StatsRunningAverage implements StatsBuffered {
     }
 
     /**
-     * Start over on the measurements and counts, to get an exponentially-weighted average of the values
-     * passed to recordValue(), with the weighting having a half life of halfLife seconds. This is
-     * equivalent to instantiating a new RunningAverage.
+     * Start over on the measurements and counts, to get an exponentially-weighted average of the values passed to
+     * recordValue(), with the weighting having a half life of halfLife seconds. This is equivalent to instantiating a
+     * new RunningAverage.
      *
-     * @param halfLife
-     * 		half of the exponential weighting comes from the last halfLife seconds
+     * @param halfLife half of the exponential weighting comes from the last halfLife seconds
      */
     @SuppressWarnings("removal")
     @Override
@@ -145,18 +140,16 @@ public class StatsRunningAverage implements StatsBuffered {
     }
 
     /**
-     * Incorporate "value" into the running average. If it is the same on every call, then the average will
-     * equal it, no matter how those calls are timed. If it has various values on various calls, then the
-     * running average will weight the more recent ones more heavily, with a half life of halfLife seconds,
-     * where halfLife was passed in when this object was instantiated.
+     * Incorporate "value" into the running average. If it is the same on every call, then the average will equal it, no
+     * matter how those calls are timed. If it has various values on various calls, then the running average will weight
+     * the more recent ones more heavily, with a half life of halfLife seconds, where halfLife was passed in when this
+     * object was instantiated.
      * <p>
-     * If this is called repeatedly with a value of X over a long period, then suddenly all calls start
-     * having a value of Y, then after halflife seconds, the average will have moved halfway from X to Y,
-     * regardless of how often update was called, as long as it is called at least once at the end of that
-     * period.
+     * If this is called repeatedly with a value of X over a long period, then suddenly all calls start having a value
+     * of Y, then after halflife seconds, the average will have moved halfway from X to Y, regardless of how often
+     * update was called, as long as it is called at least once at the end of that period.
      *
-     * @param value
-     * 		the value to incorporate into the running average
+     * @param value the value to incorporate into the running average
      */
     public void recordValue(final double value) {
         if (Double.isNaN(value)) { // java getSystemCpuLoad returns NaN at beginning
@@ -183,8 +176,8 @@ public class StatsRunningAverage implements StatsBuffered {
     }
 
     /**
-     * Get the average of recent calls to recordValue(). This is an exponentially-weighted average of recent
-     * calls, with the weighting by time, not by number of calls to recordValue().
+     * Get the average of recent calls to recordValue(). This is an exponentially-weighted average of recent calls, with
+     * the weighting by time, not by number of calls to recordValue().
      *
      * @return the running average as of the last time recordValue was called
      */

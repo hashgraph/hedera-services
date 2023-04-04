@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.base.time.TimeFacade;
+import com.swirlds.base.time.TimeFactory;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
@@ -174,7 +174,7 @@ class AsyncPreConsensusEventWriterTests {
         }
 
         final PreConsensusEventFileManager reader =
-                new PreConsensusEventFileManager(platformContext, TimeFacade.getOsTime(), 0);
+                new PreConsensusEventFileManager(platformContext, TimeFactory.getOsTime(), 0);
 
         // Verify that the events were written correctly
         final PreConsensusEventMultiFileIterator eventsIterator = reader.getEventIterator(0);
@@ -269,7 +269,7 @@ class AsyncPreConsensusEventWriterTests {
         final PlatformContext platformContext = buildContext();
 
         final PreConsensusEventFileManager fileManager =
-                new PreConsensusEventFileManager(buildContext(), TimeFacade.getOsTime(), 0);
+                new PreConsensusEventFileManager(buildContext(), TimeFactory.getOsTime(), 0);
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreConsensusEventWriter writer = new AsyncPreConsensusEventWriter(
@@ -460,7 +460,7 @@ class AsyncPreConsensusEventWriterTests {
         final PlatformContext platformContext = buildContext();
 
         final PreConsensusEventFileManager fileManager =
-                new PreConsensusEventFileManager(platformContext, TimeFacade.getOsTime(), 0);
+                new PreConsensusEventFileManager(platformContext, TimeFactory.getOsTime(), 0);
 
         final PreconsensusEventStreamSequencer sequencer1 = new PreconsensusEventStreamSequencer();
         final PreConsensusEventWriter writer1 = new AsyncPreConsensusEventWriter(

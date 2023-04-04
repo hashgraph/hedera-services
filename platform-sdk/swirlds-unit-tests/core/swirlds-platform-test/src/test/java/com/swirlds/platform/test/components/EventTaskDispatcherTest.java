@@ -20,7 +20,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.base.time.TimeFacade;
+import com.swirlds.base.time.TimeFactory;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.components.EventCreator;
@@ -46,11 +46,11 @@ class EventTaskDispatcherTest {
     void test() {
         final EventCreator creator = mock(EventCreator.class);
         final EventValidator validator = mock(EventValidator.class);
-        @SuppressWarnings("unchecked")
-        final Consumer<GossipEvent> intake = (Consumer<GossipEvent>) mock(Consumer.class);
+        @SuppressWarnings("unchecked") final Consumer<GossipEvent> intake = (Consumer<GossipEvent>) mock(
+                Consumer.class);
 
         final EventTaskDispatcher dispatcher = new EventTaskDispatcher(
-                TimeFacade.getOsTime(),
+                TimeFactory.getOsTime(),
                 validator,
                 creator,
                 intake,

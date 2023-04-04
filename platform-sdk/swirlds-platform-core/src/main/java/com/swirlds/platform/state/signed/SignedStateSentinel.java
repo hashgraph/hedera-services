@@ -19,7 +19,7 @@ package com.swirlds.platform.state.signed;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.base.time.TimeFacade;
+import com.swirlds.base.time.TimeFactory;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -35,8 +35,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * This object is responsible for observing the lifespans of signed states, and taking action
- * if a state suspected of a memory leak is observed.
+ * This object is responsible for observing the lifespans of signed states, and taking action if a state suspected of a
+ * memory leak is observed.
  */
 public class SignedStateSentinel implements Startable, Stoppable {
 
@@ -51,10 +51,8 @@ public class SignedStateSentinel implements Startable, Stoppable {
     /**
      * Create an object that monitors signed state lifespans.
      *
-     * @param threadManager
-     * 		responsible for creating and managing threads
-     * @param time
-     * 		provides the wall clock time
+     * @param threadManager responsible for creating and managing threads
+     * @param time          provides the wall clock time
      */
     public SignedStateSentinel(final ThreadManager threadManager, final Time time) {
         this.time = time;
@@ -65,7 +63,7 @@ public class SignedStateSentinel implements Startable, Stoppable {
                 .setWork(this::checkSignedStates)
                 .build();
 
-        rateLimiter = new RateLimiter(TimeFacade.getOsTime(), Duration.ofMinutes(10));
+        rateLimiter = new RateLimiter(TimeFactory.getOsTime(), Duration.ofMinutes(10));
     }
 
     /**

@@ -24,11 +24,11 @@ import java.time.Clock;
 /**
  * Facade for all time functionality that is part of the base module
  */
-public final class TimeFacade {
+public final class TimeFactory {
 
     private static final Clock nanoClock = new NanoClock();
 
-    private TimeFacade() {}
+    private TimeFactory() {}
 
     /**
      * Returns an implementation of {@link Time} that will return the true wall clock time (according to the OS).

@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import com.swirlds.base.time.TimeFacade;
+import com.swirlds.base.time.TimeFactory;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;
@@ -83,7 +83,7 @@ class ConsensusHashManagerTests {
 
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
         final ConsensusHashManager manager = new ConsensusHashManager(
-                TimeFacade.getOsTime(), dispatchBuilder, addressBook, consensusConfig, stateConfig);
+                TimeFactory.getOsTime(), dispatchBuilder, addressBook, consensusConfig, stateConfig);
 
         final AtomicBoolean fail = new AtomicBoolean(false);
         dispatchBuilder.registerObserver(this, SelfIssTrigger.class, (a, b, c) -> fail.set(true));
@@ -182,7 +182,7 @@ class ConsensusHashManagerTests {
 
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
         final ConsensusHashManager manager = new ConsensusHashManager(
-                TimeFacade.getOsTime(), dispatchBuilder, addressBook, consensusConfig, stateConfig);
+                TimeFactory.getOsTime(), dispatchBuilder, addressBook, consensusConfig, stateConfig);
 
         final AtomicBoolean fail = new AtomicBoolean(false);
         final AtomicInteger issCount = new AtomicInteger(0);
@@ -279,8 +279,8 @@ class ConsensusHashManagerTests {
     }
 
     /**
-     * The method generateNodeHashes() doesn't account for self ID, and therefore doesn't guarantee that
-     * any particular node will have an ISS. Regenerate data until we find a data set that results in a self ISS.
+     * The method generateNodeHashes() doesn't account for self ID, and therefore doesn't guarantee that any particular
+     * node will have an ISS. Regenerate data until we find a data set that results in a self ISS.
      */
     private static RoundHashValidatorTests.HashGenerationData generateDataWithSelfIss(
             final Random random, final AddressBook addressBook, final long selfId, final long targetRound) {
@@ -322,7 +322,7 @@ class ConsensusHashManagerTests {
 
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
         final ConsensusHashManager manager = new ConsensusHashManager(
-                TimeFacade.getOsTime(), dispatchBuilder, addressBook, consensusConfig, stateConfig);
+                TimeFactory.getOsTime(), dispatchBuilder, addressBook, consensusConfig, stateConfig);
 
         dispatchBuilder.registerObserver(
                 this, CatastrophicIssTrigger.class, (a, b) -> fail("did not expect catastrophic ISS"));
@@ -386,7 +386,7 @@ class ConsensusHashManagerTests {
 
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
         final ConsensusHashManager manager = new ConsensusHashManager(
-                TimeFacade.getOsTime(), dispatchBuilder, addressBook, consensusConfig, stateConfig);
+                TimeFactory.getOsTime(), dispatchBuilder, addressBook, consensusConfig, stateConfig);
 
         dispatchBuilder.registerObserver(
                 this, CatastrophicIssTrigger.class, (a, b) -> fail("did not expect catastrophic ISS"));
@@ -436,7 +436,7 @@ class ConsensusHashManagerTests {
 
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
         final ConsensusHashManager manager = new ConsensusHashManager(
-                TimeFacade.getOsTime(), dispatchBuilder, addressBook, consensusConfig, stateConfig);
+                TimeFactory.getOsTime(), dispatchBuilder, addressBook, consensusConfig, stateConfig);
 
         final AtomicInteger issCount = new AtomicInteger();
         dispatchBuilder.registerObserver(this, CatastrophicIssTrigger.class, (a, b) -> issCount.getAndIncrement());
@@ -481,8 +481,8 @@ class ConsensusHashManagerTests {
     }
 
     /**
-     * Generate data in an order that will cause a catastrophic ISS after the timeout, assuming the bare minimum
-     * to meet &ge;2/3 has been met.
+     * Generate data in an order that will cause a catastrophic ISS after the timeout, assuming the bare minimum to meet
+     * &ge;2/3 has been met.
      */
     @SuppressWarnings("SameParameterValue")
     private static List<RoundHashValidatorTests.NodeHashInfo> generateCatastrophicTimeoutIss(
@@ -525,7 +525,7 @@ class ConsensusHashManagerTests {
 
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
         final ConsensusHashManager manager = new ConsensusHashManager(
-                TimeFacade.getOsTime(), dispatchBuilder, addressBook, consensusConfig, stateConfig);
+                TimeFactory.getOsTime(), dispatchBuilder, addressBook, consensusConfig, stateConfig);
 
         final AtomicInteger issCount = new AtomicInteger();
         dispatchBuilder.registerObserver(this, CatastrophicIssTrigger.class, (a, b) -> issCount.getAndIncrement());
@@ -588,7 +588,7 @@ class ConsensusHashManagerTests {
 
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
         final ConsensusHashManager manager = new ConsensusHashManager(
-                TimeFacade.getOsTime(), dispatchBuilder, addressBook, consensusConfig, stateConfig);
+                TimeFactory.getOsTime(), dispatchBuilder, addressBook, consensusConfig, stateConfig);
 
         final AtomicInteger issCount = new AtomicInteger();
         dispatchBuilder.registerObserver(this, CatastrophicIssTrigger.class, (a, b) -> issCount.getAndIncrement());
