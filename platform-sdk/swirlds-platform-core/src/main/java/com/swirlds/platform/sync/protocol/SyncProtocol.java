@@ -197,11 +197,6 @@ public class SyncProtocol implements Protocol {
         }
         try {
             synchronizer.synchronize(connection);
-
-            final long sleepAfterSyncDuration = sleepAfterSyncSupplier.getAsLong();
-            if (sleepAfterSyncDuration > 0) {
-                Thread.sleep(sleepAfterSyncDuration);
-            }
         } catch (final ParallelExecutionException | SyncException e) {
             if (Utilities.isRootCauseSuppliedType(e, IOException.class)) {
                 throw new IOException(e);
@@ -210,6 +205,11 @@ public class SyncProtocol implements Protocol {
         } finally {
             if (maybeAcquiredPermit.isLockAcquired()) {
                 maybeAcquiredPermit.close();
+            }
+
+            final long sleepAfterSyncDuration = sleepAfterSyncSupplier.getAsLong();
+            if (sleepAfterSyncDuration > 0) {
+                Thread.sleep(sleepAfterSyncDuration);
             }
         }
     }
