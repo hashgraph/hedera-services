@@ -16,13 +16,14 @@
 
 package com.swirlds.platform.state.signed;
 
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
+import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.platform.state.signed.SignedStateUtilities.newSignedStateWrapper;
 
 import com.swirlds.common.utility.AutoCloseableWrapper;
-import java.util.HashMap;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
-import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -31,7 +32,12 @@ import java.util.function.Predicate;
  */
 public class SignedStateMap {
 
-    private final Map<Long, SignedState> map = new HashMap<>();
+    private final SortedMap<Long, SignedState> map = new TreeMap<>();
+
+    /**
+     * The round returned if there are no states in this map.
+     */
+    public static final long NO_STATE_ROUND = -1;
 
     /**
      * Create a new map for signed states.
@@ -47,24 +53,55 @@ public class SignedStateMap {
      * @return an auto-closable object that wraps a signed state. May point to a null state if there is no state for the
      * given round. Will automatically release the state when closed.
      */
-    public synchronized AutoCloseableWrapper<SignedState> get(final long round) {
+    public synchronized @NonNull AutoCloseableWrapper<SignedState> get(final long round) {
+        return newSignedStateWrapper(map.get(round));
+    }
 
-        final SignedState signedState = map.get(round);
+    /**
+     * Get the latest state in this map. A reservation is taken on the state before this method returns.
+     *
+     * @return an auto-closable object that wraps a signed state. May point to a null state if there are no states in
+     * this container. Will automatically release the state when closed.
+     */
+    public synchronized @NonNull AutoCloseableWrapper<SignedState> getLatest() { // TODO test
+        if (map.isEmpty()) {
+            return newSignedStateWrapper(null);
+        }
+        return newSignedStateWrapper(map.get(map.lastKey()));
+    }
 
-        return newSignedStateWrapper(signedState);
+    /**
+     * Get the latest round in this map.
+     *
+     * @return the latest round in this map, or {@link #NO_STATE_ROUND} if this map is empty
+     */
+    public synchronized long getLatestRound() {
+        if (map.isEmpty()) {
+            return NO_STATE_ROUND;
+        }
+        return map.lastKey();
+    }
+
+    /**
+     * Check if the map is empty.
+     *
+     * @return true if the map is empty, otherwise false.
+     */
+    public synchronized boolean isEmpty() {
+        return map.isEmpty();
     }
 
     /**
      * Take a reservation.
      */
-    private static void reserve(final SignedState signedState) {
+    private static void reserve(@NonNull final SignedState signedState) {
         signedState.reserve();
     }
 
     /**
      * Release a reservation.
      */
-    private static void release(final SignedState signedState) {
+    private static void release(@NonNull final SignedState signedState) {
         signedState.release();
     }
 
@@ -73,7 +110,7 @@ public class SignedStateMap {
      *
      * @param signedState the signed state to add
      */
-    public synchronized void put(final SignedState signedState) {
+    public synchronized void put(@NonNull final SignedState signedState) {
         throwArgNull(signedState, "signedState");
 
         reserve(signedState);
@@ -114,7 +151,8 @@ public class SignedStateMap {
      * @return an {@link AutoCloseableWrapper} with the first matching signed state with the specified reservation take
      * out on it, or an {@link AutoCloseableWrapper} with null if none was found
      */
-    public synchronized AutoCloseableWrapper<SignedState> find(final Predicate<SignedState> predicate) {
+    public synchronized @NonNull AutoCloseableWrapper<SignedState> find(
+            @NonNull final Predicate<SignedState> predicate) {
         for (final SignedState signedState : map.values()) {
             if (predicate.test(signedState)) {
                 return newSignedStateWrapper(signedState);
@@ -135,7 +173,7 @@ public class SignedStateMap {
      *
      * @param operation an operation that will use an iterator
      */
-    public synchronized void atomicIteration(final Consumer<Iterator<SignedState>> operation) {
+    public synchronized void atomicIteration(@NonNull final Consumer<Iterator<SignedState>> operation) {
 
         final Iterator<SignedState> baseIterator = map.values().iterator();
 
