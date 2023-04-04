@@ -75,6 +75,7 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -198,7 +199,8 @@ class SignedStateFileManagerTests {
                 MAIN_CLASS_NAME,
                 SELF_ID,
                 SWIRLD_NAME,
-                consumer);
+                consumer,
+                x -> {});
         manager.start();
 
         manager.saveSignedStateToDisk(signedState);
@@ -245,7 +247,8 @@ class SignedStateFileManagerTests {
                 MAIN_CLASS_NAME,
                 SELF_ID,
                 SWIRLD_NAME,
-                consumer);
+                consumer,
+                x -> {});
         manager.start();
 
         final Thread thread = new ThreadConfiguration(getStaticThreadManager())
@@ -296,7 +299,8 @@ class SignedStateFileManagerTests {
                 MAIN_CLASS_NAME,
                 SELF_ID,
                 SWIRLD_NAME,
-                consumer);
+                consumer,
+                x -> {});
         manager.start();
 
         manager.dumpState(signedState, "iss", false);
@@ -392,7 +396,8 @@ class SignedStateFileManagerTests {
                 MAIN_CLASS_NAME,
                 SELF_ID,
                 SWIRLD_NAME,
-                consumer);
+                consumer,
+                x -> {});
         manager.start();
 
         final List<SignedState> states = new ArrayList<>();
@@ -453,6 +458,8 @@ class SignedStateFileManagerTests {
         final int averageTimeBetweenStates = 10;
         final double standardDeviationTimeBetweenStates = 0.5;
 
+        final AtomicLong minimumGenerationNonAncientSetByCallback = new AtomicLong();
+
         final SignedStateFileManager manager = new SignedStateFileManager(
                 context,
                 getStaticThreadManager(),
@@ -461,7 +468,11 @@ class SignedStateFileManagerTests {
                 MAIN_CLASS_NAME,
                 SELF_ID,
                 SWIRLD_NAME,
-                (ssw, path, success) -> ssw.release());
+                (ssw, path, success) -> ssw.release(),
+                x -> {
+                    assertTrue(x > minimumGenerationNonAncientSetByCallback.get());
+                    minimumGenerationNonAncientSetByCallback.set(x);
+                });
         manager.start();
 
         Instant timestamp;
@@ -498,6 +509,8 @@ class SignedStateFileManagerTests {
             final SignedState signedState = new RandomSignedStateGenerator(random)
                     .setConsensusTimestamp(timestamp)
                     .setRound(round)
+                    //                    .setMinimumGenerationNonAncient(random.nextLong((round + 1) * 100, (round + 1)
+                    // * 101)) // TODO
                     .build();
 
             manager.determineIfStateShouldBeSaved(signedState);
@@ -522,6 +535,9 @@ class SignedStateFileManagerTests {
 
                             assertEquals(
                                     oldestMetadata.minimumGenerationNonAncient(),
+                                    manager.getMinimumGenerationNonAncientForOldestState());
+                            assertEquals(
+                                    minimumGenerationNonAncientSetByCallback.get(),
                                     manager.getMinimumGenerationNonAncientForOldestState());
 
                             assertTrue(
@@ -585,7 +601,8 @@ class SignedStateFileManagerTests {
                 MAIN_CLASS_NAME,
                 SELF_ID,
                 SWIRLD_NAME,
-                (ssw, path, success) -> ssw.release());
+                (ssw, path, success) -> ssw.release(),
+                x -> {});
         manager.start();
 
         final Path statesDirectory =

@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metric;
@@ -54,7 +53,8 @@ class MetricsDocUtilsTest {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue("metricsDocFileName", METRIC_DOC_FILE_NAME)
                 .getOrCreateConfig();
-        final String docFilePath = ConfigUtils.getUserDir() + File.separator + METRIC_DOC_FILE_NAME;
+        final String docFilePath =
+                com.swirlds.common.io.utility.FileUtils.getUserDir() + File.separator + METRIC_DOC_FILE_NAME;
         final File oldFile = new File(docFilePath);
         if (oldFile.exists()) {
             FileUtils.deleteQuietly(oldFile);

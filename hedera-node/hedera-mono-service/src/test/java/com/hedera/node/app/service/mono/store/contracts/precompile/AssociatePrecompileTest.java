@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiCon
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ASSOCIATE_TOKENS;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.AssociatePrecompile.decodeAssociation;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.MultiAssociatePrecompile.decodeMultipleAssociations;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -230,8 +231,7 @@ class AssociatePrecompileTest {
     @BeforeEach
     void setUp() throws IOException {
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
-        canonicalPrices.put(
-                HederaFunctionality.TokenAssociateToAccount, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
+        canonicalPrices.put(TokenAssociateToAccount, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
         final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
                 assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
@@ -277,7 +277,8 @@ class AssociatePrecompileTest {
                         false,
                         Id.fromGrpcAccount(HTSTestsUtil.accountMerkleId).asEvmAddress(),
                         HTSTestsUtil.senderAddress,
-                        wrappedLedgers))
+                        wrappedLedgers,
+                        TokenAssociateToAccount))
                 .willReturn(false);
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
                 .willReturn(1L);
@@ -317,7 +318,8 @@ class AssociatePrecompileTest {
                         false,
                         Id.fromGrpcAccount(HTSTestsUtil.accountMerkleId).asEvmAddress(),
                         HTSTestsUtil.senderAddress,
-                        null))
+                        null,
+                        TokenAssociateToAccount))
                 .willThrow(new NullPointerException());
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
                 .willReturn(1L);
@@ -365,7 +367,8 @@ class AssociatePrecompileTest {
                         true,
                         Id.fromGrpcAccount(HTSTestsUtil.accountMerkleId).asEvmAddress(),
                         HTSTestsUtil.recipientAddress,
-                        wrappedLedgers))
+                        wrappedLedgers,
+                        TokenAssociateToAccount))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
@@ -426,7 +429,8 @@ class AssociatePrecompileTest {
                         true,
                         Id.fromGrpcAccount(HTSTestsUtil.accountMerkleId).asEvmAddress(),
                         HTSTestsUtil.recipientAddress,
-                        wrappedLedgers))
+                        wrappedLedgers,
+                        TokenAssociateToAccount))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
@@ -471,7 +475,8 @@ class AssociatePrecompileTest {
                         true,
                         Id.fromGrpcAccount(HTSTestsUtil.accountMerkleId).asEvmAddress(),
                         HTSTestsUtil.senderAddress,
-                        wrappedLedgers))
+                        wrappedLedgers,
+                        TokenAssociateToAccount))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
@@ -521,7 +526,8 @@ class AssociatePrecompileTest {
                         false,
                         Id.fromGrpcAccount(HTSTestsUtil.accountMerkleId).asEvmAddress(),
                         HTSTestsUtil.senderAddress,
-                        wrappedLedgers))
+                        wrappedLedgers,
+                        TokenAssociateToAccount))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
@@ -571,7 +577,8 @@ class AssociatePrecompileTest {
                         false,
                         Id.fromGrpcAccount(HTSTestsUtil.accountMerkleId).asEvmAddress(),
                         HTSTestsUtil.senderAddress,
-                        wrappedLedgers))
+                        wrappedLedgers,
+                        TokenAssociateToAccount))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
@@ -622,7 +629,8 @@ class AssociatePrecompileTest {
                         false,
                         Id.fromGrpcAccount(HTSTestsUtil.accountMerkleId).asEvmAddress(),
                         HTSTestsUtil.senderAddress,
-                        wrappedLedgers))
+                        wrappedLedgers,
+                        TokenAssociateToAccount))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))

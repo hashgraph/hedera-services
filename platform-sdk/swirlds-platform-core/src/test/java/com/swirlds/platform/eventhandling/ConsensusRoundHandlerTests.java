@@ -119,6 +119,7 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
                 consensusHandlingMetrics,
                 eventStreamManager,
                 stateHashSignQueue,
+                e -> {},
                 () -> {},
                 (round) -> {},
                 null);
@@ -204,6 +205,7 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
                 consensusHandlingMetrics,
                 eventStreamManager,
                 stateHashSignQueue,
+                e -> {},
                 () -> {},
                 (round) -> {},
                 null);

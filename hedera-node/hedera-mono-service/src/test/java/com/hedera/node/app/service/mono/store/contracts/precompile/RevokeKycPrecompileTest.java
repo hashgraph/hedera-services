@@ -311,7 +311,12 @@ class RevokeKycPrecompileTest {
         given(syntheticTxnFactory.createRevokeKyc(grantRevokeKycWrapper))
                 .willReturn(TransactionBody.newBuilder().setTokenRevokeKyc(TokenRevokeKycTransactionBody.newBuilder()));
 
-        given(sigsVerifier.hasActiveKycKey(true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
+        given(sigsVerifier.hasActiveKycKey(
+                        true,
+                        fungibleTokenAddr,
+                        fungibleTokenAddr,
+                        wrappedLedgers,
+                        HederaFunctionality.TokenRevokeKycFromAccount))
                 .willReturn(true);
     }
 

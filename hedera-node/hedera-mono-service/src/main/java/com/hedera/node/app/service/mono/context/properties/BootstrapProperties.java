@@ -60,6 +60,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_HANDLE_MAX_
 import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ALLOW_AUTO_ASSOCIATIONS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ALLOW_CREATE2;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_CHAIN_ID;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_DEFAULT_LIFETIME;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_DYNAMIC_EVM_VERSION;
@@ -74,6 +75,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_GAS_PER
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_KV_PAIRS_AGGREGATE;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_NUM;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PERMITTED_DELEGATE_CALLERS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED;
@@ -88,6 +90,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECARS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECAR_VALIDATION_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_STORAGE_SLOT_PRICE_TIERS;
 import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_THROTTLE_THROTTLE_BY_GAS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS;
 import static com.hedera.node.app.spi.config.PropertyNames.CRYPTO_CREATE_WITH_ALIAS_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.DEV_DEFAULT_LISTENING_NODE_ACCOUNT;
 import static com.hedera.node.app.spi.config.PropertyNames.DEV_ONLY_DEFAULT_NODE_LISTENS;
@@ -441,6 +444,9 @@ public final class BootstrapProperties implements PropertySource {
             CONTRACTS_LOCAL_CALL_EST_RET_BYTES,
             CONTRACTS_ALLOW_CREATE2,
             CONTRACTS_ALLOW_AUTO_ASSOCIATIONS,
+            CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
+            CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
+            CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS,
             CONTRACTS_MAX_GAS_PER_SEC,
             CONTRACTS_MAX_KV_PAIRS_AGGREGATE,
             CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL,
@@ -736,6 +742,9 @@ public final class BootstrapProperties implements PropertySource {
             entry(CONTRACTS_LOCAL_CALL_EST_RET_BYTES, AS_INT),
             entry(CONTRACTS_ALLOW_CREATE2, AS_BOOLEAN),
             entry(CONTRACTS_ALLOW_AUTO_ASSOCIATIONS, AS_BOOLEAN),
+            entry(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, AS_FUNCTIONS),
+            entry(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, AS_LONG),
+            entry(CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS, AS_EVM_ADDRESSES),
             entry(CONTRACTS_DEFAULT_LIFETIME, AS_LONG),
             entry(CONTRACTS_MAX_GAS_PER_SEC, AS_LONG),
             entry(CONTRACTS_ITEMIZE_STORAGE_FEES, AS_BOOLEAN),
