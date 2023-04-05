@@ -32,7 +32,7 @@ No arguments are necessary because
 - The token address was already determined by looking up the contract address to determine if it is an HTS token address.
 - The address to associate/dissociate will be the caller (i.e. msg.sender)
 
-Once that has been implemented in services, the end user will be able to call the `associate` and `dissociate` functions as follows:
+Once the above functionality has been implemented in services, the end user will be able to call the `associate` and `dissociate` functions as follows:
 
 ```
 IHRC(tokenAddress).associate()
@@ -55,7 +55,7 @@ of being called via the proxy contract.  The new overwritten classes will differ
 be passed the token id and the sender address as constructor arguments and construct the associate and dissociate operator 
 classes from these arguments.  The `getGasRequirement` method can be moved to the parent class as the functionality will be
 common to both the existing and new classes. The `getSuccessResultFor` and `getFailureResultFor` function need to be overridden
-in order to return a boolean value consistent with other like ERC functions.
+in order to return a boolean value consistent with other similar ERC functions.
 
 The class `RedirectViewExecutor` will also be updated to include the cost to perform the `associate` and `dissociate` functions.
 
