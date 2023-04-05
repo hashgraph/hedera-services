@@ -18,6 +18,7 @@ package com.swirlds.platform.components.state;
 
 import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
 
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.StateConfig;
@@ -491,6 +492,10 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         if (round == null) {
             // No round is specified, dump the latest immutable state.
             try (final AutoCloseableWrapper<SignedState> wrapper = signedStateManager.getLatestImmutableState()) {
+                if (wrapper.get() == null) {
+                    logger.warn(STATE_TO_DISK.getMarker(), "State dump requested, but no state is available.");
+                    return;
+                }
                 signedStateFileManager.dumpState(wrapper.get(), reason, blocking);
                 return;
             }
@@ -507,6 +512,16 @@ public class DefaultStateManagementComponent implements StateManagementComponent
 
         try (final AutoCloseableWrapper<SignedState> wrapper = signedStateManager.getLatestImmutableState()) {
             // We weren't able to find the requested round, so the best we can do is the latest round.
+            if (wrapper.get() == null) {
+                logger.warn(STATE_TO_DISK.getMarker(), "State dump requested, but no state is available.");
+                return;
+            }
+            logger.info(
+                    STATE_TO_DISK.getMarker(),
+                    "State dump for round {} requested, but round could not be "
+                            + "found in the signed state manager. Dumping round {} instead.",
+                    round,
+                    wrapper.get().getRound());
             signedStateFileManager.dumpState(wrapper.get(), reason, blocking);
         }
     }
