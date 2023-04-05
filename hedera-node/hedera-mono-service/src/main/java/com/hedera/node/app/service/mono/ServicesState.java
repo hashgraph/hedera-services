@@ -44,10 +44,12 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.state.migration.LinkRepairs;
 import com.hedera.node.app.service.mono.state.migration.MapMigrationToDisk;
 import com.hedera.node.app.service.mono.state.migration.RecordsStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.StakingInfoMapBuilder;
 import com.hedera.node.app.service.mono.state.migration.StateChildIndices;
+import com.hedera.node.app.service.mono.state.migration.StorageLinksFixer;
 import com.hedera.node.app.service.mono.state.migration.ToDiskMigrations;
 import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
@@ -607,6 +609,9 @@ public class ServicesState extends PartialNaryMerkleInternal
 
     @VisibleForTesting
     void migrateFrom(@NonNull final SoftwareVersion deserializedVersion) {
+        // Will be removed on the next 0.36 tag
+        StorageLinksFixer.fixAnyBrokenLinks(this, LinkRepairs::new, VirtualMapMigration::extractVirtualMapData);
+
         // Keep the MutableStateChildren up-to-date (no harm done if they are already are)
         final var app = getMetadata().app();
         app.workingState().updatePrimitiveChildrenFrom(this);

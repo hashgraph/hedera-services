@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAdd
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -117,6 +118,7 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.SplittableRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
@@ -203,6 +205,8 @@ public class ContractCallSuite extends HapiSuite {
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 consTimeManagementWorksWithRevertedInternalCreations(),
+                // Just useful for local testing with hashCode() migration code
+                createMapWorks(),
                 payableSuccess(),
                 depositSuccess(),
                 depositDeleteSuccess(),
@@ -2145,6 +2149,29 @@ public class ContractCallSuite extends HapiSuite {
                                 recordWith()
                                         .status(INSUFFICIENT_GAS)
                                         .consensusTimeImpliedByNonce(parentConsTime.get(), 1))));
+    }
+
+    HapiSpec createMapWorks() {
+        // Well-known: 0.0.1002, 0.0.1004, 0.0.1006
+        // 0.36 Well-known: 0.0.1012, 0.0.1014, 0.0.1016
+        final var contract = "SmartContractState";
+        final var r = new SplittableRandom();
+        final var wellKnownToCall = "0.0.1004";
+
+        return onlyDefaultHapiSpec("CreateMapWorks")
+                .given()
+                .when(
+                        uploadInitCode(contract),
+                        contractCreate(contract),
+                        contractCall(contract, "create_map", r.nextLong(16L)).gas(GAS_TO_OFFER))
+                .then(
+                        //                        contractCallWithFunctionAbi(
+                        //                                wellKnownToCall,
+                        //
+                        // "{\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"n\",\"type\":\"uint32\"}],\"name\":\"create_map\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}",
+                        //                                r.nextLong(16L))
+                        //                        .gas(GAS_TO_OFFER)
+                        );
     }
 
     private String getNestedContractAddress(final String contract, final HapiSpec spec) {

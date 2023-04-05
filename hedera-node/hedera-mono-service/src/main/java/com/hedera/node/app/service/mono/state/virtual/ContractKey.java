@@ -19,7 +19,6 @@ package com.hedera.node.app.service.mono.state.virtual;
 import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.deserializeUint256Key;
 import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.serializePackedBytes;
 import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.serializePackedBytesToBuffer;
-import static com.swirlds.common.utility.NonCryptographicHashing.hash32;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -130,10 +129,10 @@ public final class ContractKey implements VirtualKey<ContractKey> {
         return contractId == that.contractId && Arrays.equals(uint256Key, that.uint256Key);
     }
 
-    /** Special hash to make sure we get good distribution. */
+    /** Special hash to make sure we get good distribution - must NEVER change per {@code VirtualKey} contract. */
     @Override
     public int hashCode() {
-        return hash32(
+        return (int) stableHash64(
                 contractId,
                 uint256Key[7],
                 uint256Key[6],
@@ -327,5 +326,42 @@ public final class ContractKey implements VirtualKey<ContractKey> {
     @Override
     public int getMinimumSupportedVersion() {
         return 1;
+    }
+
+    /**
+     * An unchanging, UNTOUCHABLE implementation of {@code hashCode()} to reduce hash collisions.
+     *
+     * @param x0 the first long to hash
+     * @param x1 the second long to hash
+     * @param x2 the third long to hash
+     * @param x3 the fourth long to hash
+     * @param x4 the fifth long to hash
+     * @param x5 the sixth long to hash
+     * @param x6 the seventh long to hash
+     * @param x7 the eighth long to hash
+     * @param x8 the ninth long to hash
+     * @return a near-optimal non-cryptographic hash of the given longs
+     */
+    private static long stableHash64(long x0, long x1, long x2, long x3, long x4, long x5, long x6, long x7, long x8) {
+        return stablePerm64(stablePerm64(stablePerm64(stablePerm64(stablePerm64(stablePerm64(
+                                                        stablePerm64(stablePerm64(stablePerm64(x0) ^ x1) ^ x2) ^ x3)
+                                                ^ x4)
+                                        ^ x5)
+                                ^ x6)
+                        ^ x7)
+                ^ x8);
+    }
+
+    private static long stablePerm64(long x) {
+        x += x << 30;
+        x ^= x >>> 27;
+        x += x << 16;
+        x ^= x >>> 20;
+        x += x << 5;
+        x ^= x >>> 18;
+        x += x << 10;
+        x ^= x >>> 24;
+        x += x << 30;
+        return x;
     }
 }
