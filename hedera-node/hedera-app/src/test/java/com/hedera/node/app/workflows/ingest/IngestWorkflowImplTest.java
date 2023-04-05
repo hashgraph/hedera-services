@@ -354,8 +354,7 @@ class IngestWorkflowImplTest extends AppTestBase {
         @DisplayName("If the transaction fails WorkflowOnset, a failure response is returned with the right error")
         void onsetFailsWithPreCheckException(ResponseCodeEnum failureReason) throws PreCheckException, IOException {
             // Given a WorkflowOnset that will throw a PreCheckException with the given failure reason
-            when(transactionChecker.parseAndCheck(any()))
-                    .thenThrow(new PreCheckException(failureReason));
+            when(transactionChecker.parseAndCheck(any())).thenThrow(new PreCheckException(failureReason));
 
             // When the transaction is submitted
             workflow.submitTransaction(requestBuffer, responseBuffer);
@@ -375,8 +374,7 @@ class IngestWorkflowImplTest extends AppTestBase {
         @DisplayName("If some random exception is thrown from WorkflowOnset, the exception is bubbled up")
         void randomException() throws PreCheckException {
             // Given a WorkflowOnset that will throw a RuntimeException
-            when(transactionChecker.parseAndCheck(any()))
-                    .thenThrow(new RuntimeException("parseAndCheck exception"));
+            when(transactionChecker.parseAndCheck(any())).thenThrow(new RuntimeException("parseAndCheck exception"));
 
             // When the transaction is submitted, then the exception is bubbled up
             assertThatThrownBy(() -> workflow.submitTransaction(requestBuffer, responseBuffer))

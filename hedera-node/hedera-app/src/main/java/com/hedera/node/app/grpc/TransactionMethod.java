@@ -52,9 +52,7 @@ final class TransactionMethod extends MethodBase {
 
     /** {@inheritDoc} */
     @Override
-    protected void handle(
-            @NonNull final Bytes requestBuffer,
-            @NonNull final BufferedData responseBuffer) {
+    protected void handle(@NonNull final Bytes requestBuffer, @NonNull final BufferedData responseBuffer) {
         workflow.submitTransaction(requestBuffer, responseBuffer);
     }
 }

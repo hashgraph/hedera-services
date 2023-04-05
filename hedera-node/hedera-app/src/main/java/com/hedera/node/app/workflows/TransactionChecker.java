@@ -145,8 +145,7 @@ public class TransactionChecker {
      * @throws PreCheckException if the data is not valid
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public TransactionInfo parseAndCheck(@NonNull final Bytes buffer)
-            throws PreCheckException {
+    public TransactionInfo parseAndCheck(@NonNull final Bytes buffer) throws PreCheckException {
         // Fail fast if there are too many transaction bytes
         if (buffer.length() > maxSignedTxnSize) {
             throw new PreCheckException(TRANSACTION_OVERSIZE);
@@ -190,8 +189,7 @@ public class TransactionChecker {
      * @throws PreCheckException if the data is not valid
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public TransactionInfo check(@NonNull final Transaction tx)
-            throws PreCheckException {
+    public TransactionInfo check(@NonNull final Transaction tx) throws PreCheckException {
 
         // NOTE: Since we've already parsed the transaction, we assume that the transaction was not too many
         // bytes. This is a safe assumption because the code that receives the transaction bytes and parses

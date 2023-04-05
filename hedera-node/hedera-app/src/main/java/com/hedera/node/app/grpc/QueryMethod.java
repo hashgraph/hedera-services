@@ -72,9 +72,7 @@ final class QueryMethod extends MethodBase {
 
     /** {@inheritDoc} */
     @Override
-    protected void handle(
-            @NonNull final Bytes requestBuffer,
-            @NonNull final BufferedData responseBuffer) {
+    protected void handle(@NonNull final Bytes requestBuffer, @NonNull final BufferedData responseBuffer) {
         workflow.handleQuery(requestBuffer, responseBuffer);
         queriesAnsweredCounter.increment();
         queriesAnsweredSpeedometer.cycle();

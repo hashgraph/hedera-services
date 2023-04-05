@@ -344,10 +344,8 @@ class QueryWorkflowImplTest extends AppTestBase {
         final var responseBuffer = newEmptyBuffer();
 
         // then
-        assertThatThrownBy(() -> workflow.handleQuery(null, responseBuffer))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> workflow.handleQuery(requestBuffer, null))
-                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> workflow.handleQuery(null, responseBuffer)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> workflow.handleQuery(requestBuffer, null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test

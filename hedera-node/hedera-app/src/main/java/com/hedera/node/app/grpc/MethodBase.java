@@ -141,9 +141,7 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData, Buffe
      * @param requestBuffer The {@link Bytes} containing the protobuf bytes for the request
      * @param responseBuffer A {@link BufferedData} into which the response protobuf bytes may be written
      */
-    protected abstract void handle(
-            @NonNull final Bytes requestBuffer,
-            @NonNull final BufferedData responseBuffer);
+    protected abstract void handle(@NonNull final Bytes requestBuffer, @NonNull final BufferedData responseBuffer);
 
     /**
      * Helper method for creating a {@link Counter} metric.

@@ -149,9 +149,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     }
 
     @Override
-    public void handleQuery(
-            @NonNull final Bytes requestBuffer,
-            @NonNull final BufferedData responseBuffer) {
+    public void handleQuery(@NonNull final Bytes requestBuffer, @NonNull final BufferedData responseBuffer) {
         requireNonNull(requestBuffer);
         requireNonNull(responseBuffer);
 

@@ -101,9 +101,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
     }
 
     @Override
-    public void submitTransaction(
-            @NonNull final Bytes requestBuffer,
-            @NonNull final BufferedData responseBuffer) {
+    public void submitTransaction(@NonNull final Bytes requestBuffer, @NonNull final BufferedData responseBuffer) {
         submitTransaction(requestBuffer, responseBuffer, ReadableAccountStore::new);
     }
 
