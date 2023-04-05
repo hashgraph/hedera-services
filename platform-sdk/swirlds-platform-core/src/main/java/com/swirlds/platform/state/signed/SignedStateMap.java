@@ -62,7 +62,7 @@ public class SignedStateMap {
      * @return an auto-closable object that wraps a signed state. May point to a null state if there are no states in
      * this container. Will automatically release the state when closed.
      */
-    public synchronized @NonNull AutoCloseableWrapper<SignedState> getLatest() { // TODO test
+    public synchronized @NonNull AutoCloseableWrapper<SignedState> getLatest() {
         if (map.isEmpty()) {
             return newSignedStateWrapper(null);
         }
