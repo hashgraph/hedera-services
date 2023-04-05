@@ -19,14 +19,13 @@ package com.hedera.node.app.workflows.ingest;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.config.Profile;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.RecordCache;
-import com.hedera.node.app.workflows.onset.WorkflowOnset;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.system.Platform;
@@ -47,7 +46,7 @@ public class SubmissionManager {
 
     private final Platform platform;
     private final RecordCache recordCache;
-    private final NodeLocalProperties nodeLocalProperties;
+    private final boolean isProduction;
     private final SpeedometerMetric platformTxnRejections;
 
     /**
@@ -66,7 +65,7 @@ public class SubmissionManager {
             @NonNull final Metrics metrics) {
         this.platform = requireNonNull(platform);
         this.recordCache = requireNonNull(recordCache);
-        this.nodeLocalProperties = requireNonNull(nodeLocalProperties);
+        this.isProduction = requireNonNull(nodeLocalProperties).activeProfile() == Profile.PROD;
         this.platformTxnRejections =
                 metrics.getOrCreate(new SpeedometerMetric.Config("app", PLATFORM_TXN_REJECTIONS_NAME)
                         .withDescription(PLATFORM_TXN_REJECTIONS_DESC)
@@ -91,26 +90,25 @@ public class SubmissionManager {
         byte[] payload = txBytes;
 
         // Unchecked submits are a mechanism to inject transaction to the system, that bypass all
-        // pre-checks.This is used in tests to check the reaction to illegal input.
+        // pre-checks. This is used in tests to check the reaction to illegal input.
+        // FIXME This should be deprecated and removed. We do not want this in our production system.
         if (txBody.hasUncheckedSubmit()) {
-            LOG.warn("Unchecked submit is not supported in this version of Hedera");
-            if (nodeLocalProperties.activeProfile() == Profile.PROD) {
-                // we do not allow unchecked submits in PROD
+            // We do NOT allow this call in production!
+            if (isProduction) {
                 throw new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED);
             }
+
+            // We allow it outside of prod, but it really shouldn't be used.
             final var uncheckedSubmit = txBody.uncheckedSubmitOrThrow();
             final var uncheckedTxBytes = uncheckedSubmit.transactionBytes();
-            WorkflowOnset.parse(
-                    uncheckedTxBytes.toReadableSequentialData(),
-                    Transaction.PROTOBUF,
-                    PLATFORM_TRANSACTION_NOT_CREATED);
             payload = PbjConverter.asBytes(uncheckedTxBytes);
-            uncheckedTxBytes.getBytes(0, payload);
         }
 
         final var success = platform.createTransaction(payload);
         if (success) {
-            recordCache.addPreConsensus(txBody.transactionIDOrThrow());
+            // TODO This is bogus. We need to actually create the receipt, which is created by services.
+            final var receipt = TransactionReceipt.newBuilder().build();
+            recordCache.addPreConsensus(txBody.transactionIDOrThrow(), receipt);
         } else {
             platformTxnRejections.cycle();
             throw new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED);

@@ -79,8 +79,8 @@ class AdaptedMonoEventExpansionTest {
         //        willAnswer(invocation -> {
         //                    final Consumer<com.swirlds.common.system.transaction.Transaction> consumer =
         //                            invocation.getArgument(0);
-        //                    consumer.accept(txns.get(nextI.getAndIncrement()));
-        //                    consumer.accept(txns.get(nextI.getAndIncrement()));
+        //                    consumer.onConsensusRound(txns.get(nextI.getAndIncrement()));
+        //                    consumer.onConsensusRound(txns.get(nextI.getAndIncrement()));
         //                    return null;
         //                })
         //                .given(event)

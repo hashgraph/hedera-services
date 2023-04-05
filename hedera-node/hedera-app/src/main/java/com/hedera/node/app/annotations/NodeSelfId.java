@@ -24,7 +24,7 @@ import java.lang.annotation.Target;
 import javax.inject.Qualifier;
 
 /**
- * This annotation is used with dependency injection to inject the node's self ID (account ID?) as an argument to a
+ * This annotation is used with dependency injection to inject the node's self account ID as an argument to a
  * class constructor.
  */
 @Target({ElementType.METHOD, ElementType.PARAMETER})

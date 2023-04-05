@@ -551,7 +551,7 @@ class TransactionDispatcherTest {
 
     @Test
     void dispatchesTokenUnpauseAsExpected() {
-    final var tokenUnPauseBuilder = mock(TokenUnPauseRecordBuilder.class);
+        final var tokenUnPauseBuilder = mock(TokenUnPauseRecordBuilder.class);
 
         given(tokenUnpauseHandler.newRecordBuilder()).willReturn(tokenUnPauseBuilder);
         given(writableStoreFactory.createTokenStore()).willReturn(writableTokenStore);

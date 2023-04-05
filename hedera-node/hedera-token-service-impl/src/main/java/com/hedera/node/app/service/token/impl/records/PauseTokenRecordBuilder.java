@@ -18,10 +18,17 @@ package com.hedera.node.app.service.token.impl.records;
 
 import com.hedera.node.app.spi.records.UniversalRecordBuilder;
 
+/**
+ * A {@code RecordBuilder} specialization for tracking the side-effects of a
+ * {@code TokenPause} transaction.
+ */
 public class PauseTokenRecordBuilder extends UniversalRecordBuilder<TokenPauseRecordBuilder>
         implements TokenPauseRecordBuilder {
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    protected TokenPauseRecordBuilder self() {
+    protected PauseTokenRecordBuilder self() {
         return this;
     }
 }

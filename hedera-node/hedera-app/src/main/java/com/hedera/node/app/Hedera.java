@@ -21,7 +21,9 @@ import static com.hedera.node.app.service.mono.context.properties.SemanticVersio
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_FIRST_USER_ENTITY;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.grpc.GrpcServiceBuilder;
 import com.hedera.node.app.service.admin.FreezeService;
 import com.hedera.node.app.service.admin.impl.FreezeServiceImpl;
@@ -55,6 +57,7 @@ import com.hedera.node.app.service.util.UtilService;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.MerkleHederaState.MerkleWritableStates;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
@@ -90,7 +93,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -155,7 +157,7 @@ public final class Hedera implements SwirldMain {
             @NonNull final BootstrapProperties bootstrapProps) {
 
         // Load properties, configuration, and other things that can be done before a state is created.
-        this.bootstrapProps = Objects.requireNonNull(bootstrapProps);
+        this.bootstrapProps = requireNonNull(bootstrapProps);
 
         // Read the software version
         version = SEMANTIC_VERSIONS.deployedSoftwareVersion();
@@ -477,16 +479,22 @@ public final class Hedera implements SwirldMain {
     /**
      * Invoked by the platform to handle pre-consensus events. This only happens after {@link #run()} has been called.
      */
-    private void onPreHandle(@NonNull final Event event) {
-        // TBD: The pre-handle workflow should be created by dagger and just be something we can delegate to here.
+    private void onPreHandle(@NonNull final Event event, @NonNull final HederaState state) {
+        // For now, we will delegate pre-handle to the mono-service. But this needs to be moved to
+        // use the Pre-Handle workflow instead.
+        daggerApp.adaptedMonoEventExpansion().expand(event, state);
     }
 
     /**
      * Invoked by the platform to handle a round of consensus events.  This only happens after {@link #run()} has been
      * called.
      */
-    private void onHandleConsensusRound(@NonNull final Round round, @NonNull final SwirldDualState dualState) {
+    private void onHandleConsensusRound(
+            @NonNull final Round round, @NonNull final SwirldDualState dualState, @NonNull final HederaState state) {
         // TBD: The handle workflow should be created by dagger and just be something we can delegate to here.
+        daggerApp.dualStateAccessor().setDualState(dualState);
+        daggerApp.workingStateAccessor().setHederaState(state);
+        daggerApp.logic().incorporateConsensus(round);
     }
 
     /*==================================================================================================================
@@ -683,6 +691,7 @@ public final class Hedera implements SwirldMain {
         if (daggerApp == null) {
             stateChildren = state.getStateChildrenProvider(platform);
             final var nodeAddress = stateChildren.addressBook().getAddress(selfId);
+            final var nodeSelfAccount = parseAccount(nodeAddress.getMemo());
             final var initialHash =
                     stateChildren.runningHashLeaf().getRunningHash().getHash();
             // Fully qualified so as to not confuse javadoc
@@ -694,7 +703,7 @@ public final class Hedera implements SwirldMain {
                     .consoleCreator(SwirldsGui::createConsole)
                     .maxSignedTxnSize(MAX_SIGNED_TXN_SIZE)
                     .crypto(CryptographyHolder.get())
-                    .selfId(selfId)
+                    .selfId(nodeSelfAccount)
                     .build();
         }
     }
@@ -713,5 +722,18 @@ public final class Hedera implements SwirldMain {
 
     private boolean isDowngrade(SerializableSemVers deployedVersion, SoftwareVersion deserializedVersion) {
         return deployedVersion.isBefore(deserializedVersion);
+    }
+
+    private AccountID parseAccount(@NonNull final String string) {
+        try {
+            final var parts = string.split("\\.");
+            return AccountID.newBuilder()
+                    .shardNum(Long.parseLong(parts[0]))
+                    .realmNum(Long.parseLong(parts[1]))
+                    .accountNum(Long.parseLong(parts[2]))
+                    .build();
+        } catch (final NumberFormatException | ArrayIndexOutOfBoundsException e) {
+            throw new IllegalArgumentException(String.format("'%s' is not a dot-separated triplet", string));
+        }
     }
 }

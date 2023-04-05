@@ -17,6 +17,7 @@
 package com.hedera.node.app.state;
 
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.transaction.TransactionReceipt;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /** Tracks transactions and whether there is a receipt present for those transactions. */
@@ -33,6 +34,7 @@ public interface RecordCache {
      * Records the fact that the given transaction has been encountered in pre-consensus.
      *
      * @param transactionID The transaction to track
+     * @param receipt The transaction receipt to add
      */
-    void addPreConsensus(@NonNull TransactionID transactionID);
+    void addPreConsensus(@NonNull TransactionID transactionID, @NonNull TransactionReceipt receipt);
 }

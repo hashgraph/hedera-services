@@ -30,7 +30,7 @@ plugins {
   id("com.gradle.enterprise").version("3.11.4")
   // Use GIT plugin to clone HAPI protobuf files
   // See documentation https://melix.github.io/includegit-gradle-plugin/latest/index.html
-  id("me.champeau.includegit").version("0.1.5")
+  id("me.champeau.includegit").version("0.1.6")
 }
 
 include(":hedera-node")
@@ -117,7 +117,7 @@ dependencyResolutionManagement {
       version("hapi-version", "0.37.0-modularization-SNAPSHOT")
 
       // Definition of version numbers for all libraries
-      version("pbj-version", "0.5.0")
+      version("pbj-version", "0.5.1")
       version("besu-version", "22.10.1")
       version("besu-native-version", "0.6.1")
       version("bouncycastle-version", "1.70")
@@ -141,7 +141,7 @@ dependencyResolutionManagement {
       version("netty-version", "4.1.66.Final")
       version("protobuf-java-version", "3.19.4")
       version("slf4j-version", "2.0.3")
-      version("swirlds-version", "0.36.0-alpha.1")
+      version("swirlds-version", "0.36.1")
       version("tuweni-version", "2.2.0")
       version("jna-version", "5.12.1")
       version("jsr305-version", "3.0.2")
@@ -299,7 +299,6 @@ dependencyResolutionManagement {
       library("mockito-inline", "org.mockito", "mockito-inline").versionRef("mockito-version")
       library("mockito-jupiter", "org.mockito", "mockito-junit-jupiter")
           .versionRef("mockito-version")
-      library("mockito-inline", "org.mockito", "mockito-inline").versionRef("mockito-version")
       library("picocli", "info.picocli", "picocli").versionRef("picocli-version")
       library("snakeyaml", "org.yaml", "snakeyaml").versionRef("snakeyaml-version")
       library("testcontainers-core", "org.testcontainers", "testcontainers")

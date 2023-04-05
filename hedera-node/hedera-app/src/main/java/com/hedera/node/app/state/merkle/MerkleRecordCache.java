@@ -17,18 +17,21 @@
 package com.hedera.node.app.state.merkle;
 
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.node.app.state.RecordCache;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class MerkleRecordCache implements RecordCache {
+    private final ConcurrentHashMap<TransactionID, TransactionReceipt> receipts = new ConcurrentHashMap<>();
+
     @Override
-    public boolean isReceiptPresent(@NonNull TransactionID transactionID) {
-        // TODO Delegate to the mono repo RecordCache
-        return false;
+    public boolean isReceiptPresent(@NonNull final TransactionID transactionID) {
+        return receipts.containsKey(transactionID);
     }
 
     @Override
-    public void addPreConsensus(@NonNull TransactionID transactionID) {
-        // TODO Delegate to the mono repo RecordCache
+    public void addPreConsensus(@NonNull final TransactionID transactionID, @NonNull final TransactionReceipt receipt) {
+        receipts.put(transactionID, receipt);
     }
 }

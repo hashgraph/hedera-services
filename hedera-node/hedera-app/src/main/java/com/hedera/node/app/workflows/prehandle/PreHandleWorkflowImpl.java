@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.prehandle;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -25,13 +26,12 @@ import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.signature.SignaturePreparer;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.onset.WorkflowOnset;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.TransactionSignature;
@@ -63,7 +63,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     private static final ThreadLocal<SessionContext> SESSION_CONTEXT_THREAD_LOCAL =
             ThreadLocal.withInitial(SessionContext::new);
 
-    private final WorkflowOnset onset;
+    private final TransactionChecker transactionChecker;
     private final TransactionDispatcher dispatcher;
     private final SignaturePreparer signaturePreparer;
     private final Cryptography cryptography;
@@ -75,7 +75,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
      * @param exe the {@link ExecutorService} to use when submitting new tasks
      * @param dispatcher the {@link TransactionDispatcher} that will call transaction-specific
      * {@code preHandle()}-methods
-     * @param onset the {@link WorkflowOnset} that pre-processes the {@link byte[]} of a transaction
+     * @param transactionChecker the {@link TransactionChecker} that pre-processes the {@link byte[]} of a transaction
      * @param signaturePreparer the {@link SignaturePreparer} to prepare signatures
      * @param cryptography the {@link Cryptography} component used to verify signatures
      * @throws NullPointerException if any of the parameters is {@code null}
@@ -84,12 +84,12 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     public PreHandleWorkflowImpl(
             @NonNull final ExecutorService exe,
             @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final WorkflowOnset onset,
+            @NonNull final TransactionChecker transactionChecker,
             @NonNull final SignaturePreparer signaturePreparer,
             @NonNull final Cryptography cryptography) {
         requireNonNull(exe);
         this.dispatcher = requireNonNull(dispatcher);
-        this.onset = requireNonNull(onset);
+        this.transactionChecker = requireNonNull(transactionChecker);
         this.signaturePreparer = requireNonNull(signaturePreparer);
         this.cryptography = requireNonNull(cryptography);
         this.runner = runnable -> CompletableFuture.runAsync(runnable, exe);
@@ -98,12 +98,12 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     // Used only for testing
     PreHandleWorkflowImpl(
             @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final WorkflowOnset onset,
+            @NonNull final TransactionChecker transactionChecker,
             @NonNull final SignaturePreparer signaturePreparer,
             @NonNull final Cryptography cryptography,
             @NonNull final Function<Runnable, CompletableFuture<Void>> runner) {
         this.dispatcher = requireNonNull(dispatcher);
-        this.onset = requireNonNull(onset);
+        this.transactionChecker = requireNonNull(transactionChecker);
         this.signaturePreparer = requireNonNull(signaturePreparer);
         this.cryptography = requireNonNull(cryptography);
         this.runner = requireNonNull(runner);
@@ -134,7 +134,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         CompletableFuture.allOf(array).join();
     }
 
-    private TransactionMetadata securePreHandle(
+    private PreHandleResult securePreHandle(
             final HederaState state, final com.swirlds.common.system.transaction.Transaction platformTx) {
         try {
             return preHandle(state, platformTx);
@@ -143,11 +143,11 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // end up with an ISS. It is critical that I log whatever happened, because we should
             // have caught all legitimate failures in another catch block.
             LOG.error("An unexpected exception was thrown during pre-handle", ex);
-            return createInvalidTransactionMetadata(ResponseCodeEnum.UNKNOWN);
+            return createInvalidResult(ResponseCodeEnum.UNKNOWN);
         }
     }
 
-    TransactionMetadata preHandle(
+    PreHandleResult preHandle(
             final HederaState state, final com.swirlds.common.system.transaction.Transaction platformTx) {
         TransactionBody txBody;
         try {
@@ -156,14 +156,14 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             final var txBytes = Bytes.wrap(platformTx.getContents());
 
             // 1. Parse the Transaction and check the syntax
-            final var onsetResult = onset.parseAndCheck(ctx, txBytes);
+            final var onsetResult = transactionChecker.parseAndCheck(ctx, txBytes);
             txBody = onsetResult.txBody();
 
             // 2. Call PreTransactionHandler to do transaction-specific checks, get list of required
             // keys, and prefetch required data
             final var storeFactory = new ReadableStoreFactory(state);
             final var accountStore = storeFactory.createAccountStore();
-            final var context = new PreHandleContext(accountStore, txBody, onsetResult.errorCode());
+            final var context = new PreHandleContext(accountStore, txBody, OK);
             dispatcher.dispatchPreHandle(storeFactory, context);
 
             // 3. Prepare and verify signature-data
@@ -174,26 +174,25 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
             // 4. Eventually prepare and verify signatures of inner transaction
             final var innerContext = context.getInnerContext();
-            TransactionMetadata innerMetadata = null;
+            PreHandleResult innerResult = null;
             if (innerContext != null) {
                 // VERIFY: the txBytes used for inner transactions is the same as the outer transaction
                 final var innerPayerSignature = verifyPayerSignature(state, innerContext, txBytes, signatureMap);
                 final var innerOtherSignatures = verifyOtherSignatures(state, innerContext, txBytes, signatureMap);
-                innerMetadata = createTransactionMetadata(
-                        innerContext, signatureMap, innerPayerSignature, innerOtherSignatures, null);
+                innerResult = createResult(innerContext, signatureMap, innerPayerSignature, innerOtherSignatures, null);
             }
 
-            // 5. Return TransactionMetadata
-            return createTransactionMetadata(context, signatureMap, payerSignature, otherSignatures, innerMetadata);
+            // 5. Return PreHandleResult
+            return createResult(context, signatureMap, payerSignature, otherSignatures, innerResult);
 
         } catch (PreCheckException preCheckException) {
-            return createInvalidTransactionMetadata(preCheckException.responseCode());
+            return createInvalidResult(preCheckException.responseCode());
         } catch (Exception ex) {
             // Some unknown and unexpected failure happened. If this was non-deterministic, I could
             // end up with an ISS. It is critical that I log whatever happened, because we should
             // have caught all legitimate failures in another catch block.
             LOG.error("An unexpected exception was thrown during pre-handle", ex);
-            return createInvalidTransactionMetadata(ResponseCodeEnum.UNKNOWN);
+            return createInvalidResult(ResponseCodeEnum.UNKNOWN);
         }
     }
 
@@ -226,23 +225,23 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     }
 
     @NonNull
-    private static TransactionMetadata createTransactionMetadata(
+    private static PreHandleResult createResult(
             @NonNull final PreHandleContext context,
             @NonNull final SignatureMap signatureMap,
             @Nullable final TransactionSignature payerSignature,
             @NonNull final Map<HederaKey, TransactionSignature> otherSignatures,
-            @Nullable final TransactionMetadata innerMetadata) {
+            @Nullable final PreHandleResult innerResult) {
         final var otherSigs = otherSignatures.values();
         final var allSigs = new ArrayList<TransactionSignature>(otherSigs.size() + 1);
         if (payerSignature != null) {
             allSigs.add(payerSignature);
         }
         allSigs.addAll(otherSigs);
-        return new TransactionMetadata(context, signatureMap, allSigs, innerMetadata);
+        return new PreHandleResult(context, signatureMap, allSigs, innerResult);
     }
 
     @NonNull
-    private static TransactionMetadata createInvalidTransactionMetadata(@NonNull final ResponseCodeEnum responseCode) {
-        return new TransactionMetadata(responseCode);
+    private static PreHandleResult createInvalidResult(@NonNull final ResponseCodeEnum responseCode) {
+        return new PreHandleResult(responseCode);
     }
 }

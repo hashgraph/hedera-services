@@ -842,9 +842,15 @@ public class Address implements SelfSerializable {
                 && Arrays.equals(addressExternalIpv4, address.addressExternalIpv4)
                 && Arrays.equals(addressInternalIpv6, address.addressInternalIpv6)
                 && Arrays.equals(addressExternalIpv6, address.addressExternalIpv6)
-                && Objects.equals(sigPublicKey, address.sigPublicKey)
-                && Objects.equals(encPublicKey, address.encPublicKey)
-                && Objects.equals(agreePublicKey, address.agreePublicKey)
+                && Arrays.equals(
+                        sigPublicKey.getPublicKey().getEncoded(),
+                        address.sigPublicKey.getPublicKey().getEncoded())
+                && Arrays.equals(
+                        encPublicKey.getPublicKey().getEncoded(),
+                        address.encPublicKey.getPublicKey().getEncoded())
+                && Arrays.equals(
+                        agreePublicKey.getPublicKey().getEncoded(),
+                        address.agreePublicKey.getPublicKey().getEncoded())
                 && Objects.equals(memo, address.memo);
     }
 

@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.query;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.DaggerHederaApp;
 import com.hedera.node.app.HederaApp;
 import com.hedera.node.app.components.QueryComponent;
@@ -51,7 +52,7 @@ class QueryComponentTest {
                 .consoleCreator(SwirldsGui::createConsole)
                 .staticAccountMemo("memo")
                 .bootstrapProps(new BootstrapProperties())
-                .selfId(selfNodeId.getId())
+                .selfId(AccountID.newBuilder().accountNum(selfNodeId.getId()).build())
                 .initialHash(new Hash())
                 .maxSignedTxnSize(1024)
                 .build();

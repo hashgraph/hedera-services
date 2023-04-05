@@ -33,9 +33,9 @@ import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
+import com.hedera.node.app.spi.workflows.HandleStatusException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -284,7 +284,8 @@ public class TransactionDispatcher {
      * @param tokenUnpause the token unpause transaction
      * @param tokenStore the token store
      */
-    private void dispatchTokenUnpause(@NonNull final TransactionBody tokenUnpause, @NonNull final WritableTokenStore tokenStore) {
+    private void dispatchTokenUnpause(
+            @NonNull final TransactionBody tokenUnpause, @NonNull final WritableTokenStore tokenStore) {
         final var handler = handlers.tokenUnpauseHandler();
         final var recordBuilder = handler.newRecordBuilder();
         handler.handle(tokenUnpause, recordBuilder, tokenStore);
@@ -296,7 +297,8 @@ public class TransactionDispatcher {
      * @param tokenPause the token pause transaction
      * @param tokenStore the token store
      */
-    private void dispatchTokenPause(@NonNull final TransactionBody tokenPause, @NonNull final WritableTokenStore tokenStore) {
+    private void dispatchTokenPause(
+            @NonNull final TransactionBody tokenPause, @NonNull final WritableTokenStore tokenStore) {
         final var handler = handlers.tokenPauseHandler();
         final var recordBuilder = handler.newRecordBuilder();
         handler.handle(tokenPause, recordBuilder, tokenStore);

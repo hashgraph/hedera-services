@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.sigs.order;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.functionOf;
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.IMMUTABLE_ACCOUNT;
 import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.IMMUTABLE_CONTRACT;
 import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.INVALID_ACCOUNT;
@@ -32,6 +33,7 @@ import static java.util.Collections.EMPTY_LIST;
 
 import com.hedera.node.app.hapi.utils.exception.UnknownHederaFunctionality;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JWildcardECDSAKey;
 import com.hedera.node.app.service.mono.sigs.metadata.SigMetadataLookup;
 import com.hedera.node.app.service.mono.sigs.metadata.TokenSigningMetadata;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
@@ -69,6 +71,7 @@ import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
@@ -733,14 +736,24 @@ public class SigRequirements {
 
     private <T> SigningOrderResult<T> cryptoCreate(
             final CryptoCreateTransactionBody op, final SigningOrderResultFactory<T> factory) {
-        if (!op.getReceiverSigRequired()) {
-            return SigningOrderResult.noKnownKeys();
-        } else {
-            final var candidate = asUsableFcKey(op.getKey());
-            return candidate.isPresent()
-                    ? factory.forValidOrder(List.of(candidate.get()))
-                    : SigningOrderResult.noKnownKeys();
+        final var required = new ArrayList<JKey>();
+        final var key = op.getKey();
+        final var alias = op.getAlias();
+        if (!alias.isEmpty()) {
+            // semantic checks should have already verified alias is a valid evm address
+            // add evm address key to req keys only if it is derived from a key, diff than the admin key
+            final var isAliasDerivedFromDiffKey = !key.hasECDSASecp256K1()
+                    || !Arrays.equals(
+                            recoverAddressFromPubKey(key.getECDSASecp256K1().toByteArray()), alias.toByteArray());
+            if (isAliasDerivedFromDiffKey) {
+                required.add(new JWildcardECDSAKey(alias.toByteArray(), false));
+            }
         }
+        if (op.getReceiverSigRequired()) {
+            final var candidate = asUsableFcKey(key);
+            candidate.ifPresent(required::add);
+        }
+        return factory.forValidOrder(required);
     }
 
     private <T> SigningOrderResult<T> topicCreate(

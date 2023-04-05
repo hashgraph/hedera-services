@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.hedera.node.app.service.token.impl.test.handlers;
@@ -22,7 +21,6 @@ import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.
 import static com.hedera.test.factories.scenarios.TokenPauseScenarios.VALID_PAUSE_WITH_EXTANT_TOKEN;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_PAUSE_KT;
 import static com.hedera.test.utils.KeyUtils.sanityRestoredToPbj;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import com.hedera.node.app.service.token.impl.handlers.TokenPauseHandler;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-
 import org.junit.jupiter.api.Test;
 
 class TokenPauseHandlerTest extends ParityTestBase {
@@ -46,8 +43,6 @@ class TokenPauseHandlerTest extends ParityTestBase {
         assertFalse(context.failed());
         assertEquals(OK, context.getStatus());
         assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(
-                sanityRestoredToPbj(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_PAUSE_KT.asPbjKey()));
+        assertThat(sanityRestoredToPbj(context.getRequiredNonPayerKeys()), contains(TOKEN_PAUSE_KT.asPbjKey()));
     }
 }
