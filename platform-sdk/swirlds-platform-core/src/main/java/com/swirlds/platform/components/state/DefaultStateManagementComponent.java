@@ -63,6 +63,7 @@ import com.swirlds.platform.state.signed.SignedStateSentinel;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.util.HashLogger;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
@@ -484,8 +485,28 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * @param blocking if this method should block until the operation has been completed
      */
     @Observer(StateDumpRequestedTrigger.class)
-    public void stateDumpRequestedObserver(final String reason, final Boolean blocking) {
+    public void stateDumpRequestedObserver(
+            @Nullable final Long round, @NonNull final String reason, @NonNull final Boolean blocking) {
+
+        if (round == null) {
+            // No round is specified, dump the latest immutable state.
+            try (final AutoCloseableWrapper<SignedState> wrapper = signedStateManager.getLatestImmutableState()) {
+                signedStateFileManager.dumpState(wrapper.get(), reason, blocking);
+                return;
+            }
+        }
+
+        try (final AutoCloseableWrapper<SignedState> wrapper =
+                signedStateManager.find(state -> state.getRound() == round)) {
+            if (wrapper.get() != null) {
+                // We were able to find the requested round. Dump it.
+                signedStateFileManager.dumpState(wrapper.get(), reason, blocking);
+                return;
+            }
+        }
+
         try (final AutoCloseableWrapper<SignedState> wrapper = signedStateManager.getLatestImmutableState()) {
+            // We weren't able to find the requested round, so the best we can do is the latest round.
             signedStateFileManager.dumpState(wrapper.get(), reason, blocking);
         }
     }

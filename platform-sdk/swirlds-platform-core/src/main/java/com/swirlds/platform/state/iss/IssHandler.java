@@ -93,7 +93,9 @@ public class IssHandler {
      */
     @Observer(StateHashValidityTrigger.class)
     public void stateHashValidityObserver(
-            @NonNull final Long round, @NonNull final Long nodeId, @NonNull final Hash nodeHash,
+            @NonNull final Long round,
+            @NonNull final Long nodeId,
+            @NonNull final Hash nodeHash,
             @NonNull final Hash consensusHash) {
 
         if (consensusHash.equals(nodeHash)) {
@@ -132,8 +134,8 @@ public class IssHandler {
      * @param consensusHash the correct hash computed by the network
      */
     @Observer(SelfIssTrigger.class)
-    public void selfIssObserver(@NonNull final Long round, @NonNull final Hash selfStateHash,
-            @NonNull final Hash consensusHash) {
+    public void selfIssObserver(
+            @NonNull final Long round, @NonNull final Hash selfStateHash, @NonNull final Hash consensusHash) {
 
         if (halted) {
             // don't take any action once halted
