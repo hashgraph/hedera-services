@@ -16,52 +16,11 @@
 
 package com.hedera.node.app.config;
 
-import static com.hedera.node.app.spi.config.PropertyNames.DEV_DEFAULT_LISTENING_NODE_ACCOUNT;
-import static com.hedera.node.app.spi.config.PropertyNames.DEV_ONLY_DEFAULT_NODE_LISTENS;
-import static com.hedera.node.app.spi.config.PropertyNames.GRPC_PORT;
-import static com.hedera.node.app.spi.config.PropertyNames.GRPC_TLS_PORT;
-import static com.hedera.node.app.spi.config.PropertyNames.GRPC_WORKFLOWS_PORT;
-import static com.hedera.node.app.spi.config.PropertyNames.GRPC_WORKFLOWS_TLS_PORT;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_ACCOUNTS_EXPORT_PATH;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_EXPORT_ACCOUNTS_ON_STARTUP;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_PREFETCH_CODE_CACHE_TTL_SECS;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_PREFETCH_QUEUE_CAPACITY;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_PREFETCH_THREAD_POOL_SIZE;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_PROFILES_ACTIVE;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_IS_ENABLED;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_LOG_DIR;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_LOG_PERIOD;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_QUEUE_CAPACITY;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_SIDE_CAR_DIR;
-import static com.hedera.node.app.spi.config.PropertyNames.ISS_RESET_PERIOD;
-import static com.hedera.node.app.spi.config.PropertyNames.ISS_ROUNDS_TO_LOG;
-import static com.hedera.node.app.spi.config.PropertyNames.NETTY_MODE;
-import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_FLOW_CONTROL_WINDOW;
-import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_KEEP_ALIVE_TIME;
-import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_KEEP_ALIVE_TIMEOUT;
-import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_MAX_CONCURRENT_CALLS;
-import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_MAX_CONNECTION_AGE;
-import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_MAX_CONNECTION_AGE_GRACE;
-import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_MAX_CONNECTION_IDLE;
-import static com.hedera.node.app.spi.config.PropertyNames.NETTY_START_RETRIES;
-import static com.hedera.node.app.spi.config.PropertyNames.NETTY_START_RETRY_INTERVAL_MS;
-import static com.hedera.node.app.spi.config.PropertyNames.NETTY_TLS_CERT_PATH;
-import static com.hedera.node.app.spi.config.PropertyNames.NETTY_TLS_KEY_PATH;
-import static com.hedera.node.app.spi.config.PropertyNames.QUERIES_BLOB_LOOK_UP_RETRIES;
-import static com.hedera.node.app.spi.config.PropertyNames.STATS_CONS_THROTTLES_TO_SAMPLE;
-import static com.hedera.node.app.spi.config.PropertyNames.STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS;
-import static com.hedera.node.app.spi.config.PropertyNames.STATS_EXECUTION_TIMES_TO_TRACK;
-import static com.hedera.node.app.spi.config.PropertyNames.STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS;
-import static com.hedera.node.app.spi.config.PropertyNames.STATS_HAPI_THROTTLES_TO_SAMPLE;
-import static com.hedera.node.app.spi.config.PropertyNames.STATS_RUNNING_AVG_HALF_LIFE_SECS;
-import static com.hedera.node.app.spi.config.PropertyNames.STATS_SPEEDOMETER_HALF_LIFE_SECS;
-import static com.hedera.node.app.spi.config.PropertyNames.STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS;
-import static com.hedera.node.app.spi.config.PropertyNames.WORKFLOWS_ENABLED;
-
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.spi.config.GlobalConfig;
 import com.hedera.node.app.spi.config.NodeConfig;
 import com.hedera.node.app.spi.config.Profile;
+import com.hedera.node.app.spi.config.PropertyNames;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
@@ -206,46 +165,48 @@ public class ConfigurationAdaptor implements Configuration {
      */
     private NodeConfig createNodeConfig() {
         return new NodeConfig(
-                propertySource.getTypedProperty(Integer.class, GRPC_PORT),
-                propertySource.getTypedProperty(Integer.class, GRPC_TLS_PORT),
-                propertySource.getTypedProperty(Long.class, STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS),
-                propertySource.getTypedProperty(Long.class, STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS),
-                propertySource.getTypedProperty(Long.class, STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS),
-                propertySource.getTypedProperty(Profile.class, HEDERA_PROFILES_ACTIVE),
-                propertySource.getTypedProperty(Double.class, STATS_SPEEDOMETER_HALF_LIFE_SECS),
-                propertySource.getTypedProperty(Double.class, STATS_RUNNING_AVG_HALF_LIFE_SECS),
-                propertySource.getTypedProperty(String.class, HEDERA_RECORD_STREAM_LOG_DIR),
-                propertySource.getTypedProperty(Long.class, HEDERA_RECORD_STREAM_LOG_PERIOD),
-                propertySource.getTypedProperty(Boolean.class, HEDERA_RECORD_STREAM_IS_ENABLED),
-                propertySource.getTypedProperty(Integer.class, HEDERA_RECORD_STREAM_QUEUE_CAPACITY),
-                propertySource.getTypedProperty(Integer.class, QUERIES_BLOB_LOOK_UP_RETRIES),
-                propertySource.getTypedProperty(Long.class, NETTY_PROD_KEEP_ALIVE_TIME),
-                propertySource.getTypedProperty(String.class, NETTY_TLS_CERT_PATH),
-                propertySource.getTypedProperty(String.class, NETTY_TLS_KEY_PATH),
-                propertySource.getTypedProperty(Long.class, NETTY_PROD_KEEP_ALIVE_TIMEOUT),
-                propertySource.getTypedProperty(Long.class, NETTY_PROD_MAX_CONNECTION_AGE),
-                propertySource.getTypedProperty(Long.class, NETTY_PROD_MAX_CONNECTION_AGE_GRACE),
-                propertySource.getTypedProperty(Long.class, NETTY_PROD_MAX_CONNECTION_IDLE),
-                propertySource.getTypedProperty(Integer.class, NETTY_PROD_MAX_CONCURRENT_CALLS),
-                propertySource.getTypedProperty(Integer.class, NETTY_PROD_FLOW_CONTROL_WINDOW),
-                propertySource.getTypedProperty(String.class, DEV_DEFAULT_LISTENING_NODE_ACCOUNT),
-                propertySource.getTypedProperty(Boolean.class, DEV_ONLY_DEFAULT_NODE_LISTENS),
-                propertySource.getTypedProperty(String.class, HEDERA_ACCOUNTS_EXPORT_PATH),
-                propertySource.getTypedProperty(Boolean.class, HEDERA_EXPORT_ACCOUNTS_ON_STARTUP),
-                propertySource.getTypedProperty(Profile.class, NETTY_MODE),
-                propertySource.getTypedProperty(Integer.class, NETTY_START_RETRIES),
-                propertySource.getTypedProperty(Long.class, NETTY_START_RETRY_INTERVAL_MS),
-                propertySource.getTypedProperty(Integer.class, STATS_EXECUTION_TIMES_TO_TRACK),
-                propertySource.getTypedProperty(Integer.class, ISS_RESET_PERIOD),
-                propertySource.getTypedProperty(Integer.class, ISS_ROUNDS_TO_LOG),
-                propertySource.getTypedProperty(Integer.class, HEDERA_PREFETCH_QUEUE_CAPACITY),
-                propertySource.getTypedProperty(Integer.class, HEDERA_PREFETCH_THREAD_POOL_SIZE),
-                propertySource.getTypedProperty(Integer.class, HEDERA_PREFETCH_CODE_CACHE_TTL_SECS),
-                propertySource.getTypedProperty(List.class, STATS_CONS_THROTTLES_TO_SAMPLE),
-                propertySource.getTypedProperty(List.class, STATS_HAPI_THROTTLES_TO_SAMPLE),
-                propertySource.getTypedProperty(String.class, HEDERA_RECORD_STREAM_SIDE_CAR_DIR),
-                propertySource.getTypedProperty(Integer.class, GRPC_WORKFLOWS_PORT),
-                propertySource.getTypedProperty(Integer.class, GRPC_WORKFLOWS_TLS_PORT));
+                propertySource.getTypedProperty(Integer.class, PropertyNames.GRPC_PORT),
+                propertySource.getTypedProperty(Integer.class, PropertyNames.GRPC_TLS_PORT),
+                propertySource.getTypedProperty(
+                        Long.class, PropertyNames.STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS),
+                propertySource.getTypedProperty(Long.class, PropertyNames.STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS),
+                propertySource.getTypedProperty(
+                        Long.class, PropertyNames.STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS),
+                propertySource.getTypedProperty(Profile.class, PropertyNames.HEDERA_PROFILES_ACTIVE),
+                propertySource.getTypedProperty(Double.class, PropertyNames.STATS_SPEEDOMETER_HALF_LIFE_SECS),
+                propertySource.getTypedProperty(Double.class, PropertyNames.STATS_RUNNING_AVG_HALF_LIFE_SECS),
+                propertySource.getTypedProperty(String.class, PropertyNames.HEDERA_RECORD_STREAM_LOG_DIR),
+                propertySource.getTypedProperty(Long.class, PropertyNames.HEDERA_RECORD_STREAM_LOG_PERIOD),
+                propertySource.getTypedProperty(Boolean.class, PropertyNames.HEDERA_RECORD_STREAM_IS_ENABLED),
+                propertySource.getTypedProperty(Integer.class, PropertyNames.HEDERA_RECORD_STREAM_QUEUE_CAPACITY),
+                propertySource.getTypedProperty(Integer.class, PropertyNames.QUERIES_BLOB_LOOK_UP_RETRIES),
+                propertySource.getTypedProperty(Long.class, PropertyNames.NETTY_PROD_KEEP_ALIVE_TIME),
+                propertySource.getTypedProperty(String.class, PropertyNames.NETTY_TLS_CERT_PATH),
+                propertySource.getTypedProperty(String.class, PropertyNames.NETTY_TLS_KEY_PATH),
+                propertySource.getTypedProperty(Long.class, PropertyNames.NETTY_PROD_KEEP_ALIVE_TIMEOUT),
+                propertySource.getTypedProperty(Long.class, PropertyNames.NETTY_PROD_MAX_CONNECTION_AGE),
+                propertySource.getTypedProperty(Long.class, PropertyNames.NETTY_PROD_MAX_CONNECTION_AGE_GRACE),
+                propertySource.getTypedProperty(Long.class, PropertyNames.NETTY_PROD_MAX_CONNECTION_IDLE),
+                propertySource.getTypedProperty(Integer.class, PropertyNames.NETTY_PROD_MAX_CONCURRENT_CALLS),
+                propertySource.getTypedProperty(Integer.class, PropertyNames.NETTY_PROD_FLOW_CONTROL_WINDOW),
+                propertySource.getTypedProperty(String.class, PropertyNames.DEV_DEFAULT_LISTENING_NODE_ACCOUNT),
+                propertySource.getTypedProperty(Boolean.class, PropertyNames.DEV_ONLY_DEFAULT_NODE_LISTENS),
+                propertySource.getTypedProperty(String.class, PropertyNames.HEDERA_ACCOUNTS_EXPORT_PATH),
+                propertySource.getTypedProperty(Boolean.class, PropertyNames.HEDERA_EXPORT_ACCOUNTS_ON_STARTUP),
+                propertySource.getTypedProperty(Profile.class, PropertyNames.NETTY_MODE),
+                propertySource.getTypedProperty(Integer.class, PropertyNames.NETTY_START_RETRIES),
+                propertySource.getTypedProperty(Long.class, PropertyNames.NETTY_START_RETRY_INTERVAL_MS),
+                propertySource.getTypedProperty(Integer.class, PropertyNames.STATS_EXECUTION_TIMES_TO_TRACK),
+                propertySource.getTypedProperty(Integer.class, PropertyNames.ISS_RESET_PERIOD),
+                propertySource.getTypedProperty(Integer.class, PropertyNames.ISS_ROUNDS_TO_LOG),
+                propertySource.getTypedProperty(Integer.class, PropertyNames.HEDERA_PREFETCH_QUEUE_CAPACITY),
+                propertySource.getTypedProperty(Integer.class, PropertyNames.HEDERA_PREFETCH_THREAD_POOL_SIZE),
+                propertySource.getTypedProperty(Integer.class, PropertyNames.HEDERA_PREFETCH_CODE_CACHE_TTL_SECS),
+                propertySource.getTypedProperty(List.class, PropertyNames.STATS_CONS_THROTTLES_TO_SAMPLE),
+                propertySource.getTypedProperty(List.class, PropertyNames.STATS_HAPI_THROTTLES_TO_SAMPLE),
+                propertySource.getTypedProperty(String.class, PropertyNames.HEDERA_RECORD_STREAM_SIDE_CAR_DIR),
+                propertySource.getTypedProperty(Integer.class, PropertyNames.GRPC_WORKFLOWS_PORT),
+                propertySource.getTypedProperty(Integer.class, PropertyNames.GRPC_WORKFLOWS_TLS_PORT));
     }
 
     /**
@@ -254,7 +215,7 @@ public class ConfigurationAdaptor implements Configuration {
      * @return a new GlobalConfig instance
      */
     private GlobalConfig createGlobalConfig() {
-        return new GlobalConfig(propertySource.getTypedProperty(Set.class, WORKFLOWS_ENABLED));
+        return new GlobalConfig(propertySource.getTypedProperty(Set.class, PropertyNames.WORKFLOWS_ENABLED));
     }
 
     private String exceptionMessagePropertyDoesNotExist(final String name) {

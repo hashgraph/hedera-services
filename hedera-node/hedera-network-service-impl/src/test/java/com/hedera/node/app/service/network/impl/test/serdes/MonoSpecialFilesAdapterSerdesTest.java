@@ -19,10 +19,14 @@ package com.hedera.node.app.service.network.impl.test.serdes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.hapi.node.base.FileID;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
 import com.hedera.node.app.service.mono.state.merkle.internals.BytesElement;
-import com.hedera.node.app.service.network.impl.serdes.MonoSpecialFilesAdapterSerdes;
-import com.hederahashgraph.api.proto.java.FileID;
+import com.hedera.node.app.service.network.impl.serdes.MonoSpecialFilesAdapterCodec;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
+import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -31,32 +35,26 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.fcqueue.FCQueue;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataInput;
-import java.io.DataOutput;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 class MonoSpecialFilesAdapterSerdesTest {
-    private static final FileID SOME_FILE_ID =
-            FileID.newBuilder().setFileNum(666).build();
+    private static final FileID SOME_FILE_ID = FileID.newBuilder().fileNum(666).build();
     private static final MerkleSpecialFiles SOME_SPECIAL_FILES = new MerkleSpecialFiles();
 
     static {
-        SOME_SPECIAL_FILES.append(SOME_FILE_ID, "abcdef".getBytes());
+        SOME_SPECIAL_FILES.append(PbjConverter.fromPbj(SOME_FILE_ID), "abcdef".getBytes());
     }
 
     @Mock
-    private DataInput input;
+    private ReadableSequentialData input;
 
-    @Mock
-    private DataOutput output;
-
-    final MonoSpecialFilesAdapterSerdes subject = new MonoSpecialFilesAdapterSerdes();
+    final MonoSpecialFilesAdapterCodec subject = new MonoSpecialFilesAdapterCodec();
 
     @Test
     void doesntSupportUnnecessary() {
-        assertThrows(UnsupportedOperationException.class, subject::typicalSize);
+        assertThrows(UnsupportedOperationException.class, () -> subject.measureRecord(SOME_SPECIAL_FILES));
         assertThrows(UnsupportedOperationException.class, () -> subject.measure(input));
         assertThrows(UnsupportedOperationException.class, () -> subject.fastEquals(SOME_SPECIAL_FILES, input));
     }
@@ -69,17 +67,11 @@ class MonoSpecialFilesAdapterSerdesTest {
                 .registerConstructable(new ClassConstructorPair(BytesElement.class, BytesElement::new));
         final var baos = new ByteArrayOutputStream();
         final var actualOut = new SerializableDataOutputStream(baos);
-        subject.write(SOME_SPECIAL_FILES, actualOut);
+        subject.write(SOME_SPECIAL_FILES, new WritableStreamingData(actualOut));
         actualOut.flush();
 
         final var actualIn = new SerializableDataInputStream(new ByteArrayInputStream(baos.toByteArray()));
-        final var parsed = subject.parse(actualIn);
+        final var parsed = subject.parse(new ReadableStreamingData(actualIn));
         assertEquals(SOME_SPECIAL_FILES.getHash(), parsed.getHash());
-    }
-
-    @Test
-    void doesntSupportOtherStreams() {
-        assertThrows(IllegalArgumentException.class, () -> subject.parse(input));
-        assertThrows(IllegalArgumentException.class, () -> subject.write(SOME_SPECIAL_FILES, output));
     }
 }

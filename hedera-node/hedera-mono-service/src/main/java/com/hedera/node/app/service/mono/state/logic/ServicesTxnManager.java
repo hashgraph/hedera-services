@@ -19,6 +19,7 @@ package com.hedera.node.app.service.mono.state.logic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.RewardCalculator;
@@ -26,9 +27,13 @@ import com.hedera.node.app.service.mono.records.RecordCache;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.annotations.RunTopLevelTransition;
 import com.hedera.node.app.service.mono.state.annotations.RunTriggeredTransition;
+import com.hedera.node.app.service.mono.state.initialization.BlocklistAccountCreator;
 import com.hedera.node.app.service.mono.state.migration.MigrationRecordsManager;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
+import com.hedera.node.app.spi.config.PropertyNames;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -51,6 +56,8 @@ public class ServicesTxnManager {
     private final RecordStreaming recordStreaming;
     private final BlockManager blockManager;
     private final RewardCalculator rewardCalculator;
+    private final BootstrapProperties bootstrapProperties;
+    private final BlocklistAccountCreator blocklistAccountCreator;
 
     @Inject
     public ServicesTxnManager(
@@ -64,7 +71,9 @@ public class ServicesTxnManager {
             final MigrationRecordsManager migrationRecordsManager,
             final RecordStreaming recordStreaming,
             final BlockManager blockManager,
-            final RewardCalculator rewardCalculator) {
+            final RewardCalculator rewardCalculator,
+            final @NonNull BootstrapProperties bootstrapProperties,
+            final @NonNull BlocklistAccountCreator blocklistAccountCreator) {
         this.txnCtx = txnCtx;
         this.ledger = ledger;
         this.recordCache = recordCache;
@@ -76,6 +85,8 @@ public class ServicesTxnManager {
         this.scopedTriggeredProcessing = scopedTriggeredProcessing;
         this.blockManager = blockManager;
         this.rewardCalculator = rewardCalculator;
+        this.bootstrapProperties = Objects.requireNonNull(bootstrapProperties);
+        this.blocklistAccountCreator = Objects.requireNonNull(blocklistAccountCreator);
     }
 
     private boolean needToPublishMigrationRecords = true;
@@ -94,6 +105,10 @@ public class ServicesTxnManager {
             ledger.begin();
 
             if (needToPublishMigrationRecords) {
+                if (bootstrapProperties.getBooleanProperty(PropertyNames.ACCOUNTS_BLOCKLIST_ENABLED)) {
+                    blocklistAccountCreator.createMissingAccounts();
+                }
+
                 // The manager will only publish migration records if the MerkleNetworkContext (in
                 // state) shows that it needs to do so; our responsibility here is just to give it
                 // the opportunity

@@ -16,16 +16,15 @@
 
 package com.hedera.node.app.service.token.impl.test.serdes;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.token.impl.serdes.EntityNumSerdes;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import java.io.DataInput;
-import java.io.DataOutput;
+import com.hedera.node.app.service.token.impl.serdes.EntityNumCodec;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,45 +36,32 @@ class EntityNumSerdesTest {
     private static final EntityNum SOME_NUM = EntityNum.fromLong(666L);
 
     @Mock
-    private DataInput input;
+    private ReadableSequentialData input;
 
     @Mock
-    private DataOutput output;
+    private WritableSequentialData output;
 
-    @Mock
-    private SerializableDataInputStream in;
-
-    @Mock
-    private SerializableDataOutputStream out;
-
-    final EntityNumSerdes subject = new EntityNumSerdes();
+    final EntityNumCodec subject = new EntityNumCodec();
 
     @Test
     void doesntSupportUnnecessary() {
-        assertThrows(UnsupportedOperationException.class, subject::typicalSize);
         assertThrows(UnsupportedOperationException.class, () -> subject.measure(input));
         assertThrows(UnsupportedOperationException.class, () -> subject.fastEquals(SOME_NUM, input));
     }
 
     @Test
     void canDeserializeFromAppropriateStream() throws IOException {
-        given(in.readInt()).willReturn(SOME_NUM.intValue());
+        given(input.readInt()).willReturn(SOME_NUM.intValue());
 
-        final var parsed = subject.parse(in);
+        final var parsed = subject.parse(input);
 
         assertEquals(SOME_NUM, parsed);
     }
 
     @Test
     void canSerializeToAppropriateStream() throws IOException {
-        subject.write(SOME_NUM, out);
+        subject.write(SOME_NUM, output);
 
-        verify(out).writeInt(SOME_NUM.intValue());
-    }
-
-    @Test
-    void doesntSupportOtherStreams() {
-        assertThrows(IllegalArgumentException.class, () -> subject.parse(input));
-        assertThrows(IllegalArgumentException.class, () -> subject.write(SOME_NUM, output));
+        verify(output).writeInt(SOME_NUM.intValue());
     }
 }
