@@ -46,19 +46,13 @@ import java.util.function.Predicate;
  *
  * <ul>
  * <li>
- * The most recent fully-signed state
+ * The most recent fully-signed state (as long as it's not too old)
  * </li>
  * <li>
- * All the non-ancient states that are not fully signed
+ * All the non-ancient states that are not fully signed (as long as they are not too old)
  * </li>
  * <li>
- * Any state that is currently in the process of being written to disk (no matter how old it is)
- * </li>
- * <li>
- * Any state that is being used for a reconnect
- * </li>
- * <li>
- * Any state that the application has taken a reservation on
+ * Recently signed states, if configured to do so.
  * </li>
  * </ul>
  */
