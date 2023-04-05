@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.context.properties;
 
+import com.hedera.hapi.node.base.TopicID;
 import com.hedera.node.app.service.evm.contracts.execution.StaticProperties;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
@@ -53,6 +54,14 @@ public class StaticPropertiesHolder extends StaticProperties {
                 .setShardNum(shard)
                 .setRealmNum(realm)
                 .setAccountNum(num)
+                .build();
+    }
+
+    public TopicID scopedTopicIdWith(final long num) {
+        return TopicID.newBuilder()
+                .shardNum(shard)
+                .realmNum(realm)
+                .topicNum(num)
                 .build();
     }
 

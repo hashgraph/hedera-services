@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.consensus.impl.handlers.test;
+package com.hedera.node.app.service.consensus.impl.test.handlers;
 
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.*;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
@@ -39,6 +40,11 @@ import org.mockito.Mockito;
 public class AdapterUtils {
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
     private static final String ALIASES_KEY = "ALIASES";
+
+    public static final AccountID PARITY_CUSTOM_PAYER =
+            AccountID.newBuilder().accountNum(1216).build();
+    public static final AccountID PARITY_DEFAULT_PAYER =
+            AccountID.newBuilder().accountNum(13257).build();
 
     private AdapterUtils() {
         throw new UnsupportedOperationException("Utility Class");
