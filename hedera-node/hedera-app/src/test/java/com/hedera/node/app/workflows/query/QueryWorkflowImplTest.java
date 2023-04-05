@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.query;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
@@ -56,8 +57,6 @@ import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandler;
-import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
-import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
 import com.hedera.node.app.service.network.impl.handlers.NetworkGetExecutionTimeHandler;
@@ -70,7 +69,6 @@ import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hederahashgraph.api.proto.java.NetworkGetExecutionTimeQuery;
-import com.swirlds.common.system.PlatformStatus;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -91,12 +89,6 @@ class QueryWorkflowImplTest extends AppTestBase {
 
     @Mock
     private HederaState state;
-
-    @Mock
-    private NodeInfo nodeInfo;
-
-    @Mock(strictness = LENIENT)
-    private CurrentPlatformStatus currentPlatformStatus;
 
     @Mock(strictness = LENIENT)
     private Function<ResponseType, AutoCloseableWrapper<HederaState>> stateAccessor;
@@ -136,7 +128,6 @@ class QueryWorkflowImplTest extends AppTestBase {
 
     @BeforeEach
     void setup() throws PreCheckException, IOException {
-        when(currentPlatformStatus.get()).thenReturn(PlatformStatus.ACTIVE);
         when(stateAccessor.apply(any())).thenReturn(new AutoCloseableWrapper<>(state, () -> {}));
         requestBuffer = Bytes.wrap(new byte[] {1, 2, 3});
         payment = Transaction.newBuilder().build();
@@ -173,8 +164,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                 .thenReturn(response);
 
         workflow = new QueryWorkflowImpl(
-                nodeInfo,
-                currentPlatformStatus,
                 stateAccessor,
                 throttleAccumulator,
                 submissionManager,
@@ -189,8 +178,6 @@ class QueryWorkflowImplTest extends AppTestBase {
     void testConstructorWithIllegalParameters() {
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         null,
-                        currentPlatformStatus,
-                        stateAccessor,
                         throttleAccumulator,
                         submissionManager,
                         checker,
@@ -199,30 +186,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                         queryParser))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        nodeInfo,
-                        null,
-                        stateAccessor,
-                        throttleAccumulator,
-                        submissionManager,
-                        checker,
-                        dispatcher,
-                        feeAccumulator,
-                        queryParser))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
-                        null,
-                        throttleAccumulator,
-                        submissionManager,
-                        checker,
-                        dispatcher,
-                        feeAccumulator,
-                        queryParser))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
                         stateAccessor,
                         null,
                         submissionManager,
@@ -232,8 +195,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                         queryParser))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
                         stateAccessor,
                         throttleAccumulator,
                         null,
@@ -243,8 +204,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                         queryParser))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
                         stateAccessor,
                         throttleAccumulator,
                         submissionManager,
@@ -254,8 +213,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                         queryParser))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
                         stateAccessor,
                         throttleAccumulator,
                         submissionManager,
@@ -265,8 +222,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                         queryParser))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
                         stateAccessor,
                         throttleAccumulator,
                         submissionManager,
@@ -276,8 +231,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                         queryParser))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
                         stateAccessor,
                         throttleAccumulator,
                         submissionManager,
@@ -380,8 +333,6 @@ class QueryWorkflowImplTest extends AppTestBase {
         when(localDispatcher.getHandler(query)).thenReturn(localHandler);
         final var responseBuffer = newEmptyBuffer();
         workflow = new QueryWorkflowImpl(
-                nodeInfo,
-                currentPlatformStatus,
                 stateAccessor,
                 throttleAccumulator,
                 submissionManager,
@@ -397,20 +348,10 @@ class QueryWorkflowImplTest extends AppTestBase {
     }
 
     @Test
-    void testInactiveNodeFails(@Mock NodeInfo localNodeInfo) throws IOException {
+    void testInvalidNodeFails() throws PreCheckException, IOException {
         // given
-        when(localNodeInfo.isSelfZeroStake()).thenReturn(true);
+        doThrow(new PreCheckException(INVALID_NODE_ACCOUNT)).when(checker).checkNodeState();
         final var responseBuffer = newEmptyBuffer();
-        workflow = new QueryWorkflowImpl(
-                localNodeInfo,
-                currentPlatformStatus,
-                stateAccessor,
-                throttleAccumulator,
-                submissionManager,
-                checker,
-                dispatcher,
-                feeAccumulator,
-                queryParser);
 
         // when
         workflow.handleQuery(ctx, requestBuffer, responseBuffer);
@@ -418,34 +359,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         // then
         final var response = parseResponse(responseBuffer);
         final var header = response.fileGetInfoOrThrow().headerOrThrow();
-        Assertions.assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(ResponseCodeEnum.INVALID_NODE_ACCOUNT);
-        Assertions.assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
-        Assertions.assertThat(header.cost()).isZero();
-    }
-
-    @Test
-    void testInactivePlatformFails(@Mock CurrentPlatformStatus localCurrentPlatformStatus) throws IOException {
-        // given
-        when(localCurrentPlatformStatus.get()).thenReturn(PlatformStatus.MAINTENANCE);
-        final var responseBuffer = newEmptyBuffer();
-        workflow = new QueryWorkflowImpl(
-                nodeInfo,
-                localCurrentPlatformStatus,
-                stateAccessor,
-                throttleAccumulator,
-                submissionManager,
-                checker,
-                dispatcher,
-                feeAccumulator,
-                queryParser);
-
-        // when
-        workflow.handleQuery(ctx, requestBuffer, responseBuffer);
-
-        // then
-        final var response = parseResponse(responseBuffer);
-        final var header = response.fileGetInfoOrThrow().headerOrThrow();
-        Assertions.assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(ResponseCodeEnum.PLATFORM_NOT_ACTIVE);
+        Assertions.assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(INVALID_NODE_ACCOUNT);
         Assertions.assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
         Assertions.assertThat(header.cost()).isZero();
     }
@@ -579,8 +493,6 @@ class QueryWorkflowImplTest extends AppTestBase {
         when(localChecker.validateCryptoTransfer(ctx, payment)).thenThrow(new PreCheckException(INSUFFICIENT_TX_FEE));
         final var responseBuffer = newEmptyBuffer();
         workflow = new QueryWorkflowImpl(
-                nodeInfo,
-                currentPlatformStatus,
                 stateAccessor,
                 throttleAccumulator,
                 submissionManager,

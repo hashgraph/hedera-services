@@ -17,7 +17,9 @@
 
 package com.hedera.node.app.info;
 
+import com.hedera.node.app.spi.info.CurrentPlatformStatus;
 import com.hedera.node.app.spi.info.NetworkInfo;
+import com.hedera.node.app.spi.info.NodeInfo;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -27,9 +29,22 @@ import javax.inject.Singleton;
 @Module
 public interface InfoDaggerModule {
 
+
+    @Provides
+    @Singleton
+    static CurrentPlatformStatus provideCurrentPlatformStatus(@NonNull final com.hedera.node.app.service.mono.context.CurrentPlatformStatus delegate) {
+        return new MonoCurrentPlatformStatus(delegate);
+    }
+
     @Provides
     @Singleton
     static NetworkInfo provideNetworkInfo(@NonNull final com.hedera.node.app.service.mono.config.NetworkInfo delegate) {
         return new MonoNetworkInfo(delegate);
+    }
+
+    @Provides
+    @Singleton
+    static NodeInfo provideNodeInfo(@NonNull final com.hedera.node.app.service.mono.context.NodeInfo delegate) {
+        return new MonoNodeInfo(delegate);
     }
 }

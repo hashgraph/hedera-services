@@ -17,18 +17,17 @@
 
 package com.hedera.node.app.spi.info;
 
-import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.system.PlatformStatus;
 
 /**
- * Provides information about the network.
+ * Provides the current platform status.
  */
-public interface NetworkInfo {
+public interface CurrentPlatformStatus {
 
     /**
-     * Returns the current ledger ID.
+     * Returns the current platform status.
      *
-     * @return the {@link Bytes} of the current ledger ID
+     * @return the current platform status
      */
-    Bytes ledgerId();
-
+    PlatformStatus get();
 }

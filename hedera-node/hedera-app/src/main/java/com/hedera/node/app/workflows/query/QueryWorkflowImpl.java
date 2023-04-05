@@ -19,13 +19,10 @@ package com.hedera.node.app.workflows.query;
 import static com.hedera.hapi.node.base.HederaFunctionality.GET_ACCOUNT_DETAILS;
 import static com.hedera.hapi.node.base.HederaFunctionality.NETWORK_GET_EXECUTION_TIME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER_STATE_PROOF;
 import static com.hedera.node.app.spi.HapiUtils.asTimestamp;
-import static com.swirlds.common.system.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -39,8 +36,6 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
-import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
-import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
@@ -77,8 +72,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     private static final List<HederaFunctionality> RESTRICTED_FUNCTIONALITIES =
             List.of(NETWORK_GET_EXECUTION_TIME, GET_ACCOUNT_DETAILS);
 
-    private final NodeInfo nodeInfo;
-    private final CurrentPlatformStatus currentPlatformStatus;
     private final Function<ResponseType, AutoCloseableWrapper<HederaState>> stateAccessor;
     private final ThrottleAccumulator throttleAccumulator;
     private final SubmissionManager submissionManager;
@@ -91,8 +84,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     /**
      * Constructor of {@code QueryWorkflowImpl}
      *
-     * @param nodeInfo the {@link NodeInfo} of the current node
-     * @param currentPlatformStatus the {@link CurrentPlatformStatus}
      * @param stateAccessor a {@link Function} that returns the latest immutable or latest signed
      *     state depending on the {@link ResponseType}
      * @param throttleAccumulator the {@link ThrottleAccumulator} for throttling
@@ -103,8 +94,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
      */
     @Inject
     public QueryWorkflowImpl(
-            @NonNull final NodeInfo nodeInfo,
-            @NonNull final CurrentPlatformStatus currentPlatformStatus,
             @NonNull final Function<ResponseType, AutoCloseableWrapper<HederaState>> stateAccessor,
             @NonNull final ThrottleAccumulator throttleAccumulator,
             @NonNull final SubmissionManager submissionManager,
@@ -112,8 +101,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             @NonNull final QueryDispatcher dispatcher,
             @NonNull final FeeAccumulator feeAccumulator,
             @NonNull final Codec<Query> queryParser) {
-        this.nodeInfo = requireNonNull(nodeInfo);
-        this.currentPlatformStatus = requireNonNull(currentPlatformStatus);
         this.stateAccessor = requireNonNull(stateAccessor);
         this.throttleAccumulator = requireNonNull(throttleAccumulator);
         this.submissionManager = requireNonNull(submissionManager);
@@ -159,13 +146,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         long fee = 0L;
         try (final var wrappedState = stateAccessor.apply(responseType)) {
             // Do some general pre-checks
-            if (nodeInfo.isSelfZeroStake()) {
-                // Zero stake nodes are currently not supported
-                throw new PreCheckException(INVALID_NODE_ACCOUNT);
-            }
-            if (currentPlatformStatus.get() != ACTIVE) {
-                throw new PreCheckException(PLATFORM_NOT_ACTIVE);
-            }
+            checker.checkNodeState();
             if (UNSUPPORTED_RESPONSE_TYPES.contains(responseType)) {
                 throw new PreCheckException(NOT_SUPPORTED);
             }

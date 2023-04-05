@@ -15,20 +15,28 @@
  *
  */
 
-package com.hedera.node.app.spi.info;
+package com.hedera.node.app.info;
 
-import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.node.app.spi.info.NodeInfo;
 
 /**
- * Provides information about the network.
+ * Implementation of {@link NodeInfo} that delegates to the mono-service.
  */
-public interface NetworkInfo {
+public class MonoNodeInfo implements NodeInfo {
+
+    private final com.hedera.node.app.service.mono.context.NodeInfo delegate;
 
     /**
-     * Returns the current ledger ID.
+     * Constructs a {@link MonoNodeInfo} with the given delegate.
      *
-     * @return the {@link Bytes} of the current ledger ID
+     * @param delegate the delegate
      */
-    Bytes ledgerId();
+    public MonoNodeInfo(com.hedera.node.app.service.mono.context.NodeInfo delegate) {
+        this.delegate = delegate;
+    }
 
+    @Override
+    public boolean isSelfZeroStake() {
+        return delegate.isSelfZeroStake();
+    }
 }

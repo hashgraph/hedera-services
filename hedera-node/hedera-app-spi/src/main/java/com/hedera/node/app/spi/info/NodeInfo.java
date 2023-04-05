@@ -17,18 +17,20 @@
 
 package com.hedera.node.app.spi.info;
 
-import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.system.address.AddressBook;
 
 /**
- * Provides information about the network.
+ * Summarizes useful information about the nodes in the {@link AddressBook} from the Platform. In
+ * the future, there may be events that require re-reading the book; but at present nodes may treat
+ * the initializing book as static.
  */
-public interface NetworkInfo {
+public interface NodeInfo {
 
     /**
-     * Returns the current ledger ID.
+     * Convenience method to check if this node is zero-stake.
      *
-     * @return the {@link Bytes} of the current ledger ID
+     * @return whether this node has zero stake.
      */
-    Bytes ledgerId();
+    boolean isSelfZeroStake();
 
 }
