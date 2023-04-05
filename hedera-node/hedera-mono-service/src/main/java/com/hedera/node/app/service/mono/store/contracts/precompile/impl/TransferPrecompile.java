@@ -232,8 +232,15 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             if (change.hasAlias()) {
                 replaceAliasWithId(change, changes, completedLazyCreates);
             }
-            if (change.isForNft() || units < 0) {
-                if (change.isApprovedAllowance() || change.isForCustomFee()) {
+            final var isDebit = units < 0;
+            final var isCredit = units > 0;
+
+            if (change.isForNft() || isDebit) {
+                // The receiver signature is enforced for a transfer of NFT with a royalty fallback
+                // fee
+                final var isForNonFallbackRoyaltyFee =
+                        change.isForCustomFee() && !change.includesFallbackFee();
+                if (change.isApprovedAllowance() || isForNonFallbackRoyaltyFee) {
                     // Signing requirements are skipped for changes to be authorized via an
                     // allowance
                     continue;
@@ -264,22 +271,25 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                 NFT exchanges) */
                 var hasReceiverSigIfReq = true;
                 if (change.isForNft()) {
-                    final var counterPartyAddress = asTypedEvmAddress(change.counterPartyAccountId());
-                    hasReceiverSigIfReq = KeyActivationUtils.validateKey(
-                            frame,
-                            counterPartyAddress,
-                            sigsVerifier::hasActiveKeyOrNoReceiverSigReq,
-                            ledgers,
-                            updater.aliases(),
-                            CryptoTransfer);
-                } else if (units > 0) {
-                    hasReceiverSigIfReq = KeyActivationUtils.validateKey(
-                            frame,
-                            change.getAccount().asEvmAddress(),
-                            sigsVerifier::hasActiveKeyOrNoReceiverSigReq,
-                            ledgers,
-                            updater.aliases(),
-                            CryptoTransfer);
+                    final var counterPartyAddress =
+                            asTypedEvmAddress(change.counterPartyAccountId());
+                    hasReceiverSigIfReq =
+                            KeyActivationUtils.validateKey(
+                                    frame,
+                                    counterPartyAddress,
+                                    sigsVerifier::hasActiveKeyOrNoReceiverSigReq,
+                                    ledgers,
+                                    updater.aliases(),
+                                    CryptoTransfer);
+                } else if (isCredit) {
+                    hasReceiverSigIfReq =
+                            KeyActivationUtils.validateKey(
+                                    frame,
+                                    change.getAccount().asEvmAddress(),
+                                    sigsVerifier::hasActiveKeyOrNoReceiverSigReq,
+                                    ledgers,
+                                    updater.aliases(),
+                                    CryptoTransfer);
                 }
                 validateTrue(hasReceiverSigIfReq, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, TRANSFER);
             }

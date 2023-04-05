@@ -27,7 +27,9 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.keys.SigControl.SECP256K1_ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -40,11 +42,17 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFeeInheritingRoyaltyCollector;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFeeInheritingRoyaltyCollector;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeWithFallback;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -65,13 +73,18 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(ContractKeysStillWorkAsExpectedSuite.class);
-    public static final String CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS = "contracts.maxNumWithHapiSigsAccess";
+    private static final Logger log =
+            LogManager.getLogger(ContractKeysStillWorkAsExpectedSuite.class);
+    private static final String EVM_ALIAS_ENABLED_PROP =
+            "cryptoCreateWithAliasAndEvmAddress.enabled";
+    public static final String CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS =
+            "contracts.maxNumWithHapiSigsAccess";
 
     public static void main(String... args) {
         new ContractKeysStillWorkAsExpectedSuite().runSuiteSync();
@@ -95,7 +108,185 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
                 canStillTransferByVirtueOfContractIdInEOAThreshold(),
                 approvalFallbacksRequiredWithoutTopLevelSigAccess(),
                 topLevelSigsStillWorkWithDefaultGrandfatherNum(),
-                contractCanStillTransferItsOwnAssets());
+                contractCanStillTransferItsOwnAssets(),
+                fallbackFeeForHtsPayerMustSign(),
+                fallbackFeePayerMustSign());
+    }
+
+    private HapiSpec fallbackFeePayerMustSign() {
+        final AtomicReference<Address> senderAddr = new AtomicReference<>();
+        final AtomicReference<Address> receiverAddr = new AtomicReference<>();
+        final AtomicReference<Address> nonFungibleTokenMirrorAddr = new AtomicReference<>();
+
+        final var treasury = "treasury";
+        final var sender = "sender";
+        final var receiver = "receiver";
+        final var nft = "nft";
+        final var failedCallTxn = "failedCallTxn";
+
+        return propertyPreservingHapiSpec("FallbackFeePayerMustSign")
+                .preserving(EVM_ALIAS_ENABLED_PROP)
+                .given(
+                        overriding(EVM_ALIAS_ENABLED_PROP, "true"),
+                        uploadInitCode(WELL_KNOWN_TREASURY_CONTRACT),
+                        contractCreate(WELL_KNOWN_TREASURY_CONTRACT),
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(treasury),
+                        cryptoCreate(sender)
+                                .keyShape(SECP256K1_ON)
+                                .exposingEvmAddressTo(senderAddr::set),
+                        getAccountInfo(sender).logged(),
+                        cryptoCreate(receiver)
+                                .keyShape(SECP256K1_ON)
+                                .balance(ONE_HBAR)
+                                .exposingEvmAddressTo(receiverAddr::set))
+                .when(
+                        tokenCreate(nft)
+                                .exposingAddressTo(nonFungibleTokenMirrorAddr::set)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0)
+                                .supplyKey(MULTI_KEY)
+                                .withCustom(
+                                        royaltyFeeWithFallback(
+                                                1,
+                                                2,
+                                                fixedHbarFeeInheritingRoyaltyCollector(ONE_HBAR),
+                                                treasury))
+                                .treasury(treasury),
+                        getTokenInfo(nft).logged(),
+                        tokenAssociate(sender, nft),
+                        tokenAssociate(receiver, nft),
+                        mintToken(
+                                nft,
+                                List.of(
+                                        ByteString.copyFromUtf8("serialNo1"),
+                                        ByteString.copyFromUtf8("serialNo2"))),
+                        cryptoTransfer(movingUnique(nft, 1, 2).between(treasury, sender)))
+                .then(
+                        // Without the receiver signature, will fail with INVALID_SIGNATURE
+                        sourcing(
+                                () ->
+                                        contractCall(
+                                                        WELL_KNOWN_TREASURY_CONTRACT,
+                                                        "transferSerialNo1FromToOthers",
+                                                        nonFungibleTokenMirrorAddr.get(),
+                                                        senderAddr.get(),
+                                                        receiverAddr.get())
+                                                .gas(2_000_000)
+                                                .via(failedCallTxn)
+                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                                .alsoSigningWithFullPrefix(sender)),
+                        childRecordsCheck(
+                                failedCallTxn,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)),
+                        // And no hbar were deducted from the receiver
+                        getAccountBalance(receiver).hasTinyBars(ONE_HBAR),
+                        // But now sign with receiver as well
+                        sourcing(
+                                () ->
+                                        contractCall(
+                                                        WELL_KNOWN_TREASURY_CONTRACT,
+                                                        "transferSerialNo1FromToOthers",
+                                                        nonFungibleTokenMirrorAddr.get(),
+                                                        senderAddr.get(),
+                                                        receiverAddr.get())
+                                                .gas(2_000_000)
+                                                .alsoSigningWithFullPrefix(sender, receiver)),
+                        // Receiver balance will be debited ONE_HBAR
+                        getAccountBalance(receiver).hasTinyBars(0L));
+    }
+
+    private HapiSpec fallbackFeeForHtsPayerMustSign() {
+        final AtomicReference<Address> senderAddr = new AtomicReference<>();
+        final AtomicReference<Address> receiverAddr = new AtomicReference<>();
+        final AtomicReference<Address> nonFungibleTokenMirrorAddr = new AtomicReference<>();
+
+        final var treasury = "treasury";
+        final var sender = "sender";
+        final var receiver = "receiver";
+        final var nft = "nft";
+        final var fungible = "fungible";
+        final var failedCallTxn = "failedCallTxn";
+
+        return propertyPreservingHapiSpec("FallbackFeeHtsPayerMustSign")
+                .preserving(EVM_ALIAS_ENABLED_PROP)
+                .given(
+                        overriding(EVM_ALIAS_ENABLED_PROP, "true"),
+                        uploadInitCode(WELL_KNOWN_TREASURY_CONTRACT),
+                        contractCreate(WELL_KNOWN_TREASURY_CONTRACT),
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(treasury),
+                        cryptoCreate(sender)
+                                .keyShape(SECP256K1_ON)
+                                .exposingEvmAddressTo(senderAddr::set),
+                        getAccountInfo(sender).logged(),
+                        cryptoCreate(receiver)
+                                .keyShape(SECP256K1_ON)
+                                .balance(ONE_HBAR)
+                                .exposingEvmAddressTo(receiverAddr::set))
+                .when(
+                        tokenCreate(fungible)
+                                .initialSupply(100)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY),
+                        tokenAssociate(sender, fungible),
+                        tokenAssociate(receiver, fungible),
+                        cryptoTransfer(moving(10, fungible).between(TOKEN_TREASURY, receiver)),
+                        tokenCreate(nft)
+                                .exposingAddressTo(nonFungibleTokenMirrorAddr::set)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0)
+                                .supplyKey(MULTI_KEY)
+                                .withCustom(
+                                        royaltyFeeWithFallback(
+                                                1,
+                                                2,
+                                                fixedHtsFeeInheritingRoyaltyCollector(1, fungible),
+                                                treasury))
+                                .treasury(treasury),
+                        getTokenInfo(nft).logged(),
+                        tokenAssociate(sender, nft),
+                        tokenAssociate(receiver, nft),
+                        mintToken(
+                                nft,
+                                List.of(
+                                        ByteString.copyFromUtf8("serialNo1"),
+                                        ByteString.copyFromUtf8("serialNo2"))),
+                        cryptoTransfer(movingUnique(nft, 1, 2).between(treasury, sender)))
+                .then(
+                        // Without the receiver signature, will fail with INVALID_SIGNATURE
+                        sourcing(
+                                () ->
+                                        contractCall(
+                                                        WELL_KNOWN_TREASURY_CONTRACT,
+                                                        "transferSerialNo1FromToOthers",
+                                                        nonFungibleTokenMirrorAddr.get(),
+                                                        senderAddr.get(),
+                                                        receiverAddr.get())
+                                                .gas(2_000_000)
+                                                .via(failedCallTxn)
+                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                                .alsoSigningWithFullPrefix(sender)),
+                        childRecordsCheck(
+                                failedCallTxn,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)),
+                        // And no tokens were deducted from the receiver
+                        getAccountBalance(receiver).hasTokenBalance(fungible, 10),
+                        // But now sign with receiver as well
+                        sourcing(
+                                () ->
+                                        contractCall(
+                                                        WELL_KNOWN_TREASURY_CONTRACT,
+                                                        "transferSerialNo1FromToOthers",
+                                                        nonFungibleTokenMirrorAddr.get(),
+                                                        senderAddr.get(),
+                                                        receiverAddr.get())
+                                                .gas(2_000_000)
+                                                .alsoSigningWithFullPrefix(sender, receiver)),
+                        // Receiver token balance of custom fee denomination should debit by 1
+                        getAccountBalance(receiver).hasTokenBalance(fungible, 9));
     }
 
     private HapiSpec contractCanStillTransferItsOwnAssets() {
@@ -200,7 +391,7 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
         final AtomicReference<Address> bSenderAddr = new AtomicReference<>();
         final AtomicReference<Address> bReceiverAddr = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec("ContractKeysWorkAsExpectedForFungibleTokenMgmt")
+        return propertyPreservingHapiSpec("ApprovalFallbacksRequiredWithoutTopLevelSigAccess")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
                         // No top-level signatures are available to any contract
@@ -414,7 +605,7 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
         final var receiver = "receiver";
         final var controlledSpenderKey = "controlledSpenderKey";
 
-        return propertyPreservingHapiSpec("ContractKeysWorkAsExpectedForFungibleTokenMgmt")
+        return propertyPreservingHapiSpec("CanStillTransferByVirtueOfContractIdInEOAThreshold")
                 .preserving(
                         CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
                         "contracts.withSpecialHapiSigsAccess",
@@ -478,15 +669,19 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
                 .preserving(
                         CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
                         "contracts.withSpecialHapiSigsAccess",
-                        "contracts.allowSystemUseOfHapiSigs")
+                        "contracts.allowSystemUseOfHapiSigs",
+                        EVM_ALIAS_ENABLED_PROP)
                 .given(
-                        overridingThree(
-                                CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
-                                "0",
-                                "contracts.withSpecialHapiSigsAccess",
-                                "",
-                                "contracts.allowSystemUseOfHapiSigs",
-                                ""),
+                        overridingAllOf(
+                                Map.of(
+                                        CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
+                                        "0",
+                                        "contracts.withSpecialHapiSigsAccess",
+                                        "",
+                                        "contracts.allowSystemUseOfHapiSigs",
+                                        "",
+                                        EVM_ALIAS_ENABLED_PROP,
+                                        "true")),
                         uploadInitCode(managementContract),
                         newKeyNamed(tmpAdminKey),
                         contractCreate(managementContract).adminKey(tmpAdminKey),
@@ -533,7 +728,7 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
         final AtomicReference<Address> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<Address> accountAddr = new AtomicReference<>();
 
-        return defaultHapiSpec("ContractKeysWorkAsExpectedForFungibleTokenMgmt")
+        return defaultHapiSpec("ContractKeysStillHaveSpecificityNoMatterTopLevelSignatures")
                 .given(
                         uploadInitCode(managementContract, PAY_RECEIVABLE_CONTRACT),
                         newKeyNamed(tmpAdminKey),

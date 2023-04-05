@@ -42,21 +42,35 @@ public class FixedFeeAssessor {
         this.customFeePayerExemptions = customFeePayerExemptions;
     }
 
+    /**
+     * Assess the given fixed fee, which may be either a top-level fixed fee or a fallback royalty
+     * fee.
+     *
+     * @param payer the payer of the fixed fee
+     * @param feeMeta the metadata for the token charging the fixed fee
+     * @param fee the fixed fee to assess
+     * @param changeManager the balance change manager to use for the assessment
+     * @param accumulator the accumulator for the assessed custom fees
+     * @param isFallbackFee whether the fee is a fallback royalty fee
+     * @return OK if the fee was assessed successfully, or a failure code if not
+     */
     public ResponseCodeEnum assess(
-            Id payer,
-            CustomFeeMeta feeMeta,
-            FcCustomFee fee,
-            BalanceChangeManager changeManager,
-            List<AssessedCustomFeeWrapper> accumulator) {
+            final Id payer,
+            final CustomFeeMeta feeMeta,
+            final FcCustomFee fee,
+            final BalanceChangeManager changeManager,
+            final List<AssessedCustomFeeWrapper> accumulator,
+            final boolean isFallbackFee) {
         if (customFeePayerExemptions.isPayerExempt(feeMeta, fee, payer)) {
             return OK;
         }
 
         final var fixedSpec = fee.getFixedFeeSpec();
         if (fixedSpec.getTokenDenomination() == null) {
-            return hbarFeeAssessor.assess(payer, fee, changeManager, accumulator);
+            return hbarFeeAssessor.assess(payer, fee, changeManager, accumulator, isFallbackFee);
         } else {
-            return htsFeeAssessor.assess(payer, feeMeta, fee, changeManager, accumulator);
+            return htsFeeAssessor.assess(
+                    payer, feeMeta, fee, changeManager, accumulator, isFallbackFee);
         }
     }
 }
