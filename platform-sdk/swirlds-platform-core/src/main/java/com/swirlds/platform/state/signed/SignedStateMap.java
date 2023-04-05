@@ -25,7 +25,6 @@ import java.util.Iterator;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 
 /**
  * A thread safe map-like object for storing a number of states. This object automatically manages reservations.
@@ -142,23 +141,6 @@ public class SignedStateMap {
             release(signedState);
         }
         map.clear();
-    }
-
-    /**
-     * Finds the first signed state matching the supplied {@code predicate} and returns it with a reservation.
-     *
-     * @param predicate the search criteria
-     * @return an {@link AutoCloseableWrapper} with the first matching signed state with the specified reservation take
-     * out on it, or an {@link AutoCloseableWrapper} with null if none was found
-     */
-    public synchronized @NonNull AutoCloseableWrapper<SignedState> find( // TODO remove
-            @NonNull final Predicate<SignedState> predicate) {
-        for (final SignedState signedState : map.values()) {
-            if (predicate.test(signedState)) {
-                return newSignedStateWrapper(signedState);
-            }
-        }
-        return newSignedStateWrapper(null);
     }
 
     /**
