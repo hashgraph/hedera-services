@@ -17,7 +17,7 @@
 package com.hedera.node.app.spi.validation;
 
 import com.hedera.hapi.node.base.Key;
-import com.hedera.node.app.spi.exceptions.HandleStatusException;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 
 /**
@@ -29,7 +29,7 @@ public interface AttributeValidator {
      * Validates the given key.
      *
      * @param key the key to validate
-     * @throws HandleStatusException if the key is invalid
+     * @throws HandleException if the key is invalid
      */
     void validateKey(Key key);
 
@@ -37,7 +37,7 @@ public interface AttributeValidator {
      * Validates the given memo.
      *
      * @param memo the memo to validate
-     * @throws HandleStatusException if the key is invalid
+     * @throws HandleException if the key is invalid
      */
     void validateMemo(String memo);
 }

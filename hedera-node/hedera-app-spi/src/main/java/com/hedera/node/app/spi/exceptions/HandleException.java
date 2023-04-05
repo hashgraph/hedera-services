@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.exceptions;
+package com.hedera.node.app.spi.workflows;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 
@@ -27,10 +27,10 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
  * detects an internal error. Instead, use {@link IllegalStateException} or
  * {@link IllegalArgumentException} as appropriate.
  */
-public class HandleStatusException extends RuntimeException {
+public class HandleException extends RuntimeException {
     private final ResponseCodeEnum status;
 
-    public HandleStatusException(final ResponseCodeEnum status) {
+    public HandleException(final ResponseCodeEnum status) {
         this.status = status;
     }
 
@@ -40,7 +40,7 @@ public class HandleStatusException extends RuntimeException {
 
     public static void validateTrue(final boolean flag, final ResponseCodeEnum errorStatus) {
         if (!flag) {
-            throw new HandleStatusException(errorStatus);
+            throw new HandleException(errorStatus);
         }
     }
 

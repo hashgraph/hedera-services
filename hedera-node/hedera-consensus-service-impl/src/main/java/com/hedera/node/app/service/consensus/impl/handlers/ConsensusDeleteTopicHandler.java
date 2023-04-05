@@ -29,7 +29,7 @@ import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusDeleteTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.DeleteTopicRecordBuilder;
-import com.hedera.node.app.spi.exceptions.HandleStatusException;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -91,13 +91,13 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
 
         /* If the topic doesn't exist, return INVALID_TOPIC_ID */
         if (optionalTopic.isEmpty()) {
-            throw new HandleStatusException(INVALID_TOPIC_ID);
+            throw new HandleException(INVALID_TOPIC_ID);
         }
         final var topic = optionalTopic.get();
 
         /* Topics without adminKeys can't be deleted.*/
         if (topic.adminKey() == null) {
-            throw new HandleStatusException(UNAUTHORIZED);
+            throw new HandleException(UNAUTHORIZED);
         }
 
         /* Copy all the fields from existing topic and change deleted flag */

@@ -53,8 +53,8 @@ import com.hedera.node.app.service.mono.Utils;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.accounts.AccountAccess;
-import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.assertj.core.api.Assertions;
@@ -186,7 +186,7 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
         given(writableStates.<EntityNum, Topic>get(TOPICS)).willReturn(writableTopicState);
         writableStore = new WritableTopicStore(writableStates);
 
-        final var msg = assertThrows(HandleStatusException.class, () -> subject.handle(txn, writableStore));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(txn, writableStore));
         assertEquals(ResponseCodeEnum.INVALID_TOPIC_ID, msg.getStatus());
     }
 
@@ -211,7 +211,7 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
         given(writableStates.<EntityNum, Topic>get(TOPICS)).willReturn(writableTopicState);
         writableStore = new WritableTopicStore(writableStates);
 
-        final var msg = assertThrows(HandleStatusException.class, () -> subject.handle(txn, writableStore));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(txn, writableStore));
 
         assertEquals(ResponseCodeEnum.UNAUTHORIZED, msg.getStatus());
     }

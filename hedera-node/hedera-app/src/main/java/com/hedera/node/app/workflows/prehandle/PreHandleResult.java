@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.meta;
+package com.hedera.node.app.workflows.prehandle;
 
 import static java.util.Objects.requireNonNull;
 
@@ -33,16 +33,16 @@ import java.util.List;
 /**
  * Metadata collected when transactions are handled as part of "pre-handle". This happens with
  * multiple background threads. Any state read or computed as part of this pre-handle, including any
- * errors, are captured in the TransactionMetadata. This is then made available to the transaction
+ * errors, are captured in the {@link PreHandleResult}. This is then made available to the transaction
  * during the "handle" phase as part of the HandleContext.
  *
  * @param txnBody Transaction that is being pre-handled
  * @param payer payer for the transaction
  * @param status {@link ResponseCodeEnum} status of the transaction
  * @param payerKey payer key required to sign the transaction. It is null if payer is missing
- * @param innerMetadata {@link TransactionMetadata} of the inner transaction (where appropriate)
+ * @param innerResult {@link PreHandleResult} of the inner transaction (where appropriate)
  */
-public record TransactionMetadata(
+public record PreHandleResult(
         @Nullable TransactionBody txnBody,
         @Nullable SignatureMap signatureMap,
         @Nullable AccountID payer,
@@ -50,17 +50,17 @@ public record TransactionMetadata(
         @Nullable HederaKey payerKey,
         @NonNull List<HederaKey> otherPartyKeys,
         @Nullable List<TransactionSignature> cryptoSignatures,
-        @Nullable TransactionMetadata innerMetadata) {
+        @Nullable PreHandleResult innerResult) {
 
-    public TransactionMetadata {
+    public PreHandleResult {
         requireNonNull(status);
     }
 
-    public TransactionMetadata(
+    public PreHandleResult(
             @NonNull final PreHandleContext context,
             @NonNull final SignatureMap signatureMap,
             @NonNull final List<TransactionSignature> cryptoSignatures,
-            @Nullable final TransactionMetadata innerMetadata) {
+            @Nullable final PreHandleResult innerResult) {
         this(
                 requireNonNull(context).getTxn(),
                 requireNonNull(signatureMap),
@@ -69,10 +69,10 @@ public record TransactionMetadata(
                 context.getPayerKey(),
                 context.getRequiredNonPayerKeys(),
                 requireNonNull(cryptoSignatures),
-                innerMetadata);
+                innerResult);
     }
 
-    public TransactionMetadata(@NonNull final ResponseCodeEnum status) {
+    public PreHandleResult(@NonNull final ResponseCodeEnum status) {
         this(null, null, null, status, null, Collections.emptyList(), Collections.emptyList(), null);
     }
 
