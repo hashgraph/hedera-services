@@ -16,7 +16,6 @@
 
 package com.swirlds.common.time;
 
-import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.Units;
 
 /**

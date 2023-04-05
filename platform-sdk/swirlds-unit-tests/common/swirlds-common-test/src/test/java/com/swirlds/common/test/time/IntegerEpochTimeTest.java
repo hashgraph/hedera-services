@@ -19,8 +19,8 @@ package com.swirlds.common.test.time;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-import com.swirlds.common.time.IntegerEpochTime;
 import com.swirlds.common.test.fixtures.FakeTime;
+import com.swirlds.common.time.IntegerEpochTime;
 import com.swirlds.common.utility.Units;
 import java.time.Duration;
 import java.time.Instant;

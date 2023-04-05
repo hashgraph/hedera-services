@@ -16,15 +16,14 @@
 
 package com.swirlds.common.test.metrics.extensions;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.swirlds.common.metrics.extensions.BusyTime;
 import com.swirlds.common.test.fixtures.FakeTime;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import java.time.Duration;
 import java.time.Instant;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class BusyTimeTest {
     private final FakeTime clock = new FakeTime(Instant.EPOCH, Duration.ZERO);
@@ -97,7 +96,10 @@ class BusyTimeTest {
                 0.01,
                 "3 second of work, 4 seconds of idle, so the busy fraction should be 0.43");
         assertEquals(
-                0.43, metric.getAndReset(), 0.01, "the snapshot should contain the same value returned by getBusyFraction()");
+                0.43,
+                metric.getAndReset(),
+                0.01,
+                "the snapshot should contain the same value returned by getBusyFraction()");
         assertEquals(0.0, metric.getBusyFraction(), "the snapshotting should reset the value");
 
         clock.tick(Duration.ofSeconds(1)); // time == 9
@@ -133,7 +135,7 @@ class BusyTimeTest {
         clock.tick(Duration.ofSeconds(1));
         metric.finishedWork();
         clock.tick(Duration.ofSeconds(1));
-        assertEquals(0.33, metric.getAndReset(), 0.01, "the second finishedWork() should be ignored, so 0.33 is expected");
+        assertEquals(
+                0.33, metric.getAndReset(), 0.01, "the second finishedWork() should be ignored, so 0.33 is expected");
     }
-
 }

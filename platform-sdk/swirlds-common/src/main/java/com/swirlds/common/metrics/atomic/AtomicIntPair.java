@@ -16,13 +16,13 @@
 
 package com.swirlds.common.metrics.atomic;
 
+import static com.swirlds.common.metrics.extensions.IntPairUtils.*;
+
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 import java.util.function.IntBinaryOperator;
 import java.util.function.LongBinaryOperator;
 import java.util.function.ToDoubleBiFunction;
-
-import static com.swirlds.common.metrics.extensions.IntPairUtils.*;
 
 /**
  * Holds two integers that can be updated atomically
