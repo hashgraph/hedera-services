@@ -43,7 +43,6 @@ import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
-import com.hedera.node.app.spi.meta.QueryContext;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
@@ -96,7 +95,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     private final Map<HederaFunctionality, Counter> answered = new EnumMap<>(HederaFunctionality.class);
 
     private final FeeAccumulator feeAccumulator;
-    private final QueryContext queryContext;
     private final Codec<Query> queryParser;
 
     /**
@@ -124,7 +122,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             @NonNull final QueryDispatcher dispatcher,
             @NonNull final Metrics metrics,
             @NonNull final FeeAccumulator feeAccumulator,
-            @NonNull final QueryContextImpl queryContext,
             @NonNull final Codec<Query> queryParser) {
         this.nodeInfo = requireNonNull(nodeInfo);
         this.currentPlatformStatus = requireNonNull(currentPlatformStatus);
@@ -134,7 +131,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         this.checker = requireNonNull(checker);
         this.dispatcher = requireNonNull(dispatcher);
         this.feeAccumulator = requireNonNull(feeAccumulator);
-        this.queryContext = requireNonNull(queryContext);
         this.queryParser = requireNonNull(queryParser);
 
         // Create metrics for tracking each query received and answered per query type
@@ -256,7 +252,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             } else {
                 // 6.ii Find response
                 final var header = createResponseHeader(responseType, validity, fee);
-                response = dispatcher.getResponse(storeFactory, query, header, queryContext);
+                response = dispatcher.getResponse(storeFactory, query, header);
             }
 
             answered.get(functionality).increment();

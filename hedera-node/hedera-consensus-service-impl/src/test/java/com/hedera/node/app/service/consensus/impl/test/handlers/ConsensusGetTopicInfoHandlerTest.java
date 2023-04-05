@@ -20,7 +20,6 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KE
 import static com.hedera.test.utils.TxnUtils.payerSponsoredPbjTransfer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
@@ -43,24 +42,31 @@ import com.hedera.node.app.service.consensus.impl.handlers.ConsensusGetTopicInfo
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
+import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
+
+    @Mock
+    private NetworkInfo networkInfo;
+
     private ConsensusGetTopicInfoHandler subject;
 
     @BeforeEach
     void setUp() {
-        subject = new ConsensusGetTopicInfoHandler();
+        subject = new ConsensusGetTopicInfoHandler(networkInfo);
     }
 
     @Test
     void emptyConstructor() {
-        assertNotNull(new ConsensusGetTopicInfoHandler());
+        Assertions.assertThatCode(ConsensusGetTopicInfoHandler::new).doesNotThrowAnyException();
     }
 
     @Test
@@ -141,7 +147,7 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
                 .build();
 
         final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
-        final var response = subject.findResponse(query, responseHeader, readableStore, queryContext);
+        final var response = subject.findResponse(query, responseHeader, readableStore);
         final var op = response.consensusGetTopicInfoOrThrow();
         assertEquals(ResponseCodeEnum.FAIL_FEE, op.header().nodeTransactionPrecheckCode());
         assertNull(op.topicInfo());
@@ -150,14 +156,14 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
     @Test
     void getsResponseIfOkResponse() {
         givenValidTopic();
-        given(queryContext.getLedgerId()).willReturn(ledgerId);
+        given(networkInfo.ledgerId()).willReturn(ledgerId);
         final var responseHeader = ResponseHeader.newBuilder()
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
                 .build();
         final var expectedInfo = getExpectedInfo();
 
         final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
-        final var response = subject.findResponse(query, responseHeader, readableStore, queryContext);
+        final var response = subject.findResponse(query, responseHeader, readableStore);
         final var topicInfoResponse = response.consensusGetTopicInfoOrThrow();
         assertEquals(ResponseCodeEnum.OK, topicInfoResponse.header().nodeTransactionPrecheckCode());
         assertEquals(expectedInfo, topicInfoResponse.topicInfo());

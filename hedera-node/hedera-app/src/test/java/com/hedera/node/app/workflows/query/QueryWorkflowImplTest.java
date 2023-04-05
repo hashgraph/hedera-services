@@ -124,9 +124,6 @@ class QueryWorkflowImplTest extends AppTestBase {
     @Mock
     private FeeAccumulator feeAccumulator;
 
-    @Mock
-    private QueryContextImpl queryContext;
-
     @Mock(strictness = LENIENT)
     private Codec<Query> queryParser;
 
@@ -174,7 +171,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         final var response = Response.newBuilder().fileGetInfo(fileGetInfo).build();
 
         when(dispatcher.getHandler(query)).thenReturn(handler);
-        when(dispatcher.getResponse(any(), eq(query), eq(responseHeader), eq(queryContext)))
+        when(dispatcher.getResponse(any(), eq(query), eq(responseHeader)))
                 .thenReturn(response);
 
         workflow = new QueryWorkflowImpl(
@@ -187,7 +184,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                 dispatcher,
                 metrics,
                 feeAccumulator,
-                queryContext,
                 queryParser);
     }
 
@@ -204,7 +200,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         metrics,
                         feeAccumulator,
-                        queryContext,
                         queryParser))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
@@ -217,7 +212,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         metrics,
                         feeAccumulator,
-                        queryContext,
                         queryParser))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
@@ -230,7 +224,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         metrics,
                         feeAccumulator,
-                        queryContext,
                         queryParser))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
@@ -243,7 +236,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         metrics,
                         feeAccumulator,
-                        queryContext,
                         queryParser))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
@@ -256,7 +248,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         metrics,
                         feeAccumulator,
-                        queryContext,
                         queryParser))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
@@ -269,7 +260,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         metrics,
                         feeAccumulator,
-                        queryContext,
                         queryParser))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
@@ -282,7 +272,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                         null,
                         metrics,
                         feeAccumulator,
-                        queryContext,
                         queryParser))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
@@ -295,7 +284,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         null,
                         feeAccumulator,
-                        queryContext,
                         queryParser))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
@@ -307,20 +295,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                         checker,
                         dispatcher,
                         metrics,
-                        null,
-                        queryContext,
-                        queryParser))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
-                        stateAccessor,
-                        throttleAccumulator,
-                        submissionManager,
-                        checker,
-                        dispatcher,
-                        metrics,
-                        feeAccumulator,
                         null,
                         queryParser))
                 .isInstanceOf(NullPointerException.class);
@@ -334,7 +308,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                         dispatcher,
                         metrics,
                         feeAccumulator,
-                        queryContext,
                         null))
                 .isInstanceOf(NullPointerException.class);
     }
@@ -379,7 +352,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         given(feeAccumulator.computePayment(any(), any(), any(), any())).willReturn(new FeeObject(100L, 0L, 100L));
         given(handler.requiresNodePayment(any())).willReturn(true);
         given(dispatcher.validate(any(), any())).willReturn(OK);
-        when(dispatcher.getResponse(any(), any(), any(), any()))
+        when(dispatcher.getResponse(any(), any(), any()))
                 .thenReturn(Response.newBuilder()
                         .fileGetInfo(FileGetInfoResponse.newBuilder()
                                 .header(ResponseHeader.newBuilder().build())
@@ -444,7 +417,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                 localDispatcher,
                 metrics,
                 feeAccumulator,
-                queryContext,
                 queryParser);
 
         // then
@@ -469,7 +441,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                 dispatcher,
                 metrics,
                 feeAccumulator,
-                queryContext,
                 queryParser);
 
         // when
@@ -499,7 +470,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                 dispatcher,
                 metrics,
                 feeAccumulator,
-                queryContext,
                 queryParser);
 
         // when
@@ -661,7 +631,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                 dispatcher,
                 metrics,
                 feeAccumulator,
-                queryContext,
                 queryParser);
 
         // when
