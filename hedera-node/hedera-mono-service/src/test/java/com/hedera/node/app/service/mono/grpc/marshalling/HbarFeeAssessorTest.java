@@ -53,7 +53,7 @@ class HbarFeeAssessorTest {
                 .willReturn(collectorChange);
 
         // when:
-        subject.assess(payer, hbarFee, balanceChangeManager, accumulator);
+        subject.assess(payer, hbarFee, balanceChangeManager, accumulator, false);
 
         // then:
         verify(payerChange).aggregateUnits(-amountOfHbarFee);
@@ -74,7 +74,7 @@ class HbarFeeAssessorTest {
                 INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
 
         // when:
-        subject.assess(payer, hbarFee, balanceChangeManager, accumulator);
+        subject.assess(payer, hbarFee, balanceChangeManager, accumulator, false);
 
         // then:
         verify(balanceChangeManager).includeChange(expectedPayerChange);

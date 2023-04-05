@@ -135,7 +135,8 @@ class FractionalFeeAssessorTest {
                                 netOfTransfersFeeCollector,
                                 true),
                         changeManager,
-                        accumulator);
+                        accumulator,
+                        false);
     }
 
     @Test

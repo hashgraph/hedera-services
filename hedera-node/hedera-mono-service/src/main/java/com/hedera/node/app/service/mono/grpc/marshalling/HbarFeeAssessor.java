@@ -37,11 +37,12 @@ public class HbarFeeAssessor {
             final Id payer,
             final FcCustomFee hbarFee,
             final BalanceChangeManager changeManager,
-            final List<AssessedCustomFeeWrapper> accumulator) {
+            final List<AssessedCustomFeeWrapper> accumulator,
+            boolean isFallbackFee) {
         final var collector = hbarFee.getFeeCollectorAsId();
         final var fixedSpec = hbarFee.getFixedFeeSpec();
         final var amount = fixedSpec.getUnitsToCollect();
-        adjustForAssessedHbar(payer, collector, amount, changeManager);
+        adjustForAssessedHbar(payer, collector, amount, changeManager, isFallbackFee);
         final var effPayerAccountNums = new AccountID[] {payer.asGrpcAccount()};
         final var assessed =
                 new AssessedCustomFeeWrapper(collector.asEntityId(), amount, effPayerAccountNums);

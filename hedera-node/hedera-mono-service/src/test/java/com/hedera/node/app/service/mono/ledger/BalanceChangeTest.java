@@ -119,7 +119,10 @@ class BalanceChangeTest {
         adjust.setCodeForInsufficientBalance(INSUFFICIENT_PAYER_BALANCE);
         assertEquals(INSUFFICIENT_PAYER_BALANCE, adjust.codeForInsufficientBalance());
         adjust.setExemptFromCustomFees(false);
+        assertFalse(adjust.includesFallbackFee());
         assertFalse(adjust.isExemptFromCustomFees());
+        adjust.setIncludesFallbackFee();
+        assertTrue(adjust.includesFallbackFee());
     }
 
     @Test

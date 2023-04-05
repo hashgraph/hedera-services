@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
+import static com.hedera.node.app.service.mono.grpc.marshalling.FeeAssessor.IS_FALLBACK_FEE;
 import static com.hedera.node.app.service.mono.state.submerkle.FcCustomFee.FeeType.ROYALTY_FEE;
 import static com.hedera.node.app.service.mono.store.models.Id.MISSING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
@@ -89,7 +90,12 @@ public class RoyaltyFeeAssessor {
                                     collector.asEntityId(),
                                     fee.getAllCollectorsAreExempt());
                     fixedFeeAssessor.assess(
-                            receiver, customFeeMeta, fallbackFee, changeManager, accumulator);
+                            receiver,
+                            customFeeMeta,
+                            fallbackFee,
+                            changeManager,
+                            accumulator,
+                            IS_FALLBACK_FEE);
                 }
             } else if (!customFeePayerExemptions.isPayerExempt(customFeeMeta, fee, payer)) {
                 final var fractionalValidity =

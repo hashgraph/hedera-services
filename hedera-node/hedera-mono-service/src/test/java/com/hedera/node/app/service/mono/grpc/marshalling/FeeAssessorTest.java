@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
+import static com.hedera.node.app.service.mono.grpc.marshalling.FeeAssessor.IS_NOT_FALLBACK_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
@@ -148,9 +149,22 @@ class FeeAssessorTest {
                         props);
 
         // then:
-        verify(fixedFeeAssessor).assess(payer, meta, hbarFee, balanceChangeManager, accumulator);
+        verify(fixedFeeAssessor)
+                .assess(
+                        payer,
+                        meta,
+                        hbarFee,
+                        balanceChangeManager,
+                        accumulator,
+                        IS_NOT_FALLBACK_FEE);
         verify(fixedFeeAssessor, times(2))
-                .assess(payer, meta, htsFee, balanceChangeManager, accumulator);
+                .assess(
+                        payer,
+                        meta,
+                        htsFee,
+                        balanceChangeManager,
+                        accumulator,
+                        IS_NOT_FALLBACK_FEE);
         assertEquals(OK, result);
     }
 
@@ -174,9 +188,22 @@ class FeeAssessorTest {
                         props);
 
         // then:
-        verify(fixedFeeAssessor).assess(payer, feeMeta, hbarFee, balanceChangeManager, accumulator);
+        verify(fixedFeeAssessor)
+                .assess(
+                        payer,
+                        feeMeta,
+                        hbarFee,
+                        balanceChangeManager,
+                        accumulator,
+                        IS_NOT_FALLBACK_FEE);
         verify(fixedFeeAssessor, times(2))
-                .assess(payer, feeMeta, htsFee, balanceChangeManager, accumulator);
+                .assess(
+                        payer,
+                        feeMeta,
+                        htsFee,
+                        balanceChangeManager,
+                        accumulator,
+                        IS_NOT_FALLBACK_FEE);
         verify(fractionalFeeAssessor)
                 .assessAllFractional(fungibleTrigger, feeMeta, balanceChangeManager, accumulator);
         assertEquals(OK, result);
@@ -196,7 +223,14 @@ class FeeAssessorTest {
                         props);
 
         // then:
-        verify(fixedFeeAssessor).assess(payer, meta, hbarFee, balanceChangeManager, accumulator);
+        verify(fixedFeeAssessor)
+                .assess(
+                        payer,
+                        meta,
+                        hbarFee,
+                        balanceChangeManager,
+                        accumulator,
+                        IS_NOT_FALLBACK_FEE);
         assertEquals(OK, result);
     }
 
@@ -310,7 +344,14 @@ class FeeAssessorTest {
                         props);
 
         // then:
-        verify(fixedFeeAssessor).assess(payer, meta, htsFee, balanceChangeManager, accumulator);
+        verify(fixedFeeAssessor)
+                .assess(
+                        payer,
+                        meta,
+                        htsFee,
+                        balanceChangeManager,
+                        accumulator,
+                        IS_NOT_FALLBACK_FEE);
         assertEquals(OK, result);
     }
 
@@ -331,8 +372,22 @@ class FeeAssessorTest {
                         props);
 
         // then:
-        verify(fixedFeeAssessor).assess(payer, meta, hbarFee, balanceChangeManager, accumulator);
-        verify(fixedFeeAssessor).assess(payer, meta, htsFee, balanceChangeManager, accumulator);
+        verify(fixedFeeAssessor)
+                .assess(
+                        payer,
+                        meta,
+                        hbarFee,
+                        balanceChangeManager,
+                        accumulator,
+                        IS_NOT_FALLBACK_FEE);
+        verify(fixedFeeAssessor)
+                .assess(
+                        payer,
+                        meta,
+                        htsFee,
+                        balanceChangeManager,
+                        accumulator,
+                        IS_NOT_FALLBACK_FEE);
         verify(fractionalFeeAssessor, never())
                 .assessAllFractional(fungibleTrigger, feeMeta, balanceChangeManager, accumulator);
         assertEquals(CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS, result);
@@ -358,8 +413,22 @@ class FeeAssessorTest {
                         props);
 
         // then:
-        verify(fixedFeeAssessor).assess(payer, meta, hbarFee, balanceChangeManager, accumulator);
-        verify(fixedFeeAssessor).assess(payer, meta, htsFee, balanceChangeManager, accumulator);
+        verify(fixedFeeAssessor)
+                .assess(
+                        payer,
+                        meta,
+                        hbarFee,
+                        balanceChangeManager,
+                        accumulator,
+                        IS_NOT_FALLBACK_FEE);
+        verify(fixedFeeAssessor)
+                .assess(
+                        payer,
+                        meta,
+                        htsFee,
+                        balanceChangeManager,
+                        accumulator,
+                        IS_NOT_FALLBACK_FEE);
         verify(fractionalFeeAssessor)
                 .assessAllFractional(fungibleTrigger, feeMeta, balanceChangeManager, accumulator);
         assertEquals(CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE, result);
@@ -386,8 +455,22 @@ class FeeAssessorTest {
                         props);
 
         // then:
-        verify(fixedFeeAssessor).assess(payer, meta, hbarFee, balanceChangeManager, accumulator);
-        verify(fixedFeeAssessor).assess(payer, meta, htsFee, balanceChangeManager, accumulator);
+        verify(fixedFeeAssessor)
+                .assess(
+                        payer,
+                        meta,
+                        hbarFee,
+                        balanceChangeManager,
+                        accumulator,
+                        IS_NOT_FALLBACK_FEE);
+        verify(fixedFeeAssessor)
+                .assess(
+                        payer,
+                        meta,
+                        htsFee,
+                        balanceChangeManager,
+                        accumulator,
+                        IS_NOT_FALLBACK_FEE);
         verify(fractionalFeeAssessor)
                 .assessAllFractional(fungibleTrigger, feeMeta, balanceChangeManager, accumulator);
         assertEquals(CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS, result);

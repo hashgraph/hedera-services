@@ -56,7 +56,7 @@ class HtsFeeAssessorTest {
         given(balanceChangeManager.changeFor(feeCollector, denom)).willReturn(collectorChange);
 
         // when:
-        subject.assess(payer, nonDenomFeeMeta, htsFee, balanceChangeManager, accumulator);
+        subject.assess(payer, nonDenomFeeMeta, htsFee, balanceChangeManager, accumulator, false);
 
         // then:
         verify(collectorChange).aggregateUnits(+amountOfHtsFee);
@@ -80,7 +80,34 @@ class HtsFeeAssessorTest {
                 INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
 
         // when:
-        subject.assess(payer, nonDenomFeeMeta, htsFee, balanceChangeManager, accumulator);
+        subject.assess(payer, nonDenomFeeMeta, htsFee, balanceChangeManager, accumulator, false);
+
+        // then:
+        verify(balanceChangeManager).includeChange(expectedPayerChange);
+        verify(balanceChangeManager)
+                .includeChange(
+                        BalanceChange.tokenCustomFeeAdjust(feeCollector, denom, +amountOfHtsFee));
+        // and:
+        assertEquals(1, accumulator.size());
+        assertEquals(expectedAssess, accumulator.get(0));
+    }
+
+    @Test
+    void addsNewChangesWithFallbackFeeIfNotPresent() {
+        // setup:
+        final var expectedAssess =
+                new AssessedCustomFeeWrapper(
+                        htsFeeCollector, feeDenom, amountOfHtsFee, effPayerNums);
+
+        // given:
+        final var expectedPayerChange =
+                BalanceChange.tokenCustomFeeAdjust(payer, denom, -amountOfHtsFee);
+        expectedPayerChange.setIncludesFallbackFee();
+        expectedPayerChange.setCodeForInsufficientBalance(
+                INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
+
+        // when:
+        subject.assess(payer, nonDenomFeeMeta, htsFee, balanceChangeManager, accumulator, true);
 
         // then:
         verify(balanceChangeManager).includeChange(expectedPayerChange);
@@ -107,7 +134,7 @@ class HtsFeeAssessorTest {
                 INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
 
         // when:
-        subject.assess(payer, denomFeeMeta, htsFee, balanceChangeManager, accumulator);
+        subject.assess(payer, denomFeeMeta, htsFee, balanceChangeManager, accumulator, false);
 
         // then:
         verify(balanceChangeManager).includeChange(expectedPayerChange);

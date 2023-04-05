@@ -29,6 +29,7 @@ import com.hedera.node.app.hapi.fees.usage.BaseTransactionMeta;
 import com.hedera.node.app.hapi.fees.usage.crypto.CryptoCreateMeta;
 import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
+import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
@@ -91,6 +92,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
     private Optional<ByteString> evmAddress = Optional.empty();
     private Consumer<Address> addressObserver;
     private boolean fuzzingIdentifiers = false;
+    private boolean setEvmAddressAliasFromKey = false;
 
     @Override
     public HederaFunctionality type() {
@@ -307,6 +309,16 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
                                         b.setStakedNodeId(stakedNodeId.get());
                                     }
                                     b.setDeclineReward(isDeclinedReward);
+
+                                    if (fuzzingIdentifiers && key.hasECDSASecp256K1()) {
+                                        InitialAccountIdentifiers.fuzzedFrom(key).customize(b);
+                                    } else if (setEvmAddressAliasFromKey) {
+                                        final var congruentAddress =
+                                                EthSigsUtils.recoverAddressFromPubKey(
+                                                        key.getECDSASecp256K1().toByteArray());
+                                        b.setKey(key);
+                                        b.setAlias(ByteString.copyFrom(congruentAddress));
+                                    }
                                 });
         return b -> b.setCryptoCreateAccount(opBody);
     }
@@ -383,5 +395,10 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
         return Optional.ofNullable(lastReceipt)
                 .map(receipt -> receipt.getAccountID().getAccountNum())
                 .orElse(-1L);
+    }
+
+    public HapiCryptoCreate withMatchingEvmAddress() {
+        setEvmAddressAliasFromKey = true;
+        return this;
     }
 }
