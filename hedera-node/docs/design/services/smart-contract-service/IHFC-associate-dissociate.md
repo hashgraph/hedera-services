@@ -1,4 +1,4 @@
-# IHFC Facade Associate and Dissociate Functionality
+# IHRC Facade Associate and Dissociate Functionality
 
 ## Purpose
 
@@ -32,6 +32,22 @@ No arguments are necessary because
 - The token address was already determined by looking up the contract address to determine if it is an HTS token address.
 - The address to associate/dissociate will be the caller (i.e. msg.sender)
 
+Once that has been implemented in services, the end user will be able to call the `associate` and `dissociate` functions as follows:
+
+```
+IHRC(tokenAddress).associate()
+IHRC(tokenAddress).dissociate()
+```
+
+The solidity interface for IHRC will be the following
+
+```
+interface IHRC {
+    function associate() external returns (bool);
+    function dissociate() external returns (bool);
+}
+```
+
 ## Implementation
 
 Override the existing `AbstractAssociatePrecompile` and `AbstractDissociatePrecompile` classes to handle this new use case
@@ -42,6 +58,7 @@ common to both the existing and new classes. The `getSuccessResultFor` and `getF
 in order to return a boolean value consistent with other like ERC functions.
 
 The class `RedirectViewExecutor` will also be updated to include the cost to perform the `associate` and `dissociate` functions.
+
 
 ## Open Questions
 
