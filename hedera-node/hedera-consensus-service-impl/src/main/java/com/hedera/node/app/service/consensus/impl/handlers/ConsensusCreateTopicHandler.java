@@ -35,10 +35,9 @@ import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.CreateTopicRecordBuilder;
-import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.spi.meta.HandleContext;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -60,8 +59,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
      * This method is called during the pre-handle workflow.
      *
      * <p>Typically, this method validates the {@link TransactionBody} semantically, gathers all
-     * required keys, warms the cache, and creates the {@link TransactionMetadata} that is used in
-     * the handle stage.
+     * required keys, and warms the cache.
      *
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
@@ -111,7 +109,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
 
         /* Validate if the current topic can be created */
         if (topicStore.sizeOfState() >= consensusServiceConfig.maxTopics()) {
-            throw new HandleStatusException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+            throw new HandleException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
         }
 
         /* Validate the topic memo */
@@ -147,11 +145,11 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
 
             /* --- Build the record with newly created topic --- */
             recordBuilder.setCreatedTopic(topic.topicNumber());
-        } catch (final HandleStatusException e) {
+        } catch (final HandleException e) {
             if (e.getStatus() == INVALID_EXPIRATION_TIME) {
                 // Since for some reason TopicCreateTransactionBody does not have an expiration time,
                 // it makes more sense to propagate AUTORENEW_DURATION_NOT_IN_RANGE
-                throw new HandleStatusException(AUTORENEW_DURATION_NOT_IN_RANGE);
+                throw new HandleException(AUTORENEW_DURATION_NOT_IN_RANGE);
             }
             throw e;
         }

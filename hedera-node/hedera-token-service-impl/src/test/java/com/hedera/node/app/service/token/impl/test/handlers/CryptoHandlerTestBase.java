@@ -33,7 +33,6 @@ import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -67,9 +66,6 @@ public class CryptoHandlerTestBase {
 
     @Mock
     protected CryptoSignatureWaiversImpl waivers;
-
-    @Mock
-    protected TransactionMetadata metaToHandle;
 
     protected ReadableAccountStore store;
 
