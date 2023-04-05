@@ -86,14 +86,9 @@ public class FractionalFeeAssessor {
             }
 
             if (spec.isNetOfTransfers()) {
-                final var addedFee =
-                        fixedFee(
-                                assessedAmount,
-                                denom.asEntityId(),
-                                fee.getFeeCollector(),
-                                fee.getAllCollectorsAreExempt());
-                fixedFeeAssessor.assess(
-                        payer, feeMeta, addedFee, changeManager, accumulator, IS_NOT_FALLBACK_FEE);
+                final var addedFee = fixedFee(
+                        assessedAmount, denom.asEntityId(), fee.getFeeCollector(), fee.getAllCollectorsAreExempt());
+                fixedFeeAssessor.assess(payer, feeMeta, addedFee, changeManager, accumulator, IS_NOT_FALLBACK_FEE);
             } else {
                 long exemptAmount;
                 try {

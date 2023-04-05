@@ -45,13 +45,7 @@ public class HtsFeeAssessor {
         final var amount = fixedSpec.getUnitsToCollect();
         final var denominatingToken = fixedSpec.getTokenDenomination().asId();
         AdjustmentUtils.adjustForAssessed(
-                payer,
-                chargingTokenMeta.tokenId(),
-                collector,
-                denominatingToken,
-                amount,
-                changeManager,
-                isFallbackFee);
+                payer, chargingTokenMeta.tokenId(), collector, denominatingToken, amount, changeManager, isFallbackFee);
 
         final var effPayerAccountNums = new AccountID[] {payer.asGrpcAccount()};
         final var assessed = new AssessedCustomFeeWrapper(

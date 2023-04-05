@@ -84,19 +84,13 @@ public class RoyaltyFeeAssessor {
                         return INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
                     }
                     final var receiver = Id.fromGrpcAccount(change.counterPartyAccountId());
-                    final var fallbackFee =
-                            FcCustomFee.fixedFee(
-                                    fallback.getUnitsToCollect(),
-                                    fallback.getTokenDenomination(),
-                                    collector.asEntityId(),
-                                    fee.getAllCollectorsAreExempt());
+                    final var fallbackFee = FcCustomFee.fixedFee(
+                            fallback.getUnitsToCollect(),
+                            fallback.getTokenDenomination(),
+                            collector.asEntityId(),
+                            fee.getAllCollectorsAreExempt());
                     fixedFeeAssessor.assess(
-                            receiver,
-                            customFeeMeta,
-                            fallbackFee,
-                            changeManager,
-                            accumulator,
-                            IS_FALLBACK_FEE);
+                            receiver, customFeeMeta, fallbackFee, changeManager, accumulator, IS_FALLBACK_FEE);
                 }
             } else if (!customFeePayerExemptions.isPayerExempt(customFeeMeta, fee, payer)) {
                 final var fractionalValidity =

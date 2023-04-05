@@ -764,21 +764,17 @@ class TransferPrecompilesTest {
         given(frame.getRecipientAddress()).willReturn(recipientAddr);
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
-        given(infrastructureFactory.newImpliedTransfersMarshal(any()))
-                .willReturn(impliedTransfersMarshal);
+        given(infrastructureFactory.newImpliedTransfersMarshal(any())).willReturn(impliedTransfersMarshal);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftsTransferList)))
                 .willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
-        given(
-                        sigsVerifier.hasActiveKey(
-                                Mockito.anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
+        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(true);
-        given(
-                        sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-                                Mockito.anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
+        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                        Mockito.anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
                 .willReturn(true);
         transferPrecompile
                 .when(() -> decodeTransferNFTs(eq(pretendArguments), any(), any()))
@@ -789,37 +785,25 @@ class TransferPrecompilesTest {
         given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
                 .willReturn(hederaTokenStore);
 
-        given(
-                        infrastructureFactory.newTransferLogic(
-                                hederaTokenStore, sideEffects, nfts, accounts, tokenRels))
+        given(infrastructureFactory.newTransferLogic(hederaTokenStore, sideEffects, nfts, accounts, tokenRels))
                 .willReturn(transferLogic);
-        given(
-                        feeCalculator.estimatedGasPriceInTinybars(
-                                HederaFunctionality.ContractCall, timestamp))
+        given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
         given(mockSynthBodyBuilder.build())
-                .willReturn(
-                        TransactionBody.newBuilder()
-                                .setCryptoTransfer(cryptoTransferTransactionBody)
-                                .build());
-        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
-                .willReturn(mockSynthBodyBuilder);
+                .willReturn(TransactionBody.newBuilder()
+                        .setCryptoTransfer(cryptoTransferTransactionBody)
+                        .build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
-        given(
-                        creator.createSuccessfulSyntheticRecord(
-                                Collections.emptyList(), sideEffects, EMPTY_MEMO))
+        given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(mockRecordBuilder);
-        given(
-                        impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
+        given(impliedTransfersMarshal.assessCustomFeesAndValidate(anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
-        given(impliedTransfers.getAllBalanceChanges())
-                .willReturn(nftTransferChangesWithCustomFeesForRoyalty);
+        given(impliedTransfers.getAllBalanceChanges()).willReturn(nftTransferChangesWithCustomFeesForRoyalty);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
         given(impliedTransfersMeta.code()).willReturn(OK);
-        given(aliases.resolveForEvm(any()))
-                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);
         given(frame.getSenderAddress()).willReturn(contractAddress);
         when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
@@ -836,23 +820,11 @@ class TransferPrecompilesTest {
         // and:
         verify(transferLogic).doZeroSum(nftTransferChangesWithCustomFeesForRoyalty);
         verify(wrappedLedgers).commit();
-        verify(worldUpdater)
-                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 
+        verify(sigsVerifier).hasActiveKey(true, senderId.asEvmAddress(), recipientAddr, wrappedLedgers, CryptoTransfer);
         verify(sigsVerifier)
-                .hasActiveKey(
-                        true,
-                        senderId.asEvmAddress(),
-                        recipientAddr,
-                        wrappedLedgers,
-                        CryptoTransfer);
-        verify(sigsVerifier)
-                .hasActiveKey(
-                        true,
-                        receiverId.asEvmAddress(),
-                        recipientAddr,
-                        wrappedLedgers,
-                        CryptoTransfer);
+                .hasActiveKey(true, receiverId.asEvmAddress(), recipientAddr, wrappedLedgers, CryptoTransfer);
     }
 
     @Test
