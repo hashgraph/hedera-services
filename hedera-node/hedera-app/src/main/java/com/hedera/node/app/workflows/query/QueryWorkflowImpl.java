@@ -36,7 +36,6 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
@@ -151,10 +150,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
 
     @Override
     public void handleQuery(
-            @NonNull final SessionContext session,
             @NonNull final Bytes requestBuffer,
             @NonNull final BufferedData responseBuffer) {
-        requireNonNull(session);
         requireNonNull(requestBuffer);
         requireNonNull(responseBuffer);
 
@@ -211,7 +208,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             if (paymentRequired) {
                 // 3.i Validate CryptoTransfer
                 allegedPayment = queryHeader.paymentOrThrow();
-                txBody = checker.validateCryptoTransfer(session, allegedPayment);
+                txBody = checker.validateCryptoTransfer(allegedPayment);
                 final var payer = txBody.transactionIDOrThrow().accountIDOrThrow();
 
                 // 3.ii Check permissions

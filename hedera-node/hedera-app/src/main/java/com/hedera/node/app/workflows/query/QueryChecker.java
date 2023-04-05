@@ -28,7 +28,6 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.authorization.Authorizer;
 import com.hedera.node.app.service.mono.queries.validation.QueryFeeCheck;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
@@ -79,17 +78,14 @@ public class QueryChecker {
     /**
      * Validates the {@link HederaFunctionality#CRYPTO_TRANSFER} that is contained in a query
      *
-     * @param session the {@link SessionContext} with all parsers
      * @param txn the {@link Transaction} that needs to be checked
      * @return the {@link TransactionBody} that was found in the transaction
      * @throws PreCheckException if validation fails
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public TransactionBody validateCryptoTransfer(@NonNull final SessionContext session, @NonNull final Transaction txn)
-            throws PreCheckException {
-        requireNonNull(session);
+    public TransactionBody validateCryptoTransfer(@NonNull final Transaction txn) throws PreCheckException {
         requireNonNull(txn);
-        final var onsetResult = transactionChecker.check(session, txn);
+        final var onsetResult = transactionChecker.check(txn);
         if (onsetResult.functionality() != CRYPTO_TRANSFER) {
             throw new PreCheckException(INSUFFICIENT_TX_FEE);
         }

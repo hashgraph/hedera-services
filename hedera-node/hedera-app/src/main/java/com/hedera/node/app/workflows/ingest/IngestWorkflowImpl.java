@@ -24,7 +24,6 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionResponse;
-import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
@@ -42,6 +41,7 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -102,19 +102,16 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
 
     @Override
     public void submitTransaction(
-            @NonNull final SessionContext ctx,
             @NonNull final Bytes requestBuffer,
             @NonNull final BufferedData responseBuffer) {
-        submitTransaction(ctx, requestBuffer, responseBuffer, ReadableAccountStore::new);
+        submitTransaction(requestBuffer, responseBuffer, ReadableAccountStore::new);
     }
 
     // Package-private for testing
     void submitTransaction(
-            @NonNull final SessionContext ctx,
             @NonNull final Bytes requestBuffer,
             @NonNull final BufferedData responseBuffer,
             @NonNull final Function<ReadableStates, ReadableAccountStore> storeSupplier) {
-        requireNonNull(ctx);
         requireNonNull(requestBuffer);
         requireNonNull(responseBuffer);
         requireNonNull(storeSupplier);
@@ -135,7 +132,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
                 final var state = wrappedState.get();
 
                 // 1. Parse the TransactionBody and check the syntax
-                final var onsetResult = transactionChecker.parseAndCheck(ctx, requestBuffer);
+                final var onsetResult = transactionChecker.parseAndCheck(requestBuffer);
                 final var txBody = onsetResult.txBody();
                 final var signatureMap = onsetResult.signatureMap();
                 final var functionality = onsetResult.functionality();
@@ -185,7 +182,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
         } catch (IOException ex) {
             // It may be that the response couldn't be written because the response buffer was
             // too small, which would be an internal server error.
-            throw new RuntimeException("Failed to write bytes to response buffer", ex);
+            throw new UncheckedIOException("Failed to write bytes to response buffer", ex);
         }
     }
 }

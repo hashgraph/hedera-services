@@ -19,7 +19,6 @@ package com.hedera.node.app.grpc;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.Hedera;
-import com.hedera.node.app.SessionContext;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.Counter;
@@ -48,14 +47,6 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData, Buffe
     private static final String SPEEDOMETER_HANDLED_DESC_TPL = "number of %s handled per second";
     private static final String SPEEDOMETER_RECEIVED_NAME_TPL = "%sRcv/sec";
     private static final String SPEEDOMETER_RECEIVED_DESC_TPL = "number of %s received per second";
-
-    /**
-     * Per-thread shared resources are shared in a {@link SessionContext}. We store these in a
-     * thread local, because we do not have control over the thread pool used by the underlying gRPC
-     * server.
-     */
-    private static final ThreadLocal<SessionContext> SESSION_CONTEXT_THREAD_LOCAL =
-            ThreadLocal.withInitial(SessionContext::new);
 
     /**
      * Per-thread shared {@link BufferedData} for responses. We store these in a thread local, because we do
@@ -119,7 +110,6 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData, Buffe
             }
 
             // Prepare the response buffer
-            final var session = SESSION_CONTEXT_THREAD_LOCAL.get();
             final var responseBuffer = BUFFER_THREAD_LOCAL.get();
             responseBuffer.reset();
 
@@ -127,7 +117,7 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData, Buffe
             final var requestBytes = requestBuffer.getBytes(0, requestBuffer.length());
 
             // Call the workflow
-            handle(session, requestBytes, responseBuffer);
+            handle(requestBytes, responseBuffer);
 
             // Respond to the client
             responseBuffer.flip();
@@ -148,12 +138,10 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData, Buffe
      * Called to handle the method invocation. Implementations should <b>only</b> throw a {@link RuntimeException}
      * if a gRPC <b>ERROR</b> is to be returned.
      *
-     * @param session The {@link SessionContext} for this call
      * @param requestBuffer The {@link Bytes} containing the protobuf bytes for the request
      * @param responseBuffer A {@link BufferedData} into which the response protobuf bytes may be written
      */
     protected abstract void handle(
-            @NonNull final SessionContext session,
             @NonNull final Bytes requestBuffer,
             @NonNull final BufferedData responseBuffer);
 
