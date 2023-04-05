@@ -30,26 +30,9 @@ import java.util.TreeMap;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
- * Accepts key/value pairs from up to two full scans of the storage {@code VirtualMap}, building up
- * the internal state needed to repair any corruptions in the key/value linked lists. Then performs
- * any needed repairs via {@link LinkRepairs#fixAnyBrokenLinks()}.
- *
- * <p>During the first scan, checks each {@link IterableContractValue} for corruption in the form
- * of:
- *
- * <ol>
- *   <li>A {@code next} pointer to a non-existent key; or, <i>if</i> the value is for a non-root
- *       key,
- *   <li>An unset {@code prev} pointer.
- * </ol>
- *
- * Every contract that has a corrupt link is added to the {@code keyListsToRepair} map.
- *
- * <p>If there are key lists to repair after the first scan, then during the second scan, adds
- * <i>all keys</i> for each corrupted contract to a contract-scoped list. When {@link
- * LinkRepairs#fixAnyBrokenLinks()} is called, iterates through each list to repair the
- * corresponding {@link IterableContractValue} objects with valid {@code prev}/{@code next}
- * pointers, calling {@link MerkleAccount#setFirstUint256StorageKey(int[])} with the new root key.
+ * Accepts key/value pairs from a full scans of the storage {@code VirtualMap}, building up
+ * an in-memory picture of its entire contents. Then re-creates the storage map and links
+ * using the stable {@link ContractKey#hashCode()} implementation.
  */
 public class LinkRepairs implements InterruptableConsumer<Pair<ContractKey, IterableContractValue>> {
     private final Map<EntityNum, List<Pair<ContractKey, IterableContractValue>>> mappingsToRepair = new TreeMap<>();
@@ -74,7 +57,7 @@ public class LinkRepairs implements InterruptableConsumer<Pair<ContractKey, Iter
                 .add(kvPair);
     }
 
-    public void fixAnyBrokenLinks() {
+    public void rebuildStorageMapAndLinks() {
         // First remove any keys reachable using the undesired hashCode()
         ContractKey.setUseStableHashCode(false);
         allKeys.forEach(this::tryToRemove);
