@@ -16,16 +16,14 @@
 
 package com.swirlds.common.metrics;
 
-import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import java.util.EnumSet;
 import java.util.function.BiFunction;
 import java.util.function.IntBinaryOperator;
 import java.util.function.IntSupplier;
-import java.util.function.IntUnaryOperator;
-import java.util.function.LongBinaryOperator;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
@@ -111,12 +109,11 @@ public interface IntegerPairAccumulator<T> extends Metric {
 
         private final IntBinaryOperator leftAccumulator;
         private final IntBinaryOperator rightAccumulator;
-        private final LongBinaryOperator combinedAccumulator;
 
-        private final IntUnaryOperator leftReset;
-        private final IntUnaryOperator rightReset;
+        private final IntSupplier leftInitializer;
+        private final IntSupplier rightInitializer;
 
-        private static final IntUnaryOperator DEFAULT_INITIALIZER = i -> 0;
+        private static final IntSupplier DEFAULT_INITIALIZER = () -> 0;
 
         /**
          * Constructor of {@code IntegerPairAccumulator.Config}
@@ -140,9 +137,8 @@ public interface IntegerPairAccumulator<T> extends Metric {
             this.resultFunction = throwArgNull(resultFunction, "resultFunction");
             this.leftAccumulator = Integer::sum;
             this.rightAccumulator = Integer::sum;
-            this.leftReset = DEFAULT_INITIALIZER;
-            this.rightReset = DEFAULT_INITIALIZER;
-            this.combinedAccumulator = null;
+            this.leftInitializer = DEFAULT_INITIALIZER;
+            this.rightInitializer = DEFAULT_INITIALIZER;
         }
 
         private Config(
@@ -155,23 +151,16 @@ public interface IntegerPairAccumulator<T> extends Metric {
                 final BiFunction<Integer, Integer, T> resultFunction,
                 final IntBinaryOperator leftAccumulator,
                 final IntBinaryOperator rightAccumulator,
-                final LongBinaryOperator combinedAccumulator,
-                final IntUnaryOperator leftReset,
-                final IntUnaryOperator rightReset) {
+                final IntSupplier leftInitializer,
+                final IntSupplier rightInitializer) {
 
             super(category, name, description, unit, format);
             this.type = throwArgNull(type, "type");
             this.resultFunction = throwArgNull(resultFunction, "resultFunction");
-            if (combinedAccumulator == null) {
-                this.leftAccumulator = throwArgNull(leftAccumulator, "leftAccumulator");
-                this.rightAccumulator = throwArgNull(rightAccumulator, "rightAccumulator");
-            } else {
-                this.leftAccumulator = null;
-                this.rightAccumulator = null;
-            }
-            this.combinedAccumulator = combinedAccumulator;
-            this.leftReset = throwArgNull(leftReset, "leftInitializer");
-            this.rightReset = throwArgNull(rightReset, "rightInitializer");
+            this.leftAccumulator = throwArgNull(leftAccumulator, "leftAccumulator");
+            this.rightAccumulator = throwArgNull(rightAccumulator, "rightAccumulator");
+            this.leftInitializer = throwArgNull(leftInitializer, "leftInitializer");
+            this.rightInitializer = throwArgNull(rightInitializer, "rightInitializer");
         }
 
         /**
@@ -189,9 +178,8 @@ public interface IntegerPairAccumulator<T> extends Metric {
                     getResultFunction(),
                     getLeftAccumulator(),
                     getRightAccumulator(),
-                    getCombinedAccumulator(),
-                    getLeftReset(),
-                    getRightReset());
+                    getLeftInitializer(),
+                    getRightInitializer());
         }
 
         /**
@@ -209,9 +197,8 @@ public interface IntegerPairAccumulator<T> extends Metric {
                     getResultFunction(),
                     getLeftAccumulator(),
                     getRightAccumulator(),
-                    getCombinedAccumulator(),
-                    getLeftReset(),
-                    getRightReset());
+                    getLeftInitializer(),
+                    getRightInitializer());
         }
 
         /**
@@ -232,9 +219,8 @@ public interface IntegerPairAccumulator<T> extends Metric {
                     getResultFunction(),
                     getLeftAccumulator(),
                     getRightAccumulator(),
-                    getCombinedAccumulator(),
-                    getLeftReset(),
-                    getRightReset());
+                    getLeftInitializer(),
+                    getRightInitializer());
         }
 
         /**
@@ -271,9 +257,6 @@ public interface IntegerPairAccumulator<T> extends Metric {
          * @return a new configuration-object with updated {@code leftAccumulator}
          */
         public IntegerPairAccumulator.Config<T> withLeftAccumulator(final IntBinaryOperator leftAccumulator) {
-            if (combinedAccumulator != null) {
-                throw new IllegalStateException("Cannot set leftAccumulator when combinedAccumulator is set");
-            }
             return new IntegerPairAccumulator.Config<>(
                     getCategory(),
                     getName(),
@@ -284,9 +267,8 @@ public interface IntegerPairAccumulator<T> extends Metric {
                     getResultFunction(),
                     leftAccumulator,
                     getRightAccumulator(),
-                    null,
-                    getLeftReset(),
-                    getRightReset());
+                    getLeftInitializer(),
+                    getRightInitializer());
         }
 
         /**
@@ -305,9 +287,6 @@ public interface IntegerPairAccumulator<T> extends Metric {
          * @return a new configuration-object with updated {@code rightAccumulator}
          */
         public IntegerPairAccumulator.Config<T> withRightAccumulator(final IntBinaryOperator rightAccumulator) {
-            if (combinedAccumulator != null) {
-                throw new IllegalStateException("Cannot set rightAccumulator when combinedAccumulator is set");
-            }
             return new IntegerPairAccumulator.Config<>(
                     getCategory(),
                     getName(),
@@ -318,49 +297,17 @@ public interface IntegerPairAccumulator<T> extends Metric {
                     getResultFunction(),
                     getLeftAccumulator(),
                     rightAccumulator,
-                    null,
-                    getLeftReset(),
-                    getRightReset());
+                    getLeftInitializer(),
+                    getRightInitializer());
         }
 
         /**
-         * Getter of the {@code combinedAccumulator}
+         * Getter of the {@code leftInitializer}
          *
-         * @return the {@code combinedAccumulator}
+         * @return the {@code leftInitializer}
          */
-        public LongBinaryOperator getCombinedAccumulator() {
-            return combinedAccumulator;
-        }
-
-        /**
-         * Fluent-style setter of the combined accumulator.
-         *
-         * @param combinedAccumulator the accumulator method
-         * @return a new configuration-object with updated {@code combinedAccumulator}
-         */
-        public IntegerPairAccumulator.Config<T> withCombinedAccumulator(final LongBinaryOperator combinedAccumulator) {
-            return new IntegerPairAccumulator.Config<>(
-                    getCategory(),
-                    getName(),
-                    getDescription(),
-                    getUnit(),
-                    getFormat(),
-                    getType(),
-                    getResultFunction(),
-                    null,
-                    null,
-                    combinedAccumulator,
-                    getLeftReset(),
-                    getRightReset());
-        }
-
-        /**
-         * Getter of the {@code leftReset}
-         *
-         * @return the {@code leftReset}
-         */
-        public IntUnaryOperator getLeftReset() {
-            return leftReset;
+        public IntSupplier getLeftInitializer() {
+            return leftInitializer;
         }
 
         /**
@@ -380,9 +327,8 @@ public interface IntegerPairAccumulator<T> extends Metric {
                     getResultFunction(),
                     getLeftAccumulator(),
                     getRightAccumulator(),
-                    getCombinedAccumulator(),
-                    i -> leftInitializer.getAsInt(),
-                    getRightReset());
+                    leftInitializer,
+                    getRightInitializer());
         }
 
         /**
@@ -402,40 +348,17 @@ public interface IntegerPairAccumulator<T> extends Metric {
                     getResultFunction(),
                     getLeftAccumulator(),
                     getRightAccumulator(),
-                    getCombinedAccumulator(),
-                    leftInitialValue == 0 ? DEFAULT_INITIALIZER : i -> leftInitialValue,
-                    getRightReset());
+                    leftInitialValue == 0 ? DEFAULT_INITIALIZER : () -> leftInitialValue,
+                    getRightInitializer());
         }
 
         /**
-         * Fluent-style setter of the left reset.
+         * Getter of the {@code rightInitializer}
          *
-         * @param leftReset the left reset
-         * @return a new configuration-object with updated {@code leftReset}
+         * @return the {@code rightInitializer}
          */
-        public IntegerPairAccumulator.Config<T> withLeftReset(final IntUnaryOperator leftReset) {
-            return new IntegerPairAccumulator.Config<>(
-                    getCategory(),
-                    getName(),
-                    getDescription(),
-                    getUnit(),
-                    getFormat(),
-                    getType(),
-                    getResultFunction(),
-                    getLeftAccumulator(),
-                    getRightAccumulator(),
-                    getCombinedAccumulator(),
-                    leftReset,
-                    getRightReset());
-        }
-
-        /**
-         * Getter of the {@code rightReset}
-         *
-         * @return the {@code rightReset}
-         */
-        public IntUnaryOperator getRightReset() {
-            return rightReset;
+        public IntSupplier getRightInitializer() {
+            return rightInitializer;
         }
 
         /**
@@ -455,9 +378,8 @@ public interface IntegerPairAccumulator<T> extends Metric {
                     getResultFunction(),
                     getLeftAccumulator(),
                     getRightAccumulator(),
-                    getCombinedAccumulator(),
-                    getLeftReset(),
-                    i -> rightInitializer.getAsInt());
+                    getLeftInitializer(),
+                    rightInitializer);
         }
 
         /**
@@ -477,31 +399,8 @@ public interface IntegerPairAccumulator<T> extends Metric {
                     getResultFunction(),
                     getLeftAccumulator(),
                     getRightAccumulator(),
-                    getCombinedAccumulator(),
-                    getLeftReset(),
-                    rightInitialValue == 0 ? DEFAULT_INITIALIZER : i -> rightInitialValue);
-        }
-
-        /**
-         * Fluent-style setter of the right reset.
-         *
-         * @param rightReset the right reset value
-         * @return a new configuration-object with updated {@code rightReset}
-         */
-        public IntegerPairAccumulator.Config<T> withRightReset(final IntUnaryOperator rightReset) {
-            return new IntegerPairAccumulator.Config<>(
-                    getCategory(),
-                    getName(),
-                    getDescription(),
-                    getUnit(),
-                    getFormat(),
-                    getType(),
-                    getResultFunction(),
-                    getLeftAccumulator(),
-                    getRightAccumulator(),
-                    getCombinedAccumulator(),
-                    getLeftReset(),
-                    rightReset);
+                    getLeftInitializer(),
+                    rightInitialValue == 0 ? DEFAULT_INITIALIZER : () -> rightInitialValue);
         }
 
         /**
