@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.contract.openzeppelin;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -61,69 +62,56 @@ public class ERC1155ContractInteractions extends HapiSuite {
                 .given(cryptoCreate(ACCOUNT1), uploadInitCode(CONTRACT))
                 .when()
                 .then(
-                        contractCreate(CONTRACT)
-                                .via("contractCreate")
-                                .payingWith(DEFAULT_CONTRACT_SENDER),
+                        contractCreate(CONTRACT).via("contractCreate").payingWith(DEFAULT_CONTRACT_SENDER),
                         getTxnRecord("contractCreate").logged(),
                         getAccountBalance(DEFAULT_CONTRACT_SENDER).logged(),
                         getAccountInfo(ACCOUNT1).savingSnapshot(ACCOUNT1 + "Info"),
-                        getAccountInfo(DEFAULT_CONTRACT_SENDER)
-                                .savingSnapshot(DEFAULT_CONTRACT_SENDER + "Info"),
-                        withOpContext(
-                                (spec, log) -> {
-                                    final var accountOneAddress =
-                                            spec.registry()
-                                                    .getAccountInfo(ACCOUNT1 + "Info")
-                                                    .getContractAccountID();
-                                    final var senderAddress =
-                                            spec.registry()
-                                                    .getAccountInfo(
-                                                            DEFAULT_CONTRACT_SENDER + "Info")
-                                                    .getContractAccountID();
+                        getAccountInfo(DEFAULT_CONTRACT_SENDER).savingSnapshot(DEFAULT_CONTRACT_SENDER + "Info"),
+                        withOpContext((spec, log) -> {
+                            final var accountOneAddress = spec.registry()
+                                    .getAccountInfo(ACCOUNT1 + "Info")
+                                    .getContractAccountID();
+                            final var senderAddress = spec.registry()
+                                    .getAccountInfo(DEFAULT_CONTRACT_SENDER + "Info")
+                                    .getContractAccountID();
 
-                                    final var ops = new ArrayList<HapiSpecOperation>();
+                            final var ops = new ArrayList<HapiSpecOperation>();
 
-                                    /* approve for other accounts */
-                                    final var approveCall =
-                                            contractCall(
-                                                            CONTRACT,
-                                                            "setApprovalForAll",
-                                                            asHeadlongAddress(accountOneAddress),
-                                                            true)
-                                                    .via("acc1ApproveCall")
-                                                    .payingWith(DEFAULT_CONTRACT_SENDER)
-                                                    .hasKnownStatus(ResponseCodeEnum.SUCCESS);
-                                    ops.add(approveCall);
+                            /* approve for other accounts */
+                            final var approveCall = contractCall(
+                                            CONTRACT, "setApprovalForAll", asHeadlongAddress(accountOneAddress), true)
+                                    .via("acc1ApproveCall")
+                                    .payingWith(DEFAULT_CONTRACT_SENDER)
+                                    .hasKnownStatus(ResponseCodeEnum.SUCCESS);
+                            ops.add(approveCall);
 
-                                    /* mint to the contract owner */
-                                    final var mintCall =
-                                            contractCall(
-                                                            CONTRACT,
-                                                            "mintToken",
-                                                            BigInteger.ZERO,
-                                                            BigInteger.valueOf(10),
-                                                            asHeadlongAddress(senderAddress))
-                                                    .via("contractMintCall")
-                                                    .payingWith(DEFAULT_CONTRACT_SENDER)
-                                                    .hasKnownStatus(ResponseCodeEnum.SUCCESS);
-                                    ops.add(mintCall);
+                            /* mint to the contract owner */
+                            final var mintCall = contractCall(
+                                            CONTRACT,
+                                            "mintToken",
+                                            BigInteger.ZERO,
+                                            BigInteger.valueOf(10),
+                                            asHeadlongAddress(senderAddress))
+                                    .via("contractMintCall")
+                                    .payingWith(DEFAULT_CONTRACT_SENDER)
+                                    .hasKnownStatus(ResponseCodeEnum.SUCCESS);
+                            ops.add(mintCall);
 
-                                    /* transfer from - account to account */
-                                    final var transferCall =
-                                            contractCall(
-                                                            CONTRACT,
-                                                            "safeTransferFrom",
-                                                            asHeadlongAddress(senderAddress),
-                                                            asHeadlongAddress(accountOneAddress),
-                                                            BigInteger.ZERO, // token id
-                                                            BigInteger.ONE, // amount
-                                                            "0x0".getBytes())
-                                                    .via("contractTransferFromCall")
-                                                    .payingWith(ACCOUNT1)
-                                                    .hasKnownStatus(ResponseCodeEnum.SUCCESS);
-                                    ops.add(transferCall);
-                                    allRunFor(spec, ops);
-                                }),
+                            /* transfer from - account to account */
+                            final var transferCall = contractCall(
+                                            CONTRACT,
+                                            "safeTransferFrom",
+                                            asHeadlongAddress(senderAddress),
+                                            asHeadlongAddress(accountOneAddress),
+                                            BigInteger.ZERO, // token id
+                                            BigInteger.ONE, // amount
+                                            "0x0".getBytes())
+                                    .via("contractTransferFromCall")
+                                    .payingWith(ACCOUNT1)
+                                    .hasKnownStatus(ResponseCodeEnum.SUCCESS);
+                            ops.add(transferCall);
+                            allRunFor(spec, ops);
+                        }),
                         getTxnRecord("contractMintCall").logged(),
                         getTxnRecord("acc1ApproveCall").logged(),
                         getTxnRecord("contractTransferFromCall").logged());

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.contract.opcodes;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -75,9 +76,7 @@ public class PrngSeedOperationSuite extends HapiSuite {
 
     List<HapiSpec> positiveSpecs() {
         return List.of(
-                prngPrecompileHappyPathWorks(),
-                multipleCallsHaveIndependentResults(),
-                prngPrecompileDisabledInV030());
+                prngPrecompileHappyPathWorks(), multipleCallsHaveIndependentResults(), prngPrecompileDisabledInV030());
     }
 
     private HapiSpec multipleCallsHaveIndependentResults() {
@@ -91,44 +90,38 @@ public class PrngSeedOperationSuite extends HapiSuite {
                         contractCreate(prng),
                         overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE),
                         overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_31))
-                .when(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    for (int i = 0; i < numCalls; i++) {
-                                        final var txn = "call" + i;
-                                        final var call =
-                                                contractCall(prng, GET_SEED)
-                                                        .gas(gasToOffer)
-                                                        .via(txn);
-                                        final var lookup = getTxnRecord(txn).andAllChildRecords();
-                                        allRunFor(spec, call, lookup);
-                                        final var response = lookup.getResponseRecord();
-                                        final var rawResult =
-                                                response.getContractCallResult()
-                                                        .getContractCallResult()
-                                                        .toByteArray();
-                                        // Since this contract returns the result of the Prng system
-                                        // contract, its call result
-                                        // should be identical to the result of the system contract
-                                        // in the child record
-                                        for (final var child : lookup.getChildRecords()) {
-                                            if (child.hasContractCallResult()) {
-                                                assertArrayEquals(
-                                                        rawResult,
-                                                        child.getContractCallResult()
-                                                                .getContractCallResult()
-                                                                .toByteArray());
-                                            }
-                                        }
-                                        prngSeeds.add(CommonUtils.hex(rawResult));
-                                    }
-                                    opLog.info("Got prng seeds  : {}", prngSeeds);
-                                    assertEquals(
-                                            prngSeeds.size(),
-                                            new HashSet<>(prngSeeds).size(),
-                                            "An N-3 running hash was repeated, which is"
-                                                    + " inconceivable");
-                                }))
+                .when(withOpContext((spec, opLog) -> {
+                    for (int i = 0; i < numCalls; i++) {
+                        final var txn = "call" + i;
+                        final var call =
+                                contractCall(prng, GET_SEED).gas(gasToOffer).via(txn);
+                        final var lookup = getTxnRecord(txn).andAllChildRecords();
+                        allRunFor(spec, call, lookup);
+                        final var response = lookup.getResponseRecord();
+                        final var rawResult = response.getContractCallResult()
+                                .getContractCallResult()
+                                .toByteArray();
+                        // Since this contract returns the result of the Prng system
+                        // contract, its call result
+                        // should be identical to the result of the system contract
+                        // in the child record
+                        for (final var child : lookup.getChildRecords()) {
+                            if (child.hasContractCallResult()) {
+                                assertArrayEquals(
+                                        rawResult,
+                                        child.getContractCallResult()
+                                                .getContractCallResult()
+                                                .toByteArray());
+                            }
+                        }
+                        prngSeeds.add(CommonUtils.hex(rawResult));
+                    }
+                    opLog.info("Got prng seeds  : {}", prngSeeds);
+                    assertEquals(
+                            prngSeeds.size(),
+                            new HashSet<>(prngSeeds).size(),
+                            "An N-3 running hash was repeated, which is" + " inconceivable");
+                }))
                 .then(
                         // It's possible to call these contracts in a static context with no issues
                         contractCallLocal(prng, GET_SEED).gas(gasToOffer));
@@ -144,28 +137,17 @@ public class PrngSeedOperationSuite extends HapiSuite {
                         cryptoCreate(BOB),
                         uploadInitCode(prng),
                         contractCreate(prng))
-                .when(
-                        sourcing(
-                                () ->
-                                        contractCall(prng, GET_SEED)
-                                                .gas(GAS_TO_OFFER)
-                                                .payingWith(BOB)
-                                                .via(randomBits)
-                                                .logged()))
-                .then(
-                        getTxnRecord(randomBits)
-                                .hasPriority(
-                                        recordWith()
-                                                .contractCallResult(
-                                                        resultWith()
-                                                                .resultViaFunctionName(
-                                                                        GET_SEED,
-                                                                        prng,
-                                                                        isRandomResult(
-                                                                                (new Object[] {
-                                                                                    new byte[32]
-                                                                                })))))
-                                .logged());
+                .when(sourcing(() -> contractCall(prng, GET_SEED)
+                        .gas(GAS_TO_OFFER)
+                        .payingWith(BOB)
+                        .via(randomBits)
+                        .logged()))
+                .then(getTxnRecord(randomBits)
+                        .hasPriority(recordWith()
+                                .contractCallResult(resultWith()
+                                        .resultViaFunctionName(
+                                                GET_SEED, prng, isRandomResult((new Object[] {new byte[32]})))))
+                        .logged());
     }
 
     private HapiSpec prngPrecompileDisabledInV030() {
@@ -178,28 +160,17 @@ public class PrngSeedOperationSuite extends HapiSuite {
                         cryptoCreate(BOB),
                         uploadInitCode(prng),
                         contractCreate(prng))
-                .when(
-                        sourcing(
-                                () ->
-                                        contractCall(prng, GET_SEED)
-                                                .gas(GAS_TO_OFFER)
-                                                .payingWith(BOB)
-                                                .via(randomBits)
-                                                .logged()))
-                .then(
-                        getTxnRecord(randomBits)
-                                .hasPriority(
-                                        recordWith()
-                                                .contractCallResult(
-                                                        resultWith()
-                                                                .resultViaFunctionName(
-                                                                        GET_SEED,
-                                                                        prng,
-                                                                        isLiteralResult(
-                                                                                (new Object[] {
-                                                                                    new byte[32]
-                                                                                })))))
-                                .logged());
+                .when(sourcing(() -> contractCall(prng, GET_SEED)
+                        .gas(GAS_TO_OFFER)
+                        .payingWith(BOB)
+                        .via(randomBits)
+                        .logged()))
+                .then(getTxnRecord(randomBits)
+                        .hasPriority(recordWith()
+                                .contractCallResult(resultWith()
+                                        .resultViaFunctionName(
+                                                GET_SEED, prng, isLiteralResult((new Object[] {new byte[32]})))))
+                        .logged());
     }
 
     @Override

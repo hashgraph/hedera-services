@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.utils;
 
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
@@ -36,6 +37,7 @@ import com.hedera.node.app.hapi.fees.usage.token.meta.TokenWipeMeta;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.files.HFileMeta;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -44,7 +46,6 @@ import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
@@ -55,20 +56,19 @@ import javax.inject.Singleton;
 public class OpUsageCtxHelper {
     private static final long THREE_MONTHS_IN_SECONDS = 7776000L;
 
-    private static final ExtantFeeScheduleContext MISSING_FEE_SCHEDULE_UPDATE_CTX =
-            new ExtantFeeScheduleContext(0, 0);
+    private static final ExtantFeeScheduleContext MISSING_FEE_SCHEDULE_UPDATE_CTX = new ExtantFeeScheduleContext(0, 0);
 
     private final StateView workingView;
     private final HederaFileNumbers fileNumbers;
     private final TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
-    private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
+    private final Supplier<MerkleMapLike<EntityNum, MerkleToken>> tokens;
     private final AliasManager aliasManager;
 
     @Inject
     public OpUsageCtxHelper(
             final StateView workingView,
             final HederaFileNumbers fileNumbers,
-            final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
+            final Supplier<MerkleMapLike<EntityNum, MerkleToken>> tokens,
             final AliasManager aliasManager) {
         this.tokens = tokens;
         this.fileNumbers = fileNumbers;
@@ -90,61 +90,55 @@ public class OpUsageCtxHelper {
 
         final var fileMeta = workingView.attrOf(fid);
 
-        final var effCreationTime = txn.getTransactionID().getTransactionValidStart().getSeconds();
+        final var effCreationTime =
+                txn.getTransactionID().getTransactionValidStart().getSeconds();
         final var effExpiration = fileMeta.map(HFileMeta::getExpiry).orElse(effCreationTime);
         final var effLifetime = effExpiration - effCreationTime;
 
         return new FileAppendMeta(op.getContents().size(), effLifetime);
     }
 
-    public ExtantFeeScheduleContext ctxForFeeScheduleUpdate(
-            TokenFeeScheduleUpdateTransactionBody op) {
+    public ExtantFeeScheduleContext ctxForFeeScheduleUpdate(TokenFeeScheduleUpdateTransactionBody op) {
         final var key = EntityNum.fromTokenId(op.getTokenId());
         final var token = tokens.get().get(key);
         if (token == null) {
             return MISSING_FEE_SCHEDULE_UPDATE_CTX;
         }
-        return new ExtantFeeScheduleContext(
-                token.expiry(), curFeeScheduleReprSize(token.customFeeSchedule()));
+        return new ExtantFeeScheduleContext(token.expiry(), curFeeScheduleReprSize(token.customFeeSchedule()));
     }
 
     public ExtantCryptoContext ctxForCryptoUpdate(TransactionBody txn) {
         final var op = txn.getCryptoUpdateAccount();
         final var id = op.getAccountIDToUpdate();
         final var accountEntityNum =
-                id.getAlias().isEmpty()
-                        ? fromAccountId(id)
-                        : aliasManager.lookupIdBy(id.getAlias());
+                id.getAlias().isEmpty() ? fromAccountId(id) : aliasManager.lookupIdBy(id.getAlias());
         final var account = workingView.accounts().get(accountEntityNum);
         ExtantCryptoContext cryptoContext;
         if (account != null) {
-            cryptoContext =
-                    ExtantCryptoContext.newBuilder()
-                            .setCurrentKey(asKeyUnchecked(account.getAccountKey()))
-                            .setCurrentMemo(account.getMemo())
-                            .setCurrentExpiry(account.getExpiry())
-                            .setCurrentlyHasProxy(account.getProxy() != null)
-                            .setCurrentNumTokenRels(account.getNumAssociations())
-                            .setCurrentMaxAutomaticAssociations(
-                                    account.getMaxAutomaticAssociations())
-                            .setCurrentCryptoAllowances(getCryptoAllowancesList(account))
-                            .setCurrentTokenAllowances(getFungibleTokenAllowancesList(account))
-                            .setCurrentApproveForAllNftAllowances(getNftApprovedForAll(account))
-                            .build();
+            cryptoContext = ExtantCryptoContext.newBuilder()
+                    .setCurrentKey(asKeyUnchecked(account.getAccountKey()))
+                    .setCurrentMemo(account.getMemo())
+                    .setCurrentExpiry(account.getExpiry())
+                    .setCurrentlyHasProxy(account.getProxy() != null)
+                    .setCurrentNumTokenRels(account.getNumAssociations())
+                    .setCurrentMaxAutomaticAssociations(account.getMaxAutomaticAssociations())
+                    .setCurrentCryptoAllowances(getCryptoAllowancesList(account))
+                    .setCurrentTokenAllowances(getFungibleTokenAllowancesList(account))
+                    .setCurrentApproveForAllNftAllowances(getNftApprovedForAll(account))
+                    .build();
         } else {
-            cryptoContext =
-                    ExtantCryptoContext.newBuilder()
-                            .setCurrentExpiry(
-                                    txn.getTransactionID().getTransactionValidStart().getSeconds())
-                            .setCurrentMemo(DEFAULT_MEMO)
-                            .setCurrentKey(Key.getDefaultInstance())
-                            .setCurrentlyHasProxy(false)
-                            .setCurrentNumTokenRels(0)
-                            .setCurrentMaxAutomaticAssociations(0)
-                            .setCurrentCryptoAllowances(Collections.emptyMap())
-                            .setCurrentTokenAllowances(Collections.emptyMap())
-                            .setCurrentApproveForAllNftAllowances(Collections.emptySet())
-                            .build();
+            cryptoContext = ExtantCryptoContext.newBuilder()
+                    .setCurrentExpiry(
+                            txn.getTransactionID().getTransactionValidStart().getSeconds())
+                    .setCurrentMemo(DEFAULT_MEMO)
+                    .setCurrentKey(Key.getDefaultInstance())
+                    .setCurrentlyHasProxy(false)
+                    .setCurrentNumTokenRels(0)
+                    .setCurrentMaxAutomaticAssociations(0)
+                    .setCurrentCryptoAllowances(Collections.emptyMap())
+                    .setCurrentTokenAllowances(Collections.emptyMap())
+                    .setCurrentApproveForAllNftAllowances(Collections.emptySet())
+                    .build();
         }
         return cryptoContext;
     }
@@ -152,42 +146,36 @@ public class OpUsageCtxHelper {
     public ExtantCryptoContext ctxForCryptoAllowance(TxnAccessor accessor) {
         final var id = accessor.getPayer();
         final var accountEntityNum =
-                id.getAlias().isEmpty()
-                        ? fromAccountId(id)
-                        : aliasManager.lookupIdBy(id.getAlias());
+                id.getAlias().isEmpty() ? fromAccountId(id) : aliasManager.lookupIdBy(id.getAlias());
         final var account = workingView.accounts().get(accountEntityNum);
         ExtantCryptoContext cryptoContext;
         if (account != null) {
-            cryptoContext =
-                    ExtantCryptoContext.newBuilder()
-                            .setCurrentKey(asKeyUnchecked(account.getAccountKey()))
-                            .setCurrentMemo(account.getMemo())
-                            .setCurrentExpiry(account.getExpiry())
-                            .setCurrentlyHasProxy(account.getProxy() != null)
-                            .setCurrentNumTokenRels(account.getNumAssociations())
-                            .setCurrentMaxAutomaticAssociations(
-                                    account.getMaxAutomaticAssociations())
-                            .setCurrentCryptoAllowances(getCryptoAllowancesList(account))
-                            .setCurrentTokenAllowances(getFungibleTokenAllowancesList(account))
-                            .setCurrentApproveForAllNftAllowances(getNftApprovedForAll(account))
-                            .build();
+            cryptoContext = ExtantCryptoContext.newBuilder()
+                    .setCurrentKey(asKeyUnchecked(account.getAccountKey()))
+                    .setCurrentMemo(account.getMemo())
+                    .setCurrentExpiry(account.getExpiry())
+                    .setCurrentlyHasProxy(account.getProxy() != null)
+                    .setCurrentNumTokenRels(account.getNumAssociations())
+                    .setCurrentMaxAutomaticAssociations(account.getMaxAutomaticAssociations())
+                    .setCurrentCryptoAllowances(getCryptoAllowancesList(account))
+                    .setCurrentTokenAllowances(getFungibleTokenAllowancesList(account))
+                    .setCurrentApproveForAllNftAllowances(getNftApprovedForAll(account))
+                    .build();
         } else {
-            cryptoContext =
-                    ExtantCryptoContext.newBuilder()
-                            .setCurrentExpiry(
-                                    accessor.getTxn()
-                                            .getTransactionID()
-                                            .getTransactionValidStart()
-                                            .getSeconds())
-                            .setCurrentMemo(DEFAULT_MEMO)
-                            .setCurrentKey(Key.getDefaultInstance())
-                            .setCurrentlyHasProxy(false)
-                            .setCurrentNumTokenRels(0)
-                            .setCurrentMaxAutomaticAssociations(0)
-                            .setCurrentCryptoAllowances(Collections.emptyMap())
-                            .setCurrentTokenAllowances(Collections.emptyMap())
-                            .setCurrentApproveForAllNftAllowances(Collections.emptySet())
-                            .build();
+            cryptoContext = ExtantCryptoContext.newBuilder()
+                    .setCurrentExpiry(accessor.getTxn()
+                            .getTransactionID()
+                            .getTransactionValidStart()
+                            .getSeconds())
+                    .setCurrentMemo(DEFAULT_MEMO)
+                    .setCurrentKey(Key.getDefaultInstance())
+                    .setCurrentlyHasProxy(false)
+                    .setCurrentNumTokenRels(0)
+                    .setCurrentMaxAutomaticAssociations(0)
+                    .setCurrentCryptoAllowances(Collections.emptyMap())
+                    .setCurrentTokenAllowances(Collections.emptyMap())
+                    .setCurrentApproveForAllNftAllowances(Collections.emptySet())
+                    .build();
         }
         return cryptoContext;
     }
@@ -197,8 +185,7 @@ public class OpUsageCtxHelper {
     }
 
     public TokenWipeMeta metaForTokenWipe(TxnAccessor accessor) {
-        return TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(
-                accessor.getTxn().getTokenWipe(), accessor.getSubType());
+        return TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(accessor.getTxn().getTokenWipe(), accessor.getSubType());
     }
 
     public TokenMintMeta metaForTokenMint(TxnAccessor accessor) {

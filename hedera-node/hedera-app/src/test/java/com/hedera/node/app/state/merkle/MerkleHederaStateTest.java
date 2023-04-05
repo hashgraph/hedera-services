@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,10 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.state.merkle;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.hedera.node.app.spi.state.ReadableKVState;
@@ -30,7 +32,12 @@ import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.merkle.map.MerkleMap;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -53,11 +60,10 @@ class MerkleHederaStateTest extends MerkleTestBase {
     @BeforeEach
     void setUp() {
         setupFruitMerkleMap();
-        hederaMerkle =
-                new MerkleHederaState(
-                        tree -> onMigrateCalled.set(true),
-                        evt -> onPreHandleCalled.set(true),
-                        (round, dual) -> onHandleCalled.set(true));
+        hederaMerkle = new MerkleHederaState(
+                (tree, state) -> onPreHandleCalled.set(true),
+                (evt, meta, state) -> onHandleCalled.set(true),
+                (state, platform, dual, trigger, version) -> onMigrateCalled.set(true));
     }
 
     /** Looks for a merkle node with the given label */
@@ -88,9 +94,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
         @DisplayName("Adding a service node that is not Labeled throws IAE")
         void addingWrongKindOfNodeThrows() {
             assertThatThrownBy(
-                            () ->
-                                    hederaMerkle.putServiceStateIfAbsent(
-                                            fruitMetadata, Mockito.mock(MerkleNode.class)))
+                            () -> hederaMerkle.putServiceStateIfAbsent(fruitMetadata, Mockito.mock(MerkleNode.class)))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -99,23 +103,15 @@ class MerkleHederaStateTest extends MerkleTestBase {
         void addingNodeWithNoLabelThrows() {
             final var fruitNodeNoLabel = Mockito.mock(MerkleMap.class);
             Mockito.when(fruitNodeNoLabel.getLabel()).thenReturn(null);
-            assertThatThrownBy(
-                            () ->
-                                    hederaMerkle.putServiceStateIfAbsent(
-                                            fruitMetadata, fruitNodeNoLabel))
+            assertThatThrownBy(() -> hederaMerkle.putServiceStateIfAbsent(fruitMetadata, fruitNodeNoLabel))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
         @Test
-        @DisplayName(
-                "Adding a service node with a label that doesn't match service name and state key"
-                        + " throws IAE")
+        @DisplayName("Adding a service node with a label that doesn't match service name and state key throws IAE")
         void addingBadServiceNodeNameThrows() {
             fruitMerkleMap.setLabel("Some Random Label");
-            assertThatThrownBy(
-                            () ->
-                                    hederaMerkle.putServiceStateIfAbsent(
-                                            fruitMetadata, fruitMerkleMap))
+            assertThatThrownBy(() -> hederaMerkle.putServiceStateIfAbsent(fruitMetadata, fruitMerkleMap))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -174,9 +170,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
         }
 
         @Test
-        @DisplayName(
-                "Adding the same service twice with two different nodes causes the original node to"
-                        + " remain")
+        @DisplayName("Adding the same service twice with two different nodes causes the original node to remain")
         void addingServiceTwiceWithDifferentNodesDoesNotReplaceFirstNode() {
             // Given an empty merkle tree, when I add the same metadata twice but with different
             // nodes,
@@ -190,17 +184,14 @@ class MerkleHederaStateTest extends MerkleTestBase {
         }
 
         @Test
-        @DisplayName(
-                "Adding the same service node twice with two different metadata replaces the"
-                        + " metadata")
+        @DisplayName("Adding the same service node twice with two different metadata replaces the" + " metadata")
         void addingServiceTwiceWithDifferentMetadata() {
             // Given an empty merkle tree, when I add the same node twice but with different
             // metadata,
-            final var fruitMetadata2 =
-                    new StateMetadata<>(
-                            FIRST_SERVICE,
-                            new TestSchema(1),
-                            StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_SERDES, LONG_SERDES));
+            final var fruitMetadata2 = new StateMetadata<>(
+                    FIRST_SERVICE,
+                    new TestSchema(1),
+                    StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_CODEC, LONG_CODEC));
 
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata, fruitMerkleMap);
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata2, fruitMerkleMap);
@@ -216,10 +207,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
         @DisplayName("Adding non-VirtualMap merkle node with on-disk metadata throws")
         void merkleMapWithOnDiskThrows() {
             setupFruitVirtualMap();
-            assertThatThrownBy(
-                            () ->
-                                    hederaMerkle.putServiceStateIfAbsent(
-                                            fruitVirtualMetadata, fruitMerkleMap))
+            assertThatThrownBy(() -> hederaMerkle.putServiceStateIfAbsent(fruitVirtualMetadata, fruitMerkleMap))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Mismatch");
         }
@@ -284,12 +272,10 @@ class MerkleHederaStateTest extends MerkleTestBase {
             for (int i = 0; i < 10; i++) {
                 final var serviceName = "Service_" + i;
                 final var label = StateUtils.computeLabel(serviceName, FRUIT_STATE_KEY);
-                final var md =
-                        new StateMetadata<>(
-                                serviceName,
-                                new TestSchema(1),
-                                StateDefinition.inMemory(
-                                        FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES));
+                final var md = new StateMetadata<>(
+                        serviceName,
+                        new TestSchema(1),
+                        StateDefinition.<String, String>inMemory(FRUIT_STATE_KEY, STRING_CODEC, STRING_CODEC));
 
                 final var node = createMerkleMap(label);
                 map.put(serviceName, node);
@@ -359,8 +345,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
             final var states = hederaMerkle.createReadableStates(FIRST_SERVICE);
 
             // Then query it for an unknown state and get an IAE
-            assertThatThrownBy(() -> states.get(UNKNOWN_STATE_KEY))
-                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> states.get(UNKNOWN_STATE_KEY)).isInstanceOf(IllegalArgumentException.class);
         }
 
         @Test
@@ -389,8 +374,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
             final var states = hederaMerkle.createReadableStates(FIRST_SERVICE);
 
             // Then try to read the state and find it is missing!
-            assertThatThrownBy(() -> states.get(FRUIT_STATE_KEY))
-                    .isInstanceOf(IllegalStateException.class);
+            assertThatThrownBy(() -> states.get(FRUIT_STATE_KEY)).isInstanceOf(IllegalStateException.class);
         }
 
         @Test
@@ -431,8 +415,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
         }
 
         @Test
-        @DisplayName(
-                "Getting ReadableStates on a known service returns an object with all the state")
+        @DisplayName("Getting ReadableStates on a known service returns an object with all the state")
         void knownServiceNameUsingReadableStates() {
             // Given a HederaState with the fruit and animal and country states
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata, fruitMerkleMap);
@@ -467,8 +450,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
             assertThat(animalStates.get(F_KEY)).isSameAs(FOX);
             assertThat(animalStates.get(G_KEY)).isNull();
 
-            final ReadableSingletonState<String> countryState =
-                    states.getSingleton(COUNTRY_STATE_KEY);
+            final ReadableSingletonState<String> countryState = states.getSingleton(COUNTRY_STATE_KEY);
             assertThat(countryState.getStateKey()).isEqualTo(COUNTRY_STATE_KEY);
             assertThat(countryState.get()).isEqualTo(GHANA);
 
@@ -530,8 +512,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
             final var states = hederaMerkle.createWritableStates(FIRST_SERVICE);
 
             // Then query it for an unknown state and get an IAE
-            assertThatThrownBy(() -> states.get(UNKNOWN_STATE_KEY))
-                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> states.get(UNKNOWN_STATE_KEY)).isInstanceOf(IllegalArgumentException.class);
         }
 
         @Test
@@ -546,8 +527,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
             final var states = hederaMerkle.createWritableStates(FIRST_SERVICE);
 
             // Then try to read the state and find it is missing!
-            assertThatThrownBy(() -> states.get(FRUIT_STATE_KEY))
-                    .isInstanceOf(IllegalStateException.class);
+            assertThatThrownBy(() -> states.get(FRUIT_STATE_KEY)).isInstanceOf(IllegalStateException.class);
         }
 
         @Test
@@ -602,8 +582,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
         }
 
         @Test
-        @DisplayName(
-                "Getting WritableStates on a known service returns an object with all the state")
+        @DisplayName("Getting WritableStates on a known service returns an object with all the state")
         void knownServiceNameUsingWritableStates() {
             // Given a HederaState with the fruit and animal and country states
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata, fruitMerkleMap);
@@ -636,18 +615,6 @@ class MerkleHederaStateTest extends MerkleTestBase {
     }
 
     @Nested
-    @DisplayName("Handling Migrate Tests")
-    final class MigrationTest {
-        @Test
-        @DisplayName("The onMigrate handler is called when a migration happens")
-        void onMigrateCalled() {
-            assertThat(onMigrateCalled).isFalse();
-            hederaMerkle.migrate(1);
-            assertThat(onMigrateCalled).isTrue();
-        }
-    }
-
-    @Nested
     @DisplayName("Handling Pre-Handle Tests")
     final class PreHandleTest {
         @Test
@@ -663,21 +630,17 @@ class MerkleHederaStateTest extends MerkleTestBase {
     @DisplayName("Handling Consensus Rounds Tests")
     final class ConsensusRoundTest {
         @Test
-        @DisplayName(
-                "Notifications are sent to onHandleConsensusRound when handleConsensusRound is"
-                        + " called")
+        @DisplayName("Notifications are sent to onHandleConsensusRound when handleConsensusRound is called")
         void handleConsensusRoundCallback() {
             final var round = Mockito.mock(Round.class);
             final var dualState = Mockito.mock(SwirldDualState.class);
-            final var state =
-                    new MerkleHederaState(
-                            tree -> onMigrateCalled.set(true),
-                            evt -> onPreHandleCalled.set(true),
-                            (r, d) -> {
-                                assertThat(round).isSameAs(r);
-                                assertThat(dualState).isSameAs(d);
-                                onHandleCalled.set(true);
-                            });
+            final var state = new MerkleHederaState(
+                    (tree, st) -> onPreHandleCalled.set(true),
+                    (evt, meta, provider) -> {
+                        assertThat(round).isSameAs(evt);
+                        onHandleCalled.set(true);
+                    },
+                    (s, p, d, t, v) -> {});
 
             state.handleConsensusRound(round, dualState);
             assertThat(onHandleCalled).isTrue();
@@ -688,17 +651,14 @@ class MerkleHederaStateTest extends MerkleTestBase {
     @DisplayName("Copy Tests")
     final class CopyTest {
         @Test
-        @DisplayName(
-                "When a copy is made, the original loses the onConsensusRoundCallback, and the copy"
-                        + " gains it")
+        @DisplayName("When a copy is made, the original loses the onConsensusRoundCallback, and the copy gains it")
         void originalLosesConsensusRoundCallbackAfterCopy() {
             final var copy = hederaMerkle.copy();
 
             // The original no longer has the listener
             final var round = Mockito.mock(Round.class);
             final var dualState = Mockito.mock(SwirldDualState.class);
-            hederaMerkle.handleConsensusRound(round, dualState);
-            assertThat(onHandleCalled).isFalse();
+            assertThrows(MutabilityException.class, () -> hederaMerkle.handleConsensusRound(round, dualState));
 
             // But the copy does
             copy.handleConsensusRound(round, dualState);
@@ -717,10 +677,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
         void addServiceOnOriginalAfterCopyThrows() {
             setupAnimalMerkleMap();
             hederaMerkle.copy();
-            assertThatThrownBy(
-                            () ->
-                                    hederaMerkle.putServiceStateIfAbsent(
-                                            animalMetadata, animalMerkleMap))
+            assertThatThrownBy(() -> hederaMerkle.putServiceStateIfAbsent(animalMetadata, animalMerkleMap))
                     .isInstanceOf(MutabilityException.class);
         }
 
@@ -730,8 +687,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
             setupAnimalMerkleMap();
             hederaMerkle.putServiceStateIfAbsent(animalMetadata, animalMerkleMap);
             hederaMerkle.copy();
-            assertThatThrownBy(
-                            () -> hederaMerkle.removeServiceState(FIRST_SERVICE, ANIMAL_STATE_KEY))
+            assertThatThrownBy(() -> hederaMerkle.removeServiceState(FIRST_SERVICE, ANIMAL_STATE_KEY))
                     .isInstanceOf(MutabilityException.class);
         }
 

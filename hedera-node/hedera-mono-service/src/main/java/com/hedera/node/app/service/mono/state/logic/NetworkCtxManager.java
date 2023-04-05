@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.logic;
 
 import static com.hedera.node.app.service.mono.context.domain.trackers.IssEventStatus.ONGOING_ISS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PERIOD_MINS;
 import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager.DEFAULT_STAKING_PERIOD_MINS;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.isGasThrottled;
 import static com.hedera.node.app.service.mono.utils.Units.MINUTES_TO_MILLISECONDS;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_PERIOD_MINS;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 import static java.time.ZoneOffset.UTC;
 import static java.time.temporal.ChronoUnit.SECONDS;
@@ -54,6 +55,7 @@ import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class NetworkCtxManager {
+
     private static final Logger log = LogManager.getLogger(NetworkCtxManager.class);
 
     private final int issResetPeriod;
@@ -131,8 +133,7 @@ public class NetworkCtxManager {
         final var networkCtxNow = networkCtx.get();
         final var lastConsensusTime = networkCtxNow.consensusTimeOfLastHandledTxn();
 
-        if (lastConsensusTime == null
-                || consensusTime.getEpochSecond() > lastConsensusTime.getEpochSecond()) {
+        if (lastConsensusTime == null || consensusTime.getEpochSecond() > lastConsensusTime.getEpochSecond()) {
             consensusSecondJustChanged = true;
             // We're in a new second, so check if it's the first of a UTC calendar day; there are
             // some special actions that trigger on the first transaction after midnight

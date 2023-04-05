@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,164 +13,70 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app;
 
-import static com.hedera.node.app.service.mono.context.AppsManager.APPS;
-import static com.hedera.node.app.service.mono.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
-import static java.nio.charset.StandardCharsets.UTF_8;
+import static com.hedera.node.app.spi.config.PropertyNames.WORKFLOWS_ENABLED;
 
-import com.hedera.node.app.service.mono.ServicesApp;
-import com.hedera.node.app.service.mono.ServicesState;
-import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
-import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
-import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
+import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
-import com.swirlds.common.system.state.notifications.IssListener;
-import com.swirlds.common.system.state.notifications.NewSignedStateListener;
-import com.swirlds.platform.Browser;
-import java.security.NoSuchAlgorithmException;
-import java.util.Locale;
+import com.swirlds.common.system.SwirldState2;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Implements callbacks to bind gRPC services, react to platform status changes, and incorporate new
- * signed states.
+ * Main entry point.
+ *
+ * <p>This class simply delegates to either {@link MonoServicesMain} or {@link Hedera} depending on
+ * the value of the {@code hedera.services.functions.workflows.enabled} property. If *any* workflows
+ * are enabled, then {@link Hedera} is used; otherwise, {@link MonoServicesMain} is used.
  */
 public class ServicesMain implements SwirldMain {
-    private static final Logger log = LogManager.getLogger(ServicesMain.class);
-
-    /** Stores information related to the running of services in the mono-repo */
-    private ServicesApp app;
+    private static final Logger logger = LogManager.getLogger(ServicesMain.class);
 
     /**
-     * Stores information related to the running of the Hedera application in the modular app. This
-     * is unused when the "hedera.workflows.enabled" flag is false.
+     * The {@link SwirldMain} to actually use, depending on whether workflows are enabled.
      */
-    private final Hedera hedera = new Hedera();
+    private SwirldMain delegate;
 
-    /**
-     * Convenience launcher for dev env.
-     *
-     * @param args ignored
-     */
-    public static void main(final String... args) {
-        Browser.main(null);
+    /** Create a new instance */
+    public ServicesMain() {
+        final var bootstrapProps = new BootstrapProperties(false);
+        final var enabledWorkflows = bootstrapProps.getFunctionsProperty(WORKFLOWS_ENABLED);
+        if (enabledWorkflows.isEmpty()) {
+            logger.info("No workflows enabled, using mono-service");
+            delegate = new MonoServicesMain();
+        } else {
+            logger.info("One or more workflows enabled, using Hedera");
+            delegate = new Hedera(ConstructableRegistry.getInstance(), bootstrapProps);
+        }
     }
 
+    /** {@inheritDoc} */
     @Override
     public SoftwareVersion getSoftwareVersion() {
-        return SEMANTIC_VERSIONS.deployedSoftwareVersion();
+        return delegate.getSoftwareVersion();
     }
 
+    /** {@inheritDoc} */
     @Override
-    public void init(final Platform ignore, final NodeId nodeId) {
-        try {
-            app = APPS.get(nodeId.getId());
-            initApp();
-        } catch (final IllegalArgumentException iae) {
-            log.error("No app present for {}", nodeId, iae);
-            throw new AssertionError("Cannot continue without an app");
-        }
+    public void init(final Platform ignored, final NodeId nodeId) {
+        delegate.init(ignored, nodeId);
     }
 
+    /** {@inheritDoc} */
     @Override
-    public ServicesState newState() {
-        return new ServicesState();
+    public SwirldState2 newState() {
+        return (SwirldState2) delegate.newState();
     }
 
+    /** {@inheritDoc} */
     @Override
     public void run() {
-        /* No-op. */
-    }
-
-    private void initApp() {
-        if (defaultCharsetIsCorrect() && sha384DigestIsAvailable()) {
-            try {
-                Locale.setDefault(Locale.US);
-                consoleLog(
-                        String.format(
-                                "Using context to initialize HederaNode#%s...", app.nodeId()));
-                doStagedInit();
-            } catch (final Exception e) {
-                log.error("Fatal precondition violated in HederaNode#{}", app.nodeId(), e);
-                app.systemExits().fail(1);
-            }
-        } else {
-            app.systemExits().fail(1);
-        }
-    }
-
-    private void doStagedInit() {
-        validateLedgerState();
-        log.info("Ledger state ok");
-
-        configurePlatform();
-        log.info("Platform is configured w/ callbacks and stats registered");
-
-        exportAccountsIfDesired();
-        log.info("Accounts exported (if requested)");
-
-        startNettyIfAppropriate();
-        log.info("Netty started (if appropriate)");
-    }
-
-    private void exportAccountsIfDesired() {
-        app.accountsExporter().toFile(app.workingState().accounts());
-    }
-
-    private void startNettyIfAppropriate() {
-        // The "hedera.workflows.enabled" feature flag indicates whether we enable the new gRPC
-        // server and workflows, or use the existing gRPC handlers in mono-service.
-        final var props = app.globalStaticProperties();
-        if (props.workflowsEnabled()) {
-            hedera.start(app, app.nodeLocalProperties().port());
-        } else {
-            app.grpcStarter().startIfAppropriate();
-        }
-    }
-
-    private void configurePlatform() {
-        final var platform = app.platform();
-        app.statsManager().initializeFor(platform);
-    }
-
-    private void validateLedgerState() {
-        app.ledgerValidator().validate(app.workingState().accounts());
-        app.nodeInfo().validateSelfAccountIfStaked();
-        final var notifications = app.notificationEngine().get();
-        notifications.register(PlatformStatusChangeListener.class, app.statusChangeListener());
-        notifications.register(ReconnectCompleteListener.class, app.reconnectListener());
-        notifications.register(
-                StateWriteToDiskCompleteListener.class, app.stateWriteToDiskListener());
-        notifications.register(NewSignedStateListener.class, app.newSignedStateListener());
-        notifications.register(IssListener.class, app.issListener());
-    }
-
-    private boolean defaultCharsetIsCorrect() {
-        final var charset = app.nativeCharset().get();
-        if (!UTF_8.equals(charset)) {
-            log.error("Default charset is {}, not UTF-8", charset);
-            return false;
-        }
-        return true;
-    }
-
-    private boolean sha384DigestIsAvailable() {
-        try {
-            app.digestFactory().forName("SHA-384");
-            return true;
-        } catch (final NoSuchAlgorithmException nsae) {
-            log.error(nsae);
-            return false;
-        }
-    }
-
-    private void consoleLog(final String s) {
-        log.info(s);
-        app.consoleOut().ifPresent(c -> c.println(s));
+        delegate.run();
     }
 }

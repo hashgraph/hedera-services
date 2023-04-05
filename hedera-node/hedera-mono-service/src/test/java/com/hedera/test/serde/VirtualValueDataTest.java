@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.serde;
 
 import static com.hedera.test.serde.SerializedForms.assertSameBufferSerialization;
@@ -32,24 +33,20 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
-public abstract class VirtualValueDataTest<T extends VirtualValue>
-        extends SelfSerializableDataTest<T> {
+public abstract class VirtualValueDataTest<T extends VirtualValue> extends SelfSerializableDataTest<T> {
     @ParameterizedTest
     @ArgumentsSource(CurrentVersionArgumentsProvider.class)
-    void bufferSerializationHasNoRegressionWithCurrentVersion(
-            final int version, final int testCaseNo) {
+    void bufferSerializationHasNoRegressionWithCurrentVersion(final int version, final int testCaseNo) {
         assertSameBufferSerialization(getType(), this::getExpectedObject, version, testCaseNo);
     }
 
     @ParameterizedTest
     @ArgumentsSource(SupportedVersionsArgumentsProvider.class)
-    void bufferDeserializationWorksForAllSupportedVersions(
-            final int version, final int testCaseNo) {
+    void bufferDeserializationWorksForAllSupportedVersions(final int version, final int testCaseNo) {
         final var serializedForm = getSerializedForm(version, testCaseNo);
         final var expectedObject = getExpectedObject(version, testCaseNo);
 
-        final T actualObject =
-                deserializeFromBuffer(() -> instantiate(getType()), version, serializedForm);
+        final T actualObject = deserializeFromBuffer(() -> instantiate(getType()), version, serializedForm);
 
         customAssertEquals()
                 .ifPresentOrElse(
@@ -60,24 +57,20 @@ public abstract class VirtualValueDataTest<T extends VirtualValue>
     @ParameterizedTest
     @ArgumentsSource(AsReadOnlyArgumentsProvider.class)
     void immutabilityContractsMetForVirtualValue(
-            final VirtualValue readOnlySubject,
-            final VirtualValue copiedSubject,
-            final Method setter) {
+            final VirtualValue readOnlySubject, final VirtualValue copiedSubject, final Method setter) {
         assertTrue(readOnlySubject.isImmutable());
         assertTrue(copiedSubject.isImmutable());
 
         final var param = validatedSetterParam(setter);
-        final var e =
-                assertThrows(
-                        InvocationTargetException.class,
-                        () -> setter.invoke(readOnlySubject, param),
-                        "A read-only subject must be immutable");
+        final var e = assertThrows(
+                InvocationTargetException.class,
+                () -> setter.invoke(readOnlySubject, param),
+                "A read-only subject must be immutable");
         assertInstanceOf(MutabilityException.class, e.getCause());
-        final var f =
-                assertThrows(
-                        InvocationTargetException.class,
-                        () -> setter.invoke(copiedSubject, param),
-                        "A copied subject must be immutable");
+        final var f = assertThrows(
+                InvocationTargetException.class,
+                () -> setter.invoke(copiedSubject, param),
+                "A copied subject must be immutable");
         assertInstanceOf(MutabilityException.class, f.getCause());
     }
 
@@ -95,8 +88,7 @@ public abstract class VirtualValueDataTest<T extends VirtualValue>
         }
     }
 
-    private static <T extends VirtualValue> Stream<Arguments> mutabilityTestCasesFor(
-            final Class<T> virtualValueType) {
+    private static <T extends VirtualValue> Stream<Arguments> mutabilityTestCasesFor(final Class<T> virtualValueType) {
         final var readOnlySubject = instantiate(virtualValueType).asReadOnly();
         final var copiedSubject = instantiate(virtualValueType);
         copiedSubject.copy();

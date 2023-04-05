@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.autorenew;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -52,13 +53,12 @@ public class AutoRemovalCasesSuite extends HapiSuite {
     @Override
     @SuppressWarnings("java:S3878")
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    ignoresExpiredDeletedContracts(),
-                    displacesTokenUnitsAsExpected(),
-                    immediatelyRemovesDeletedAccountOnExpiry(),
-                    autoRemovalCasesSuiteCleanup(),
-                });
+        return List.of(new HapiSpec[] {
+            ignoresExpiredDeletedContracts(),
+            displacesTokenUnitsAsExpected(),
+            immediatelyRemovesDeletedAccountOnExpiry(),
+            autoRemovalCasesSuiteCleanup(),
+        });
     }
 
     private HapiSpec ignoresExpiredDeletedContracts() {
@@ -90,9 +90,7 @@ public class AutoRemovalCasesSuite extends HapiSuite {
                         cryptoCreate(onlyDetached).balance(0L).autoRenewSecs(5),
                         cryptoDelete(tbd))
                 .when(sleepFor(5_500L), cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)))
-                .then(
-                        getAccountInfo(onlyDetached),
-                        getAccountInfo(tbd).hasCostAnswerPrecheck(INVALID_ACCOUNT_ID));
+                .then(getAccountInfo(onlyDetached), getAccountInfo(tbd).hasCostAnswerPrecheck(INVALID_ACCOUNT_ID));
     }
 
     private HapiSpec displacesTokenUnitsAsExpected() {
@@ -124,12 +122,9 @@ public class AutoRemovalCasesSuite extends HapiSuite {
                                 .autoRenewSecs(5),
                         tokenAssociate(removedAccount, List.of(deletedToken, liveToken)),
                         cryptoTransfer(
-                                moving(displacedSupply, deletedToken)
-                                        .between(civilian, removedAccount),
-                                moving(displacedSupply, liveToken)
-                                        .between(civilian, removedAccount),
-                                moving(displacedSupply, anotherLiveToken)
-                                        .between(civilian, removedAccount)),
+                                moving(displacedSupply, deletedToken).between(civilian, removedAccount),
+                                moving(displacedSupply, liveToken).between(civilian, removedAccount),
+                                moving(displacedSupply, anotherLiveToken).between(civilian, removedAccount)),
                         tokenDelete(deletedToken))
                 .when(sleepFor(5_500L), cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)))
                 .then(
@@ -144,10 +139,7 @@ public class AutoRemovalCasesSuite extends HapiSuite {
         return defaultHapiSpec("AutoRemovalCasesSuiteCleanup")
                 .given()
                 .when()
-                .then(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(GENESIS)
-                                .overridingProps(disablingAutoRenewWithDefaults()));
+                .then(fileUpdate(APP_PROPERTIES).payingWith(GENESIS).overridingProps(disablingAutoRenewWithDefaults()));
     }
 
     @Override

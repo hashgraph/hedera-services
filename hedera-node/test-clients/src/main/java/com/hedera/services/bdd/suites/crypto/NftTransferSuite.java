@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -54,7 +55,7 @@ public class NftTransferSuite extends HapiSuite {
         new NftTransferSuite().runSuiteSync();
         final long endTimeMillis = System.currentTimeMillis();
         final long deltaMillis = endTimeMillis - startTimeMillis;
-        System.out.printf("Total time: %.3f\n", deltaMillis / 1000f);
+        System.out.printf("Total time: %.3f%n", deltaMillis / 1000f);
     }
 
     public static void main(String... args) throws ExecutionException, InterruptedException {
@@ -94,17 +95,12 @@ public class NftTransferSuite extends HapiSuite {
     private static HapiSpecOperation createTokenTypes() {
         return blockingOrder(
                 createAccounts("token-treasury-", NftTransferSuite.NUM_TOKEN_TYPES),
-                parFor(
-                        0,
-                        NftTransferSuite.NUM_TOKEN_TYPES,
-                        id ->
-                                tokenCreate(tokenTypeName(id))
-                                        .tokenType(NON_FUNGIBLE_UNIQUE)
-                                        .supplyKey(NftTransferSuite.KEY)
-                                        .initialSupply(0L)
-                                        .treasury(tokenTreasuryName(id))
-                                        .withCustom(
-                                                fixedHbarFee(1L, NftTransferSuite.FEE_COLLECTOR))));
+                parFor(0, NftTransferSuite.NUM_TOKEN_TYPES, id -> tokenCreate(tokenTypeName(id))
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .supplyKey(NftTransferSuite.KEY)
+                        .initialSupply(0L)
+                        .treasury(tokenTreasuryName(id))
+                        .withCustom(fixedHbarFee(1L, NftTransferSuite.FEE_COLLECTOR))));
     }
 
     private static HapiSpecOperation createBasicAccounts() {
@@ -112,77 +108,44 @@ public class NftTransferSuite extends HapiSuite {
     }
 
     private static HapiSpecOperation associateAccountsWithTokenTypes() {
-        String[] tokenNames =
-                IntStream.range(0, NftTransferSuite.NUM_TOKEN_TYPES)
-                        .mapToObj(NftTransferSuite::tokenTypeName)
-                        .toArray(String[]::new);
-        return parFor(
-                0,
-                NftTransferSuite.NUM_ACCOUNTS,
-                id -> tokenAssociate(userAccountName(id), tokenNames));
+        String[] tokenNames = IntStream.range(0, NftTransferSuite.NUM_TOKEN_TYPES)
+                .mapToObj(NftTransferSuite::tokenTypeName)
+                .toArray(String[]::new);
+        return parFor(0, NftTransferSuite.NUM_ACCOUNTS, id -> tokenAssociate(userAccountName(id), tokenNames));
     }
 
     private static HapiSpecOperation createAccountsAndNfts() {
         return blockingOrder(
                 // Create user accounts to partake in crypto transfers
-                inParallel(
-                        createAccounts(USER_ACCOUNT_PREFIX, NftTransferSuite.NUM_ACCOUNTS),
-                        createTokenTypes()),
+                inParallel(createAccounts(USER_ACCOUNT_PREFIX, NftTransferSuite.NUM_ACCOUNTS), createTokenTypes()),
                 inParallel(
                         associateAccountsWithTokenTypes(),
                         parFor(
                                 0,
                                 NftTransferSuite.NUM_TOKEN_TYPES,
-                                id ->
-                                        mintTokensFor(
-                                                tokenTypeName(id),
-                                                NftTransferSuite.NUM_ACCOUNTS))));
+                                id -> mintTokensFor(tokenTypeName(id), NftTransferSuite.NUM_ACCOUNTS))));
     }
 
-    private static List<HapiSpecOperation> opsFor(
-            int from, int to, IntFunction<HapiSpecOperation> functionToRun) {
+    private static List<HapiSpecOperation> opsFor(int from, int to, IntFunction<HapiSpecOperation> functionToRun) {
         return IntStream.range(from, to).mapToObj(functionToRun).toList();
     }
 
-    private static HapiSpecOperation parFor(
-            int from, int to, IntFunction<HapiSpecOperation> functionToRun) {
-        return inParallel(
-                IntStream.range(from, to)
-                        .mapToObj(functionToRun)
-                        .toArray(HapiSpecOperation[]::new));
+    private static HapiSpecOperation parFor(int from, int to, IntFunction<HapiSpecOperation> functionToRun) {
+        return inParallel(IntStream.range(from, to).mapToObj(functionToRun).toArray(HapiSpecOperation[]::new));
     }
 
-    private static HapiSpecOperation seqFor(
-            int from, int to, IntFunction<HapiSpecOperation> functionToRun) {
-        return blockingOrder(
-                IntStream.range(from, to)
-                        .mapToObj(functionToRun)
-                        .toArray(HapiSpecOperation[]::new));
+    private static HapiSpecOperation seqFor(int from, int to, IntFunction<HapiSpecOperation> functionToRun) {
+        return blockingOrder(IntStream.range(from, to).mapToObj(functionToRun).toArray(HapiSpecOperation[]::new));
     }
 
     private static HapiSpecOperation transferInitial() {
-        return inParallel(
-                IntStream.range(0, NUM_ACCOUNTS)
-                        .mapToObj(
-                                accountId ->
-                                        opsFor(
-                                                0,
-                                                NftTransferSuite.NUM_TOKEN_TYPES,
-                                                tokenId ->
-                                                        cryptoTransfer(
-                                                                        TokenMovement.movingUnique(
-                                                                                        tokenTypeName(
-                                                                                                tokenId),
-                                                                                        accountId
-                                                                                                + 1)
-                                                                                .between(
-                                                                                        tokenTreasuryName(
-                                                                                                tokenId),
-                                                                                        userAccountName(
-                                                                                                accountId)))
-                                                                .payingWith(GENESIS)))
-                        .flatMap(List::stream)
-                        .toArray(HapiSpecOperation[]::new));
+        return inParallel(IntStream.range(0, NUM_ACCOUNTS)
+                .mapToObj(accountId -> opsFor(0, NftTransferSuite.NUM_TOKEN_TYPES, tokenId -> cryptoTransfer(
+                                TokenMovement.movingUnique(tokenTypeName(tokenId), accountId + 1)
+                                        .between(tokenTreasuryName(tokenId), userAccountName(accountId)))
+                        .payingWith(GENESIS)))
+                .flatMap(List::stream)
+                .toArray(HapiSpecOperation[]::new));
     }
 
     private static HapiSpecOperation transferRound(int roundNum) {
@@ -199,33 +162,15 @@ public class NftTransferSuite extends HapiSuite {
             toOffset = 0;
         }
 
-        HapiSpecOperation[] ops =
-                IntStream.range(0, halfAccounts)
-                        .mapToObj(
-                                accountId ->
-                                        opsFor(
-                                                0,
-                                                NftTransferSuite.NUM_TOKEN_TYPES,
-                                                tokenId ->
-                                                        cryptoTransfer(
-                                                                        TokenMovement.movingUnique(
-                                                                                        tokenTypeName(
-                                                                                                tokenId),
-                                                                                        2L
-                                                                                                        * accountId
-                                                                                                + 1)
-                                                                                .between(
-                                                                                        userAccountName(
-                                                                                                2
-                                                                                                                * accountId
-                                                                                                        + fromOffset),
-                                                                                        userAccountName(
-                                                                                                2
-                                                                                                                * accountId
-                                                                                                        + toOffset)))
-                                                                .payingWith(GENESIS)))
-                        .flatMap(List::stream)
-                        .toArray(HapiSpecOperation[]::new);
+        HapiSpecOperation[] ops = IntStream.range(0, halfAccounts)
+                .mapToObj(accountId -> opsFor(0, NftTransferSuite.NUM_TOKEN_TYPES, tokenId -> cryptoTransfer(
+                                TokenMovement.movingUnique(tokenTypeName(tokenId), 2L * accountId + 1)
+                                        .between(
+                                                userAccountName(2 * accountId + fromOffset),
+                                                userAccountName(2 * accountId + toOffset)))
+                        .payingWith(GENESIS)))
+                .flatMap(List::stream)
+                .toArray(HapiSpecOperation[]::new);
         return inParallel(ops);
     }
 

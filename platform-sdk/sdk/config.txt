@@ -1,0 +1,179 @@
+###############################################################################################
+# Swirlds configuration file, for automatically running multiple instances
+###############################################################################################
+swirld, 123
+
+ app,		HashgraphDemo.jar,	   1,0,0,0,0,0,0,0,0,0, all
+# app,		HelloSwirldDemo.jar
+# app,		CryptocurrencyDemo.jar
+# app,		StatsDemo.jar,		   1, 3000, 0, 100, -1, 200
+
+
+# ** BEGIN REMOVE FROM SDK RELEASES **
+# app,		StatsSigningTestingTool.jar,  1, 3000, 0, 100, -1, 1000, 5000
+# app,		StatsRandomTestingTool.jar,  0, 3000, 0, 100, -1, 250000, 5000, 1, 10	0, 1024
+# app,		StatsSeqTestingTool.jar,	   1, 3000, 1000, 100, 16, -1
+# app,		FCMStatsTestingTool.jar,	 signed, syncDelay, transPerEventMax, transPerSecToCreate
+# app,		FCMStatsTestingTool.jar,		 0,      0,         -1,               250
+# app,		PlatformTestingTool.jar, FCMFCQ-Basic-1k-10m.json
+# app,		MigrationTestingTool.jar, 4685095852903873060, 5000,	4
+# app,		ISSTestingTool.jar, 10000, 60:0-1+2+3, 120:0-1-2+3
+# app,		AddressBookTestingTool.jar,
+# ** END REMOVE FROM SDK RELEASES **
+
+ address,  A, Alice,    1, 127.0.0.1, 15301, 127.0.0.1, 15301
+ address,  B, Bob,      1, 127.0.0.1, 15302, 127.0.0.1, 15302
+ address,  C, Carol,    1, 127.0.0.1, 15303, 127.0.0.1, 15303
+ address,  D, Dave,     1, 127.0.0.1, 15304, 127.0.0.1, 15304
+# address,  E, Eric,     1, 127.0.0.1, 15305, 127.0.0.1, 15305
+# address,  F, Fred,     1, 127.0.0.1, 15306, 127.0.0.1, 15306
+# address,  G, Gina,     1, 127.0.0.1, 15307, 127.0.0.1, 15307
+# address,  H, Hank,     1, 127.0.0.1, 15308, 127.0.0.1, 15308
+# address,  I, Iris,     1, 127.0.0.1, 15309, 127.0.0.1, 15309
+# address,  J, Judy,     1, 127.0.0.1, 15310, 127.0.0.1, 15310
+# address,  K, Kent,     1, 127.0.0.1, 15311, 127.0.0.1, 15311
+# address,  L, Lucy,     1, 127.0.0.1, 15312, 127.0.0.1, 15312
+# address,  M, Mike,     1, 127.0.0.1, 15313, 127.0.0.1, 15313
+# address,  N, Nina,     1, 127.0.0.1, 15314, 127.0.0.1, 15314
+# address,  O, Olie,     1, 127.0.0.1, 15315, 127.0.0.1, 15315
+# address,  P, Pete,     1, 127.0.0.1, 15316, 127.0.0.1, 15316
+# address,  Q, Quin,     1, 127.0.0.1, 15317, 127.0.0.1, 15317
+# address,  R, Rita,     1, 127.0.0.1, 15318, 127.0.0.1, 15318
+# address,  S, Susi,     1, 127.0.0.1, 15319, 127.0.0.1, 15319
+# address,  T, Tina,     1, 127.0.0.1, 15320, 127.0.0.1, 15320
+# address,  U, Ursa,     1, 127.0.0.1, 15321, 127.0.0.1, 15321
+# address,  V, Vera,     1, 127.0.0.1, 15322, 127.0.0.1, 15322
+# address,  W, Will,     1, 127.0.0.1, 15323, 127.0.0.1, 15323
+# address,  X, Xeno,     1, 127.0.0.1, 15324, 127.0.0.1, 15324
+# address,  Y, York,     1, 127.0.0.1, 15325, 127.0.0.1, 15325
+# address,  Z, Zeke,     1, 127.0.0.1, 15326, 127.0.0.1, 15326
+# address,  !, node!,     1, 127.0.0.1, 15327, 127.0.0.1, 15327
+# address,  @, node@,     1, 127.0.0.1, 15328, 127.0.0.1, 15328
+# address,  #, node#,     1, 127.0.0.1, 15329, 127.0.0.1, 15329
+# address,  $, node$,     1, 127.0.0.1, 15330, 127.0.0.1, 15330
+# address,  %, node%,     1, 127.0.0.1, 15331, 127.0.0.1, 15331
+# address,  ^, node^,     1, 127.0.0.1, 15332, 127.0.0.1, 15332
+# address,  &, node&,     1, 127.0.0.1, 15333, 127.0.0.1, 15333
+# address,  *, node*,     1, 127.0.0.1, 15334, 127.0.0.1, 15334
+# address,  (, node(,     1, 127.0.0.1, 15335, 127.0.0.1, 15335
+# address,  ), node),     1, 127.0.0.1, 15336, 127.0.0.1, 15336
+# address,  [, node[,     1, 127.0.0.1, 15337, 127.0.0.1, 15337
+# address,  ], node],     1, 127.0.0.1, 15338, 127.0.0.1, 15338
+# address,  <, node<,     1, 127.0.0.1, 15339, 127.0.0.1, 15339
+
+
+
+# The above addresses assume all are running on the same computer.
+# If multiple computers are being used, then the listed IP addresses should be changed.
+
+# TLS, off
+# maxSyncs, 1
+# transactionMaxBytes, 1024
+# ipTos, 123
+# genesisFreezeTime, -1
+
+###############################################################################################
+# The first line can be “swirld, “ and then a name for this swirld (shared world / ledger),
+# where the name is any string without commas, line breaks, or leading/trailing whitespace.
+#
+# The optional "TLS" line can be set to on or off to choose whether to use TLS encryption.
+#
+# The optional "maxSyncs" line controls the maximum number of gossip syncs at the same time
+# initiated by a member.
+#
+# The optional "transactionMaxBytes" line sets a limit on transactions size. Any transaction
+# will be rejected if it's too big.
+#
+# The optional "ipTos" parameter sets the Type of Service (IP_ToS) byte in each of the
+# TCP/IP packets (0 to 255). The internet usually ignores this byte.
+#
+# Uncomment exactly one of the app name lines, above.
+# That line should have the the word "app", then the  jar filename,
+# then any parameters, separated by commas.
+#
+#	HelloSwirldDemo.jar parameters: none
+#
+#	CryptocurrencyDemo.jar parameters: none
+#
+#	FilesystemDemo.jar parameters: none
+#
+#	HashGraphDemo.jar takes parameters that give the initial checkbox settings,
+#		in the same order they appear are on the screen, with 1 to check it
+#		and 0 to not check it, followed by the number of events to display
+#		(or “all”). The first parameter  controls whether it runs
+#		slowly (1) or runs at full speed (0).
+#
+#	GameDemo.jar parameters:
+#		height:           height of the board (in cells). Player moves 1 cell at a time.
+#		width:            width of the board (in cells). Player moves 1 cell at a time.
+#
+#	StatsDemo.jar parameters:
+#		headless:         1 to run in a headless mode with no windows.
+#				  0 to see a window with the results.
+#		writePeriod:      how often to write stats to the file, in milliseconds.
+#		syncDelay:        how long to pause after initiating a sync, in milliseconds.
+#		bytesPerTrans:    how many bytes make up each transaction.
+#               transPerEventMax: max number of transactions to put in each event
+#                                 or -1 for infinite (no limit).
+#		transPerSec:      desired transaction per second (total created by all members)
+#                                 or -1 for infinite (no limit).
+#                                 This and transPerEventMax must not both be -1.
+#
+# After the app name line comes all the address book lines,
+# which give the addresses of all members, which is used by the simulation.
+# If the sim is run from a .jar file, put this file in the same directory as the jar.
+# If the sim is run in eclipse, put this file in the  sdk/  directory.
+#
+# Then list one member per line. For each member, list these, separated by commas
+# (after the word "address" at the start):
+#         nickname            - a short version of the member's name
+#         full name           - the member's name
+#         stake               - a nonnegative integer that weighting the consensus voting
+#                               (normally all are 1, can be others, but can't all be 0)
+#         internal IP address - four numbers, each in the range 0-255, separated by dots
+#                               (Only use 127.0.0.1 if ALL the members are on the same machine)
+#         internal port       - in range 50000-65535
+#         external IP address - four numbers, each in the range 0-255, separated by dots
+#                               (Only use 127.0.0.1 if ALL the members are on the same machine)
+#         external port       - in range 50000-65535
+#
+#         stream IP address   - (optioanl) four numbers, each in the range 0-255, separated by dots
+#                               (Only use 127.0.0.1 if ALL the members are on the same machine)
+#         stream port         - (optioanl) in range 50000-65535
+#
+#
+# Each member should be listed only once, on a single line. If all the members are on the same
+# computer, then they can each be given that computers's IP address, or they can each be given
+# 127.0.0.1, or some can be given the computer's IP address and some 127.0.0.1.
+#
+# If the members are running on 2 or more machines, then they must all be given the
+# actual IP address. The actual IP address will be something like 10.0.1.52 or
+# 192.168.2.10, but never the address 127.0.0.1. Two members on the same machine will have the
+# same address.
+#
+# No two members should have the same full name or the same nickname, even when ignoring
+# case (so alice and ALICE and aLiCe count as the same, and nicknames a and A are the same).
+#
+# The “internal” (or local or private) address is how the member computer is reached by
+# other computers on the same local network, with no Network Address Translation (NAT) in
+# between.
+#
+# The “external” (or public) address is how it is reached by outside computers. It will
+# often be the address of the router that does the NAT.
+#
+# If you don’t know an external address for a computer, then just assume that the external
+# address is the same as the internal address. This will work if there is no router, or if
+# there is a router that isn’t doing NAT, or if it is doing NAT but all the computers are
+# on the same local network.
+#
+# The ports can be chosen to be any number in the given range, as long as members on the
+# same computer are always given different ports.
+#
+# Lines starting with # are comments.
+# Blank lines are ignored.
+# Whitespace is ignored (except line breaks).
+# None of the strings, such as nicknames and names, can contain any commas or # symbols
+# or quotation marks.
+# Boolean parameters can be any of on/1/true/yes/t/y for true,
+# and any of off/0/false/no/f/n for false, where capitalization doesn’t matter.
+###############################################################################################

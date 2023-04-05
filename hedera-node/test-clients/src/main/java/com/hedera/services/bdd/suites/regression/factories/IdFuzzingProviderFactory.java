@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.regression.factories;
 
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -47,12 +48,9 @@ public class IdFuzzingProviderFactory {
         return spec -> {
             final var props = RegressionProviderFactory.propsFrom(resource);
 
-            final var keys =
-                    new RegistrySourcedNameProvider<>(
-                            Key.class, spec.registry(), new RandomSelector());
+            final var keys = new RegistrySourcedNameProvider<>(Key.class, spec.registry(), new RandomSelector());
             final var accounts =
-                    new RegistrySourcedNameProvider<>(
-                            AccountID.class, spec.registry(), new RandomSelector());
+                    new RegistrySourcedNameProvider<>(AccountID.class, spec.registry(), new RandomSelector());
 
             return new BiasedDelegatingProvider()
                     /* --- <inventory> --- */
@@ -60,11 +58,8 @@ public class IdFuzzingProviderFactory {
                     /* ----- CRYPTO ----- */
                     .withOp(
                             new RandomAccount(keys, accounts, true)
-                                    .ceiling(
-                                            intPropOrElse(
-                                                    "randomAccount.ceilingNum",
-                                                    RandomAccount.DEFAULT_CEILING_NUM,
-                                                    props)),
+                                    .ceiling(intPropOrElse(
+                                            "randomAccount.ceilingNum", RandomAccount.DEFAULT_CEILING_NUM, props)),
                             intPropOrElse("randomAccount.bias", 0, props))
                     .withOp(
                             new RandomAccountUpdate(keys, accounts),

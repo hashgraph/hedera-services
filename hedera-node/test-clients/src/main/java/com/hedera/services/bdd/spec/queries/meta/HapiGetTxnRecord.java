@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.queries.meta;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
@@ -77,6 +78,7 @@ import java.util.OptionalInt;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
@@ -108,8 +110,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     private final List<Pair<String, Long>> accountAmountsToValidate = new ArrayList<>();
     private final List<Triple<String, String, Long>> tokenAmountsToValidate = new ArrayList<>();
     private final List<AssessedNftTransfer> assessedNftTransfersToValidate = new ArrayList<>();
-    private final List<Triple<String, String, Long>> assessedCustomFeesToValidate =
-            new ArrayList<>();
+    private final List<Triple<String, String, Long>> assessedCustomFeesToValidate = new ArrayList<>();
     private final List<Pair<String, String>> newTokenAssociations = new ArrayList<>();
     private OptionalInt assessedCustomFeesSize = OptionalInt.empty();
     private Optional<TransactionID> explicitTxnId = Optional.empty();
@@ -125,14 +126,18 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     private Optional<LongConsumer> priceConsumer = Optional.empty();
     private Optional<Map<AccountID, Long>> expectedDebits = Optional.empty();
     private Optional<Consumer<Map<AccountID, Long>>> debitsConsumer = Optional.empty();
-    private Optional<ErroringAssertsProvider<List<TransactionRecord>>> duplicateExpectations =
-            Optional.empty();
+    private Optional<ErroringAssertsProvider<List<TransactionRecord>>> duplicateExpectations = Optional.empty();
     private OptionalInt childRecordsCount = OptionalInt.empty();
     private Optional<Consumer<TransactionRecord>> observer = Optional.empty();
 
     private Optional<Integer> pseudorandomNumberRange = Optional.empty();
-    @Nullable private Consumer<List<String>> createdIdsObserver = null;
-    @Nullable private Consumer<List<TokenID>> createdTokenIdsObserver = null;
+
+    @Nullable
+    private Consumer<List<String>> createdIdsObserver = null;
+
+    @Nullable
+    private Consumer<List<TokenID>> createdTokenIdsObserver = null;
+
     private boolean assertEffectivePayersAreKnown = false;
 
     private boolean pseudorandomBytesExpected = false;
@@ -141,7 +146,8 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     private List<Pair<String, Long>> paidStakingRewards = new ArrayList<>();
     private int numStakingRewardsPaid = -1;
 
-    @Nullable private Consumer<List<AccountAmount>> stakingRewardsObserver = null;
+    @Nullable
+    private Consumer<List<AccountAmount>> stakingRewardsObserver = null;
 
     private Consumer<List<?>> eventDataObserver;
     private String eventName;
@@ -188,8 +194,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         return this;
     }
 
-    public HapiGetTxnRecord exposingTokenCreationsTo(
-            final Consumer<List<TokenID>> createdTokenIdsObserver) {
+    public HapiGetTxnRecord exposingTokenCreationsTo(final Consumer<List<TokenID>> createdTokenIdsObserver) {
         this.createdTokenIdsObserver = createdTokenIdsObserver;
         return this;
     }
@@ -347,15 +352,13 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         return this;
     }
 
-    public HapiGetTxnRecord hasChildRecords(
-            final TransactionID parentId, final TransactionRecordAsserts... providers) {
+    public HapiGetTxnRecord hasChildRecords(final TransactionID parentId, final TransactionRecordAsserts... providers) {
         expectedParentId = Optional.of(parentId);
         childRecordsExpectations = Optional.of(Arrays.asList(providers));
         return this;
     }
 
-    public HapiGetTxnRecord hasDuplicates(
-            final ErroringAssertsProvider<List<TransactionRecord>> provider) {
+    public HapiGetTxnRecord hasDuplicates(final ErroringAssertsProvider<List<TransactionRecord>> provider) {
         duplicateExpectations = Optional.of(provider);
         return this;
     }
@@ -387,21 +390,18 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         return this;
     }
 
-    public HapiGetTxnRecord hasTokenAmount(
-            final String token, final String account, final long amount) {
+    public HapiGetTxnRecord hasTokenAmount(final String token, final String account, final long amount) {
         tokenAmountsToValidate.add(Triple.of(token, account, amount));
         return this;
     }
 
     public HapiGetTxnRecord hasNftTransfer(
             final String token, final String sender, final String receiver, final long serial) {
-        assessedNftTransfersToValidate.add(
-                new AssessedNftTransfer(token, sender, receiver, serial));
+        assessedNftTransfersToValidate.add(new AssessedNftTransfer(token, sender, receiver, serial));
         return this;
     }
 
-    public HapiGetTxnRecord hasAssessedCustomFee(
-            final String token, final String account, final long amount) {
+    public HapiGetTxnRecord hasAssessedCustomFee(final String token, final String account, final long amount) {
         assessedCustomFeesToValidate.add(Triple.of(token, account, amount));
         return this;
     }
@@ -434,20 +434,17 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     }
 
     @SuppressWarnings("java:S5960")
-    private void assertPriority(final HapiSpec spec, final TransactionRecord actualRecord)
-            throws Throwable {
+    private void assertPriority(final HapiSpec spec, final TransactionRecord actualRecord) throws Throwable {
         if (priorityExpectations.isPresent()) {
             final ErroringAsserts<TransactionRecord> asserts =
                     priorityExpectations.get().assertsFor(spec);
             final List<Throwable> errors = asserts.errorsIn(actualRecord);
             rethrowSummaryError(LOG, "Bad priority record!", errors);
         }
-        expectedDebits.ifPresent(
-                debits -> assertEquals(debits, asDebits(actualRecord.getTransferList())));
+        expectedDebits.ifPresent(debits -> assertEquals(debits, asDebits(actualRecord.getTransferList())));
     }
 
-    private void assertChildRecords(
-            final HapiSpec spec, final List<TransactionRecord> actualRecords) throws Throwable {
+    private void assertChildRecords(final HapiSpec spec, final List<TransactionRecord> actualRecords) throws Throwable {
         if (childRecordsExpectations.isPresent()) {
             int numStakingRecords = 0;
             if (!actualRecords.isEmpty() && isEndOfStakingPeriodRecord(actualRecords.get(0))) {
@@ -465,21 +462,23 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
             }
 
             final var numActualRecords = actualRecords.size();
-            assertEquals(
-                    expectedChildRecords.size(),
-                    numActualRecords - numStakingRecords,
-                    "Wrong # of (non-staking) child records");
+            if (expectedChildRecords.size() != (numActualRecords - numStakingRecords)) {
+                final var printableActualRecords = actualRecords.stream()
+                        .filter(r -> !isEndOfStakingPeriodRecord(r))
+                        .map(TransactionRecord::toString)
+                        .collect(Collectors.joining(", "));
+                assertEquals(
+                        expectedChildRecords.size(),
+                        numActualRecords - numStakingRecords,
+                        "Wrong # of (non-staking) child records, got: " + printableActualRecords);
+            }
             for (int i = numStakingRecords; i < numActualRecords; i++) {
                 final var expectedChildRecord = expectedChildRecords.get(i - numStakingRecords);
                 final var actualChildRecord = actualRecords.get(i);
-                final ErroringAsserts<TransactionRecord> asserts =
-                        expectedChildRecord.assertsFor(spec);
+                final ErroringAsserts<TransactionRecord> asserts = expectedChildRecord.assertsFor(spec);
                 final List<Throwable> errors = asserts.errorsIn(actualChildRecord);
                 rethrowSummaryError(LOG, "Bad child records!", errors);
-                expectedDebits.ifPresent(
-                        debits ->
-                                assertEquals(
-                                        debits, asDebits(actualChildRecord.getTransferList())));
+                expectedDebits.ifPresent(debits -> assertEquals(debits, asDebits(actualChildRecord.getTransferList())));
             }
         }
     }
@@ -488,9 +487,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         if (duplicateExpectations.isPresent()) {
             final var asserts = duplicateExpectations.get().assertsFor(spec);
             final var errors =
-                    asserts.errorsIn(
-                            response.getTransactionGetRecord()
-                                    .getDuplicateTransactionRecordsList());
+                    asserts.errorsIn(response.getTransactionGetRecord().getDuplicateTransactionRecordsList());
             rethrowSummaryError(LOG, "Bad duplicate records!", errors);
         }
     }
@@ -504,8 +501,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                 "Bad transaction hash!");
     }
 
-    private void assertTopicRunningHash(final HapiSpec spec, final TransactionRecord actualRecord)
-            throws IOException {
+    private void assertTopicRunningHash(final HapiSpec spec, final TransactionRecord actualRecord) throws IOException {
         if (topicToValidate.isPresent()) {
             if (actualRecord.getReceipt().getStatus().equals(ResponseCodeEnum.SUCCESS)) {
                 final var previousRunningHash = spec.registry().getBytes(topicToValidate.get());
@@ -528,17 +524,12 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                     out.flush();
                     final var expectedRunningHash = noThrowSha384HashOf(boas.toByteArray());
                     final var actualRunningHash = actualRecord.getReceipt().getTopicRunningHash();
-                    assertArrayEquals(
-                            expectedRunningHash,
-                            actualRunningHash.toByteArray(),
-                            "Bad running hash!");
+                    assertArrayEquals(expectedRunningHash, actualRunningHash.toByteArray(), "Bad running hash!");
                     spec.registry().saveBytes(topicToValidate.get(), actualRunningHash);
                 }
             } else {
                 if (verboseLoggingOn) {
-                    LOG.warn(
-                            "Cannot validate running hash for an unsuccessful submit message"
-                                    + " transaction!");
+                    LOG.warn("Cannot validate running hash for an unsuccessful submit message" + " transaction!");
                 }
             }
         }
@@ -558,25 +549,15 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         assertChildRecords(spec, childRecords);
 
         if (assertEffectivePayersAreKnown) {
-            actualRecord
-                    .getAssessedCustomFeesList()
-                    .forEach(
-                            acf ->
-                                    acf.getEffectivePayerAccountIdList()
-                                            .forEach(
-                                                    effPayer ->
-                                                            assertNotEquals(
-                                                                    0L,
-                                                                    effPayer.getAccountNum(),
-                                                                    "Assessed fee "
-                                                                            + acf
-                                                                            + " has unknown"
-                                                                            + " effective payer")));
+            actualRecord.getAssessedCustomFeesList().forEach(acf -> acf.getEffectivePayerAccountIdList()
+                    .forEach(effPayer -> assertNotEquals(
+                            0L,
+                            effPayer.getAccountNum(),
+                            "Assessed fee " + acf + " has unknown" + " effective payer")));
         }
     }
 
-    private void assertCorrectRecord(final HapiSpec spec, final TransactionRecord actualRecord)
-            throws Throwable {
+    private void assertCorrectRecord(final HapiSpec spec, final TransactionRecord actualRecord) throws Throwable {
         assertPriority(spec, actualRecord);
         if (scheduled || assertOnlyPriority) {
             return;
@@ -591,32 +572,24 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         }
         if (!accountAmountsToValidate.isEmpty()) {
             final var accountAmounts = actualRecord.getTransferList().getAccountAmountsList();
-            accountAmountsToValidate.forEach(
-                    pair ->
-                            validateAccountAmount(
-                                    asIdForKeyLookUp(pair.getLeft(), spec),
-                                    pair.getRight(),
-                                    accountAmounts));
+            accountAmountsToValidate.forEach(pair ->
+                    validateAccountAmount(asIdForKeyLookUp(pair.getLeft(), spec), pair.getRight(), accountAmounts));
         }
         final var tokenTransferLists = actualRecord.getTokenTransferListsList();
         if (!tokenAmountsToValidate.isEmpty()) {
-            tokenAmountsToValidate.forEach(
-                    triple ->
-                            validateTokenAmount(
-                                    asTokenId(triple.getLeft(), spec),
-                                    asIdForKeyLookUp(triple.getMiddle(), spec),
-                                    triple.getRight(),
-                                    tokenTransferLists));
+            tokenAmountsToValidate.forEach(triple -> validateTokenAmount(
+                    asTokenId(triple.getLeft(), spec),
+                    asIdForKeyLookUp(triple.getMiddle(), spec),
+                    triple.getRight(),
+                    tokenTransferLists));
         }
         if (!assessedNftTransfersToValidate.isEmpty()) {
-            assessedNftTransfersToValidate.forEach(
-                    transfer ->
-                            validateAssessedNftTransfer(
-                                    asTokenId(transfer.getToken(), spec),
-                                    asIdForKeyLookUp(transfer.getSender(), spec),
-                                    asIdForKeyLookUp(transfer.getReceiver(), spec),
-                                    transfer.getSerial(),
-                                    tokenTransferLists));
+            assessedNftTransfersToValidate.forEach(transfer -> validateAssessedNftTransfer(
+                    asTokenId(transfer.getToken(), spec),
+                    asIdForKeyLookUp(transfer.getSender(), spec),
+                    asIdForKeyLookUp(transfer.getReceiver(), spec),
+                    transfer.getSerial(),
+                    tokenTransferLists));
         }
         final var actualAssessedCustomFees = actualRecord.getAssessedCustomFeesList();
         if (assessedCustomFeesSize.isPresent()) {
@@ -626,24 +599,18 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                     "Unexpected size of assessed_custom_fees:\n" + actualAssessedCustomFees);
         }
         if (!assessedCustomFeesToValidate.isEmpty()) {
-            assessedCustomFeesToValidate.forEach(
-                    triple ->
-                            validateAssessedCustomFees(
-                                    triple.getLeft().equals(HBAR_TOKEN_SENTINEL)
-                                            ? null
-                                            : asTokenId(triple.getLeft(), spec),
-                                    asId(triple.getMiddle(), spec),
-                                    triple.getRight(),
-                                    actualAssessedCustomFees));
+            assessedCustomFeesToValidate.forEach(triple -> validateAssessedCustomFees(
+                    triple.getLeft().equals(HBAR_TOKEN_SENTINEL) ? null : asTokenId(triple.getLeft(), spec),
+                    asId(triple.getMiddle(), spec),
+                    triple.getRight(),
+                    actualAssessedCustomFees));
         }
         final var actualNewTokenAssociations = actualRecord.getAutomaticTokenAssociationsList();
         if (!newTokenAssociations.isEmpty()) {
-            newTokenAssociations.forEach(
-                    pair ->
-                            validateNewTokenAssociations(
-                                    asTokenId(pair.getLeft(), spec),
-                                    asIdForKeyLookUp(pair.getRight(), spec),
-                                    actualNewTokenAssociations));
+            newTokenAssociations.forEach(pair -> validateNewTokenAssociations(
+                    asTokenId(pair.getLeft(), spec),
+                    asIdForKeyLookUp(pair.getRight(), spec),
+                    actualNewTokenAssociations));
         }
         if (!childExpectations.isEmpty()) {
             for (final var index : childExpectations.entrySet()) {
@@ -675,10 +642,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         if (validateStakingFees) {
             final var actualTxnFee = actualRecord.getTransactionFee();
             final var transferList = actualRecord.getTransferList();
-            final var pendingRewards =
-                    actualRecord.getPaidStakingRewardsList().stream()
-                            .mapToLong(AccountAmount::getAmount)
-                            .sum();
+            final var pendingRewards = actualRecord.getPaidStakingRewardsList().stream()
+                    .mapToLong(AccountAmount::getAmount)
+                    .sum();
             assertStakingAccountFees(transferList, actualTxnFee, pendingRewards);
         }
 
@@ -689,8 +655,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         if (noPseudoRandomData) {
             final var actualByteString = actualRecord.getPrngBytes();
             final var actualRandomNum = actualRecord.getPrngNumber();
-            assertEquals(
-                    TransactionRecord.EntropyCase.ENTROPY_NOT_SET, actualRecord.getEntropyCase());
+            assertEquals(TransactionRecord.EntropyCase.ENTROPY_NOT_SET, actualRecord.getEntropyCase());
             assertEquals(ByteString.EMPTY, actualByteString);
             assertEquals(0, actualRandomNum);
         }
@@ -712,8 +677,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     private void assertNoStakingAccountFees(final TransferList transferList) {
         for (final var adjust : transferList.getAccountAmountsList()) {
             final var id = adjust.getAccountID();
-            if ((id.getAccountNum() == 801L || id.getAccountNum() == 800L)
-                    && adjust.getAmount() > 0) {
+            if ((id.getAccountNum() == 801L || id.getAccountNum() == 800L) && adjust.getAmount() > 0) {
                 Assertions.fail("Staking fees present in the txnRecord");
             }
         }
@@ -741,17 +705,14 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     }
 
     private void validateNewTokenAssociations(
-            final TokenID token,
-            final AccountID account,
-            final List<TokenAssociation> newTokenAssociations) {
+            final TokenID token, final AccountID account, final List<TokenAssociation> newTokenAssociations) {
         for (final var newTokenAssociation : newTokenAssociations) {
             if (newTokenAssociation.getTokenId().equals(token)
                     && newTokenAssociation.getAccountId().equals(account)) {
                 return;
             }
         }
-        Assertions.fail(
-                cannotFind(token, account) + " in the new_token_associations of the txnRecord");
+        Assertions.fail(cannotFind(token, account) + " in the new_token_associations of the txnRecord");
     }
 
     private void validateAssessedCustomFees(
@@ -767,9 +728,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
             }
         }
 
-        Assertions.fail(
-                cannotFind(tokenID, accountID, amount)
-                        + " in the assessed_custom_fees of the txnRecord");
+        Assertions.fail(cannotFind(tokenID, accountID, amount) + " in the assessed_custom_fees of the txnRecord");
     }
 
     private String cannotFind(final TokenID tokenID, final AccountID accountID) {
@@ -784,16 +743,13 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         for (final var ttl : tokenTransferLists) {
             if (ttl.getToken().equals(tokenID)) {
                 final var accountAmounts = ttl.getTransfersList();
-                if (!accountAmounts.isEmpty()
-                        && foundInAccountAmountsList(accountID, amount, accountAmounts)) {
+                if (!accountAmounts.isEmpty() && foundInAccountAmountsList(accountID, amount, accountAmounts)) {
                     return;
                 }
             }
         }
 
-        Assertions.fail(
-                cannotFind(tokenID, accountID, amount)
-                        + " in the tokenTransferLists of the txnRecord");
+        Assertions.fail(cannotFind(tokenID, accountID, amount) + " in the tokenTransferLists of the txnRecord");
     }
 
     private String cannotFind(final TokenID tokenID, final AccountID accountID, final long amount) {
@@ -809,23 +765,17 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         for (final var ttl : tokenTransferLists) {
             if (ttl.getToken().equals(tokenID)) {
                 final var nftTransferList = ttl.getNftTransfersList();
-                if (!nftTransferList.isEmpty()
-                        && foundInNftTransferList(sender, receiver, serial, nftTransferList)) {
+                if (!nftTransferList.isEmpty() && foundInNftTransferList(sender, receiver, serial, nftTransferList)) {
                     return;
                 }
             }
         }
 
-        Assertions.fail(
-                cannotFind(tokenID, sender, receiver, serial)
-                        + " in the tokenTransferLists of the txnRecord");
+        Assertions.fail(cannotFind(tokenID, sender, receiver, serial) + " in the tokenTransferLists of the txnRecord");
     }
 
     private String cannotFind(
-            final TokenID tokenID,
-            final AccountID sender,
-            final AccountID receiver,
-            final long serial) {
+            final TokenID tokenID, final AccountID sender, final AccountID receiver, final long serial) {
         return "Cannot find TokenID: "
                 + tokenID
                 + " sender: "
@@ -853,9 +803,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     }
 
     private void validateAccountAmount(
-            final AccountID accountID,
-            final long amount,
-            final List<AccountAmount> accountAmountsList) {
+            final AccountID accountID, final long amount, final List<AccountAmount> accountAmountsList) {
         final var found = foundInAccountAmountsList(accountID, amount, accountAmountsList);
         assertTrue(
                 found,
@@ -868,9 +816,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     }
 
     private boolean foundInAccountAmountsList(
-            final AccountID accountID,
-            final long amount,
-            final List<AccountAmount> accountAmountsList) {
+            final AccountID accountID, final long amount, final List<AccountAmount> accountAmountsList) {
         for (final var aa : accountAmountsList) {
             if (aa.getAmount() == amount && aa.getAccountID().equals(accountID)) {
                 return true;
@@ -882,13 +828,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
     @Override
     @SuppressWarnings("java:S1874")
-    protected void submitWith(final HapiSpec spec, final Transaction payment)
-            throws InvalidProtocolBufferException {
+    protected void submitWith(final HapiSpec spec, final Transaction payment) throws InvalidProtocolBufferException {
         final Query query = getRecordQuery(spec, payment, false);
-        response =
-                spec.clients()
-                        .getCryptoSvcStub(targetNodeFor(spec), useTls)
-                        .getTxRecordByTxID(query);
+        response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getTxRecordByTxID(query);
         final TransactionRecord rcd = response.getTransactionGetRecord().getTransactionRecord();
         if (contractResultAbi != null) {
             exposeRequestedEventsFrom(rcd);
@@ -898,25 +840,23 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         }
         observer.ifPresent(obs -> obs.accept(rcd));
         childRecords = response.getTransactionGetRecord().getChildTransactionRecordsList();
-        childRecordsCount.ifPresent(
-                count -> {
-                    if (includeStakingRecordsInCount) {
-                        assertEquals(count, childRecords.size());
-                    } else {
-                        int observedCount = childRecords.size();
-                        if (!childRecords.isEmpty()
-                                && isEndOfStakingPeriodRecord(childRecords.get(0))) {
-                            observedCount--;
-                        }
-                        assertEquals(count, observedCount, "Wrong # of non-staking records");
-                    }
-                });
+        childRecordsCount.ifPresent(count -> {
+            if (includeStakingRecordsInCount) {
+                assertEquals(count, childRecords.size());
+            } else {
+                int observedCount = childRecords.size();
+                if (!childRecords.isEmpty() && isEndOfStakingPeriodRecord(childRecords.get(0))) {
+                    observedCount--;
+                }
+                assertEquals(count, observedCount, "Wrong # of non-staking records");
+            }
+        });
         final List<String> creations = (createdIdsObserver != null) ? new ArrayList<>() : null;
-        final List<TokenID> tokenCreations =
-                (createdTokenIdsObserver != null) ? new ArrayList<>() : null;
+        final List<TokenID> tokenCreations = (createdTokenIdsObserver != null) ? new ArrayList<>() : null;
         for (final var rec : childRecords) {
             if (rec.getReceipt().hasAccountID() && creations != null) {
-                creations.add(HapiPropertySource.asAccountString(rec.getReceipt().getAccountID()));
+                creations.add(
+                        HapiPropertySource.asAccountString(rec.getReceipt().getAccountID()));
             }
             if (rec.getReceipt().hasTokenID() && tokenCreations != null) {
                 tokenCreations.add(rec.getReceipt().getTokenID());
@@ -926,8 +866,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                         .saveAccountId(
                                 rec.getAlias().toStringUtf8(), rec.getReceipt().getAccountID());
                 try {
-                    spec.registry()
-                            .saveKey(rec.getAlias().toStringUtf8(), Key.parseFrom(rec.getAlias()));
+                    spec.registry().saveKey(rec.getAlias().toStringUtf8(), Key.parseFrom(rec.getAlias()));
                 } catch (InvalidProtocolBufferException e) {
                     LOG.debug(
                             "Cannot save alias {} as key, since it is an evmAddress alias.",
@@ -955,11 +894,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                 final var rates = spec.ratesProvider();
                 if (rates.hasRateSet()) {
                     final var priceInUsd = sdec(rates.toUsdWithActiveRates(fee), 5);
-                    LOG.info(
-                            "{}Record (charged ${}): {}",
-                            spec::logPrefix,
-                            () -> priceInUsd,
-                            () -> rcd);
+                    LOG.info("{}Record (charged ${}): {}", spec::logPrefix, () -> priceInUsd, () -> rcd);
                 }
                 LOG.info(
                         "{}  And {} child record{}: {}",
@@ -967,9 +902,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                         childRecords::size,
                         () -> childRecords.size() > 1 ? "s" : "",
                         () -> childRecords);
-                LOG.info(
-                        "Duplicates: {}",
-                        response.getTransactionGetRecord().getDuplicateTransactionRecordsList());
+                LOG.info("Duplicates: {}", response.getTransactionGetRecord().getDuplicateTransactionRecordsList());
             }
         }
         if (response.getTransactionGetRecord().getHeader().getNodeTransactionPrecheckCode() == OK) {
@@ -993,7 +926,8 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
     private void exposeRequestedEventsFrom(final TransactionRecord rcd) {
         final var events = ABIJSON.parseEvents(contractResultAbi);
-        final var event = events.stream().filter(e -> eventName.equals(e.getName())).findFirst();
+        final var event =
+                events.stream().filter(e -> eventName.equals(e.getName())).findFirst();
         final var logs = rcd.getContractCallResult().getLogInfoList();
         for (final var log : logs) {
             final var data = log.getData().toByteArray();
@@ -1012,18 +946,14 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     protected long lookupCostWith(final HapiSpec spec, final Transaction payment) throws Throwable {
         final Query query = getRecordQuery(spec, payment, true);
         final Response response =
-                spec.clients()
-                        .getCryptoSvcStub(targetNodeFor(spec), useTls)
-                        .getTxRecordByTxID(query);
+                spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getTxRecordByTxID(query);
         return costFrom(response);
     }
 
-    private Query getRecordQuery(
-            final HapiSpec spec, final Transaction payment, final boolean costOnly) {
-        TransactionID txnId =
-                useDefaultTxnId
-                        ? defaultTxnId
-                        : explicitTxnId.orElseGet(() -> spec.registry().getTxnId(txn));
+    private Query getRecordQuery(final HapiSpec spec, final Transaction payment, final boolean costOnly) {
+        TransactionID txnId = useDefaultTxnId
+                ? defaultTxnId
+                : explicitTxnId.orElseGet(() -> spec.registry().getTxnId(txn));
         if (lookupScheduledFromRegistryId) {
             txnId = spec.registry().getTxnId(correspondingScheduledTxnId(creationName.get()));
         } else {
@@ -1037,22 +967,19 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         } else {
             header = costOnly ? answerCostHeader(payment) : answerHeader(payment);
         }
-        final TransactionGetRecordQuery getRecordQuery =
-                TransactionGetRecordQuery.newBuilder()
-                        .setHeader(header)
-                        .setTransactionID(txnId)
-                        .setIncludeDuplicates(requestDuplicates)
-                        .setIncludeChildRecords(requestChildRecords)
-                        .build();
+        final TransactionGetRecordQuery getRecordQuery = TransactionGetRecordQuery.newBuilder()
+                .setHeader(header)
+                .setTransactionID(txnId)
+                .setIncludeDuplicates(requestDuplicates)
+                .setIncludeChildRecords(requestChildRecords)
+                .build();
         return Query.newBuilder().setTransactionGetRecord(getRecordQuery).build();
     }
 
     @Override
     protected long costOnlyNodePayment(final HapiSpec spec) throws Throwable {
         return spec.fees()
-                .forOp(
-                        HederaFunctionality.TransactionGetRecord,
-                        cryptoFees.getCostTransactionRecordQueryFeeMatrices());
+                .forOp(HederaFunctionality.TransactionGetRecord, cryptoFees.getCostTransactionRecordQueryFeeMatrices());
     }
 
     @Override
@@ -1075,8 +1002,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         private final String receiver;
         private final long serial;
 
-        public AssessedNftTransfer(
-                final String token, final String sender, final String receiver, final long serial) {
+        public AssessedNftTransfer(final String token, final String sender, final String receiver, final long serial) {
             this.token = token;
             this.sender = sender;
             this.receiver = receiver;

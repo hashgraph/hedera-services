@@ -13,16 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.test.handlers;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.handlers.CryptoCreateHandler;
-import com.hedera.node.app.spi.meta.PreHandleContext;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -58,24 +59,20 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void handleNotImplemented() {
-        assertThrows(UnsupportedOperationException.class, () -> subject.handle(metaToHandle));
+        assertThrows(UnsupportedOperationException.class, () -> subject.handle());
     }
 
     private TransactionBody createAccountTransaction(final boolean receiverSigReq) {
-        final var transactionID =
-                TransactionID.newBuilder()
-                        .setAccountID(payer)
-                        .setTransactionValidStart(consensusTimestamp);
-        final var createTxnBody =
-                CryptoCreateTransactionBody.newBuilder()
-                        .setKey(key)
-                        .setReceiverSigRequired(receiverSigReq)
-                        .setMemo("Create Account")
-                        .build();
+        final var transactionID = TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
+        final var createTxnBody = CryptoCreateTransactionBody.newBuilder()
+                .key(key)
+                .receiverSigRequired(receiverSigReq)
+                .memo("Create Account")
+                .build();
 
         return TransactionBody.newBuilder()
-                .setTransactionID(transactionID)
-                .setCryptoCreateAccount(createTxnBody)
+                .transactionID(transactionID)
+                .cryptoCreateAccount(createTxnBody)
                 .build();
     }
 }

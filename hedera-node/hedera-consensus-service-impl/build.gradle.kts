@@ -13,28 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-plugins {
-    id("com.hedera.hashgraph.conventions")
-}
+
+plugins { id("com.hedera.hashgraph.conventions") }
 
 description = "Default Hedera Consensus Service Implementation"
 
 configurations.all {
-    exclude("javax.annotation", "javax.annotation-api")
+  exclude("javax.annotation", "javax.annotation-api")
 
-    exclude("io.grpc", "grpc-core")
-    exclude("io.grpc", "grpc-context")
-    exclude("io.grpc", "grpc-api")
-    exclude("io.grpc", "grpc-testing")
+  exclude("io.grpc", "grpc-core")
+  exclude("io.grpc", "grpc-context")
+  exclude("io.grpc", "grpc-api")
+  exclude("io.grpc", "grpc-testing")
 }
 
 dependencies {
-    annotationProcessor(libs.dagger.compiler)
-    api(project(":hedera-node:hedera-consensus-service"))
-    implementation(project(":hedera-node:hedera-mono-service"))
-    implementation(libs.bundles.di)
-    testImplementation(testLibs.bundles.testing)
-    testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
-    testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
-    testImplementation(testLibs.mockito.inline)
+  annotationProcessor(libs.dagger.compiler)
+  api(project(":hedera-node:hapi"))
+  api(project(":hedera-node:hedera-consensus-service"))
+  api(project(":hedera-node:hapi"))
+  implementation(project(":hedera-node:hedera-mono-service"))
+  implementation(libs.bundles.di)
+  implementation(libs.pbj.runtime)
+  implementation(libs.swirlds.common)
+  testImplementation(testLibs.bundles.testing)
+  testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
+  testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
+  testImplementation(testLibs.mockito.inline)
 }

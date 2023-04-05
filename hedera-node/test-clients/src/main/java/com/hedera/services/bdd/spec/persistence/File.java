@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.persistence;
 
 import static com.hedera.services.bdd.spec.persistence.Entity.UNUSED_KEY_LIST;
@@ -32,8 +33,7 @@ import java.util.stream.IntStream;
 
 public class File {
     private static final String UNSPECIFIED_CONTENTS_LOC = null;
-    private static final String DEFAULT_CONTENTS =
-            "What America did you have / When Charon quit poling his ferry";
+    private static final String DEFAULT_CONTENTS = "What America did you have / When Charon quit poling his ferry";
     private static final String CONTENTS_SUBDIR = "code";
     private static final String MISSING_MEMO = null;
 
@@ -47,10 +47,7 @@ public class File {
                 wacl.getListOf().get(i).registerWith(spec, under(name + i));
             }
         }
-        entityId.ifPresent(
-                id -> {
-                    spec.registry().saveFileId(name, id.asFile());
-                });
+        entityId.ifPresent(id -> spec.registry().saveFileId(name, id.asFile()));
     }
 
     public HapiQueryOp<?> existenceCheck(String name) {
@@ -63,13 +60,9 @@ public class File {
         if (data == UNSPECIFIED_CONTENTS_LOC) {
             op.contents(DEFAULT_CONTENTS);
         } else {
-            op.path(
-                    spec ->
-                            spec.setup().persistentEntitiesDir()
-                                    + java.io.File.separator
-                                    + String.join(
-                                            java.io.File.separator,
-                                            new String[] {FILES_SUBDIR, CONTENTS_SUBDIR, data}));
+            op.path(spec -> spec.setup().persistentEntitiesDir()
+                    + java.io.File.separator
+                    + String.join(java.io.File.separator, new String[] {FILES_SUBDIR, CONTENTS_SUBDIR, data}));
         }
 
         if (memo != MISSING_MEMO) {
@@ -77,10 +70,9 @@ public class File {
         }
 
         if (wacl != UNUSED_KEY_LIST) {
-            var constituents =
-                    IntStream.range(0, wacl.getListOf().size())
-                            .mapToObj(i -> name + i)
-                            .collect(toList());
+            var constituents = IntStream.range(0, wacl.getListOf().size())
+                    .mapToObj(i -> name + i)
+                    .collect(toList());
             op.key(name);
             return blockingOrder(newKeyListNamed(name, constituents), op);
         }

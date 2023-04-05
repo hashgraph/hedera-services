@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.backing;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -22,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.RecordsStorageAdapter;
@@ -48,10 +50,14 @@ class BackingAccountsTest {
     private final AccountID b = asAccount("0.0.2");
     private final EntityNum aKey = EntityNum.fromAccountId(a);
     private final EntityNum bKey = EntityNum.fromAccountId(b);
-    private final MerkleAccount aValue = MerkleAccountFactory.newAccount().balance(123L).get();
-    private final MerkleAccount bValue = MerkleAccountFactory.newAccount().balance(122L).get();
+    private final MerkleAccount aValue =
+            MerkleAccountFactory.newAccount().balance(123L).get();
+    private final MerkleAccount bValue =
+            MerkleAccountFactory.newAccount().balance(122L).get();
 
-    @Mock private RecordsStorageAdapter payerRecords;
+    @Mock
+    private RecordsStorageAdapter payerRecords;
+
     private MerkleMap<EntityNum, MerkleAccount> delegate;
     private BackingAccounts subject;
 
@@ -61,9 +67,8 @@ class BackingAccountsTest {
         delegate.put(aKey, aValue);
         delegate.put(bKey, bValue);
 
-        subject =
-                new BackingAccounts(
-                        () -> AccountStorageAdapter.fromInMemory(delegate), () -> payerRecords);
+        subject = new BackingAccounts(
+                () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(delegate)), () -> payerRecords);
 
         subject.rebuildFromSources();
     }
@@ -71,8 +76,7 @@ class BackingAccountsTest {
     @Test
     void auxiliarySetIsRebuiltFromScratch() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance()
-                .registerConstructable(
-                        new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
+                .registerConstructable(new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
         final var idSet = subject.getExistingAccounts();
 
         subject.rebuildFromSources();
@@ -166,8 +170,7 @@ class BackingAccountsTest {
     void twoPutsChangesG4M() throws ConstructableRegistryException {
         // setup:
         ConstructableRegistry.getInstance()
-                .registerConstructable(
-                        new ClassConstructorPair(KeyedMerkleLong.class, KeyedMerkleLong::new));
+                .registerConstructable(new ClassConstructorPair(KeyedMerkleLong.class, KeyedMerkleLong::new));
         final var oneGrandKey = new FcLong(1000L);
         final var twoGrandKey = new FcLong(2000L);
         final var evilKey = new FcLong(666L);

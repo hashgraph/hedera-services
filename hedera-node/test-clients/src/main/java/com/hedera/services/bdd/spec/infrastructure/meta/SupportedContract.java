@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.meta;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.bytecodePath;
@@ -24,23 +25,17 @@ import java.util.List;
 
 public enum SupportedContract {
     SIMPLE_STORAGE(
-            bytecodePath("SimpleStorage"),
-            List.of(
-                    new ContractCallDetails(
-                            getABIFor(FUNCTION, "set", "SimpleStorage"),
-                            new Object[] {BigInteger.valueOf(1)})),
-            List.of(
-                    new ContractCallDetails(
-                            getABIFor(FUNCTION, "get", "SimpleStorage"), new Object[] {})));
+            bytecodePath(Constants.SIMPLE_STORAGE1),
+            List.of(new ContractCallDetails(
+                    getABIFor(FUNCTION, "set", Constants.SIMPLE_STORAGE1), new Object[] {BigInteger.valueOf(1)})),
+            List.of(new ContractCallDetails(getABIFor(FUNCTION, "get", Constants.SIMPLE_STORAGE1), new Object[] {})));
 
     private final String pathToBytecode;
     private final List<ContractCallDetails> callDetails;
     private final List<ContractCallDetails> localCallDetails;
 
     SupportedContract(
-            String pathToBytecode,
-            List<ContractCallDetails> callDetails,
-            List<ContractCallDetails> localCallDetails) {
+            String pathToBytecode, List<ContractCallDetails> callDetails, List<ContractCallDetails> localCallDetails) {
         this.pathToBytecode = pathToBytecode;
         this.callDetails = callDetails;
         this.localCallDetails = localCallDetails;
@@ -56,5 +51,9 @@ public enum SupportedContract {
 
     public String getPathToBytecode() {
         return pathToBytecode;
+    }
+
+    private static class Constants {
+        static final String SIMPLE_STORAGE1 = "SimpleStorage";
     }
 }

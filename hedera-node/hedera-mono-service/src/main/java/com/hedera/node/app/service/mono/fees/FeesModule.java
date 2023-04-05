@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
@@ -26,7 +27,6 @@ import com.hedera.node.app.service.mono.fees.annotations.GenericPriceMultiplier;
 import com.hedera.node.app.service.mono.fees.calculation.BasicFcfsUsagePrices;
 import com.hedera.node.app.service.mono.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.node.app.service.mono.fees.calculation.TxnResourceUsageEstimator;
-import com.hedera.node.app.service.mono.fees.calculation.UsageBasedFeeCalculator;
 import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
 import com.hedera.node.app.service.mono.fees.calculation.consensus.ConsensusFeesModule;
 import com.hedera.node.app.service.mono.fees.calculation.contract.ContractFeesModule;
@@ -73,12 +73,7 @@ import javax.inject.Singleton;
 public interface FeesModule {
     @Binds
     @Singleton
-    StorageFeeCharging bindStorageFeeCharging(
-            RecordedStorageFeeCharging recordedStorageFeeCharging);
-
-    @Binds
-    @Singleton
-    FeeCalculator bindFeeCalculator(UsageBasedFeeCalculator usageBasedFeeCalculator);
+    StorageFeeCharging bindStorageFeeCharging(RecordedStorageFeeCharging recordedStorageFeeCharging);
 
     @Binds
     @Singleton
@@ -91,14 +86,12 @@ public interface FeesModule {
     @Binds
     @Singleton
     @GenericPriceMultiplier
-    FeeMultiplierSource bindGenericFeeMultiplierSource(
-            TxnRateFeeMultiplierSource txnRateFeeMultiplierSource);
+    FeeMultiplierSource bindGenericFeeMultiplierSource(TxnRateFeeMultiplierSource txnRateFeeMultiplierSource);
 
     @Binds
     @Singleton
     @GasPriceMultiplier
-    FeeMultiplierSource bindGasFeeMultiplierSource(
-            GasPriceMultiplierSource gasPriceMultiplierSource);
+    FeeMultiplierSource bindGasFeeMultiplierSource(GasPriceMultiplierSource gasPriceMultiplierSource);
 
     @Provides
     @Singleton
@@ -133,8 +126,7 @@ public interface FeesModule {
     @Provides
     @IntoMap
     @FunctionKey(Freeze)
-    static List<TxnResourceUsageEstimator> provideFreezeEstimator(
-            FreezeResourceUsage freezeResourceUsage) {
+    static List<TxnResourceUsageEstimator> provideFreezeEstimator(FreezeResourceUsage freezeResourceUsage) {
         return List.of(freezeResourceUsage);
     }
 

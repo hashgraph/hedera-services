@@ -13,31 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.test.entity;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.node.app.service.token.entity.Account.HBARS_TO_TINYBARS;
-import static org.junit.jupiter.api.Assertions.*;
+import static com.hedera.node.app.spi.accounts.Account.HBARS_TO_TINYBARS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.google.protobuf.ByteString;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.node.app.service.token.impl.entity.AccountBuilderImpl;
 import com.hedera.node.app.service.token.impl.entity.AccountImpl;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hederahashgraph.api.proto.java.Key;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class AccountImplTest {
     private AccountImpl subject;
-    private final HederaKey key =
-            asHederaKey(
-                            Key.newBuilder()
-                                    .setEd25519(
-                                            ByteString.copyFromUtf8(
-                                                    "01234567890123456789012345678911"))
-                                    .build())
-                    .get();
+    private final HederaKey key = asHederaKey(Key.newBuilder()
+                    .ed25519(Bytes.wrap("01234567890123456789012345678911"))
+                    .build())
+            .get();
 
     @BeforeEach
     void setUp() {
@@ -65,9 +66,8 @@ class AccountImplTest {
     @Test
     void toStringWorks() {
         final var actual = subject.toString();
-        final var expected =
-                "AccountImpl[accountNumber=2,alias=Optional.empty,key=<JEd25519Key: ed25519"
-                    + " hex=3031323334353637383930313233343536373839303132333435363738393131>,expiry=123456789,balance=20000000000,memo=test,isDeleted=true,isSmartContract=true,isReceiverSigRequired=true,numberOfOwnedNfts=100,maxAutoAssociations=200,usedAutoAssociations=10,numAssociations=20,numPositiveBalances=10,ethereumNonce=20,stakedToMe=1000000,stakePeriodStart=123456,stakedNum=2,declineReward=false,stakeAtStartOfLastRewardedPeriod=1000,autoRenewAccountNumber=3000,autoRenewSecs=360000]";
+        final var expected = "AccountImpl[accountNumber=2,alias=Optional.empty,key=<JEd25519Key: ed25519"
+                + " hex=3031323334353637383930313233343536373839303132333435363738393131>,expiry=123456789,balance=20000000000,memo=test,isDeleted=true,isSmartContract=true,isReceiverSigRequired=true,numberOfOwnedNfts=100,maxAutoAssociations=200,usedAutoAssociations=10,numAssociations=20,numPositiveBalances=10,ethereumNonce=20,stakedToMe=1000000,stakePeriodStart=123456,stakedNum=2,declineReward=false,stakeAtStartOfLastRewardedPeriod=1000,autoRenewAccountNumber=3000,autoRenewSecs=360000]";
         assertEquals(expected, actual);
     }
 
@@ -95,8 +95,6 @@ class AccountImplTest {
         assertEquals(1_000L, subject.stakeAtStartOfLastRewardedPeriod());
         assertEquals(3_000L, subject.autoRenewAccountNumber());
         assertEquals(360_000, subject.autoRenewSecs());
-        assertEquals(0, subject.shardNumber());
-        assertEquals(0, subject.realmNumber());
         assertFalse(subject.isHollow());
     }
 

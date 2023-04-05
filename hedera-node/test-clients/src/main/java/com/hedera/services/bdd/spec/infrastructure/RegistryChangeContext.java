@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -23,8 +24,7 @@ public class RegistryChangeContext<T> {
     private final HapiSpecRegistry registry;
     private final Optional<HapiSpecOperation> cause;
 
-    public RegistryChangeContext(
-            T value, HapiSpecRegistry registry, Optional<HapiSpecOperation> cause) {
+    public RegistryChangeContext(T value, HapiSpecRegistry registry, Optional<HapiSpecOperation> cause) {
         this.value = value;
         this.registry = registry;
         this.cause = cause;

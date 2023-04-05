@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.fees;
 
 import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode;
@@ -57,11 +58,10 @@ public class CreateAndUpdateOps extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    //				variousCryptoMutations(),
-                    variousFileMutations(),
-                });
+        return List.of(new HapiSpec[] {
+            //				variousCryptoMutations(),
+            variousFileMutations(),
+        });
     }
 
     HapiSpec variousFileMutations() {
@@ -84,40 +84,31 @@ public class CreateAndUpdateOps extends HapiSuite {
                                 .via("payerCreation")
                                 .fee(feeToOffer)
                                 .balance(payerBalance),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    var lookup =
-                                            getTxnRecord("payerCreation")
-                                                    .nodePayment(paymentToOffer);
-                                    allRunFor(spec, lookup);
-                                    var record = lookup.getResponseRecord();
-                                    consensusNow.set(record.getConsensusTimestamp().getSeconds());
-                                }))
+                        withOpContext((spec, opLog) -> {
+                            var lookup = getTxnRecord("payerCreation").nodePayment(paymentToOffer);
+                            allRunFor(spec, lookup);
+                            var record = lookup.getResponseRecord();
+                            consensusNow.set(record.getConsensusTimestamp().getSeconds());
+                        }))
                 .when(
-                        sourcing(
-                                () ->
-                                        fileCreate("sksc")
-                                                .fee(feeToOffer)
-                                                .payingWith("payer")
-                                                .key("sk")
-                                                .contents(smallContents)
-                                                .expiry(consensusNow.get() + shortExpiry)),
-                        sourcing(
-                                () ->
-                                        fileCreate("skmc")
-                                                .fee(feeToOffer)
-                                                .payingWith("payer")
-                                                .key("sk")
-                                                .contents(mediumContents)
-                                                .expiry(consensusNow.get() + mediumExpiry)),
-                        sourcing(
-                                () ->
-                                        fileCreate("sklc")
-                                                .fee(feeToOffer)
-                                                .payingWith("payer")
-                                                .key("sk")
-                                                .contents(largeContents)
-                                                .expiry(consensusNow.get() + eternalExpiry)))
+                        sourcing(() -> fileCreate("sksc")
+                                .fee(feeToOffer)
+                                .payingWith("payer")
+                                .key("sk")
+                                .contents(smallContents)
+                                .expiry(consensusNow.get() + shortExpiry)),
+                        sourcing(() -> fileCreate("skmc")
+                                .fee(feeToOffer)
+                                .payingWith("payer")
+                                .key("sk")
+                                .contents(mediumContents)
+                                .expiry(consensusNow.get() + mediumExpiry)),
+                        sourcing(() -> fileCreate("sklc")
+                                .fee(feeToOffer)
+                                .payingWith("payer")
+                                .key("sk")
+                                .contents(largeContents)
+                                .expiry(consensusNow.get() + eternalExpiry)))
                 .then(
                         fileUpdate("sksc")
                                 .fee(feeToOffer)
@@ -151,15 +142,12 @@ public class CreateAndUpdateOps extends HapiSuite {
                                 .via("payerCreation")
                                 .fee(feeToOffer)
                                 .balance(payerBalance),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    var lookup =
-                                            getTxnRecord("payerCreation")
-                                                    .nodePayment(paymentToOffer);
-                                    allRunFor(spec, lookup);
-                                    var record = lookup.getResponseRecord();
-                                    consensusNow.set(record.getConsensusTimestamp().getSeconds());
-                                }),
+                        withOpContext((spec, opLog) -> {
+                            var lookup = getTxnRecord("payerCreation").nodePayment(paymentToOffer);
+                            allRunFor(spec, lookup);
+                            var record = lookup.getResponseRecord();
+                            consensusNow.set(record.getConsensusTimestamp().getSeconds());
+                        }),
                         cryptoCreate("proxy").fee(feeToOffer))
                 .when(
                         cryptoCreate("sksenp")
@@ -196,29 +184,23 @@ public class CreateAndUpdateOps extends HapiSuite {
                                 .key("sk")
                                 .autoRenewSecs(eternalExpiry))
                 .then(
-                        sourcing(
-                                () ->
-                                        cryptoUpdate("sksenp")
-                                                .fee(feeToOffer)
-                                                .payingWith("payer")
-                                                .newProxy("proxy")
-                                                .key("lk")
-                                                .expiring(consensusNow.get() + mediumExpiry)),
-                        sourcing(
-                                () ->
-                                        cryptoUpdate("skmenp")
-                                                .fee(feeToOffer)
-                                                .payingWith("payer")
-                                                .newProxy("proxy")
-                                                .key("lk")
-                                                .expiring(consensusNow.get() + eternalExpiry)),
-                        sourcing(
-                                () ->
-                                        cryptoUpdate("skeenp")
-                                                .fee(feeToOffer)
-                                                .payingWith("payer")
-                                                .newProxy("proxy")
-                                                .key("lk")),
+                        sourcing(() -> cryptoUpdate("sksenp")
+                                .fee(feeToOffer)
+                                .payingWith("payer")
+                                .newProxy("proxy")
+                                .key("lk")
+                                .expiring(consensusNow.get() + mediumExpiry)),
+                        sourcing(() -> cryptoUpdate("skmenp")
+                                .fee(feeToOffer)
+                                .payingWith("payer")
+                                .newProxy("proxy")
+                                .key("lk")
+                                .expiring(consensusNow.get() + eternalExpiry)),
+                        sourcing(() -> cryptoUpdate("skeenp")
+                                .fee(feeToOffer)
+                                .payingWith("payer")
+                                .newProxy("proxy")
+                                .key("lk")),
                         getAccountInfo("sksenp"),
                         getAccountInfo("skmenp"),
                         getAccountInfo("skeenp"));

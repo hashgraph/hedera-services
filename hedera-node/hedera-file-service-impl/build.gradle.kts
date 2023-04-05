@@ -13,24 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-plugins {
-    id("com.hedera.hashgraph.conventions")
-}
+
+plugins { id("com.hedera.hashgraph.conventions") }
 
 description = "Default Hedera File Service Implementation"
 
 configurations.all {
-    exclude("javax.annotation", "javax.annotation-api")
+  exclude("javax.annotation", "javax.annotation-api")
 
-    exclude("io.grpc", "grpc-core")
-    exclude("io.grpc", "grpc-context")
-    exclude("io.grpc", "grpc-api")
-    exclude("io.grpc", "grpc-testing")
+  exclude("io.grpc", "grpc-core")
+  exclude("io.grpc", "grpc-context")
+  exclude("io.grpc", "grpc-api")
+  exclude("io.grpc", "grpc-testing")
 }
 
 dependencies {
-    annotationProcessor(libs.dagger.compiler)
-    api(project(":hedera-node:hedera-file-service"))
-    implementation(libs.bundles.di)
-    implementation(project(":hedera-node:hedera-mono-service"))
+  annotationProcessor(libs.dagger.compiler)
+  api(project(":hedera-node:hedera-file-service"))
+  implementation(libs.swirlds.virtualmap)
+  implementation(libs.swirlds.jasperdb)
+  implementation(libs.bundles.di)
+  implementation(project(":hedera-node:hedera-mono-service"))
+  testImplementation(testLibs.mockito.inline)
+  testImplementation(testLibs.bundles.testing)
+  testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
+  testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
@@ -68,6 +69,7 @@ import com.hedera.node.app.service.mono.store.tokens.HederaTokenStore;
 import com.hedera.node.app.service.mono.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -92,77 +94,121 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class UpdateTokenExpiryInfoPrecompileTest {
-    @Mock private HederaTokenStore hederaTokenStore;
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private GasCalculator gasCalculator;
-    @Mock private MessageFrame frame;
-    @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
-    @Mock private RecordsHistorian recordsHistorian;
-    @Mock private EncodingFacade encoder;
-    @Mock private EvmEncodingFacade evmEncoder;
-    @Mock private TokenUpdateLogic updateLogic;
-    @Mock private SideEffectsTracker sideEffects;
-    @Mock private ExpirableTxnRecord.Builder mockRecordBuilder;
-    @Mock private SyntheticTxnFactory syntheticTxnFactory;
-    @Mock private HederaStackedWorldStateUpdater worldUpdater;
-    @Mock private WorldLedgers wrappedLedgers;
-    @Mock private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nfts;
+    @Mock
+    private HederaTokenStore hederaTokenStore;
 
     @Mock
-    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
-            tokenRels;
+    private GlobalDynamicProperties dynamicProperties;
 
-    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
-    @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
-    @Mock private ExpiringCreations creator;
-    @Mock private FeeCalculator feeCalculator;
-    @Mock private StateView stateView;
-    @Mock private ContractAliases aliases;
-    @Mock private UsagePricesProvider resourceCosts;
-    @Mock private InfrastructureFactory infrastructureFactory;
-    @Mock private AssetsLoader assetLoader;
-    @Mock private HbarCentExchange exchange;
-    @Mock private ExchangeRate exchangeRate;
-    @Mock private AccessorFactory accessorFactory;
-    @Mock private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
+    @Mock
+    private GasCalculator gasCalculator;
+
+    @Mock
+    private MessageFrame frame;
+
+    @Mock
+    private TxnAwareEvmSigsVerifier sigsVerifier;
+
+    @Mock
+    private RecordsHistorian recordsHistorian;
+
+    @Mock
+    private EncodingFacade encoder;
+
+    @Mock
+    private EvmEncodingFacade evmEncoder;
+
+    @Mock
+    private TokenUpdateLogic updateLogic;
+
+    @Mock
+    private SideEffectsTracker sideEffects;
+
+    @Mock
+    private ExpirableTxnRecord.Builder mockRecordBuilder;
+
+    @Mock
+    private SyntheticTxnFactory syntheticTxnFactory;
+
+    @Mock
+    private HederaStackedWorldStateUpdater worldUpdater;
+
+    @Mock
+    private WorldLedgers wrappedLedgers;
+
+    @Mock
+    private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nfts;
+
+    @Mock
+    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel> tokenRels;
+
+    @Mock
+    private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
+
+    @Mock
+    private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
+
+    @Mock
+    private ExpiringCreations creator;
+
+    @Mock
+    private FeeCalculator feeCalculator;
+
+    @Mock
+    private StateView stateView;
+
+    @Mock
+    private ContractAliases aliases;
+
+    @Mock
+    private UsagePricesProvider resourceCosts;
+
+    @Mock
+    private InfrastructureFactory infrastructureFactory;
+
+    @Mock
+    private AssetsLoader assetLoader;
+
+    @Mock
+    private HbarCentExchange exchange;
+
+    @Mock
+    private ExchangeRate exchangeRate;
+
+    @Mock
+    private AccessorFactory accessorFactory;
+
+    @Mock
+    private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
-    public static final Bytes UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT =
-            Bytes.fromHexString(
-                    "0x593d6e8200000000000000000000000000000000000000000000000000000000000008d300000000000000000000000000000000000000000000000000000000bbf7edc700000000000000000000000000000000000000000000000000000000000008d000000000000000000000000000000000000000000000000000000000002820a8");
-    public static final Bytes UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT_V2 =
-            Bytes.fromHexString(
-                    "0xd27be6cd00000000000000000000000000000000000000000000000000000000000008d3000000000000000000000000000000000000000000000000000000000bf7edc700000000000000000000000000000000000000000000000000000000000008d00000000000000000000000000000000000000000000000000000000000000008");
+    public static final Bytes UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT = Bytes.fromHexString(
+            "0x593d6e8200000000000000000000000000000000000000000000000000000000000008d300000000000000000000000000000000000000000000000000000000bbf7edc700000000000000000000000000000000000000000000000000000000000008d000000000000000000000000000000000000000000000000000000000002820a8");
+    public static final Bytes UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT_V2 = Bytes.fromHexString(
+            "0xd27be6cd00000000000000000000000000000000000000000000000000000000000008d3000000000000000000000000000000000000000000000000000000000bf7edc700000000000000000000000000000000000000000000000000000000000008d00000000000000000000000000000000000000000000000000000000000000008");
 
     private HTSPrecompiledContract subject;
     private MockedStatic<UpdateTokenExpiryInfoPrecompile> updateTokenExpiryInfoPrecompile;
 
     @BeforeEach
     void setUp() {
-        final PrecompilePricingUtils precompilePricingUtils =
-                new PrecompilePricingUtils(
-                        assetLoader,
-                        exchange,
-                        () -> feeCalculator,
-                        resourceCosts,
-                        stateView,
-                        accessorFactory);
-        subject =
-                new HTSPrecompiledContract(
-                        dynamicProperties,
-                        gasCalculator,
-                        recordsHistorian,
-                        sigsVerifier,
-                        encoder,
-                        evmEncoder,
-                        syntheticTxnFactory,
-                        creator,
-                        () -> feeCalculator,
-                        stateView,
-                        precompilePricingUtils,
-                        infrastructureFactory,
-                        evmHTSPrecompiledContract);
+        final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
+                assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
+        subject = new HTSPrecompiledContract(
+                dynamicProperties,
+                gasCalculator,
+                recordsHistorian,
+                sigsVerifier,
+                encoder,
+                evmEncoder,
+                syntheticTxnFactory,
+                creator,
+                () -> feeCalculator,
+                stateView,
+                precompilePricingUtils,
+                infrastructureFactory,
+                evmHTSPrecompiledContract);
 
         updateTokenExpiryInfoPrecompile = Mockito.mockStatic(UpdateTokenExpiryInfoPrecompile.class);
     }
@@ -251,8 +297,7 @@ class UpdateTokenExpiryInfoPrecompileTest {
     @Test
     void decodeUpdateExpiryInfoForTokenInput() {
         updateTokenExpiryInfoPrecompile.close();
-        final var decodedInput =
-                decodeUpdateTokenExpiryInfo(UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT, identity());
+        final var decodedInput = decodeUpdateTokenExpiryInfo(UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT, identity());
 
         assertTrue(decodedInput.tokenID().getTokenNum() > 0);
         assertTrue(decodedInput.expiry().second() > 0);
@@ -263,8 +308,7 @@ class UpdateTokenExpiryInfoPrecompileTest {
     @Test
     void decodeUpdateExpiryInfoV2ForTokenInput() {
         updateTokenExpiryInfoPrecompile.close();
-        final var decodedInput =
-                decodeUpdateTokenExpiryInfoV2(UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT_V2, identity());
+        final var decodedInput = decodeUpdateTokenExpiryInfoV2(UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT_V2, identity());
 
         assertTrue(decodedInput.tokenID().getTokenNum() > 0);
         assertTrue(decodedInput.expiry().second() > 0);
@@ -285,54 +329,45 @@ class UpdateTokenExpiryInfoPrecompileTest {
         final Optional<WorldUpdater> parent = Optional.of(worldUpdater);
         given(worldUpdater.parentUpdater()).willReturn(parent);
         given(worldUpdater.aliases()).willReturn(aliases);
-        given(aliases.resolveForEvm(any()))
-                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
     }
 
     private void givenUpdateTokenContext() {
-        given(sigsVerifier.hasActiveAdminKey(true, tokenAddress, fungibleTokenAddr, wrappedLedgers))
+        given(sigsVerifier.hasActiveAdminKey(
+                        true, tokenAddress, fungibleTokenAddr, wrappedLedgers, HederaFunctionality.TokenUpdate))
                 .willReturn(true);
         given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
                 .willReturn(hederaTokenStore);
-        given(
-                        infrastructureFactory.newTokenUpdateLogic(
-                                hederaTokenStore, wrappedLedgers, sideEffects))
+        given(infrastructureFactory.newTokenUpdateLogic(hederaTokenStore, wrappedLedgers, sideEffects))
                 .willReturn(updateLogic);
         given(updateLogic.validate(any())).willReturn(ResponseCodeEnum.OK);
         updateTokenExpiryInfoPrecompile
                 .when(() -> decodeUpdateTokenExpiryInfo(any(), any()))
                 .thenReturn(tokenUpdateExpiryInfoWrapper);
         given(syntheticTxnFactory.createTokenUpdateExpiryInfo(tokenUpdateExpiryInfoWrapper))
-                .willReturn(
-                        TransactionBody.newBuilder()
-                                .setTokenUpdate(TokenUpdateTransactionBody.newBuilder()));
+                .willReturn(TransactionBody.newBuilder().setTokenUpdate(TokenUpdateTransactionBody.newBuilder()));
     }
 
     private void givenUpdateTokenContextV2() {
-        given(sigsVerifier.hasActiveAdminKey(true, tokenAddress, fungibleTokenAddr, wrappedLedgers))
+        given(sigsVerifier.hasActiveAdminKey(
+                        true, tokenAddress, fungibleTokenAddr, wrappedLedgers, HederaFunctionality.TokenUpdate))
                 .willReturn(true);
         given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
                 .willReturn(hederaTokenStore);
-        given(
-                        infrastructureFactory.newTokenUpdateLogic(
-                                hederaTokenStore, wrappedLedgers, sideEffects))
+        given(infrastructureFactory.newTokenUpdateLogic(hederaTokenStore, wrappedLedgers, sideEffects))
                 .willReturn(updateLogic);
         given(updateLogic.validate(any())).willReturn(ResponseCodeEnum.OK);
         updateTokenExpiryInfoPrecompile
                 .when(() -> decodeUpdateTokenExpiryInfoV2(any(), any()))
                 .thenReturn(tokenUpdateExpiryInfoWrapper);
         given(syntheticTxnFactory.createTokenUpdateExpiryInfo(tokenUpdateExpiryInfoWrapper))
-                .willReturn(
-                        TransactionBody.newBuilder()
-                                .setTokenUpdate(TokenUpdateTransactionBody.newBuilder()));
+                .willReturn(TransactionBody.newBuilder().setTokenUpdate(TokenUpdateTransactionBody.newBuilder()));
     }
 
     private void givenMinimalRecordStructureForSuccessfulCall() {
-        given(
-                        creator.createSuccessfulSyntheticRecord(
-                                Collections.emptyList(), sideEffects, EMPTY_MEMO))
+        given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(mockRecordBuilder);
     }
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.perf.topic;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -57,8 +58,9 @@ import org.apache.logging.log4j.Logger;
 
 public class SubmitMessageLoadTest extends LoadTest {
 
-    private static final org.apache.logging.log4j.Logger log =
-            LogManager.getLogger(SubmitMessageLoadTest.class);
+    private static final org.apache.logging.log4j.Logger log = LogManager.getLogger(SubmitMessageLoadTest.class);
+    private static final String SUBMIT_KEY = "submitKey";
+    private static final String SENDER = "sender";
     private static String topicID = null;
     private static int messageSize = 256;
     private static String pemFile = null;
@@ -85,19 +87,19 @@ public class SubmitMessageLoadTest extends LoadTest {
         // parsing local argument specific to this test
         if (args.length > (usedArgs)) {
             messageSize = Integer.parseInt(args[usedArgs]);
-            log.info("Set messageSize as " + messageSize);
+            log.info("Set messageSize as {}", messageSize);
             usedArgs++;
         }
 
         if (args.length > (usedArgs)) {
             pemFile = args[usedArgs];
-            log.info("Set pemFile as " + pemFile);
+            log.info("Set pemFile as {}", pemFile);
             usedArgs++;
         }
 
         if (args.length > usedArgs) {
             topicID = args[usedArgs];
-            log.info("Set topicID as " + topicID);
+            log.info("Set topicID as {}", topicID);
             usedArgs++;
         }
 
@@ -122,62 +124,53 @@ public class SubmitMessageLoadTest extends LoadTest {
                                 (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
                         // if no pem file defined then create a new submitKey
                         pemFile == null
-                                ? newKeyNamed("submitKey")
+                                ? newKeyNamed(SUBMIT_KEY)
                                 : keyFromPem(pemFile)
-                                        .name("submitKey")
+                                        .name(SUBMIT_KEY)
                                         .simpleWacl()
                                         .passphrase(KeyFactory.PEM_PASSPHRASE),
                         // if just created a new key then export spec for later reuse
                         pemFile == null
                                 ? withOpContext(
-                                        (spec, ignore) ->
-                                                spec.keys()
-                                                        .exportSimpleKey(
-                                                                "topicSubmitKey.pem", "submitKey"))
+                                        (spec, ignore) -> spec.keys().exportSimpleKey("topicSubmitKey.pem", SUBMIT_KEY))
                                 : sleepFor(100),
                         logIt(ignore -> settings.toString()))
                 .when(
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(GENESIS)
-                                .overridingProps(
-                                        Map.of(
-                                                "hapi.throttling.buckets.fastOpBucket.capacity",
-                                                "4000",
-                                                "hapi.throttling.ops.consensusSubmitMessage.capacityRequired",
-                                                "1.0")),
-                        cryptoCreate("sender")
+                                .overridingProps(Map.of(
+                                        "hapi.throttling.buckets.fastOpBucket.capacity",
+                                        "4000",
+                                        "hapi.throttling.ops.consensusSubmitMessage.capacityRequired",
+                                        "1.0")),
+                        cryptoCreate(SENDER)
                                 .balance(ignore -> settings.getInitialBalance())
                                 .withRecharging()
                                 .rechargeWindow(3)
-                                .hasRetryPrecheckFrom(
-                                        BUSY,
-                                        DUPLICATE_TRANSACTION,
-                                        PLATFORM_TRANSACTION_NOT_CREATED),
+                                .hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
                         topicID == null
                                 ? createTopic("topic")
-                                        .submitKeyName("submitKey")
+                                        .submitKeyName(SUBMIT_KEY)
                                         .hasRetryPrecheckFrom(
-                                                BUSY,
-                                                DUPLICATE_TRANSACTION,
-                                                PLATFORM_TRANSACTION_NOT_CREATED)
+                                                BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
                                 : sleepFor(100),
                         sleepFor(10000) // wait all other thread ready
                         )
-                .then(defaultLoadTest(submitBurst, settings), getAccountBalance("sender").logged());
+                .then(
+                        defaultLoadTest(submitBurst, settings),
+                        getAccountBalance(SENDER).logged());
     }
 
     private static Supplier<HapiSpecOperation> opSupplier(PerfTestLoadSettings settings) {
-        int msgSize =
-                (r.nextInt(2) == 1)
-                        ? settings.getIntProperty("messageSize", messageSize)
-                                + r.nextInt(settings.getHcsSubmitMessageSizeVar())
-                        : settings.getIntProperty("messageSize", messageSize)
-                                - r.nextInt(settings.getHcsSubmitMessageSizeVar());
+        int msgSize = (r.nextInt(2) == 1)
+                ? settings.getIntProperty("messageSize", messageSize) + r.nextInt(settings.getHcsSubmitMessageSizeVar())
+                : settings.getIntProperty("messageSize", messageSize)
+                        - r.nextInt(settings.getHcsSubmitMessageSizeVar());
 
-        String senderId = "sender";
+        String senderId = SENDER;
         String topicId = "topic";
-        String senderKey = "sender";
-        String submitKey = "submitKey";
+        String senderKey = SENDER;
+        String submitKey = SUBMIT_KEY;
         if (settings.getTotalAccounts() > 1) {
             int s = r.nextInt(settings.getTotalAccounts());
             int re = 0;
@@ -185,53 +178,44 @@ public class SubmitMessageLoadTest extends LoadTest {
                 re = r.nextInt(settings.getTotalAccounts());
             } while (re == s);
             // maybe use some more realistic distributions to simulate real world scenarios
-            senderId =
-                    String.format(
-                            "0.0.%d",
-                            TEST_ACCOUNT_STARTS_FROM + r.nextInt(settings.getTotalAccounts()));
-            topicId =
-                    String.format(
-                            "0.0.%d",
-                            TEST_ACCOUNT_STARTS_FROM
-                                    + settings.getTotalAccounts()
-                                    + r.nextInt(settings.getTotalTopics()));
+            senderId = String.format("0.0.%d", TEST_ACCOUNT_STARTS_FROM + r.nextInt(settings.getTotalAccounts()));
+            topicId = String.format(
+                    "0.0.%d",
+                    TEST_ACCOUNT_STARTS_FROM + settings.getTotalAccounts() + r.nextInt(settings.getTotalTopics()));
             senderKey = GENESIS;
             submitKey = GENESIS;
         }
 
         if (log.isDebugEnabled()) {
-            log.debug(
-                    "{} will submit a message of size {} to topic {}", senderId, msgSize, topicId);
+            log.debug("{} will submit a message of size {} to topic {}", senderId, msgSize, topicId);
         }
-        var op =
-                submitMessageTo(topicId)
-                        .message(
-                                ArrayUtils.addAll(
-                                        ByteBuffer.allocate(8)
-                                                .putLong(Instant.now().toEpochMilli())
-                                                .array(),
-                                        randomUtf8Bytes(msgSize - 8)))
-                        .noLogging()
-                        .payingWith(senderId)
-                        .signedBy(senderKey, submitKey)
-                        .fee(100_000_000)
-                        .suppressStats(true)
-                        .hasRetryPrecheckFrom(
-                                BUSY,
-                                DUPLICATE_TRANSACTION,
-                                PLATFORM_TRANSACTION_NOT_CREATED,
-                                TOPIC_EXPIRED,
-                                INVALID_TOPIC_ID,
-                                INSUFFICIENT_PAYER_BALANCE)
-                        .hasKnownStatusFrom(
-                                SUCCESS,
-                                OK,
-                                INVALID_TOPIC_ID,
-                                INSUFFICIENT_PAYER_BALANCE,
-                                UNKNOWN,
-                                TRANSACTION_EXPIRED,
-                                MESSAGE_SIZE_TOO_LARGE)
-                        .deferStatusResolution();
+        var op = submitMessageTo(topicId)
+                .message(ArrayUtils.addAll(
+                        ByteBuffer.allocate(8)
+                                .putLong(Instant.now().toEpochMilli())
+                                .array(),
+                        randomUtf8Bytes(msgSize - 8)))
+                .noLogging()
+                .payingWith(senderId)
+                .signedBy(senderKey, submitKey)
+                .fee(100_000_000)
+                .suppressStats(true)
+                .hasRetryPrecheckFrom(
+                        BUSY,
+                        DUPLICATE_TRANSACTION,
+                        PLATFORM_TRANSACTION_NOT_CREATED,
+                        TOPIC_EXPIRED,
+                        INVALID_TOPIC_ID,
+                        INSUFFICIENT_PAYER_BALANCE)
+                .hasKnownStatusFrom(
+                        SUCCESS,
+                        OK,
+                        INVALID_TOPIC_ID,
+                        INSUFFICIENT_PAYER_BALANCE,
+                        UNKNOWN,
+                        TRANSACTION_EXPIRED,
+                        MESSAGE_SIZE_TOO_LARGE)
+                .deferStatusResolution();
         if (settings.getBooleanProperty("isChunk", false)) {
             return () -> op.chunkInfo(1, 1).usePresetTimestamp();
         }

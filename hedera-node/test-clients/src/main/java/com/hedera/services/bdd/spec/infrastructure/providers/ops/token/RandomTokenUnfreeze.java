@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.token;
 
 import static com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenDissociation.explicit;
@@ -46,10 +47,9 @@ public class RandomTokenUnfreeze implements OpProvider {
 
         var implicitRel = relToUnfreeze.get();
         var rel = explicit(implicitRel);
-        var op =
-                tokenUnfreeze(rel.getRight(), rel.getLeft())
-                        .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                        .hasKnownStatusFrom(permissibleOutcomes);
+        var op = tokenUnfreeze(rel.getRight(), rel.getLeft())
+                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+                .hasKnownStatusFrom(permissibleOutcomes);
         return Optional.of(op);
     }
 }

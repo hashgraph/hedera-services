@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono;
 
 import com.hedera.node.app.service.mono.config.ConfigModule;
@@ -29,6 +30,7 @@ import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertiesModule;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.contracts.ContractsModule;
+import com.hedera.node.app.service.mono.fees.FeeCalculatorModule;
 import com.hedera.node.app.service.mono.fees.FeesModule;
 import com.hedera.node.app.service.mono.files.FilesModule;
 import com.hedera.node.app.service.mono.grpc.GrpcModule;
@@ -51,7 +53,9 @@ import com.hedera.node.app.service.mono.state.forensics.HashLogger;
 import com.hedera.node.app.service.mono.state.initialization.SystemAccountsCreator;
 import com.hedera.node.app.service.mono.state.initialization.SystemFilesManager;
 import com.hedera.node.app.service.mono.state.initialization.TreasuryCloner;
+import com.hedera.node.app.service.mono.state.logic.LastStepModule;
 import com.hedera.node.app.service.mono.state.logic.NetworkCtxManager;
+import com.hedera.node.app.service.mono.state.logic.ProcessLogicModule;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.migration.MigrationRecordsManager;
 import com.hedera.node.app.service.mono.state.tasks.TaskModule;
@@ -113,7 +117,10 @@ import javax.inject.Singleton;
             ThrottlingModule.class,
             SubmissionModule.class,
             TransactionsModule.class,
-            ExpiryModule.class
+            ExpiryModule.class,
+            LastStepModule.class,
+            ProcessLogicModule.class,
+            FeeCalculatorModule.class
         })
 public interface ServicesApp {
     /* Needed by ServicesState */

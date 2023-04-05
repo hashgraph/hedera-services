@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.reconnect;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
@@ -50,8 +51,7 @@ import org.apache.logging.log4j.Logger;
 
 public class UpdateAllProtectedFilesDuringReconnect extends HapiSuite {
 
-    private static final Logger log =
-            LogManager.getLogger(UpdateAllProtectedFilesDuringReconnect.class);
+    private static final Logger log = LogManager.getLogger(UpdateAllProtectedFilesDuringReconnect.class);
 
     public static void main(String... args) {
         new ValidateAppPropertiesStateAfterReconnect().runSuiteSync();
@@ -85,21 +85,16 @@ public class UpdateAllProtectedFilesDuringReconnect extends HapiSuite {
                                 .payingWith(GENESIS)
                                 .overridingProps(Map.of("ledger.autoRenewPeriod.minDuration", "20"))
                                 .erasingProps(Set.of("minimumAutoRenewDuration")),
-                        fileUpdate(API_PERMISSIONS)
-                                .payingWith(GENESIS)
-                                .overridingProps(Map.of("updateFile", "2-50")),
-                        fileCreate(nonUpdatableFile)
-                                .contents("Cannot update file because of the new api permissions"),
+                        fileUpdate(API_PERMISSIONS).payingWith(GENESIS).overridingProps(Map.of("updateFile", "2-50")),
+                        fileCreate(nonUpdatableFile).contents("Cannot update file because of the new api permissions"),
                         fileUpdate(EXCHANGE_RATES)
-                                .contents(
-                                        spec -> {
-                                            ByteString newRates =
-                                                    spec.ratesProvider()
-                                                            .rateSetWith(100, 1)
-                                                            .toByteString();
-                                            spec.registry().saveBytes("newRates", newRates);
-                                            return newRates;
-                                        })
+                                .contents(spec -> {
+                                    ByteString newRates = spec.ratesProvider()
+                                            .rateSetWith(100, 1)
+                                            .toByteString();
+                                    spec.registry().saveBytes("newRates", newRates);
+                                    return newRates;
+                                })
                                 .payingWith(GENESIS),
                         makeFree(CryptoGetInfo),
                         getAccountBalance(GENESIS).setNode("0.0.8").unavailableNode())

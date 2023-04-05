@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.properties;
 
+import com.hedera.hapi.node.base.TopicID;
 import com.hedera.node.app.service.evm.contracts.execution.StaticProperties;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
@@ -33,8 +35,7 @@ public class StaticPropertiesHolder extends StaticProperties {
     public static final StaticPropertiesHolder STATIC_PROPERTIES = new StaticPropertiesHolder();
     private static long maxThrottleExemptNum = DEFAULT_LAST_THROTTLE_EXEMPT;
 
-    public static void configureNumbers(
-            final HederaNumbers hederaNum, final long maxThrottleExemptNum) {
+    public static void configureNumbers(final HederaNumbers hederaNum, final long maxThrottleExemptNum) {
         shard = hederaNum.shard();
         realm = hederaNum.realm();
         StaticPropertiesHolder.maxThrottleExemptNum = maxThrottleExemptNum;
@@ -56,6 +57,14 @@ public class StaticPropertiesHolder extends StaticProperties {
                 .build();
     }
 
+    public TopicID scopedTopicIdWith(final long num) {
+        return TopicID.newBuilder()
+                .shardNum(shard)
+                .realmNum(realm)
+                .topicNum(num)
+                .build();
+    }
+
     public ContractID scopedContractIdWith(final long num) {
         return ContractID.newBuilder()
                 .setShardNum(shard)
@@ -73,11 +82,19 @@ public class StaticPropertiesHolder extends StaticProperties {
     }
 
     public FileID scopedFileWith(final long num) {
-        return FileID.newBuilder().setShardNum(shard).setRealmNum(realm).setFileNum(num).build();
+        return FileID.newBuilder()
+                .setShardNum(shard)
+                .setRealmNum(realm)
+                .setFileNum(num)
+                .build();
     }
 
     public TokenID scopedTokenWith(final long num) {
-        return TokenID.newBuilder().setShardNum(shard).setRealmNum(realm).setTokenNum(num).build();
+        return TokenID.newBuilder()
+                .setShardNum(shard)
+                .setRealmNum(realm)
+                .setTokenNum(num)
+                .build();
     }
 
     public ScheduleID scopedScheduleWith(final long num) {

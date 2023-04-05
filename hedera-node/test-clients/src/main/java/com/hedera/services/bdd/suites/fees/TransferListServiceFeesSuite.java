@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.fees;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultFailingHapiSpec;
@@ -43,6 +44,8 @@ import org.apache.logging.log4j.Logger;
 
 public class TransferListServiceFeesSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TransferListServiceFeesSuite.class);
+    private static final String REFERENCE_TRANSFER = "referenceTransfer";
+    private static final String PAYER = "payer";
 
     final Function<Long, Long> sufficientBalanceFn = fee -> 2L * fee;
 
@@ -62,9 +65,7 @@ public class TransferListServiceFeesSuite extends HapiSuite {
 
     private List<HapiSpec> positiveTests() {
         return Arrays.asList(
-                nobodyPaysRecordFeeForInvalidTxn(),
-                noExtraFeeChargedForCreationTransfer(),
-                nodeCoversForBrokePayer());
+                nobodyPaysRecordFeeForInvalidTxn(), noExtraFeeChargedForCreationTransfer(), nodeCoversForBrokePayer());
     }
 
     private List<HapiSpec> negativeTests() {
@@ -73,56 +74,38 @@ public class TransferListServiceFeesSuite extends HapiSuite {
 
     private final String FEE_CHARGED = "feeCharged";
 
-    private final BiFunction<String, Function<Long, Long>, Function<HapiSpec, Long>>
-            getBalanceFromFee =
-                    (name, balanceFn) ->
-                            spec -> {
-                                HapiGetTxnRecord referenceTransferRec =
-                                        QueryVerbs.getTxnRecord(name);
-                                allRunFor(spec, referenceTransferRec);
-                                TransactionRecord record =
-                                        referenceTransferRec
-                                                .getResponse()
-                                                .getTransactionGetRecord()
-                                                .getTransactionRecord();
-                                long feeCharged = record.getTransactionFee();
-                                spec.registry().saveAmount(FEE_CHARGED, feeCharged);
-                                return balanceFn.apply(feeCharged);
-                            };
+    private final BiFunction<String, Function<Long, Long>, Function<HapiSpec, Long>> getBalanceFromFee =
+            (name, balanceFn) -> spec -> {
+                HapiGetTxnRecord referenceTransferRec = QueryVerbs.getTxnRecord(name);
+                allRunFor(spec, referenceTransferRec);
+                TransactionRecord record = referenceTransferRec
+                        .getResponse()
+                        .getTransactionGetRecord()
+                        .getTransactionRecord();
+                long feeCharged = record.getTransactionFee();
+                spec.registry().saveAmount(FEE_CHARGED, feeCharged);
+                return balanceFn.apply(feeCharged);
+            };
 
     private HapiSpec nodeCoversForBrokePayer() {
         final long TRANSFER_AMOUNT = 1_000L;
 
         return defaultFailingHapiSpec("NodeCoversForBrokePayer")
-                .given(
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, TRANSFER_AMOUNT))
-                                .via("referenceTransfer"))
+                .given(cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, TRANSFER_AMOUNT))
+                        .via(REFERENCE_TRANSFER))
                 .when(
-                        cryptoCreate("payer")
-                                .balance(
-                                        getBalanceFromFee.apply(
-                                                "referenceTransfer", sufficientBalanceFn)),
+                        cryptoCreate(PAYER).balance(getBalanceFromFee.apply(REFERENCE_TRANSFER, sufficientBalanceFn)),
                         UtilVerbs.inParallel(
-                                cryptoTransfer(
-                                                tinyBarsFromTo(
-                                                        "payer",
-                                                        EXCHANGE_RATE_CONTROL,
-                                                        spec ->
-                                                                spec.registry()
-                                                                        .getAmount(FEE_CHARGED)))
+                                cryptoTransfer(tinyBarsFromTo(PAYER, EXCHANGE_RATE_CONTROL, spec -> spec.registry()
+                                                .getAmount(FEE_CHARGED)))
                                         .via("txnA")
-                                        .payingWith("payer")
+                                        .payingWith(PAYER)
                                         .hasAnyPrecheck()
                                         .hasAnyKnownStatus(),
-                                cryptoTransfer(
-                                                tinyBarsFromTo(
-                                                        "payer",
-                                                        EXCHANGE_RATE_CONTROL,
-                                                        spec ->
-                                                                spec.registry()
-                                                                        .getAmount(FEE_CHARGED)))
+                                cryptoTransfer(tinyBarsFromTo(PAYER, EXCHANGE_RATE_CONTROL, spec -> spec.registry()
+                                                .getAmount(FEE_CHARGED)))
                                         .via("txnB")
-                                        .payingWith("payer")
+                                        .payingWith(PAYER)
                                         .hasAnyPrecheck()
                                         .hasAnyKnownStatus()))
                 .then(UtilVerbs.assertionsHold((spec, assertLog) -> {}));
@@ -132,16 +115,13 @@ public class TransferListServiceFeesSuite extends HapiSuite {
         return defaultHapiSpec("NodeCoversExtraServiceFee")
                 .given(
                         cryptoCreate("anon").via("referenceCreation"),
-                        cryptoCreate("payer")
-                                .balance(
-                                        getBalanceFromFee.apply(
-                                                "referenceCreation", sufficientBalanceFn)))
+                        cryptoCreate(PAYER).balance(getBalanceFromFee.apply("referenceCreation", sufficientBalanceFn)))
                 .when(
                         cryptoCreate("child")
-                                .payingWith("payer")
+                                .payingWith(PAYER)
                                 .balance(spec -> spec.registry().getAmount(FEE_CHARGED))
                                 .via("subjectTxn"),
-                        QueryVerbs.getAccountBalance("payer").hasTinyBars(0L))
+                        QueryVerbs.getAccountBalance(PAYER).hasTinyBars(0L))
                 .then();
     }
 
@@ -156,57 +136,40 @@ public class TransferListServiceFeesSuite extends HapiSuite {
                         cryptoTransfer(
                                         tinyBarsFromTo("anon", "A", TRANSFER_AMOUNT),
                                         tinyBarsFromTo("anon", "B", TRANSFER_AMOUNT))
-                                .via("referenceTransfer")
+                                .via(REFERENCE_TRANSFER)
                                 .payingWith("anon"))
                 .when(
-                        cryptoCreate("payer")
-                                .balance(
-                                        getBalanceFromFee.apply(
-                                                "referenceTransfer", Function.identity())),
+                        cryptoCreate(PAYER).balance(getBalanceFromFee.apply(REFERENCE_TRANSFER, Function.identity())),
                         cryptoTransfer(
-                                        tinyBarsFromTo("payer", "A", TRANSFER_AMOUNT),
-                                        tinyBarsFromTo("payer", "B", TRANSFER_AMOUNT))
-                                .payingWith("payer")
+                                        tinyBarsFromTo(PAYER, "A", TRANSFER_AMOUNT),
+                                        tinyBarsFromTo(PAYER, "B", TRANSFER_AMOUNT))
+                                .payingWith(PAYER)
                                 .via("subjectTransfer")
                                 .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE))
-                .then(
-                        UtilVerbs.assertionsHold(
-                                (spec, assertLog) -> {
-                                    HapiGetTxnRecord refOp =
-                                            QueryVerbs.getTxnRecord("referenceTransfer");
-                                    allRunFor(spec, refOp);
-                                    AccountID payer = spec.registry().getAccountID("anon");
-                                    TransactionRecord refRecord =
-                                            refOp.getResponse()
-                                                    .getTransactionGetRecord()
-                                                    .getTransactionRecord();
-                                    boolean isServicePayment = false;
-                                    long serviceFee = 0L;
-                                    for (AccountAmount entry :
-                                            refRecord.getTransferList().getAccountAmountsList()) {
-                                        if (entry.getAccountID().equals(payer)) {
-                                            if (!isServicePayment) {
-                                                isServicePayment = true;
-                                            } else {
-                                                serviceFee = -1L * entry.getAmount();
-                                                break;
-                                            }
-                                        }
-                                    }
-                                    assertLog.info(
-                                            "Should(?!) be missing fee of " + serviceFee + "...");
-                                    HapiGetTxnRecord subOp =
-                                            QueryVerbs.getTxnRecord("subjectTransfer")
-                                                    .noLogging()
-                                                    .hasPriority(
-                                                            recordWith()
-                                                                    .transfers(
-                                                                            missingPayments(
-                                                                                    from(
-                                                                                            "payer",
-                                                                                            serviceFee))));
-                                    allRunFor(spec, subOp);
-                                }));
+                .then(UtilVerbs.assertionsHold((spec, assertLog) -> {
+                    HapiGetTxnRecord refOp = QueryVerbs.getTxnRecord(REFERENCE_TRANSFER);
+                    allRunFor(spec, refOp);
+                    AccountID payer = spec.registry().getAccountID("anon");
+                    TransactionRecord refRecord =
+                            refOp.getResponse().getTransactionGetRecord().getTransactionRecord();
+                    boolean isServicePayment = false;
+                    long serviceFee = 0L;
+                    for (AccountAmount entry : refRecord.getTransferList().getAccountAmountsList()) {
+                        if (entry.getAccountID().equals(payer)) {
+                            if (!isServicePayment) {
+                                isServicePayment = true;
+                            } else {
+                                serviceFee = -1L * entry.getAmount();
+                                break;
+                            }
+                        }
+                    }
+                    assertLog.info("Should(?!) be missing fee of {}...", serviceFee);
+                    HapiGetTxnRecord subOp = QueryVerbs.getTxnRecord("subjectTransfer")
+                            .noLogging()
+                            .hasPriority(recordWith().transfers(missingPayments(from(PAYER, serviceFee))));
+                    allRunFor(spec, subOp);
+                }));
     }
 
     @Override

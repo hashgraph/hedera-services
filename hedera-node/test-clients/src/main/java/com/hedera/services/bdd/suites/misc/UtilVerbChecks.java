@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.misc;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -45,12 +46,11 @@ public class UtilVerbChecks extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    //						testLivenessTimeout(),
-                    testMakingFree(),
-                    //						testDissociation(),
-                });
+        return List.of(new HapiSpec[] {
+            //						testLivenessTimeout(),
+            testMakingFree(),
+            //						testDissociation(),
+        });
     }
 
     private HapiSpec testMakingFree() {
@@ -62,11 +62,10 @@ public class UtilVerbChecks extends HapiSuite {
                                 .nodePayment(0L)
                                 .hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE))
                 .when(makeFree(CryptoGetInfo))
-                .then(
-                        getAccountInfo("0.0.2")
-                                .payingWith("civilian")
-                                .nodePayment(0L)
-                                .hasAnswerOnlyPrecheck(OK));
+                .then(getAccountInfo("0.0.2")
+                        .payingWith("civilian")
+                        .nodePayment(0L)
+                        .hasAnswerOnlyPrecheck(OK));
     }
 
     private HapiSpec testDissociation() {
@@ -80,21 +79,17 @@ public class UtilVerbChecks extends HapiSuite {
                         cryptoTransfer(moving(1, "a").between("t", "somebody")),
                         cryptoTransfer(moving(2, "b").between("t", "somebody")))
                 .when(ensureDissociated("somebody", List.of("a", "b")))
-                .then(
-                        getAccountInfo("somebody")
-                                .hasNoTokenRelationship("a")
-                                .hasNoTokenRelationship("b"));
+                .then(getAccountInfo("somebody").hasNoTokenRelationship("a").hasNoTokenRelationship("b"));
     }
 
     private HapiSpec testLivenessTimeout() {
         return defaultHapiSpec("TestLivenessTimeout")
                 .given()
                 .when()
-                .then(
-                        withLiveNode("0.0.3")
-                                .within(300, TimeUnit.SECONDS)
-                                .loggingAvailabilityEvery(30)
-                                .sleepingBetweenRetriesFor(10));
+                .then(withLiveNode("0.0.3")
+                        .within(300, TimeUnit.SECONDS)
+                        .loggingAvailabilityEvery(30)
+                        .sleepingBetweenRetriesFor(10));
     }
 
     @Override

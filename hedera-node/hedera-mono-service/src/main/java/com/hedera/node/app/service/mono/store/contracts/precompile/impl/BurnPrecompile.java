@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT;
@@ -21,6 +22,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.BURN_FUNGIBLE;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.BURN_NFT;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -58,15 +60,11 @@ public class BurnPrecompile extends AbstractWritePrecompile {
     private final int functionId;
     private static final List<Long> NO_SERIAL_NOS = Collections.emptyList();
     private static final String BURN = String.format(FAILURE_MESSAGE, "burn");
-    private static final Function BURN_TOKEN_FUNCTION =
-            new Function("burnToken(address,uint64,int64[])", INT);
-    private static final Function BURN_TOKEN_FUNCTION_V2 =
-            new Function("burnToken(address,int64,int64[])", INT);
+    private static final Function BURN_TOKEN_FUNCTION = new Function("burnToken(address,uint64,int64[])", INT);
+    private static final Function BURN_TOKEN_FUNCTION_V2 = new Function("burnToken(address,int64,int64[])", INT);
     private static final Bytes BURN_TOKEN_SELECTOR = Bytes.wrap(BURN_TOKEN_FUNCTION.selector());
-    private static final Bytes BURN_TOKEN_SELECTOR_V2 =
-            Bytes.wrap(BURN_TOKEN_FUNCTION_V2.selector());
-    private static final ABIType<Tuple> BURN_TOKEN_DECODER =
-            TypeFactory.create("(bytes32,int64,int64[])");
+    private static final Bytes BURN_TOKEN_SELECTOR_V2 = Bytes.wrap(BURN_TOKEN_FUNCTION_V2.selector());
+    private static final ABIType<Tuple> BURN_TOKEN_DECODER = TypeFactory.create("(bytes32,int64,int64[])");
     private final EncodingFacade encoder;
     private final ContractAliases aliases;
     private final EvmSigsVerifier sigsVerifier;
@@ -90,14 +88,11 @@ public class BurnPrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public TransactionBody.Builder body(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        burnOp =
-                switch (functionId) {
-                    case AbiConstants.ABI_ID_BURN_TOKEN -> decodeBurn(input);
-                    case AbiConstants.ABI_ID_BURN_TOKEN_V2 -> decodeBurnV2(input);
-                    default -> null;
-                };
+    public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+        burnOp = switch (functionId) {
+            case AbiConstants.ABI_ID_BURN_TOKEN -> decodeBurn(input);
+            case AbiConstants.ABI_ID_BURN_TOKEN_V2 -> decodeBurnV2(input);
+            default -> null;};
         transactionBody = syntheticTxnFactory.createBurn(burnOp);
         return transactionBody;
     }
@@ -108,24 +103,14 @@ public class BurnPrecompile extends AbstractWritePrecompile {
 
         /* --- Check required signatures --- */
         final var tokenId = Id.fromGrpcToken(burnOp.tokenType());
-        final var hasRequiredSigs =
-                KeyActivationUtils.validateKey(
-                        frame,
-                        tokenId.asEvmAddress(),
-                        sigsVerifier::hasActiveSupplyKey,
-                        ledgers,
-                        aliases);
+        final var hasRequiredSigs = KeyActivationUtils.validateKey(
+                frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey, ledgers, aliases, TokenBurn);
         validateTrue(hasRequiredSigs, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, BURN);
 
         /* --- Build the necessary infrastructure to execute the transaction --- */
         final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());
-        final var tokenStore =
-                infrastructureFactory.newTokenStore(
-                        accountStore,
-                        sideEffects,
-                        ledgers.tokens(),
-                        ledgers.nfts(),
-                        ledgers.tokenRels());
+        final var tokenStore = infrastructureFactory.newTokenStore(
+                accountStore, sideEffects, ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels());
         final var burnLogic = infrastructureFactory.newBurnLogic(accountStore, tokenStore);
         final var validity = burnLogic.validateSyntax(transactionBody.build());
         validateTrue(validity == OK, validity);
@@ -141,8 +126,7 @@ public class BurnPrecompile extends AbstractWritePrecompile {
 
     @Override
     public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
-        Objects.requireNonNull(
-                burnOp, "`body` method should be called before `getMinimumFeeInTinybars`");
+        Objects.requireNonNull(burnOp, "`body` method should be called before `getMinimumFeeInTinybars`");
         return pricingUtils.getMinimumPriceInTinybars(
                 (burnOp.type() == NON_FUNGIBLE_UNIQUE) ? BURN_NFT : BURN_FUNGIBLE, consensusTime);
     }
@@ -164,8 +148,7 @@ public class BurnPrecompile extends AbstractWritePrecompile {
     }
 
     private static BurnWrapper getBurnWrapper(final Bytes input, final Bytes burnTokenSelector) {
-        final Tuple decodedArguments =
-                decodeFunctionCall(input, burnTokenSelector, BURN_TOKEN_DECODER);
+        final Tuple decodedArguments = decodeFunctionCall(input, burnTokenSelector, BURN_TOKEN_DECODER);
 
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
         final var fungibleAmount = (long) decodedArguments.get(1);

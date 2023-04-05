@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.contract;
 
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.unaliased;
@@ -65,10 +66,7 @@ public class GetBytecodeAnswer implements AnswerService {
 
     @Override
     public Response responseGiven(
-            final Query query,
-            @Nullable final StateView view,
-            final ResponseCodeEnum validity,
-            final long cost) {
+            final Query query, @Nullable final StateView view, final ResponseCodeEnum validity, final long cost) {
         final var op = query.getContractGetBytecode();
         final var target = EntityIdUtils.unaliased(op.getContractID(), aliasManager);
 
@@ -84,11 +82,8 @@ public class GetBytecodeAnswer implements AnswerService {
             } else {
                 /* Include cost here to satisfy legacy regression tests. */
                 response.setHeader(answerOnlyHeader(OK, cost));
-                response.setBytecode(
-                        ByteString.copyFrom(
-                                Objects.requireNonNull(view)
-                                        .bytecodeOf(target)
-                                        .orElse(EMPTY_BYTECODE)));
+                response.setBytecode(ByteString.copyFrom(
+                        Objects.requireNonNull(view).bytecodeOf(target).orElse(EMPTY_BYTECODE)));
             }
         }
         return Response.newBuilder().setContractGetBytecodeResponse(response).build();
@@ -108,9 +103,7 @@ public class GetBytecodeAnswer implements AnswerService {
 
     @Override
     public ResponseCodeEnum extractValidityFrom(final Response response) {
-        return response.getContractGetBytecodeResponse()
-                .getHeader()
-                .getNodeTransactionPrecheckCode();
+        return response.getContractGetBytecodeResponse().getHeader().getNodeTransactionPrecheckCode();
     }
 
     @Override

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.fees;
 
 import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode;
@@ -59,6 +60,12 @@ import org.apache.logging.log4j.Logger;
 
 public class CostOfEverythingSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CostOfEverythingSuite.class);
+    private static final String PAYING_SENDER = "payingSender";
+    private static final String RECEIVER = "receiver";
+    private static final String CANONICAL = "canonical";
+    private static final String CIVILIAN = "civilian";
+    private static final String HAIR_TRIGGER_PAYER = "hairTriggerPayer";
+    private static final String COST_SNAPSHOT_MODE = "cost.snapshot.mode";
 
     CostSnapshotMode costSnapshotMode = TAKE;
     //	CostSnapshotMode costSnapshotMode = COMPARE;
@@ -91,42 +98,37 @@ public class CostOfEverythingSuite extends HapiSuite {
 
     HapiSpec canonicalScheduleOpsHaveExpectedUsdFees() {
         return customHapiSpec("CanonicalScheduleOps")
-                .withProperties(
-                        Map.of(
-                                "nodes", "35.231.208.148",
-                                "default.payer.pemKeyLoc", "previewtestnet-account2.pem",
-                                "default.payer.pemKeyPassphrase", "<secret>"))
+                .withProperties(Map.of(
+                        "nodes", "35.231.208.148",
+                        "default.payer.pemKeyLoc", "previewtestnet-account2.pem",
+                        "default.payer.pemKeyPassphrase", "<secret>"))
                 .given(
-                        cryptoCreate("payingSender").balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate("receiver").balance(0L).receiverSigRequired(true))
+                        cryptoCreate(PAYING_SENDER).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true))
                 .when(
                         scheduleCreate(
-                                        "canonical",
-                                        cryptoTransfer(
-                                                        tinyBarsFromTo(
-                                                                "payingSender", "receiver", 1L))
+                                        CANONICAL,
+                                        cryptoTransfer(tinyBarsFromTo(PAYING_SENDER, RECEIVER, 1L))
                                                 .blankMemo()
                                                 .fee(ONE_HBAR))
                                 .via("canonicalCreation")
-                                .payingWith("payingSender")
-                                .adminKey("payingSender"),
-                        getScheduleInfo("canonical").payingWith("payingSender"),
-                        scheduleSign("canonical")
+                                .payingWith(PAYING_SENDER)
+                                .adminKey(PAYING_SENDER),
+                        getScheduleInfo(CANONICAL).payingWith(PAYING_SENDER),
+                        scheduleSign(CANONICAL)
                                 .via("canonicalSigning")
-                                .payingWith("payingSender")
-                                .alsoSigningWith("receiver"),
+                                .payingWith(PAYING_SENDER)
+                                .alsoSigningWith(RECEIVER),
                         scheduleCreate(
                                         "tbd",
-                                        cryptoTransfer(
-                                                        tinyBarsFromTo(
-                                                                "payingSender", "receiver", 1L))
+                                        cryptoTransfer(tinyBarsFromTo(PAYING_SENDER, RECEIVER, 1L))
                                                 .memo("")
                                                 .fee(ONE_HBAR)
                                                 .blankMemo()
-                                                .signedBy("payingSender"))
-                                .payingWith("payingSender")
-                                .adminKey("payingSender"),
-                        scheduleDelete("tbd").via("canonicalDeletion").payingWith("payingSender"))
+                                                .signedBy(PAYING_SENDER))
+                                .payingWith(PAYING_SENDER)
+                                .adminKey(PAYING_SENDER),
+                        scheduleDelete("tbd").via("canonicalDeletion").payingWith(PAYING_SENDER))
                 .then(
                         validateChargedUsdWithin("canonicalCreation", 0.01, 3.0),
                         validateChargedUsdWithin("canonicalSigning", 0.001, 3.0),
@@ -139,84 +141,71 @@ public class CostOfEverythingSuite extends HapiSuite {
         final var lookupContract = "BalanceLookup";
 
         return customHapiSpec("MiscContractCreatesAndCalls")
-                .withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
+                .withProperties(Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
                 .given(
-                        cryptoCreate("civilian").balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS),
                         uploadInitCode(multipurposeContract, lookupContract))
                 .when(
-                        contractCreate(multipurposeContract).payingWith("civilian").balance(652),
-                        contractCreate(lookupContract).payingWith("civilian").balance(256))
+                        contractCreate(multipurposeContract)
+                                .payingWith(CIVILIAN)
+                                .balance(652),
+                        contractCreate(lookupContract).payingWith(CIVILIAN).balance(256))
                 .then(
-                        contractCall(multipurposeContract, "believeIn", 256).payingWith("civilian"),
+                        contractCall(multipurposeContract, "believeIn", 256).payingWith(CIVILIAN),
                         contractCallLocal(multipurposeContract, "pick")
-                                .payingWith("civilian")
+                                .payingWith(CIVILIAN)
                                 .logged()
-                                .has(
-                                        resultWith()
-                                                .resultThruAbi(
-                                                        getABIFor(
-                                                                FUNCTION,
-                                                                "pick",
-                                                                multipurposeContract),
-                                                        isLiteralResult(
-                                                                new Object[] {
-                                                                    BigInteger.valueOf(256)
-                                                                }))),
+                                .has(resultWith()
+                                        .resultThruAbi(
+                                                getABIFor(FUNCTION, "pick", multipurposeContract),
+                                                isLiteralResult(new Object[] {BigInteger.valueOf(256)}))),
                         contractCall(multipurposeContract, "donate", donationArgs)
-                                .payingWith("civilian"),
-                        contractCallLocal(
-                                        lookupContract,
-                                        "lookup",
-                                        spec ->
-                                                new Object[] {
-                                                    spec.registry()
-                                                            .getAccountID("civilian")
-                                                            .getAccountNum()
-                                                })
-                                .payingWith("civilian")
+                                .payingWith(CIVILIAN),
+                        contractCallLocal(lookupContract, "lookup", spec -> new Object[] {
+                                    spec.registry().getAccountID(CIVILIAN).getAccountNum()
+                                })
+                                .payingWith(CIVILIAN)
                                 .logged());
     }
 
     HapiSpec txnGetCreateRecord() {
         return customHapiSpec("TxnGetCreateRecord")
-                .withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
-                .given(cryptoCreate("hairTriggerPayer").balance(99_999_999_999L).sendThreshold(1L))
-                .when(cryptoCreate("somebodyElse").payingWith("hairTriggerPayer").via("txn"))
+                .withProperties(Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
+                .given(cryptoCreate(HAIR_TRIGGER_PAYER).balance(99_999_999_999L).sendThreshold(1L))
+                .when(cryptoCreate("somebodyElse")
+                        .payingWith(HAIR_TRIGGER_PAYER)
+                        .via("txn"))
                 .then(getTxnRecord("txn").logged());
     }
 
     HapiSpec txnGetSmallTransferRecord() {
         return customHapiSpec("TxnGetSmalTransferRecord")
-                .withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
-                .given(cryptoCreate("hairTriggerPayer").sendThreshold(1L))
-                .when(
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
-                                .payingWith("hairTriggerPayer")
-                                .via("txn"))
+                .withProperties(Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
+                .given(cryptoCreate(HAIR_TRIGGER_PAYER).sendThreshold(1L))
+                .when(cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
+                        .payingWith(HAIR_TRIGGER_PAYER)
+                        .via("txn"))
                 .then(getTxnRecord("txn").logged());
     }
 
     HapiSpec txnGetLargeTransferRecord() {
         return customHapiSpec("TxnGetLargeTransferRecord")
-                .withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
+                .withProperties(Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
                 .given(
-                        cryptoCreate("hairTriggerPayer").sendThreshold(1L),
+                        cryptoCreate(HAIR_TRIGGER_PAYER).sendThreshold(1L),
                         cryptoCreate("a"),
                         cryptoCreate("b"),
                         cryptoCreate("c"),
                         cryptoCreate("d"))
-                .when(
-                        cryptoTransfer(
-                                        spec ->
-                                                TransferList.newBuilder()
-                                                        .addAccountAmounts(aa(spec, GENESIS, -4L))
-                                                        .addAccountAmounts(aa(spec, "a", 1L))
-                                                        .addAccountAmounts(aa(spec, "b", 1L))
-                                                        .addAccountAmounts(aa(spec, "c", 1L))
-                                                        .addAccountAmounts(aa(spec, "d", 1L))
-                                                        .build())
-                                .payingWith("hairTriggerPayer")
-                                .via("txn"))
+                .when(cryptoTransfer(spec -> TransferList.newBuilder()
+                                .addAccountAmounts(aa(spec, GENESIS, -4L))
+                                .addAccountAmounts(aa(spec, "a", 1L))
+                                .addAccountAmounts(aa(spec, "b", 1L))
+                                .addAccountAmounts(aa(spec, "c", 1L))
+                                .addAccountAmounts(aa(spec, "d", 1L))
+                                .build())
+                        .payingWith(HAIR_TRIGGER_PAYER)
+                        .via("txn"))
                 .then(getTxnRecord("txn").logged());
     }
 
@@ -229,60 +218,40 @@ public class CostOfEverythingSuite extends HapiSuite {
 
     HapiSpec[] cryptoGetAccountRecordsPaths() {
         return new HapiSpec[] {
-            cryptoGetRecordsHappyPathS(),
-            cryptoGetRecordsHappyPathM(),
-            cryptoGetRecordsHappyPathL(),
+            cryptoGetRecordsHappyPathS(), cryptoGetRecordsHappyPathM(), cryptoGetRecordsHappyPathL(),
         };
     }
 
     HapiSpec cryptoGetRecordsHappyPathS() {
         return customHapiSpec("CryptoGetRecordsHappyPathS")
-                .withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
-                .given(cryptoCreate("hairTriggerPayer").sendThreshold(1L))
-                .when(
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
-                                .payingWith("hairTriggerPayer"))
-                .then(getAccountRecords("hairTriggerPayer").has(inOrder(recordWith())));
+                .withProperties(Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
+                .given(cryptoCreate(HAIR_TRIGGER_PAYER).sendThreshold(1L))
+                .when(cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)).payingWith(HAIR_TRIGGER_PAYER))
+                .then(getAccountRecords(HAIR_TRIGGER_PAYER).has(inOrder(recordWith())));
     }
 
     HapiSpec cryptoGetRecordsHappyPathM() {
         return customHapiSpec("CryptoGetRecordsHappyPathM")
-                .withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
-                .given(cryptoCreate("hairTriggerPayer").sendThreshold(1L))
+                .withProperties(Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
+                .given(cryptoCreate(HAIR_TRIGGER_PAYER).sendThreshold(1L))
                 .when(
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
-                                .payingWith("hairTriggerPayer"),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
-                                .payingWith("hairTriggerPayer"))
-                .then(
-                        getAccountRecords("hairTriggerPayer")
-                                .has(inOrder(recordWith(), recordWith())));
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)).payingWith(HAIR_TRIGGER_PAYER),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)).payingWith(HAIR_TRIGGER_PAYER))
+                .then(getAccountRecords(HAIR_TRIGGER_PAYER).has(inOrder(recordWith(), recordWith())));
     }
 
     HapiSpec cryptoGetRecordsHappyPathL() {
         return customHapiSpec("CryptoGetRecordsHappyPathL")
-                .withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
-                .given(cryptoCreate("hairTriggerPayer").sendThreshold(1L))
+                .withProperties(Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
+                .given(cryptoCreate(HAIR_TRIGGER_PAYER).sendThreshold(1L))
                 .when(
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
-                                .payingWith("hairTriggerPayer"),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
-                                .payingWith("hairTriggerPayer"),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
-                                .payingWith("hairTriggerPayer"),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
-                                .payingWith("hairTriggerPayer"),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
-                                .payingWith("hairTriggerPayer"))
-                .then(
-                        getAccountRecords("hairTriggerPayer")
-                                .has(
-                                        inOrder(
-                                                recordWith(),
-                                                recordWith(),
-                                                recordWith(),
-                                                recordWith(),
-                                                recordWith())));
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)).payingWith(HAIR_TRIGGER_PAYER),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)).payingWith(HAIR_TRIGGER_PAYER),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)).payingWith(HAIR_TRIGGER_PAYER),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)).payingWith(HAIR_TRIGGER_PAYER),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)).payingWith(HAIR_TRIGGER_PAYER))
+                .then(getAccountRecords(HAIR_TRIGGER_PAYER)
+                        .has(inOrder(recordWith(), recordWith(), recordWith(), recordWith(), recordWith())));
     }
 
     HapiSpec[] cryptoGetAccountInfoPaths() {
@@ -295,7 +264,7 @@ public class CostOfEverythingSuite extends HapiSuite {
         KeyShape hugeKey = threshOf(4, SIMPLE, SIMPLE, listOf(4), listOf(3), listOf(2));
 
         return customHapiSpec("CryptoGetAccountInfoHappyPath")
-                .withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
+                .withProperties(Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
                 .given(
                         newKeyNamed("smallKey").shape(smallKey),
                         newKeyNamed("midsizeKey").shape(midsizeKey),
@@ -317,7 +286,7 @@ public class CostOfEverythingSuite extends HapiSuite {
         KeyShape shape = SIMPLE;
 
         return customHapiSpec("SuccessfulCryptoCreate")
-                .withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
+                .withProperties(Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
                 .given(newKeyNamed("key").shape(shape))
                 .when()
                 .then(cryptoCreate("a").key("key"));
@@ -331,7 +300,7 @@ public class CostOfEverythingSuite extends HapiSuite {
 
     HapiSpec cryptoTransferGenesisToFunding() {
         return customHapiSpec("CryptoTransferGenesisToFunding")
-                .withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
+                .withProperties(Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
                 .given()
                 .when()
                 .then(cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1_000L)));

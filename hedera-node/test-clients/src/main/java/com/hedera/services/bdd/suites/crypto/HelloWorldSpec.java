@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -38,10 +39,9 @@ public class HelloWorldSpec extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    balancesChangeOnTransfer(),
-                });
+        return List.of(new HapiSpec[] {
+            balancesChangeOnTransfer(),
+        });
     }
 
     private HapiSpec balancesChangeOnTransfer() {
@@ -51,15 +51,12 @@ public class HelloWorldSpec extends HapiSuite {
                         cryptoCreate("beneficiary"),
                         balanceSnapshot("sponsorBefore", "sponsor"),
                         balanceSnapshot("beneficiaryBefore", "beneficiary"))
-                .when(
-                        cryptoTransfer(tinyBarsFromTo("sponsor", "beneficiary", 1L))
-                                .payingWith(GENESIS)
-                                .memo("Hello World!"))
+                .when(cryptoTransfer(tinyBarsFromTo("sponsor", "beneficiary", 1L))
+                        .payingWith(GENESIS)
+                        .memo("Hello World!"))
                 .then(
-                        getAccountBalance("sponsor")
-                                .hasTinyBars(changeFromSnapshot("sponsorBefore", -1L)),
-                        getAccountBalance("beneficiary")
-                                .hasTinyBars(changeFromSnapshot("beneficiaryBefore", +1L)));
+                        getAccountBalance("sponsor").hasTinyBars(changeFromSnapshot("sponsorBefore", -1L)),
+                        getAccountBalance("beneficiary").hasTinyBars(changeFromSnapshot("beneficiaryBefore", +1L)));
     }
 
     @Override

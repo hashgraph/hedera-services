@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -58,9 +59,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
-    private static final Logger log =
-            LogManager.getLogger(PauseUnpauseTokenAccountPrecompileSuite.class);
-    private static final String PAUSE_UNPAUSE_CONTRACT = "PauseUnpauseTokenAccount";
+    private static final Logger log = LogManager.getLogger(PauseUnpauseTokenAccountPrecompileSuite.class);
+    public static final String PAUSE_UNPAUSE_CONTRACT = "PauseUnpauseTokenAccount";
 
     private static final String UNPAUSE_KEY = "UNPAUSE_KEY";
 
@@ -70,8 +70,8 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
 
     public static final long INITIAL_BALANCE = 1_000_000_000L;
     private static final long GAS_TO_OFFER = 4_000_000L;
-    private static final String PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME = "pauseTokenAccount";
-    private static final String UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME = "unpauseTokenAccount";
+    public static final String PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME = "pauseTokenAccount";
+    public static final String UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME = "unpauseTokenAccount";
     private static final String PAUSE_FUNGIBLE_TXN = "pauseFungibleTxn";
     private static final String UNPAUSE_FUNGIBLE_TXN = "unpauseFungibleTxn";
     private static final String PAUSE_NONFUNGIBLE_TXN = "pauseNonFungibleTxn";
@@ -121,32 +121,27 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
                                 .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
                         uploadInitCode(PAUSE_UNPAUSE_CONTRACT),
                         contractCreate(PAUSE_UNPAUSE_CONTRACT))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                                PAUSE_UNPAUSE_CONTRACT,
-                                                                PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                asHeadlongAddress(INVALID_ADDRESS))
-                                                        .payingWith(ACCOUNT)
-                                                        .gas(GAS_TO_OFFER)
-                                                        .via(PAUSE_TX)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                contractCall(
-                                                                PAUSE_UNPAUSE_CONTRACT,
-                                                                UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                asHeadlongAddress(INVALID_ADDRESS))
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                                        .payingWith(ACCOUNT)
-                                                        .gas(GAS_TO_OFFER)
-                                                        .via(UNPAUSE_TX))))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        PAUSE_UNPAUSE_CONTRACT,
+                                        PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
+                                        asHeadlongAddress(INVALID_ADDRESS))
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER)
+                                .via(PAUSE_TX)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        contractCall(
+                                        PAUSE_UNPAUSE_CONTRACT,
+                                        UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
+                                        asHeadlongAddress(INVALID_ADDRESS))
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER)
+                                .via(UNPAUSE_TX))))
                 .then(
                         childRecordsCheck(
-                                PAUSE_TX,
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(INVALID_TOKEN_ID)),
+                                PAUSE_TX, CONTRACT_REVERT_EXECUTED, recordWith().status(INVALID_TOKEN_ID)),
                         childRecordsCheck(
                                 UNPAUSE_TX,
                                 CONTRACT_REVERT_EXECUTED,
@@ -159,9 +154,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
         return defaultHapiSpec("noKeyReverts")
                 .given(
                         newKeyNamed(MULTI_KEY),
-                        cryptoCreate(ACCOUNT)
-                                .balance(100 * ONE_HBAR)
-                                .exposingCreatedIdTo(accountID::set),
+                        cryptoCreate(ACCOUNT).balance(100 * ONE_HBAR).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
@@ -172,56 +165,41 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
                         uploadInitCode(PAUSE_UNPAUSE_CONTRACT),
                         contractCreate(PAUSE_UNPAUSE_CONTRACT),
                         tokenAssociate(ACCOUNT, VANILLA_TOKEN))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                                PAUSE_UNPAUSE_CONTRACT,
-                                                                PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                asHeadlongAddress(
-                                                                        asHexedAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())))
-                                                        .payingWith(ACCOUNT)
-                                                        .gas(GAS_TO_OFFER)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                                        .via(PAUSE_TX),
-                                                contractCall(
-                                                                PAUSE_UNPAUSE_CONTRACT,
-                                                                UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                asHeadlongAddress(
-                                                                        asHexedAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())))
-                                                        .payingWith(ACCOUNT)
-                                                        .gas(GAS_TO_OFFER)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                                        .via(UNPAUSE_TX))))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        PAUSE_UNPAUSE_CONTRACT,
+                                        PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
+                                        asHeadlongAddress(asHexedAddress(vanillaTokenID.get())))
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                .via(PAUSE_TX),
+                        contractCall(
+                                        PAUSE_UNPAUSE_CONTRACT,
+                                        UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
+                                        asHeadlongAddress(asHexedAddress(vanillaTokenID.get())))
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                .via(UNPAUSE_TX))))
                 .then(
                         childRecordsCheck(
                                 PAUSE_TX,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(TOKEN_HAS_NO_PAUSE_KEY)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                TOKEN_HAS_NO_PAUSE_KEY)))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(TOKEN_HAS_NO_PAUSE_KEY)))),
                         childRecordsCheck(
                                 UNPAUSE_TX,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(TOKEN_HAS_NO_PAUSE_KEY)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                TOKEN_HAS_NO_PAUSE_KEY)))));
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(TOKEN_HAS_NO_PAUSE_KEY)))));
     }
 
     HapiSpec pauseFungibleTokenHappyPath() {
@@ -240,72 +218,55 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
                                 .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
                         uploadInitCode(PAUSE_UNPAUSE_CONTRACT),
                         contractCreate(PAUSE_UNPAUSE_CONTRACT))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                                PAUSE_UNPAUSE_CONTRACT,
-                                                                PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                asHeadlongAddress(
-                                                                        asHexedAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())))
-                                                        .payingWith(ACCOUNT)
-                                                        .via(
-                                                                "pauseFungibleAccountDoesNotOwnPauseKeyFailingTxn")
-                                                        .gas(GAS_TO_OFFER)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                cryptoUpdate(ACCOUNT).key(MULTI_KEY),
-                                                contractCall(
-                                                                PAUSE_UNPAUSE_CONTRACT,
-                                                                PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                asHeadlongAddress(
-                                                                        asHexedAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())))
-                                                        .payingWith(ACCOUNT)
-                                                        .via(PAUSE_FUNGIBLE_TXN)
-                                                        .gas(GAS_TO_OFFER),
-                                                getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Paused),
-                                                tokenUnpause(VANILLA_TOKEN),
-                                                tokenDelete(VANILLA_TOKEN),
-                                                contractCall(
-                                                                PAUSE_UNPAUSE_CONTRACT,
-                                                                PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                asHeadlongAddress(
-                                                                        asHexedAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())))
-                                                        .payingWith(ACCOUNT)
-                                                        .via(
-                                                                "pauseFungibleAccountIsDeletedFailingTxn")
-                                                        .gas(GAS_TO_OFFER)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        PAUSE_UNPAUSE_CONTRACT,
+                                        PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
+                                        asHeadlongAddress(asHexedAddress(vanillaTokenID.get())))
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
+                                .via("pauseFungibleAccountDoesNotOwnPauseKeyFailingTxn")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        cryptoUpdate(ACCOUNT).key(MULTI_KEY),
+                        contractCall(
+                                        PAUSE_UNPAUSE_CONTRACT,
+                                        PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
+                                        asHeadlongAddress(asHexedAddress(vanillaTokenID.get())))
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
+                                .via(PAUSE_FUNGIBLE_TXN)
+                                .gas(GAS_TO_OFFER),
+                        getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Paused),
+                        tokenUnpause(VANILLA_TOKEN),
+                        tokenDelete(VANILLA_TOKEN),
+                        contractCall(
+                                        PAUSE_UNPAUSE_CONTRACT,
+                                        PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
+                                        asHeadlongAddress(asHexedAddress(vanillaTokenID.get())))
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
+                                .via("pauseFungibleAccountIsDeletedFailingTxn")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(
                         childRecordsCheck(
                                 "pauseFungibleAccountDoesNotOwnPauseKeyFailingTxn",
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(INVALID_SIGNATURE)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                INVALID_SIGNATURE)))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(INVALID_SIGNATURE)))),
                         childRecordsCheck(
                                 "pauseFungibleAccountIsDeletedFailingTxn",
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(TOKEN_WAS_DELETED)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                TOKEN_WAS_DELETED)))));
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(TOKEN_WAS_DELETED)))));
     }
 
     HapiSpec unpauseFungibleTokenHappyPath() {
@@ -323,46 +284,35 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
                                 .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
                         uploadInitCode(PAUSE_UNPAUSE_CONTRACT),
                         contractCreate(PAUSE_UNPAUSE_CONTRACT))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                                PAUSE_UNPAUSE_CONTRACT,
-                                                                UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                asHeadlongAddress(
-                                                                        asHexedAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())))
-                                                        .payingWith(ACCOUNT)
-                                                        .via(
-                                                                "unpauseFungibleAccountDoesNotOwnPauseKeyFailingTxn")
-                                                        .gas(GAS_TO_OFFER)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                cryptoUpdate(ACCOUNT).key(UNPAUSE_KEY),
-                                                contractCall(
-                                                                PAUSE_UNPAUSE_CONTRACT,
-                                                                UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                asHeadlongAddress(
-                                                                        asHexedAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())))
-                                                        .payingWith(ACCOUNT)
-                                                        .via(UNPAUSE_FUNGIBLE_TXN)
-                                                        .gas(GAS_TO_OFFER))))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        PAUSE_UNPAUSE_CONTRACT,
+                                        UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
+                                        asHeadlongAddress(asHexedAddress(vanillaTokenID.get())))
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
+                                .via("unpauseFungibleAccountDoesNotOwnPauseKeyFailingTxn")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        cryptoUpdate(ACCOUNT).key(UNPAUSE_KEY),
+                        contractCall(
+                                        PAUSE_UNPAUSE_CONTRACT,
+                                        UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
+                                        asHeadlongAddress(asHexedAddress(vanillaTokenID.get())))
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
+                                .via(UNPAUSE_FUNGIBLE_TXN)
+                                .gas(GAS_TO_OFFER))))
                 .then(
                         childRecordsCheck(
                                 "unpauseFungibleAccountDoesNotOwnPauseKeyFailingTxn",
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(INVALID_SIGNATURE)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                INVALID_SIGNATURE)))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(INVALID_SIGNATURE)))),
                         getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Unpaused));
     }
 
@@ -384,72 +334,55 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
                                 .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
                         uploadInitCode(PAUSE_UNPAUSE_CONTRACT),
                         contractCreate(PAUSE_UNPAUSE_CONTRACT))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                                PAUSE_UNPAUSE_CONTRACT,
-                                                                PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                asHeadlongAddress(
-                                                                        asHexedAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())))
-                                                        .payingWith(ACCOUNT)
-                                                        .via(
-                                                                "pauseNonFungibleAccountDoesNotOwnPauseKeyFailingTxn")
-                                                        .gas(GAS_TO_OFFER)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                cryptoUpdate(ACCOUNT).key(MULTI_KEY).key(PAUSE_KEY),
-                                                contractCall(
-                                                                PAUSE_UNPAUSE_CONTRACT,
-                                                                PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                asHeadlongAddress(
-                                                                        asHexedAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())))
-                                                        .payingWith(ACCOUNT)
-                                                        .via(PAUSE_NONFUNGIBLE_TXN)
-                                                        .gas(GAS_TO_OFFER),
-                                                getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Paused),
-                                                tokenUnpause(VANILLA_TOKEN),
-                                                tokenDelete(VANILLA_TOKEN),
-                                                contractCall(
-                                                                PAUSE_UNPAUSE_CONTRACT,
-                                                                PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                asHeadlongAddress(
-                                                                        asHexedAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())))
-                                                        .payingWith(ACCOUNT)
-                                                        .via(
-                                                                "pauseNonFungibleAccountIsDeletedFailingTxn")
-                                                        .gas(GAS_TO_OFFER)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        PAUSE_UNPAUSE_CONTRACT,
+                                        PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
+                                        asHeadlongAddress(asHexedAddress(vanillaTokenID.get())))
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
+                                .via("pauseNonFungibleAccountDoesNotOwnPauseKeyFailingTxn")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        cryptoUpdate(ACCOUNT).key(MULTI_KEY).key(PAUSE_KEY),
+                        contractCall(
+                                        PAUSE_UNPAUSE_CONTRACT,
+                                        PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
+                                        asHeadlongAddress(asHexedAddress(vanillaTokenID.get())))
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
+                                .via(PAUSE_NONFUNGIBLE_TXN)
+                                .gas(GAS_TO_OFFER),
+                        getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Paused),
+                        tokenUnpause(VANILLA_TOKEN),
+                        tokenDelete(VANILLA_TOKEN),
+                        contractCall(
+                                        PAUSE_UNPAUSE_CONTRACT,
+                                        PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
+                                        asHeadlongAddress(asHexedAddress(vanillaTokenID.get())))
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
+                                .via("pauseNonFungibleAccountIsDeletedFailingTxn")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(
                         childRecordsCheck(
                                 "pauseNonFungibleAccountDoesNotOwnPauseKeyFailingTxn",
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(INVALID_SIGNATURE)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                INVALID_SIGNATURE)))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(INVALID_SIGNATURE)))),
                         childRecordsCheck(
                                 "pauseNonFungibleAccountIsDeletedFailingTxn",
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(TOKEN_WAS_DELETED)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                TOKEN_WAS_DELETED)))));
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(TOKEN_WAS_DELETED)))));
     }
 
     HapiSpec unpauseNonFungibleTokenHappyPath() {
@@ -469,46 +402,35 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
                                 .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
                         uploadInitCode(PAUSE_UNPAUSE_CONTRACT),
                         contractCreate(PAUSE_UNPAUSE_CONTRACT))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                                PAUSE_UNPAUSE_CONTRACT,
-                                                                UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                asHeadlongAddress(
-                                                                        asHexedAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())))
-                                                        .payingWith(ACCOUNT)
-                                                        .via(
-                                                                "unpauseNonFungibleAccountDoesNotOwnPauseKeyFailingTxn")
-                                                        .gas(GAS_TO_OFFER)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                cryptoUpdate(ACCOUNT).key(UNPAUSE_KEY),
-                                                contractCall(
-                                                                PAUSE_UNPAUSE_CONTRACT,
-                                                                UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
-                                                                asHeadlongAddress(
-                                                                        asHexedAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())))
-                                                        .payingWith(ACCOUNT)
-                                                        .via(UNPAUSE_NONFUNGIBLE_TXN)
-                                                        .gas(GAS_TO_OFFER))))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        PAUSE_UNPAUSE_CONTRACT,
+                                        UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
+                                        asHeadlongAddress(asHexedAddress(vanillaTokenID.get())))
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
+                                .via("unpauseNonFungibleAccountDoesNotOwnPauseKeyFailingTxn")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        cryptoUpdate(ACCOUNT).key(UNPAUSE_KEY),
+                        contractCall(
+                                        PAUSE_UNPAUSE_CONTRACT,
+                                        UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
+                                        asHeadlongAddress(asHexedAddress(vanillaTokenID.get())))
+                                .signedBy(GENESIS, ACCOUNT)
+                                .alsoSigningWithFullPrefix(ACCOUNT)
+                                .via(UNPAUSE_NONFUNGIBLE_TXN)
+                                .gas(GAS_TO_OFFER))))
                 .then(
                         childRecordsCheck(
                                 "unpauseNonFungibleAccountDoesNotOwnPauseKeyFailingTxn",
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(INVALID_SIGNATURE)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                INVALID_SIGNATURE)))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(INVALID_SIGNATURE)))),
                         getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Unpaused));
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.queries.meta;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.txnReceiptQueryFor;
@@ -115,25 +116,21 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
 
     @Override
     protected void submitWith(HapiSpec spec, Transaction payment) {
-        TransactionID txnId =
-                explicitTxnId.orElseGet(
-                        () -> useDefaultTxnId ? defaultTxnId : spec.registry().getTxnId(txn));
+        TransactionID txnId = explicitTxnId.orElseGet(
+                () -> useDefaultTxnId ? defaultTxnId : spec.registry().getTxnId(txn));
         Query query =
-                forgetOp
-                        ? Query.newBuilder().build()
-                        : txnReceiptQueryFor(txnId, requestDuplicates, getChildReceipts);
-        response =
-                spec.clients()
-                        .getCryptoSvcStub(targetNodeFor(spec), useTls)
-                        .getTransactionReceipts(query);
+                forgetOp ? Query.newBuilder().build() : txnReceiptQueryFor(txnId, requestDuplicates, getChildReceipts);
+        response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getTransactionReceipts(query);
         childReceipts = response.getTransactionGetReceipt().getChildTransactionReceiptsList();
         if (verboseLoggingOn) {
-            log.info("Receipt: " + response.getTransactionGetReceipt().getReceipt());
-            log.info(
-                    spec.logPrefix() + "  And {} child receipts{}: {}",
-                    childReceipts.size(),
-                    childReceipts.size() > 1 ? "s" : "",
-                    childReceipts);
+            String message = String.format(
+                    "Receipt: %s", response.getTransactionGetReceipt().getReceipt());
+            log.info(message);
+            String message2 = String.format(
+                    "%s  And %d child receipts%s: %s",
+                    spec.logPrefix(), childReceipts.size(), childReceipts.size() > 1 ? "s" : "", childReceipts);
+
+            log.info(message2);
         }
     }
 
@@ -145,19 +142,14 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
             assertEquals(expectedPriorityStatus.get(), actualStatus);
         }
         if (expectedDuplicateStatuses.isPresent()) {
-            var duplicates =
-                    response
-                            .getTransactionGetReceipt()
-                            .getDuplicateTransactionReceiptsList()
-                            .stream()
-                            .map(TransactionReceipt::getStatus)
-                            .toArray(n -> new ResponseCodeEnum[n]);
+            var duplicates = response.getTransactionGetReceipt().getDuplicateTransactionReceiptsList().stream()
+                    .map(TransactionReceipt::getStatus)
+                    .toArray(n -> new ResponseCodeEnum[n]);
             Assertions.assertArrayEquals(expectedDuplicateStatuses.get(), duplicates);
         }
         if (expectedScheduledTxnId.isPresent()) {
             var expected = spec.registry().getTxnId(expectedScheduledTxnId.get());
-            var actual =
-                    response.getTransactionGetReceipt().getReceipt().getScheduledTransactionID();
+            var actual = response.getTransactionGetReceipt().getReceipt().getScheduledTransactionID();
             assertEquals(expected, actual, "Wrong scheduled transaction id!");
         }
         if (expectedSchedule.isPresent()) {

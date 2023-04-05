@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.suites;
 
 import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode.TAKE;
@@ -85,6 +86,18 @@ import org.apache.logging.log4j.Logger;
 
 public class CostOfEveryThingSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CostOfEveryThingSuite.class);
+    private static final String COST_SNAPSHOT_MODE = "cost.snapshot.mode";
+    private static final String PAYER = "payer";
+    private static final String AUTO_RENEW_ACCOUNT = "autoRenewAccount";
+    private static final String PAYING_SENDER = "payingSender";
+    private static final String RECEIVER = "receiver";
+    private static final String CANONICAL_SCHEDULE = "canonicalSchedule";
+    private static final String ADMIN_KEY = "adminKey";
+    private static final String MEMORABLE = "memorable";
+    private static final String TEST_TOPIC = "testTopic";
+    private static final String TEST_ACCOUNT_A = "testAccountA";
+    private static final String TEST_TOKEN = "testToken";
+    private static final String CANONICAL_ACCOUNT = "canonicalAccount";
 
     HapiSpec.CostSnapshotMode costSnapshotMode = TAKE;
     private final Map<String, String> specConfig;
@@ -112,43 +125,24 @@ public class CostOfEveryThingSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return Stream.of(
-                        ofNullable(
-                                ServiceTypes.contains(Utils.ServiceType.CRYPTO)
-                                        ? canonicalCryptoOps()
-                                        : null),
-                        ofNullable(
-                                ServiceTypes.contains(Utils.ServiceType.CONSENSUS)
-                                        ? canonicalTopicOps()
-                                        : null),
-                        ofNullable(
-                                ServiceTypes.contains(Utils.ServiceType.TOKEN)
-                                        ? canonicalTokenOps()
-                                        : null),
-                        ofNullable(
-                                ServiceTypes.contains(Utils.ServiceType.FILE)
-                                        ? canonicalFileOps()
-                                        : null),
-                        ofNullable(
-                                ServiceTypes.contains(Utils.ServiceType.CONTRACT)
-                                        ? canonicalContractOps()
-                                        : null),
-                        ofNullable(
-                                ServiceTypes.contains(Utils.ServiceType.SCHEDULED)
-                                        ? canonicalScheduleOps()
-                                        : null))
+                        ofNullable(ServiceTypes.contains(Utils.ServiceType.CRYPTO) ? canonicalCryptoOps() : null),
+                        ofNullable(ServiceTypes.contains(Utils.ServiceType.CONSENSUS) ? canonicalTopicOps() : null),
+                        ofNullable(ServiceTypes.contains(Utils.ServiceType.TOKEN) ? canonicalTokenOps() : null),
+                        ofNullable(ServiceTypes.contains(Utils.ServiceType.FILE) ? canonicalFileOps() : null),
+                        ofNullable(ServiceTypes.contains(Utils.ServiceType.CONTRACT) ? canonicalContractOps() : null),
+                        ofNullable(ServiceTypes.contains(Utils.ServiceType.SCHEDULED) ? canonicalScheduleOps() : null))
                 .flatMap(Optional::stream)
                 .collect(toList());
     }
 
     HapiSpec canonicalContractOps() {
-        return HapiSpec.customHapiSpec(String.format("canonicalContractOps"))
-                .withProperties(
-                        specConfig, Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
+        return HapiSpec.customHapiSpec("canonicalContractOps")
+                .withProperties(specConfig, Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
                 .given(
                         newKeyNamed("key").shape(SIMPLE),
-                        cryptoCreate("payer").key("key").balance(10_000_000_000L),
+                        cryptoCreate(PAYER).key("key").balance(10_000_000_000L),
                         fileCreate("contractFile")
-                                .payingWith("payer")
+                                .payingWith(PAYER)
                                 .fromResource("contract/contracts/CreateTrivial/CreateTrivial.bin"))
                 .when(
                         uploadInitCode(contract),
@@ -159,53 +153,38 @@ public class CostOfEveryThingSuite extends HapiSuite {
                                 .adminKey("key")
                                 .autoRenewSecs(THREE_MONTHS_IN_SECONDS - 1)
                                 .gas(30000)
-                                .payingWith("payer")
+                                .payingWith(PAYER)
                                 .hasKnownStatus(SUCCESS)
                                 .via("canonicalContractCreate"),
                         contractUpdate(contract)
                                 .newMemo("")
                                 .blankMemo()
-                                .payingWith("payer")
+                                .payingWith(PAYER)
                                 .newKey("key")
                                 .newExpirySecs(THREE_MONTHS_IN_SECONDS)
                                 .via("canonicalContractUpdate"),
                         contractCall(contract, "create")
                                 .blankMemo()
-                                .payingWith("payer")
+                                .payingWith(PAYER)
                                 .gas(100000)
                                 .via("canonicalContractCall"),
-                        getContractInfo(contract)
-                                .payingWith("payer")
-                                .via("canonicalGetContractInfo"),
+                        getContractInfo(contract).payingWith(PAYER).via("canonicalGetContractInfo"),
                         contractCallLocal(contract, "getIndirect")
-                                .payingWith("payer")
+                                .payingWith(PAYER)
                                 .nodePayment(100_000_000)
                                 .gas(50000)
                                 .via("canonicalContractCallLocal"),
-                        getContractBytecode(contract)
-                                .payingWith("payer")
-                                .via("canonicalGetContractByteCode"),
-                        contractDelete(contract)
-                                .blankMemo()
-                                .payingWith("payer")
-                                .via("canonicalContractDelete"))
+                        getContractBytecode(contract).payingWith(PAYER).via("canonicalGetContractByteCode"),
+                        contractDelete(contract).blankMemo().payingWith(PAYER).via("canonicalContractDelete"))
                 .then(
                         withOpContext((spec, log) -> appendServiceName("Smart Contract Service")),
-                        getTransactionFee(
-                                "canonicalContractCreate", feeTableBuilder, "contractCreate"),
-                        getTransactionFee(
-                                "canonicalContractUpdate", feeTableBuilder, "contractUpdate"),
+                        getTransactionFee("canonicalContractCreate", feeTableBuilder, "contractCreate"),
+                        getTransactionFee("canonicalContractUpdate", feeTableBuilder, "contractUpdate"),
                         getTransactionFee("canonicalContractCall", feeTableBuilder, "contractCall"),
-                        getTransactionFee(
-                                "canonicalGetContractInfo", feeTableBuilder, "getContractInfo"),
-                        getTransactionFee(
-                                "canonicalContractCallLocal", feeTableBuilder, "contractCallLocal"),
-                        getTransactionFee(
-                                "canonicalGetContractByteCode",
-                                feeTableBuilder,
-                                "getContractByteCode"),
-                        getTransactionFee(
-                                "canonicalContractDelete", feeTableBuilder, "contractDelete"));
+                        getTransactionFee("canonicalGetContractInfo", feeTableBuilder, "getContractInfo"),
+                        getTransactionFee("canonicalContractCallLocal", feeTableBuilder, "contractCallLocal"),
+                        getTransactionFee("canonicalGetContractByteCode", feeTableBuilder, "getContractByteCode"),
+                        getTransactionFee("canonicalContractDelete", feeTableBuilder, "contractDelete"));
     }
 
     HapiSpec canonicalFileOps() {
@@ -213,112 +192,95 @@ public class CostOfEveryThingSuite extends HapiSuite {
         final byte[] first = randomUtf8Bytes(fileSize);
         final byte[] next = randomUtf8Bytes(fileSize);
 
-        return HapiSpec.customHapiSpec(String.format("canonicalFileOps"))
-                .withProperties(
-                        specConfig, Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
+        return HapiSpec.customHapiSpec("canonicalFileOps")
+                .withProperties(specConfig, Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
                 .given(
                         newKeyNamed("key").shape(SIMPLE),
-                        cryptoCreate("payer").key("key").balance(1_000_000_000L),
-                        newKeyListNamed("WACL", List.of("payer")),
-                        fileCreate("memorable")
+                        cryptoCreate(PAYER).key("key").balance(1_000_000_000L),
+                        newKeyListNamed("WACL", List.of(PAYER)),
+                        fileCreate(MEMORABLE)
                                 .blankMemo()
                                 .entityMemo("")
-                                .payingWith("payer")
+                                .payingWith(PAYER)
                                 .key("WACL")
-                                .expiry(
-                                        Instant.now().getEpochSecond()
-                                                + THREE_MONTHS_IN_SECONDS
-                                                - 1)
+                                .expiry(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS - 1)
                                 .contents(first)
                                 .via("canonicalFileCreate"))
                 .when(
-                        fileAppend("memorable")
+                        fileAppend(MEMORABLE)
                                 .blankMemo()
-                                .payingWith("payer")
+                                .payingWith(PAYER)
                                 .content(next)
                                 .via("canonicalFileAppend"),
-                        fileUpdate("memorable")
+                        fileUpdate(MEMORABLE)
                                 .blankMemo()
                                 .entityMemo("")
-                                .payingWith("payer")
+                                .payingWith(PAYER)
                                 .contents(next)
                                 .extendingExpiryBy(1L)
                                 .via("canonicalFileUpdate"),
-                        getFileContents("memorable").via("canonicalGetFileContents"),
-                        getFileInfo("memorable").via("canonicalGetFileInfo"),
-                        fileDelete("memorable")
-                                .blankMemo()
-                                .payingWith("payer")
-                                .via("canonicalFileDelete"))
+                        getFileContents(MEMORABLE).via("canonicalGetFileContents"),
+                        getFileInfo(MEMORABLE).via("canonicalGetFileInfo"),
+                        fileDelete(MEMORABLE).blankMemo().payingWith(PAYER).via("canonicalFileDelete"))
                 .then(
                         withOpContext((spec, log) -> appendServiceName("File Service")),
                         getTransactionFee("canonicalFileCreate", feeTableBuilder, "fileCreate"),
                         getTransactionFee("canonicalFileAppend", feeTableBuilder, "fileAppend"),
                         getTransactionFee("canonicalFileUpdate", feeTableBuilder, "fileUpdate"),
-                        getTransactionFee(
-                                "canonicalGetFileContents", feeTableBuilder, "getFileContents"),
+                        getTransactionFee("canonicalGetFileContents", feeTableBuilder, "getFileContents"),
                         getTransactionFee("canonicalGetFileInfo", feeTableBuilder, "getFileInfo"),
                         getTransactionFee("canonicalFileDelete", feeTableBuilder, "fileDelete"));
     }
 
     HapiSpec canonicalTopicOps() {
-        return HapiSpec.customHapiSpec(String.format("canonicalTopicOps"))
-                .withProperties(
-                        specConfig, Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
+        return HapiSpec.customHapiSpec("canonicalTopicOps")
+                .withProperties(specConfig, Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
                 .given(
                         newKeyNamed("key").shape(SIMPLE),
-                        cryptoCreate("payer").key("key").balance(100_000_000L))
+                        cryptoCreate(PAYER).key("key").balance(100_000_000L))
                 .when(
-                        createTopic("testTopic")
+                        createTopic(TEST_TOPIC)
                                 .blankMemo()
                                 .topicMemo("")
                                 .autoRenewPeriod(THREE_MONTHS_IN_SECONDS - 1)
-                                .adminKeyName("payer")
-                                .payingWith("payer")
+                                .adminKeyName(PAYER)
+                                .payingWith(PAYER)
                                 .via("canonicalTopicCreate"),
-                        updateTopic("testTopic")
+                        updateTopic(TEST_TOPIC)
                                 .blankMemo()
                                 .topicMemo("")
-                                .payingWith("payer")
+                                .payingWith(PAYER)
                                 .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
                                 .via("canonicalTopicUpdate"),
-                        submitMessageTo("testTopic")
+                        submitMessageTo(TEST_TOPIC)
                                 .message("testMessage")
-                                .payingWith("payer")
+                                .payingWith(PAYER)
                                 .hasKnownStatus(SUCCESS)
                                 .via("canonicalSubmitMessage"),
-                        getTopicInfo("testTopic").payingWith("payer").via("canonicalGetTopicInfo"),
-                        deleteTopic("testTopic").payingWith("payer").via("canonicalTopicDelete"))
+                        getTopicInfo(TEST_TOPIC).payingWith(PAYER).via("canonicalGetTopicInfo"),
+                        deleteTopic(TEST_TOPIC).payingWith(PAYER).via("canonicalTopicDelete"))
                 .then(
                         withOpContext((spec, log) -> appendServiceName("Consensus Service")),
-                        getTransactionFee(
-                                "canonicalTopicCreate", feeTableBuilder, "consensusCreateTopic"),
-                        getTransactionFee(
-                                "canonicalTopicUpdate", feeTableBuilder, "consensusUpdateTopic"),
-                        getTransactionFee(
-                                "canonicalSubmitMessage",
-                                feeTableBuilder,
-                                "consensusSubmitMessage"),
-                        getTransactionFee(
-                                "canonicalGetTopicInfo", feeTableBuilder, "consensusGetInfo"),
-                        getTransactionFee(
-                                "canonicalTopicDelete", feeTableBuilder, "consensusDeleteTopic"));
+                        getTransactionFee("canonicalTopicCreate", feeTableBuilder, "consensusCreateTopic"),
+                        getTransactionFee("canonicalTopicUpdate", feeTableBuilder, "consensusUpdateTopic"),
+                        getTransactionFee("canonicalSubmitMessage", feeTableBuilder, "consensusSubmitMessage"),
+                        getTransactionFee("canonicalGetTopicInfo", feeTableBuilder, "consensusGetInfo"),
+                        getTransactionFee("canonicalTopicDelete", feeTableBuilder, "consensusDeleteTopic"));
     }
 
     HapiSpec canonicalTokenOps() {
-        return HapiSpec.customHapiSpec(String.format("canonicalTokenOps"))
-                .withProperties(
-                        specConfig, Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
+        return HapiSpec.customHapiSpec("canonicalTokenOps")
+                .withProperties(specConfig, Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
                 .given(
                         newKeyNamed("key").shape(SIMPLE),
-                        newKeyNamed("adminKey").shape(listOf(3)),
+                        newKeyNamed(ADMIN_KEY).shape(listOf(3)),
                         newKeyNamed("freezeKey"),
                         newKeyNamed("kycKey"),
                         newKeyNamed("supplyKey"),
                         newKeyNamed("wipeKey"),
                         cryptoCreate(TOKEN_TREASURY).key("key").balance(1_000 * ONE_HBAR),
-                        cryptoCreate("autoRenewAccount").key("adminKey").balance(0L),
-                        cryptoCreate("testAccountA").key("adminKey"))
+                        cryptoCreate(AUTO_RENEW_ACCOUNT).key(ADMIN_KEY).balance(0L),
+                        cryptoCreate(TEST_ACCOUNT_A).key(ADMIN_KEY))
                 .when(
                         tokenCreate("primary")
                                 .entityMemo("")
@@ -326,9 +288,9 @@ public class CostOfEveryThingSuite extends HapiSuite {
                                 .name(new String(randomUtf8Bytes(12), StandardCharsets.UTF_8))
                                 .symbol(new String(randomUtf8Bytes(4), StandardCharsets.UTF_8))
                                 .treasury(TOKEN_TREASURY)
-                                .autoRenewAccount("autoRenewAccount")
+                                .autoRenewAccount(AUTO_RENEW_ACCOUNT)
                                 .autoRenewPeriod(THREE_MONTHS_IN_SECONDS - 1)
-                                .adminKey("adminKey")
+                                .adminKey(ADMIN_KEY)
                                 .payingWith(TOKEN_TREASURY)
                                 .via("canonicalTokenCreate"),
                         tokenUpdate("primary")
@@ -337,65 +299,61 @@ public class CostOfEveryThingSuite extends HapiSuite {
                                 .payingWith(TOKEN_TREASURY)
                                 .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
                                 .via("canonicalTokenUpdate"),
-                        tokenCreate("testToken")
+                        tokenCreate(TEST_TOKEN)
                                 .entityMemo("")
                                 .name("testCoin")
                                 .treasury(TOKEN_TREASURY)
-                                .autoRenewAccount("autoRenewAccount")
+                                .autoRenewAccount(AUTO_RENEW_ACCOUNT)
                                 .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
                                 .initialSupply(500)
                                 .decimals(1)
-                                .adminKey("adminKey")
+                                .adminKey(ADMIN_KEY)
                                 .freezeKey("freezeKey")
                                 .kycKey("kycKey")
                                 .supplyKey("supplyKey")
                                 .wipeKey("wipeKey"),
-                        mintToken("testToken", 1)
+                        mintToken(TEST_TOKEN, 1)
                                 .blankMemo()
                                 .payingWith(TOKEN_TREASURY)
                                 .via("cannonicalMintToken"),
-                        burnToken("testToken", 1)
+                        burnToken(TEST_TOKEN, 1)
                                 .blankMemo()
                                 .payingWith(TOKEN_TREASURY)
                                 .via("canonicalBurnToken"),
-                        tokenAssociate("testAccountA", "testToken")
+                        tokenAssociate(TEST_ACCOUNT_A, TEST_TOKEN)
                                 .blankMemo()
                                 .payingWith(TOKEN_TREASURY)
                                 .via("canonicalTokenAssociation"),
-                        revokeTokenKyc("testToken", "testAccountA")
+                        revokeTokenKyc(TEST_TOKEN, TEST_ACCOUNT_A)
                                 .blankMemo()
                                 .payingWith(TOKEN_TREASURY)
                                 .via("canonicalTokenRevokeKyc"),
-                        grantTokenKyc("testToken", "testAccountA")
+                        grantTokenKyc(TEST_TOKEN, TEST_ACCOUNT_A)
                                 .blankMemo()
                                 .payingWith(TOKEN_TREASURY)
                                 .via("canonicalTokenGrantKyc"),
-                        tokenFreeze("testToken", "testAccountA")
+                        tokenFreeze(TEST_TOKEN, TEST_ACCOUNT_A)
                                 .blankMemo()
                                 .payingWith(TOKEN_TREASURY)
                                 .via("canonicalTokenFreeze"),
-                        tokenUnfreeze("testToken", "testAccountA")
+                        tokenUnfreeze(TEST_TOKEN, TEST_ACCOUNT_A)
                                 .blankMemo()
                                 .payingWith(TOKEN_TREASURY)
                                 .via("canonicalTokenUnFreeze"),
-                        cryptoTransfer(
-                                        moving(1, "testToken")
-                                                .between(TOKEN_TREASURY, "testAccountA"))
+                        cryptoTransfer(moving(1, TEST_TOKEN).between(TOKEN_TREASURY, TEST_ACCOUNT_A))
                                 .blankMemo()
                                 .payingWith(TOKEN_TREASURY)
                                 .via("canonicalTokenTransfer"),
-                        wipeTokenAccount("testToken", "testAccountA", 1)
+                        wipeTokenAccount(TEST_TOKEN, TEST_ACCOUNT_A, 1)
                                 .payingWith(TOKEN_TREASURY)
                                 .blankMemo()
                                 .via("canonicalTokenWipe"),
-                        tokenDissociate("testAccountA", "testToken")
+                        tokenDissociate(TEST_ACCOUNT_A, TEST_TOKEN)
                                 .blankMemo()
                                 .payingWith(TOKEN_TREASURY)
                                 .via("canonicalTokenDissociation"),
-                        getTokenInfo("testToken")
-                                .payingWith(TOKEN_TREASURY)
-                                .via("canonicalTokenGetInfo"),
-                        tokenDelete("testToken")
+                        getTokenInfo(TEST_TOKEN).payingWith(TOKEN_TREASURY).via("canonicalTokenGetInfo"),
+                        tokenDelete(TEST_TOKEN)
                                 .blankMemo()
                                 .payingWith(TOKEN_TREASURY)
                                 .via("canonicalTokenDelete"))
@@ -403,130 +361,106 @@ public class CostOfEveryThingSuite extends HapiSuite {
                         withOpContext((spec, log) -> appendServiceName("Token Service")),
                         getTransactionFee("canonicalTokenCreate", feeTableBuilder, "tokenCreate"),
                         getTransactionFee("canonicalTokenUpdate", feeTableBuilder, "tokenUpdate"),
-                        getTransactionFee(
-                                "cannonicalMintToken", feeTableBuilder, "tokenMintSingle"),
+                        getTransactionFee("cannonicalMintToken", feeTableBuilder, "tokenMintSingle"),
                         getTransactionFee("canonicalBurnToken", feeTableBuilder, "tokenBurnSingle"),
-                        getTransactionFee(
-                                "canonicalTokenAssociation", feeTableBuilder, "tokenAssociate"),
-                        getTransactionFee(
-                                "canonicalTokenGrantKyc", feeTableBuilder, "tokenGrantKyc"),
-                        getTransactionFee(
-                                "canonicalTokenRevokeKyc", feeTableBuilder, "tokenRevokeKyc"),
+                        getTransactionFee("canonicalTokenAssociation", feeTableBuilder, "tokenAssociate"),
+                        getTransactionFee("canonicalTokenGrantKyc", feeTableBuilder, "tokenGrantKyc"),
+                        getTransactionFee("canonicalTokenRevokeKyc", feeTableBuilder, "tokenRevokeKyc"),
                         getTransactionFee("canonicalTokenFreeze", feeTableBuilder, "tokenFreeze"),
-                        getTransactionFee(
-                                "canonicalTokenUnFreeze", feeTableBuilder, "tokenUnFreeze"),
-                        getTransactionFee(
-                                "canonicalTokenTransfer", feeTableBuilder, "tokenTransfer"),
+                        getTransactionFee("canonicalTokenUnFreeze", feeTableBuilder, "tokenUnFreeze"),
+                        getTransactionFee("canonicalTokenTransfer", feeTableBuilder, "tokenTransfer"),
                         getTransactionFee("canonicalTokenWipe", feeTableBuilder, "tokenWipe"),
-                        getTransactionFee(
-                                "canonicalTokenDissociation", feeTableBuilder, "tokenDissociate"),
+                        getTransactionFee("canonicalTokenDissociation", feeTableBuilder, "tokenDissociate"),
                         getTransactionFee("canonicalTokenGetInfo", feeTableBuilder, "getTokenInfo"),
                         getTransactionFee("canonicalTokenDelete", feeTableBuilder, "tokenDelete"));
     }
 
     HapiSpec canonicalCryptoOps() {
 
-        return HapiSpec.customHapiSpec(String.format("canonicalCryptoOps"))
-                .withProperties(
-                        specConfig, Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
+        return HapiSpec.customHapiSpec("canonicalCryptoOps")
+                .withProperties(specConfig, Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
                 .given(
                         newKeyNamed("key").shape(SIMPLE),
-                        cryptoCreate("payer").key("key").balance(1_000 * ONE_HBAR))
+                        cryptoCreate(PAYER).key("key").balance(1_000 * ONE_HBAR))
                 .when(
-                        cryptoCreate("canonicalAccount")
+                        cryptoCreate(CANONICAL_ACCOUNT)
                                 .key("key")
                                 .blankMemo()
                                 .balance(100 * ONE_HBAR)
                                 .entityMemo("")
                                 .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
-                                .payingWith("payer")
+                                .payingWith(PAYER)
                                 .via("canonicalCryptoCreation"),
-                        cryptoUpdate("canonicalAccount")
-                                .payingWith("canonicalAccount")
+                        cryptoUpdate(CANONICAL_ACCOUNT)
+                                .payingWith(CANONICAL_ACCOUNT)
                                 .blankMemo()
                                 .expiring(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
                                 .entityMemo("")
                                 .via("canonicalCryptoUpdate"),
                         cryptoCreate("testAccount").key("key"),
-                        cryptoTransfer(tinyBarsFromTo("canonicalAccount", "testAccount", 1L))
-                                .payingWith("canonicalAccount")
+                        cryptoTransfer(tinyBarsFromTo(CANONICAL_ACCOUNT, "testAccount", 1L))
+                                .payingWith(CANONICAL_ACCOUNT)
                                 .blankMemo()
                                 .via("canonicalCryptoTransfer"),
-                        getAccountRecords("canonicalAccount").via("canonicalGetRecords"),
-                        getAccountInfo("canonicalAccount").via("canonicalGetAccountInfo"),
+                        getAccountRecords(CANONICAL_ACCOUNT).via("canonicalGetRecords"),
+                        getAccountInfo(CANONICAL_ACCOUNT).via("canonicalGetAccountInfo"),
                         cryptoCreate("canonicalAccountTBD")
                                 .blankMemo()
                                 .entityMemo("")
-                                .payingWith("payer"),
+                                .payingWith(PAYER),
                         cryptoDelete("canonicalAccountTBD")
                                 .blankMemo()
-                                .payingWith("payer")
+                                .payingWith(PAYER)
                                 .via("canonicalCryptoDeletion"))
                 .then(
                         withOpContext((spec, log) -> appendServiceName("Cryptocurrency Service")),
-                        getTransactionFee(
-                                "canonicalCryptoCreation", feeTableBuilder, "cryptoCreate"),
+                        getTransactionFee("canonicalCryptoCreation", feeTableBuilder, "cryptoCreate"),
                         getTransactionFee("canonicalCryptoUpdate", feeTableBuilder, "cryptoUpdate"),
-                        getTransactionFee(
-                                "canonicalCryptoTransfer", feeTableBuilder, "cryptoTransfer"),
-                        getTransactionFee(
-                                "canonicalGetRecords", feeTableBuilder, "cryptoGetAccountRecords"),
-                        getTransactionFee(
-                                "canonicalGetAccountInfo", feeTableBuilder, "cryptoGetAccountInfo"),
-                        getTransactionFee(
-                                "canonicalCryptoDeletion", feeTableBuilder, "cryptoDelete"));
+                        getTransactionFee("canonicalCryptoTransfer", feeTableBuilder, "cryptoTransfer"),
+                        getTransactionFee("canonicalGetRecords", feeTableBuilder, "cryptoGetAccountRecords"),
+                        getTransactionFee("canonicalGetAccountInfo", feeTableBuilder, "cryptoGetAccountInfo"),
+                        getTransactionFee("canonicalCryptoDeletion", feeTableBuilder, "cryptoDelete"));
     }
 
     HapiSpec canonicalScheduleOps() {
-        return HapiSpec.customHapiSpec(String.format("canonicalScheduleOps"))
-                .withProperties(
-                        specConfig, Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
+        return HapiSpec.customHapiSpec("canonicalScheduleOps")
+                .withProperties(specConfig, Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
                 .given(
-                        cryptoCreate("payingSender").balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate("receiver").balance(0L).receiverSigRequired(true))
+                        cryptoCreate(PAYING_SENDER).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true))
                 .when(
                         scheduleCreate(
-                                        "canonicalSchedule",
-                                        cryptoTransfer(
-                                                        tinyBarsFromTo(
-                                                                "payingSender", "receiver", 1L))
+                                        CANONICAL_SCHEDULE,
+                                        cryptoTransfer(tinyBarsFromTo(PAYING_SENDER, RECEIVER, 1L))
                                                 .memo("")
                                                 .fee(ONE_HBAR))
                                 .via("canonicalScheduleCreation")
-                                .payingWith("payingSender")
-                                .adminKey("payingSender"),
-                        getScheduleInfo("canonicalSchedule").payingWith("payingSender"),
-                        scheduleSign("canonicalSchedule")
+                                .payingWith(PAYING_SENDER)
+                                .adminKey(PAYING_SENDER),
+                        getScheduleInfo(CANONICAL_SCHEDULE).payingWith(PAYING_SENDER),
+                        scheduleSign(CANONICAL_SCHEDULE)
                                 .via("canonicalScheduleSigning")
-                                .payingWith("payingSender")
-                                .alsoSigningWith("receiver"),
+                                .payingWith(PAYING_SENDER)
+                                .alsoSigningWith(RECEIVER),
                         scheduleCreate(
                                         "tbd",
-                                        cryptoTransfer(
-                                                        tinyBarsFromTo(
-                                                                "payingSender", "receiver", 1L))
+                                        cryptoTransfer(tinyBarsFromTo(PAYING_SENDER, RECEIVER, 1L))
                                                 .memo("")
                                                 .fee(ONE_HBAR)
-                                                .signedBy("payingSender"))
-                                .payingWith("payingSender")
-                                .adminKey("payingSender"),
-                        scheduleDelete("tbd")
-                                .via("canonicalScheduleDeletion")
-                                .payingWith("payingSender"))
+                                                .signedBy(PAYING_SENDER))
+                                .payingWith(PAYING_SENDER)
+                                .adminKey(PAYING_SENDER),
+                        scheduleDelete("tbd").via("canonicalScheduleDeletion").payingWith(PAYING_SENDER))
                 .then(
-                        withOpContext(
-                                (spec, log) -> appendServiceName("Schedule Transaction Service")),
-                        getTransactionFee(
-                                "canonicalScheduleCreation", feeTableBuilder, "scheduleCreate"),
-                        getTransactionFee(
-                                "canonicalScheduleSigning", feeTableBuilder, "scheduleSign"),
-                        getTransactionFee(
-                                "canonicalScheduleDeletion", feeTableBuilder, "scheduleDelete"));
+                        withOpContext((spec, log) -> appendServiceName("Schedule Transaction Service")),
+                        getTransactionFee("canonicalScheduleCreation", feeTableBuilder, "scheduleCreate"),
+                        getTransactionFee("canonicalScheduleSigning", feeTableBuilder, "scheduleSign"),
+                        getTransactionFee("canonicalScheduleDeletion", feeTableBuilder, "scheduleDelete"));
     }
 
     private void appendServiceName(final String serviceName) {
         feeTableBuilder.append(serviceBorder);
-        feeTableBuilder.append(String.format("%30s | Fees \t\t |\n", serviceName));
+        feeTableBuilder.append(String.format("%30s | Fees \t\t |%n", serviceName));
         feeTableBuilder.append(serviceBorder);
     }
 }

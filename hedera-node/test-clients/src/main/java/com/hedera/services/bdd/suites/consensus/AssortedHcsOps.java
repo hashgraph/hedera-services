@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.consensus;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTopicString;
@@ -48,6 +49,9 @@ import org.apache.logging.log4j.Logger;
 
 public class AssortedHcsOps extends HapiSuite {
     private static final Logger log = LogManager.getLogger(AssortedHcsOps.class);
+    private static final String UPDATED_TOPIC = "updatedTopic";
+    private static final String VANILLA_TOPIC = "vanillaTopic";
+    private static final String DELETED_TOPIC = "deletedTopic";
 
     public static void main(String... args) {
         new AssortedHcsOps().runSuiteSync();
@@ -55,12 +59,11 @@ public class AssortedHcsOps extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    //						runMisc(),
-                    testRechargingPayer(),
-                    //						infoLookup(),
-                });
+        return List.of(new HapiSpec[] {
+            //						runMisc(),
+            testRechargingPayer(),
+            //						infoLookup(),
+        });
     }
 
     final String TARGET_DIR = "./dev-system-files";
@@ -71,15 +74,12 @@ public class AssortedHcsOps extends HapiSuite {
         return defaultHapiSpec("testRechargingPayer")
                 .given(cryptoCreate("rechargingPayer").balance(startingBalance).withRecharging())
                 .when()
-                .then(
-                        IntStream.range(0, 1_000)
-                                .mapToObj(
-                                        id ->
-                                                cryptoCreate("child" + id)
-                                                        .payingWith("rechargingPayer")
-                                                        .balance(startingBalance / 2)
-                                                        .logged())
-                                .toArray(HapiSpecOperation[]::new));
+                .then(IntStream.range(0, 1_000)
+                        .mapToObj(id -> cryptoCreate("child" + id)
+                                .payingWith("rechargingPayer")
+                                .balance(startingBalance / 2)
+                                .logged())
+                        .toArray(HapiSpecOperation[]::new));
     }
 
     private HapiSpec infoLookup() {
@@ -96,72 +96,50 @@ public class AssortedHcsOps extends HapiSuite {
         AtomicReference<String> updatedTopic = new AtomicReference<>();
         AtomicReference<String> deletedTopic = new AtomicReference<>();
 
-        Function<String, HapiSpecOperation[]> submitBurst =
-                ref ->
-                        IntStream.range(0, SUBMIT_BURST_SIZE)
-                                .mapToObj(
-                                        i ->
-                                                submitMessageTo(ref)
-                                                        .message(
-                                                                String.format(
-                                                                        "%s message #%d", ref, i)))
-                                .toArray(n -> new HapiSpecOperation[n]);
+        Function<String, HapiSpecOperation[]> submitBurst = ref -> IntStream.range(0, SUBMIT_BURST_SIZE)
+                .mapToObj(i -> submitMessageTo(ref).message(String.format("%s message #%d", ref, i)))
+                .toArray(n -> new HapiSpecOperation[n]);
 
         KeyShape origAdminKey = listOf(SIMPLE, threshOf(2, 3), SIMPLE);
         KeyShape origSubmitKey = listOf(SIMPLE, threshOf(2, 3), listOf(5));
 
         return customHapiSpec("RunMisc")
-                .withProperties(
-                        Map.of(
-                                "client.feeSchedule.fromDisk",
-                                "false",
-                                "client.feeSchedule.path",
-                                path("feeSchedule.bin"),
-                                "client.exchangeRates.fromDisk",
-                                "false",
-                                "client.exchangeRates.path",
-                                path("exchangeRates.bin")))
+                .withProperties(Map.of(
+                        "client.feeSchedule.fromDisk",
+                        "false",
+                        "client.feeSchedule.path",
+                        path("feeSchedule.bin"),
+                        "client.exchangeRates.fromDisk",
+                        "false",
+                        "client.exchangeRates.path",
+                        path("exchangeRates.bin")))
                 .given(
                         newKeyNamed("origAdminKey").shape(origAdminKey),
                         newKeyNamed("origSubmitKey").shape(origSubmitKey),
-                        createTopic("vanillaTopic").adminKeyName(GENESIS),
-                        createTopic("updatedTopic")
-                                .adminKeyName("origAdminKey")
-                                .submitKeyName("origSubmitKey"),
-                        createTopic("deletedTopic").adminKeyName(GENESIS),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    vanillaTopic.set(
-                                            asTopicString(
-                                                    spec.registry().getTopicID("vanillaTopic")));
-                                    updatedTopic.set(
-                                            asTopicString(
-                                                    spec.registry().getTopicID("updatedTopic")));
-                                    deletedTopic.set(
-                                            asTopicString(
-                                                    spec.registry().getTopicID("deletedTopic")));
-                                }))
-                .when(
-                        flattened(
-                                submitBurst.apply("vanillaTopic"),
-                                submitBurst.apply("updatedTopic"),
-                                submitBurst.apply("deletedTopic"),
-                                updateTopic("updatedTopic").adminKey(GENESIS).submitKey(GENESIS),
-                                deleteTopic("deletedTopic")))
+                        createTopic(VANILLA_TOPIC).adminKeyName(GENESIS),
+                        createTopic(UPDATED_TOPIC).adminKeyName("origAdminKey").submitKeyName("origSubmitKey"),
+                        createTopic(DELETED_TOPIC).adminKeyName(GENESIS),
+                        withOpContext((spec, opLog) -> {
+                            vanillaTopic.set(asTopicString(spec.registry().getTopicID(VANILLA_TOPIC)));
+                            updatedTopic.set(asTopicString(spec.registry().getTopicID(UPDATED_TOPIC)));
+                            deletedTopic.set(asTopicString(spec.registry().getTopicID(DELETED_TOPIC)));
+                        }))
+                .when(flattened(
+                        submitBurst.apply(VANILLA_TOPIC),
+                        submitBurst.apply(UPDATED_TOPIC),
+                        submitBurst.apply(DELETED_TOPIC),
+                        updateTopic(UPDATED_TOPIC).adminKey(GENESIS).submitKey(GENESIS),
+                        deleteTopic(DELETED_TOPIC)))
                 .then(
-                        getTopicInfo("vanillaTopic").hasSeqNo(10L),
-                        getTopicInfo("updatedTopic")
+                        getTopicInfo(VANILLA_TOPIC).hasSeqNo(10L),
+                        getTopicInfo(UPDATED_TOPIC)
                                 .hasSeqNo(10L)
                                 .hasAdminKey(GENESIS)
                                 .hasSubmitKey(GENESIS),
-                        getTopicInfo("deletedTopic").hasCostAnswerPrecheck(INVALID_TOPIC_ID),
-                        logIt(
-                                spec ->
-                                        String.format(
-                                                "Vanilla: %s, Updated: %s, Deleted: %s",
-                                                vanillaTopic.get(),
-                                                updatedTopic.get(),
-                                                deletedTopic.get())));
+                        getTopicInfo(DELETED_TOPIC).hasCostAnswerPrecheck(INVALID_TOPIC_ID),
+                        logIt(spec -> String.format(
+                                "Vanilla: %s, Updated: %s, Deleted: %s",
+                                vanillaTopic.get(), updatedTopic.get(), deletedTopic.get())));
     }
 
     private String path(String file) {

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -22,6 +23,8 @@ import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.ServicesState;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
@@ -39,8 +42,6 @@ import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.fchashmap.FCHashMap;
-import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.virtualmap.VirtualMap;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,28 +50,56 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class MutableStateChildrenTest {
-    @Mock private ServicesState state;
-    @Mock private AccountStorageAdapter accounts;
-    @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
-    @Mock private VirtualMap<ContractKey, IterableContractValue> contractStorage;
-    @Mock private MerkleMap<EntityNum, MerkleTopic> topics;
-    @Mock private MerkleMap<EntityNum, MerkleToken> tokens;
-    @Mock private TokenRelStorageAdapter tokenAssociations;
-    @Mock private MerkleScheduledTransactions scheduleTxs;
-    @Mock private MerkleNetworkContext networkCtx;
-    @Mock private AddressBook addressBook;
-    @Mock private MerkleSpecialFiles specialFiles;
-    @Mock private UniqueTokenMapAdapter uniqueTokens;
-    @Mock private RecordsRunningHashLeaf runningHashLeaf;
-    @Mock private FCHashMap<ByteString, EntityNum> aliases;
-    @Mock private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
+    @Mock
+    private ServicesState state;
+
+    @Mock
+    private AccountStorageAdapter accounts;
+
+    @Mock
+    private VirtualMapLike<VirtualBlobKey, VirtualBlobValue> storage;
+
+    @Mock
+    private VirtualMapLike<ContractKey, IterableContractValue> contractStorage;
+
+    @Mock
+    private MerkleMapLike<EntityNum, MerkleTopic> topics;
+
+    @Mock
+    private MerkleMapLike<EntityNum, MerkleToken> tokens;
+
+    @Mock
+    private TokenRelStorageAdapter tokenAssociations;
+
+    @Mock
+    private MerkleScheduledTransactions scheduleTxs;
+
+    @Mock
+    private MerkleNetworkContext networkCtx;
+
+    @Mock
+    private AddressBook addressBook;
+
+    @Mock
+    private MerkleSpecialFiles specialFiles;
+
+    @Mock
+    private UniqueTokenMapAdapter uniqueTokens;
+
+    @Mock
+    private RecordsRunningHashLeaf runningHashLeaf;
+
+    @Mock
+    private FCHashMap<ByteString, EntityNum> aliases;
+
+    @Mock
+    private MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfo;
 
     private final MutableStateChildren subject = new MutableStateChildren();
 
     @Test
     void refusesToUpdateFromUninitializedState() {
-        assertThrows(
-                IllegalArgumentException.class, () -> subject.updateFromImmutable(state, signedAt));
+        assertThrows(IllegalArgumentException.class, () -> subject.updateFromImmutable(state, signedAt));
     }
 
     @Test

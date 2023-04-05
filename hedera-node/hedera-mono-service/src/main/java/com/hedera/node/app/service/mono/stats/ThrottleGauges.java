@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stats;
 
 import static com.hedera.node.app.service.mono.stats.ServicesStatsManager.GAUGE_FORMAT;
@@ -78,16 +79,8 @@ public class ThrottleGauges {
 
     public void updateAll() {
         final var now = Instant.now();
-        update(
-                now,
-                handleThrottling.allActiveThrottles(),
-                handleThrottling.gasLimitThrottle(),
-                consNamedMetrics);
-        update(
-                now,
-                hapiThrottling.allActiveThrottles(),
-                hapiThrottling.gasLimitThrottle(),
-                hapiNamedMetrics);
+        update(now, handleThrottling.allActiveThrottles(), handleThrottling.gasLimitThrottle(), consNamedMetrics);
+        update(now, hapiThrottling.allActiveThrottles(), hapiThrottling.gasLimitThrottle(), hapiNamedMetrics);
     }
 
     private void registerTypeWith(
@@ -99,11 +92,10 @@ public class ThrottleGauges {
         final Set<String> activeReqs = new HashSet<>();
         throttles.stream()
                 .filter(throttle -> throttlesToSample.contains(throttle.name()))
-                .forEach(
-                        throttle -> {
-                            addAndCorrelateEntryFor(type, throttle.name(), platform, namedGauges);
-                            activeReqs.add(throttle.name());
-                        });
+                .forEach(throttle -> {
+                    addAndCorrelateEntryFor(type, throttle.name(), platform, namedGauges);
+                    activeReqs.add(throttle.name());
+                });
         throttlesToSample.stream()
                 .filter(req -> !activeReqs.contains(req) && !GAS_THROTTLE_ID.equals(req))
                 .forEach(name -> justAddEntryFor(type, name, platform));
@@ -117,13 +109,12 @@ public class ThrottleGauges {
             final List<DeterministicThrottle> activeThrottles,
             final GasLimitDeterministicThrottle gasThrottle,
             final Map<String, DoubleGauge> namedMetrics) {
-        activeThrottles.forEach(
-                throttle -> {
-                    final var name = throttle.name();
-                    if (namedMetrics.containsKey(name)) {
-                        namedMetrics.get(name).set(throttle.percentUsed(now));
-                    }
-                });
+        activeThrottles.forEach(throttle -> {
+            final var name = throttle.name();
+            if (namedMetrics.containsKey(name)) {
+                namedMetrics.get(name).set(throttle.percentUsed(now));
+            }
+        });
         if (namedMetrics.containsKey(GAS_THROTTLE_NAME)) {
             namedMetrics.get(GAS_THROTTLE_NAME).set(gasThrottle.percentUsed(now));
         }
@@ -134,34 +125,27 @@ public class ThrottleGauges {
             final String throttleName,
             final Platform platform,
             final Map<String, DoubleGauge> utilizationMetrics) {
-        utilizationMetrics.put(
-                throttleName, registeredGaugeFor(type, throttleName, platform, "LIVE"));
+        utilizationMetrics.put(throttleName, registeredGaugeFor(type, throttleName, platform, "LIVE"));
     }
 
-    private void justAddEntryFor(
-            final String type, final String throttleName, final Platform platform) {
+    private void justAddEntryFor(final String type, final String throttleName, final Platform platform) {
         // Don't track this gauge since we can't update its value (the throttle bucket doesn't
         // exist)
         registeredGaugeFor(type, throttleName, platform, "INERT");
     }
 
     private DoubleGauge registeredGaugeFor(
-            final String type,
-            final String throttleName,
-            final Platform platform,
-            final String status) {
+            final String type, final String throttleName, final Platform platform, final String status) {
         final var name = type.toLowerCase() + String.format(THROTTLE_NAME_TPL, throttleName);
         final var desc = String.format(THROTTLE_DESCRIPTION_TPL, type, throttleName);
-        final var config =
-                new DoubleGauge.Config(STAT_CATEGORY, name)
-                        .withDescription(desc)
-                        .withFormat(GAUGE_FORMAT);
+        final var config = new DoubleGauge.Config(STAT_CATEGORY, name)
+                .withDescription(desc)
+                .withFormat(GAUGE_FORMAT);
         final var gauge = platform.getMetrics().getOrCreate(config);
         log.info("Registered {} gauge for '{}' under name '{}'", status, desc, name);
         return gauge;
     }
 
     private static final String THROTTLE_NAME_TPL = "%sPercentUsed";
-    private static final String THROTTLE_DESCRIPTION_TPL =
-            "instantaneous %% used in %s %s throttle bucket";
+    private static final String THROTTLE_DESCRIPTION_TPL = "instantaneous %% used in %s %s throttle bucket";
 }

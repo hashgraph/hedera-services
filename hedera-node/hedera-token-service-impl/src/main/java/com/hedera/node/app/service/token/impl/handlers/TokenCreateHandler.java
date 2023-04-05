@@ -13,20 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.meta.PreHandleContext;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.transaction.CustomFee;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CustomFee;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import javax.inject.Inject;
@@ -34,43 +36,44 @@ import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#TokenCreate}.
+ * HederaFunctionality#TOKEN_CREATE}.
  */
 @Singleton
 public class TokenCreateHandler implements TransactionHandler {
     @Inject
-    public TokenCreateHandler() {}
+    public TokenCreateHandler() {
+        // Exists for injection
+    }
 
     /**
      * This method is called during the pre-handle workflow.
      *
      * <p>Typically, this method validates the {@link TransactionBody} semantically, gathers all
-     * required keys, warms the cache, and creates the {@link TransactionMetadata} that is used in
-     * the handle stage.
+     * required keys, and warms the cache.
      *
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
-     * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@link #handle(TransactionMetadata)}
+     * @param context the {@link PreHandleContext} which collects all information
+     *
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
-        final var tokenCreateTxnBody = context.getTxn().getTokenCreation();
+        final var tokenCreateTxnBody = context.getTxn().tokenCreationOrThrow();
         if (tokenCreateTxnBody.hasTreasury()) {
-            final var treasuryId = tokenCreateTxnBody.getTreasury();
+            final var treasuryId = tokenCreateTxnBody.treasuryOrThrow();
             context.addNonPayerKey(treasuryId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
         }
         if (tokenCreateTxnBody.hasAutoRenewAccount()) {
-            final var autoRenewalAccountId = tokenCreateTxnBody.getAutoRenewAccount();
+            final var autoRenewalAccountId = tokenCreateTxnBody.autoRenewAccountOrThrow();
             context.addNonPayerKey(autoRenewalAccountId, INVALID_AUTORENEW_ACCOUNT);
         }
         if (tokenCreateTxnBody.hasAdminKey()) {
-            final var adminKey = asHederaKey(tokenCreateTxnBody.getAdminKey());
+            final var adminKey = asHederaKey(tokenCreateTxnBody.adminKeyOrThrow());
             adminKey.ifPresent(context::addToReqNonPayerKeys);
         }
-        final var customFees = tokenCreateTxnBody.getCustomFeesList();
+        final var customFees = tokenCreateTxnBody.customFeesOrElse(emptyList());
         addCustomFeeCollectorKeys(context, customFees);
     }
 
@@ -80,11 +83,9 @@ public class TokenCreateHandler implements TransactionHandler {
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
-     * @param metadata the {@link TransactionMetadata} that was generated during pre-handle.
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(@NonNull final TransactionMetadata metadata) {
-        requireNonNull(metadata);
+    public void handle() {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -97,31 +98,29 @@ public class TokenCreateHandler implements TransactionHandler {
      * @param customFeesList list with the custom fees
      */
     private void addCustomFeeCollectorKeys(
-            @NonNull final PreHandleContext context,
-            @NonNull final List<CustomFee> customFeesList) {
+            @NonNull final PreHandleContext context, @NonNull final List<CustomFee> customFeesList) {
 
         for (final var customFee : customFeesList) {
-            final var collector = customFee.getFeeCollectorAccountId();
+            final var collector = customFee.feeCollectorAccountIdOrElse(AccountID.DEFAULT);
 
             /* A fractional fee collector and a collector for a fixed fee denominated
             in the units of the newly created token both must always sign a TokenCreate,
             since these are automatically associated to the newly created token. */
             if (customFee.hasFixedFee()) {
-                final var fixedFee = customFee.getFixedFee();
-                final var alwaysAdd =
-                        fixedFee.hasDenominatingTokenId()
-                                && fixedFee.getDenominatingTokenId().getTokenNum() == 0L;
+                final var fixedFee = customFee.fixedFeeOrThrow();
+                final var alwaysAdd = fixedFee.hasDenominatingTokenId()
+                        && fixedFee.denominatingTokenIdOrThrow().tokenNum() == 0L;
                 addAccount(context, collector, alwaysAdd);
             } else if (customFee.hasFractionalFee()) {
                 context.addNonPayerKey(collector, INVALID_CUSTOM_FEE_COLLECTOR);
             } else {
-                final var royaltyFee = customFee.getRoyaltyFee();
+                // TODO: Need to validate if this is actually needed
+                final var royaltyFee = customFee.royaltyFeeOrThrow();
                 var alwaysAdd = false;
                 if (royaltyFee.hasFallbackFee()) {
-                    final var fFee = royaltyFee.getFallbackFee();
-                    alwaysAdd =
-                            fFee.hasDenominatingTokenId()
-                                    && fFee.getDenominatingTokenId().getTokenNum() == 0;
+                    final var fFee = royaltyFee.fallbackFeeOrThrow();
+                    alwaysAdd = fFee.hasDenominatingTokenId()
+                            && fFee.denominatingTokenIdOrThrow().tokenNum() == 0;
                 }
                 addAccount(context, collector, alwaysAdd);
             }
@@ -135,8 +134,7 @@ public class TokenCreateHandler implements TransactionHandler {
      * @param collector the ID of the collector
      * @param alwaysAdd if true, will always add the key
      */
-    private void addAccount(
-            final PreHandleContext context, final AccountID collector, final boolean alwaysAdd) {
+    private void addAccount(final PreHandleContext context, final AccountID collector, final boolean alwaysAdd) {
         if (alwaysAdd) {
             context.addNonPayerKey(collector, INVALID_CUSTOM_FEE_COLLECTOR);
         } else {

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.ids;
 
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -33,12 +34,18 @@ public interface EntityIdSource {
     TopicID newTopicId(AccountID sponsor);
 
     /**
-     * Returns the {@link AccountID} to use for a new account with the given sponsor.
+     * Returns the {@link AccountID} to use for a new account
      *
-     * @param newAccountSponsor the sponsor of the new account
      * @return an appropriate id to use
      */
-    AccountID newAccountId(AccountID newAccountSponsor);
+    AccountID newAccountId();
+
+    /**
+     * Returns the new account number to use for a new account
+     *
+     * @return an appropriate id to use
+     */
+    long newAccountNumber();
 
     /**
      * Returns the {@link ContractID} to use for a new contract with the given account.

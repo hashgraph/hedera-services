@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context;
 
 import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
@@ -50,6 +51,7 @@ import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
 import com.hedera.node.app.service.mono.state.EntityCreator;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.expiry.ExpiringEntity;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
@@ -105,33 +107,29 @@ class BasicTransactionContextTest {
     private final long memberId = 3;
     private final long anotherMemberId = 4;
     private final Instant now = Instant.now();
-    private final ExchangeRate rateNow =
-            ExchangeRate.newBuilder()
-                    .setHbarEquiv(1)
-                    .setCentEquiv(100)
-                    .setExpirationTime(TimestampSeconds.newBuilder())
-                    .build();
-    private final ExchangeRateSet ratesNow =
-            ExchangeRateSet.newBuilder().setCurrentRate(rateNow).setNextRate(rateNow).build();
+    private final ExchangeRate rateNow = ExchangeRate.newBuilder()
+            .setHbarEquiv(1)
+            .setCentEquiv(100)
+            .setExpirationTime(TimestampSeconds.newBuilder())
+            .build();
+    private final ExchangeRateSet ratesNow = ExchangeRateSet.newBuilder()
+            .setCurrentRate(rateNow)
+            .setNextRate(rateNow)
+            .build();
     private final AccountID payer = asAccount("0.0.2");
     private final AccountID anotherNodeAccount = asAccount("0.0.4");
     private final AccountID created = asAccount("0.0.2");
     private final AccountID another = asAccount("0.0.300");
-    private final CurrencyAdjustments transfers =
-            CurrencyAdjustments.fromChanges(
-                    new long[] {-2L, 1L, 1L},
-                    new long[] {
-                        payer.getAccountNum(), created.getAccountNum(), another.getAccountNum()
-                    });
+    private final CurrencyAdjustments transfers = CurrencyAdjustments.fromChanges(
+            new long[] {-2L, 1L, 1L},
+            new long[] {payer.getAccountNum(), created.getAccountNum(), another.getAccountNum()});
     private final TokenID tokenCreated = asToken("3.0.2");
     private final ScheduleID scheduleCreated = asSchedule("0.0.10");
-    private final TokenTransferList tokenTransfers =
-            TokenTransferList.newBuilder()
-                    .setToken(tokenCreated)
-                    .addAllTransfers(
-                            withAdjustments(payer, -2L, created, 1L, another, 1L)
-                                    .getAccountAmountsList())
-                    .build();
+    private final TokenTransferList tokenTransfers = TokenTransferList.newBuilder()
+            .setToken(tokenCreated)
+            .addAllTransfers(
+                    withAdjustments(payer, -2L, created, 1L, another, 1L).getAccountAmountsList())
+            .build();
     private List<FcTokenAssociation> newTokenAssociations =
             List.of(new FcTokenAssociation(tokenCreated.getTokenNum(), payer.getAccountNum()));
     private final FileID fileCreated = asFile("2.0.1");
@@ -141,44 +139,76 @@ class BasicTransactionContextTest {
     private final AccountID nodeAccount = asAccount("0.0.3");
     private final String memo = "Hi!";
     private final byte[] hash = "fake hash".getBytes();
-    private final TransactionID txnId =
-            TransactionID.newBuilder()
-                    .setTransactionValidStart(Timestamp.newBuilder().setSeconds(txnValidStart))
-                    .setAccountID(payer)
-                    .build();
+    private final TransactionID txnId = TransactionID.newBuilder()
+            .setTransactionValidStart(Timestamp.newBuilder().setSeconds(txnValidStart))
+            .setAccountID(payer)
+            .build();
     private ExpirableTxnRecord record;
 
-    @Mock private HbarCentExchange exchange;
-    @Mock private NodeInfo nodeInfo;
-    @Mock private NarratedCharging narratedCharging;
-    @Mock private SignedTxnAccessor accessor;
-    @Mock private SignedTxnAccessor accessor2;
-    @Mock private SwirldsTxnAccessor swirldsTxnAccessor;
-    @Mock private TransactionBody txn;
-    @Mock private ExpiringEntity expiringEntity;
-    @Mock private JKey payerKey;
-    @Mock private MerkleAccount payerAccount;
-    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
-    @Mock private EntityCreator creator;
-    @Mock private SideEffectsTracker sideEffectsTracker;
-    @Mock private EntityIdSource ids;
-    @Mock private EvmFnResult result;
-    @Mock private EthTxData evmFnCallContext;
+    @Mock
+    private HbarCentExchange exchange;
 
-    @LoggingTarget private LogCaptor logCaptor;
-    @LoggingSubject private BasicTransactionContext subject;
+    @Mock
+    private NodeInfo nodeInfo;
+
+    @Mock
+    private NarratedCharging narratedCharging;
+
+    @Mock
+    private SignedTxnAccessor accessor;
+
+    @Mock
+    private SignedTxnAccessor accessor2;
+
+    @Mock
+    private SwirldsTxnAccessor swirldsTxnAccessor;
+
+    @Mock
+    private TransactionBody txn;
+
+    @Mock
+    private ExpiringEntity expiringEntity;
+
+    @Mock
+    private JKey payerKey;
+
+    @Mock
+    private MerkleAccount payerAccount;
+
+    @Mock
+    private MerkleMap<EntityNum, MerkleAccount> accounts;
+
+    @Mock
+    private EntityCreator creator;
+
+    @Mock
+    private SideEffectsTracker sideEffectsTracker;
+
+    @Mock
+    private EntityIdSource ids;
+
+    @Mock
+    private EvmFnResult result;
+
+    @Mock
+    private EthTxData evmFnCallContext;
+
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private BasicTransactionContext subject;
 
     @BeforeEach
     void setup() {
-        subject =
-                new BasicTransactionContext(
-                        narratedCharging,
-                        () -> AccountStorageAdapter.fromInMemory(accounts),
-                        nodeInfo,
-                        exchange,
-                        creator,
-                        sideEffectsTracker,
-                        ids);
+        subject = new BasicTransactionContext(
+                narratedCharging,
+                () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
+                nodeInfo,
+                exchange,
+                creator,
+                sideEffectsTracker,
+                ids);
 
         subject.resetFor(accessor, now, memberId);
 
@@ -247,9 +277,7 @@ class BasicTransactionContextTest {
         // then:
         var ise = assertThrows(IllegalStateException.class, () -> subject.submittingNodeAccount());
         // and:
-        assertThat(
-                logCaptor.warnLogs(),
-                contains(Matchers.startsWith("No available Hedera account for member 3!")));
+        assertThat(logCaptor.warnLogs(), contains(Matchers.startsWith("No available Hedera account for member 3!")));
         assertEquals("Member 3 must have a Hedera account!", ise.getMessage());
     }
 
@@ -303,7 +331,8 @@ class BasicTransactionContextTest {
         assertFalse(subject.isPayerSigKnownActive());
         assertEquals(anotherNodeAccount, subject.submittingNodeAccount());
         assertEquals(anotherMemberId, subject.submittingSwirldsMember());
-        assertEquals(newTokenAssociations.get(0), record.getNewTokenAssociations().get(0));
+        assertEquals(
+                newTokenAssociations.get(0), record.getNewTokenAssociations().get(0));
         // and:
         verify(narratedCharging).resetForTxn(accessor, memberId);
         verify(sideEffectsTracker, times(2)).reset();
@@ -579,8 +608,7 @@ class BasicTransactionContextTest {
                 runningHash, record.getReceipt().toGrpc().getTopicRunningHash().toByteArray());
         assertEquals(sequenceNumber, record.getReceipt().getTopicSequenceNumber());
         assertEquals(
-                MerkleTopic.RUNNING_HASH_VERSION,
-                record.getReceipt().toGrpc().getTopicRunningHashVersion());
+                MerkleTopic.RUNNING_HASH_VERSION, record.getReceipt().toGrpc().getTopicRunningHashVersion());
     }
 
     @Test
@@ -699,15 +727,14 @@ class BasicTransactionContextTest {
     void throwsIfNotSwirldsTxnAccessor() {
         assertThrows(IllegalStateException.class, () -> subject.swirldsTxnAccessor());
 
-        subject =
-                new BasicTransactionContext(
-                        narratedCharging,
-                        () -> AccountStorageAdapter.fromInMemory(accounts),
-                        nodeInfo,
-                        exchange,
-                        creator,
-                        sideEffectsTracker,
-                        ids);
+        subject = new BasicTransactionContext(
+                narratedCharging,
+                () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
+                nodeInfo,
+                exchange,
+                creator,
+                sideEffectsTracker,
+                ids);
 
         subject.resetFor(swirldsTxnAccessor, now, memberId);
         verify(narratedCharging).resetForTxn(swirldsTxnAccessor, memberId);
@@ -718,11 +745,9 @@ class BasicTransactionContextTest {
     @Test
     void sidecarsArePopulatedAsExpected() {
         final var sidecar =
-                SidecarUtils.createContractBytecodeSidecarFrom(
-                        asContract("0.0.5"), "runtimeCode".getBytes());
+                SidecarUtils.createContractBytecodeSidecarFrom(asContract("0.0.5"), "runtimeCode".getBytes());
         final var sidecar2 =
-                SidecarUtils.createContractBytecodeSidecarFrom(
-                        asContract("0.0.7"), "runtimeCode2".getBytes());
+                SidecarUtils.createContractBytecodeSidecarFrom(asContract("0.0.7"), "runtimeCode2".getBytes());
 
         subject.addSidecarRecord(sidecar);
         assertEquals(1, subject.sidecars().size());
@@ -735,28 +760,20 @@ class BasicTransactionContextTest {
     }
 
     private ExpirableTxnRecord.Builder buildExpectedRecord(
-            long otherNonThresholdFees,
-            byte[] hash,
-            TxnAccessor accessor,
-            Instant consensusTime,
-            TxnReceipt receipt) {
+            long otherNonThresholdFees, byte[] hash, TxnAccessor accessor, Instant consensusTime, TxnReceipt receipt) {
         long amount = narratedCharging.totalFeesChargedToPayer() + otherNonThresholdFees;
         List<TokenTransferList> tokenTransferList = List.of(tokenTransfers);
 
-        var builder =
-                ExpirableTxnRecord.newBuilder()
-                        .setReceipt(receipt)
-                        .setTxnHash(hash)
-                        .setTxnId(TxnId.fromGrpc(accessor.getTxnId()))
-                        .setConsensusTime(RichInstant.fromJava(consensusTime))
-                        .setMemo(accessor.getTxn().getMemo())
-                        .setFee(amount)
-                        .setHbarAdjustments(transfers)
-                        .setScheduleRef(
-                                accessor.isTriggeredTxn()
-                                        ? fromGrpcScheduleId(accessor.getScheduleRef())
-                                        : null)
-                        .setNewTokenAssociations(newTokenAssociations);
+        var builder = ExpirableTxnRecord.newBuilder()
+                .setReceipt(receipt)
+                .setTxnHash(hash)
+                .setTxnId(TxnId.fromGrpc(accessor.getTxnId()))
+                .setConsensusTime(RichInstant.fromJava(consensusTime))
+                .setMemo(accessor.getTxn().getMemo())
+                .setFee(amount)
+                .setHbarAdjustments(transfers)
+                .setScheduleRef(accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null)
+                .setNewTokenAssociations(newTokenAssociations);
 
         List<EntityId> tokens = new ArrayList<>();
         List<CurrencyAdjustments> tokenAdjustments = new ArrayList<>();
@@ -770,13 +787,12 @@ class BasicTransactionContextTest {
     }
 
     private ExpirableTxnRecord.Builder setUpBuildingExpirableTxnRecord() {
-        var expirableRecordBuilder =
-                buildExpectedRecord(
-                        subject.getNonThresholdFeeChargedToPayer(),
-                        accessor.getHash(),
-                        accessor,
-                        now,
-                        subject.receiptSoFar().build());
+        var expirableRecordBuilder = buildExpectedRecord(
+                subject.getNonThresholdFeeChargedToPayer(),
+                accessor.getHash(),
+                accessor,
+                now,
+                subject.receiptSoFar().build());
         when(creator.createTopLevelRecord(anyLong(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(expirableRecordBuilder);
         return expirableRecordBuilder;

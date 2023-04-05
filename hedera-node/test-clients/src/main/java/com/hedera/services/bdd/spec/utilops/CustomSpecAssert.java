@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.utilops;
 
 import static com.hedera.services.bdd.spec.utilops.UtilStateChange.initializeEthereumAccountForSpec;
@@ -56,7 +57,7 @@ public class CustomSpecAssert extends UtilOp {
     private static void handleExec(final HapiSpec spec, final HapiSpecOperation op) {
         Optional<Throwable> error = op.execFor(spec);
         if (error.isPresent()) {
-            log.error("Operation '" + op + "' :: " + error.get().getMessage());
+            log.error("Operation '{}' :: {}", op, error.get().getMessage());
             throw new IllegalStateException(error.get());
         }
     }

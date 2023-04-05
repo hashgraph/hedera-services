@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.crypto.validators;
 
 import static com.hedera.node.app.service.mono.txns.crypto.helpers.AllowanceHelpers.aggregateNftAllowances;
@@ -51,8 +52,7 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
     private final OptionValidator validator;
 
     @Inject
-    public ApproveAllowanceChecks(
-            final GlobalDynamicProperties dynamicProperties, final OptionValidator validator) {
+    public ApproveAllowanceChecks(final GlobalDynamicProperties dynamicProperties, final OptionValidator validator) {
         super(dynamicProperties);
         this.validator = validator;
     }
@@ -77,20 +77,14 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
 
         final var accountStore = new AccountStore(validator, view.asReadOnlyAccountStore());
 
-        final var tokenStore =
-                new ReadOnlyTokenStore(
-                        accountStore,
-                        view.asReadOnlyTokenStore(),
-                        view.asReadOnlyNftStore(),
-                        view.asReadOnlyAssociationStore());
+        final var tokenStore = new ReadOnlyTokenStore(
+                accountStore,
+                view.asReadOnlyTokenStore(),
+                view.asReadOnlyNftStore(),
+                view.asReadOnlyAssociationStore());
 
         return allowancesValidation(
-                cryptoAllowances,
-                tokenAllowances,
-                nftAllowances,
-                payerAccount,
-                accountStore,
-                tokenStore);
+                cryptoAllowances, tokenAllowances, nftAllowances, payerAccount, accountStore, tokenStore);
     }
 
     /**
@@ -127,9 +121,7 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
             return validity;
         }
 
-        validity =
-                validateFungibleTokenAllowances(
-                        tokenAllowances, payerAccount, accountStore, tokenStore);
+        validity = validateFungibleTokenAllowances(tokenAllowances, payerAccount, accountStore, tokenStore);
         if (validity != OK) {
             return validity;
         }
@@ -152,9 +144,7 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
      * @return response code after validation
      */
     ResponseCodeEnum validateCryptoAllowances(
-            final List<CryptoAllowance> cryptoAllowances,
-            final Account payerAccount,
-            final AccountStore accountStore) {
+            final List<CryptoAllowance> cryptoAllowances, final Account payerAccount, final AccountStore accountStore) {
         if (cryptoAllowances.isEmpty()) {
             return OK;
         }
@@ -189,7 +179,7 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
      * @param payerAccount Account of the payer for the approveAllowance txn
      * @param accountStore account store
      * @param tokenStore read only token store
-     * @return
+     * @return response code
      */
     ResponseCodeEnum validateFungibleTokenAllowances(
             final List<TokenAllowance> tokenAllowances,
@@ -203,8 +193,7 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
         for (final var allowance : tokenAllowances) {
             final var owner = Id.fromGrpcAccount(allowance.getOwner());
             final var spender = Id.fromGrpcAccount(allowance.getSpender());
-            final var token =
-                    tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(allowance.getTokenId()));
+            final var token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(allowance.getTokenId()));
 
             final var fetchResult = fetchOwnerAccount(owner, payerAccount, accountStore);
             if (fetchResult.getRight() != OK) {
@@ -236,7 +225,7 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
      * @param payerAccount payer for approveAllowance txn
      * @param accountStore account store
      * @param tokenStore token store
-     * @return
+     * @return response code
      */
     ResponseCodeEnum validateNftAllowances(
             final List<NftAllowance> nftAllowancesList,
@@ -275,8 +264,7 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
                 return DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL;
             } else if (!delegatingSpender.equals(Id.MISSING_ID)) {
                 final var allowanceKey =
-                        FcTokenAllowanceId.from(
-                                EntityNum.fromTokenId(tokenId), delegatingSpender.asEntityNum());
+                        FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenId), delegatingSpender.asEntityNum());
                 if (!ownerAccount.getApprovedForAllNftsAllowances().contains(allowanceKey)) {
                     return DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL;
                 }
@@ -315,18 +303,14 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
         // each serial number of an NFT is considered as an allowance.
         // So for Nft allowances aggregated amount is considered for limit calculation.
         final var totalAllowances =
-                cryptoAllowances.size()
-                        + tokenAllowances.size()
-                        + aggregateNftAllowances(nftAllowances);
+                cryptoAllowances.size() + tokenAllowances.size() + aggregateNftAllowances(nftAllowances);
         return validateTotalAllowances(totalAllowances);
     }
 
     private ResponseCodeEnum validateTokenBasics(
-            final Account ownerAccount,
-            final Id spenderId,
-            final Token token,
-            final ReadOnlyTokenStore tokenStore) {
-        if (ownerAccount.getId().equals(spenderId)) {
+            final Account ownerAccount, final Id spenderId, final Token token, final ReadOnlyTokenStore tokenStore) {
+        // ONLY reject self-approval for NFT's; else allow to match OZ ERC-20
+        if (!token.isFungibleCommon() && ownerAccount.getId().equals(spenderId)) {
             return SPENDER_ACCOUNT_SAME_AS_OWNER;
         }
         if (!tokenStore.hasAssociation(token, ownerAccount)) {

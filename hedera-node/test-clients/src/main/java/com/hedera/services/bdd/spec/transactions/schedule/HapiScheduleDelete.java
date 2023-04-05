@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.schedule;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
@@ -59,13 +60,9 @@ public class HapiScheduleDelete extends HapiTxnOp<HapiScheduleDelete> {
     protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
         try {
             final ScheduleInfo info = ScheduleFeeUtils.lookupInfo(spec, schedule, loggingOff);
-            FeeCalculator.ActivityMetrics metricsCalc =
-                    (_txn, svo) ->
-                            scheduleOpsUsage.scheduleDeleteUsage(
-                                    _txn, suFrom(svo), info.getExpirationTime().getSeconds());
-            return spec.fees()
-                    .forActivityBasedOp(
-                            HederaFunctionality.ScheduleDelete, metricsCalc, txn, numPayerKeys);
+            FeeCalculator.ActivityMetrics metricsCalc = (_txn, svo) -> scheduleOpsUsage.scheduleDeleteUsage(
+                    _txn, suFrom(svo), info.getExpirationTime().getSeconds());
+            return spec.fees().forActivityBasedOp(HederaFunctionality.ScheduleDelete, metricsCalc, txn, numPayerKeys);
         } catch (Throwable ignore) {
             return HapiSuite.ONE_HBAR;
         }
@@ -74,13 +71,9 @@ public class HapiScheduleDelete extends HapiTxnOp<HapiScheduleDelete> {
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
         var sId = TxnUtils.asScheduleId(schedule, spec);
-        ScheduleDeleteTransactionBody opBody =
-                spec.txns()
-                        .<ScheduleDeleteTransactionBody, ScheduleDeleteTransactionBody.Builder>body(
-                                ScheduleDeleteTransactionBody.class,
-                                b -> {
-                                    b.setScheduleID(sId);
-                                });
+        ScheduleDeleteTransactionBody opBody = spec.txns()
+                .<ScheduleDeleteTransactionBody, ScheduleDeleteTransactionBody.Builder>body(
+                        ScheduleDeleteTransactionBody.class, b -> b.setScheduleID(sId));
         return b -> b.setScheduleDelete(opBody);
     }
 

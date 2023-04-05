@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import com.google.common.base.MoreObjects;
@@ -102,7 +103,10 @@ public class FcTokenAllowance implements SelfSerializable {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(approvedForAll).append(serialNumbers).toHashCode();
+        return new HashCodeBuilder()
+                .append(approvedForAll)
+                .append(serialNumbers)
+                .toHashCode();
     }
 
     @Override
@@ -122,8 +126,7 @@ public class FcTokenAllowance implements SelfSerializable {
         return serialNumbers;
     }
 
-    public static FcTokenAllowance from(
-            final boolean approvedForAll, final List<Long> serialNumbers) {
+    public static FcTokenAllowance from(final boolean approvedForAll, final List<Long> serialNumbers) {
         final var modifiableList = new ArrayList<>(serialNumbers);
         Collections.sort(modifiableList);
         return new FcTokenAllowance(approvedForAll, modifiableList);

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.txnFrom;
@@ -22,23 +23,23 @@ import static com.hedera.test.factories.scenarios.TokenUnfreezeScenarios.UNFREEZ
 import static com.hedera.test.factories.scenarios.TokenUnfreezeScenarios.VALID_UNFREEZE_WITH_EXTANT_TOKEN;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
-import static com.hedera.test.utils.KeyUtils.sanityRestored;
+import static com.hedera.test.utils.KeyUtils.sanityRestoredToPbj;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandler;
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
-import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.node.app.spi.meta.PreHandleContext;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class TokenUnfreezeAccountHandlerParityTest {
-    private AccountKeyLookup accountStore;
+    private AccountAccess accountStore;
     private ReadableTokenStore tokenStore;
     private TokenUnfreezeAccountHandler subject;
 
@@ -56,10 +57,8 @@ class TokenUnfreezeAccountHandlerParityTest {
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context, tokenStore);
 
-        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_FREEZE_KT.asKey()));
+        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertThat(sanityRestoredToPbj(context.getRequiredNonPayerKeys()), contains(TOKEN_FREEZE_KT.asPbjKey()));
         basicContextAssertions(context, 1, false, ResponseCodeEnum.OK);
     }
 
@@ -70,8 +69,8 @@ class TokenUnfreezeAccountHandlerParityTest {
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context, tokenStore);
 
-        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertTrue(sanityRestored(context.getRequiredNonPayerKeys()).isEmpty());
+        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
+        assertTrue(sanityRestoredToPbj(context.getRequiredNonPayerKeys()).isEmpty());
         basicContextAssertions(context, 0, true, ResponseCodeEnum.INVALID_TOKEN_ID);
     }
 
@@ -82,7 +81,7 @@ class TokenUnfreezeAccountHandlerParityTest {
         final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context, tokenStore);
 
-        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
         basicContextAssertions(context, 0, true, ResponseCodeEnum.INVALID_TOKEN_ID);
     }
 }

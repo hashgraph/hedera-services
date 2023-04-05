@@ -13,18 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.grpc;
 
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 /**
- * Handles gRPC duties for processing {@link com.hederahashgraph.api.proto.java.Transaction} gRPC
- * calls. A single instance of this class is used by all transaction ingest threads in the node.
+ * Handles gRPC duties for processing {@link Transaction} gRPC calls. A single instance of this
+ * class is used by all transaction ingest threads in the node.
  *
  * <p>FUTURE WORK: ThreadSafe annotation missing in spotbugs annotations but should be added to
  * class
@@ -48,11 +51,12 @@ final class TransactionMethod extends MethodBase {
         this.workflow = Objects.requireNonNull(workflow);
     }
 
+    /** {@inheritDoc} */
     @Override
     protected void handle(
             @NonNull final SessionContext session,
-            @NonNull final ByteBuffer requestBuffer,
-            @NonNull final ByteBuffer responseBuffer) {
+            @NonNull final Bytes requestBuffer,
+            @NonNull final BufferedData responseBuffer) {
         workflow.submitTransaction(session, requestBuffer, responseBuffer);
     }
 }

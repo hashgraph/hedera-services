@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.execution;
 
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
@@ -26,6 +27,8 @@ import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTxProcessor;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.HederaTracer;
+import com.hedera.node.app.service.mono.contracts.execution.traceability.HederaTracer.EmitActionSidecars;
+import com.hedera.node.app.service.mono.contracts.execution.traceability.HederaTracer.ValidateActionSidecars;
 import com.hedera.node.app.service.mono.exceptions.ResourceLimitException;
 import com.hedera.node.app.service.mono.store.contracts.HederaMutableWorldState;
 import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
@@ -74,14 +77,7 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
             final Map<String, Provider<MessageCallProcessor>> mcps,
             final Map<String, Provider<ContractCreationProcessor>> ccps,
             final BlockMetaSource blockMetaSource) {
-        super(
-                worldState,
-                livePricesSource,
-                dynamicProperties,
-                gasCalculator,
-                mcps,
-                ccps,
-                blockMetaSource);
+        super(worldState, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
     }
 
     /**
@@ -121,30 +117,33 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
 
         super.setupFields(contractCreation);
 
-        final var chargingResult =
-                chargeForGas(
-                        gasCost,
-                        upfrontCost,
-                        value,
-                        maxGasAllowanceInTinybars,
-                        intrinsicGas,
-                        gasPrice,
-                        gasLimit,
-                        isStatic,
-                        userOfferedGasPrice,
-                        sender.getId().asEvmAddress(),
-                        relayer == null ? null : relayer.getId().asEvmAddress(),
-                        (HederaWorldState.Updater) updater);
+        final var chargingResult = chargeForGas(
+                gasCost,
+                upfrontCost,
+                value,
+                maxGasAllowanceInTinybars,
+                intrinsicGas,
+                gasPrice,
+                gasLimit,
+                isStatic,
+                userOfferedGasPrice,
+                sender.getId().asEvmAddress(),
+                relayer == null ? null : relayer.getId().asEvmAddress(),
+                (HederaWorldState.Updater) updater);
 
         // Enable tracing of contract actions if action sidecars are enabled and this is not a
         // static call
-        final HederaTracer hederaTracer =
-                new HederaTracer(!isStatic && isSideCarTypeEnabled(SidecarType.CONTRACT_ACTION));
+        final HederaTracer.EmitActionSidecars doEmitActionSidecars =
+                !isStatic && isSideCarTypeEnabled(SidecarType.CONTRACT_ACTION)
+                        ? EmitActionSidecars.ENABLED
+                        : EmitActionSidecars.DISABLED;
+        final HederaTracer.ValidateActionSidecars doValidateActionSidecars =
+                isSidecarValidationEnabled() ? ValidateActionSidecars.ENABLED : ValidateActionSidecars.DISABLED;
+        final HederaTracer hederaTracer = new HederaTracer(doEmitActionSidecars, doValidateActionSidecars);
         super.setOperationTracer(hederaTracer);
 
         try {
-            super.execute(
-                    sender, receiver, gasPrice, gasLimit, value, payload, isStatic, mirrorReceiver);
+            super.execute(sender, receiver, gasPrice, gasLimit, value, payload, isStatic, mirrorReceiver);
         } catch (final ResourceLimitException e) {
             handleResourceLimitExceeded(
                     sender,
@@ -175,9 +174,7 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
                     // If allowance has been charged, we always try to refund relayer first
                     if (refundedWei.greaterOrEqualThan(allowanceCharged)) {
                         chargedRelayer.incrementBalance(allowanceCharged);
-                        chargingResult
-                                .sender()
-                                .incrementBalance(refundedWei.subtract(allowanceCharged));
+                        chargingResult.sender().incrementBalance(refundedWei.subtract(allowanceCharged));
                     } else {
                         chargedRelayer.incrementBalance(refundedWei);
                     }
@@ -185,8 +182,7 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
                     chargingResult.sender().incrementBalance(refundedWei);
                 }
             }
-            sendToCoinbase(
-                    coinbase, gasLimit - refunded, gasPrice, (HederaWorldState.Updater) updater);
+            sendToCoinbase(coinbase, gasLimit - refunded, gasPrice, (HederaWorldState.Updater) updater);
             initialFrame.getSelfDestructs().forEach(updater::deleteAccount);
 
             if (isSideCarTypeEnabled(SidecarType.CONTRACT_STATE_CHANGE)) {
@@ -238,16 +234,15 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
     }
 
     private boolean isSideCarTypeEnabled(final SidecarType sidecarType) {
-        return ((GlobalDynamicProperties) dynamicProperties)
-                .enabledSidecars()
-                .contains(sidecarType);
+        return ((GlobalDynamicProperties) dynamicProperties).enabledSidecars().contains(sidecarType);
+    }
+
+    private boolean isSidecarValidationEnabled() {
+        return ((GlobalDynamicProperties) dynamicProperties).validateSidecarsEnabled();
     }
 
     private void sendToCoinbase(
-            final Address coinbase,
-            final long amount,
-            final long gasPrice,
-            final HederaWorldState.Updater updater) {
+            final Address coinbase, final long amount, final long gasPrice, final HederaWorldState.Updater updater) {
         final var mutableCoinbase = updater.getOrCreate(coinbase).getMutable();
         mutableCoinbase.incrementBalance(Wei.of(amount * gasPrice));
     }
@@ -279,8 +274,7 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
                 throw new InvalidTransactionException(INSUFFICIENT_GAS);
             }
             if (relayer == null) {
-                final var senderCanAffordGas =
-                        mutableSender.getBalance().compareTo(upfrontCost) >= 0;
+                final var senderCanAffordGas = mutableSender.getBalance().compareTo(upfrontCost) >= 0;
                 validateTrue(senderCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
                 mutableSender.decrementBalance(gasCost);
             } else {
@@ -288,44 +282,32 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
                 if (userOfferedGasPrice.equals(BigInteger.ZERO)) {
                     // If sender set gas price to 0, relayer pays all the fees
                     validateTrue(gasAllowance.greaterOrEqualThan(gasCost), INSUFFICIENT_TX_FEE);
-                    final var relayerCanAffordGas =
-                            mutableRelayer.getBalance().compareTo((gasCost)) >= 0;
+                    final var relayerCanAffordGas = mutableRelayer.getBalance().compareTo((gasCost)) >= 0;
                     validateTrue(relayerCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
                     mutableRelayer.decrementBalance(gasCost);
                     allowanceCharged = gasCost;
-                } else if (userOfferedGasPrice
-                                .divide(WEIBARS_TO_TINYBARS)
-                                .compareTo(BigInteger.valueOf(gasPrice))
+                } else if (userOfferedGasPrice.divide(WEIBARS_TO_TINYBARS).compareTo(BigInteger.valueOf(gasPrice))
                         < 0) {
                     // If sender gas price < current gas price, pay the difference from gas
                     // allowance
-                    final var senderFee =
-                            Wei.of(
-                                    userOfferedGasPrice
-                                            .multiply(BigInteger.valueOf(gasLimit))
-                                            .divide(WEIBARS_TO_TINYBARS));
-                    validateTrue(
-                            mutableSender.getBalance().compareTo(senderFee) >= 0,
-                            INSUFFICIENT_PAYER_BALANCE);
+                    final var senderFee = Wei.of(userOfferedGasPrice
+                            .multiply(BigInteger.valueOf(gasLimit))
+                            .divide(WEIBARS_TO_TINYBARS));
+                    validateTrue(mutableSender.getBalance().compareTo(senderFee) >= 0, INSUFFICIENT_PAYER_BALANCE);
                     final var remainingFee = gasCost.subtract(senderFee);
-                    validateTrue(
-                            gasAllowance.greaterOrEqualThan(remainingFee), INSUFFICIENT_TX_FEE);
-                    validateTrue(
-                            mutableRelayer.getBalance().compareTo(remainingFee) >= 0,
-                            INSUFFICIENT_PAYER_BALANCE);
+                    validateTrue(gasAllowance.greaterOrEqualThan(remainingFee), INSUFFICIENT_TX_FEE);
+                    validateTrue(mutableRelayer.getBalance().compareTo(remainingFee) >= 0, INSUFFICIENT_PAYER_BALANCE);
                     mutableSender.decrementBalance(senderFee);
                     mutableRelayer.decrementBalance(remainingFee);
                     allowanceCharged = remainingFee;
                 } else {
                     // If user gas price >= current gas price, sender pays all fees
-                    final var senderCanAffordGas =
-                            mutableSender.getBalance().compareTo(gasCost) >= 0;
+                    final var senderCanAffordGas = mutableSender.getBalance().compareTo(gasCost) >= 0;
                     validateTrue(senderCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
                     mutableSender.decrementBalance(gasCost);
                 }
                 // In any case, the sender must have sufficient balance to pay for any value sent
-                final var senderCanAffordValue =
-                        mutableSender.getBalance().compareTo(Wei.of(value)) >= 0;
+                final var senderCanAffordValue = mutableSender.getBalance().compareTo(Wei.of(value)) >= 0;
                 validateTrue(senderCanAffordValue, INSUFFICIENT_PAYER_BALANCE);
             }
         }

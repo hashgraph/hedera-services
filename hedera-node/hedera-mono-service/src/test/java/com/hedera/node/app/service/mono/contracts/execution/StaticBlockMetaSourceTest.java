@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.execution;
 
 import static com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource.UNAVAILABLE_BLOCK_HASH;
@@ -31,7 +32,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class StaticBlockMetaSourceTest {
-    @Mock private MerkleNetworkContext networkCtx;
+    @Mock
+    private MerkleNetworkContext networkCtx;
 
     private StaticBlockMetaSource subject;
 

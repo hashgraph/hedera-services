@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.ids;
 
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
@@ -52,12 +53,17 @@ public class SeqNoEntityIdSource implements EntityIdSource {
     }
 
     @Override
-    public AccountID newAccountId(AccountID sponsor) {
+    public AccountID newAccountId() {
         return AccountID.newBuilder()
-                .setRealmNum(sponsor.getRealmNum())
-                .setShardNum(sponsor.getShardNum())
-                .setAccountNum(seqNo.get().getAndIncrement())
+                .setRealmNum(0)
+                .setShardNum(0)
+                .setAccountNum(newAccountNumber())
                 .build();
+    }
+
+    @Override
+    public long newAccountNumber() {
+        return seqNo.get().getAndIncrement();
     }
 
     /**

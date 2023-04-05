@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.assertions;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
@@ -37,8 +38,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 
 public class TransferListAsserts extends BaseErroringAssertsProvider<TransferList> {
-    public static TransferListAsserts exactParticipants(
-            Function<HapiSpec, List<AccountID>> provider) {
+    public static TransferListAsserts exactParticipants(Function<HapiSpec, List<AccountID>> provider) {
         return new ExactParticipantsAssert(provider);
     }
 
@@ -63,8 +63,7 @@ public class TransferListAsserts extends BaseErroringAssertsProvider<TransferLis
         return new NonEmptyTransferAsserts();
     }
 
-    public static TransferListAsserts missingPayments(
-            Function<HapiSpec, Map.Entry<AccountID, Long>>... providers) {
+    public static TransferListAsserts missingPayments(Function<HapiSpec, Map.Entry<AccountID, Long>>... providers) {
         return new MissingPaymentAsserts(providers);
     }
 
@@ -73,43 +72,32 @@ public class TransferListAsserts extends BaseErroringAssertsProvider<TransferLis
     }
 
     public static Function<HapiSpec, Map.Entry<AccountID, Long>> from(String account, Long amount) {
-        return spec ->
-                new AbstractMap.SimpleEntry<>(spec.registry().getAccountID(account), -1 * amount);
+        return spec -> new AbstractMap.SimpleEntry<>(spec.registry().getAccountID(account), -1 * amount);
     }
 
     protected void assertInclusion(TransferList of, TransferList in) {
         if (!new TinyBarTransfers(of).test(in)) {
-            Assertions.assertEquals(
-                    TxnUtils.printable(of), TxnUtils.printable(in), "Transfers missing from list!");
+            Assertions.assertEquals(TxnUtils.printable(of), TxnUtils.printable(in), "Transfers missing from list!");
         }
     }
 }
 
 class MissingPaymentAsserts extends TransferListAsserts {
     public MissingPaymentAsserts(Function<HapiSpec, Map.Entry<AccountID, Long>>... providers) {
-        registerProvider(
-                (spec, o) -> {
-                    TransferList actual = (TransferList) o;
-                    Set<String> missing =
-                            Stream.of(providers)
-                                    .map(provider -> asSig(provider.apply(spec)))
-                                    .collect(toSet());
-                    Set<String> nonAbsent = new HashSet<>();
-                    actual.getAccountAmountsList().stream()
-                            .forEach(
-                                    entry -> {
-                                        String sig =
-                                                asSig(
-                                                        new AbstractMap.SimpleEntry<>(
-                                                                entry.getAccountID(),
-                                                                entry.getAmount()));
-                                        if (missing.contains(sig)) {
-                                            nonAbsent.add(sig);
-                                        }
-                                    });
-                    Assertions.assertTrue(
-                            nonAbsent.isEmpty(), "Payments not absent from list! " + nonAbsent);
-                });
+        registerProvider((spec, o) -> {
+            TransferList actual = (TransferList) o;
+            Set<String> missing = Stream.of(providers)
+                    .map(provider -> asSig(provider.apply(spec)))
+                    .collect(toSet());
+            Set<String> nonAbsent = new HashSet<>();
+            actual.getAccountAmountsList().stream().forEach(entry -> {
+                String sig = asSig(new AbstractMap.SimpleEntry<>(entry.getAccountID(), entry.getAmount()));
+                if (missing.contains(sig)) {
+                    nonAbsent.add(sig);
+                }
+            });
+            Assertions.assertTrue(nonAbsent.isEmpty(), "Payments not absent from list! " + nonAbsent);
+        });
     }
 
     private String asSig(Map.Entry<AccountID, Long> entry) {
@@ -124,103 +112,74 @@ class MissingPaymentAsserts extends TransferListAsserts {
 
 class ExactParticipantsAssert extends TransferListAsserts {
     public ExactParticipantsAssert(Function<HapiSpec, List<AccountID>> provider) {
-        registerProvider(
-                (spec, o) -> {
-                    List<AccountID> expectedParticipants = provider.apply(spec);
-                    TransferList actual = (TransferList) o;
-                    Assertions.assertEquals(
-                            expectedParticipants.size(),
-                            actual.getAccountAmountsCount(),
-                            "Wrong number of participants!");
-                    for (int i = 0, n = expectedParticipants.size(); i < n; i++) {
-                        Assertions.assertEquals(
-                                expectedParticipants.get(i),
-                                actual.getAccountAmounts(i).getAccountID());
-                    }
-                });
+        registerProvider((spec, o) -> {
+            List<AccountID> expectedParticipants = provider.apply(spec);
+            TransferList actual = (TransferList) o;
+            Assertions.assertEquals(
+                    expectedParticipants.size(), actual.getAccountAmountsCount(), "Wrong number of participants!");
+            for (int i = 0, n = expectedParticipants.size(); i < n; i++) {
+                Assertions.assertEquals(
+                        expectedParticipants.get(i), actual.getAccountAmounts(i).getAccountID());
+            }
+        });
     }
 }
 
 class ExplicitTransferAsserts extends TransferListAsserts {
     public ExplicitTransferAsserts(List<Function<HapiSpec, TransferList>> providers) {
         providers.stream()
-                .forEach(
-                        provider -> {
-                            registerProvider(
-                                    (spec, o) -> {
-                                        TransferList expected = provider.apply(spec);
-                                        assertInclusion(expected, (TransferList) o);
-                                    });
-                        });
+                .forEach(provider -> registerProvider((spec, o) -> {
+                    TransferList expected = provider.apply(spec);
+                    assertInclusion(expected, (TransferList) o);
+                }));
     }
 }
 
 class QualifyingDeductionAssert extends TransferListAsserts {
     public QualifyingDeductionAssert(String desc, String payer) {
-        registerProvider(
-                (spec, o) -> {
-                    var transfers = (TransferList) o;
-                    var hasQualifying = getDeduction(transfers, asId(payer, spec)).isPresent();
-                    if (!hasQualifying) {
-                        Assertions.fail(
-                                "No qualifying "
-                                        + desc
-                                        + " from "
-                                        + payer
-                                        + " in "
-                                        + readableTransferList(transfers));
-                    }
-                });
+        registerProvider((spec, o) -> {
+            var transfers = (TransferList) o;
+            var hasQualifying = getDeduction(transfers, asId(payer, spec)).isPresent();
+            if (!hasQualifying) {
+                Assertions.fail("No qualifying " + desc + " from " + payer + " in " + readableTransferList(transfers));
+            }
+        });
     }
 }
 
 class NonEmptyTransferAsserts extends TransferListAsserts {
     public NonEmptyTransferAsserts() {
-        registerProvider(
-                (spec, o) -> {
-                    TransferList transfers = (TransferList) o;
-                    Assertions.assertTrue(
-                            !transfers.getAccountAmountsList().isEmpty(),
-                            "Transfer list cannot be empty!");
-                });
+        registerProvider((spec, o) -> {
+            TransferList transfers = (TransferList) o;
+            Assertions.assertTrue(!transfers.getAccountAmountsList().isEmpty(), "Transfer list cannot be empty!");
+        });
     }
 }
 
 class DeductionAsserts extends TransferListAsserts {
     public DeductionAsserts(LongSupplier from, long amount) {
-        registerProvider(
-                (spec, o) -> {
-                    TransferList transfers = (TransferList) o;
-                    long num = from.getAsLong();
-                    Assertions.assertTrue(
-                            transfers.getAccountAmountsList().stream()
-                                    .anyMatch(
-                                            aa ->
-                                                    aa.getAmount() == -amount
-                                                            && aa.getAccountID().getAccountNum()
-                                                                    == num),
-                            String.format(
-                                    "No deduction of -%d tinyBars from 0.0.%d detected!",
-                                    amount, num));
-                });
+        registerProvider((spec, o) -> {
+            TransferList transfers = (TransferList) o;
+            long num = from.getAsLong();
+            Assertions.assertTrue(
+                    transfers.getAccountAmountsList().stream()
+                            .anyMatch(aa -> aa.getAmount() == -amount
+                                    && aa.getAccountID().getAccountNum() == num),
+                    String.format("No deduction of -%d tinyBars from 0.0.%d detected!", amount, num));
+        });
     }
 }
 
 class SpecificDeductionAsserts extends TransferListAsserts {
     public SpecificDeductionAsserts(String account, long amount) {
-        registerProvider(
-                (spec, o) -> {
-                    TransferList transfers = (TransferList) o;
-                    AccountID payer = asId(account, spec);
-                    Assertions.assertTrue(
-                            transfers.getAccountAmountsList().stream()
-                                    .anyMatch(
-                                            aa ->
-                                                    aa.getAmount() == -amount
-                                                            && aa.getAccountID().equals(payer)),
-                            String.format(
-                                    "No deduction of -%d tinyBars from %s detected!",
-                                    amount, account));
-                });
+        registerProvider((spec, o) -> {
+            TransferList transfers = (TransferList) o;
+            AccountID payer = asId(account, spec);
+            Assertions.assertTrue(
+                    transfers.getAccountAmountsList().stream()
+                            .anyMatch(aa -> aa.getAmount() == -amount
+                                    && aa.getAccountID().equals(payer)),
+                    String.format("No deduction of -%d tinyBars from %s detected!", amount, account));
+        });
     }
 }

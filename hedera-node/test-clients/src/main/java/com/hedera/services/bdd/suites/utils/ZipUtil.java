@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.utils;
 
 import java.io.File;
@@ -74,7 +75,7 @@ public class ZipUtil {
                     pathDiff = pathDiff.substring(1);
                 }
                 String dirName = pathDiff + File.separator;
-                log.info("Adding dir " + dirName);
+                log.info("Adding dir {}", dirName);
                 zos.putNextEntry(new ZipEntry(dirName));
             } catch (IOException e) {
                 log.error(e);
@@ -94,9 +95,8 @@ public class ZipUtil {
                 }
 
                 try (FileInputStream fis = new FileInputStream(file)) {
-                    String name =
-                            file.getAbsolutePath().replace(rootDirectory.getAbsolutePath(), "");
-                    log.info("Adding file:" + name);
+                    String name = file.getAbsolutePath().replace(rootDirectory.getAbsolutePath(), "");
+                    log.info("Adding file:{}", name);
                     zos.putNextEntry(new ZipEntry(name));
                     int length;
                     while ((length = fis.read(buffer)) > 0) {
@@ -108,7 +108,7 @@ public class ZipUtil {
                 }
             } // for
         } else {
-            log.info("Directory " + currentDirectory + " is empty");
+            log.info("Directory {} is empty", currentDirectory);
         }
     }
 }

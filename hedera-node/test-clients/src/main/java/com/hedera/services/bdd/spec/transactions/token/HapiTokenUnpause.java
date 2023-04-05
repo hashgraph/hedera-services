@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.token;
 
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
@@ -62,13 +63,9 @@ public class HapiTokenUnpause extends HapiTxnOp<HapiTokenUnpause> {
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         final var tId = TxnUtils.asTokenId(token, spec);
-        final TokenUnpauseTransactionBody opBody =
-                spec.txns()
-                        .<TokenUnpauseTransactionBody, TokenUnpauseTransactionBody.Builder>body(
-                                TokenUnpauseTransactionBody.class,
-                                b -> {
-                                    b.setToken(tId);
-                                });
+        final TokenUnpauseTransactionBody opBody = spec.txns()
+                .<TokenUnpauseTransactionBody, TokenUnpauseTransactionBody.Builder>body(
+                        TokenUnpauseTransactionBody.class, b -> b.setToken(tId));
         return b -> b.setTokenUnpause(opBody);
     }
 
@@ -79,26 +76,22 @@ public class HapiTokenUnpause extends HapiTxnOp<HapiTokenUnpause> {
 
     @Override
     protected List<Function<HapiSpec, Key>> defaultSigners() {
-        return List.of(
-                spec -> spec.registry().getKey(effectivePayer(spec)),
-                spec -> spec.registry().getPauseKey(token));
+        return List.of(spec -> spec.registry().getKey(effectivePayer(spec)), spec -> spec.registry()
+                .getPauseKey(token));
     }
 
     @Override
-    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys)
-            throws Throwable {
-        return spec.fees()
-                .forActivityBasedOp(
-                        HederaFunctionality.TokenUnpause, this::usageEstimate, txn, numPayerKeys);
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
+        return spec.fees().forActivityBasedOp(HederaFunctionality.TokenUnpause, this::usageEstimate, txn, numPayerKeys);
     }
 
     private FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo) {
         final UsageAccumulator accumulator = new UsageAccumulator();
         final var tokenUnpauseMeta = TOKEN_OPS_USAGE_UTILS.tokenUnpauseUsageFrom();
-        final var baseTransactionMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
+        final var baseTransactionMeta =
+                new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
         final TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
-        tokenOpsUsage.tokenUnpauseUsage(
-                suFrom(svo), baseTransactionMeta, tokenUnpauseMeta, accumulator);
+        tokenOpsUsage.tokenUnpauseUsage(suFrom(svo), baseTransactionMeta, tokenUnpauseMeta, accumulator);
         return AdapterUtils.feeDataFrom(accumulator);
     }
 

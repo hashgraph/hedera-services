@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.util;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -47,10 +48,7 @@ public class UtilPrngSuite extends HapiSuite {
     }
 
     private List<HapiSpec> positiveTests() {
-        return List.of(
-                happyPathWorksForRangeAndBitString(),
-                failsInPreCheckForNegativeRange(),
-                usdFeeAsExpected());
+        return List.of(happyPathWorksForRangeAndBitString(), failsInPreCheckForNegativeRange(), usdFeeAsExpected());
     }
 
     private HapiSpec usdFeeAsExpected() {
@@ -68,8 +66,14 @@ public class UtilPrngSuite extends HapiSuite {
                         getTxnRecord(baseTxn).hasOnlyPseudoRandomBytes().logged(),
                         validateChargedUsd(baseTxn, baseFee))
                 .when(
-                        hapiPrng(10).payingWith(BOB).via(plusRangeTxn).blankMemo().logged(),
-                        getTxnRecord(plusRangeTxn).hasOnlyPseudoRandomNumberInRange(10).logged(),
+                        hapiPrng(10)
+                                .payingWith(BOB)
+                                .via(plusRangeTxn)
+                                .blankMemo()
+                                .logged(),
+                        getTxnRecord(plusRangeTxn)
+                                .hasOnlyPseudoRandomNumberInRange(10)
+                                .logged(),
                         validateChargedUsdWithin(plusRangeTxn, plusRangeFee, 0.5))
                 .then();
     }
@@ -119,12 +123,26 @@ public class UtilPrngSuite extends HapiSuite {
                 .when(
                         // should have pseudo random data
                         hapiPrng(10).payingWith(BOB).via(rangeTxn).blankMemo().logged(),
-                        getTxnRecord(rangeTxn).hasOnlyPseudoRandomNumberInRange(10).logged())
+                        getTxnRecord(rangeTxn)
+                                .hasOnlyPseudoRandomNumberInRange(10)
+                                .logged())
                 .then(
-                        hapiPrng().payingWith(BOB).via(prngWithoutRange).blankMemo().logged(),
-                        getTxnRecord(prngWithoutRange).hasOnlyPseudoRandomBytes().logged(),
-                        hapiPrng(0).payingWith(BOB).via(prngWithZeroRange).blankMemo().logged(),
-                        getTxnRecord(prngWithZeroRange).hasOnlyPseudoRandomBytes().logged(),
+                        hapiPrng()
+                                .payingWith(BOB)
+                                .via(prngWithoutRange)
+                                .blankMemo()
+                                .logged(),
+                        getTxnRecord(prngWithoutRange)
+                                .hasOnlyPseudoRandomBytes()
+                                .logged(),
+                        hapiPrng(0)
+                                .payingWith(BOB)
+                                .via(prngWithZeroRange)
+                                .blankMemo()
+                                .logged(),
+                        getTxnRecord(prngWithZeroRange)
+                                .hasOnlyPseudoRandomBytes()
+                                .logged(),
                         hapiPrng()
                                 .range(Integer.MAX_VALUE)
                                 .payingWith(BOB)

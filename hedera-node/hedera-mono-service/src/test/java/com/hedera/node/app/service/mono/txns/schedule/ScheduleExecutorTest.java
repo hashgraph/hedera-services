@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.schedule;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -43,14 +44,22 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ScheduleExecutorTest {
     private ScheduleID id = IdUtils.asSchedule("0.0.1234");
 
-    @Mock private ScheduleStore store;
-    @Mock private TransactionContext txnCtx;
-    @Mock private ScheduleVirtualValue schedule;
+    @Mock
+    private ScheduleStore store;
+
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private ScheduleVirtualValue schedule;
 
     private ScheduleExecutor subject;
-    @Mock private TxnAccessor accessor;
 
-    @Mock AccessorFactory factory;
+    @Mock
+    private TxnAccessor accessor;
+
+    @Mock
+    AccessorFactory factory;
 
     @BeforeEach
     void setUp() {
@@ -73,11 +82,7 @@ class ScheduleExecutorTest {
         Assertions.assertEquals(OK, result);
         verify(factory)
                 .triggeredTxn(
-                        Transaction.getDefaultInstance(),
-                        new EntityId(0, 0, 4321).toGrpcAccountId(),
-                        id,
-                        false,
-                        false);
+                        Transaction.getDefaultInstance(), new EntityId(0, 0, 4321).toGrpcAccountId(), id, false, false);
     }
 
     @Test
@@ -86,13 +91,8 @@ class ScheduleExecutorTest {
         given(store.get(id)).willReturn(schedule);
         given(schedule.asSignedTxn()).willReturn(Transaction.getDefaultInstance());
         given(schedule.effectivePayer()).willReturn(new EntityId(0, 0, 4321));
-        given(
-                        factory.triggeredTxn(
-                                Transaction.getDefaultInstance(),
-                                new EntityId(0, 0, 4321).toGrpcAccountId(),
-                                id,
-                                true,
-                                true))
+        given(factory.triggeredTxn(
+                        Transaction.getDefaultInstance(), new EntityId(0, 0, 4321).toGrpcAccountId(), id, true, true))
                 .willReturn(accessor);
 
         // when:
@@ -107,18 +107,12 @@ class ScheduleExecutorTest {
 
     @Test
     void nullArgumentsThrow() {
-        Assertions.assertThrows(
-                RuntimeException.class,
-                () -> subject.processImmediateExecution(null, store, txnCtx));
-        Assertions.assertThrows(
-                RuntimeException.class, () -> subject.processImmediateExecution(id, null, txnCtx));
-        Assertions.assertThrows(
-                RuntimeException.class, () -> subject.processImmediateExecution(id, store, null));
+        Assertions.assertThrows(RuntimeException.class, () -> subject.processImmediateExecution(null, store, txnCtx));
+        Assertions.assertThrows(RuntimeException.class, () -> subject.processImmediateExecution(id, null, txnCtx));
+        Assertions.assertThrows(RuntimeException.class, () -> subject.processImmediateExecution(id, store, null));
 
-        Assertions.assertThrows(
-                RuntimeException.class, () -> subject.getTriggeredTxnAccessor(null, store, false));
-        Assertions.assertThrows(
-                RuntimeException.class, () -> subject.getTriggeredTxnAccessor(id, null, false));
+        Assertions.assertThrows(RuntimeException.class, () -> subject.getTriggeredTxnAccessor(null, store, false));
+        Assertions.assertThrows(RuntimeException.class, () -> subject.getTriggeredTxnAccessor(id, null, false));
     }
 
     @Test
@@ -135,8 +129,7 @@ class ScheduleExecutorTest {
     }
 
     @Test
-    void doesntReturnTriggerUnlessAbleToPreMarkScheduleExecuted()
-            throws InvalidProtocolBufferException {
+    void doesntReturnTriggerUnlessAbleToPreMarkScheduleExecuted() throws InvalidProtocolBufferException {
         given(store.preMarkAsExecuted(id)).willReturn(SCHEDULE_ALREADY_EXECUTED);
 
         // when:

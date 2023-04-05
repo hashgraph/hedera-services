@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.migration;
 
 import static com.hedera.node.app.service.mono.utils.MiscUtils.forEach;
 
 import com.hedera.node.app.service.mono.ServicesState;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
@@ -46,22 +48,18 @@ public class UniqueTokensMigrator {
             return;
         }
 
-        final MerkleMap<EntityNumPair, MerkleUniqueToken> legacyUniqueTokens =
-                currentData.merkleMap();
+        final MerkleMap<EntityNumPair, MerkleUniqueToken> legacyUniqueTokens = currentData.merkleMap();
         final VirtualMap<UniqueTokenKey, UniqueTokenValue> vmUniqueTokens =
                 virtualMapFactory.newVirtualizedUniqueTokenStorage();
         final AtomicInteger count = new AtomicInteger();
 
-        forEach(
-                legacyUniqueTokens,
-                (entityNumPair, legacyToken) -> {
-                    final var numSerialPair = entityNumPair.asTokenNumAndSerialPair();
-                    final var newTokenKey =
-                            new UniqueTokenKey(numSerialPair.getLeft(), numSerialPair.getRight());
-                    final var newTokenValue = UniqueTokenValue.from(legacyToken);
-                    vmUniqueTokens.put(newTokenKey, newTokenValue);
-                    count.incrementAndGet();
-                });
+        forEach(MerkleMapLike.from(legacyUniqueTokens), (entityNumPair, legacyToken) -> {
+            final var numSerialPair = entityNumPair.asTokenNumAndSerialPair();
+            final var newTokenKey = new UniqueTokenKey(numSerialPair.getLeft(), numSerialPair.getRight());
+            final var newTokenValue = UniqueTokenValue.from(legacyToken);
+            vmUniqueTokens.put(newTokenKey, newTokenValue);
+            count.incrementAndGet();
+        });
 
         initializingState.setChild(StateChildIndices.UNIQUE_TOKENS, vmUniqueTokens);
         LOG.info("Migrated {} unique tokens", count.get());

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.assertions;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
@@ -30,6 +31,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
 
 public class SomeFungibleTransfers implements ErroringAssertsProvider<List<TokenTransferList>> {
+    static final String EXCEPTION_MESSAGE_NOT_EXPECTED_CHANGE_ACCOUNT_FOR_TOKEN =
+            "No expected change in account % for token %";
     private final Map<String, List<Pair<String, Long>>> changes = new HashMap<>();
     private boolean noOtherChangesTolerated = false;
 
@@ -64,11 +67,10 @@ public class SomeFungibleTransfers implements ErroringAssertsProvider<List<Token
                 if (!tokenNameLookup.containsKey(token)) {
                     if (noOtherChangesTolerated) {
                         try {
-                            Assertions.fail(
-                                    "Unexpected changes for token "
-                                            + asTokenString(token)
-                                            + " --> "
-                                            + tokenTransfer.getTransfersList());
+                            Assertions.fail("Unexpected changes for token "
+                                    + asTokenString(token)
+                                    + " --> "
+                                    + tokenTransfer.getTransfersList());
                         } catch (Throwable t) {
                             wrongFungibleChanges.add(t);
                         }
@@ -81,13 +83,12 @@ public class SomeFungibleTransfers implements ErroringAssertsProvider<List<Token
                     if (!accountNameLookup.containsKey(account)) {
                         if (noOtherChangesTolerated) {
                             try {
-                                Assertions.fail(
-                                        "Unexpected change to balance of account "
-                                                + asAccountString(account)
-                                                + " for token "
-                                                + asTokenString(token)
-                                                + " --> "
-                                                + fChange.getAmount());
+                                Assertions.fail("Unexpected change to balance of account "
+                                        + asAccountString(account)
+                                        + " for token "
+                                        + asTokenString(token)
+                                        + " --> "
+                                        + fChange.getAmount());
                             } catch (Throwable t) {
                                 wrongFungibleChanges.add(t);
                             }
@@ -102,11 +103,7 @@ public class SomeFungibleTransfers implements ErroringAssertsProvider<List<Token
                         Assertions.assertEquals(
                                 expected,
                                 actual,
-                                "Wrong change in account '"
-                                        + accountName
-                                        + "' for token '"
-                                        + tokenName
-                                        + "'");
+                                "Wrong change in account '" + accountName + "' for token '" + tokenName + "'");
                     } catch (Throwable t) {
                         wrongFungibleChanges.add(t);
                     }
@@ -120,11 +117,7 @@ public class SomeFungibleTransfers implements ErroringAssertsProvider<List<Token
                 try {
                     Assertions.assertTrue(
                             expectations.isEmpty(),
-                            () ->
-                                    "Expected changes for token '"
-                                            + token
-                                            + "', but got none of: "
-                                            + expectations);
+                            () -> "Expected changes for token '" + token + "', but got none of: " + expectations);
                 } catch (Throwable t) {
                     wrongFungibleChanges.add(t);
                 }
@@ -137,7 +130,7 @@ public class SomeFungibleTransfers implements ErroringAssertsProvider<List<Token
         final var expectations = changes.get(token);
         if (expectations == null) {
             throw new IllegalStateException(
-                    "No expected change in account '" + account + "' for token '" + token + "'");
+                    String.format(EXCEPTION_MESSAGE_NOT_EXPECTED_CHANGE_ACCOUNT_FOR_TOKEN, account, token));
         }
         for (var change : expectations) {
             if (change.getKey().equals(account)) {
@@ -145,14 +138,14 @@ public class SomeFungibleTransfers implements ErroringAssertsProvider<List<Token
             }
         }
         throw new IllegalStateException(
-                "No expected change in account '" + account + "' for token '" + token + "'");
+                String.format(EXCEPTION_MESSAGE_NOT_EXPECTED_CHANGE_ACCOUNT_FOR_TOKEN, account, token));
     }
 
     private void forgetExpectation(String token, String account) {
         final var expectations = changes.get(token);
         if (expectations == null) {
             throw new IllegalStateException(
-                    "No expected change in account '" + account + "' for token '" + token + "'");
+                    String.format(EXCEPTION_MESSAGE_NOT_EXPECTED_CHANGE_ACCOUNT_FOR_TOKEN, account, token));
         }
         for (var iter = expectations.iterator(); iter.hasNext(); ) {
             final var change = iter.next();

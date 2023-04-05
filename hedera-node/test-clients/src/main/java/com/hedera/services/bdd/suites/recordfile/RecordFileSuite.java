@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.recordfile;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -62,30 +63,23 @@ public class RecordFileSuite extends HapiSuite {
                                 .treasury(TOKEN_TREASURY)
                                 .via(secondTxn),
                         cryptoCreate(ALICE).delayBy(6000).via(thirdTxn))
-                .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var txnRecord = getTxnRecord(firstTxn);
-                                    final var txnRecord2 = getTxnRecord(secondTxn);
-                                    final var txnRecord3 = getTxnRecord(thirdTxn);
-                                    allRunFor(spec, txnRecord, txnRecord2, txnRecord3);
+                .then(withOpContext((spec, opLog) -> {
+                    final var txnRecord = getTxnRecord(firstTxn);
+                    final var txnRecord2 = getTxnRecord(secondTxn);
+                    final var txnRecord3 = getTxnRecord(thirdTxn);
+                    allRunFor(spec, txnRecord, txnRecord2, txnRecord3);
 
-                                    var transaction =
-                                            Transaction.parseFrom(
-                                                    spec.registry().getBytes(firstTxn));
-                                    var transaction2 =
-                                            Transaction.parseFrom(
-                                                    spec.registry().getBytes(secondTxn));
+                    var transaction = Transaction.parseFrom(spec.registry().getBytes(firstTxn));
+                    var transaction2 = Transaction.parseFrom(spec.registry().getBytes(secondTxn));
 
-                                    final var timestamp =
-                                            txnRecord.getResponseRecord().getConsensusTimestamp();
-                                    verifyRecordFile(
-                                                    timestamp,
-                                                    Arrays.asList(transaction, transaction2),
-                                                    txnRecord.getResponseRecord(),
-                                                    txnRecord2.getResponseRecord())
-                                            .execFor(spec);
-                                }));
+                    final var timestamp = txnRecord.getResponseRecord().getConsensusTimestamp();
+                    verifyRecordFile(
+                                    timestamp,
+                                    Arrays.asList(transaction, transaction2),
+                                    txnRecord.getResponseRecord(),
+                                    txnRecord2.getResponseRecord())
+                            .execFor(spec);
+                }));
     }
 
     @Override

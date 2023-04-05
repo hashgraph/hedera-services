@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.file.queries;
 
 import static com.hedera.test.utils.IdUtils.asFile;
@@ -47,11 +48,10 @@ class GetFileContentsResourceUsageTest {
     private FileFeeBuilder usageEstimator;
     private GetFileContentsResourceUsage subject;
     private static final long fileSize = 1_234;
-    private static final FileGetInfoResponse.FileInfo targetInfo =
-            FileGetInfoResponse.FileInfo.newBuilder()
-                    .setLedgerId(ledgerId)
-                    .setSize(fileSize)
-                    .build();
+    private static final FileGetInfoResponse.FileInfo targetInfo = FileGetInfoResponse.FileInfo.newBuilder()
+            .setLedgerId(ledgerId)
+            .setSize(fileSize)
+            .build();
 
     @BeforeEach
     void setup() {
@@ -98,8 +98,7 @@ class GetFileContentsResourceUsageTest {
     }
 
     private Query fileContentsQuery(final FileID id, final ResponseType type) {
-        final var op =
-                FileGetContentsQuery.newBuilder().setFileID(id).setHeader(queryHeaderOf(type));
+        final var op = FileGetContentsQuery.newBuilder().setFileID(id).setHeader(queryHeaderOf(type));
         return queryOf(op);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.workflows;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hederahashgraph.api.proto.java.ResponseType;
+import com.hedera.hapi.node.base.ResponseType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /** An abstract class for all free queries (no costs, not possible to requests costs) */

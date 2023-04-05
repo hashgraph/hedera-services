@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.perf.topic;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -33,6 +34,7 @@ import org.apache.logging.log4j.Logger;
 
 public class SubmitMessagePerfSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(SubmitMessagePerfSuite.class);
+    private static final String TEST_TOPIC = "testTopic";
 
     public static void main(String... args) {
         SubmitMessagePerfSuite suite = new SubmitMessagePerfSuite();
@@ -53,31 +55,24 @@ public class SubmitMessagePerfSuite extends HapiSuite {
         final int NUM_SUBMISSIONS = 100_000;
 
         return defaultHapiSpec("submitMessagePerf")
-                .given(
-                        newKeyNamed("submitKey"),
-                        createTopic("testTopic").submitKeyName("submitKey"))
+                .given(newKeyNamed("submitKey"), createTopic(TEST_TOPIC).submitKeyName("submitKey"))
                 .when(
                         startThroughputObs("submitMessageThroughput").msToSaturateQueues(50L),
                         inParallel(
                                 // only ask for record for the last transaction
                                 asOpArray(
                                         NUM_SUBMISSIONS,
-                                        i ->
-                                                (i == (NUM_SUBMISSIONS - 1))
-                                                        ? submitMessageTo("testTopic")
-                                                                .message("testMessage" + i)
-                                                        : submitMessageTo("testTopic")
-                                                                .message("testMessage" + i)
-                                                                .deferStatusResolution())))
-                .then(
-                        finishThroughputObs("submitMessageThroughput")
-                                .gatedByQuery(
-                                        () ->
-                                                getTopicInfo("testTopic")
-                                                        .hasSeqNo(NUM_SUBMISSIONS)
-                                                        .logged())
-                                .sleepMs(1_000L)
-                                .expiryMs(300_000L));
+                                        i -> (i == (NUM_SUBMISSIONS - 1))
+                                                ? submitMessageTo(TEST_TOPIC).message("testMessage" + i)
+                                                : submitMessageTo(TEST_TOPIC)
+                                                        .message("testMessage" + i)
+                                                        .deferStatusResolution())))
+                .then(finishThroughputObs("submitMessageThroughput")
+                        .gatedByQuery(() -> getTopicInfo(TEST_TOPIC)
+                                .hasSeqNo(NUM_SUBMISSIONS)
+                                .logged())
+                        .sleepMs(1_000L)
+                        .expiryMs(300_000L));
     }
 
     @Override

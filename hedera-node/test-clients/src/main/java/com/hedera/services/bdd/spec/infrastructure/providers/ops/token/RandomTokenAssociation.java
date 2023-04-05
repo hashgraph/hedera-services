@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.token;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
@@ -46,8 +47,7 @@ public class RandomTokenAssociation implements OpProvider {
     private final RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels;
 
     private final ResponseCodeEnum[] permissibleOutcomes =
-            standardOutcomesAnd(
-                    TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT, TOKEN_WAS_DELETED, ACCOUNT_DELETED);
+            standardOutcomesAnd(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT, TOKEN_WAS_DELETED, ACCOUNT_DELETED);
 
     public RandomTokenAssociation(
             RegistrySourcedNameProvider<TokenID> tokens,
@@ -84,10 +84,9 @@ public class RandomTokenAssociation implements OpProvider {
             return Optional.empty();
         }
         String[] toUse = chosen.toArray(new String[0]);
-        var op =
-                tokenAssociate(account.get(), toUse)
-                        .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                        .hasKnownStatusFrom(permissibleOutcomes);
+        var op = tokenAssociate(account.get(), toUse)
+                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+                .hasKnownStatusFrom(permissibleOutcomes);
 
         return Optional.of(op);
     }

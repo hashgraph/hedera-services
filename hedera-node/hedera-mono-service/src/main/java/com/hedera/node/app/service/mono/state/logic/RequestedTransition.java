@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.logic;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermissions;
-import com.hedera.node.app.service.mono.txns.TransitionRunner;
+import com.hedera.node.app.service.mono.txns.TransactionLastStep;
 import com.hedera.node.app.service.mono.txns.auth.SystemOpPolicies;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import javax.inject.Inject;
@@ -27,7 +28,7 @@ import javax.inject.Singleton;
 
 @Singleton
 public class RequestedTransition {
-    private final TransitionRunner transitionRunner;
+    private final TransactionLastStep lastStep;
     private final SystemOpPolicies opPolicies;
     private final TransactionContext txnCtx;
     private final NetworkCtxManager networkCtxManager;
@@ -35,12 +36,12 @@ public class RequestedTransition {
 
     @Inject
     public RequestedTransition(
-            final TransitionRunner transitionRunner,
+            final TransactionLastStep lastStep,
             final SystemOpPolicies opPolicies,
             final TransactionContext txnCtx,
             final NetworkCtxManager networkCtxManager,
             final HapiOpPermissions hapiOpPermissions) {
-        this.transitionRunner = transitionRunner;
+        this.lastStep = lastStep;
         this.opPolicies = opPolicies;
         this.txnCtx = txnCtx;
         this.networkCtxManager = networkCtxManager;
@@ -48,8 +49,7 @@ public class RequestedTransition {
     }
 
     void finishFor(TxnAccessor accessor) {
-        final var permissionStatus =
-                hapiOpPermissions.permissibilityOf(accessor.getFunction(), accessor.getPayer());
+        final var permissionStatus = hapiOpPermissions.permissibilityOf(accessor.getFunction(), accessor.getPayer());
         if (permissionStatus != OK) {
             txnCtx.setStatus(permissionStatus);
             return;
@@ -59,7 +59,7 @@ public class RequestedTransition {
             txnCtx.setStatus(sysAuthStatus);
             return;
         }
-        if (transitionRunner.tryTransition(accessor)) {
+        if (lastStep.tryTransition(accessor)) {
             networkCtxManager.finishIncorporating(accessor.getFunction());
         }
     }

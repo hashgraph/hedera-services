@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
@@ -28,14 +29,12 @@ import org.apache.tuweni.bytes.Bytes;
 public interface EvmFungibleTokenInfoPrecompile {
 
     Function GET_FUNGIBLE_TOKEN_INFO_FUNCTION = new Function("getFungibleTokenInfo(address)");
-    Bytes GET_FUNGIBLE_TOKEN_INFO_SELECTOR =
-            Bytes.wrap(GET_FUNGIBLE_TOKEN_INFO_FUNCTION.selector());
+    Bytes GET_FUNGIBLE_TOKEN_INFO_SELECTOR = Bytes.wrap(GET_FUNGIBLE_TOKEN_INFO_FUNCTION.selector());
     ABIType<Tuple> GET_FUNGIBLE_TOKEN_INFO_DECODER = TypeFactory.create(BYTES32);
 
     static TokenInfoWrapper<byte[]> decodeGetFungibleTokenInfo(final Bytes input) {
         final Tuple decodedArguments =
-                decodeFunctionCall(
-                        input, GET_FUNGIBLE_TOKEN_INFO_SELECTOR, GET_FUNGIBLE_TOKEN_INFO_DECODER);
+                decodeFunctionCall(input, GET_FUNGIBLE_TOKEN_INFO_SELECTOR, GET_FUNGIBLE_TOKEN_INFO_DECODER);
 
         return TokenInfoWrapper.forFungibleToken(decodedArguments.get(0));
     }

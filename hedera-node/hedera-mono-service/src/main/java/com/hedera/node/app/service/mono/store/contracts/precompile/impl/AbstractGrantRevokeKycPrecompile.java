@@ -13,10 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GrantRevokeKycWrapper;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -31,8 +33,8 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActi
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenID;
-import java.util.Objects;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public abstract class AbstractGrantRevokeKycPrecompile extends AbstractWritePrecompile {
@@ -43,6 +45,7 @@ public abstract class AbstractGrantRevokeKycPrecompile extends AbstractWritePrec
     protected Id accountId;
     protected AccountStore accountStore;
     protected TypedTokenStore tokenStore;
+    protected HederaFunctionality function = null;
 
     protected AbstractGrantRevokeKycPrecompile(
             WorldLedgers ledgers,
@@ -58,28 +61,23 @@ public abstract class AbstractGrantRevokeKycPrecompile extends AbstractWritePrec
     }
 
     public void initialise(MessageFrame frame) {
-        Objects.requireNonNull(grantRevokeOp);
+        requireNonNull(grantRevokeOp);
 
         /* --- Check required signatures --- */
         tokenId = Id.fromGrpcToken(grantRevokeOp.token());
         accountId = Id.fromGrpcAccount(grantRevokeOp.account());
-        final var hasRequiredSigs =
-                KeyActivationUtils.validateKey(
-                        frame,
-                        tokenId.asEvmAddress(),
-                        sigsVerifier::hasActiveKycKey,
-                        ledgers,
-                        aliases);
+        final var hasRequiredSigs = KeyActivationUtils.validateKey(
+                frame,
+                tokenId.asEvmAddress(),
+                sigsVerifier::hasActiveKycKey,
+                ledgers,
+                aliases,
+                requireNonNull(function));
         validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
         /* --- Build the necessary infrastructure to execute the transaction --- */
         accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());
-        tokenStore =
-                infrastructureFactory.newTokenStore(
-                        accountStore,
-                        sideEffects,
-                        ledgers.tokens(),
-                        ledgers.nfts(),
-                        ledgers.tokenRels());
+        tokenStore = infrastructureFactory.newTokenStore(
+                accountStore, sideEffects, ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels());
     }
 }

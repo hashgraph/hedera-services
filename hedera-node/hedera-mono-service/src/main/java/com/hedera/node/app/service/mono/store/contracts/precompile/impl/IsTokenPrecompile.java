@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
@@ -45,8 +46,7 @@ public class IsTokenPrecompile extends AbstractTokenInfoPrecompile implements Ev
     }
 
     @Override
-    public TransactionBody.Builder body(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var tokenInfoWrapper = decodeIsToken(input);
         tokenId = tokenInfoWrapper.token();
         return super.body(input, aliasResolver);

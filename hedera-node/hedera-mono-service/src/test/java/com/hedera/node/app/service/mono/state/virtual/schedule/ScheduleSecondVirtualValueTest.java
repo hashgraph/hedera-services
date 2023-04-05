@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual.schedule;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -43,14 +44,12 @@ import org.junit.jupiter.api.Test;
 
 class ScheduleSecondVirtualValueTest {
     private ScheduleSecondVirtualValue subject;
-    private Map<RichInstant, ? extends LongList> ids =
-            ImmutableMap.of(
-                    new RichInstant(30L, 40), LongLists.immutable.of(80L),
-                    new RichInstant(10L, 20), LongLists.immutable.of(50L, 60L, 70L));
-    private Map<RichInstant, ? extends LongList> otherIds =
-            ImmutableMap.of(
-                    new RichInstant(100L, 200), LongLists.immutable.of(500L, 600L, 700L),
-                    new RichInstant(300L, 400), LongLists.immutable.of(800L));
+    private Map<RichInstant, ? extends LongList> ids = ImmutableMap.of(
+            new RichInstant(30L, 40), LongLists.immutable.of(80L),
+            new RichInstant(10L, 20), LongLists.immutable.of(50L, 60L, 70L));
+    private Map<RichInstant, ? extends LongList> otherIds = ImmutableMap.of(
+            new RichInstant(100L, 200), LongLists.immutable.of(500L, 600L, 700L),
+            new RichInstant(300L, 400), LongLists.immutable.of(800L));
 
     @BeforeEach
     void setup() {
@@ -167,75 +166,69 @@ class ScheduleSecondVirtualValueTest {
 
     @Test
     void serializeActuallyWorks() throws Exception {
-        checkSerialize(
-                () -> {
-                    final var byteArr = new ByteArrayOutputStream();
-                    final var out = new SerializableDataOutputStream(byteArr);
-                    subject.serialize(out);
+        checkSerialize(() -> {
+            final var byteArr = new ByteArrayOutputStream();
+            final var out = new SerializableDataOutputStream(byteArr);
+            subject.serialize(out);
 
-                    var copy = new ScheduleSecondVirtualValue();
-                    copy.deserialize(
-                            new SerializableDataInputStream(
-                                    new ByteArrayInputStream(byteArr.toByteArray())),
-                            ScheduleSecondVirtualValue.CURRENT_VERSION);
+            var copy = new ScheduleSecondVirtualValue();
+            copy.deserialize(
+                    new SerializableDataInputStream(new ByteArrayInputStream(byteArr.toByteArray())),
+                    ScheduleSecondVirtualValue.CURRENT_VERSION);
 
-                    assertSubjectEquals(subject, copy);
+            assertSubjectEquals(subject, copy);
 
-                    return copy;
-                });
+            return copy;
+        });
     }
 
     @Test
     void serializeActuallyWithByteBufferWorks() throws Exception {
-        checkSerialize(
-                () -> {
-                    final var buffer = ByteBuffer.allocate(100000);
-                    subject.serialize(buffer);
-                    buffer.rewind();
-                    var copy = new ScheduleSecondVirtualValue();
-                    copy.deserialize(buffer, ScheduleSecondVirtualValue.CURRENT_VERSION);
+        checkSerialize(() -> {
+            final var buffer = ByteBuffer.allocate(100000);
+            subject.serialize(buffer);
+            buffer.rewind();
+            var copy = new ScheduleSecondVirtualValue();
+            copy.deserialize(buffer, ScheduleSecondVirtualValue.CURRENT_VERSION);
 
-                    assertSubjectEquals(subject, copy);
+            assertSubjectEquals(subject, copy);
 
-                    return copy;
-                });
+            return copy;
+        });
     }
 
     @Test
     void serializeActuallyWithMixedWorksBytesFirst() throws Exception {
-        checkSerialize(
-                () -> {
-                    final var buffer = ByteBuffer.allocate(100000);
-                    subject.serialize(buffer);
+        checkSerialize(() -> {
+            final var buffer = ByteBuffer.allocate(100000);
+            subject.serialize(buffer);
 
-                    var copy = new ScheduleSecondVirtualValue();
-                    copy.deserialize(
-                            new SerializableDataInputStream(
-                                    new ByteArrayInputStream(buffer.array())),
-                            ScheduleSecondVirtualValue.CURRENT_VERSION);
+            var copy = new ScheduleSecondVirtualValue();
+            copy.deserialize(
+                    new SerializableDataInputStream(new ByteArrayInputStream(buffer.array())),
+                    ScheduleSecondVirtualValue.CURRENT_VERSION);
 
-                    assertSubjectEquals(subject, copy);
+            assertSubjectEquals(subject, copy);
 
-                    return copy;
-                });
+            return copy;
+        });
     }
 
     @Test
     void serializeActuallyWithMixedWorksBytesSecond() throws Exception {
-        checkSerialize(
-                () -> {
-                    final var byteArr = new ByteArrayOutputStream();
-                    final var out = new SerializableDataOutputStream(byteArr);
-                    subject.serialize(out);
+        checkSerialize(() -> {
+            final var byteArr = new ByteArrayOutputStream();
+            final var out = new SerializableDataOutputStream(byteArr);
+            subject.serialize(out);
 
-                    final var buffer = ByteBuffer.wrap(byteArr.toByteArray());
-                    var copy = new ScheduleSecondVirtualValue();
-                    copy.deserialize(buffer, ScheduleSecondVirtualValue.CURRENT_VERSION);
+            final var buffer = ByteBuffer.wrap(byteArr.toByteArray());
+            var copy = new ScheduleSecondVirtualValue();
+            copy.deserialize(buffer, ScheduleSecondVirtualValue.CURRENT_VERSION);
 
-                    assertSubjectEquals(subject, copy);
+            assertSubjectEquals(subject, copy);
 
-                    return copy;
-                });
+            return copy;
+        });
     }
 
     private void checkSerialize(Callable<ScheduleSecondVirtualValue> check) throws Exception {
@@ -339,8 +332,7 @@ class ScheduleSecondVirtualValueTest {
                 subject.toString());
     }
 
-    private static void assertSubjectEquals(
-            ScheduleSecondVirtualValue subject, ScheduleSecondVirtualValue value) {
+    private static void assertSubjectEquals(ScheduleSecondVirtualValue subject, ScheduleSecondVirtualValue value) {
         assertEquals(subject, value);
         assertEquals(subject.getKey(), value.getKey());
     }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.extractTransactionBody;
@@ -103,12 +104,8 @@ import org.apache.logging.log4j.Logger;
 public class TxnUtils {
     private static final Logger log = LogManager.getLogger(TxnUtils.class);
 
-    public static final ResponseCodeEnum[] NOISY_RETRY_PRECHECKS = {
-        BUSY, PLATFORM_TRANSACTION_NOT_CREATED
-    };
-    public static final ResponseCodeEnum[] NOISY_ALLOWED_STATUSES = {
-        OK, SUCCESS, DUPLICATE_TRANSACTION
-    };
+    public static final ResponseCodeEnum[] NOISY_RETRY_PRECHECKS = {BUSY, PLATFORM_TRANSACTION_NOT_CREATED};
+    public static final ResponseCodeEnum[] NOISY_ALLOWED_STATUSES = {OK, SUCCESS, DUPLICATE_TRANSACTION};
 
     public static final int BYTES_4K = 4 * (1 << 10);
 
@@ -152,8 +149,7 @@ public class TxnUtils {
             if (keyShape.isPresent()) {
                 return spec.keys().generateSubjectTo(spec, keyShape.get(), generator);
             } else {
-                return spec.keys()
-                        .generate(spec, keyType.orElse(spec.setup().defaultKeyType()), generator);
+                return spec.keys().generate(spec, keyType.orElse(spec.setup().defaultKeyType()), generator);
             }
         } else {
             return spec.registry().getKey(keyName.get());
@@ -271,8 +267,7 @@ public class TxnUtils {
     }
 
     public static SigUsage suFrom(final SigValueObj svo) {
-        return new SigUsage(
-                svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+        return new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
     }
 
     private static final int NANOS_IN_A_SECOND = 1_000_000_000;
@@ -330,33 +325,33 @@ public class TxnUtils {
                 .collect(toMap(AccountAmount::getAccountID, AccountAmount::getAmount));
     }
 
-    public static List<AccountAmount> tinyBarsFromTo(
-            final long amount, final AccountID from, final AccountID to) {
+    public static List<AccountAmount> tinyBarsFromTo(final long amount, final AccountID from, final AccountID to) {
         return Arrays.asList(
-                AccountAmount.newBuilder().setAccountID(from).setAmount(-1L * amount).build(),
+                AccountAmount.newBuilder()
+                        .setAccountID(from)
+                        .setAmount(-1L * amount)
+                        .build(),
                 AccountAmount.newBuilder().setAccountID(to).setAmount(amount).build());
     }
 
     public static String printable(final TransferList transfers) {
         return transfers.getAccountAmountsList().stream()
-                .map(
-                        adjust ->
-                                String.format(
-                                        "%d %s %d",
-                                        adjust.getAmount(),
-                                        adjust.getAmount() < 0L ? "from" : "to",
-                                        adjust.getAccountID().getAccountNum()))
+                .map(adjust -> String.format(
+                        "%d %s %d",
+                        adjust.getAmount(),
+                        adjust.getAmount() < 0L ? "from" : "to",
+                        adjust.getAccountID().getAccountNum()))
                 .collect(joining(", "));
     }
 
-    public static Timestamp currExpiry(final String file, final HapiSpec spec, final String payer)
-            throws Throwable {
+    public static Timestamp currExpiry(final String file, final HapiSpec spec, final String payer) throws Throwable {
         final HapiGetFileInfo subOp = getFileInfo(file).payingWith(payer).noLogging();
         final Optional<Throwable> error = subOp.execFor(spec);
         if (error.isPresent()) {
-            log.error(
-                    "Unable to look up current expiration timestamp of file 0.0."
-                            + spec.registry().getFileId(file).getFileNum());
+            String message = String.format(
+                    "Unable to look up current expiration timestamp of file 0.0.%d",
+                    spec.registry().getFileId(file).getFileNum());
+            log.error(message);
             throw error.get();
         }
         return subOp.getResponse().getFileGetInfo().getFileInfo().getExpirationTime();
@@ -366,33 +361,30 @@ public class TxnUtils {
         return currExpiry(file, spec, spec.setup().defaultPayerName());
     }
 
-    public static Timestamp currContractExpiry(final String contract, final HapiSpec spec)
-            throws Throwable {
+    public static Timestamp currContractExpiry(final String contract, final HapiSpec spec) throws Throwable {
         final HapiGetContractInfo subOp = getContractInfo(contract).noLogging();
         final Optional<Throwable> error = subOp.execFor(spec);
         if (error.isPresent()) {
-            log.error(
-                    "Unable to look up current expiration timestamp of contract 0.0."
-                            + spec.registry().getContractId(contract).getContractNum());
+            String message = String.format(
+                    "Unable to look up current expiration timestamp of contract 0.0.%d",
+                    spec.registry().getContractId(contract).getContractNum());
+            log.error(message);
             throw error.get();
         }
         return subOp.getResponse().getContractGetInfo().getContractInfo().getExpirationTime();
     }
 
-    public static int currentMaxAutoAssociationSlots(final String contract, final HapiSpec spec)
-            throws Throwable {
+    public static int currentMaxAutoAssociationSlots(final String contract, final HapiSpec spec) throws Throwable {
         final HapiGetContractInfo subOp = getContractInfo(contract).noLogging();
         final Optional<Throwable> error = subOp.execFor(spec);
         if (error.isPresent()) {
-            log.error(
-                    "Unable to look up current expiration timestamp of contract 0.0."
-                            + spec.registry().getContractId(contract).getContractNum());
+            String message = String.format(
+                    "Unable to look up current expiration timestamp of contract 0.0.%d",
+                    spec.registry().getContractId(contract).getContractNum());
+            log.error(message);
             throw error.get();
         }
-        return subOp.getResponse()
-                .getContractGetInfo()
-                .getContractInfo()
-                .getMaxAutomaticTokenAssociations();
+        return subOp.getResponse().getContractGetInfo().getContractInfo().getMaxAutomaticTokenAssociations();
     }
 
     public static TopicID asTopicId(final AccountID id) {
@@ -432,13 +424,11 @@ public class TxnUtils {
 
     private static final SplittableRandom r = new SplittableRandom();
     private static final char[] UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
-    private static final char[] ALNUM =
-            "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
+    private static final char[] ALNUM = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
 
     public static String readableTxnId(final TransactionID txnId) {
         final var validStart = txnId.getTransactionValidStart();
-        final var startInstant =
-                Instant.ofEpochSecond(validStart.getSeconds(), validStart.getNanos());
+        final var startInstant = Instant.ofEpochSecond(validStart.getSeconds(), validStart.getNanos());
         return new StringBuilder()
                 .append(HapiPropertySource.asAccountString(txnId.getAccountID()))
                 .append("@")
@@ -448,13 +438,11 @@ public class TxnUtils {
 
     public static String readableTokenTransfers(final List<TokenTransferList> tokenTransfers) {
         return tokenTransfers.stream()
-                .map(
-                        scopedXfers ->
-                                String.format(
-                                        "%s(%s)(%s)",
-                                        asTokenString(scopedXfers.getToken()),
-                                        readableTransferList(scopedXfers.getTransfersList()),
-                                        readableNftTransferList(scopedXfers.getNftTransfersList())))
+                .map(scopedXfers -> String.format(
+                        "%s(%s)(%s)",
+                        asTokenString(scopedXfers.getToken()),
+                        readableTransferList(scopedXfers.getTransfersList()),
+                        readableNftTransferList(scopedXfers.getNftTransfersList())))
                 .collect(joining(", "));
     }
 
@@ -464,30 +452,23 @@ public class TxnUtils {
 
     public static String readableTransferList(final List<AccountAmount> adjustments) {
         return adjustments.stream()
-                .map(
-                        aa ->
-                                String.format(
-                                        "%s %s %s%s",
-                                        HapiPropertySource.asAliasableAccountString(
-                                                aa.getAccountID()),
-                                        aa.getAmount() < 0 ? "->" : "<-",
-                                        aa.getAmount() < 0 ? "-" : "+",
-                                        BigInteger.valueOf(aa.getAmount()).abs()))
+                .map(aa -> String.format(
+                        "%s %s %s%s",
+                        HapiPropertySource.asAliasableAccountString(aa.getAccountID()),
+                        aa.getAmount() < 0 ? "->" : "<-",
+                        aa.getAmount() < 0 ? "-" : "+",
+                        BigInteger.valueOf(aa.getAmount()).abs()))
                 .collect(toList())
                 .toString();
     }
 
     public static String readableNftTransferList(final List<NftTransfer> adjustments) {
         return adjustments.stream()
-                .map(
-                        nftTranfer ->
-                                String.format(
-                                        "serialNumber:%s senderAccountID:%s receiverAccountId:%s",
-                                        nftTranfer.getSerialNumber(),
-                                        HapiPropertySource.asAccountString(
-                                                nftTranfer.getSenderAccountID()),
-                                        HapiPropertySource.asAccountString(
-                                                nftTranfer.getReceiverAccountID())))
+                .map(nftTranfer -> String.format(
+                        "serialNumber:%s senderAccountID:%s receiverAccountId:%s",
+                        nftTranfer.getSerialNumber(),
+                        HapiPropertySource.asAccountString(nftTranfer.getSenderAccountID()),
+                        HapiPropertySource.asAccountString(nftTranfer.getReceiverAccountID())))
                 .collect(toList())
                 .toString();
     }
@@ -496,49 +477,38 @@ public class TxnUtils {
         final var payer = record.getTransactionID().getAccountID();
         final var txnFee = record.getTransactionFee();
         final var totalDeduction = getDeduction(record.getTransferList(), payer);
-        return totalDeduction.isPresent()
-                ? OptionalLong.of(totalDeduction.getAsLong() + txnFee)
-                : totalDeduction;
+        return totalDeduction.isPresent() ? OptionalLong.of(totalDeduction.getAsLong() + txnFee) : totalDeduction;
     }
 
-    public static OptionalLong getDeduction(
-            final TransferList accountAmounts, final AccountID payer) {
-        final var deduction =
-                accountAmounts.getAccountAmountsList().stream()
-                        .filter(aa -> aa.getAccountID().equals(payer) && aa.getAmount() < 0)
-                        .findAny();
-        return deduction.isPresent()
-                ? OptionalLong.of(deduction.get().getAmount())
-                : OptionalLong.empty();
+    public static OptionalLong getDeduction(final TransferList accountAmounts, final AccountID payer) {
+        final var deduction = accountAmounts.getAccountAmountsList().stream()
+                .filter(aa -> aa.getAccountID().equals(payer) && aa.getAmount() < 0)
+                .findAny();
+        return deduction.isPresent() ? OptionalLong.of(deduction.get().getAmount()) : OptionalLong.empty();
     }
 
-    public static FeeData defaultPartitioning(
-            final FeeComponents components, final int numPayerKeys) {
+    public static FeeData defaultPartitioning(final FeeComponents components, final int numPayerKeys) {
         final var partitions = FeeData.newBuilder();
 
-        final long networkRbh =
-                nonDegenerateDiv(BASIC_RECEIPT_SIZE * RECEIPT_STORAGE_TIME_SEC, HRS_DIVISOR);
-        final var network =
-                FeeComponents.newBuilder()
-                        .setConstant(FEE_MATRICES_CONST)
-                        .setBpt(components.getBpt())
-                        .setVpt(components.getVpt())
-                        .setRbh(networkRbh);
+        final long networkRbh = nonDegenerateDiv(BASIC_RECEIPT_SIZE * RECEIPT_STORAGE_TIME_SEC, HRS_DIVISOR);
+        final var network = FeeComponents.newBuilder()
+                .setConstant(FEE_MATRICES_CONST)
+                .setBpt(components.getBpt())
+                .setVpt(components.getVpt())
+                .setRbh(networkRbh);
 
-        final var node =
-                FeeComponents.newBuilder()
-                        .setConstant(FEE_MATRICES_CONST)
-                        .setBpt(components.getBpt())
-                        .setVpt(numPayerKeys)
-                        .setBpr(components.getBpr())
-                        .setSbpr(components.getSbpr());
+        final var node = FeeComponents.newBuilder()
+                .setConstant(FEE_MATRICES_CONST)
+                .setBpt(components.getBpt())
+                .setVpt(numPayerKeys)
+                .setBpr(components.getBpr())
+                .setSbpr(components.getSbpr());
 
-        final var service =
-                FeeComponents.newBuilder()
-                        .setConstant(FEE_MATRICES_CONST)
-                        .setRbh(components.getRbh())
-                        .setSbh(components.getSbh())
-                        .setTv(components.getTv());
+        final var service = FeeComponents.newBuilder()
+                .setConstant(FEE_MATRICES_CONST)
+                .setRbh(components.getRbh())
+                .setSbh(components.getSbh())
+                .setTv(components.getTv());
 
         partitions.setNetworkdata(network).setNodedata(node).setServicedata(service);
 
@@ -553,8 +523,7 @@ public class TxnUtils {
 
     public static Transaction replaceTxnMemo(final Transaction txn, final String newMemo) {
         try {
-            final TransactionBody.Builder txnBody =
-                    TransactionBody.newBuilder().mergeFrom(txn.getBodyBytes());
+            final TransactionBody.Builder txnBody = TransactionBody.newBuilder().mergeFrom(txn.getBodyBytes());
             txnBody.setMemo(newMemo);
             return txn.toBuilder().setBodyBytes(txnBody.build().toByteString()).build();
         } catch (final Exception e) {
@@ -563,18 +532,14 @@ public class TxnUtils {
         return null;
     }
 
-    public static Transaction replaceTxnPayerAccount(
-            final Transaction txn, final AccountID accountID) {
+    public static Transaction replaceTxnPayerAccount(final Transaction txn, final AccountID accountID) {
         final Transaction newTxn = Transaction.getDefaultInstance();
         try {
-            final TransactionBody.Builder txnBody =
-                    TransactionBody.newBuilder().mergeFrom(txn.getBodyBytes());
-            txnBody.setTransactionID(
-                    TransactionID.newBuilder()
-                            .setAccountID(accountID)
-                            .setTransactionValidStart(
-                                    txnBody.getTransactionID().getTransactionValidStart())
-                            .build());
+            final TransactionBody.Builder txnBody = TransactionBody.newBuilder().mergeFrom(txn.getBodyBytes());
+            txnBody.setTransactionID(TransactionID.newBuilder()
+                    .setAccountID(accountID)
+                    .setTransactionValidStart(txnBody.getTransactionID().getTransactionValidStart())
+                    .build());
             return txn.toBuilder().setBodyBytes(txnBody.build().toByteString()).build();
         } catch (final Exception e) {
             log.warn("Transaction's body can't be parsed: {}", txnToString(txn), e);
@@ -585,18 +550,15 @@ public class TxnUtils {
     public static Transaction replaceTxnStartTime(
             final Transaction txn, final long newStartTimeSecs, final int newStartTimeNanos) {
         try {
-            final TransactionBody.Builder txnBody =
-                    TransactionBody.newBuilder().mergeFrom(txn.getBodyBytes());
+            final TransactionBody.Builder txnBody = TransactionBody.newBuilder().mergeFrom(txn.getBodyBytes());
 
-            txnBody.setTransactionID(
-                    TransactionID.newBuilder()
-                            .setAccountID(txnBody.getTransactionID().getAccountID())
-                            .setTransactionValidStart(
-                                    Timestamp.newBuilder()
-                                            .setSeconds(newStartTimeSecs)
-                                            .setNanos(newStartTimeNanos)
-                                            .build())
-                            .build());
+            txnBody.setTransactionID(TransactionID.newBuilder()
+                    .setAccountID(txnBody.getTransactionID().getAccountID())
+                    .setTransactionValidStart(Timestamp.newBuilder()
+                            .setSeconds(newStartTimeSecs)
+                            .setNanos(newStartTimeNanos)
+                            .build())
+                    .build());
             return txn.toBuilder().setBodyBytes(txnBody.build().toByteString()).build();
         } catch (final Exception e) {
             log.warn("Transaction's body can't be parsed: {}", txnToString(txn), e);
@@ -606,8 +568,7 @@ public class TxnUtils {
 
     public static Transaction replaceTxnDuration(final Transaction txn, final long newDuration) {
         try {
-            final TransactionBody.Builder txnBody =
-                    TransactionBody.newBuilder().mergeFrom(txn.getBodyBytes());
+            final TransactionBody.Builder txnBody = TransactionBody.newBuilder().mergeFrom(txn.getBodyBytes());
             txnBody.setTransactionValidDuration(
                     Duration.newBuilder().setSeconds(newDuration).build());
             return txn.toBuilder().setBodyBytes(txnBody.build().toByteString()).build();
@@ -617,13 +578,11 @@ public class TxnUtils {
         return null;
     }
 
-    public static Transaction replaceTxnNodeAccount(
-            final Transaction txn, final AccountID newNodeAccount) {
+    public static Transaction replaceTxnNodeAccount(final Transaction txn, final AccountID newNodeAccount) {
         log.info(String.format("Old Txn attr: %s", TxnUtils.txnToString(txn)));
         try {
 
-            final TransactionBody.Builder txnBody =
-                    TransactionBody.newBuilder().mergeFrom(txn.getBodyBytes());
+            final TransactionBody.Builder txnBody = TransactionBody.newBuilder().mergeFrom(txn.getBodyBytes());
             txnBody.setNodeAccountID(newNodeAccount);
             return txn.toBuilder().setBodyBytes(txnBody.build().toByteString()).build();
         } catch (final Exception e) {
@@ -643,20 +602,17 @@ public class TxnUtils {
      * @return generated readable string
      * @throws InvalidProtocolBufferException when protocol buffer is invalid
      */
-    public static String toReadableString(final Transaction grpcTransaction)
-            throws InvalidProtocolBufferException {
+    public static String toReadableString(final Transaction grpcTransaction) throws InvalidProtocolBufferException {
         final TransactionBody body = extractTransactionBody(grpcTransaction);
         return "body="
                 + TextFormat.shortDebugString(body)
                 + "; sigs="
                 + TextFormat.shortDebugString(
-                        com.hedera.node.app.hapi.utils.CommonUtils.extractSignatureMap(
-                                grpcTransaction));
+                        com.hedera.node.app.hapi.utils.CommonUtils.extractSignatureMap(grpcTransaction));
     }
 
     public static String bytecodePath(final String contractName) {
-        return String.format(
-                "src/main/resource/contract/contracts/%s/%s.bin", contractName, contractName);
+        return String.format("src/main/resource/contract/contracts/%s/%s.bin", contractName, contractName);
     }
 
     public static ByteString literalInitcodeFor(final String contract) {

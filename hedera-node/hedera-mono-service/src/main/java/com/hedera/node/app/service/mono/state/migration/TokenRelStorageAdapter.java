@@ -13,36 +13,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.migration;
 
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 public class TokenRelStorageAdapter {
     private final boolean relsOnDisk;
 
     private final @Nullable MerkleMap<EntityNumPair, MerkleTokenRelStatus> inMemoryRels;
-    private final @Nullable VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> onDiskRels;
+    private final @Nullable VirtualMapLike<EntityNumVirtualKey, OnDiskTokenRel> onDiskRels;
 
-    public static TokenRelStorageAdapter fromInMemory(
-            final MerkleMap<EntityNumPair, MerkleTokenRelStatus> rels) {
+    public static TokenRelStorageAdapter fromInMemory(final MerkleMap<EntityNumPair, MerkleTokenRelStatus> rels) {
         return new TokenRelStorageAdapter(rels, null);
     }
 
-    public static TokenRelStorageAdapter fromOnDisk(
-            final VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> rels) {
+    public static TokenRelStorageAdapter fromOnDisk(final VirtualMapLike<EntityNumVirtualKey, OnDiskTokenRel> rels) {
         return new TokenRelStorageAdapter(null, rels);
     }
 
     private TokenRelStorageAdapter(
             @Nullable final MerkleMap<EntityNumPair, MerkleTokenRelStatus> inMemoryRels,
-            @Nullable final VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> onDiskRels) {
+            @Nullable final VirtualMapLike<EntityNumVirtualKey, OnDiskTokenRel> onDiskRels) {
         if (inMemoryRels != null) {
             this.relsOnDisk = false;
             this.inMemoryRels = inMemoryRels;
@@ -55,15 +54,11 @@ public class TokenRelStorageAdapter {
     }
 
     public HederaTokenRel get(final EntityNumPair num) {
-        return relsOnDisk
-                ? onDiskRels.get(EntityNumVirtualKey.fromPair(num))
-                : inMemoryRels.get(num);
+        return relsOnDisk ? onDiskRels.get(EntityNumVirtualKey.fromPair(num)) : inMemoryRels.get(num);
     }
 
     public HederaTokenRel getForModify(final EntityNumPair num) {
-        return relsOnDisk
-                ? onDiskRels.getForModify(EntityNumVirtualKey.fromPair(num))
-                : inMemoryRels.getForModify(num);
+        return relsOnDisk ? onDiskRels.getForModify(EntityNumVirtualKey.fromPair(num)) : inMemoryRels.getForModify(num);
     }
 
     public void put(final EntityNumPair num, final HederaTokenRel wrapper) {
@@ -88,9 +83,7 @@ public class TokenRelStorageAdapter {
     }
 
     public boolean containsKey(final EntityNumPair num) {
-        return relsOnDisk
-                ? onDiskRels.containsKey(EntityNumVirtualKey.fromPair(num))
-                : inMemoryRels.containsKey(num);
+        return relsOnDisk ? onDiskRels.containsKey(EntityNumVirtualKey.fromPair(num)) : inMemoryRels.containsKey(num);
     }
 
     public void archive() {
@@ -113,7 +106,7 @@ public class TokenRelStorageAdapter {
     }
 
     @Nullable
-    public VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> getOnDiskRels() {
+    public VirtualMapLike<EntityNumVirtualKey, OnDiskTokenRel> getOnDiskRels() {
         return onDiskRels;
     }
 }

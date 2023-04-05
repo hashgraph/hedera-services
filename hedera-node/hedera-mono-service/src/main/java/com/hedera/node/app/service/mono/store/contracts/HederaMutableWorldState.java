@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts;
 
 /*
@@ -103,4 +104,7 @@ public interface HederaMutableWorldState extends HederaEvmMutableWorldState, Wor
 
     /** Clears the customizations requested by the sender of a top-level HAPI contractCreate. */
     void resetHapiSenderCustomizer();
+
+    /** Ensures we begin the transaction with an empty list of contract creations. */
+    void clearProvisionalContractCreations();
 }

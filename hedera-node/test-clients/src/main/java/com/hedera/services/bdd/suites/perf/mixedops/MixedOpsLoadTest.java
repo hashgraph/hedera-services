@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.perf.mixedops;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -76,16 +77,14 @@ import org.apache.logging.log4j.Logger;
 public class MixedOpsLoadTest extends LoadTest {
     private static final Logger log = LogManager.getLogger(MixedOpsLoadTest.class);
     private static final int NUM_SUBMISSIONS = 100;
+    private static final String SUBMIT_KEY = "submitKey";
+    private static final String TOKEN = "token";
     private final ResponseCodeEnum[] permissiblePrechecks =
-            new ResponseCodeEnum[] {
-                BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, UNKNOWN
-            };
+            new ResponseCodeEnum[] {BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, UNKNOWN};
 
     private static String sender = "sender";
     private static String receiver = "receiver";
-    private static String submitKey = "submitKey";
     private static String topic = "topic";
-    private static String token = "token";
     private static String schedule = "schedule";
     private static int messageSize = 1024;
 
@@ -106,105 +105,83 @@ public class MixedOpsLoadTest extends LoadTest {
         AtomicInteger tokenId = new AtomicInteger(0);
         AtomicInteger scheduleId = new AtomicInteger(0);
 
-        Supplier<HapiSpecOperation[]> mixedOpsBurst =
-                () ->
-                        new HapiSpecOperation[] {
-                            cryptoTransfer(tinyBarsFromTo(sender, receiver, 1L))
-                                    .noLogging()
-                                    .payingWith(sender)
-                                    .signedBy(GENESIS)
-                                    .suppressStats(true)
-                                    .fee(ONE_HBAR)
-                                    .hasKnownStatusFrom(
-                                            SUCCESS,
-                                            OK,
-                                            INSUFFICIENT_PAYER_BALANCE,
-                                            UNKNOWN,
-                                            TRANSACTION_EXPIRED)
-                                    .hasRetryPrecheckFrom(
-                                            BUSY,
-                                            DUPLICATE_TRANSACTION,
-                                            PLATFORM_TRANSACTION_NOT_CREATED,
-                                            PAYER_ACCOUNT_NOT_FOUND)
-                                    .deferStatusResolution(),
-                            submitMessageTo(topic)
-                                    .message(
-                                            ArrayUtils.addAll(
-                                                    ByteBuffer.allocate(8)
-                                                            .putLong(Instant.now().toEpochMilli())
-                                                            .array(),
-                                                    randomUtf8Bytes(messageSize - 8)))
-                                    .noLogging()
-                                    .payingWith(GENESIS)
-                                    .signedBy(sender, submitKey)
-                                    .fee(ONE_HBAR)
-                                    .suppressStats(true)
-                                    .hasRetryPrecheckFrom(
-                                            BUSY,
-                                            DUPLICATE_TRANSACTION,
-                                            PLATFORM_TRANSACTION_NOT_CREATED,
-                                            TOPIC_EXPIRED,
-                                            INVALID_TOPIC_ID,
-                                            INSUFFICIENT_PAYER_BALANCE)
-                                    .hasKnownStatusFrom(
-                                            SUCCESS,
-                                            OK,
-                                            INVALID_TOPIC_ID,
-                                            INSUFFICIENT_PAYER_BALANCE,
-                                            UNKNOWN,
-                                            TRANSACTION_EXPIRED)
-                                    .deferStatusResolution(),
-                            r.nextInt(100) > 5
-                                    ? cryptoTransfer(
-                                                    moving(1, token + r.nextInt(NUM_SUBMISSIONS))
-                                                            .between(sender, receiver))
-                                            .payingWith(sender)
-                                            .signedBy(GENESIS)
-                                            .fee(ONE_HUNDRED_HBARS)
-                                            .noLogging()
-                                            .suppressStats(true)
-                                            .hasPrecheckFrom(
-                                                    OK,
-                                                    INSUFFICIENT_PAYER_BALANCE,
-                                                    EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS,
-                                                    DUPLICATE_TRANSACTION)
-                                            .hasRetryPrecheckFrom(permissiblePrechecks)
-                                            .hasKnownStatusFrom(
-                                                    SUCCESS,
-                                                    OK,
-                                                    INSUFFICIENT_TOKEN_BALANCE,
-                                                    TRANSACTION_EXPIRED,
-                                                    INVALID_TOKEN_ID,
-                                                    UNKNOWN,
-                                                    TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
-                                            .deferStatusResolution()
-                                    : scheduleSign(
-                                                    schedule
-                                                            + "-"
-                                                            + getHostName()
-                                                            + "-"
-                                                            + r.nextInt(NUM_SUBMISSIONS))
-                                            .ignoreIfMissing()
-                                            .noLogging()
-                                            .alsoSigningWith(receiver)
-                                            .hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)
-                                            .hasKnownStatusFrom(
-                                                    SUCCESS,
-                                                    OK,
-                                                    TRANSACTION_EXPIRED,
-                                                    INVALID_SCHEDULE_ID,
-                                                    UNKNOWN,
-                                                    SCHEDULE_ALREADY_EXECUTED)
-                                            .fee(ONE_HBAR)
-                                            .deferStatusResolution()
-                        };
+        Supplier<HapiSpecOperation[]> mixedOpsBurst = () -> new HapiSpecOperation[] {
+            cryptoTransfer(tinyBarsFromTo(sender, receiver, 1L))
+                    .noLogging()
+                    .payingWith(sender)
+                    .signedBy(GENESIS)
+                    .suppressStats(true)
+                    .fee(ONE_HBAR)
+                    .hasKnownStatusFrom(SUCCESS, OK, INSUFFICIENT_PAYER_BALANCE, UNKNOWN, TRANSACTION_EXPIRED)
+                    .hasRetryPrecheckFrom(
+                            BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, PAYER_ACCOUNT_NOT_FOUND)
+                    .deferStatusResolution(),
+            submitMessageTo(topic)
+                    .message(ArrayUtils.addAll(
+                            ByteBuffer.allocate(8)
+                                    .putLong(Instant.now().toEpochMilli())
+                                    .array(),
+                            randomUtf8Bytes(messageSize - 8)))
+                    .noLogging()
+                    .payingWith(GENESIS)
+                    .signedBy(sender, SUBMIT_KEY)
+                    .fee(ONE_HBAR)
+                    .suppressStats(true)
+                    .hasRetryPrecheckFrom(
+                            BUSY,
+                            DUPLICATE_TRANSACTION,
+                            PLATFORM_TRANSACTION_NOT_CREATED,
+                            TOPIC_EXPIRED,
+                            INVALID_TOPIC_ID,
+                            INSUFFICIENT_PAYER_BALANCE)
+                    .hasKnownStatusFrom(
+                            SUCCESS, OK, INVALID_TOPIC_ID, INSUFFICIENT_PAYER_BALANCE, UNKNOWN, TRANSACTION_EXPIRED)
+                    .deferStatusResolution(),
+            r.nextInt(100) > 5
+                    ? cryptoTransfer(moving(1, TOKEN + r.nextInt(NUM_SUBMISSIONS))
+                                    .between(sender, receiver))
+                            .payingWith(sender)
+                            .signedBy(GENESIS)
+                            .fee(ONE_HUNDRED_HBARS)
+                            .noLogging()
+                            .suppressStats(true)
+                            .hasPrecheckFrom(
+                                    OK,
+                                    INSUFFICIENT_PAYER_BALANCE,
+                                    EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS,
+                                    DUPLICATE_TRANSACTION)
+                            .hasRetryPrecheckFrom(permissiblePrechecks)
+                            .hasKnownStatusFrom(
+                                    SUCCESS,
+                                    OK,
+                                    INSUFFICIENT_TOKEN_BALANCE,
+                                    TRANSACTION_EXPIRED,
+                                    INVALID_TOKEN_ID,
+                                    UNKNOWN,
+                                    TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
+                            .deferStatusResolution()
+                    : scheduleSign(schedule + "-" + getHostName() + "-" + r.nextInt(NUM_SUBMISSIONS))
+                            .ignoreIfMissing()
+                            .noLogging()
+                            .alsoSigningWith(receiver)
+                            .hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)
+                            .hasKnownStatusFrom(
+                                    SUCCESS,
+                                    OK,
+                                    TRANSACTION_EXPIRED,
+                                    INVALID_SCHEDULE_ID,
+                                    UNKNOWN,
+                                    SCHEDULE_ALREADY_EXECUTED)
+                            .fee(ONE_HBAR)
+                            .deferStatusResolution()
+        };
 
         return defaultHapiSpec("RunMixedOps")
                 .given(
                         withOpContext(
                                 (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
                         logIt(ignore -> settings.toString()),
-                        newKeyNamed("submitKey"),
+                        newKeyNamed(SUBMIT_KEY),
                         tokenOpsEnablement(),
                         scheduleOpsEnablement(),
                         cryptoCreate("treasury")
@@ -213,18 +190,17 @@ public class MixedOpsLoadTest extends LoadTest {
                 .when(
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(GENESIS)
-                                .overridingProps(
-                                        Map.of(
-                                                "hapi.throttling.buckets.fastOpBucket.capacity",
-                                                "1300000.0",
-                                                "hapi.throttling.ops.consensusUpdateTopic.capacityRequired",
-                                                "1.0",
-                                                "hapi.throttling.ops.consensusGetTopicInfo.capacityRequired",
-                                                "1.0",
-                                                "hapi.throttling.ops.consensusSubmitMessage.capacityRequired",
-                                                "1.0",
-                                                "tokens.maxPerAccount",
-                                                "10000000")),
+                                .overridingProps(Map.of(
+                                        "hapi.throttling.buckets.fastOpBucket.capacity",
+                                        "1300000.0",
+                                        "hapi.throttling.ops.consensusUpdateTopic.capacityRequired",
+                                        "1.0",
+                                        "hapi.throttling.ops.consensusGetTopicInfo.capacityRequired",
+                                        "1.0",
+                                        "hapi.throttling.ops.consensusSubmitMessage.capacityRequired",
+                                        "1.0",
+                                        "tokens.maxPerAccount",
+                                        "10000000")),
                         cryptoCreate(sender)
                                 .balance(initialBalance.getAsLong())
                                 .withRecharging()
@@ -234,76 +210,51 @@ public class MixedOpsLoadTest extends LoadTest {
                         cryptoCreate(receiver)
                                 .hasRetryPrecheckFrom(permissiblePrechecks)
                                 .key(GENESIS),
-                        createTopic(topic).submitKeyName("submitKey"),
-                        inParallel(
-                                IntStream.range(0, NUM_SUBMISSIONS)
-                                        .mapToObj(
-                                                ignore ->
-                                                        tokenCreate(
-                                                                        "token"
-                                                                                + tokenId
-                                                                                        .getAndIncrement())
-                                                                .payingWith(GENESIS)
-                                                                .signedBy(GENESIS)
-                                                                .fee(ONE_HUNDRED_HBARS)
-                                                                .initialSupply(ONE_HUNDRED_HBARS)
-                                                                .treasury("treasury")
-                                                                .hasRetryPrecheckFrom(
-                                                                        permissiblePrechecks)
-                                                                .hasPrecheckFrom(
-                                                                        DUPLICATE_TRANSACTION, OK)
-                                                                .deferStatusResolution()
-                                                                .noLogging())
-                                        .toArray(n -> new HapiSpecOperation[n])),
+                        createTopic(topic).submitKeyName(SUBMIT_KEY),
+                        inParallel(IntStream.range(0, NUM_SUBMISSIONS)
+                                .mapToObj(ignore -> tokenCreate(TOKEN + tokenId.getAndIncrement())
+                                        .payingWith(GENESIS)
+                                        .signedBy(GENESIS)
+                                        .fee(ONE_HUNDRED_HBARS)
+                                        .initialSupply(ONE_HUNDRED_HBARS)
+                                        .treasury("treasury")
+                                        .hasRetryPrecheckFrom(permissiblePrechecks)
+                                        .hasPrecheckFrom(DUPLICATE_TRANSACTION, OK)
+                                        .deferStatusResolution()
+                                        .noLogging())
+                                .toArray(n -> new HapiSpecOperation[n])),
                         sleepFor(10000),
-                        inParallel(
-                                IntStream.range(0, NUM_SUBMISSIONS)
-                                        .mapToObj(
-                                                ignore ->
-                                                        scheduleCreate(
-                                                                        "schedule-"
-                                                                                + getHostName()
-                                                                                + "-"
-                                                                                + scheduleId
-                                                                                        .getAndIncrement(),
-                                                                        cryptoTransfer(
-                                                                                tinyBarsFromTo(
-                                                                                        sender,
-                                                                                        receiver,
-                                                                                        1)))
-                                                                .signedBy(DEFAULT_PAYER)
-                                                                .fee(ONE_HUNDRED_HBARS)
-                                                                .alsoSigningWith(sender)
-                                                                .hasPrecheckFrom(
-                                                                        STANDARD_PERMISSIBLE_PRECHECKS)
-                                                                .hasAnyKnownStatus()
-                                                                .deferStatusResolution()
-                                                                .adminKey(DEFAULT_PAYER)
-                                                                .noLogging())
-                                        .toArray(n -> new HapiSpecOperation[n])),
+                        inParallel(IntStream.range(0, NUM_SUBMISSIONS)
+                                .mapToObj(ignore -> scheduleCreate(
+                                                "schedule-" + getHostName() + "-" + scheduleId.getAndIncrement(),
+                                                cryptoTransfer(tinyBarsFromTo(sender, receiver, 1)))
+                                        .signedBy(DEFAULT_PAYER)
+                                        .fee(ONE_HUNDRED_HBARS)
+                                        .alsoSigningWith(sender)
+                                        .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+                                        .hasAnyKnownStatus()
+                                        .deferStatusResolution()
+                                        .adminKey(DEFAULT_PAYER)
+                                        .noLogging())
+                                .toArray(n -> new HapiSpecOperation[n])),
                         sleepFor(10000),
-                        inParallel(
-                                IntStream.range(0, NUM_SUBMISSIONS)
-                                        .mapToObj(
-                                                i ->
-                                                        tokenAssociate(sender, "token" + i)
-                                                                .payingWith(GENESIS)
-                                                                .signedBy(GENESIS)
-                                                                .hasRetryPrecheckFrom(
-                                                                        permissiblePrechecks)
-                                                                .hasPrecheckFrom(
-                                                                        DUPLICATE_TRANSACTION, OK)
-                                                                .hasKnownStatusFrom(
-                                                                        SUCCESS,
-                                                                        TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT,
-                                                                        INVALID_TOKEN_ID,
-                                                                        TRANSACTION_EXPIRED,
-                                                                        OK)
-                                                                .fee(ONE_HUNDRED_HBARS)
-                                                                .suppressStats(true)
-                                                                .deferStatusResolution()
-                                                                .noLogging())
-                                        .toArray(n -> new HapiSpecOperation[n])),
+                        inParallel(IntStream.range(0, NUM_SUBMISSIONS)
+                                .mapToObj(i -> tokenAssociate(sender, TOKEN + i)
+                                        .payingWith(GENESIS)
+                                        .signedBy(GENESIS)
+                                        .hasRetryPrecheckFrom(permissiblePrechecks)
+                                        .hasPrecheckFrom(DUPLICATE_TRANSACTION, OK)
+                                        .hasKnownStatusFrom(
+                                                SUCCESS,
+                                                TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT,
+                                                INVALID_TOKEN_ID,
+                                                TRANSACTION_EXPIRED,
+                                                OK)
+                                        .fee(ONE_HUNDRED_HBARS)
+                                        .suppressStats(true)
+                                        .deferStatusResolution()
+                                        .noLogging())
+                                .toArray(n -> new HapiSpecOperation[n])),
                         sleepFor(10000))
                 .then(defaultLoadTest(mixedOpsBurst, settings));
     }

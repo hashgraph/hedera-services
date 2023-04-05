@@ -13,11 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.execution.traceability;
 
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.services.stream.proto.ContractAction;
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+import org.apache.tuweni.bytes.Bytes;
 
 public class SolidityAction {
     private static final byte[] MISSING_BYTES = new byte[0];
@@ -31,7 +37,7 @@ public class SolidityAction {
     private EntityId recipientContract;
     private byte[] invalidSolidityAddress;
     private final long value;
-    private long gasUsed;
+    private long gasUsed = 0L;
     private byte[] output;
     private byte[] revertReason;
     private byte[] error;
@@ -49,6 +55,53 @@ public class SolidityAction {
         this.input = input == null ? MISSING_BYTES : input;
         this.value = value;
         this.callDepth = callDepth;
+    }
+
+    /**
+     * Check that the fields are set correctly for the semantics of the underlying protobuf
+     *
+     * Respecting, for example, protobuf `oneof` unions... (but allowing for `oneof recipient` to be missing
+     * entirely, because that's ok)
+     */
+    public boolean isValid() {
+        boolean ok = true;
+        ok &= null != getCallType() && ContractActionType.NO_ACTION != getCallType();
+        ok &= 1 == countNonNulls(getCallingAccount(), getCallingContract());
+        ok &= null != getInput();
+        ok &= 1 >= countNonNulls(getRecipientAccount(), getRecipientContract(), getInvalidSolidityAddress());
+        ok &= 1 == countNonNulls(getOutput(), getRevertReason(), getError());
+        ok &= null != getCallOperationType() && CallOperationType.OP_UNKNOWN != getCallOperationType();
+        return ok;
+    }
+
+    public String toFullString() {
+        final var sb = new StringBuilder();
+
+        Function<Object, String> fobj = o -> null != o ? o.toString() : "<null>";
+        Function<byte[], String> fbytes =
+                b -> null != b ? (0 != b.length ? Bytes.wrap(b).toHexString() : "<empty>") : "<null>";
+        BiConsumer<String, Object> ff =
+                (n, o) -> sb.append("%s: %s, ".formatted(n, o instanceof byte[] b ? fbytes.apply(b) : fobj.apply(o)));
+
+        sb.append("SolidityAction(");
+        ff.accept("callType", callType);
+        ff.accept("callOperationType", callOperationType);
+        ff.accept("value", value);
+        ff.accept("gas", gas);
+        ff.accept("gasUsed", gasUsed);
+        ff.accept("callDepth", callDepth);
+        ff.accept("callingAccount", callingAccount);
+        ff.accept("callingContract", callingContract);
+        ff.accept("recipientAccount", recipientAccount);
+        ff.accept("recipientContract", recipientContract);
+        ff.accept("invalidSolidityAddress (aka targetedAddress)", invalidSolidityAddress);
+        ff.accept("input", input);
+        ff.accept("output", output);
+        ff.accept("revertReason", revertReason);
+        ff.accept("error", error);
+        sb.setLength(sb.length() - 2);
+        sb.append(")");
+        return sb.toString();
     }
 
     public ContractActionType getCallType() {
@@ -157,8 +210,7 @@ public class SolidityAction {
 
     public ContractAction toGrpc() {
         final var grpc = ContractAction.newBuilder();
-        grpc.setCallType(
-                com.hedera.services.stream.proto.ContractActionType.forNumber(callType.ordinal()));
+        grpc.setCallType(com.hedera.services.stream.proto.ContractActionType.forNumber(callType.ordinal()));
         if (callingAccount != null) {
             grpc.setCallingAccount(callingAccount.toGrpcAccountId());
         } else if (callingContract != null) {
@@ -174,7 +226,7 @@ public class SolidityAction {
             grpc.setTargetedAddress(ByteStringUtils.wrapUnsafely(invalidSolidityAddress));
         }
         grpc.setValue(value);
-        grpc.setGasUsed(gasUsed);
+        grpc.setGasUsed(getGasUsed());
         if (output != null) {
             grpc.setOutput(ByteStringUtils.wrapUnsafely(output));
         } else if (revertReason != null) {
@@ -184,8 +236,11 @@ public class SolidityAction {
         }
         grpc.setCallDepth(callDepth);
         grpc.setCallOperationType(
-                com.hedera.services.stream.proto.CallOperationType.forNumber(
-                        callOperationType.ordinal()));
+                com.hedera.services.stream.proto.CallOperationType.forNumber(callOperationType.ordinal()));
         return grpc.build();
+    }
+
+    private static long countNonNulls(Object... objs) {
+        return Arrays.stream(objs).filter(Objects::nonNull).count();
     }
 }

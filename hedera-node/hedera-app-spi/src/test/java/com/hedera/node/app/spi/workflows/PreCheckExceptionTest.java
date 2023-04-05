@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.workflows;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import org.junit.jupiter.api.Test;
 
 class PreCheckExceptionTest {
@@ -36,7 +37,6 @@ class PreCheckExceptionTest {
     @SuppressWarnings({"ThrowableNotThrown", "ConstantConditions"})
     @Test
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(() -> new PreCheckException(null))
-                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new PreCheckException(null)).isInstanceOf(NullPointerException.class);
     }
 }

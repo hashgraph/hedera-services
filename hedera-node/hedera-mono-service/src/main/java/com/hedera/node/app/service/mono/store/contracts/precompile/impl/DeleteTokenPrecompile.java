@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.BYTES32;
@@ -21,6 +22,7 @@ import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.DELETE;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -61,12 +63,7 @@ public class DeleteTokenPrecompile extends AbstractWritePrecompile {
             SyntheticTxnFactory syntheticTxnFactory,
             InfrastructureFactory infrastructureFactory,
             PrecompilePricingUtils precompilePricingUtils) {
-        super(
-                ledgers,
-                sideEffectsTracker,
-                syntheticTxnFactory,
-                infrastructureFactory,
-                precompilePricingUtils);
+        super(ledgers, sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, precompilePricingUtils);
         this.aliases = aliases;
         this.sigsVerifier = sigsVerifier;
     }
@@ -80,8 +77,7 @@ public class DeleteTokenPrecompile extends AbstractWritePrecompile {
 
     @Override
     public long getMinimumFeeInTinybars(Timestamp consensusTime) {
-        Objects.requireNonNull(
-                deleteOp, "`body` method should be called before `getMinimumFeeInTinybars`");
+        Objects.requireNonNull(deleteOp, "`body` method should be called before `getMinimumFeeInTinybars`");
         return pricingUtils.getMinimumPriceInTinybars(DELETE, consensusTime);
     }
 
@@ -91,24 +87,14 @@ public class DeleteTokenPrecompile extends AbstractWritePrecompile {
 
         /* --- Check required signatures --- */
         final var tokenId = Id.fromGrpcToken(deleteOp.tokenID());
-        final var hasRequiredSigs =
-                KeyActivationUtils.validateKey(
-                        frame,
-                        tokenId.asEvmAddress(),
-                        sigsVerifier::hasActiveAdminKey,
-                        ledgers,
-                        aliases);
+        final var hasRequiredSigs = KeyActivationUtils.validateKey(
+                frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveAdminKey, ledgers, aliases, TokenDelete);
         validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
         /* --- Build the necessary infrastructure to execute the transaction --- */
         final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());
-        final var tokenStore =
-                infrastructureFactory.newTokenStore(
-                        accountStore,
-                        sideEffects,
-                        ledgers.tokens(),
-                        ledgers.nfts(),
-                        ledgers.tokenRels());
+        final var tokenStore = infrastructureFactory.newTokenStore(
+                accountStore, sideEffects, ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels());
 
         final var deleteLogic = infrastructureFactory.newDeleteLogic(accountStore, tokenStore);
         final var validity = deleteLogic.validate(transactionBody.build());
@@ -119,8 +105,7 @@ public class DeleteTokenPrecompile extends AbstractWritePrecompile {
     }
 
     public static DeleteWrapper decodeDelete(final Bytes input) {
-        final Tuple decodedArguments =
-                decodeFunctionCall(input, DELETE_TOKEN_SELECTOR, DELETE_TOKEN_DECODER);
+        final Tuple decodedArguments = decodeFunctionCall(input, DELETE_TOKEN_SELECTOR, DELETE_TOKEN_DECODER);
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
 
         return new DeleteWrapper(tokenID);

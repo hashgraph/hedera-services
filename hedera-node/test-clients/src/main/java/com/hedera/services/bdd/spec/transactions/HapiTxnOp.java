@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions;
 
 import static com.hedera.services.bdd.spec.fees.Payment.Reason.TXN_FEE;
@@ -78,12 +79,10 @@ import org.apache.tuweni.bytes.Bytes;
 public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperation {
     private static final Logger log = LogManager.getLogger(HapiTxnOp.class);
 
-    private static final Response UNKNOWN_RESPONSE =
-            Response.newBuilder()
-                    .setTransactionGetReceipt(
-                            TransactionGetReceiptResponse.newBuilder()
-                                    .setReceipt(TransactionReceipt.newBuilder().setStatus(UNKNOWN)))
-                    .build();
+    private static final Response UNKNOWN_RESPONSE = Response.newBuilder()
+            .setTransactionGetReceipt(TransactionGetReceiptResponse.newBuilder()
+                    .setReceipt(TransactionReceipt.newBuilder().setStatus(UNKNOWN)))
+            .build();
 
     private long submitTime = 0L;
     private TxnObs stats;
@@ -145,10 +144,11 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
             Transaction txn = finalizedTxn(spec, opBodyDef(spec));
 
             if (!loggingOff) {
-                log.info(spec.logPrefix() + " submitting " + this + " via " + txnToString(txn));
+                String message = String.format("%s submitting %s via %s", spec.logPrefix(), this, txnToString(txn));
+                log.info(message);
             }
 
-            TransactionResponse response = null;
+            TransactionResponse response;
             try {
                 if (fiddler.isPresent()) {
                     txn = fiddler.get().apply(txn);
@@ -157,10 +157,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
             } catch (StatusRuntimeException e) {
                 var msg = e.toString();
                 if (isRecognizedRecoverable(msg)) {
-                    log.info(
-                            "Recognized recoverable runtime exception {}, retrying status"
-                                    + " resolution...",
-                            msg);
+                    log.info("Recognized recoverable runtime exception {}, retrying status" + " resolution...", msg);
                     continue;
                 } else {
                     if (spec.setup().suppressUnrecoverableNetworkFailures()) {
@@ -202,10 +199,9 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
                 if (permissiblePrechecks.get().contains(actualPrecheck)) {
                     expectedPrecheck = Optional.of(actualPrecheck);
                 } else {
-                    throw new HapiTxnPrecheckStateException(
-                            String.format(
-                                    "Wrong precheck status! Expected one of %s, actual %s",
-                                    permissiblePrechecks.get(), actualPrecheck));
+                    throw new HapiTxnPrecheckStateException(String.format(
+                            "Wrong precheck status! Expected one of %s, actual %s",
+                            permissiblePrechecks.get(), actualPrecheck));
                 }
             } else {
                 if (getExpectedPrecheck() != actualPrecheck) {
@@ -217,10 +213,8 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
                             this,
                             actualPrecheck,
                             getExpectedPrecheck());
-                    throw new HapiTxnPrecheckStateException(
-                            String.format(
-                                    "Wrong precheck status! Expected %s, actual %s",
-                                    getExpectedPrecheck(), actualPrecheck));
+                    throw new HapiTxnPrecheckStateException(String.format(
+                            "Wrong precheck status! Expected %s, actual %s", getExpectedPrecheck(), actualPrecheck));
                 }
             }
         }
@@ -272,10 +266,8 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
                         this,
                         actualStatus,
                         permissibleStatuses.get());
-                throw new HapiTxnCheckStateException(
-                        String.format(
-                                "Wrong status! Expected one of %s, was %s",
-                                permissibleStatuses.get(), actualStatus));
+                throw new HapiTxnCheckStateException(String.format(
+                        "Wrong status! Expected one of %s, was %s", permissibleStatuses.get(), actualStatus));
             }
         } else {
             if (getExpectedStatus() != actualStatus) {
@@ -288,9 +280,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
                         actualStatus,
                         getExpectedStatus());
                 throw new HapiTxnCheckStateException(
-                        String.format(
-                                "Wrong status! Expected %s, was %s",
-                                getExpectedStatus(), actualStatus));
+                        String.format("Wrong status! Expected %s, was %s", getExpectedStatus(), actualStatus));
             }
         }
         if (!deferStatusResolution) {
@@ -306,9 +296,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
     private void rechargePayerFor(HapiSpec spec) {
         long rechargeAmount = spec.registry().getRechargeAmount(payer.get());
         var bank = spec.setup().defaultPayerName();
-        spec.registry()
-                .setRechargingTime(
-                        payer.get(), Instant.now()); // record timestamp of last recharge event
+        spec.registry().setRechargingTime(payer.get(), Instant.now()); // record timestamp of last recharge event
         allRunFor(spec, cryptoTransfer(tinyBarsFromTo(bank, payer.get(), rechargeAmount)));
     }
 
@@ -325,9 +313,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
     private void addIpbToPermissiblePrechecks() {
         if (permissiblePrechecks.isEmpty()) {
             permissiblePrechecks =
-                    Optional.of(
-                            EnumSet.copyOf(
-                                    List.of(OK, INSUFFICIENT_PAYER_BALANCE, INSUFFICIENT_TX_FEE)));
+                    Optional.of(EnumSet.copyOf(List.of(OK, INSUFFICIENT_PAYER_BALANCE, INSUFFICIENT_TX_FEE)));
         } else if (!permissiblePrechecks.get().contains(INSUFFICIENT_PAYER_BALANCE)
                 || !permissiblePrechecks.get().contains(INSUFFICIENT_TX_FEE)) {
             permissiblePrechecks = Optional.of(addIpbToleranceTo(permissiblePrechecks.get()));
@@ -336,8 +322,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
     private void addIpbToPermissibleStatuses() {
         if (permissibleStatuses.isEmpty()) {
-            permissibleStatuses =
-                    Optional.of(EnumSet.copyOf(List.of(SUCCESS, INSUFFICIENT_PAYER_BALANCE)));
+            permissibleStatuses = Optional.of(EnumSet.copyOf(List.of(SUCCESS, INSUFFICIENT_PAYER_BALANCE)));
         } else if (!permissibleStatuses.get().contains(INSUFFICIENT_PAYER_BALANCE)) {
             permissibleStatuses = Optional.of(addIpbToleranceTo(permissibleStatuses.get()));
         }
@@ -370,8 +355,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
             will submit a similar transaction again, with new transaction IDs. No need to throw an exception.
              */
             log.warn(
-                    "{} {} Memo didn't come from submitted transaction! actual memo {}, recorded"
-                            + " {}.",
+                    "{} {} Memo didn't come from submitted transaction! actual memo {}, recorded" + " {}.",
                     spec.logPrefix(),
                     this,
                     memo.get(),
@@ -382,8 +366,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
     @Override
     public boolean requiresFinalization(HapiSpec spec) {
-        return (actualPrecheck == OK)
-                && (deferStatusResolution || hasStatsToCollectDuringFinalization(spec));
+        return (actualPrecheck == OK) && (deferStatusResolution || hasStatsToCollectDuringFinalization(spec));
     }
 
     private boolean hasStatsToCollectDuringFinalization(HapiSpec spec) {
@@ -472,10 +455,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
             } catch (Exception e) {
                 var msg = e.toString();
                 if (isRecognizedRecoverable(msg)) {
-                    log.info(
-                            "Recognized recoverable runtime exception {}, retrying status"
-                                    + " resolution...",
-                            msg);
+                    log.info("Recognized recoverable runtime exception {}, retrying status" + " resolution...", msg);
                     continue;
                 }
                 log.warn(
@@ -499,8 +479,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
                 || msg.contains("REFUSED_STREAM");
     }
 
-    private void considerRecordingAdHocReceiptQueryStats(
-            HapiSpecRegistry registry, long responseLatency) {
+    private void considerRecordingAdHocReceiptQueryStats(HapiSpecRegistry registry, long responseLatency) {
         if (!suppressStats && !deferStatusResolution) {
             QueryObs adhocStats = new QueryObs(ANSWER_ONLY, TransactionGetReceipt);
             adhocStats.setAccepted(true);
@@ -519,8 +498,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
     }
 
     protected KeyGenerator effectiveKeyGen() {
-        return (keyGen.orElse(KeyGenerator.Nature.RANDOMIZED)
-                        == KeyGenerator.Nature.WITH_OVERLAPPING_PREFIXES)
+        return (keyGen.orElse(KeyGenerator.Nature.RANDOMIZED) == KeyGenerator.Nature.WITH_OVERLAPPING_PREFIXES)
                 ? OverlappingKeyGenerator.withDefaultOverlaps()
                 : DEFAULT_KEY_GEN;
     }
@@ -575,12 +553,9 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
     }
 
     public T signedBy(String... keys) {
-        signers =
-                Optional.of(
-                        Stream.of(keys)
-                                .<Function<HapiSpec, Key>>map(
-                                        k -> spec -> spec.registry().getKey(k))
-                                .collect(toList()));
+        signers = Optional.of(Stream.of(keys)
+                .<Function<HapiSpec, Key>>map(k -> spec -> spec.registry().getKey(k))
+                .collect(toList()));
         return self();
     }
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.freeze;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -40,12 +41,10 @@ import org.junit.jupiter.api.Assertions;
 public class UpdateServerFiles extends HapiSuite {
     private static final Logger log = LogManager.getLogger(UpdateServerFiles.class);
     private static final String zipFile = "Archive.zip";
-    private static final String DEFAULT_SCRIPT =
-            "src/main/resource/testfiles/updateFeature/updateSettings/exec.sh";
+    private static final String DEFAULT_SCRIPT = "src/main/resource/testfiles/updateFeature/updateSettings/exec.sh";
 
     private static String uploadPath = "updateFiles/";
 
-    private static final int FREEZE_LAST_MINUTES = 2;
     private static String fileIDString = "UPDATE_FEATURE"; // mnemonic for file 0.0.150
 
     public static void main(final String... args) {
@@ -79,7 +78,7 @@ public class UpdateServerFiles extends HapiSuite {
     // then send to server to update server
     private HapiSpec uploadGivenDirectory() {
 
-        log.info("Creating zip file from " + uploadPath);
+        log.info("Creating zip file from {}", uploadPath);
         // create directory if uploadPath doesn't exist
         if (!new File(uploadPath).exists()) {
             new File(uploadPath).mkdirs();
@@ -105,7 +104,7 @@ public class UpdateServerFiles extends HapiSuite {
             createZip(temp_dir, zipFile, DEFAULT_SCRIPT);
             final String uploadFile = zipFile;
 
-            log.info("Uploading file " + uploadFile);
+            log.info("Uploading file {}", uploadFile);
             data = Files.readAllBytes(Paths.get(uploadFile));
         } catch (final IOException e) {
             log.error("Directory creation failed", e);
@@ -118,13 +117,12 @@ public class UpdateServerFiles extends HapiSuite {
                                 .payingWith(ADDRESS_BOOK_CONTROL)
                                 .overridingProps(Map.of("maxFileSize", "2048000")),
                         UtilVerbs.updateLargeFile(GENESIS, fileIDString, ByteString.copyFrom(data)))
-                .when(
-                        freezeUpgrade()
-                                .withUpdateFile(fileIDString)
-                                .havingHash(hash)
-                                .payingWith(GENESIS)
-                                .startingIn(60)
-                                .seconds())
+                .when(freezeUpgrade()
+                        .withUpdateFile(fileIDString)
+                        .havingHash(hash)
+                        .payingWith(GENESIS)
+                        .startingIn(60)
+                        .seconds())
                 .then();
     }
 }

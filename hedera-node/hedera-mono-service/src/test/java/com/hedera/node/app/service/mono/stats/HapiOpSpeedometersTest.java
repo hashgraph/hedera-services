@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stats;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
@@ -41,24 +42,42 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HapiOpSpeedometersTest {
-    @Mock private Platform platform;
-    @Mock private HapiOpCounters counters;
-    @Mock private NodeLocalProperties properties;
-    @Mock private Metrics metrics;
-    @Mock private SpeedometerMetric xferReceived;
-    @Mock private SpeedometerMetric xferSubmitted;
-    @Mock private SpeedometerMetric xferHandled;
-    @Mock private SpeedometerMetric infoReceived;
-    @Mock private SpeedometerMetric infoAnswered;
-    @Mock private SpeedometerMetric xferDeprecatedRcvd;
+    @Mock
+    private Platform platform;
+
+    @Mock
+    private HapiOpCounters counters;
+
+    @Mock
+    private NodeLocalProperties properties;
+
+    @Mock
+    private Metrics metrics;
+
+    @Mock
+    private SpeedometerMetric xferReceived;
+
+    @Mock
+    private SpeedometerMetric xferSubmitted;
+
+    @Mock
+    private SpeedometerMetric xferHandled;
+
+    @Mock
+    private SpeedometerMetric infoReceived;
+
+    @Mock
+    private SpeedometerMetric infoAnswered;
+
+    @Mock
+    private SpeedometerMetric xferDeprecatedRcvd;
 
     private Function<HederaFunctionality, String> statNameFn;
     private HapiOpSpeedometers subject;
 
     @BeforeEach
     void setup() {
-        HapiOpSpeedometers.allFunctions =
-                () -> new HederaFunctionality[] {CryptoTransfer, TokenGetInfo};
+        HapiOpSpeedometers.allFunctions = () -> new HederaFunctionality[] {CryptoTransfer, TokenGetInfo};
 
         statNameFn = HederaFunctionality::toString;
 

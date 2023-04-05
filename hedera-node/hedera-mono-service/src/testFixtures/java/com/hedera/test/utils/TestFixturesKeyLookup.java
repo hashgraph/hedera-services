@@ -13,28 +13,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.utils;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.*;
-import static com.hedera.node.app.spi.KeyOrLookupFailureReason.*;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hedera.node.app.service.evm.store.models.HederaEvmAccount.EVM_ADDRESS_SIZE;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAlias;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.numFromEvmAddress;
+import static com.hedera.node.app.spi.KeyOrLookupFailureReason.PRESENT_BUT_NOT_REQUIRED;
+import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withFailureReason;
+import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
-import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
+import com.hedera.node.app.spi.accounts.Account;
+import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
+import org.apache.commons.lang3.NotImplementedException;
 
-public class TestFixturesKeyLookup implements AccountKeyLookup {
+public class TestFixturesKeyLookup implements AccountAccess {
     private final ReadableKVState<String, Long> aliases;
-    private final ReadableKVState<Long, HederaAccount> accounts;
+    private final ReadableKVState<EntityNumVirtualKey, HederaAccount> accounts;
 
     public TestFixturesKeyLookup(@NonNull final ReadableStates states) {
         this.accounts = states.get("ACCOUNTS");
@@ -76,6 +88,14 @@ public class TestFixturesKeyLookup implements AccountKeyLookup {
         return validateKey(account.getAccountKey(), true);
     }
 
+    private AccountID asAccount(final ContractID idOrAlias) {
+        return new AccountID.Builder()
+                .realmNum(idOrAlias.realmNum())
+                .shardNum(idOrAlias.shardNum())
+                .accountNum(idOrAlias.contractNumOrElse(0L))
+                .build();
+    }
+
     @Override
     public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(ContractID idOrAlias) {
         final var account = accounts.get(accountNumOf(asAccount(idOrAlias)));
@@ -92,6 +112,13 @@ public class TestFixturesKeyLookup implements AccountKeyLookup {
         }
     }
 
+    // how to deal this ?
+    @NonNull
+    @Override
+    public Optional<Account> getAccountById(@NonNull AccountID accountOrAlias) {
+        throw new NotImplementedException("getAccountById not implemented");
+    }
+
     private KeyOrLookupFailureReason validateKey(final JKey key, final boolean isContractKey) {
         if (key == null || key.isEmpty()) {
             if (isContractKey) {
@@ -105,21 +132,20 @@ public class TestFixturesKeyLookup implements AccountKeyLookup {
         }
     }
 
-    private Long accountNumOf(final AccountID id) {
-        if (isAlias(id)) {
-            final var alias = id.getAlias();
-            if (alias.size() == EVM_ADDRESS_SIZE) {
-                final var evmAddress = alias.toByteArray();
-                if (isMirror(evmAddress)) {
-                    return numFromEvmAddress(evmAddress);
+    private EntityNumVirtualKey accountNumOf(final AccountID id) {
+        if (isAlias(PbjConverter.fromPbj(id))) {
+            final var alias = id.alias();
+            if (alias != null) {
+                if (alias.length() == EVM_ADDRESS_SIZE) {
+                    final var evmAddress = PbjConverter.fromPbj(alias).toByteArray();
+                    if (isMirror(evmAddress)) {
+                        return EntityNumVirtualKey.fromLong(numFromEvmAddress(evmAddress));
+                    }
                 }
+                final var value = aliases.get(alias.asUtf8String());
+                return EntityNumVirtualKey.fromLong(value != null ? value : 0L);
             }
-            final var value = aliases.get(alias.toStringUtf8());
-            if (value == null) {
-                return 0L;
-            }
-            return value;
         }
-        return id.getAccountNum();
+        return EntityNumVirtualKey.fromLong(id.accountNumOrElse(0L));
     }
 }

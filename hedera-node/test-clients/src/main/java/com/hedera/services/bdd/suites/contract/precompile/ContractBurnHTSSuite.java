@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
@@ -72,16 +73,17 @@ public class ContractBurnHTSSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ContractBurnHTSSuite.class);
 
     private static final long GAS_TO_OFFER = 4_000_000L;
-    private static final String THE_CONTRACT = "BurnToken";
+    public static final String THE_BURN_CONTRACT = "BurnToken";
 
-    private static final String ALICE = "Alice";
+    public static final String ALICE = "Alice";
     private static final String TOKEN = "Token";
     private static final String TOKEN_TREASURY = "TokenTreasury";
     private static final String MULTI_KEY = "purpose";
     private static final String CONTRACT_KEY = "Contract key";
     private static final String SUPPLY_KEY = "Supply key";
-    private static final String CREATION_TX = "creationTx";
+    public static final String CREATION_TX = "creationTx";
     private static final String BURN_AFTER_NESTED_MINT_TX = "burnAfterNestedMint";
+    public static final String BURN_TOKEN_WITH_EVENT = "burnTokenWithEvent";
 
     public static void main(String... args) {
         new ContractBurnHTSSuite().runSuiteAsync();
@@ -121,110 +123,72 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                 .supplyKey(MULTI_KEY)
                                 .adminKey(MULTI_KEY)
                                 .treasury(TOKEN_TREASURY),
-                        uploadInitCode(THE_CONTRACT),
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCreate(
-                                                                THE_CONTRACT,
-                                                                asHeadlongAddress(
-                                                                        asHexedAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                TOKEN))))
-                                                        .payingWith(ALICE)
-                                                        .via(CREATION_TX)
-                                                        .gas(GAS_TO_OFFER))),
+                        uploadInitCode(THE_BURN_CONTRACT),
+                        withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                contractCreate(
+                                                THE_BURN_CONTRACT,
+                                                asHeadlongAddress(asHexedAddress(
+                                                        spec.registry().getTokenID(TOKEN))))
+                                        .payingWith(ALICE)
+                                        .via(CREATION_TX)
+                                        .gas(GAS_TO_OFFER))),
                         getTxnRecord(CREATION_TX).logged())
                 .when(
-                        contractCall(
-                                        THE_CONTRACT,
-                                        "burnTokenWithEvent",
-                                        BigInteger.ZERO,
-                                        new long[0])
+                        contractCall(THE_BURN_CONTRACT, BURN_TOKEN_WITH_EVENT, BigInteger.ZERO, new long[0])
                                 .payingWith(ALICE)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER)
                                 .via("burnZero"),
                         getTxnRecord("burnZero")
-                                .hasPriority(
-                                        recordWith()
-                                                .contractCallResult(
-                                                        resultWith()
-                                                                .logs(
-                                                                        inOrder(
-                                                                                logWith()
-                                                                                        .noData()
-                                                                                        .withTopicsInOrder(
-                                                                                                List
-                                                                                                        .of(
-                                                                                                                parsedToByteString(
-                                                                                                                        50))))))),
+                                .hasPriority(recordWith()
+                                        .contractCallResult(resultWith()
+                                                .logs(inOrder(logWith()
+                                                        .noData()
+                                                        .withTopicsInOrder(List.of(parsedToByteString(50))))))),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 50),
                         childRecordsCheck(
                                 "burnZero",
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .forFunction(
-                                                                                FunctionType
-                                                                                        .HAPI_BURN)
-                                                                        .withStatus(SUCCESS)
-                                                                        .withTotalSupply(50))
-                                                        .gasUsed(gasUsed))
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .forFunction(FunctionType.HAPI_BURN)
+                                                        .withStatus(SUCCESS)
+                                                        .withTotalSupply(50))
+                                                .gasUsed(gasUsed))
                                         .newTotalSupply(50)),
-                        contractCall(
-                                        THE_CONTRACT,
-                                        "burnTokenWithEvent",
-                                        BigInteger.ONE,
-                                        new long[0])
+                        contractCall(THE_BURN_CONTRACT, BURN_TOKEN_WITH_EVENT, BigInteger.ONE, new long[0])
                                 .payingWith(ALICE)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER)
                                 .via("burn"),
                         getTxnRecord("burn")
-                                .hasPriority(
-                                        recordWith()
-                                                .contractCallResult(
-                                                        resultWith()
-                                                                .logs(
-                                                                        inOrder(
-                                                                                logWith()
-                                                                                        .noData()
-                                                                                        .withTopicsInOrder(
-                                                                                                List
-                                                                                                        .of(
-                                                                                                                parsedToByteString(
-                                                                                                                        49))))))),
+                                .hasPriority(recordWith()
+                                        .contractCallResult(resultWith()
+                                                .logs(inOrder(logWith()
+                                                        .noData()
+                                                        .withTopicsInOrder(List.of(parsedToByteString(49))))))),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 49),
                         childRecordsCheck(
                                 "burn",
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .forFunction(
-                                                                                FunctionType
-                                                                                        .HAPI_BURN)
-                                                                        .withStatus(SUCCESS)
-                                                                        .withTotalSupply(49))
-                                                        .gasUsed(gasUsed))
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .forFunction(FunctionType.HAPI_BURN)
+                                                        .withStatus(SUCCESS)
+                                                        .withTotalSupply(49))
+                                                .gasUsed(gasUsed))
                                         .newTotalSupply(49)
                                         .tokenTransfers(
-                                                changingFungibleBalances()
-                                                        .including(TOKEN, TOKEN_TREASURY, -1))
+                                                changingFungibleBalances().including(TOKEN, TOKEN_TREASURY, -1))
                                         .newTotalSupply(49)),
-                        newKeyNamed(CONTRACT_KEY).shape(DELEGATE_CONTRACT.signedWith(THE_CONTRACT)),
+                        newKeyNamed(CONTRACT_KEY).shape(DELEGATE_CONTRACT.signedWith(THE_BURN_CONTRACT)),
                         tokenUpdate(TOKEN).supplyKey(CONTRACT_KEY),
-                        contractCall(THE_CONTRACT, "burnToken", BigInteger.ONE, new long[0])
+                        contractCall(THE_BURN_CONTRACT, "burnToken", BigInteger.ONE, new long[0])
                                 .via("burn with contract key")
                                 .gas(GAS_TO_OFFER),
                         childRecordsCheck(
@@ -232,19 +196,14 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .forFunction(
-                                                                                FunctionType
-                                                                                        .HAPI_BURN)
-                                                                        .withStatus(SUCCESS)
-                                                                        .withTotalSupply(48)))
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .forFunction(FunctionType.HAPI_BURN)
+                                                        .withStatus(SUCCESS)
+                                                        .withTotalSupply(48)))
                                         .newTotalSupply(48)
                                         .tokenTransfers(
-                                                changingFungibleBalances()
-                                                        .including(TOKEN, TOKEN_TREASURY, -1))))
+                                                changingFungibleBalances().including(TOKEN, TOKEN_TREASURY, -1))))
                 .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 48));
     }
 
@@ -262,53 +221,39 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                 .treasury(TOKEN_TREASURY),
                         mintToken(TOKEN, List.of(copyFromUtf8("First!"))),
                         mintToken(TOKEN, List.of(copyFromUtf8("Second!"))),
-                        uploadInitCode(THE_CONTRACT),
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCreate(
-                                                                THE_CONTRACT,
-                                                                asHeadlongAddress(
-                                                                        asHexedAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                TOKEN))))
-                                                        .payingWith(ALICE)
-                                                        .via(CREATION_TX)
-                                                        .gas(GAS_TO_OFFER))),
+                        uploadInitCode(THE_BURN_CONTRACT),
+                        withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                contractCreate(
+                                                THE_BURN_CONTRACT,
+                                                asHeadlongAddress(asHexedAddress(
+                                                        spec.registry().getTokenID(TOKEN))))
+                                        .payingWith(ALICE)
+                                        .via(CREATION_TX)
+                                        .gas(GAS_TO_OFFER))),
                         getTxnRecord(CREATION_TX).logged())
                 .when(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var serialNumbers = new long[] {1L};
-                                    allRunFor(
-                                            spec,
-                                            contractCall(
-                                                            THE_CONTRACT,
-                                                            "burnToken",
-                                                            BigInteger.ZERO,
-                                                            serialNumbers)
-                                                    .payingWith(ALICE)
-                                                    .alsoSigningWithFullPrefix(MULTI_KEY)
-                                                    .gas(GAS_TO_OFFER)
-                                                    .via("burn"));
-                                }),
+                        withOpContext((spec, opLog) -> {
+                            final var serialNumbers = new long[] {1L};
+                            allRunFor(
+                                    spec,
+                                    contractCall(THE_BURN_CONTRACT, "burnToken", BigInteger.ZERO, serialNumbers)
+                                            .payingWith(ALICE)
+                                            .alsoSigningWithFullPrefix(MULTI_KEY)
+                                            .gas(GAS_TO_OFFER)
+                                            .via("burn"));
+                        }),
                         childRecordsCheck(
                                 "burn",
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .forFunction(
-                                                                                FunctionType
-                                                                                        .HAPI_BURN)
-                                                                        .withStatus(SUCCESS)
-                                                                        .withTotalSupply(1))
-                                                        .gasUsed(gasUsed))
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .forFunction(FunctionType.HAPI_BURN)
+                                                        .withStatus(SUCCESS)
+                                                        .withTotalSupply(1))
+                                                .gasUsed(gasUsed))
                                         .newTotalSupply(1)))
                 .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 1));
     }
@@ -331,78 +276,53 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                 .treasury(TOKEN_TREASURY),
                         uploadInitCode(innerContract, outerContract),
                         contractCreate(innerContract).gas(GAS_TO_OFFER),
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCreate(
-                                                                outerContract,
-                                                                asHeadlongAddress(
-                                                                        getNestedContractAddress(
-                                                                                innerContract,
-                                                                                spec)))
-                                                        .payingWith(ALICE)
-                                                        .via(CREATION_TX)
-                                                        .gas(GAS_TO_OFFER))),
+                        withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                contractCreate(
+                                                outerContract,
+                                                asHeadlongAddress(getNestedContractAddress(innerContract, spec)))
+                                        .payingWith(ALICE)
+                                        .via(CREATION_TX)
+                                        .gas(GAS_TO_OFFER))),
                         getTxnRecord(CREATION_TX).logged())
                 .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                newKeyNamed(CONTRACT_KEY)
-                                                        .shape(
-                                                                revisedKey.signedWith(
-                                                                        sigs(
-                                                                                ON,
-                                                                                innerContract,
-                                                                                outerContract))),
-                                                tokenUpdate(TOKEN).supplyKey(CONTRACT_KEY),
-                                                contractCall(
-                                                                outerContract,
-                                                                BURN_AFTER_NESTED_MINT_TX,
-                                                                BigInteger.ONE,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                TOKEN))),
-                                                                new long[0])
-                                                        .payingWith(ALICE)
-                                                        .via(BURN_AFTER_NESTED_MINT_TX))),
+                        withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                newKeyNamed(CONTRACT_KEY)
+                                        .shape(revisedKey.signedWith(sigs(ON, innerContract, outerContract))),
+                                tokenUpdate(TOKEN).supplyKey(CONTRACT_KEY),
+                                contractCall(
+                                                outerContract,
+                                                BURN_AFTER_NESTED_MINT_TX,
+                                                BigInteger.ONE,
+                                                HapiParserUtil.asHeadlongAddress(asAddress(
+                                                        spec.registry().getTokenID(TOKEN))),
+                                                new long[0])
+                                        .payingWith(ALICE)
+                                        .via(BURN_AFTER_NESTED_MINT_TX))),
                         childRecordsCheck(
                                 BURN_AFTER_NESTED_MINT_TX,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .forFunction(
-                                                                                FunctionType
-                                                                                        .HAPI_MINT)
-                                                                        .withStatus(SUCCESS)
-                                                                        .withTotalSupply(51)
-                                                                        .withSerialNumbers()))
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .forFunction(FunctionType.HAPI_MINT)
+                                                        .withStatus(SUCCESS)
+                                                        .withTotalSupply(51)
+                                                        .withSerialNumbers()))
                                         .tokenTransfers(
-                                                changingFungibleBalances()
-                                                        .including(TOKEN, TOKEN_TREASURY, 1))
+                                                changingFungibleBalances().including(TOKEN, TOKEN_TREASURY, 1))
                                         .newTotalSupply(51),
                                 recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .forFunction(
-                                                                                FunctionType
-                                                                                        .HAPI_BURN)
-                                                                        .withStatus(SUCCESS)
-                                                                        .withTotalSupply(50)))
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .forFunction(FunctionType.HAPI_BURN)
+                                                        .withStatus(SUCCESS)
+                                                        .withTotalSupply(50)))
                                         .tokenTransfers(
-                                                changingFungibleBalances()
-                                                        .including(TOKEN, TOKEN_TREASURY, -1))
+                                                changingFungibleBalances().including(TOKEN, TOKEN_TREASURY, -1))
                                         .newTotalSupply(50)))
                 .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 50));
     }
@@ -429,77 +349,57 @@ public class ContractBurnHTSSuite extends HapiSuite {
                         mintToken(tokenWithHbarFee, List.of(copyFromUtf8("First!"))),
                         mintToken(tokenWithHbarFee, List.of(copyFromUtf8("Second!"))),
                         uploadInitCode(theContract),
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCreate(
-                                                                theContract,
-                                                                asHeadlongAddress(
-                                                                        asHexedAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                tokenWithHbarFee))))
-                                                        .payingWith(bob)
-                                                        .gas(GAS_TO_OFFER))),
+                        withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                contractCreate(
+                                                theContract,
+                                                asHeadlongAddress(asHexedAddress(
+                                                        spec.registry().getTokenID(tokenWithHbarFee))))
+                                        .payingWith(bob)
+                                        .gas(GAS_TO_OFFER))),
                         tokenAssociate(ALICE, tokenWithHbarFee),
                         tokenAssociate(bob, tokenWithHbarFee),
                         tokenAssociate(theContract, tokenWithHbarFee),
-                        cryptoTransfer(
-                                        movingUnique(tokenWithHbarFee, 2L)
-                                                .between(TOKEN_TREASURY, ALICE))
+                        cryptoTransfer(movingUnique(tokenWithHbarFee, 2L).between(TOKEN_TREASURY, ALICE))
                                 .payingWith(GENESIS),
                         getAccountInfo(feeCollector)
                                 .has(AccountInfoAsserts.accountWith().balance(0L)))
                 .when(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var serialNumbers = new long[] {1L};
-                                    allRunFor(
-                                            spec,
-                                            contractCall(
-                                                            theContract,
-                                                            "transferBurn",
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            spec.registry()
-                                                                                    .getAccountID(
-                                                                                            ALICE))),
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            spec.registry()
-                                                                                    .getAccountID(
-                                                                                            bob))),
-                                                            BigInteger.ZERO,
-                                                            2L,
-                                                            serialNumbers)
-                                                    .alsoSigningWithFullPrefix(ALICE, SUPPLY_KEY)
-                                                    .gas(GAS_TO_OFFER)
-                                                    .via("contractCallTxn")
-                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
-                                }),
+                        withOpContext((spec, opLog) -> {
+                            final var serialNumbers = new long[] {1L};
+                            allRunFor(
+                                    spec,
+                                    contractCall(
+                                                    theContract,
+                                                    "transferBurn",
+                                                    HapiParserUtil.asHeadlongAddress(asAddress(
+                                                            spec.registry().getAccountID(ALICE))),
+                                                    HapiParserUtil.asHeadlongAddress(asAddress(
+                                                            spec.registry().getAccountID(bob))),
+                                                    BigInteger.ZERO,
+                                                    2L,
+                                                    serialNumbers)
+                                            .alsoSigningWithFullPrefix(ALICE, SUPPLY_KEY)
+                                            .gas(GAS_TO_OFFER)
+                                            .via("contractCallTxn")
+                                            .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
+                        }),
                         childRecordsCheck(
                                 "contractCallTxn",
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(REVERTED_SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .forFunction(
-                                                                                FunctionType
-                                                                                        .HAPI_BURN)
-                                                                        .withStatus(SUCCESS)
-                                                                        .withTotalSupply(1))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .forFunction(FunctionType.HAPI_BURN)
+                                                        .withStatus(SUCCESS)
+                                                        .withTotalSupply(1))),
                                 recordWith()
                                         .status(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE)))))
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .withStatus(
+                                                                INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE)))))
                 .then(
                         getAccountBalance(bob).hasTokenBalance(tokenWithHbarFee, 0),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(tokenWithHbarFee, 1),
@@ -508,8 +408,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
 
     @NotNull
     private String getNestedContractAddress(String outerContract, HapiSpec spec) {
-        return HapiPropertySource.asHexedSolidityAddress(
-                spec.registry().getContractId(outerContract));
+        return HapiPropertySource.asHexedSolidityAddress(spec.registry().getContractId(outerContract));
     }
 
     @Override

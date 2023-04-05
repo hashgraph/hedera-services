@@ -13,13 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.meta.PreHandleContext;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -27,31 +29,30 @@ import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoDelete}.
+ * HederaFunctionality#CRYPTO_DELETE}.
  */
 @Singleton
 public class CryptoDeleteHandler implements TransactionHandler {
     @Inject
-    public CryptoDeleteHandler() {}
+    public CryptoDeleteHandler() {
+        // Exists for injection
+    }
 
     /**
-     * Pre-handles a {@link
-     * com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoDeleteAllowance} transaction,
-     * returning the metadata required to, at minimum, validate the signatures of all required
-     * signing keys.
+     * Pre-handles a {@link HederaFunctionality#CRYPTO_DELETE} transaction, returning the metadata
+     * required to, at minimum, validate the signatures of all required signing keys.
      *
-     * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@link #handle(TransactionMetadata)}
+     * @param context the {@link PreHandleContext} which collects all information
+     *
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
-        final var op = context.getTxn().getCryptoDelete();
-        final var deleteAccountId = op.getDeleteAccountID();
-        final var transferAccountId = op.getTransferAccountID();
+        final var op = context.getTxn().cryptoDeleteOrThrow();
+        final var deleteAccountId = op.deleteAccountIDOrElse(AccountID.DEFAULT);
+        final var transferAccountId = op.transferAccountIDOrElse(AccountID.DEFAULT);
         context.addNonPayerKey(deleteAccountId)
-                .addNonPayerKeyIfReceiverSigRequired(
-                        transferAccountId, INVALID_TRANSFER_ACCOUNT_ID);
+                .addNonPayerKeyIfReceiverSigRequired(transferAccountId, INVALID_TRANSFER_ACCOUNT_ID);
     }
 
     /**
@@ -60,11 +61,9 @@ public class CryptoDeleteHandler implements TransactionHandler {
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
-     * @param metadata the {@link TransactionMetadata} that was generated during pre-handle.
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(@NonNull final TransactionMetadata metadata) {
-        requireNonNull(metadata);
+    public void handle() {
         throw new UnsupportedOperationException("Not implemented");
     }
 }

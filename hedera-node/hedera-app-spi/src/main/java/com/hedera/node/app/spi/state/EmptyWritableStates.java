@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.state;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -24,7 +25,7 @@ import java.util.Set;
 public final class EmptyWritableStates implements WritableStates {
     @NonNull
     @Override
-    public <K extends Comparable<K>, V> WritableKVState<K, V> get(@NonNull String stateKey) {
+    public <K extends Comparable<? super K>, V> WritableKVState<K, V> get(@NonNull String stateKey) {
         Objects.requireNonNull(stateKey);
         throw new IllegalArgumentException("There are no k/v states");
     }

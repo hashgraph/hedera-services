@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.utilops.inventory;
 
 import static com.hedera.node.app.hapi.utils.SignatureGenerator.BOUNCYCASTLE_PROVIDER;
@@ -70,13 +71,13 @@ public class SpecKeyFromEcdsaFile extends UtilOp {
             final @Nullable Logger logToUse) {
         final var hexedKey = CommonUtils.hex(pubKey);
         if (logToUse != null) {
-            logToUse.info("Hex-encoded public key: " + hexedKey);
+            logToUse.info("Hex-encoded public key: {}", hexedKey);
         }
-        final var key = Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(pubKey)).build();
+        final var key =
+                Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(pubKey)).build();
         spec.registry().saveKey(name, key);
         spec.keys().incorporate(name, hexedKey, privateKey, SigControl.SECP256K1_ON);
-        linkedId.ifPresent(
-                s -> spec.registry().saveAccountId(name, HapiPropertySource.asAccount(s)));
+        linkedId.ifPresent(s -> spec.registry().saveAccountId(name, HapiPropertySource.asAccount(s)));
     }
 
     public SpecKeyFromEcdsaFile linkedTo(final String id) {
@@ -90,8 +91,7 @@ public class SpecKeyFromEcdsaFile extends UtilOp {
         final var keySpec = new ECPrivateKeySpec(s, params);
         final KeyFactory kf = KeyFactory.getInstance("EC", BOUNCYCASTLE_PROVIDER);
         final var privateKey = kf.generatePrivate(keySpec);
-        createAndLinkEcdsaKey(
-                spec, CommonUtils.unhex(hexedPubKey), privateKey, name, linkedId, log);
+        createAndLinkEcdsaKey(spec, CommonUtils.unhex(hexedPubKey), privateKey, name, linkedId, log);
         return false;
     }
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.files;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
@@ -32,8 +33,7 @@ import java.util.Optional;
 public class RandomFileDeletion implements OpProvider {
     private final RegistrySourcedNameProvider<FileID> files;
 
-    private final ResponseCodeEnum[] permissiblePrechecks =
-            standardPrechecksAnd(FILE_DELETED, INVALID_FILE_ID);
+    private final ResponseCodeEnum[] permissiblePrechecks = standardPrechecksAnd(FILE_DELETED, INVALID_FILE_ID);
     private final ResponseCodeEnum[] permissibleOutcomes =
             standardOutcomesAnd(FILE_DELETED, INVALID_FILE_ID, FAIL_INVALID);
 
@@ -50,11 +50,10 @@ public class RandomFileDeletion implements OpProvider {
         if (tbd.get().endsWith("-bytecode")) {
             return Optional.empty();
         }
-        var op =
-                fileDelete(tbd.get())
-                        .purging()
-                        .hasPrecheckFrom(permissiblePrechecks)
-                        .hasKnownStatusFrom(permissibleOutcomes);
+        var op = fileDelete(tbd.get())
+                .purging()
+                .hasPrecheckFrom(permissiblePrechecks)
+                .hasKnownStatusFrom(permissibleOutcomes);
 
         return Optional.of(op);
     }

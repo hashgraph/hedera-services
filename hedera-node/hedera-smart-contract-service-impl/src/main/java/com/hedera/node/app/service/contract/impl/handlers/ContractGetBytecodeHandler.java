@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,40 +13,45 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.contract.impl.handlers;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.QueryHeader;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.contract.ContractGetBytecodeResponse;
+import com.hedera.hapi.node.transaction.Query;
+import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hederahashgraph.api.proto.java.ContractGetBytecodeResponse;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.QueryHeader;
-import com.hederahashgraph.api.proto.java.Response;
-import com.hederahashgraph.api.proto.java.ResponseHeader;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#ContractGetBytecode}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONTRACT_GET_BYTECODE}.
  */
 @Singleton
 public class ContractGetBytecodeHandler extends PaidQueryHandler {
     @Inject
-    public ContractGetBytecodeHandler() {}
+    public ContractGetBytecodeHandler() {
+        // Exists for injection
+    }
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
-        return query.getContractGetBytecode().getHeader();
+        return query.contractGetBytecodeOrThrow().header();
     }
 
     @Override
     public Response createEmptyResponse(@NonNull final ResponseHeader header) {
-        final var response = ContractGetBytecodeResponse.newBuilder().setHeader(header);
-        return Response.newBuilder().setContractGetBytecodeResponse(response).build();
+        final var response = ContractGetBytecodeResponse.newBuilder().header(header);
+        return Response.newBuilder().contractGetBytecodeResponse(response).build();
     }
 
     /**
@@ -60,7 +65,8 @@ public class ContractGetBytecodeHandler extends PaidQueryHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      * @throws PreCheckException if validation fails
      */
-    public void validate(@NonNull final Query query) throws PreCheckException {
+    public ResponseCodeEnum validate(@NonNull final Query query) throws PreCheckException {
+        Objects.requireNonNull(query);
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -77,6 +83,8 @@ public class ContractGetBytecodeHandler extends PaidQueryHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public Response findResponse(@NonNull final Query query, @NonNull final ResponseHeader header) {
+        Objects.requireNonNull(query);
+        Objects.requireNonNull(header);
         throw new UnsupportedOperationException("Not implemented");
     }
 }

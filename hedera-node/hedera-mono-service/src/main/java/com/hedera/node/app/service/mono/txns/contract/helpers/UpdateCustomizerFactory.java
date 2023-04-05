@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.contract.helpers;
 
 import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer.hasStakedId;
@@ -54,10 +55,9 @@ public class UpdateCustomizerFactory {
 
         var expiryExtension = ExtensionType.NO_EXTENSION;
         if (op.hasExpirationTime()) {
-            expiryExtension =
-                    validator.isValidExpiry(op.getExpirationTime())
-                            ? ExtensionType.VALID_EXTENSION
-                            : ExtensionType.INVALID_EXTENSION;
+            expiryExtension = validator.isValidExpiry(op.getExpirationTime())
+                    ? ExtensionType.VALID_EXTENSION
+                    : ExtensionType.INVALID_EXTENSION;
         }
         if (contract.isExpiredAndPendingRemoval()) {
             if (expiryExtension == ExtensionType.VALID_EXTENSION) {
@@ -92,8 +92,7 @@ public class UpdateCustomizerFactory {
             processMemo(op, customizer);
         }
         if (hasStakedId(op.getStakedIdCase().name())) {
-            customizer.customizeStakedId(
-                    op.getStakedIdCase().name(), op.getStakedAccountId(), op.getStakedNodeId());
+            customizer.customizeStakedId(op.getStakedIdCase().name(), op.getStakedAccountId(), op.getStakedNodeId());
         }
         if (op.hasDeclineReward()) {
             customizer.isDeclinedReward(op.getDeclineReward().getValue());
@@ -102,21 +101,17 @@ public class UpdateCustomizerFactory {
             customizer.autoRenewAccount(fromGrpcAccountId(op.getAutoRenewAccountId()));
         }
         if (op.hasMaxAutomaticTokenAssociations()) {
-            if (op.getMaxAutomaticTokenAssociations().getValue()
-                    > MAX_CHARGEABLE_AUTO_ASSOCIATIONS) {
-                return Pair.of(
-                        Optional.empty(),
-                        REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
+            if (op.getMaxAutomaticTokenAssociations().getValue() > MAX_CHARGEABLE_AUTO_ASSOCIATIONS) {
+                return Pair.of(Optional.empty(), REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
             }
-            customizer.maxAutomaticAssociations(op.getMaxAutomaticTokenAssociations().getValue());
+            customizer.maxAutomaticAssociations(
+                    op.getMaxAutomaticTokenAssociations().getValue());
         }
 
         return Pair.of(Optional.of(customizer), OK);
     }
 
-    private void processMemo(
-            final ContractUpdateTransactionBody updateOp,
-            final HederaAccountCustomizer customizer) {
+    private void processMemo(final ContractUpdateTransactionBody updateOp, final HederaAccountCustomizer customizer) {
         if (updateOp.hasMemoWrapper()) {
             customizer.memo(updateOp.getMemoWrapper().getValue());
         } else {
@@ -129,8 +124,7 @@ public class UpdateCustomizerFactory {
             final ContractID cid,
             final HederaAccountCustomizer customizer) {
         if (IMMUTABILITY_SENTINEL_KEY.equals(updateOp.getAdminKey())) {
-            customizer.key(
-                    new JContractIDKey(cid.getShardNum(), cid.getRealmNum(), cid.getContractNum()));
+            customizer.key(new JContractIDKey(cid.getShardNum(), cid.getRealmNum(), cid.getContractNum()));
         } else {
             var resolution = keyIfAcceptable(updateOp.getAdminKey());
             if (resolution.isEmpty()) {

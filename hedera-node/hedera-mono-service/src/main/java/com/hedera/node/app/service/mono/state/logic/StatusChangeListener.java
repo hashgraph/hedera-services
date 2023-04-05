@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.logic;
 
 import static com.swirlds.common.system.PlatformStatus.ACTIVE;
@@ -52,9 +53,7 @@ public class StatusChangeListener implements PlatformStatusChangeListener {
 
     @Override
     public void notify(PlatformStatusChangeNotification notification) {
-        log.info(
-                "Notification Received: Current Platform status changed to {}",
-                notification.getNewStatus());
+        log.info("Notification Received: Current Platform status changed to {}", notification.getNewStatus());
 
         final var status = notification.getNewStatus();
         currentPlatformStatus.set(status);

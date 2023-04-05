@@ -13,22 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.accounts.staking;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.forEach;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.withLoggedDuration;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
 
 import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -55,6 +56,7 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class StakeStartupHelper {
+
     private static final Logger log = LogManager.getLogger(StakeStartupHelper.class);
 
     public enum RecomputeType {
@@ -103,8 +105,7 @@ public class StakeStartupHelper {
      * @param stakingInfos the mutable staking info map
      */
     public void doRestartHousekeeping(
-            final AddressBook addressBook,
-            final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos) {
+            final AddressBook addressBook, final MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfos) {
         // List the node ids in the staking info map from BEFORE the restart
         final List<Long> preRestartNodeIds =
                 stakingInfos.keySet().stream().map(EntityNum::longValue).toList();
@@ -129,20 +130,18 @@ public class StakeStartupHelper {
     public void doUpgradeHousekeeping(
             final MerkleNetworkContext networkContext,
             final AccountStorageAdapter accounts,
-            final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos) {
+            final MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfos) {
 
         // Recompute anything requested by the staking.startupHelper.recompute property
-        final var recomputeTypes =
-                properties.getRecomputeTypesProperty(STAKING_STARTUP_HELPER_RECOMPUTE);
+        final var recomputeTypes = properties.getRecomputeTypesProperty(STAKING_STARTUP_HELPER_RECOMPUTE);
         if (!recomputeTypes.isEmpty()) {
             withLoggedDuration(
-                    () ->
-                            recomputeQuantities(
-                                    recomputeTypes.contains(RecomputeType.NODE_STAKES),
-                                    recomputeTypes.contains(RecomputeType.PENDING_REWARDS),
-                                    networkContext,
-                                    accounts,
-                                    stakingInfos),
+                    () -> recomputeQuantities(
+                            recomputeTypes.contains(RecomputeType.NODE_STAKES),
+                            recomputeTypes.contains(RecomputeType.PENDING_REWARDS),
+                            networkContext,
+                            accounts,
+                            stakingInfos),
                     log,
                     "Recomputing " + recomputeTypes);
         }
@@ -151,18 +150,14 @@ public class StakeStartupHelper {
     private void updateInfosForAddedOrRemovedNodes(
             final List<Long> preUpgradeNodeIds,
             final List<Long> postUpgradeNodeIds,
-            final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos) {
+            final MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfos) {
         // Add staking info for nodes that are new in the address book
         final List<Long> addedNodeIds = orderedSetMinus(postUpgradeNodeIds, preUpgradeNodeIds);
         if (!addedNodeIds.isEmpty()) {
-            final var numRewardablePeriods =
-                    properties.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS);
+            final var numRewardablePeriods = properties.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS);
             log.info("Adding staking info for new node ids: {}", addedNodeIds);
             addedNodeIds.forEach(
-                    id ->
-                            stakingInfos.put(
-                                    EntityNum.fromLong(id),
-                                    new MerkleStakingInfo(numRewardablePeriods)));
+                    id -> stakingInfos.put(EntityNum.fromLong(id), new MerkleStakingInfo(numRewardablePeriods)));
         }
 
         // Remove any staking info for nodes that are no longer in the address book
@@ -178,29 +173,24 @@ public class StakeStartupHelper {
             final boolean doPendingRewards,
             final MerkleNetworkContext networkContext,
             final AccountStorageAdapter accounts,
-            final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos) {
+            final MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfos) {
 
         final AtomicLong newPendingRewards = new AtomicLong();
         final Map<EntityNum, Long> newStakesToReward = new HashMap<>();
         final Map<EntityNum, Long> newStakesToNotReward = new HashMap<>();
 
-        accounts.forEach(
-                (num, account) -> {
-                    if (!account.isDeleted() && account.getStakedId() < 0) {
-                        if (doPendingRewards) {
-                            final var truePending =
-                                    rewardCalculator.estimatePendingRewards(
-                                            account,
-                                            stakingInfos.get(
-                                                    EntityNum.fromLong(
-                                                            account.getStakedNodeAddressBookId())));
-                            newPendingRewards.addAndGet(truePending);
-                        }
-                        if (doNodeStakes) {
-                            updateForNodeStaked(account, newStakesToReward, newStakesToNotReward);
-                        }
-                    }
-                });
+        accounts.forEach((num, account) -> {
+            if (!account.isDeleted() && account.getStakedId() < 0) {
+                if (doPendingRewards) {
+                    final var truePending = rewardCalculator.estimatePendingRewards(
+                            account, stakingInfos.get(EntityNum.fromLong(account.getStakedNodeAddressBookId())));
+                    newPendingRewards.addAndGet(truePending);
+                }
+                if (doNodeStakes) {
+                    updateForNodeStaked(account, newStakesToReward, newStakesToNotReward);
+                }
+            }
+        });
 
         if (doPendingRewards) {
             final var recomputedPending = newPendingRewards.get();
@@ -214,14 +204,11 @@ public class StakeStartupHelper {
         }
 
         if (doNodeStakes) {
-            forEach(
-                    stakingInfos,
-                    (num, info) -> {
-                        final var mutableInfo = stakingInfos.getForModify(num);
-                        mutableInfo.syncRecomputedStakeValues(
-                                newStakesToReward.getOrDefault(num, 0L),
-                                newStakesToNotReward.getOrDefault(num, 0L));
-                    });
+            forEach(stakingInfos, (num, info) -> {
+                final var mutableInfo = stakingInfos.getForModify(num);
+                mutableInfo.syncRecomputedStakeValues(
+                        newStakesToReward.getOrDefault(num, 0L), newStakesToNotReward.getOrDefault(num, 0L));
+            });
         }
     }
 

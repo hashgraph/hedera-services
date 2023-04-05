@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.state;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -37,7 +38,7 @@ public interface ReadableStates {
      * @throws IllegalArgumentException if the state cannot be found.
      */
     @NonNull
-    <K extends Comparable<K>, V> ReadableKVState<K, V> get(@NonNull String stateKey);
+    <K extends Comparable<? super K>, V> ReadableKVState<K, V> get(@NonNull String stateKey);
 
     @NonNull
     <T> ReadableSingletonState<T> getSingleton(@NonNull String stateKey);

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -68,6 +69,7 @@ public class ContractUpdateSuite extends HapiSuite {
     public static final String ADMIN_KEY = "adminKey";
     public static final String NEW_ADMIN_KEY = "newAdminKey";
     private static final String CONTRACT = "Multipurpose";
+    public static final String INITIAL_ADMIN_KEY = "initialAdminKey";
 
     public static void main(String... args) {
         new ContractUpdateSuite().runSuiteAsync();
@@ -102,52 +104,43 @@ public class ContractUpdateSuite extends HapiSuite {
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT).declinedReward(true).stakedNodeId(0),
                         getContractInfo(CONTRACT)
-                                .has(
-                                        contractWith()
-                                                .isDeclinedReward(true)
-                                                .noStakedAccountId()
-                                                .stakedNodeId(0))
+                                .has(contractWith()
+                                        .isDeclinedReward(true)
+                                        .noStakedAccountId()
+                                        .stakedNodeId(0))
                                 .logged())
                 .when(
-                        contractUpdate(CONTRACT)
-                                .newDeclinedReward(false)
-                                .newStakedAccountId("0.0.10"),
+                        contractUpdate(CONTRACT).newDeclinedReward(false).newStakedAccountId("0.0.10"),
                         getContractInfo(CONTRACT)
-                                .has(
-                                        contractWith()
-                                                .isDeclinedReward(false)
-                                                .noStakingNodeId()
-                                                .stakedAccountId("0.0.10"))
+                                .has(contractWith()
+                                        .isDeclinedReward(false)
+                                        .noStakingNodeId()
+                                        .stakedAccountId("0.0.10"))
                                 .logged(),
 
                         /* --- reset the staking account */
-                        contractUpdate(CONTRACT)
-                                .newDeclinedReward(false)
-                                .newStakedAccountId("0.0.0"),
+                        contractUpdate(CONTRACT).newDeclinedReward(false).newStakedAccountId("0.0.0"),
                         getContractInfo(CONTRACT)
-                                .has(
-                                        contractWith()
-                                                .isDeclinedReward(false)
-                                                .noStakingNodeId()
-                                                .noStakedAccountId())
+                                .has(contractWith()
+                                        .isDeclinedReward(false)
+                                        .noStakingNodeId()
+                                        .noStakedAccountId())
                                 .logged(),
                         contractCreate(CONTRACT).declinedReward(true).stakedNodeId(0),
                         getContractInfo(CONTRACT)
-                                .has(
-                                        contractWith()
-                                                .isDeclinedReward(true)
-                                                .noStakedAccountId()
-                                                .stakedNodeId(0))
+                                .has(contractWith()
+                                        .isDeclinedReward(true)
+                                        .noStakedAccountId()
+                                        .stakedNodeId(0))
                                 .logged(),
 
                         /* --- reset the staking account */
                         contractUpdate(CONTRACT).newDeclinedReward(false).newStakedNodeId(-1L),
                         getContractInfo(CONTRACT)
-                                .has(
-                                        contractWith()
-                                                .isDeclinedReward(false)
-                                                .noStakingNodeId()
-                                                .noStakedAccountId())
+                                .has(contractWith()
+                                        .isDeclinedReward(false)
+                                        .noStakingNodeId()
+                                        .noStakedAccountId())
                                 .logged())
                 .then();
     }
@@ -166,94 +159,48 @@ public class ContractUpdateSuite extends HapiSuite {
 
         return defaultHapiSpec("Eip1014AddressAlwaysHasPriority")
                 .given(uploadInitCode(contract), contractCreate(contract).via(creationTxn))
-                .when(
-                        captureChildCreate2MetaFor(
-                                2, 0, "setup", creationTxn, childMirror, childEip1014))
+                .when(captureChildCreate2MetaFor(2, 0, "setup", creationTxn, childMirror, childEip1014))
                 .then(
                         contractCall(contract, "makeNormalCall").via(callTxn),
-                        sourcing(
-                                () ->
-                                        getTxnRecord(callTxn)
-                                                .logged()
-                                                .hasPriority(
-                                                        recordWith()
-                                                                .contractCallResult(
-                                                                        resultWith()
-                                                                                .resultThruAbi(
-                                                                                        getABIFor(
-                                                                                                FUNCTION,
-                                                                                                "makeNormalCall",
-                                                                                                contract),
-                                                                                        isLiteralResult(
-                                                                                                new Object
-                                                                                                        [] {
-                                                                                                    asHeadlongAddress(
-                                                                                                            childEip1014
-                                                                                                                    .get())
-                                                                                                }))))),
+                        sourcing(() -> getTxnRecord(callTxn)
+                                .logged()
+                                .hasPriority(recordWith()
+                                        .contractCallResult(resultWith()
+                                                .resultThruAbi(
+                                                        getABIFor(FUNCTION, "makeNormalCall", contract),
+                                                        isLiteralResult(
+                                                                new Object[] {asHeadlongAddress(childEip1014.get())
+                                                                }))))),
                         contractCall(contract, "makeStaticCall").via(staticcallTxn),
-                        sourcing(
-                                () ->
-                                        getTxnRecord(staticcallTxn)
-                                                .logged()
-                                                .hasPriority(
-                                                        recordWith()
-                                                                .contractCallResult(
-                                                                        resultWith()
-                                                                                .resultThruAbi(
-                                                                                        getABIFor(
-                                                                                                FUNCTION,
-                                                                                                "makeStaticCall",
-                                                                                                contract),
-                                                                                        isLiteralResult(
-                                                                                                new Object
-                                                                                                        [] {
-                                                                                                    asHeadlongAddress(
-                                                                                                            childEip1014
-                                                                                                                    .get())
-                                                                                                }))))),
+                        sourcing(() -> getTxnRecord(staticcallTxn)
+                                .logged()
+                                .hasPriority(recordWith()
+                                        .contractCallResult(resultWith()
+                                                .resultThruAbi(
+                                                        getABIFor(FUNCTION, "makeStaticCall", contract),
+                                                        isLiteralResult(
+                                                                new Object[] {asHeadlongAddress(childEip1014.get())
+                                                                }))))),
                         contractCall(contract, "makeDelegateCall").via(delegatecallTxn),
-                        sourcing(
-                                () ->
-                                        getTxnRecord(delegatecallTxn)
-                                                .logged()
-                                                .hasPriority(
-                                                        recordWith()
-                                                                .contractCallResult(
-                                                                        resultWith()
-                                                                                .resultThruAbi(
-                                                                                        getABIFor(
-                                                                                                FUNCTION,
-                                                                                                "makeDelegateCall",
-                                                                                                contract),
-                                                                                        isLiteralResult(
-                                                                                                new Object
-                                                                                                        [] {
-                                                                                                    asHeadlongAddress(
-                                                                                                            childEip1014
-                                                                                                                    .get())
-                                                                                                }))))),
+                        sourcing(() -> getTxnRecord(delegatecallTxn)
+                                .logged()
+                                .hasPriority(recordWith()
+                                        .contractCallResult(resultWith()
+                                                .resultThruAbi(
+                                                        getABIFor(FUNCTION, "makeDelegateCall", contract),
+                                                        isLiteralResult(
+                                                                new Object[] {asHeadlongAddress(childEip1014.get())
+                                                                }))))),
                         contractCall(contract, "makeCallCode").via(callcodeTxn),
-                        sourcing(
-                                () ->
-                                        getTxnRecord(callcodeTxn)
-                                                .logged()
-                                                .hasPriority(
-                                                        recordWith()
-                                                                .contractCallResult(
-                                                                        resultWith()
-                                                                                .resultThruAbi(
-                                                                                        getABIFor(
-                                                                                                FUNCTION,
-                                                                                                "makeCallCode",
-                                                                                                contract),
-                                                                                        isLiteralResult(
-                                                                                                new Object
-                                                                                                        [] {
-                                                                                                    asHeadlongAddress(
-                                                                                                            childEip1014
-                                                                                                                    .get())
-                                                                                                }))))));
+                        sourcing(() -> getTxnRecord(callcodeTxn)
+                                .logged()
+                                .hasPriority(recordWith()
+                                        .contractCallResult(resultWith()
+                                                .resultThruAbi(
+                                                        getABIFor(FUNCTION, "makeCallCode", contract),
+                                                        isLiteralResult(
+                                                                new Object[] {asHeadlongAddress(childEip1014.get())
+                                                                }))))));
     }
 
     private HapiSpec updateWithBothMemoSettersWorks() {
@@ -268,9 +215,7 @@ public class ContractUpdateSuite extends HapiSuite {
                         contractCreate(CONTRACT).adminKey(ADMIN_KEY).entityMemo(firstMemo))
                 .when(
                         contractUpdate(CONTRACT).newMemo(secondMemo),
-                        contractUpdate(CONTRACT)
-                                .newMemo(ZERO_BYTE_MEMO)
-                                .hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
+                        contractUpdate(CONTRACT).newMemo(ZERO_BYTE_MEMO).hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
                         getContractInfo(CONTRACT).has(contractWith().memo(secondMemo)))
                 .then(
                         contractUpdate(CONTRACT).useDeprecatedMemoField().newMemo(thirdMemo),
@@ -287,16 +232,12 @@ public class ContractUpdateSuite extends HapiSuite {
 
     private HapiSpec rejectsExpiryTooFarInTheFuture() {
         final var smallBuffer = 12_345L;
-        final var excessiveExpiry =
-                defaultMaxLifetime + Instant.now().getEpochSecond() + smallBuffer;
+        final var excessiveExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() + smallBuffer;
 
         return defaultHapiSpec("RejectsExpiryTooFarInTheFuture")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when()
-                .then(
-                        contractUpdate(CONTRACT)
-                                .newExpirySecs(excessiveExpiry)
-                                .hasKnownStatus(INVALID_EXPIRATION_TIME));
+                .then(contractUpdate(CONTRACT).newExpirySecs(excessiveExpiry).hasKnownStatus(INVALID_EXPIRATION_TIME));
     }
 
     private HapiSpec updateAutoRenewWorks() {
@@ -304,13 +245,9 @@ public class ContractUpdateSuite extends HapiSuite {
                 .given(
                         newKeyNamed(ADMIN_KEY),
                         uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT)
-                                .adminKey(ADMIN_KEY)
-                                .autoRenewSecs(THREE_MONTHS_IN_SECONDS))
+                        contractCreate(CONTRACT).adminKey(ADMIN_KEY).autoRenewSecs(THREE_MONTHS_IN_SECONDS))
                 .when(contractUpdate(CONTRACT).newAutoRenew(THREE_MONTHS_IN_SECONDS + ONE_DAY))
-                .then(
-                        getContractInfo(CONTRACT)
-                                .has(contractWith().autoRenew(THREE_MONTHS_IN_SECONDS + ONE_DAY)));
+                .then(getContractInfo(CONTRACT).has(contractWith().autoRenew(THREE_MONTHS_IN_SECONDS + ONE_DAY)));
     }
 
     private HapiSpec updateAutoRenewAccountWorks() {
@@ -322,13 +259,9 @@ public class ContractUpdateSuite extends HapiSuite {
                         cryptoCreate(autoRenewAccount),
                         cryptoCreate(newAutoRenewAccount),
                         uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT)
-                                .adminKey(ADMIN_KEY)
-                                .autoRenewAccountId(autoRenewAccount),
+                        contractCreate(CONTRACT).adminKey(ADMIN_KEY).autoRenewAccountId(autoRenewAccount),
                         getContractInfo(CONTRACT)
-                                .has(
-                                        ContractInfoAsserts.contractWith()
-                                                .autoRenewAccountId(autoRenewAccount))
+                                .has(ContractInfoAsserts.contractWith().autoRenewAccountId(autoRenewAccount))
                                 .logged())
                 .when(
                         contractUpdate(CONTRACT)
@@ -338,12 +271,9 @@ public class ContractUpdateSuite extends HapiSuite {
                         contractUpdate(CONTRACT)
                                 .newAutoRenewAccount(newAutoRenewAccount)
                                 .signedBy(DEFAULT_PAYER, ADMIN_KEY, newAutoRenewAccount))
-                .then(
-                        getContractInfo(CONTRACT)
-                                .has(
-                                        ContractInfoAsserts.contractWith()
-                                                .autoRenewAccountId(newAutoRenewAccount))
-                                .logged());
+                .then(getContractInfo(CONTRACT)
+                        .has(ContractInfoAsserts.contractWith().autoRenewAccountId(newAutoRenewAccount))
+                        .logged());
     }
 
     private HapiSpec updateAdminKeyWorks() {
@@ -376,14 +306,9 @@ public class ContractUpdateSuite extends HapiSuite {
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT).adminKey(ADMIN_KEY))
                 .when(
-                        contractUpdate(CONTRACT)
-                                .improperlyEmptyingAdminKey()
-                                .hasKnownStatus(INVALID_ADMIN_KEY),
+                        contractUpdate(CONTRACT).improperlyEmptyingAdminKey().hasKnownStatus(INVALID_ADMIN_KEY),
                         contractUpdate(CONTRACT).properlyEmptyingAdminKey())
-                .then(
-                        contractUpdate(CONTRACT)
-                                .newKey(NEW_ADMIN_KEY)
-                                .hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT));
+                .then(contractUpdate(CONTRACT).newKey(NEW_ADMIN_KEY).hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT));
     }
 
     private HapiSpec givenAdminKeyMustBeValid() {
@@ -391,23 +316,19 @@ public class ContractUpdateSuite extends HapiSuite {
         return defaultHapiSpec("GivenAdminKeyMustBeValid")
                 .given(uploadInitCode(contract), contractCreate(contract))
                 .when(getContractInfo(contract).logged())
-                .then(
-                        contractUpdate(contract)
-                                .useDeprecatedAdminKey()
-                                .signedBy(GENESIS, contract)
-                                .hasKnownStatus(INVALID_ADMIN_KEY));
+                .then(contractUpdate(contract)
+                        .useDeprecatedAdminKey()
+                        .signedBy(GENESIS, contract)
+                        .hasKnownStatus(INVALID_ADMIN_KEY));
     }
 
     HapiSpec fridayThe13thSpec() {
         final var contract = "SimpleStorage";
         final var suffix = "Clone";
-        final var newExpiry =
-                Instant.now().getEpochSecond() + DEFAULT_PROPS.defaultExpirationSecs() * 2;
-        final var betterExpiry =
-                Instant.now().getEpochSecond() + DEFAULT_PROPS.defaultExpirationSecs() * 3;
+        final var newExpiry = Instant.now().getEpochSecond() + DEFAULT_PROPS.defaultExpirationSecs() * 2;
+        final var betterExpiry = Instant.now().getEpochSecond() + DEFAULT_PROPS.defaultExpirationSecs() * 3;
         final var INITIAL_MEMO = "This is a memo string with only Ascii characters";
-        final var NEW_MEMO =
-                "Turning and turning in the widening gyre, the falcon cannot hear the falconer...";
+        final var NEW_MEMO = "Turning and turning in the widening gyre, the falcon cannot hear the falconer...";
         final var BETTER_MEMO = "This was Mr. Bleaney's room...";
         final var initialKeyShape = KeyShape.SIMPLE;
         final var newKeyShape = listOf(3);
@@ -415,32 +336,32 @@ public class ContractUpdateSuite extends HapiSuite {
 
         return defaultHapiSpec("FridayThe13thSpec")
                 .given(
-                        newKeyNamed("initialAdminKey").shape(initialKeyShape),
-                        newKeyNamed("newAdminKey").shape(newKeyShape),
+                        newKeyNamed(INITIAL_ADMIN_KEY).shape(initialKeyShape),
+                        newKeyNamed(NEW_ADMIN_KEY).shape(newKeyShape),
                         cryptoCreate(payer).balance(10 * ONE_HUNDRED_HBARS),
                         uploadInitCode(contract))
                 .when(
                         contractCreate(contract).payingWith(payer).omitAdminKey(),
                         contractCustomCreate(contract, suffix)
                                 .payingWith(payer)
-                                .adminKey("initialAdminKey")
+                                .adminKey(INITIAL_ADMIN_KEY)
                                 .entityMemo(INITIAL_MEMO),
                         getContractInfo(contract + suffix)
                                 .payingWith(payer)
                                 .logged()
-                                .has(contractWith().memo(INITIAL_MEMO).adminKey("initialAdminKey")))
+                                .has(contractWith().memo(INITIAL_MEMO).adminKey(INITIAL_ADMIN_KEY)))
                 .then(
                         contractUpdate(contract + suffix)
                                 .payingWith(payer)
-                                .newKey("newAdminKey")
-                                .signedBy(payer, "initialAdminKey")
+                                .newKey(NEW_ADMIN_KEY)
+                                .signedBy(payer, INITIAL_ADMIN_KEY)
                                 .hasKnownStatus(INVALID_SIGNATURE),
                         contractUpdate(contract + suffix)
                                 .payingWith(payer)
-                                .newKey("newAdminKey")
-                                .signedBy(payer, "newAdminKey")
+                                .newKey(NEW_ADMIN_KEY)
+                                .signedBy(payer, NEW_ADMIN_KEY)
                                 .hasKnownStatus(INVALID_SIGNATURE),
-                        contractUpdate(contract + suffix).payingWith(payer).newKey("newAdminKey"),
+                        contractUpdate(contract + suffix).payingWith(payer).newKey(NEW_ADMIN_KEY),
                         contractUpdate(contract + suffix)
                                 .payingWith(payer)
                                 .newExpirySecs(newExpiry)
@@ -448,19 +369,16 @@ public class ContractUpdateSuite extends HapiSuite {
                         getContractInfo(contract + suffix)
                                 .payingWith(payer)
                                 .logged()
-                                .has(
-                                        contractWith()
-                                                .solidityAddress(contract + suffix)
-                                                .memo(NEW_MEMO)
-                                                .expiry(newExpiry)),
+                                .has(contractWith()
+                                        .solidityAddress(contract + suffix)
+                                        .memo(NEW_MEMO)
+                                        .expiry(newExpiry)),
                         contractUpdate(contract + suffix).payingWith(payer).newMemo(BETTER_MEMO),
                         getContractInfo(contract + suffix)
                                 .payingWith(payer)
                                 .logged()
                                 .has(contractWith().memo(BETTER_MEMO).expiry(newExpiry)),
-                        contractUpdate(contract + suffix)
-                                .payingWith(payer)
-                                .newExpirySecs(betterExpiry),
+                        contractUpdate(contract + suffix).payingWith(payer).newExpirySecs(betterExpiry),
                         getContractInfo(contract + suffix)
                                 .payingWith(payer)
                                 .logged()
@@ -477,27 +395,23 @@ public class ContractUpdateSuite extends HapiSuite {
                                 .hasKnownStatus(INVALID_SIGNATURE),
                         contractUpdate(contract + suffix)
                                 .payingWith(payer)
-                                .signedBy(payer, "initialAdminKey")
+                                .signedBy(payer, INITIAL_ADMIN_KEY)
                                 .hasKnownStatus(INVALID_SIGNATURE),
                         contractUpdate(contract)
                                 .payingWith(payer)
                                 .newMemo(BETTER_MEMO)
                                 .hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
-                        contractDelete(contract)
-                                .payingWith(payer)
-                                .hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
+                        contractDelete(contract).payingWith(payer).hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
                         contractUpdate(contract).payingWith(payer).newExpirySecs(betterExpiry),
                         contractDelete(contract + suffix)
                                 .payingWith(payer)
-                                .signedBy(payer, "initialAdminKey")
+                                .signedBy(payer, INITIAL_ADMIN_KEY)
                                 .hasKnownStatus(INVALID_SIGNATURE),
                         contractDelete(contract + suffix)
                                 .payingWith(payer)
                                 .signedBy(payer)
                                 .hasKnownStatus(INVALID_SIGNATURE),
-                        contractDelete(contract + suffix)
-                                .payingWith(payer)
-                                .hasKnownStatus(SUCCESS));
+                        contractDelete(contract + suffix).payingWith(payer).hasKnownStatus(SUCCESS));
     }
 
     private HapiSpec updateDoesNotChangeBytecode() {
@@ -509,16 +423,11 @@ public class ContractUpdateSuite extends HapiSuite {
                         contractCreate(simpleStorageContract),
                         getContractBytecode(simpleStorageContract).saveResultTo("initialBytecode"))
                 .when(contractUpdate(simpleStorageContract).bytecode(emptyConstructorContract))
-                .then(
-                        withOpContext(
-                                (spec, log) -> {
-                                    var op =
-                                            getContractBytecode(simpleStorageContract)
-                                                    .hasBytecode(
-                                                            spec.registry()
-                                                                    .getBytes("initialBytecode"));
-                                    allRunFor(spec, op);
-                                }));
+                .then(withOpContext((spec, log) -> {
+                    var op = getContractBytecode(simpleStorageContract)
+                            .hasBytecode(spec.registry().getBytes("initialBytecode"));
+                    allRunFor(spec, op);
+                }));
     }
 
     @Override

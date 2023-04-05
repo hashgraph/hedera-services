@@ -13,11 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.contracts.execution;
 
+import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
 
 public interface EvmProperties {
+
+    /**
+     * @return the chain ID in bytes32 format.
+     */
+    Bytes32 chainIdBytes32();
 
     String evmVersion();
 
@@ -28,4 +35,11 @@ public interface EvmProperties {
     int maxGasRefundPercentage();
 
     boolean isRedirectTokenCallsEnabled();
+
+    boolean isLazyCreationEnabled();
+
+    /**
+     * Enables or disables Create2 operation.
+     */
+    boolean isCreate2Enabled();
 }

@@ -13,8 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.test.factories.scenarios.TokenFeeScheduleUpdateScenarios.NO_RECEIVER_SIG_KT;
 import static com.hedera.test.factories.scenarios.TokenFeeScheduleUpdateScenarios.RECEIVER_SIG_KT;
 import static com.hedera.test.factories.scenarios.TokenFeeScheduleUpdateScenarios.TOKEN_FEE_SCHEDULE_KT;
@@ -27,10 +31,7 @@ import static com.hedera.test.factories.scenarios.TokenFeeScheduleUpdateScenario
 import static com.hedera.test.factories.scenarios.TokenFeeScheduleUpdateScenarios.UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_MISSING_FEE_COLLECTOR;
 import static com.hedera.test.factories.scenarios.TokenFeeScheduleUpdateScenarios.UPDATE_TOKEN_WITH_NO_FEE_SCHEDULE_KEY;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
-import static com.hedera.test.utils.KeyUtils.sanityRestored;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hedera.test.utils.KeyUtils.sanityRestoredToPbj;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -38,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.node.app.service.token.impl.handlers.TokenFeeScheduleUpdateHandler;
-import com.hedera.node.app.spi.meta.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -50,113 +51,101 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
     @Test
     void tokenFeeScheduleUpdateNonExistingToken() {
         final var txn = txnFrom(UPDATE_TOKEN_FEE_SCHEDULE_BUT_TOKEN_DOESNT_EXIST);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertTrue(context.failed());
         assertEquals(INVALID_TOKEN_ID, context.getStatus());
-        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
         assertEquals(Collections.emptyList(), context.getRequiredNonPayerKeys());
     }
 
     @Test
     void tokenFeeScheduleUpdateTokenWithoutFeeScheduleKey() {
         final var txn = txnFrom(UPDATE_TOKEN_WITH_NO_FEE_SCHEDULE_KEY);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         // may look odd, but is intentional --- we fail in the handle(), not in preHandle()
         assertFalse(context.failed());
         assertEquals(OK, context.getStatus());
-        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
         assertEquals(Collections.emptyList(), context.getRequiredNonPayerKeys());
     }
 
     @Test
     void tokenFeeScheduleUpdateWithFeeScheduleKeySigReqFeeCollector() {
         final var txn = txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_NO_FEE_COLLECTOR_SIG_REQ);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
         assertEquals(OK, context.getStatus());
-        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
         assertEquals(2, context.getRequiredNonPayerKeys().size());
         assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_FEE_SCHEDULE_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+                sanityRestoredToPbj(context.getRequiredNonPayerKeys()),
+                contains(TOKEN_FEE_SCHEDULE_KT.asPbjKey(), RECEIVER_SIG_KT.asPbjKey()));
     }
 
     @Test
     void tokenFeeScheduleUpdateWithFeeScheduleKeySigNotReqFeeCollector() {
         final var txn = txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_NO_FEE_COLLECTOR_NO_SIG_REQ);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
         assertEquals(OK, context.getStatus());
-        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
         assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_FEE_SCHEDULE_KT.asKey()));
+        assertThat(sanityRestoredToPbj(context.getRequiredNonPayerKeys()), contains(TOKEN_FEE_SCHEDULE_KT.asPbjKey()));
     }
 
     @Test
-    void
-            tokenFeeScheduleUpdateWithFeeScheduleKeyAndOneSigReqFeeCollectorAndAnotherSigNonReqFeeCollector() {
+    void tokenFeeScheduleUpdateWithFeeScheduleKeyAndOneSigReqFeeCollectorAndAnotherSigNonReqFeeCollector() {
         final var txn = txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_SIG_REQ);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
         assertEquals(OK, context.getStatus());
-        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestoredToPbj(context.getPayerKey()), DEFAULT_PAYER_KT.asPbjKey());
         assertEquals(2, context.getRequiredNonPayerKeys().size());
         assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_FEE_SCHEDULE_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+                sanityRestoredToPbj(context.getRequiredNonPayerKeys()),
+                contains(TOKEN_FEE_SCHEDULE_KT.asPbjKey(), RECEIVER_SIG_KT.asPbjKey()));
     }
 
     @Test
     void tokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorAsPayerAndSigReq() {
-        final var txn =
-                txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_SIG_REQ_AND_AS_PAYER);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var txn = txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_SIG_REQ_AND_AS_PAYER);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
         assertEquals(OK, context.getStatus());
-        assertEquals(sanityRestored(context.getPayerKey()), RECEIVER_SIG_KT.asKey());
+        assertEquals(sanityRestoredToPbj(context.getPayerKey()), RECEIVER_SIG_KT.asPbjKey());
         assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_FEE_SCHEDULE_KT.asKey()));
+        assertThat(sanityRestoredToPbj(context.getRequiredNonPayerKeys()), contains(TOKEN_FEE_SCHEDULE_KT.asPbjKey()));
     }
 
     @Test
     void tokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorAsPayer() {
-        final var txn =
-                txnFrom(
-                        UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_NO_SIG_REQ_AND_AS_PAYER);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var txn = txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_NO_SIG_REQ_AND_AS_PAYER);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
         assertEquals(OK, context.getStatus());
-        assertEquals(
-                List.of(NO_RECEIVER_SIG_KT.asKey()),
-                sanityRestored(List.of(context.getPayerKey())));
+        assertEquals(List.of(NO_RECEIVER_SIG_KT.asPbjKey()), sanityRestoredToPbj(List.of(context.getPayerKey())));
         assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_FEE_SCHEDULE_KT.asKey()));
+        assertThat(sanityRestoredToPbj(context.getRequiredNonPayerKeys()), contains(TOKEN_FEE_SCHEDULE_KT.asPbjKey()));
     }
 
     @Test
     void tokenFeeScheduleUpdateWithFeeScheduleKeyAndInvalidFeeCollector() {
         final var txn = txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_MISSING_FEE_COLLECTOR);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertTrue(context.failed());

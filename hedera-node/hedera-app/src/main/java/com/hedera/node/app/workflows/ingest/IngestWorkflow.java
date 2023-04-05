@@ -13,13 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.ingest;
 
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.transaction.TransactionResponse;
 import com.hedera.node.app.SessionContext;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.ByteBuffer;
 
 /**
  * The {@link IngestWorkflow} represents the workflow used when receiving a {@link Transaction} from
@@ -39,7 +41,5 @@ public interface IngestWorkflow {
      * @param responseBuffer The raw protobuf response bytes.
      */
     void submitTransaction(
-            @NonNull SessionContext session,
-            @NonNull ByteBuffer requestBuffer,
-            @NonNull ByteBuffer responseBuffer);
+            @NonNull SessionContext session, @NonNull Bytes requestBuffer, @NonNull BufferedData responseBuffer);
 }

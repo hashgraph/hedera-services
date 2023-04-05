@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -40,6 +41,10 @@ public final class EntityNumVirtualKey implements VirtualLongKey {
 
     public static EntityNumVirtualKey from(final EntityNum num) {
         return new EntityNumVirtualKey(num.longValue());
+    }
+
+    public static EntityNumVirtualKey fromLong(final long num) {
+        return new EntityNumVirtualKey(num);
     }
 
     public static EntityNumVirtualKey fromPair(final EntityNumPair num) {
@@ -101,8 +106,7 @@ public final class EntityNumVirtualKey implements VirtualLongKey {
 
     /** {@inheritDoc} */
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version)
-            throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         value = in.readLong();
     }
 

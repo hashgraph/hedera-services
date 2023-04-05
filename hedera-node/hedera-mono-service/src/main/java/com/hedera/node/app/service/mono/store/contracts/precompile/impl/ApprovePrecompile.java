@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ADDRESS_ADDRESS_UINT256_RAW_TYPE;
@@ -64,32 +65,29 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
 
 public class ApprovePrecompile extends AbstractWritePrecompile {
-    private static final Function ERC_TOKEN_APPROVE_FUNCTION =
-            new Function("approve(address,uint256)", BOOL);
-    private static final Bytes ERC_TOKEN_APPROVE_SELECTOR =
-            Bytes.wrap(ERC_TOKEN_APPROVE_FUNCTION.selector());
-    private static final ABIType<Tuple> ERC_TOKEN_APPROVE_DECODER =
-            TypeFactory.create(ADDRESS_UINT256_RAW_TYPE);
+    private static final Function ERC_TOKEN_APPROVE_FUNCTION = new Function("approve(address,uint256)", BOOL);
+    private static final Bytes ERC_TOKEN_APPROVE_SELECTOR = Bytes.wrap(ERC_TOKEN_APPROVE_FUNCTION.selector());
+    private static final ABIType<Tuple> ERC_TOKEN_APPROVE_DECODER = TypeFactory.create(ADDRESS_UINT256_RAW_TYPE);
     private static final Function HAPI_TOKEN_APPROVE_FUNCTION =
             new Function("approve(address,address,uint256)", INT_BOOL_PAIR);
-    private static final Bytes HAPI_TOKEN_APPROVE_SELECTOR =
-            Bytes.wrap(HAPI_TOKEN_APPROVE_FUNCTION.selector());
+    private static final Bytes HAPI_TOKEN_APPROVE_SELECTOR = Bytes.wrap(HAPI_TOKEN_APPROVE_FUNCTION.selector());
     private static final ABIType<Tuple> HAPI_TOKEN_APPROVE_DECODER =
             TypeFactory.create(ADDRESS_ADDRESS_UINT256_RAW_TYPE);
-    private static final Function HAPI_APPROVE_NFT_FUNCTION =
-            new Function("approveNFT(address,address,uint256)", INT);
-    private static final Bytes HAPI_APPROVE_NFT_SELECTOR =
-            Bytes.wrap(HAPI_APPROVE_NFT_FUNCTION.selector());
-    private static final ABIType<Tuple> HAPI_APPROVE_NFT_DECODER =
-            TypeFactory.create(ADDRESS_ADDRESS_UINT256_RAW_TYPE);
+    private static final Function HAPI_APPROVE_NFT_FUNCTION = new Function("approveNFT(address,address,uint256)", INT);
+    private static final Bytes HAPI_APPROVE_NFT_SELECTOR = Bytes.wrap(HAPI_APPROVE_NFT_FUNCTION.selector());
+    private static final ABIType<Tuple> HAPI_APPROVE_NFT_DECODER = TypeFactory.create(ADDRESS_ADDRESS_UINT256_RAW_TYPE);
 
     private final TokenID tokenId;
     private final boolean isFungible;
     private final EncodingFacade encoder;
     private final Address senderAddress;
     private ApproveWrapper approveOp;
-    @Nullable private EntityId operatorId;
-    @Nullable private EntityId ownerId;
+
+    @Nullable
+    private EntityId operatorId;
+
+    @Nullable
+    private EntityId ownerId;
 
     public ApprovePrecompile(
             final TokenID tokenId,
@@ -130,14 +128,13 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public TransactionBody.Builder body(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var nestedInput = tokenId == null ? input : input.slice(24);
         operatorId = EntityId.fromAddress(senderAddress);
         approveOp = decodeTokenApprove(nestedInput, tokenId, isFungible, aliasResolver, ledgers);
 
         if (approveOp.isFungible()) {
-            transactionBody = syntheticTxnFactory.createFungibleApproval(approveOp);
+            transactionBody = syntheticTxnFactory.createFungibleApproval(approveOp, operatorId);
         } else {
             final var nftId =
                     NftId.fromGrpc(approveOp.tokenId(), approveOp.serialNumber().longValueExact());
@@ -146,12 +143,9 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
             // translate this approveAllowance into a deleteAllowance
             if (isNftApprovalRevocation()) {
                 final var nominalOwnerId = ownerId != null ? ownerId : MISSING_ENTITY_ID;
-                transactionBody =
-                        syntheticTxnFactory.createDeleteAllowance(approveOp, nominalOwnerId);
+                transactionBody = syntheticTxnFactory.createDeleteAllowance(approveOp, nominalOwnerId);
             } else {
-                transactionBody =
-                        syntheticTxnFactory.createNonfungibleApproval(
-                                approveOp, ownerId, operatorId);
+                transactionBody = syntheticTxnFactory.createNonfungibleApproval(approveOp, ownerId, operatorId);
             }
         }
 
@@ -162,54 +156,42 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
     public void run(final MessageFrame frame) {
         Objects.requireNonNull(approveOp, "`body` method should be called before `run`");
 
-        validateTrueOrRevert(
-                approveOp.isFungible() || ownerId != null, INVALID_TOKEN_NFT_SERIAL_NUMBER);
+        validateTrueOrRevert(approveOp.isFungible() || ownerId != null, INVALID_TOKEN_NFT_SERIAL_NUMBER);
         final var grpcOperatorId = Objects.requireNonNull(operatorId).toGrpcAccountId();
         //  Per the ERC-721 spec, "Throws unless `msg.sender` is the current NFT owner, or
         //  an authorized operator of the current owner"
         if (!approveOp.isFungible()) {
-            final var isApproved =
-                    operatorId.equals(ownerId)
-                            || ledgers.hasApprovedForAll(
-                                    ownerId.toGrpcAccountId(), grpcOperatorId, approveOp.tokenId());
+            final var isApproved = operatorId.equals(ownerId)
+                    || ledgers.hasApprovedForAll(ownerId.toGrpcAccountId(), grpcOperatorId, approveOp.tokenId());
             validateTrueOrRevert(isApproved, SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
         }
 
         // --- Build the necessary infrastructure to execute the transaction ---
         final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());
-        final var tokenStore =
-                infrastructureFactory.newTokenStore(
-                        accountStore,
-                        sideEffects,
-                        ledgers.tokens(),
-                        ledgers.nfts(),
-                        ledgers.tokenRels());
+        final var tokenStore = infrastructureFactory.newTokenStore(
+                accountStore, sideEffects, ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels());
         final var payerAccount = accountStore.loadAccount(Id.fromGrpcAccount(grpcOperatorId));
         final var approveAllowanceChecks = infrastructureFactory.newApproveAllowanceChecks();
         final var deleteAllowanceChecks = infrastructureFactory.newDeleteAllowanceChecks();
         // --- Execute the transaction and capture its results ---
         if (isNftApprovalRevocation()) {
-            final var deleteAllowanceLogic =
-                    infrastructureFactory.newDeleteAllowanceLogic(accountStore, tokenStore);
+            final var deleteAllowanceLogic = infrastructureFactory.newDeleteAllowanceLogic(accountStore, tokenStore);
             final var revocationOp = transactionBody.getCryptoDeleteAllowance();
             final var revocationWrapper = revocationOp.getNftAllowancesList();
-            final var status =
-                    deleteAllowanceChecks.deleteAllowancesValidation(
-                            revocationWrapper, payerAccount, accountStore, tokenStore);
+            final var status = deleteAllowanceChecks.deleteAllowancesValidation(
+                    revocationWrapper, payerAccount, accountStore, tokenStore);
             validateTrueOrRevert(status == OK, status);
             deleteAllowanceLogic.deleteAllowance(revocationWrapper, grpcOperatorId);
         } else {
-            final var status =
-                    approveAllowanceChecks.allowancesValidation(
-                            transactionBody.getCryptoApproveAllowance().getCryptoAllowancesList(),
-                            transactionBody.getCryptoApproveAllowance().getTokenAllowancesList(),
-                            transactionBody.getCryptoApproveAllowance().getNftAllowancesList(),
-                            payerAccount,
-                            accountStore,
-                            tokenStore);
+            final var status = approveAllowanceChecks.allowancesValidation(
+                    transactionBody.getCryptoApproveAllowance().getCryptoAllowancesList(),
+                    transactionBody.getCryptoApproveAllowance().getTokenAllowancesList(),
+                    transactionBody.getCryptoApproveAllowance().getNftAllowancesList(),
+                    payerAccount,
+                    accountStore,
+                    tokenStore);
             validateTrueOrRevert(status == OK, status);
-            final var approveAllowanceLogic =
-                    infrastructureFactory.newApproveAllowanceLogic(accountStore, tokenStore);
+            final var approveAllowanceLogic = infrastructureFactory.newApproveAllowanceLogic(accountStore, tokenStore);
             try {
                 approveAllowanceLogic.approveAllowance(
                         transactionBody.getCryptoApproveAllowance().getCryptoAllowancesList(),
@@ -261,24 +243,18 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
         final TokenID tokenId;
 
         if (offset == 0) {
-            decodedArguments =
-                    decodeFunctionCall(
-                            input, ERC_TOKEN_APPROVE_SELECTOR, ERC_TOKEN_APPROVE_DECODER);
+            decodedArguments = decodeFunctionCall(input, ERC_TOKEN_APPROVE_SELECTOR, ERC_TOKEN_APPROVE_DECODER);
             tokenId = impliedTokenId;
         } else if (isFungible) {
-            decodedArguments =
-                    decodeFunctionCall(
-                            input, HAPI_TOKEN_APPROVE_SELECTOR, HAPI_TOKEN_APPROVE_DECODER);
+            decodedArguments = decodeFunctionCall(input, HAPI_TOKEN_APPROVE_SELECTOR, HAPI_TOKEN_APPROVE_DECODER);
             tokenId = convertAddressBytesToTokenID(decodedArguments.get(0));
         } else {
-            decodedArguments =
-                    decodeFunctionCall(input, HAPI_APPROVE_NFT_SELECTOR, HAPI_APPROVE_NFT_DECODER);
+            decodedArguments = decodeFunctionCall(input, HAPI_APPROVE_NFT_SELECTOR, HAPI_APPROVE_NFT_DECODER);
             tokenId = convertAddressBytesToTokenID(decodedArguments.get(0));
         }
 
         final var ledgerFungible = TokenType.FUNGIBLE_COMMON.equals(ledgers.typeOf(tokenId));
-        final var spender =
-                convertLeftPaddedAddressToAccountId(decodedArguments.get(offset), aliasResolver);
+        final var spender = convertLeftPaddedAddressToAccountId(decodedArguments.get(offset), aliasResolver);
 
         if (isFungible) {
             if (!ledgerFungible) {
@@ -298,9 +274,7 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
     }
 
     private boolean isNftApprovalRevocation() {
-        return Objects.requireNonNull(
-                                approveOp,
-                                "`body` method should be called before `isNftApprovalRevocation`")
+        return Objects.requireNonNull(approveOp, "`body` method should be called before `isNftApprovalRevocation`")
                         .spender()
                         .getAccountNum()
                 == 0;
@@ -311,8 +285,7 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
                 .forLogger(logger)
                 .forEventSignature(AbiConstants.APPROVAL_EVENT)
                 .forIndexedArgument(ledgers.canonicalAddress(senderAddress))
-                .forIndexedArgument(
-                        ledgers.canonicalAddress(asTypedEvmAddress(approveOp.spender())))
+                .forIndexedArgument(ledgers.canonicalAddress(asTypedEvmAddress(approveOp.spender())))
                 .forDataItem(approveOp.amount())
                 .build();
     }
@@ -322,8 +295,7 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
                 .forLogger(logger)
                 .forEventSignature(AbiConstants.APPROVAL_EVENT)
                 .forIndexedArgument(ledgers.canonicalAddress(senderAddress))
-                .forIndexedArgument(
-                        ledgers.canonicalAddress(asTypedEvmAddress(approveOp.spender())))
+                .forIndexedArgument(ledgers.canonicalAddress(asTypedEvmAddress(approveOp.spender())))
                 .forIndexedArgument(approveOp.serialNumber())
                 .build();
     }

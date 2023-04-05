@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context;
 
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.parseAccount;
@@ -78,8 +79,7 @@ public class NodeInfo {
 
         final int index = (int) nodeId;
         if (isIndexOutOfBounds(index)) {
-            throw new IllegalArgumentException(
-                    "The address book does not have a node at index " + index);
+            throw new IllegalArgumentException("The address book does not have a node at index " + index);
         }
         return isZeroStake[index];
     }
@@ -120,12 +120,10 @@ public class NodeInfo {
 
         final int index = (int) nodeId;
         if (isIndexOutOfBounds(index)) {
-            throw new IllegalArgumentException(
-                    "No node with id " + nodeId + " was in the address book!");
+            throw new IllegalArgumentException("No node with id " + nodeId + " was in the address book!");
         }
         if (accounts[index] == null) {
-            throw new IllegalArgumentException(
-                    "The address book did not have an account for node id " + nodeId + "!");
+            throw new IllegalArgumentException("The address book did not have an account for node id " + nodeId + "!");
         }
         return index;
     }
@@ -182,8 +180,7 @@ public class NodeInfo {
                 accountKeys[i] = EntityNum.fromAccountId(accounts[i]);
             } catch (IllegalArgumentException e) {
                 if (!isZeroStake[i]) {
-                    log.error(
-                            "Cannot parse account for staked node id {}, potentially fatal!", i, e);
+                    log.error("Cannot parse account for staked node id {}, potentially fatal!", i, e);
                 }
             }
         }

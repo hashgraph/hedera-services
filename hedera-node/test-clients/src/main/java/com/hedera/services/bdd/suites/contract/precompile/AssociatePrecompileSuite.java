@@ -13,9 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
+import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -37,6 +39,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
@@ -73,12 +76,11 @@ public class AssociatePrecompileSuite extends HapiSuite {
 
     private static final long GAS_TO_OFFER = 4_000_000L;
     private static final long TOTAL_SUPPLY = 1_000;
-    private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE =
-            KeyShape.threshOf(1, SIMPLE, DELEGATE_CONTRACT);
+    private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE = KeyShape.threshOf(1, SIMPLE, DELEGATE_CONTRACT);
     private static final String TOKEN_TREASURY = "treasury";
     private static final String OUTER_CONTRACT = "NestedAssociateDissociate";
     private static final String INNER_CONTRACT = "AssociateDissociate";
-    private static final String THE_CONTRACT = "AssociateDissociate";
+    public static final String THE_CONTRACT = "AssociateDissociate";
     private static final String THE_GRACEFULLY_FAILING_CONTRACT = "GracefullyFailing";
     private static final String ACCOUNT = "anybody";
     private static final String FROZEN_TOKEN = "Frozen token";
@@ -87,8 +89,12 @@ public class AssociatePrecompileSuite extends HapiSuite {
     private static final String DELEGATE_KEY = "Delegate key";
     private static final String FREEZE_KEY = "Freeze key";
     private static final String KYC_KEY = "KYC key";
-    private static final byte[] ACCOUNT_ADDRESS = asAddress(AccountID.newBuilder().build());
+    private static final byte[] ACCOUNT_ADDRESS =
+            asAddress(AccountID.newBuilder().build());
     private static final byte[] TOKEN_ADDRESS = asAddress(TokenID.newBuilder().build());
+    private static final String INVALID_SINGLE_ABI_CALL_TXN = "Invalid Single Abi Call txn";
+    public static final String TOKEN_ASSOCIATE_FUNCTION = "tokenAssociate";
+    private static final String VANILLA_TOKEN_ASSOCIATE_TXN = "vanillaTokenAssociateTxn";
 
     public static void main(String... args) {
         new AssociatePrecompileSuite().runSuiteAsync();
@@ -117,61 +123,53 @@ public class AssociatePrecompileSuite extends HapiSuite {
     List<HapiSpec> positiveSpecs() {
         return List.of(
                 nestedAssociateWorksAsExpected(),
-                multipleAssociatePrecompileWithSignatureWorksForFungible());
+                multipleAssociatePrecompileWithSignatureWorksForFungible(),
+                associateWithMissingEvmAddressHasSaneTxnAndRecord());
     }
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
     private HapiSpec functionCallWithLessThanFourBytesFailsWithinSingleContractCall() {
         return defaultHapiSpec("FunctionCallWithLessThanFourBytesFailsWithinSingleContractCall")
-                .given(
-                        uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT),
-                        contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
-                .when(
-                        contractCall(
-                                        THE_GRACEFULLY_FAILING_CONTRACT,
-                                        "performLessThanFourBytesFunctionCall",
-                                        HapiParserUtil.asHeadlongAddress(ACCOUNT_ADDRESS),
-                                        HapiParserUtil.asHeadlongAddress(TOKEN_ADDRESS))
-                                .notTryingAsHexedliteral()
-                                .via("Function call with less than 4 bytes txn")
-                                .gas(100_000))
+                .given(uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT), contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
+                .when(contractCall(
+                                THE_GRACEFULLY_FAILING_CONTRACT,
+                                "performLessThanFourBytesFunctionCall",
+                                HapiParserUtil.asHeadlongAddress(ACCOUNT_ADDRESS),
+                                HapiParserUtil.asHeadlongAddress(TOKEN_ADDRESS))
+                        .notTryingAsHexedliteral()
+                        .via("Function call with less than 4 bytes txn")
+                        .gas(100_000))
                 .then(childRecordsCheck("Function call with less than 4 bytes txn", SUCCESS));
     }
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
     private HapiSpec invalidAbiCallGracefullyFailsWithinSingleContractCall() {
         return defaultHapiSpec("InvalidAbiCallGracefullyFailsWithinSingleContractCall")
-                .given(
-                        uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT),
-                        contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
-                .when(
-                        contractCall(
-                                        THE_GRACEFULLY_FAILING_CONTRACT,
-                                        "performInvalidlyFormattedFunctionCall",
-                                        HapiParserUtil.asHeadlongAddress(ACCOUNT_ADDRESS),
-                                        new Address[] {
-                                            HapiParserUtil.asHeadlongAddress(TOKEN_ADDRESS),
-                                            HapiParserUtil.asHeadlongAddress(TOKEN_ADDRESS)
-                                        })
-                                .notTryingAsHexedliteral()
-                                .via("Invalid Abi Function call txn"))
+                .given(uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT), contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
+                .when(contractCall(
+                                THE_GRACEFULLY_FAILING_CONTRACT,
+                                "performInvalidlyFormattedFunctionCall",
+                                HapiParserUtil.asHeadlongAddress(ACCOUNT_ADDRESS),
+                                new Address[] {
+                                    HapiParserUtil.asHeadlongAddress(TOKEN_ADDRESS),
+                                    HapiParserUtil.asHeadlongAddress(TOKEN_ADDRESS)
+                                })
+                        .notTryingAsHexedliteral()
+                        .via("Invalid Abi Function call txn"))
                 .then(childRecordsCheck("Invalid Abi Function call txn", SUCCESS));
     }
 
     /* -- HSCS-PREC-26 from HTS Precompile Test Plan -- */
     private HapiSpec nonSupportedAbiCallGracefullyFailsWithinSingleContractCall() {
         return defaultHapiSpec("NonSupportedAbiCallGracefullyFailsWithinSingleContractCall")
-                .given(
-                        uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT),
-                        contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
-                .when(
-                        contractCall(
-                                        THE_GRACEFULLY_FAILING_CONTRACT,
-                                        "performNonExistingServiceFunctionCall",
-                                        HapiParserUtil.asHeadlongAddress(ACCOUNT_ADDRESS),
-                                        HapiParserUtil.asHeadlongAddress(TOKEN_ADDRESS))
-                                .notTryingAsHexedliteral()
-                                .via("nonExistingFunctionCallTxn"))
+                .given(uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT), contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
+                .when(contractCall(
+                                THE_GRACEFULLY_FAILING_CONTRACT,
+                                "performNonExistingServiceFunctionCall",
+                                HapiParserUtil.asHeadlongAddress(ACCOUNT_ADDRESS),
+                                HapiParserUtil.asHeadlongAddress(TOKEN_ADDRESS))
+                        .notTryingAsHexedliteral()
+                        .via("nonExistingFunctionCallTxn"))
                 .then(childRecordsCheck("nonExistingFunctionCallTxn", SUCCESS));
     }
 
@@ -190,56 +188,36 @@ public class AssociatePrecompileSuite extends HapiSuite {
                                 .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
                         uploadInitCode(THE_CONTRACT),
                         contractCreate(THE_CONTRACT))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                newKeyNamed(DELEGATE_KEY)
-                                                        .shape(
-                                                                DELEGATE_CONTRACT_KEY_SHAPE
-                                                                        .signedWith(
-                                                                                sigs(
-                                                                                        ON,
-                                                                                        THE_CONTRACT))),
-                                                cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
-                                                contractCall(
-                                                                THE_CONTRACT,
-                                                                "nonSupportedFunction",
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(accountID.get())),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())))
-                                                        .payingWith(GENESIS)
-                                                        .via("notSupportedFunctionCallTxn")
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                contractCall(
-                                                                THE_CONTRACT,
-                                                                "tokenAssociate",
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(accountID.get())),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())))
-                                                        .payingWith(GENESIS)
-                                                        .via("vanillaTokenAssociateTxn")
-                                                        .gas(GAS_TO_OFFER))))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
+                        cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
+                        contractCall(
+                                        THE_CONTRACT,
+                                        "nonSupportedFunction",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                .payingWith(GENESIS)
+                                .via("notSupportedFunctionCallTxn")
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        contractCall(
+                                        THE_CONTRACT,
+                                        TOKEN_ASSOCIATE_FUNCTION,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                .payingWith(GENESIS)
+                                .via(VANILLA_TOKEN_ASSOCIATE_TXN)
+                                .gas(GAS_TO_OFFER))))
                 .then(
-                        emptyChildRecordsCheck(
-                                "notSupportedFunctionCallTxn", CONTRACT_REVERT_EXECUTED),
+                        emptyChildRecordsCheck("notSupportedFunctionCallTxn", CONTRACT_REVERT_EXECUTED),
                         childRecordsCheck(
-                                "vanillaTokenAssociateTxn",
+                                VANILLA_TOKEN_ASSOCIATE_TXN,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(SUCCESS)))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))),
                         getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)));
     }
 
@@ -259,65 +237,45 @@ public class AssociatePrecompileSuite extends HapiSuite {
                                 .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
                         uploadInitCode(THE_CONTRACT),
                         contractCreate(THE_CONTRACT))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                newKeyNamed(DELEGATE_KEY)
-                                                        .shape(
-                                                                DELEGATE_CONTRACT_KEY_SHAPE
-                                                                        .signedWith(
-                                                                                sigs(
-                                                                                        ON,
-                                                                                        THE_CONTRACT))),
-                                                cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
-                                                contractCall(
-                                                                THE_CONTRACT,
-                                                                "tokenAssociate",
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(accountID.get())),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        invalidAbiArgument))
-                                                        .payingWith(GENESIS)
-                                                        .via("functionCallWithInvalidArgumentTxn")
-                                                        .gas(GAS_TO_OFFER)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                contractCall(
-                                                                THE_CONTRACT,
-                                                                "tokenAssociate",
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(accountID.get())),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())))
-                                                        .payingWith(GENESIS)
-                                                        .via("vanillaTokenAssociateTxn")
-                                                        .gas(GAS_TO_OFFER)
-                                                        .hasKnownStatus(SUCCESS))))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
+                        cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
+                        contractCall(
+                                        THE_CONTRACT,
+                                        TOKEN_ASSOCIATE_FUNCTION,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(invalidAbiArgument))
+                                .payingWith(GENESIS)
+                                .via("functionCallWithInvalidArgumentTxn")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        contractCall(
+                                        THE_CONTRACT,
+                                        TOKEN_ASSOCIATE_FUNCTION,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                .payingWith(GENESIS)
+                                .via(VANILLA_TOKEN_ASSOCIATE_TXN)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS))))
                 .then(
                         childRecordsCheck(
                                 "functionCallWithInvalidArgumentTxn",
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(INVALID_TOKEN_ID)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                INVALID_TOKEN_ID)))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(INVALID_TOKEN_ID)))),
                         childRecordsCheck(
-                                "vanillaTokenAssociateTxn",
+                                VANILLA_TOKEN_ASSOCIATE_TXN,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(SUCCESS)))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))),
                         getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)));
     }
 
@@ -333,9 +291,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
                 .given(
                         newKeyNamed(FREEZE_KEY),
                         newKeyNamed(KYC_KEY),
-                        cryptoCreate(ACCOUNT)
-                                .balance(10 * ONE_HUNDRED_HBARS)
-                                .exposingCreatedIdTo(accountID::set),
+                        cryptoCreate(ACCOUNT).balance(10 * ONE_HUNDRED_HBARS).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         tokenCreate(FROZEN_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
@@ -361,70 +317,43 @@ public class AssociatePrecompileSuite extends HapiSuite {
                                 .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
                         uploadInitCode(THE_CONTRACT),
                         contractCreate(THE_CONTRACT))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                                THE_CONTRACT,
-                                                                "tokensAssociate",
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(accountID.get())),
-                                                                new Address[] {
-                                                                    HapiParserUtil
-                                                                            .asHeadlongAddress(
-                                                                                    asAddress(
-                                                                                            frozenTokenID
-                                                                                                    .get())),
-                                                                    HapiParserUtil
-                                                                            .asHeadlongAddress(
-                                                                                    asAddress(
-                                                                                            unfrozenTokenID
-                                                                                                    .get())),
-                                                                    HapiParserUtil
-                                                                            .asHeadlongAddress(
-                                                                                    asAddress(
-                                                                                            kycTokenID
-                                                                                                    .get())),
-                                                                    HapiParserUtil
-                                                                            .asHeadlongAddress(
-                                                                                    asAddress(
-                                                                                            vanillaTokenID
-                                                                                                    .get()))
-                                                                })
-                                                        .alsoSigningWithFullPrefix(ACCOUNT)
-                                                        .via("MultipleTokensAssociationsTxn")
-                                                        .gas(GAS_TO_OFFER)
-                                                        .hasKnownStatus(ResponseCodeEnum.SUCCESS))))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        THE_CONTRACT,
+                                        "tokensAssociate",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        new Address[] {
+                                            HapiParserUtil.asHeadlongAddress(asAddress(frozenTokenID.get())),
+                                            HapiParserUtil.asHeadlongAddress(asAddress(unfrozenTokenID.get())),
+                                            HapiParserUtil.asHeadlongAddress(asAddress(kycTokenID.get())),
+                                            HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get()))
+                                        })
+                                .alsoSigningWithFullPrefix(ACCOUNT)
+                                .via("MultipleTokensAssociationsTxn")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(ResponseCodeEnum.SUCCESS))))
                 .then(
                         childRecordsCheck(
                                 "MultipleTokensAssociationsTxn",
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(SUCCESS)))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))),
                         getAccountInfo(ACCOUNT)
+                                .hasToken(relationshipWith(FROZEN_TOKEN)
+                                        .kyc(KycNotApplicable)
+                                        .freeze(Frozen))
+                                .hasToken(relationshipWith(UNFROZEN_TOKEN)
+                                        .kyc(KycNotApplicable)
+                                        .freeze(Unfrozen))
                                 .hasToken(
-                                        relationshipWith(FROZEN_TOKEN)
-                                                .kyc(KycNotApplicable)
-                                                .freeze(Frozen))
-                                .hasToken(
-                                        relationshipWith(UNFROZEN_TOKEN)
-                                                .kyc(KycNotApplicable)
-                                                .freeze(Unfrozen))
-                                .hasToken(
-                                        relationshipWith(KYC_TOKEN)
-                                                .kyc(Revoked)
-                                                .freeze(FreezeNotApplicable))
-                                .hasToken(
-                                        relationshipWith(TokenAssociationSpecs.VANILLA_TOKEN)
-                                                .kyc(KycNotApplicable)
-                                                .freeze(FreezeNotApplicable)));
+                                        relationshipWith(KYC_TOKEN).kyc(Revoked).freeze(FreezeNotApplicable))
+                                .hasToken(relationshipWith(TokenAssociationSpecs.VANILLA_TOKEN)
+                                        .kyc(KycNotApplicable)
+                                        .freeze(FreezeNotApplicable)));
     }
 
     /* -- HSCS-PREC-010 from HTS Precompile Test Plan -- */
@@ -434,9 +363,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
 
         return defaultHapiSpec("nestedAssociateWorksAsExpected")
                 .given(
-                        cryptoCreate(ACCOUNT)
-                                .balance(10 * ONE_HUNDRED_HBARS)
-                                .exposingCreatedIdTo(accountID::set),
+                        cryptoCreate(ACCOUNT).balance(10 * ONE_HUNDRED_HBARS).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
@@ -444,77 +371,80 @@ public class AssociatePrecompileSuite extends HapiSuite {
                                 .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
                         uploadInitCode(INNER_CONTRACT, OUTER_CONTRACT),
                         contractCreate(INNER_CONTRACT))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCreate(
-                                                        OUTER_CONTRACT,
-                                                        asHeadlongAddress(
-                                                                getNestedContractAddress(
-                                                                        INNER_CONTRACT, spec))),
-                                                contractCall(
-                                                                OUTER_CONTRACT,
-                                                                "associateDissociateContractCall",
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(accountID.get())),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())))
-                                                        .alsoSigningWithFullPrefix(ACCOUNT)
-                                                        .via("nestedAssociateTxn")
-                                                        .gas(GAS_TO_OFFER)
-                                                        .hasKnownStatus(ResponseCodeEnum.SUCCESS))))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCreate(
+                                OUTER_CONTRACT, asHeadlongAddress(getNestedContractAddress(INNER_CONTRACT, spec))),
+                        contractCall(
+                                        OUTER_CONTRACT,
+                                        "associateDissociateContractCall",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                .alsoSigningWithFullPrefix(ACCOUNT)
+                                .via("nestedAssociateTxn")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(ResponseCodeEnum.SUCCESS))))
                 .then(
                         childRecordsCheck(
                                 "nestedAssociateTxn",
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(SUCCESS))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS))),
                                 recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(SUCCESS)))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))),
                         getAccountInfo(ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN));
+    }
+
+    private HapiSpec associateWithMissingEvmAddressHasSaneTxnAndRecord() {
+        final AtomicReference<Address> tokenAddress = new AtomicReference<>();
+        final var missingAddress =
+                Address.wrap(Address.toChecksumAddress("0xabababababababababababababababababababab"));
+        final var txn = "txn";
+
+        return defaultHapiSpec("AssociateWithMissingEvmAddressHasSaneTxnAndRecord")
+                .given(
+                        cryptoCreate(TOKEN_TREASURY),
+                        uploadInitCode(INNER_CONTRACT),
+                        contractCreate(INNER_CONTRACT),
+                        tokenCreate(VANILLA_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .exposingCreatedIdTo(idLit ->
+                                        tokenAddress.set(idAsHeadlongAddress(HapiPropertySource.asToken(idLit)))))
+                .when(sourcing(
+                        () -> contractCall(INNER_CONTRACT, TOKEN_ASSOCIATE_FUNCTION, missingAddress, tokenAddress.get())
+                                .via(txn)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
+                .then(getTxnRecord(txn).andAllChildRecords().logged());
     }
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
     private HapiSpec invalidSingleAbiCallConsumesAllProvidedGas() {
         return defaultHapiSpec("InvalidSingleAbiCallConsumesAllProvidedGas")
-                .given(
-                        uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT),
-                        contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
+                .given(uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT), contractCreate(THE_GRACEFULLY_FAILING_CONTRACT))
                 .when(
                         contractCall(
                                         THE_GRACEFULLY_FAILING_CONTRACT,
                                         "performInvalidlyFormattedSingleFunctionCall",
                                         HapiParserUtil.asHeadlongAddress(ACCOUNT_ADDRESS))
                                 .notTryingAsHexedliteral()
-                                .via("Invalid Single Abi Call txn")
+                                .via(INVALID_SINGLE_ABI_CALL_TXN)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                        getTxnRecord("Invalid Single Abi Call txn")
-                                .saveTxnRecordToRegistry("Invalid Single Abi Call txn"))
-                .then(
-                        withOpContext(
-                                (spec, ignore) -> {
-                                    final var gasUsed =
-                                            spec.registry()
-                                                    .getTransactionRecord(
-                                                            "Invalid Single Abi Call txn")
-                                                    .getContractCallResult()
-                                                    .getGasUsed();
-                                    assertEquals(99011, gasUsed);
-                                }));
+                        getTxnRecord(INVALID_SINGLE_ABI_CALL_TXN).saveTxnRecordToRegistry(INVALID_SINGLE_ABI_CALL_TXN))
+                .then(withOpContext((spec, ignore) -> {
+                    final var gasUsed = spec.registry()
+                            .getTransactionRecord(INVALID_SINGLE_ABI_CALL_TXN)
+                            .getContractCallResult()
+                            .getGasUsed();
+                    assertEquals(99011, gasUsed);
+                }));
     }
 
     @Override
@@ -534,7 +464,6 @@ public class AssociatePrecompileSuite extends HapiSuite {
 
     @NotNull
     public static String getNestedContractAddress(final String outerContract, final HapiSpec spec) {
-        return HapiPropertySource.asHexedSolidityAddress(
-                spec.registry().getContractId(outerContract));
+        return HapiPropertySource.asHexedSolidityAddress(spec.registry().getContractId(outerContract));
     }
 }

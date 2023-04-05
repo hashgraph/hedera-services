@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.crypto;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
@@ -60,8 +61,7 @@ public class HapiCryptoDeleteAllowance extends HapiTxnOp<HapiCryptoDeleteAllowan
         return this;
     }
 
-    public HapiCryptoDeleteAllowance addNftDeleteAllowance(
-            String owner, String token, List<Long> serials) {
+    public HapiCryptoDeleteAllowance addNftDeleteAllowance(String owner, String token, List<Long> serials) {
         nftAllowances.add(NftAllowances.from(owner, token, serials));
         return this;
     }
@@ -69,26 +69,17 @@ public class HapiCryptoDeleteAllowance extends HapiTxnOp<HapiCryptoDeleteAllowan
     @Override
     protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
         try {
-            FeeCalculator.ActivityMetrics metricsCalc =
-                    (_txn, svo) -> {
-                        var baseMeta = new BaseTransactionMeta(_txn.getMemoBytes().size(), 0);
-                        var opMeta =
-                                new CryptoDeleteAllowanceMeta(
-                                        _txn.getCryptoDeleteAllowance(),
-                                        _txn.getTransactionID()
-                                                .getTransactionValidStart()
-                                                .getSeconds());
-                        var accumulator = new UsageAccumulator();
-                        cryptoOpsUsage.cryptoDeleteAllowanceUsage(
-                                suFrom(svo), baseMeta, opMeta, accumulator);
-                        return AdapterUtils.feeDataFrom(accumulator);
-                    };
+            FeeCalculator.ActivityMetrics metricsCalc = (_txn, svo) -> {
+                var baseMeta = new BaseTransactionMeta(_txn.getMemoBytes().size(), 0);
+                var opMeta = new CryptoDeleteAllowanceMeta(
+                        _txn.getCryptoDeleteAllowance(),
+                        _txn.getTransactionID().getTransactionValidStart().getSeconds());
+                var accumulator = new UsageAccumulator();
+                cryptoOpsUsage.cryptoDeleteAllowanceUsage(suFrom(svo), baseMeta, opMeta, accumulator);
+                return AdapterUtils.feeDataFrom(accumulator);
+            };
             return spec.fees()
-                    .forActivityBasedOp(
-                            HederaFunctionality.CryptoDeleteAllowance,
-                            metricsCalc,
-                            txn,
-                            numPayerKeys);
+                    .forActivityBasedOp(HederaFunctionality.CryptoDeleteAllowance, metricsCalc, txn, numPayerKeys);
         } catch (Throwable ignore) {
             return HapiSuite.ONE_HBAR;
         }
@@ -98,25 +89,17 @@ public class HapiCryptoDeleteAllowance extends HapiTxnOp<HapiCryptoDeleteAllowan
     protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
         List<NftRemoveAllowance> nftallowances = new ArrayList<>();
         calculateAllowances(spec, nftallowances);
-        CryptoDeleteAllowanceTransactionBody opBody =
-                spec.txns()
-                        .<CryptoDeleteAllowanceTransactionBody,
-                                CryptoDeleteAllowanceTransactionBody.Builder>
-                                body(
-                                        CryptoDeleteAllowanceTransactionBody.class,
-                                        b -> {
-                                            b.addAllNftAllowances(nftallowances);
-                                        });
+        CryptoDeleteAllowanceTransactionBody opBody = spec.txns()
+                .<CryptoDeleteAllowanceTransactionBody, CryptoDeleteAllowanceTransactionBody.Builder>body(
+                        CryptoDeleteAllowanceTransactionBody.class, b -> b.addAllNftAllowances(nftallowances));
         return b -> b.setCryptoDeleteAllowance(opBody);
     }
 
-    private void calculateAllowances(
-            final HapiSpec spec, final List<NftRemoveAllowance> nftallowances) {
+    private void calculateAllowances(final HapiSpec spec, final List<NftRemoveAllowance> nftallowances) {
         for (var entry : nftAllowances) {
-            final var builder =
-                    NftRemoveAllowance.newBuilder()
-                            .setTokenId(spec.registry().getTokenID(entry.token()))
-                            .addAllSerialNumbers(entry.serials());
+            final var builder = NftRemoveAllowance.newBuilder()
+                    .setTokenId(spec.registry().getTokenID(entry.token()))
+                    .addAllSerialNumbers(entry.serials());
             if (entry.owner() != MISSING_OWNER) {
                 builder.setOwner(spec.registry().getAccountID(entry.owner()));
             }
@@ -143,8 +126,7 @@ public class HapiCryptoDeleteAllowance extends HapiTxnOp<HapiCryptoDeleteAllowan
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
-        MoreObjects.ToStringHelper helper =
-                super.toStringHelper().add("nftDeleteAllowances", nftAllowances);
+        MoreObjects.ToStringHelper helper = super.toStringHelper().add("nftDeleteAllowances", nftAllowances);
         return helper;
     }
 

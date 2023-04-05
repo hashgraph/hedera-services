@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.utilops.checks;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -32,8 +33,7 @@ public class VerifyGetBySolidityIdNotSupported extends UtilOp {
         Response response =
                 spec.clients().getScSvcStub(targetNodeFor(spec), useTls).getBySolidityID(query);
         Assertions.assertEquals(
-                NOT_SUPPORTED,
-                response.getGetBySolidityID().getHeader().getNodeTransactionPrecheckCode());
+                NOT_SUPPORTED, response.getGetBySolidityID().getHeader().getNodeTransactionPrecheckCode());
         return false;
     }
 }

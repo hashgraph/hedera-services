@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.junit.validators;
 
 import java.io.IOException;
@@ -38,10 +39,7 @@ public class QueryLogValidator {
         final List<String> problemLines = Files.readAllLines(Paths.get(logFileLocation));
         if (!problemLines.isEmpty()) {
             Assertions.fail(
-                    "Found problems in log file '"
-                            + logFileLocation
-                            + "':\n"
-                            + String.join("\n", problemLines));
+                    "Found problems in log file '" + logFileLocation + "':\n" + String.join("\n", problemLines));
         }
     }
 }

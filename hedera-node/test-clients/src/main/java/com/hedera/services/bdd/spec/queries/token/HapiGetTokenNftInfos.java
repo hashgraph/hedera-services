@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.queries.token;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
@@ -63,46 +64,37 @@ public class HapiGetTokenNftInfos extends HapiQueryOp<HapiGetTokenNftInfos> {
     protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
         var actualInfo = response.getTokenGetNftInfos().getNftsList();
         var expectedInfo = new ArrayList<TokenNftInfo>();
-        expectedNfts.ifPresent(
-                nfts -> {
-                    for (HapiTokenNftInfo nftInfo : nfts) {
-                        var expectedNftId = NftID.newBuilder();
-                        var expectedNftElement = TokenNftInfo.newBuilder();
+        expectedNfts.ifPresent(nfts -> {
+            for (HapiTokenNftInfo nftInfo : nfts) {
+                var expectedNftId = NftID.newBuilder();
+                var expectedNftElement = TokenNftInfo.newBuilder();
 
-                        nftInfo.getExpectedTokenID()
-                                .ifPresent(
-                                        e -> {
-                                            expectedNftId.setTokenID(TxnUtils.asTokenId(e, spec));
-                                            expectedNftElement.setCreationTime(
-                                                    spec.registry().getCreationTime(e));
-                                        });
-                        nftInfo.getExpectedSerialNum().ifPresent(expectedNftId::setSerialNumber);
-
-                        expectedNftElement.setNftID(expectedNftId.build());
-                        nftInfo.getExpectedAccountID()
-                                .ifPresent(
-                                        e ->
-                                                expectedNftElement.setAccountID(
-                                                        TxnUtils.asId(e, spec)));
-                        nftInfo.getExpectedMetadata().ifPresent(expectedNftElement::setMetadata);
-
-                        nftInfo.getExpectedLedgerID()
-                                .ifPresent(id -> expectedNftElement.setLedgerId(rationalize(id)));
-
-                        var completedNft = expectedNftElement.build();
-                        expectedInfo.add(completedNft);
-                    }
-                    Assertions.assertEquals(actualInfo, expectedInfo);
+                nftInfo.getExpectedTokenID().ifPresent(e -> {
+                    expectedNftId.setTokenID(TxnUtils.asTokenId(e, spec));
+                    expectedNftElement.setCreationTime(spec.registry().getCreationTime(e));
                 });
+                nftInfo.getExpectedSerialNum().ifPresent(expectedNftId::setSerialNumber);
+
+                expectedNftElement.setNftID(expectedNftId.build());
+                nftInfo.getExpectedAccountID().ifPresent(e -> expectedNftElement.setAccountID(TxnUtils.asId(e, spec)));
+                nftInfo.getExpectedMetadata().ifPresent(expectedNftElement::setMetadata);
+
+                nftInfo.getExpectedLedgerID().ifPresent(id -> expectedNftElement.setLedgerId(rationalize(id)));
+
+                var completedNft = expectedNftElement.build();
+                expectedInfo.add(completedNft);
+            }
+            Assertions.assertEquals(actualInfo, expectedInfo);
+        });
     }
 
     @Override
     protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getTokenNftInfosQuery(spec, payment, false);
-        response =
-                spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls).getTokenNftInfos(query);
+        response = spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls).getTokenNftInfos(query);
         if (verboseLoggingOn) {
-            log.info("NftInfo for '" + token + "': ");
+            String message = String.format("NftInfo for '%s': ", token);
+            log.info(message);
             response.getTokenGetNftInfos().getNftsList().forEach(nft -> log.info(nft.toString()));
         }
     }
@@ -132,13 +124,12 @@ public class HapiGetTokenNftInfos extends HapiQueryOp<HapiGetTokenNftInfos> {
 
     private Query getTokenNftInfosQuery(HapiSpec spec, Transaction payment, boolean costOnly) {
         var id = TxnUtils.asTokenId(token, spec);
-        TokenGetNftInfosQuery getTokenNftInfosQuery =
-                TokenGetNftInfosQuery.newBuilder()
-                        .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
-                        .setTokenID(id)
-                        .setStart(start)
-                        .setEnd(end)
-                        .build();
+        TokenGetNftInfosQuery getTokenNftInfosQuery = TokenGetNftInfosQuery.newBuilder()
+                .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
+                .setTokenID(id)
+                .setStart(start)
+                .setEnd(end)
+                .build();
         return Query.newBuilder().setTokenGetNftInfos(getTokenNftInfosQuery).build();
     }
 }

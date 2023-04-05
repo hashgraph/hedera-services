@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.utilops;
 
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -33,9 +34,7 @@ public enum FeatureFlags {
     @SuppressWarnings("unchecked")
     private Map<String, String> all(final String choice) {
         return Map.ofEntries(
-                Arrays.stream(NAMES)
-                        .map(name -> Map.entry(name, choice))
-                        .toArray(Map.Entry[]::new));
+                Arrays.stream(NAMES).map(name -> Map.entry(name, choice)).toArray(Map.Entry[]::new));
     }
 
     private static final String[] NAMES = {
@@ -54,7 +53,7 @@ public enum FeatureFlags {
         "utilPrng.isEnabled",
         "tokens.autoCreations.isEnabled",
         "lazyCreation.enabled",
-        "cryptoCreateWithAliasAndEvmAddress.enabled",
+        "cryptoCreateWithAlias.enabled",
         "contracts.allowAutoAssociations",
         "contracts.enforceCreationThrottle",
         "contracts.precompile.atomicCryptoTransfer.enabled",

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.accounts;
 
 import static com.hedera.node.app.service.mono.store.models.Id.MISSING_ID;
@@ -73,13 +74,12 @@ public class MerkleAccountFactory {
         memo.ifPresent(value::setMemo);
         alias.ifPresent(value::setAlias);
         proxy.ifPresent(p -> value.setProxy(EntityId.fromGrpcAccountId(p)));
-        balance.ifPresent(
-                b -> {
-                    try {
-                        value.setBalance(b);
-                    } catch (Exception ignore) {
-                    }
-                });
+        balance.ifPresent(b -> {
+            try {
+                value.setBalance(b);
+            } catch (Exception ignore) {
+            }
+        });
         deleted.ifPresent(value::setDeleted);
         accountKeys.ifPresent(value::setAccountKey);
         expirationTime.ifPresent(value::setExpiry);
@@ -245,14 +245,12 @@ public class MerkleAccountFactory {
         return this;
     }
 
-    public MerkleAccountFactory fungibleTokenAllowances(
-            final TreeMap<FcTokenAllowanceId, Long> allowances) {
+    public MerkleAccountFactory fungibleTokenAllowances(final TreeMap<FcTokenAllowanceId, Long> allowances) {
         fungibleTokenAllowances = allowances;
         return this;
     }
 
-    public MerkleAccountFactory explicitNftAllowances(
-            final TreeSet<FcTokenAllowanceId> allowances) {
+    public MerkleAccountFactory explicitNftAllowances(final TreeSet<FcTokenAllowanceId> allowances) {
         approveForAllNftsAllowances = allowances;
         return this;
     }

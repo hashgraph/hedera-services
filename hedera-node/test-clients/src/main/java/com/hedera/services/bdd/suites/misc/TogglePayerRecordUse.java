@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.misc;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -34,10 +35,9 @@ public class TogglePayerRecordUse extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    changePayerRecordStateStorage(),
-                });
+        return List.of(new HapiSpec[] {
+            changePayerRecordStateStorage(),
+        });
     }
 
     private HapiSpec changePayerRecordStateStorage() {
@@ -46,10 +46,9 @@ public class TogglePayerRecordUse extends HapiSuite {
         return defaultHapiSpec("ChangePayerRecordStateStorage")
                 .given()
                 .when()
-                .then(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(Map.of("ledger.createPayerRecords", NEW_VALUE)));
+                .then(fileUpdate(APP_PROPERTIES)
+                        .payingWith(ADDRESS_BOOK_CONTROL)
+                        .overridingProps(Map.of("ledger.createPayerRecords", NEW_VALUE)));
     }
 
     @Override

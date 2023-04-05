@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
@@ -44,12 +45,7 @@ public class TokenMintTransitionLogic implements TransitionLogic {
         final var grpcId = op.getToken();
         final var targetId = Id.fromGrpcToken(grpcId);
 
-        mintLogic.mint(
-                targetId,
-                op.getMetadataCount(),
-                op.getAmount(),
-                op.getMetadataList(),
-                txnCtx.consensusTime());
+        mintLogic.mint(targetId, op.getMetadataCount(), op.getAmount(), op.getMetadataList(), txnCtx.consensusTime());
     }
 
     @Override

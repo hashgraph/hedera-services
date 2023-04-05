@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.file.negative;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -38,33 +39,26 @@ public class CreateFailuresSpec extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    //						handleRejectsMissingWacl(),
-                    precheckRejectsBadEffectiveAutoRenewPeriod(),
-                });
+        return List.of(new HapiSpec[] {
+            //						handleRejectsMissingWacl(),
+            precheckRejectsBadEffectiveAutoRenewPeriod(),
+        });
     }
 
     private HapiSpec handleRejectsMissingWacl() {
         return defaultHapiSpec("handleRejectsMissingWacl")
-                .given(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    spec.registry()
-                                            .saveKey(
-                                                    "emptyKey",
-                                                    Key.newBuilder()
-                                                            .setKeyList(
-                                                                    KeyList.getDefaultInstance())
-                                                            .build());
-                                }))
+                .given(withOpContext((spec, opLog) -> spec.registry()
+                        .saveKey(
+                                "emptyKey",
+                                Key.newBuilder()
+                                        .setKeyList(KeyList.getDefaultInstance())
+                                        .build())))
                 .when()
-                .then(
-                        fileCreate("notHere")
-                                .contents("Not meant to be!")
-                                .key("emptyKey")
-                                .signedBy(GENESIS)
-                                .hasKnownStatus(ResponseCodeEnum.NO_WACL_KEY));
+                .then(fileCreate("notHere")
+                        .contents("Not meant to be!")
+                        .key("emptyKey")
+                        .signedBy(GENESIS)
+                        .hasKnownStatus(ResponseCodeEnum.NO_WACL_KEY));
     }
 
     private HapiSpec precheckRejectsBadEffectiveAutoRenewPeriod() {
@@ -74,10 +68,9 @@ public class CreateFailuresSpec extends HapiSuite {
         return defaultHapiSpec("precheckRejectsBadEffectiveAutoRenewPeriod")
                 .given()
                 .when()
-                .then(
-                        fileCreate("notHere")
-                                .lifetime(-60L)
-                                .hasPrecheck(ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE));
+                .then(fileCreate("notHere")
+                        .lifetime(-60L)
+                        .hasPrecheck(ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE));
     }
 
     @Override

@@ -13,26 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.grpc;
 
+import static java.util.Objects.requireNonNull;
+
+import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.ByteBuffer;
-import java.util.Objects;
 
 /**
- * Handles gRPC duties for processing {@link com.hederahashgraph.api.proto.java.Query} gRPC calls. A
- * single instance of this class is used by all query threads in the node.
+ * Handles gRPC duties for processing {@link Query} gRPC calls. A single instance of this class is
+ * used by all query threads in the node.
  *
  * <p>FUTURE WORK: ThreadSafe annotation missing in spotbugs annotations but should be added to
  * class
  */
 /*@ThreadSafe*/
 final class QueryMethod extends MethodBase {
+    // Constants for metric names and descriptions
     private static final String COUNTER_ANSWERED_NAME_TPL = "%sSub";
     private static final String COUNTER_ANSWERED_DESC_TPL = "number of %s answered";
     private static final String SPEEDOMETER_ANSWERED_NAME_TPL = "%sSub/sec";
@@ -60,19 +65,18 @@ final class QueryMethod extends MethodBase {
             @NonNull final QueryWorkflow workflow,
             @NonNull final Metrics metrics) {
         super(serviceName, methodName, metrics);
-        this.workflow = Objects.requireNonNull(workflow);
-
-        this.queriesAnsweredCounter =
-                counter(metrics, COUNTER_ANSWERED_NAME_TPL, COUNTER_ANSWERED_DESC_TPL);
+        this.workflow = requireNonNull(workflow);
+        this.queriesAnsweredCounter = counter(metrics, COUNTER_ANSWERED_NAME_TPL, COUNTER_ANSWERED_DESC_TPL);
         this.queriesAnsweredSpeedometer =
                 speedometer(metrics, SPEEDOMETER_ANSWERED_NAME_TPL, SPEEDOMETER_ANSWERED_DESC_TPL);
     }
 
+    /** {@inheritDoc} */
     @Override
     protected void handle(
             @NonNull final SessionContext session,
-            @NonNull final ByteBuffer requestBuffer,
-            @NonNull final ByteBuffer responseBuffer) {
+            @NonNull final Bytes requestBuffer,
+            @NonNull final BufferedData responseBuffer) {
         workflow.handleQuery(session, requestBuffer, responseBuffer);
         queriesAnsweredCounter.increment();
         queriesAnsweredSpeedometer.cycle();

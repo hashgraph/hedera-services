@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.entity;
 
-import com.hedera.node.app.service.token.entity.Account;
-import com.hedera.node.app.service.token.entity.AccountBuilder;
+import com.hedera.node.app.spi.accounts.Account;
+import com.hedera.node.app.spi.accounts.AccountBuilder;
 import com.hedera.node.app.spi.key.HederaKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -25,7 +26,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
-/** An implementation of {@link Account}. FUTURE: Should be moved to token-service-impl module */
+/** An implementation of {@link Account} */
 public record AccountImpl(
         long accountNumber,
         Optional<byte[]> alias,
@@ -50,18 +51,6 @@ public record AccountImpl(
         long autoRenewAccountNumber,
         long autoRenewSecs)
         implements Account {
-
-    @Override
-    public long shardNumber() {
-        // FUTURE: Need to get this from config
-        return 0;
-    }
-
-    @Override
-    public long realmNumber() {
-        // FUTURE: Need to get this from config
-        return 0;
-    }
 
     @Override
     public boolean isHollow() {

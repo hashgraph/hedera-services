@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
-import com.hederahashgraph.api.proto.java.SemanticVersion;
 import java.util.ArrayList;
 import java.util.Collections;
 import org.junit.jupiter.api.Disabled;
@@ -103,7 +104,7 @@ class SchemaTest extends StateTestBase {
     void version() {
         final var schema1 = new TestSchema(1);
         assertThat(schema1.getVersion())
-                .isEqualTo(SemanticVersion.newBuilder().setMajor(1).build());
+                .isEqualTo(SemanticVersion.newBuilder().major(1).build());
     }
 
     @Test
@@ -126,8 +127,7 @@ class SchemaTest extends StateTestBase {
         final var schema1 = new TestSchema(1);
         final var newStates = new MapWritableStates(Collections.emptyMap());
         //noinspection DataFlowIssue
-        assertThatThrownBy(() -> schema1.migrate(null, newStates))
-                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> schema1.migrate(null, newStates)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -136,7 +136,6 @@ class SchemaTest extends StateTestBase {
         final var schema1 = new TestSchema(1);
         final var prevStates = new MapWritableStates(Collections.emptyMap());
         //noinspection DataFlowIssue
-        assertThatThrownBy(() -> schema1.migrate(prevStates, null))
-                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> schema1.migrate(prevStates, null)).isInstanceOf(NullPointerException.class);
     }
 }

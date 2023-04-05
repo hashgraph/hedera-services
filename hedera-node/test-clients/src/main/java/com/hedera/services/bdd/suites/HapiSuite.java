@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites;
 
 import static com.hedera.services.bdd.suites.HapiSuite.FinalOutcome.SUITE_FAILED;
@@ -30,6 +31,7 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -58,13 +60,20 @@ public abstract class HapiSuite {
 
     public abstract List<HapiSpec> getSpecsInSuite();
 
+    public List<HapiSpec> getSpecsInSuiteWithOverrides() {
+        final var specs = getSpecsInSuite();
+        if (!overrides.isEmpty()) {
+            specs.forEach(spec -> spec.addOverrideProperties(overrides));
+        }
+        return specs;
+    }
+
     public static final Key EMPTY_KEY =
             Key.newBuilder().setKeyList(KeyList.newBuilder().build()).build();
 
-    public static final Key STANDIN_CONTRACT_ID_KEY =
-            Key.newBuilder()
-                    .setContractID(ContractID.newBuilder().setContractNum(0).build())
-                    .build();
+    public static final Key STANDIN_CONTRACT_ID_KEY = Key.newBuilder()
+            .setContractID(ContractID.newBuilder().setContractNum(0).build())
+            .build();
     private static final int BYTES_PER_KB = 1024;
     public static final int MAX_CALL_DATA_SIZE = 6 * BYTES_PER_KB;
     public static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
@@ -82,8 +91,7 @@ public abstract class HapiSuite {
     public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
 
     public static final String CHAIN_ID_PROP = "contracts.chainId";
-    public static final String CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED =
-            "cryptoCreateWithAliasAndEvmAddress.enabled";
+    public static final String CRYPTO_CREATE_WITH_ALIAS_ENABLED = "cryptoCreateWithAlias.enabled";
     public static final Integer CHAIN_ID = 298;
     public static final String ETH_HASH_KEY = "EthHash";
     public static final String ETH_SENDER_ADDRESS = "EthSenderAddress";
@@ -98,14 +106,15 @@ public abstract class HapiSuite {
     public static final String ZERO_BYTE_MEMO = "\u0000kkkk";
     public static final String NODE = HapiSpecSetup.getDefaultInstance().defaultNodeName();
     public static final String HBAR_TOKEN_SENTINEL = "HBAR";
-    public static final String SYSTEM_ADMIN =
-            HapiSpecSetup.getDefaultInstance().strongControlName();
+    public static final String SYSTEM_ADMIN = HapiSpecSetup.getDefaultInstance().strongControlName();
     public static final String FREEZE_ADMIN = HapiSpecSetup.getDefaultInstance().freezeAdminName();
     public static final String FUNDING = HapiSpecSetup.getDefaultInstance().fundingAccountName();
     public static final String STAKING_REWARD =
             HapiSpecSetup.getDefaultInstance().stakingRewardAccountName();
-    public static final String NODE_REWARD =
-            HapiSpecSetup.getDefaultInstance().nodeRewardAccountName();
+    public static final String NODE_REWARD = HapiSpecSetup.getDefaultInstance().nodeRewardAccountName();
+    public static final String FEE_COLLECTOR =
+            HapiSpecSetup.getDefaultInstance().feeCollectorAccountName();
+
     public static final String GENESIS = HapiSpecSetup.getDefaultInstance().genesisAccountName();
     public static final String DEFAULT_PAYER =
             HapiSpecSetup.getDefaultInstance().defaultPayerName();
@@ -143,13 +152,14 @@ public abstract class HapiSuite {
     private boolean tearDownClientsAfter = true;
     private List<HapiSpec> finalSpecs = Collections.emptyList();
 
+    private Map<String, Object> overrides = Collections.emptyMap();
+
     public String name() {
         String simpleName = this.getClass().getSimpleName();
 
-        simpleName =
-                !simpleName.endsWith("Suite")
-                        ? simpleName
-                        : simpleName.substring(0, simpleName.length() - "Suite".length());
+        simpleName = !simpleName.endsWith("Suite")
+                ? simpleName
+                : simpleName.substring(0, simpleName.length() - "Suite".length());
         return simpleName;
     }
 
@@ -184,6 +194,20 @@ public abstract class HapiSuite {
         }
     }
 
+    public void runSuiteConcurrentWithOverrides(final Map<String, Object> overrides) {
+        this.overrides = overrides;
+        runSuiteAsync();
+    }
+
+    public void runSuiteSequentialWithOverrides(final Map<String, Object> overrides) {
+        this.overrides = overrides;
+        runSuiteSync();
+    }
+
+    public void setOverrides(final Map<String, Object> overrides) {
+        this.overrides = overrides;
+    }
+
     public FinalOutcome runSuiteAsync() {
         return runSuite(HapiSuite::runConcurrentSpecs);
     }
@@ -204,6 +228,9 @@ public abstract class HapiSuite {
 
         List<HapiSpec> specs = getSpecsInSuite();
         for (final var spec : specs) {
+            if (!overrides.isEmpty()) {
+                spec.addOverrideProperties(overrides);
+            }
             if (spec.isOnlySpecToRunInSuite()) {
                 specs = List.of(spec);
                 break;
@@ -223,13 +250,11 @@ public abstract class HapiSuite {
     @SuppressWarnings({"java:S3358", "java:S3740"})
     public static HapiSpecOperation[] flattened(Object... ops) {
         return Stream.of(ops)
-                .map(
-                        op ->
-                                (op instanceof HapiSpecOperation hapiOp)
-                                        ? new HapiSpecOperation[] {hapiOp}
-                                        : ((op instanceof List list)
-                                                ? list.toArray(new HapiSpecOperation[0])
-                                                : (HapiSpecOperation[]) op))
+                .map(op -> (op instanceof HapiSpecOperation hapiOp)
+                        ? new HapiSpecOperation[] {hapiOp}
+                        : ((op instanceof List list)
+                                ? list.toArray(new HapiSpecOperation[0])
+                                : (HapiSpecOperation[]) op))
                 .flatMap(Stream::of)
                 .toArray(HapiSpecOperation[]::new);
     }
@@ -260,10 +285,9 @@ public abstract class HapiSuite {
     }
 
     public static void runConcurrentSpecs(final List<HapiSpec> specs) {
-        final var futures =
-                specs.stream()
-                        .map(r -> CompletableFuture.runAsync(r, HapiSpec.getCommonThreadPool()))
-                        .<CompletableFuture<Void>>toArray(CompletableFuture[]::new);
+        final var futures = specs.stream()
+                .map(r -> CompletableFuture.runAsync(r, HapiSpec.getCommonThreadPool()))
+                .<CompletableFuture<Void>>toArray(CompletableFuture[]::new);
         CompletableFuture.allOf(futures).join();
     }
 

@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.migration;
 
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
@@ -22,7 +24,6 @@ import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
@@ -32,10 +33,12 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 public class UniqueTokenMapAdapter {
 
     /** Pointer to the underlying MerkleMap to interface with. null if unavailable. */
-    @Nullable private final MerkleMap<EntityNumPair, MerkleUniqueToken> merkleMap;
+    @Nullable
+    private final MerkleMap<EntityNumPair, MerkleUniqueToken> merkleMap;
 
     /** Pointer to the underlying VirtualMap to interface with. null if unavailable. */
-    @Nullable private final VirtualMap<UniqueTokenKey, UniqueTokenValue> virtualMap;
+    @Nullable
+    private final VirtualMapLike<UniqueTokenKey, UniqueTokenValue> virtualMap;
 
     /** True if {@link #virtualMap} is set. False if {@link #merkleMap} is set. */
     private final boolean isVirtual;
@@ -46,8 +49,7 @@ public class UniqueTokenMapAdapter {
      * @param virtualMap the VirtualMap instance to interface
      * @return newly constructed adapter making use of the provided virtual map.
      */
-    public static UniqueTokenMapAdapter wrap(
-            final VirtualMap<UniqueTokenKey, UniqueTokenValue> virtualMap) {
+    public static UniqueTokenMapAdapter wrap(final VirtualMapLike<UniqueTokenKey, UniqueTokenValue> virtualMap) {
         return new UniqueTokenMapAdapter(virtualMap);
     }
 
@@ -57,12 +59,11 @@ public class UniqueTokenMapAdapter {
      * @param merkleMap the MerkleMap instance to interface
      * @return newly constructed adapter making use of the provided merkle map.
      */
-    public static UniqueTokenMapAdapter wrap(
-            final MerkleMap<EntityNumPair, MerkleUniqueToken> merkleMap) {
+    public static UniqueTokenMapAdapter wrap(final MerkleMap<EntityNumPair, MerkleUniqueToken> merkleMap) {
         return new UniqueTokenMapAdapter(merkleMap);
     }
 
-    UniqueTokenMapAdapter(final VirtualMap<UniqueTokenKey, UniqueTokenValue> virtualMap) {
+    UniqueTokenMapAdapter(final VirtualMapLike<UniqueTokenKey, UniqueTokenValue> virtualMap) {
         isVirtual = true;
         this.virtualMap = virtualMap;
         this.merkleMap = null;
@@ -84,7 +85,7 @@ public class UniqueTokenMapAdapter {
     /**
      * @return the virtual map instance that the adapter is connecting to.
      */
-    public VirtualMap<UniqueTokenKey, UniqueTokenValue> virtualMap() {
+    public VirtualMapLike<UniqueTokenKey, UniqueTokenValue> virtualMap() {
         return virtualMap;
     }
 
@@ -191,7 +192,7 @@ public class UniqueTokenMapAdapter {
     }
 
     @Nullable
-    public VirtualMap<UniqueTokenKey, UniqueTokenValue> getOnDiskNfts() {
+    public VirtualMapLike<UniqueTokenKey, UniqueTokenValue> getOnDiskNfts() {
         return virtualMap;
     }
 }

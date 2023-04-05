@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.annotations;
 
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
@@ -22,6 +23,12 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import javax.inject.Qualifier;
 
+/**
+ * This annotation is used with dependency injection to inject the maximum size of a signed transaction
+ * as an argument to a class constructor.
+ *
+ * <p>NOTE: We may want to consider moving this value into standard configuration.
+ */
 @Target({ElementType.METHOD, ElementType.PARAMETER})
 @Qualifier
 @Retention(RUNTIME)

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.primitives;
 
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
@@ -59,6 +60,8 @@ import com.hedera.node.app.service.mono.ledger.backing.BackingTokens;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
 import com.hedera.node.app.service.mono.sigs.sourcing.KeyType;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
@@ -109,8 +112,6 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.virtualmap.VirtualMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -126,18 +127,17 @@ public class StateView {
 
     private static final Logger log = LogManager.getLogger(StateView.class);
 
-    private static final String FAILURE_TOKEN_INFO =
-            "Unexpected failure getting info for token {}!";
+    private static final String FAILURE_TOKEN_INFO = "Unexpected failure getting info for token {}!";
 
     /* EVM storage maps from 256-bit (32-byte) keys to 256-bit (32-byte) values */
     public static final long BYTES_PER_EVM_KEY_VALUE_PAIR = 64L;
-    public static final AccountID WILDCARD_OWNER = AccountID.newBuilder().setAccountNum(0L).build();
+    public static final AccountID WILDCARD_OWNER =
+            AccountID.newBuilder().setAccountNum(0L).build();
 
     static final byte[] EMPTY_BYTES = new byte[0];
 
     public static final JKey EMPTY_WACL = new JKeyList();
-    public static final MerkleToken REMOVED_TOKEN =
-            new MerkleToken(0L, 0L, 0, "", "", false, false, MISSING_ENTITY_ID);
+    public static final MerkleToken REMOVED_TOKEN = new MerkleToken(0L, 0L, 0, "", "", false, false, MISSING_ENTITY_ID);
 
     private final ScheduleStore scheduleStore;
     private final StateChildren stateChildren;
@@ -155,9 +155,7 @@ public class StateView {
     private BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> backingRels = null;
 
     public StateView(
-            final ScheduleStore scheduleStore,
-            final StateChildren stateChildren,
-            final NetworkInfo networkInfo) {
+            final ScheduleStore scheduleStore, final StateChildren stateChildren, final NetworkInfo networkInfo) {
         this.scheduleStore = scheduleStore;
         this.stateChildren = stateChildren;
         this.networkInfo = networkInfo;
@@ -238,8 +236,7 @@ public class StateView {
         if (merkleTopic.hasSubmitKey()) {
             info.setSubmitKey(asKeyUnchecked(merkleTopic.getSubmitKey()));
         }
-        info.setAutoRenewPeriod(
-                Duration.newBuilder().setSeconds(merkleTopic.getAutoRenewDurationSeconds()));
+        info.setAutoRenewPeriod(Duration.newBuilder().setSeconds(merkleTopic.getAutoRenewDurationSeconds()));
         if (merkleTopic.hasAutoRenewAccountId()) {
             info.setAutoRenewAccount(asAccount(merkleTopic.getAutoRenewAccountId()));
         }
@@ -263,23 +260,18 @@ public class StateView {
 
             signatories.forEach(pubKey -> signatoriesList.addKeys(grpcKeyReprOf(pubKey)));
 
-            final var info =
-                    ScheduleInfo.newBuilder()
-                            .setLedgerId(networkInfo.ledgerId())
-                            .setScheduleID(id)
-                            .setScheduledTransactionBody(schedule.scheduledTxn())
-                            .setScheduledTransactionID(schedule.scheduledTransactionId())
-                            .setCreatorAccountID(schedule.schedulingAccount().toGrpcAccountId())
-                            .setPayerAccountID(schedule.effectivePayer().toGrpcAccountId())
-                            .setSigners(signatoriesList)
-                            .setExpirationTime(
-                                    Timestamp.newBuilder()
-                                            .setSeconds(
-                                                    schedule.calculatedExpirationTime()
-                                                            .getSeconds())
-                                            .setNanos(
-                                                    schedule.calculatedExpirationTime().getNanos()))
-                            .setWaitForExpiry(schedule.calculatedWaitForExpiry());
+            final var info = ScheduleInfo.newBuilder()
+                    .setLedgerId(networkInfo.ledgerId())
+                    .setScheduleID(id)
+                    .setScheduledTransactionBody(schedule.scheduledTxn())
+                    .setScheduledTransactionID(schedule.scheduledTransactionId())
+                    .setCreatorAccountID(schedule.schedulingAccount().toGrpcAccountId())
+                    .setPayerAccountID(schedule.effectivePayer().toGrpcAccountId())
+                    .setSigners(signatoriesList)
+                    .setExpirationTime(Timestamp.newBuilder()
+                            .setSeconds(schedule.calculatedExpirationTime().getSeconds())
+                            .setNanos(schedule.calculatedExpirationTime().getNanos()))
+                    .setWaitForExpiry(schedule.calculatedWaitForExpiry());
             schedule.memo().ifPresent(info::setMemo);
             if (schedule.isDeleted()) {
                 info.setDeletionTime(schedule.deletionTime());
@@ -292,17 +284,16 @@ public class StateView {
 
             return Optional.of(info.build());
         } catch (Exception unexpected) {
-            log.warn(
-                    "Unexpected failure getting info for schedule {}!",
-                    readableId(scheduleID),
-                    unexpected);
+            log.warn("Unexpected failure getting info for schedule {}!", readableId(scheduleID), unexpected);
             return Optional.empty();
         }
     }
 
     private Key grpcKeyReprOf(final byte[] publicKey) {
         if (publicKey.length == KeyType.ECDSA_SECP256K1.getLength()) {
-            return Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(publicKey)).build();
+            return Key.newBuilder()
+                    .setECDSASecp256K1(ByteString.copyFrom(publicKey))
+                    .build();
         } else {
             return Key.newBuilder().setEd25519(ByteString.copyFrom(publicKey)).build();
         }
@@ -311,8 +302,7 @@ public class StateView {
     public Optional<TokenNftInfo> infoForNft(final NftID target) {
         final var currentNfts = uniqueTokens();
         final var tokenId = EntityNum.fromTokenId(target.getTokenID());
-        final var targetKey =
-                NftId.withDefaultShardRealm(tokenId.longValue(), target.getSerialNumber());
+        final var targetKey = NftId.withDefaultShardRealm(tokenId.longValue(), target.getSerialNumber());
         if (!currentNfts.containsKey(targetKey)) {
             return Optional.empty();
         }
@@ -329,15 +319,14 @@ public class StateView {
 
         final var spenderId = targetNft.getSpender().toGrpcAccountId();
 
-        final var info =
-                TokenNftInfo.newBuilder()
-                        .setLedgerId(networkInfo.ledgerId())
-                        .setNftID(target)
-                        .setAccountID(accountId)
-                        .setCreationTime(targetNft.getCreationTime().toGrpc())
-                        .setMetadata(ByteString.copyFrom(targetNft.getMetadata()))
-                        .setSpenderId(spenderId)
-                        .build();
+        final var info = TokenNftInfo.newBuilder()
+                .setLedgerId(networkInfo.ledgerId())
+                .setNftID(target)
+                .setAccountID(accountId)
+                .setCreationTime(targetNft.getCreationTime().toGrpc())
+                .setMetadata(ByteString.copyFrom(targetNft.getMetadata()))
+                .setSpenderId(spenderId)
+                .build();
         return Optional.of(info);
     }
 
@@ -351,7 +340,8 @@ public class StateView {
             if (optionalToken.isEmpty()) {
                 return Optional.empty();
             }
-            return optionalToken.map(token -> TokenType.forNumber(token.tokenType().ordinal()));
+            return optionalToken.map(
+                    token -> TokenType.forNumber(token.tokenType().ordinal()));
         } catch (Exception unexpected) {
             log.warn(FAILURE_TOKEN_INFO, readableId(tokenId), unexpected);
             return Optional.empty();
@@ -359,8 +349,7 @@ public class StateView {
     }
 
     public boolean tokenExists(final TokenID id) {
-        return stateChildren != null
-                && stateChildren.tokens().containsKey(EntityNum.fromTokenId(id));
+        return stateChildren != null && stateChildren.tokens().containsKey(EntityNum.fromTokenId(id));
     }
 
     public boolean scheduleExists(final ScheduleID id) {
@@ -382,13 +371,12 @@ public class StateView {
             return Optional.empty();
         }
         final var contents = contentsOf(id).orElse(EMPTY_BYTES);
-        final var info =
-                FileGetInfoResponse.FileInfo.newBuilder()
-                        .setLedgerId(networkInfo.ledgerId())
-                        .setFileID(id)
-                        .setDeleted(attr.isDeleted())
-                        .setExpirationTime(Timestamp.newBuilder().setSeconds(attr.getExpiry()))
-                        .setSize(contents.length);
+        final var info = FileGetInfoResponse.FileInfo.newBuilder()
+                .setLedgerId(networkInfo.ledgerId())
+                .setFileID(id)
+                .setDeleted(attr.isDeleted())
+                .setExpirationTime(Timestamp.newBuilder().setSeconds(attr.getExpiry()))
+                .setSize(contents.length);
         if (!attr.getWacl().isEmpty()) {
             info.setKeys(MiscUtils.asKeyUnchecked(attr.getWacl()).getKeyList());
         }
@@ -396,7 +384,8 @@ public class StateView {
             info.setMemo(attr.getMemo());
         } else {
             // The "memo" of a special upgrade file is its hexed SHA-384 hash for DevOps convenience
-            final var upgradeHash = hex(CryptographyHolder.get().digestSync(contents).getValue());
+            final var upgradeHash =
+                    hex(CryptographyHolder.get().digestSync(contents).getValue());
             info.setMemo(upgradeHash);
         }
         return Optional.of(info.build());
@@ -407,37 +396,28 @@ public class StateView {
             final AliasManager aliasManager,
             final int maxTokensForAccountInfo,
             final RewardCalculator rewardCalculator) {
-        final var accountNum =
-                id.getAlias().isEmpty()
-                        ? fromAccountId(id)
-                        : aliasManager.lookupIdBy(id.getAlias());
+        final var accountNum = id.getAlias().isEmpty() ? fromAccountId(id) : aliasManager.lookupIdBy(id.getAlias());
         final var account = accounts().get(accountNum);
         if (account == null) {
             return Optional.empty();
         }
 
         final AccountID accountID = id.getAlias().isEmpty() ? id : accountNum.toGrpcAccountId();
-        final var info =
-                CryptoGetInfoResponse.AccountInfo.newBuilder()
-                        .setLedgerId(networkInfo.ledgerId())
-                        .setKey(asKeyUnchecked(account.getAccountKey()))
-                        .setAccountID(accountID)
-                        .setReceiverSigRequired(account.isReceiverSigRequired())
-                        .setDeleted(account.isDeleted())
-                        .setMemo(account.getMemo())
-                        .setAutoRenewPeriod(
-                                Duration.newBuilder().setSeconds(account.getAutoRenewSecs()))
-                        .setBalance(account.getBalance())
-                        .setExpirationTime(Timestamp.newBuilder().setSeconds(account.getExpiry()))
-                        .setContractAccountID(
-                                getContractAccountId(
-                                        account.getAccountKey(), accountID, account.getAlias()))
-                        .setOwnedNfts(account.getNftsOwned())
-                        .setMaxAutomaticTokenAssociations(account.getMaxAutomaticAssociations())
-                        .setEthereumNonce(account.getEthereumNonce());
-        Optional.ofNullable(account.getProxy())
-                .map(EntityId::toGrpcAccountId)
-                .ifPresent(info::setProxyAccountID);
+        final var info = CryptoGetInfoResponse.AccountInfo.newBuilder()
+                .setLedgerId(networkInfo.ledgerId())
+                .setKey(asKeyUnchecked(account.getAccountKey()))
+                .setAccountID(accountID)
+                .setReceiverSigRequired(account.isReceiverSigRequired())
+                .setDeleted(account.isDeleted())
+                .setMemo(account.getMemo())
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(account.getAutoRenewSecs()))
+                .setBalance(account.getBalance())
+                .setExpirationTime(Timestamp.newBuilder().setSeconds(account.getExpiry()))
+                .setContractAccountID(getContractAccountId(account.getAccountKey(), accountID, account.getAlias()))
+                .setOwnedNfts(account.getNftsOwned())
+                .setMaxAutomaticTokenAssociations(account.getMaxAutomaticAssociations())
+                .setEthereumNonce(account.getEthereumNonce());
+        Optional.ofNullable(account.getProxy()).map(EntityId::toGrpcAccountId).ifPresent(info::setProxyAccountID);
         if (account.getAlias().size() != EVM_ADDRESS_SIZE) {
             info.setAlias(account.getAlias());
         }
@@ -450,8 +430,7 @@ public class StateView {
         return Optional.of(info.build());
     }
 
-    private String getContractAccountId(
-            final JKey key, final AccountID accountID, final ByteString alias) {
+    private String getContractAccountId(final JKey key, final AccountID accountID, final ByteString alias) {
         if (alias.size() == EVM_ADDRESS_SIZE) {
             return CommonUtils.hex(ByteStringUtils.unwrapUnsafelyIfPossible(alias));
         }
@@ -472,13 +451,11 @@ public class StateView {
      * @param account given account for which info is queried
      * @return staking info
      */
-    public StakingInfo stakingInfo(
-            final HederaAccount account, final RewardCalculator rewardCalculator) {
+    public StakingInfo stakingInfo(final HederaAccount account, final RewardCalculator rewardCalculator) {
         // will be updated with pending_reward in future PR
-        final var stakingInfo =
-                StakingInfo.newBuilder()
-                        .setDeclineReward(account.isDeclinedReward())
-                        .setStakedToMe(account.getStakedToMe());
+        final var stakingInfo = StakingInfo.newBuilder()
+                .setDeclineReward(account.isDeclinedReward())
+                .setStakedToMe(account.getStakedToMe());
 
         final var stakedNum = account.getStakedId();
         if (stakedNum < 0) {
@@ -501,10 +478,7 @@ public class StateView {
             }
             return evmCustomFees(token.grpcFeeSchedule());
         } catch (Exception unexpected) {
-            log.warn(
-                    "Unexpected failure getting custom fees for token {}!",
-                    readableId(tokenId),
-                    unexpected);
+            log.warn("Unexpected failure getting custom fees for token {}!", readableId(tokenId), unexpected);
             return emptyList();
         }
     }
@@ -513,52 +487,41 @@ public class StateView {
             final StakingInfo.Builder stakingInfo,
             final HederaAccount account,
             final RewardCalculator rewardCalculator) {
-        final var startSecond =
-                rewardCalculator.epochSecondAtStartOfPeriod(account.getStakePeriodStart());
-        stakingInfo.setStakePeriodStart(Timestamp.newBuilder().setSeconds(startSecond).build());
+        final var startSecond = rewardCalculator.epochSecondAtStartOfPeriod(account.getStakePeriodStart());
+        stakingInfo.setStakePeriodStart(
+                Timestamp.newBuilder().setSeconds(startSecond).build());
         if (account.mayHavePendingReward()) {
             final var info = stateChildren.stakingInfo();
-            final var nodeStakingInfo =
-                    info.get(EntityNum.fromLong(account.getStakedNodeAddressBookId()));
-            final var pendingReward =
-                    rewardCalculator.estimatePendingRewards(account, nodeStakingInfo);
+            final var nodeStakingInfo = info.get(EntityNum.fromLong(account.getStakedNodeAddressBookId()));
+            final var pendingReward = rewardCalculator.estimatePendingRewards(account, nodeStakingInfo);
             stakingInfo.setPendingReward(pendingReward);
         }
     }
 
     public Optional<GetAccountDetailsResponse.AccountDetails> accountDetails(
-            final AccountID id,
-            final AliasManager aliasManager,
-            final int maxTokensForAccountInfo) {
-        final var accountNum =
-                id.getAlias().isEmpty()
-                        ? fromAccountId(id)
-                        : aliasManager.lookupIdBy(id.getAlias());
+            final AccountID id, final AliasManager aliasManager, final int maxTokensForAccountInfo) {
+        final var accountNum = id.getAlias().isEmpty() ? fromAccountId(id) : aliasManager.lookupIdBy(id.getAlias());
         final var account = accounts().get(accountNum);
         if (account == null) {
             return Optional.empty();
         }
 
         final AccountID accountID = id.getAlias().isEmpty() ? id : accountNum.toGrpcAccountId();
-        final var details =
-                GetAccountDetailsResponse.AccountDetails.newBuilder()
-                        .setLedgerId(networkInfo.ledgerId())
-                        .setKey(asKeyUnchecked(account.getAccountKey()))
-                        .setAccountId(accountID)
-                        .setAlias(account.getAlias())
-                        .setReceiverSigRequired(account.isReceiverSigRequired())
-                        .setDeleted(account.isDeleted())
-                        .setMemo(account.getMemo())
-                        .setAutoRenewPeriod(
-                                Duration.newBuilder().setSeconds(account.getAutoRenewSecs()))
-                        .setBalance(account.getBalance())
-                        .setExpirationTime(Timestamp.newBuilder().setSeconds(account.getExpiry()))
-                        .setContractAccountId(asHexedEvmAddress(accountID))
-                        .setOwnedNfts(account.getNftsOwned())
-                        .setMaxAutomaticTokenAssociations(account.getMaxAutomaticAssociations());
-        Optional.ofNullable(account.getProxy())
-                .map(EntityId::toGrpcAccountId)
-                .ifPresent(details::setProxyAccountId);
+        final var details = GetAccountDetailsResponse.AccountDetails.newBuilder()
+                .setLedgerId(networkInfo.ledgerId())
+                .setKey(asKeyUnchecked(account.getAccountKey()))
+                .setAccountId(accountID)
+                .setAlias(account.getAlias())
+                .setReceiverSigRequired(account.isReceiverSigRequired())
+                .setDeleted(account.isDeleted())
+                .setMemo(account.getMemo())
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(account.getAutoRenewSecs()))
+                .setBalance(account.getBalance())
+                .setExpirationTime(Timestamp.newBuilder().setSeconds(account.getExpiry()))
+                .setContractAccountId(asHexedEvmAddress(accountID))
+                .setOwnedNfts(account.getNftsOwned())
+                .setMaxAutomaticTokenAssociations(account.getMaxAutomaticAssociations());
+        Optional.ofNullable(account.getProxy()).map(EntityId::toGrpcAccountId).ifPresent(details::setProxyAccountId);
         final var tokenRels = tokenRels(this, account, maxTokensForAccountInfo);
         if (!tokenRels.isEmpty()) {
             details.addAllTokenRelationships(tokenRels);
@@ -568,8 +531,7 @@ public class StateView {
     }
 
     private void setAllowancesIfAny(
-            final GetAccountDetailsResponse.AccountDetails.Builder details,
-            final HederaAccount account) {
+            final GetAccountDetailsResponse.AccountDetails.Builder details, final HederaAccount account) {
         details.addAllGrantedCryptoAllowances(getCryptoGrantedAllowancesList(account));
         details.addAllGrantedTokenAllowances(getFungibleGrantedTokenAllowancesList(account));
         details.addAllGrantedNftAllowances(getNftGrantedAllowancesList(account));
@@ -596,19 +558,17 @@ public class StateView {
 
         final var mirrorId = contractId.toGrpcAccountId();
         final var storageSize = contract.getNumContractKvPairs() * BYTES_PER_EVM_KEY_VALUE_PAIR;
-        final var info =
-                ContractGetInfoResponse.ContractInfo.newBuilder()
-                        .setLedgerId(networkInfo.ledgerId())
-                        .setAccountID(mirrorId)
-                        .setDeleted(contract.isDeleted())
-                        .setContractID(contractId.toGrpcContractID())
-                        .setMemo(contract.getMemo())
-                        .setStorage(storageSize)
-                        .setAutoRenewPeriod(
-                                Duration.newBuilder().setSeconds(contract.getAutoRenewSecs()))
-                        .setBalance(contract.getBalance())
-                        .setExpirationTime(Timestamp.newBuilder().setSeconds(contract.getExpiry()))
-                        .setMaxAutomaticTokenAssociations(contract.getMaxAutomaticAssociations());
+        final var info = ContractGetInfoResponse.ContractInfo.newBuilder()
+                .setLedgerId(networkInfo.ledgerId())
+                .setAccountID(mirrorId)
+                .setDeleted(contract.isDeleted())
+                .setContractID(contractId.toGrpcContractID())
+                .setMemo(contract.getMemo())
+                .setStorage(storageSize)
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(contract.getAutoRenewSecs()))
+                .setBalance(contract.getBalance())
+                .setExpirationTime(Timestamp.newBuilder().setSeconds(contract.getExpiry()))
+                .setMaxAutomaticTokenAssociations(contract.getMaxAutomaticAssociations());
         if (contract.hasAutoRenewAccount()) {
             info.setAutoRenewAccountId(
                     Objects.requireNonNull(contract.getAutoRenewAccount()).toGrpcAccountId());
@@ -635,7 +595,7 @@ public class StateView {
         return Optional.of(info.build());
     }
 
-    public MerkleMap<EntityNum, MerkleTopic> topics() {
+    public MerkleMapLike<EntityNum, MerkleTopic> topics() {
         return Objects.requireNonNull(stateChildren).topics();
     }
 
@@ -659,15 +619,15 @@ public class StateView {
         return Objects.requireNonNull(stateChildren).uniqueTokens();
     }
 
-    public VirtualMap<VirtualBlobKey, VirtualBlobValue> storage() {
+    public VirtualMapLike<VirtualBlobKey, VirtualBlobValue> storage() {
         return Objects.requireNonNull(stateChildren).storage();
     }
 
-    public VirtualMap<ContractKey, IterableContractValue> contractStorage() {
+    public VirtualMapLike<ContractKey, IterableContractValue> contractStorage() {
         return Objects.requireNonNull(stateChildren).contractStorage();
     }
 
-    public MerkleMap<EntityNum, MerkleToken> tokens() {
+    public MerkleMapLike<EntityNum, MerkleToken> tokens() {
         return Objects.requireNonNull(stateChildren).tokens();
     }
 
@@ -680,8 +640,7 @@ public class StateView {
 
     public BackingStore<AccountID, HederaAccount> asReadOnlyAccountStore() {
         if (backingAccounts == null) {
-            backingAccounts =
-                    new BackingAccounts(stateChildren::accounts, stateChildren::payerRecords);
+            backingAccounts = new BackingAccounts(stateChildren::accounts, stateChildren::payerRecords);
         }
         return backingAccounts;
     }
@@ -721,28 +680,21 @@ public class StateView {
      * @param maxRels the maximum token relationships to return
      * @return a list of the account's newest token relationships up to the given limit
      */
-    static List<TokenRelationship> tokenRels(
-            final StateView view, final HederaAccount account, final int maxRels) {
+    static List<TokenRelationship> tokenRels(final StateView view, final HederaAccount account, final int maxRels) {
         final List<TokenRelationship> grpcRels = new ArrayList<>();
         var firstRel = account.getLatestAssociation();
-        doBoundedIteration(
-                view.tokenAssociations(),
-                view.tokens(),
-                firstRel,
-                maxRels,
-                (token, rel) -> {
-                    final var grpcRel =
-                            new RawTokenRelationship(
-                                            rel.getBalance(),
-                                            STATIC_PROPERTIES.getShard(),
-                                            STATIC_PROPERTIES.getRealm(),
-                                            rel.getRelatedTokenNum(),
-                                            rel.isFrozen(),
-                                            rel.isKycGranted(),
-                                            rel.isAutomaticAssociation())
-                                    .asGrpcFor(token);
-                    grpcRels.add(grpcRel);
-                });
+        doBoundedIteration(view.tokenAssociations(), view.tokens(), firstRel, maxRels, (token, rel) -> {
+            final var grpcRel = new RawTokenRelationship(
+                            rel.getBalance(),
+                            STATIC_PROPERTIES.getShard(),
+                            STATIC_PROPERTIES.getRealm(),
+                            rel.getRelatedTokenNum(),
+                            rel.isFrozen(),
+                            rel.isKycGranted(),
+                            rel.isAutomaticAssociation())
+                    .asGrpcFor(token);
+            grpcRels.add(grpcRel);
+        });
 
         return grpcRels;
     }
@@ -759,7 +711,7 @@ public class StateView {
      */
     public static void doBoundedIteration(
             final TokenRelStorageAdapter tokenRels,
-            final MerkleMap<EntityNum, MerkleToken> tokens,
+            final MerkleMapLike<EntityNum, MerkleToken> tokens,
             final HederaAccount account,
             final BiConsumer<MerkleToken, HederaTokenRel> visitor) {
         final var maxRels = account.getNumAssociations();
@@ -781,7 +733,7 @@ public class StateView {
      */
     public static void doBoundedIteration(
             final TokenRelStorageAdapter tokenRels,
-            final MerkleMap<EntityNum, MerkleToken> tokens,
+            final MerkleMapLike<EntityNum, MerkleToken> tokens,
             final EntityNumPair firstRel,
             final int maxRels,
             final BiConsumer<MerkleToken, HederaTokenRel> visitor) {
@@ -809,7 +761,7 @@ public class StateView {
     }
 
     @VisibleForTesting
-    public MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo() {
+    public MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfo() {
         return stateChildren.stakingInfo();
     }
 }

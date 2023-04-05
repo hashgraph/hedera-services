@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.exports;
 
 import java.io.IOException;
@@ -39,8 +40,7 @@ public class Sha384HashReader implements FileHashReader {
             byte[] data = Files.readAllBytes(Paths.get(targetLoc));
             return SHA384_MD.digest(data);
         } catch (IOException e) {
-            throw new UncheckedIOException(
-                    String.format("I/O error reading hash of '%s'!", targetLoc), e);
+            throw new UncheckedIOException(String.format("I/O error reading hash of '%s'!", targetLoc), e);
         }
     }
 }

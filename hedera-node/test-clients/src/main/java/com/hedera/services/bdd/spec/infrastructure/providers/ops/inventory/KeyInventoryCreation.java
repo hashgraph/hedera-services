@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.inventory;
 
 import static com.hedera.services.bdd.spec.keys.KeyShape.randomly;
@@ -46,15 +47,8 @@ public class KeyInventoryCreation {
 
     public HapiSpecOperation[] creationOps() {
         return IntStream.range(0, numKeys)
-                .mapToObj(
-                        i ->
-                                newKeyNamed("randKey" + i)
-                                        .shape(
-                                                randomly(
-                                                        maxDepth,
-                                                        this::someListSize,
-                                                        this::someType,
-                                                        this::someThresholdSizes)))
+                .mapToObj(i -> newKeyNamed("randKey" + i)
+                        .shape(randomly(maxDepth, this::someListSize, this::someType, this::someThresholdSizes)))
                 .toArray(HapiSpecOperation[]::new);
     }
 

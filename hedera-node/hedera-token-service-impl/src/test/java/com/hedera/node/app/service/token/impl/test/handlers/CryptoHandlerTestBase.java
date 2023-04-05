@@ -13,28 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.PreHandleContext;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -45,24 +46,33 @@ public class CryptoHandlerTestBase {
     protected static final String ACCOUNTS = "ACCOUNTS";
     protected static final String ALIASES = "ALIASES";
     protected final Key key = A_COMPLEX_KEY;
-    protected final AccountID payer = asAccount("0.0.3");
+    protected final AccountID payer = AccountID.newBuilder().accountNum(3).build();
     protected final Timestamp consensusTimestamp =
-            Timestamp.newBuilder().setSeconds(1_234_567L).build();
+            Timestamp.newBuilder().seconds(1_234_567L).build();
     protected final HederaKey payerKey = asHederaKey(A_COMPLEX_KEY).get();
-    protected final Long payerNum = payer.getAccountNum();
+    protected final Long payerNum = payer.accountNum();
 
-    @Mock protected ReadableKVState<Long, MerkleAccount> aliases;
-    @Mock protected ReadableKVState<Long, MerkleAccount> accounts;
-    @Mock protected MerkleAccount payerAccount;
-    @Mock protected ReadableStates states;
-    @Mock protected CryptoSignatureWaiversImpl waivers;
-    @Mock protected TransactionMetadata metaToHandle;
+    @Mock
+    protected ReadableKVState<String, EntityNumValue> aliases;
+
+    @Mock
+    protected ReadableKVState<EntityNumVirtualKey, MerkleAccount> accounts;
+
+    @Mock
+    protected MerkleAccount payerAccount;
+
+    @Mock
+    protected ReadableStates states;
+
+    @Mock
+    protected CryptoSignatureWaiversImpl waivers;
+
     protected ReadableAccountStore store;
 
     @BeforeEach
     void commonSetUp() {
-        given(states.<Long, MerkleAccount>get(ACCOUNTS)).willReturn(accounts);
-        given(states.<Long, MerkleAccount>get(ALIASES)).willReturn(aliases);
+        given(states.<EntityNumVirtualKey, MerkleAccount>get(ACCOUNTS)).willReturn(accounts);
+        given(states.<String, EntityNumValue>get(ALIASES)).willReturn(aliases);
         store = new ReadableAccountStore(states);
         setUpPayer();
     }
@@ -78,7 +88,7 @@ public class CryptoHandlerTestBase {
     }
 
     protected void setUpPayer() {
-        lenient().when(accounts.get(payerNum)).thenReturn(payerAccount);
+        lenient().when(accounts.get(EntityNumVirtualKey.fromLong(payerNum))).thenReturn(payerAccount);
         lenient().when(payerAccount.getAccountKey()).thenReturn((JKey) payerKey);
     }
 }

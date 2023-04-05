@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.issues;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -33,6 +34,7 @@ import org.apache.logging.log4j.Logger;
 
 public class Issue1744Suite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(Issue1744Suite.class);
+    private static final String PAYER = "payer";
 
     public static void main(String... args) {
         new Issue1744Suite().runSuiteSync();
@@ -47,32 +49,25 @@ public class Issue1744Suite extends HapiSuite {
         return defaultHapiSpec("KeepsRecordOfPayerIBE")
                 .given(
                         cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)).via("referenceTxn"),
-                        UtilVerbs.withOpContext(
-                                (spec, ctxLog) -> {
-                                    HapiGetTxnRecord subOp = getTxnRecord("referenceTxn");
-                                    allRunFor(spec, subOp);
-                                    TransactionRecord record = subOp.getResponseRecord();
-                                    long fee = record.getTransactionFee();
-                                    spec.registry().saveAmount("fee", fee);
-                                    spec.registry().saveAmount("balance", fee * 2);
-                                }))
-                .when(cryptoCreate("payer").balance(spec -> spec.registry().getAmount("balance")))
+                        UtilVerbs.withOpContext((spec, ctxLog) -> {
+                            HapiGetTxnRecord subOp = getTxnRecord("referenceTxn");
+                            allRunFor(spec, subOp);
+                            TransactionRecord record = subOp.getResponseRecord();
+                            long fee = record.getTransactionFee();
+                            spec.registry().saveAmount("fee", fee);
+                            spec.registry().saveAmount("balance", fee * 2);
+                        }))
+                .when(cryptoCreate(PAYER).balance(spec -> spec.registry().getAmount("balance")))
                 .then(
                         UtilVerbs.inParallel(
-                                cryptoTransfer(
-                                                tinyBarsFromTo(
-                                                        "payer",
-                                                        FUNDING,
-                                                        spec -> spec.registry().getAmount("fee")))
-                                        .payingWith("payer")
+                                cryptoTransfer(tinyBarsFromTo(PAYER, FUNDING, spec -> spec.registry()
+                                                .getAmount("fee")))
+                                        .payingWith(PAYER)
                                         .via("txnA")
                                         .hasAnyKnownStatus(),
-                                cryptoTransfer(
-                                                tinyBarsFromTo(
-                                                        "payer",
-                                                        FUNDING,
-                                                        spec -> spec.registry().getAmount("fee")))
-                                        .payingWith("payer")
+                                cryptoTransfer(tinyBarsFromTo(PAYER, FUNDING, spec -> spec.registry()
+                                                .getAmount("fee")))
+                                        .payingWith(PAYER)
                                         .via("txnB")
                                         .hasAnyKnownStatus()),
                         getTxnRecord("txnA").logged(),

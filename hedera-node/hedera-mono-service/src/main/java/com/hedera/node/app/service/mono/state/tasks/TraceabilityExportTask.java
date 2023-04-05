@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.tasks;
 
 import static com.hedera.node.app.service.mono.state.tasks.SystemTaskResult.DONE;
@@ -25,6 +26,7 @@ import static com.hedera.node.app.service.mono.throttling.MapAccessType.STORAGE_
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
@@ -42,7 +44,6 @@ import com.hedera.services.stream.proto.ContractStateChanges;
 import com.hedera.services.stream.proto.StorageChange;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.swirlds.virtualmap.VirtualMap;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -84,7 +85,7 @@ public class TraceabilityExportTask implements SystemTask {
     private final GlobalDynamicProperties dynamicProperties;
     private final TraceabilityRecordsHelper recordsHelper;
     private final Supplier<AccountStorageAdapter> accounts;
-    private final Supplier<VirtualMap<ContractKey, IterableContractValue>> contractStorage;
+    private final Supplier<VirtualMapLike<ContractKey, IterableContractValue>> contractStorage;
 
     // Used to occasionally log the progress of the traceability export; because this is
     // not in state, will become inaccurate on a node that falls behind or restarts, but
@@ -100,7 +101,7 @@ public class TraceabilityExportTask implements SystemTask {
             final TraceabilityRecordsHelper recordsHelper,
             final @HandleThrottle FunctionalityThrottling handleThrottling,
             final Supplier<AccountStorageAdapter> accounts,
-            final Supplier<VirtualMap<ContractKey, IterableContractValue>> contractStorage) {
+            final Supplier<VirtualMapLike<ContractKey, IterableContractValue>> contractStorage) {
         this.entityAccess = entityAccess;
         this.expiryThrottle = expiryThrottle;
         this.dynamicProperties = dynamicProperties;
@@ -156,8 +157,7 @@ public class TraceabilityExportTask implements SystemTask {
 
     private boolean needsBackPressure(final Instant now, final MerkleNetworkContext curNetworkCtx) {
         return inHighGasRegime(now)
-                || curNetworkCtx.getEntitiesTouchedThisSecond()
-                        >= dynamicProperties.traceabilityMaxExportsPerConsSec();
+                || curNetworkCtx.getEntitiesTouchedThisSecond() >= dynamicProperties.traceabilityMaxExportsPerConsSec();
     }
 
     private boolean inHighGasRegime(final Instant now) {
@@ -174,8 +174,7 @@ public class TraceabilityExportTask implements SystemTask {
             return;
         }
         final var stateChangesSidecar =
-                generateMigrationStateChangesSidecar(
-                        contractId, contractStorageKey, contract.getNumContractKvPairs());
+                generateMigrationStateChangesSidecar(contractId, contractStorageKey, contract.getNumContractKvPairs());
         sidecars.add(stateChangesSidecar);
     }
 
@@ -184,70 +183,56 @@ public class TraceabilityExportTask implements SystemTask {
         final var bytecodeSidecar = generateMigrationBytecodeSidecarFor(contractId);
         if (bytecodeSidecar == null) {
             log.warn(
-                    "Contract 0.0.{} has no bytecode in state - no migration"
-                            + " sidecar records will be published.",
+                    "Contract 0.0.{} has no bytecode in state - no migration" + " sidecar records will be published.",
                     contractId.getContractNum());
         } else {
             sidecars.add(bytecodeSidecar);
         }
     }
 
-    private TransactionSidecarRecord.Builder generateMigrationBytecodeSidecarFor(
-            final ContractID contractId) {
+    private TransactionSidecarRecord.Builder generateMigrationBytecodeSidecarFor(final ContractID contractId) {
         expiryThrottle.allowOne(BLOBS_GET);
-        final var runtimeCode =
-                entityAccess.fetchCodeIfPresent(EntityIdUtils.asTypedEvmAddress(contractId));
+        final var runtimeCode = entityAccess.fetchCodeIfPresent(EntityIdUtils.asTypedEvmAddress(contractId));
         if (runtimeCode == null) {
             return null;
         }
         final var bytecodeSidecar =
-                SidecarUtils.createContractBytecodeSidecarFrom(
-                        contractId, runtimeCode.toArrayUnsafe());
+                SidecarUtils.createContractBytecodeSidecarFrom(contractId, runtimeCode.toArrayUnsafe());
         bytecodeSidecar.setMigration(true);
         return bytecodeSidecar;
     }
 
     private TransactionSidecarRecord.Builder generateMigrationStateChangesSidecar(
-            final ContractID contractId,
-            ContractKey contractStorageKey,
-            int maxNumberOfKvPairsToIterate) {
-        final var contractStateChangeBuilder =
-                ContractStateChange.newBuilder().setContractId(contractId);
+            final ContractID contractId, ContractKey contractStorageKey, int maxNumberOfKvPairsToIterate) {
+        final var contractStateChangeBuilder = ContractStateChange.newBuilder().setContractId(contractId);
 
         IterableContractValue iterableValue;
         final var curStorage = contractStorage.get();
         while (maxNumberOfKvPairsToIterate > 0 && contractStorageKey != null) {
             expiryThrottle.allowOne(STORAGE_GET);
             iterableValue = curStorage.get(contractStorageKey);
-            contractStateChangeBuilder.addStorageChanges(
-                    StorageChange.newBuilder()
-                            .setSlot(ByteStringUtils.wrapUnsafely(slotAsBytes(contractStorageKey)))
-                            .setValueRead(
-                                    ByteStringUtils.wrapUnsafely(
-                                            iterableValue
-                                                    .asUInt256()
-                                                    .trimLeadingZeros()
-                                                    .toArrayUnsafe()))
-                            .build());
-            contractStorageKey =
-                    iterableValue.getNextKeyScopedTo(contractStorageKey.getContractId());
+            contractStateChangeBuilder.addStorageChanges(StorageChange.newBuilder()
+                    .setSlot(ByteStringUtils.wrapUnsafely(slotAsBytes(contractStorageKey)))
+                    .setValueRead(ByteStringUtils.wrapUnsafely(
+                            iterableValue.asUInt256().trimLeadingZeros().toArrayUnsafe()))
+                    .build());
+            contractStorageKey = iterableValue.getNextKeyScopedTo(contractStorageKey.getContractId());
             maxNumberOfKvPairsToIterate--;
         }
 
         if (maxNumberOfKvPairsToIterate != 0) {
             log.warn(
                     "After walking through all iterable storage of contract 0.0.{},"
-                        + " numContractKvPairs field indicates that there should have been {} more"
-                        + " k/v pair(s) left",
+                            + " numContractKvPairs field indicates that there should have been {} more"
+                            + " k/v pair(s) left",
                     contractId.getContractNum(),
                     maxNumberOfKvPairsToIterate);
         }
 
         return TransactionSidecarRecord.newBuilder()
-                .setStateChanges(
-                        ContractStateChanges.newBuilder()
-                                .addContractStateChanges(contractStateChangeBuilder)
-                                .build())
+                .setStateChanges(ContractStateChanges.newBuilder()
+                        .addContractStateChanges(contractStateChangeBuilder)
+                        .build())
                 .setMigration(true);
     }
 

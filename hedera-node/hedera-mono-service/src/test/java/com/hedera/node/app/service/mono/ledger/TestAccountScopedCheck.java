@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger;
 
 import static com.hedera.node.app.service.mono.ledger.properties.TestAccountProperty.FLAG;
@@ -34,23 +35,20 @@ import java.util.function.Function;
 
 class TestAccountScopedCheck implements LedgerCheck<TestAccount, TestAccountProperty> {
     @Override
-    public ResponseCodeEnum checkUsing(
-            final TestAccount account, final Map<TestAccountProperty, Object> changeSet) {
-        final Function<TestAccountProperty, Object> getter =
-                prop -> {
-                    if (changeSet != null && changeSet.containsKey(prop)) {
-                        return changeSet.get(prop);
-                    } else {
-                        return prop.getter().apply(account);
-                    }
-                };
+    public ResponseCodeEnum checkUsing(final TestAccount account, final Map<TestAccountProperty, Object> changeSet) {
+        final Function<TestAccountProperty, Object> getter = prop -> {
+            if (changeSet != null && changeSet.containsKey(prop)) {
+                return changeSet.get(prop);
+            } else {
+                return prop.getter().apply(account);
+            }
+        };
         return checkUsing(getter, changeSet);
     }
 
     @Override
     public ResponseCodeEnum checkUsing(
-            final Function<TestAccountProperty, Object> extantProps,
-            final Map<TestAccountProperty, Object> changeSet) {
+            final Function<TestAccountProperty, Object> extantProps, final Map<TestAccountProperty, Object> changeSet) {
         if ((boolean) extantProps.apply(FLAG)) {
             return ACCOUNT_IS_TREASURY;
         }

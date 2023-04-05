@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.consensus;
 
 import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
@@ -133,26 +134,20 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         genKeysFor(spec);
-        final ConsensusCreateTopicTransactionBody opBody =
-                spec.txns()
-                        .<ConsensusCreateTopicTransactionBody,
-                                ConsensusCreateTopicTransactionBody.Builder>
-                                body(
-                                        ConsensusCreateTopicTransactionBody.class,
-                                        b -> {
-                                            if (adminKey != null) {
-                                                b.setAdminKey(adminKey);
-                                            }
-                                            topicMemo.ifPresent(b::setMemo);
-                                            submitKey.ifPresent(b::setSubmitKey);
-                                            autoRenewAccountId.ifPresent(
-                                                    id -> b.setAutoRenewAccount(asId(id, spec)));
-                                            autoRenewPeriod.ifPresent(
-                                                    secs -> b.setAutoRenewPeriod(asDuration(secs)));
-                                            if (clearAutoRenewPeriod) {
-                                                b.clearAutoRenewPeriod();
-                                            }
-                                        });
+        final ConsensusCreateTopicTransactionBody opBody = spec.txns()
+                .<ConsensusCreateTopicTransactionBody, ConsensusCreateTopicTransactionBody.Builder>body(
+                        ConsensusCreateTopicTransactionBody.class, b -> {
+                            if (adminKey != null) {
+                                b.setAdminKey(adminKey);
+                            }
+                            topicMemo.ifPresent(b::setMemo);
+                            submitKey.ifPresent(b::setSubmitKey);
+                            autoRenewAccountId.ifPresent(id -> b.setAutoRenewAccount(asId(id, spec)));
+                            autoRenewPeriod.ifPresent(secs -> b.setAutoRenewPeriod(asDuration(secs)));
+                            if (clearAutoRenewPeriod) {
+                                b.clearAutoRenewPeriod();
+                            }
+                        });
         return b -> b.setConsensusCreateTopic(opBody);
     }
 
@@ -162,13 +157,7 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
         }
 
         if (submitKeyName.isPresent() || submitKeyShape.isPresent()) {
-            submitKey =
-                    Optional.of(
-                            netOf(
-                                    spec,
-                                    submitKeyName,
-                                    submitKeyShape,
-                                    Optional.of(this::effectiveKeyGen)));
+            submitKey = Optional.of(netOf(spec, submitKeyName, submitKeyShape, Optional.of(this::effectiveKeyGen)));
         }
     }
 
@@ -194,31 +183,28 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
             final TransactionBody txn = CommonUtils.extractTransactionBody(txnSubmitted);
             final long approxConsensusTime =
                     txn.getTransactionID().getTransactionValidStart().getSeconds() + 1;
-            spec.registry()
-                    .saveTopicMeta(topic, txn.getConsensusCreateTopic(), approxConsensusTime);
+            spec.registry().saveTopicMeta(topic, txn.getConsensusCreateTopic(), approxConsensusTime);
         } catch (final Exception impossible) {
             throw new IllegalStateException(impossible);
         }
 
         if (advertiseCreation) {
-            final String banner =
-                    "\n\n"
-                            + bannerWith(
-                                    String.format(
-                                            "Created topic '%s' with id '0.0.%d'.",
-                                            topic, lastReceipt.getTopicID().getTopicNum()));
+            final String banner = "\n\n"
+                    + bannerWith(String.format(
+                            "Created topic '%s' with id '0.0.%d'.",
+                            topic, lastReceipt.getTopicID().getTopicNum()));
             log.info(banner);
         }
     }
 
     @Override
     protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
-        return spec.clients().getConsSvcStub(targetNodeFor(spec), useTls)::createTopic;
+        return spec.clients()
+                .getConsSvcStub(targetNodeFor(spec), useTls, spec.setup().workflowOperations())::createTopic;
     }
 
     @Override
-    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys)
-            throws Throwable {
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
         return spec.fees()
                 .forActivityBasedOp(
                         ConsensusCreateTopic,
@@ -231,13 +217,11 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
     protected MoreObjects.ToStringHelper toStringHelper() {
         final MoreObjects.ToStringHelper helper = super.toStringHelper().add("topic", topic);
         autoRenewAccountId.ifPresent(id -> helper.add("autoRenewId", id));
-        Optional.ofNullable(lastReceipt)
-                .ifPresent(
-                        receipt -> {
-                            if (receipt.getTopicID().getTopicNum() != 0) {
-                                helper.add("created", receipt.getTopicID().getTopicNum());
-                            }
-                        });
+        Optional.ofNullable(lastReceipt).ifPresent(receipt -> {
+            if (receipt.getTopicID().getTopicNum() != 0) {
+                helper.add("created", receipt.getTopicID().getTopicNum());
+            }
+        });
         return helper;
     }
 

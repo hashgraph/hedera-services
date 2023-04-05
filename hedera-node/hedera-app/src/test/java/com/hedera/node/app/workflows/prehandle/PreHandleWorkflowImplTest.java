@@ -13,34 +13,51 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.prehandle;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
+import com.hedera.hapi.node.transaction.SignedTransaction;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.AppTestBase;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.signature.SignaturePreparer;
+import com.hedera.node.app.spi.fixtures.state.MapReadableStates;
+import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.workflows.TransactionChecker;
+import com.hedera.node.app.workflows.TransactionInfo;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.onset.OnsetResult;
-import com.hedera.node.app.workflows.onset.WorkflowOnset;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
+import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
-import java.time.Duration;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -48,7 +65,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.Function;
-import java.util.function.Supplier;
+import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -57,7 +74,16 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class PreHandleWorkflowImplTest {
+class PreHandleWorkflowImplTest extends AppTestBase {
+
+    @Mock(strictness = LENIENT)
+    private TransactionSignature cryptoSig;
+
+    @Mock(strictness = LENIENT)
+    private JKey payerKey;
+
+    @Mock(strictness = LENIENT)
+    private ReadableStoreFactory storeFactory;
 
     @Mock(strictness = LENIENT)
     private SwirldTransaction transaction;
@@ -66,7 +92,16 @@ class PreHandleWorkflowImplTest {
     private TransactionDispatcher dispatcher;
 
     @Mock(strictness = LENIENT)
-    private WorkflowOnset onset;
+    private TransactionChecker transactionChecker;
+
+    @Mock(strictness = LENIENT)
+    private SignaturePreparer signaturePreparer;
+
+    @Mock(strictness = LENIENT)
+    private Cryptography cryptography;
+
+    @Mock(strictness = LENIENT)
+    private PreHandleContext context;
 
     @Mock(strictness = LENIENT)
     private HederaState state;
@@ -74,46 +109,96 @@ class PreHandleWorkflowImplTest {
     @Mock(strictness = LENIENT)
     private Event event;
 
+    @Mock(strictness = LENIENT)
+    private MapReadableStates readableStates;
+
+    @Mock
+    private ReadableKVState accountState;
+
+    @Mock
+    private MerkleAccount payerAccount;
+
+    @Mock
+    private ConsensusTransactionImpl workflowTxn;
+
     private PreHandleWorkflowImpl workflow;
 
-    private static final Function<Supplier<?>, CompletableFuture<?>> RUN_INSTANTLY =
-            supplier -> CompletableFuture.completedFuture(supplier.get());
+    private static final Function<Runnable, CompletableFuture<Void>> RUN_INSTANTLY = runnable -> {
+        runnable.run();
+        return CompletableFuture.completedFuture(null);
+    };
 
     @BeforeEach
-    void setup(@Mock ReadableStates readableStates) throws PreCheckException {
-        when(state.createReadableStates(any())).thenReturn(readableStates);
+    void setup() throws PreCheckException {
         final ConsensusCreateTopicTransactionBody content =
                 ConsensusCreateTopicTransactionBody.newBuilder().build();
         final AccountID payerID = AccountID.newBuilder().build();
         final TransactionID transactionID =
-                TransactionID.newBuilder().setAccountID(payerID).build();
-        final TransactionBody txBody =
-                TransactionBody.newBuilder()
-                        .setTransactionID(transactionID)
-                        .setConsensusCreateTopic(content)
-                        .build();
+                TransactionID.newBuilder().accountID(payerID).build();
+        final TransactionBody txBody = TransactionBody.newBuilder()
+                .transactionID(transactionID)
+                .consensusCreateTopic(content)
+                .build();
         final SignatureMap signatureMap = SignatureMap.newBuilder().build();
-        final HederaFunctionality functionality = HederaFunctionality.ConsensusCreateTopic;
-        final OnsetResult onsetResult =
-                new OnsetResult(txBody, txBody.toByteArray(), OK, signatureMap, functionality);
-        when(onset.parseAndCheck(any(), any(byte[].class))).thenReturn(onsetResult);
+        final HederaFunctionality functionality = HederaFunctionality.CONSENSUS_CREATE_TOPIC;
+        final TransactionInfo txInfo = new TransactionInfo(
+                com.hedera.hapi.node.base.Transaction.newBuilder().build(), txBody, signatureMap, functionality);
+        when(transactionChecker.parseAndCheck(any(), any(Bytes.class))).thenReturn(txInfo);
 
-        final Iterator<Transaction> iterator = List.of((Transaction) transaction).iterator();
+        final Iterator<Transaction> iterator =
+                List.of((Transaction) transaction).iterator();
         when(event.transactionIterator()).thenReturn(iterator);
 
         when(transaction.getContents()).thenReturn(new byte[0]);
 
-        workflow = new PreHandleWorkflowImpl(dispatcher, onset, RUN_INSTANTLY);
+        workflow = new PreHandleWorkflowImpl(
+                dispatcher, transactionChecker, signaturePreparer, cryptography, RUN_INSTANTLY);
+    }
+
+    @Test
+    void verifiesExpandedSigsAsync() throws PreCheckException {
+        final AccountID payerID = AccountID.newBuilder().accountNum(1000L).build();
+        final TransactionID transactionID =
+                TransactionID.newBuilder().accountID(payerID).build();
+        final var onsetResult = new TransactionInfo(
+                com.hedera.hapi.node.base.Transaction.newBuilder().build(),
+                TransactionBody.newBuilder().transactionID(transactionID).build(),
+                SignatureMap.newBuilder().build(),
+                HederaFunctionality.CRYPTO_TRANSFER);
+        given(transactionChecker.parseAndCheck(any(), any(Bytes.class))).willReturn(onsetResult);
+        given(context.getStatus()).willReturn(DUPLICATE_TRANSACTION);
+        given(context.getPayerKey()).willReturn(payerKey);
+        given(context.getRequiredNonPayerKeys()).willReturn(Collections.emptyList());
+        given(signaturePreparer.prepareSignature(any(), any(), any(), any())).willReturn(cryptoSig);
+        given(workflowTxn.getContents()).willReturn(cryptoTransferContents());
+        given(state.createReadableStates(TokenService.NAME)).willReturn(readableStates);
+        given(readableStates.get("ACCOUNTS")).willReturn(accountState);
+        given(accountState.get(any())).willReturn(payerAccount);
+        given(payerAccount.getAccountKey()).willReturn(payerKey);
+
+        final var meta = workflow.preHandle(state, workflowTxn);
+
+        assertNotNull(meta);
+        verify(cryptography).verifyAsync(cryptoSig);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalParameters(@Mock ExecutorService executorService) {
-        assertThatThrownBy(() -> new PreHandleWorkflowImpl(null, dispatcher, onset))
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(
+                        null, dispatcher, transactionChecker, signaturePreparer, cryptography))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new PreHandleWorkflowImpl(executorService, null, onset))
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(
+                        executorService, null, transactionChecker, signaturePreparer, cryptography))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new PreHandleWorkflowImpl(executorService, dispatcher, null))
+        assertThatThrownBy(() ->
+                        new PreHandleWorkflowImpl(executorService, dispatcher, null, signaturePreparer, cryptography))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() ->
+                        new PreHandleWorkflowImpl(executorService, dispatcher, transactionChecker, null, cryptography))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(
+                        executorService, dispatcher, transactionChecker, signaturePreparer, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -121,9 +206,9 @@ class PreHandleWorkflowImplTest {
     @Test
     void testStartWithIllegalParameters() {
         // then
-        assertThatThrownBy(() -> workflow.start(null, event))
+        AssertionsForClassTypes.assertThatThrownBy(() -> workflow.start(null, event))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> workflow.start(state, null))
+        AssertionsForClassTypes.assertThatThrownBy(() -> workflow.start(state, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -136,10 +221,8 @@ class PreHandleWorkflowImplTest {
         assertThatCode(() -> workflow.start(state, localEvent)).doesNotThrowAnyException();
     }
 
-    @SuppressWarnings("JUnitMalformedDeclaration")
     @Test
-    void testStartEventWithTwoTransactions(
-            @Mock Event localEvent, @Mock SwirldTransaction transaction2) {
+    void testStartEventWithTwoTransactions(@Mock Event localEvent, @Mock SwirldTransaction transaction2) {
         // given
         final Iterator<Transaction> iterator =
                 List.of(transaction, (Transaction) transaction2).iterator();
@@ -160,64 +243,78 @@ class PreHandleWorkflowImplTest {
         workflow.start(state, event);
 
         // then
-        final ArgumentCaptor<Future<TransactionMetadata>> captor =
-                ArgumentCaptor.forClass(Future.class);
+        final ArgumentCaptor<Future<PreHandleResult>> captor = ArgumentCaptor.forClass(Future.class);
         verify(transaction).setMetadata(any());
     }
 
     @SuppressWarnings("unchecked")
     @Test
-    void testPreHandleOnsetCatastrophicFail(@Mock WorkflowOnset localOnset)
-            throws PreCheckException {
+    void testPreHandleOnsetCatastrophicFail(@Mock TransactionChecker localOnset) throws PreCheckException {
         // given
-        when(localOnset.parseAndCheck(any(), any(byte[].class)))
-                .thenThrow(new PreCheckException(INVALID_TRANSACTION));
-        workflow = new PreHandleWorkflowImpl(dispatcher, localOnset, RUN_INSTANTLY);
+        when(localOnset.parseAndCheck(any(), any(Bytes.class))).thenThrow(new PreCheckException(INVALID_TRANSACTION));
+        workflow = new PreHandleWorkflowImpl(dispatcher, localOnset, signaturePreparer, cryptography, RUN_INSTANTLY);
 
         // when
         workflow.start(state, event);
 
         // then
-        final ArgumentCaptor<Future<TransactionMetadata>> captor =
-                ArgumentCaptor.forClass(Future.class);
+        final ArgumentCaptor<PreHandleResult> captor = ArgumentCaptor.forClass(PreHandleResult.class);
         verify(transaction).setMetadata(captor.capture());
-        assertThat(captor.getValue())
-                .succeedsWithin(Duration.ofMillis(100))
-                .isInstanceOf(TransactionMetadata.class)
+        AssertionsForClassTypes.assertThat(captor.getValue())
                 .hasFieldOrPropertyWithValue("status", INVALID_TRANSACTION);
         verify(dispatcher, never()).dispatchPreHandle(any(), any());
     }
 
     @Test
-    void testPreHandleOnsetMildFail(@Mock WorkflowOnset localOnset) throws PreCheckException {
+    void testPreHandleOnsetMildFail(@Mock TransactionChecker localOnset) throws PreCheckException {
         // given
         final ConsensusCreateTopicTransactionBody content =
                 ConsensusCreateTopicTransactionBody.newBuilder().build();
         final AccountID payerID = AccountID.newBuilder().build();
         final TransactionID transactionID =
-                TransactionID.newBuilder().setAccountID(payerID).build();
-        final TransactionBody txBody =
-                TransactionBody.newBuilder()
-                        .setTransactionID(transactionID)
-                        .setConsensusCreateTopic(content)
-                        .build();
+                TransactionID.newBuilder().accountID(payerID).build();
+        final TransactionBody txBody = TransactionBody.newBuilder()
+                .transactionID(transactionID)
+                .consensusCreateTopic(content)
+                .build();
+        final var signedTxn = SignedTransaction.newBuilder()
+                .bodyBytes(PbjConverter.asWrappedBytes(TransactionBody.PROTOBUF, txBody))
+                .build();
         final SignatureMap signatureMap = SignatureMap.newBuilder().build();
-        final HederaFunctionality functionality = HederaFunctionality.ConsensusCreateTopic;
-        final OnsetResult onsetResult =
-                new OnsetResult(
-                        txBody,
-                        txBody.toByteArray(),
-                        DUPLICATE_TRANSACTION,
-                        signatureMap,
-                        functionality);
-        when(localOnset.parseAndCheck(any(), any(byte[].class))).thenReturn(onsetResult);
+        final var txn = com.hedera.hapi.node.base.Transaction.newBuilder()
+                .signedTransactionBytes(PbjConverter.asWrappedBytes(SignedTransaction.PROTOBUF, signedTxn))
+                .sigMap(signatureMap)
+                .build();
+        final HederaFunctionality functionality = HederaFunctionality.CONSENSUS_CREATE_TOPIC;
+        final TransactionInfo onsetResult = new TransactionInfo(txn, txBody, signatureMap, functionality);
+        when(localOnset.parseAndCheck(any(), any(Bytes.class))).thenReturn(onsetResult);
 
-        workflow = new PreHandleWorkflowImpl(dispatcher, localOnset, RUN_INSTANTLY);
+        given(transactionChecker.parseAndCheck(any(), any(Bytes.class))).willReturn(onsetResult);
+        given(context.getStatus()).willReturn(DUPLICATE_TRANSACTION);
+        given(context.getPayerKey()).willReturn(payerKey);
+        given(context.getRequiredNonPayerKeys()).willReturn(Collections.emptyList());
+        given(signaturePreparer.prepareSignature(any(), any(), any(), any())).willReturn(cryptoSig);
+        given(state.createReadableStates(TokenService.NAME)).willReturn(readableStates);
+        given(readableStates.get("ACCOUNTS")).willReturn(accountState);
+
+        workflow = new PreHandleWorkflowImpl(dispatcher, localOnset, signaturePreparer, cryptography, RUN_INSTANTLY);
 
         // when
         workflow.start(state, event);
 
-        // then
         verify(dispatcher).dispatchPreHandle(any(), any());
+    }
+
+    private byte[] cryptoTransferContents() {
+        return com.hederahashgraph.api.proto.java.Transaction.newBuilder()
+                .setSignedTransactionBytes(com.hederahashgraph.api.proto.java.SignedTransaction.newBuilder()
+                        .setBodyBytes(com.hederahashgraph.api.proto.java.TransactionBody.newBuilder()
+                                .setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
+                                .build()
+                                .toByteString())
+                        .build()
+                        .toByteString())
+                .build()
+                .toByteArray();
     }
 }

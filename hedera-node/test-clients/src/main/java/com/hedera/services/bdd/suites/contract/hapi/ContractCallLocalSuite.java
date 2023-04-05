@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -28,7 +29,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
@@ -42,6 +45,7 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -63,16 +67,16 @@ public class ContractCallLocalSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    deletedContract(),
-                    invalidContractID(),
-                    impureCallFails(),
-                    insufficientFeeFails(),
-                    lowBalanceFails(),
-                    erc20Query(),
-                    vanillaSuccess()
-                });
+        return List.of(new HapiSpec[] {
+            deletedContract(),
+            invalidContractID(),
+            impureCallFails(),
+            insufficientFeeFails(),
+            lowBalanceFails(),
+            erc20Query(),
+            vanillaSuccess(),
+            callLocalDoesNotCheckSignaturesNorPayer()
+        });
     }
 
     private HapiSpec vanillaSuccess() {
@@ -82,15 +86,10 @@ public class ContractCallLocalSuite extends HapiSuite {
                 .then(
                         sleepFor(3_000L),
                         contractCallLocal(CONTRACT, "getIndirect")
-                                .has(
-                                        resultWith()
-                                                .resultViaFunctionName(
-                                                        "getIndirect",
-                                                        CONTRACT,
-                                                        isLiteralResult(
-                                                                new Object[] {
-                                                                    BigInteger.valueOf(7L)
-                                                                }))));
+                                .has(resultWith()
+                                        .resultViaFunctionName("getIndirect", CONTRACT, isLiteralResult(new Object[] {
+                                            BigInteger.valueOf(7L)
+                                        }))));
     }
 
     private HapiSpec impureCallFails() {
@@ -101,18 +100,16 @@ public class ContractCallLocalSuite extends HapiSuite {
                         sleepFor(3_000L),
                         contractCallLocal(CONTRACT, "create")
                                 .nodePayment(1_234_567)
-                                .hasAnswerOnlyPrecheck(
-                                        ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION));
+                                .hasAnswerOnlyPrecheck(ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION));
     }
 
     private HapiSpec deletedContract() {
         return defaultHapiSpec("InvalidDeletedContract")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractDelete(CONTRACT))
-                .then(
-                        contractCallLocal(CONTRACT, "create")
-                                .nodePayment(1_234_567)
-                                .hasAnswerOnlyPrecheck(CONTRACT_DELETED));
+                .then(contractCallLocal(CONTRACT, "create")
+                        .nodePayment(1_234_567)
+                        .hasAnswerOnlyPrecheck(CONTRACT_DELETED));
     }
 
     private HapiSpec invalidContractID() {
@@ -168,21 +165,27 @@ public class ContractCallLocalSuite extends HapiSuite {
     }
 
     private HapiSpec erc20Query() {
-        final var decimalsABI =
-                "{\"constant\": true,\"inputs\": [],\"name\": \"decimals\","
-                        + "\"outputs\": [{\"name\": \"\",\"type\": \"uint8\"}],\"payable\": false,"
-                        + "\"type\": \"function\"}";
+        final var decimalsABI = "{\"constant\": true,\"inputs\": [],\"name\": \"decimals\","
+                + "\"outputs\": [{\"name\": \"\",\"type\": \"uint8\"}],\"payable\": false,"
+                + "\"type\": \"function\"}";
 
         return defaultHapiSpec("erc20Queries")
                 .given(tokenCreate(TOKEN).decimals(DECIMALS).symbol(SYMBOL).asCallableContract())
                 .when()
-                .then(
-                        contractCallLocalWithFunctionAbi(TOKEN, decimalsABI)
-                                .has(
-                                        resultWith()
-                                                .resultThruAbi(
-                                                        decimalsABI,
-                                                        isLiteralResult(new Object[] {DECIMALS}))));
+                .then(contractCallLocalWithFunctionAbi(TOKEN, decimalsABI)
+                        .has(resultWith().resultThruAbi(decimalsABI, isLiteralResult(new Object[] {DECIMALS}))));
+    }
+
+    // https://github.com/hashgraph/hedera-services/pull/5485
+    private HapiSpec callLocalDoesNotCheckSignaturesNorPayer() {
+        return defaultHapiSpec("VanillaSuccess")
+                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).adminKey(THRESHOLD))
+                .when(contractCall(CONTRACT, "create").gas(785_000))
+                .then(withOpContext((spec, opLog) -> IntStream.range(0, 2000).forEach(i -> {
+                    final var create = cryptoCreate("account #" + i).deferStatusResolution();
+                    final var callLocal = contractCallLocal(CONTRACT, "getIndirect");
+                    allRunFor(spec, create, callLocal);
+                })));
     }
 
     @Override

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.contract;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
@@ -20,7 +21,6 @@ import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.E
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -108,6 +108,8 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
             final Id relayerId,
             final long maxGasAllowanceInTinybars,
             final BigInteger offeredGasPrice) {
+        worldState.clearProvisionalContractCreations();
+
         var op = contractCallTxn.getContractCall();
 
         // --- Load the model objects ---
@@ -123,48 +125,39 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
                 && properties.isLazyCreationEnabled()) {
             // allow Ethereum transactions to lazy create a hollow account
             // if `to` is non-existent and `value` is non-zero
-            validateTrue(op.getAmount() > 0, INVALID_ACCOUNT_ID);
+            validateTrue(op.getAmount() > 0, INVALID_CONTRACT_ID);
             final var evmAddress = op.getContractID().getEvmAddress();
             validateTrue(evmAddress.size() == EVM_ADDRESS_SIZE, INVALID_CONTRACT_ID);
             receiver = new Account(evmAddress);
         } else {
-            receiver =
-                    entityAccess.isTokenAccount(targetId.asEvmAddress())
-                            ? new Account(targetId)
-                            : accountStore.loadContract(targetId);
+            receiver = entityAccess.isTokenAccount(targetId.asEvmAddress())
+                    ? new Account(targetId)
+                    : accountStore.loadContract(targetId);
         }
 
-        final var callData =
-                !op.getFunctionParameters().isEmpty()
-                        ? Bytes.wrap(op.getFunctionParameters().toByteArray())
-                        : Bytes.EMPTY;
+        final var callData = !op.getFunctionParameters().isEmpty()
+                ? Bytes.wrap(op.getFunctionParameters().toByteArray())
+                : Bytes.EMPTY;
 
         // --- Do the business logic ---
         TransactionProcessingResult result;
         if (relayerId == null) {
-            result =
-                    evmTxProcessor.execute(
-                            sender,
-                            receiver.canonicalAddress(),
-                            op.getGas(),
-                            op.getAmount(),
-                            callData,
-                            txnCtx.consensusTime());
+            result = evmTxProcessor.execute(
+                    sender, receiver.canonicalAddress(), op.getGas(), op.getAmount(), callData, txnCtx.consensusTime());
         } else {
             sender.incrementEthereumNonce();
             accountStore.commitAccount(sender);
 
-            result =
-                    evmTxProcessor.executeEth(
-                            sender,
-                            receiver.canonicalAddress(),
-                            op.getGas(),
-                            op.getAmount(),
-                            callData,
-                            txnCtx.consensusTime(),
-                            offeredGasPrice,
-                            accountStore.loadAccount(relayerId),
-                            maxGasAllowanceInTinybars);
+            result = evmTxProcessor.executeEth(
+                    sender,
+                    receiver.canonicalAddress(),
+                    op.getGas(),
+                    op.getAmount(),
+                    callData,
+                    txnCtx.consensusTime(),
+                    offeredGasPrice,
+                    accountStore.loadAccount(relayerId),
+                    maxGasAllowanceInTinybars);
         }
 
         /* --- Externalise result --- */

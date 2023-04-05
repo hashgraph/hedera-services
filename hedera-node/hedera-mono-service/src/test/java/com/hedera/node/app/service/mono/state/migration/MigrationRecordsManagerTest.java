@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.migration;
 
 import static com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
@@ -21,6 +22,8 @@ import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.state.EntityCreator.NO_CUSTOM_FEES;
 import static com.hedera.node.app.service.mono.state.initialization.TreasuryClonerTest.accountWith;
 import static com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext.MAX_PENDING_REWARDS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentCaptor.forClass;
@@ -31,18 +34,21 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.config.MockGlobalDynamicProps;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
-import com.hedera.node.app.service.mono.context.properties.PropertyNames;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
+import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
 import com.hedera.node.app.service.mono.records.ConsensusTimeTracker;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.EntityCreator;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.initialization.BackedSystemAccountsCreator;
+import com.hedera.node.app.service.mono.state.initialization.BlocklistAccountCreator;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
@@ -51,6 +57,7 @@ import com.hedera.node.app.service.mono.state.submerkle.TxnId;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
+import com.hedera.node.app.spi.config.PropertyNames;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -74,6 +81,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.commons.codec.DecoderException;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -83,6 +92,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class MigrationRecordsManagerTest {
+
     private static final long fundingExpiry = 33197904000L;
     private static final long stakingRewardAccount = 800;
     private static final long nodeRewardAccount = 801;
@@ -99,90 +109,141 @@ class MigrationRecordsManagerTest {
     private static final String MEMO = "Release 0.24.1 migration record";
     private static final String TREASURY_CLONE_MEMO = "Synthetic zero-balance treasury clone";
     private static final String SYSTEM_ACCOUNT_CREATION_MEMO = "Synthetic system creation";
+    private static final String BLOCKED_ACCOUNT_CREATION_MEMO = "Synthetic blocked account creation";
     private static final long contract1Expiry = 2000000L;
     private static final long contract2Expiry = 4000000L;
     private static final EntityId contract1Id = EntityId.fromIdentityCode(1);
     private static final EntityId contract2Id = EntityId.fromIdentityCode(2);
     private static final EntityId deletedContractId = EntityId.fromIdentityCode(3);
     private static final long pretendExpiry = 2 * now.getEpochSecond();
-    private static final JKey pretendTreasuryKey =
-            new JEd25519Key("a123456789a123456789a123456789a1".getBytes());
+    private static final JKey pretendTreasuryKey = new JEd25519Key("a123456789a123456789a123456789a1".getBytes());
     private static final long systemAccount = 3 * now.getEpochSecond();
-    private static final JKey systemAccountKey =
-            new JEd25519Key("a123456789a123456789a1234567891011a1".getBytes());
+    private static final JKey systemAccountKey = new JEd25519Key("a123456789a123456789a1234567891011a1".getBytes());
+    private static final JKey genesisKey;
+    public static final String EVM_ADDRESS_1 = "evmAddress1";
+    public static final String EVM_ADDRESS_2 = "evmAddress2";
+    public static final String MEMO_1 = "memo1";
+    public static final String MEMO_2 = "memo2";
+
+    static {
+        try {
+            genesisKey = JKey.mapKey(Key.newBuilder()
+                    .setKeyList(KeyList.newBuilder().addKeys(MiscUtils.asKeyUnchecked(systemAccountKey)))
+                    .build());
+        } catch (DecoderException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private final List<HederaAccount> treasuryClones = new ArrayList<>();
     private final List<HederaAccount> systemAccounts = new ArrayList<>();
+    private final List<HederaAccount> blocklistedAccounts = new ArrayList<>();
     private final MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
     private final AtomicInteger nextTracker = new AtomicInteger();
-    @Mock private BootstrapProperties bootstrapProperties;
-    private final SyntheticTxnFactory factory =
-            new SyntheticTxnFactory(new MockGlobalDynamicProps());
-    @Mock private SigImpactHistorian sigImpactHistorian;
-    @Mock private RecordsHistorian recordsHistorian;
-    @Mock private ConsensusTimeTracker consensusTimeTracker;
-    @Mock private MerkleNetworkContext networkCtx;
-    @Mock private SideEffectsTracker tracker800;
-    @Mock private SideEffectsTracker tracker801;
-    @Mock private SideEffectsTracker tracker200;
-    @Mock private SideEffectsTracker tracker201;
-    @Mock private SideEffectsTracker tracker100;
-    @Mock private SideEffectsTracker tracker101;
-    @Mock private SideEffectsTracker tracker2;
-    @Mock private EntityCreator creator;
-    @Mock private HederaAccountNumbers accountNumbers;
-    @Mock private BackedSystemAccountsCreator systemAccountsCreator;
-    @Mock private MerkleAccount merkleAccount;
-    @LoggingTarget private LogCaptor logCaptor;
-    @LoggingSubject private MigrationRecordsManager subject;
+
+    private final int blockedAccountNum1 = 1001;
+    private final int blockedAccountNum2 = 1002;
+
+    @Mock
+    private BootstrapProperties bootstrapProperties;
+
+    private final SyntheticTxnFactory factory = new SyntheticTxnFactory(new MockGlobalDynamicProps());
+
+    @Mock
+    private SigImpactHistorian sigImpactHistorian;
+
+    @Mock
+    private RecordsHistorian recordsHistorian;
+
+    @Mock
+    private ConsensusTimeTracker consensusTimeTracker;
+
+    @Mock
+    private MerkleNetworkContext networkCtx;
+
+    @Mock
+    private SideEffectsTracker tracker800;
+
+    @Mock
+    private SideEffectsTracker tracker801;
+
+    @Mock
+    private SideEffectsTracker tracker200;
+
+    @Mock
+    private SideEffectsTracker tracker201;
+
+    @Mock
+    private SideEffectsTracker tracker100;
+
+    @Mock
+    private SideEffectsTracker tracker101;
+
+    @Mock
+    private SideEffectsTracker tracker2;
+
+    @Mock
+    private EntityCreator creator;
+
+    @Mock
+    private HederaAccountNumbers accountNumbers;
+
+    @Mock
+    private BackedSystemAccountsCreator systemAccountsCreator;
+
+    @Mock
+    private MerkleAccount merkleAccount;
+
+    @Mock
+    private BlocklistAccountCreator blocklistAccountCreator;
+
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private MigrationRecordsManager subject;
 
     @BeforeEach
     void setUp() {
         accounts.put(EntityNum.fromLong(1L), merkleAccount);
         accounts.put(EntityNum.fromLong(2L), merkleAccount);
 
-        subject =
-                new MigrationRecordsManager(
-                        creator,
-                        systemAccountsCreator,
-                        sigImpactHistorian,
-                        recordsHistorian,
-                        () -> networkCtx,
-                        consensusTimeTracker,
-                        () -> AccountStorageAdapter.fromInMemory(accounts),
-                        factory,
-                        accountNumbers,
-                        bootstrapProperties);
+        subject = new MigrationRecordsManager(
+                creator,
+                systemAccountsCreator,
+                sigImpactHistorian,
+                recordsHistorian,
+                () -> networkCtx,
+                consensusTimeTracker,
+                () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
+                factory,
+                accountNumbers,
+                bootstrapProperties,
+                blocklistAccountCreator);
 
-        subject.setSideEffectsFactory(
-                () ->
-                        switch (nextTracker.getAndIncrement()) {
-                            case 0 -> tracker800;
-                            case 1 -> tracker801;
-                            case 2 -> tracker200;
-                            case 3 -> tracker201;
-                            case 4 -> tracker100;
-                            default -> tracker101;
-                        });
+        subject.setSideEffectsFactory(() -> switch (nextTracker.getAndIncrement()) {
+            case 0 -> tracker800;
+            case 1 -> tracker801;
+            case 2 -> tracker200;
+            case 3 -> tracker201;
+            case 4 -> tracker100;
+            default -> tracker101;
+        });
     }
 
     @Test
     void streamsTreasuryAccountCreationRecordsWithTransferList() {
-        final ArgumentCaptor<TransactionBody.Builder> bodyCaptor =
-                forClass(TransactionBody.Builder.class);
-        subject.setSideEffectsFactory(
-                () ->
-                        switch (nextTracker.getAndIncrement()) {
-                            case 0 -> tracker2;
-                            default -> tracker2;
-                        });
+        final ArgumentCaptor<TransactionBody.Builder> bodyCaptor = forClass(TransactionBody.Builder.class);
+        subject.setSideEffectsFactory(() -> switch (nextTracker.getAndIncrement()) {
+            case 0 -> tracker2;
+            default -> tracker2;
+        });
 
         final var systemAccountSynthBody = expectedTreasuryAccountCreationSynthBody();
         final var record = ExpirableTxnRecord.newBuilder();
 
         given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
-        given(
-                        creator.createSuccessfulSyntheticRecord(
-                                NO_CUSTOM_FEES, tracker2, SYSTEM_ACCOUNT_CREATION_MEMO))
+        given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker2, SYSTEM_ACCOUNT_CREATION_MEMO))
                 .willReturn(record);
         given(systemAccountsCreator.getTreasuryClonesCreated()).willReturn(List.of());
         given(systemAccountsCreator.getSystemAccountsCreated()).willReturn(List.of(merkleAccount));
@@ -197,8 +258,7 @@ class MigrationRecordsManagerTest {
         subject.publishMigrationRecords(now);
 
         verify(sigImpactHistorian).markEntityChanged(2L);
-        verify(recordsHistorian)
-                .trackPrecedingChildRecord(eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(record));
+        verify(recordsHistorian).trackPrecedingChildRecord(eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(record));
         verify(networkCtx).markMigrationRecordsStreamed();
         verify(systemAccountsCreator).forgetCreations();
 
@@ -213,8 +273,7 @@ class MigrationRecordsManagerTest {
 
     @Test
     void streamsSystemAccountCreationRecords() {
-        final ArgumentCaptor<TransactionBody.Builder> bodyCaptor =
-                forClass(TransactionBody.Builder.class);
+        final ArgumentCaptor<TransactionBody.Builder> bodyCaptor = forClass(TransactionBody.Builder.class);
         final var rewardSynthBody = expectedSyntheticRewardAccount();
         final var cloneSynthBody = expectedSyntheticTreasuryClone();
         final var systemAccountSynthBody = expectedSystemAccountCreationSynthBody();
@@ -224,21 +283,13 @@ class MigrationRecordsManagerTest {
                 .willReturn(pretend800);
         given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker801, MEMO))
                 .willReturn(pretend801);
-        given(
-                        creator.createSuccessfulSyntheticRecord(
-                                NO_CUSTOM_FEES, tracker200, TREASURY_CLONE_MEMO))
+        given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker200, TREASURY_CLONE_MEMO))
                 .willReturn(pretend200);
-        given(
-                        creator.createSuccessfulSyntheticRecord(
-                                NO_CUSTOM_FEES, tracker201, TREASURY_CLONE_MEMO))
+        given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker201, TREASURY_CLONE_MEMO))
                 .willReturn(pretend201);
-        given(
-                        creator.createSuccessfulSyntheticRecord(
-                                NO_CUSTOM_FEES, tracker100, SYSTEM_ACCOUNT_CREATION_MEMO))
+        given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker100, SYSTEM_ACCOUNT_CREATION_MEMO))
                 .willReturn(pretend100);
-        given(
-                        creator.createSuccessfulSyntheticRecord(
-                                NO_CUSTOM_FEES, tracker101, SYSTEM_ACCOUNT_CREATION_MEMO))
+        given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker101, SYSTEM_ACCOUNT_CREATION_MEMO))
                 .willReturn(pretend101);
 
         given(accountNumbers.stakingRewardAccount()).willReturn(stakingRewardAccount);
@@ -250,26 +301,16 @@ class MigrationRecordsManagerTest {
 
         verify(sigImpactHistorian).markEntityChanged(800L);
         verify(sigImpactHistorian).markEntityChanged(801L);
-        verify(tracker800).trackAutoCreation(AccountID.newBuilder().setAccountNum(800L).build());
-        verify(tracker801).trackAutoCreation(AccountID.newBuilder().setAccountNum(801L).build());
-        verify(recordsHistorian)
-                .trackPrecedingChildRecord(
-                        eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend800));
-        verify(recordsHistorian)
-                .trackPrecedingChildRecord(
-                        eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend801));
-        verify(recordsHistorian)
-                .trackPrecedingChildRecord(
-                        eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend200));
-        verify(recordsHistorian)
-                .trackPrecedingChildRecord(
-                        eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend201));
-        verify(recordsHistorian)
-                .trackPrecedingChildRecord(
-                        eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend100));
-        verify(recordsHistorian)
-                .trackPrecedingChildRecord(
-                        eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend101));
+        verify(tracker800)
+                .trackAutoCreation(AccountID.newBuilder().setAccountNum(800L).build());
+        verify(tracker801)
+                .trackAutoCreation(AccountID.newBuilder().setAccountNum(801L).build());
+        verify(recordsHistorian).trackPrecedingChildRecord(eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend800));
+        verify(recordsHistorian).trackPrecedingChildRecord(eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend801));
+        verify(recordsHistorian).trackPrecedingChildRecord(eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend200));
+        verify(recordsHistorian).trackPrecedingChildRecord(eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend201));
+        verify(recordsHistorian).trackPrecedingChildRecord(eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend100));
+        verify(recordsHistorian).trackPrecedingChildRecord(eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend101));
         verify(networkCtx).markMigrationRecordsStreamed();
         verify(systemAccountsCreator).forgetCreations();
         final var bodies = bodyCaptor.getAllValues();
@@ -282,9 +323,64 @@ class MigrationRecordsManagerTest {
     }
 
     @Test
+    void streamsBlocklistedAccountWhenFeatureFlagIsEnabled() throws DecoderException {
+        final var bodyCaptor = forClass(TransactionBody.Builder.class);
+        given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
+        given(bootstrapProperties.getBooleanProperty(PropertyNames.ACCOUNTS_BLOCKLIST_ENABLED))
+                .willReturn(true);
+        given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker800, MEMO))
+                .willReturn(pretend800);
+        given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker801, MEMO))
+                .willReturn(pretend801);
+        given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker200, BLOCKED_ACCOUNT_CREATION_MEMO))
+                .willReturn(pretend200);
+        given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker201, BLOCKED_ACCOUNT_CREATION_MEMO))
+                .willReturn(pretend201);
+        given(accountNumbers.stakingRewardAccount()).willReturn(stakingRewardAccount);
+        given(accountNumbers.nodeRewardAccount()).willReturn(nodeRewardAccount);
+        givenBlocklistedAccountsCreated();
+
+        subject.publishMigrationRecords(now);
+
+        verify(sigImpactHistorian).markEntityChanged(blockedAccountNum1);
+        verify(sigImpactHistorian).markEntityChanged(blockedAccountNum2);
+        verify(tracker200)
+                .trackAutoCreation(
+                        AccountID.newBuilder().setAccountNum(blockedAccountNum1).build());
+        verify(tracker201)
+                .trackAutoCreation(
+                        AccountID.newBuilder().setAccountNum(blockedAccountNum2).build());
+        verify(recordsHistorian).trackPrecedingChildRecord(eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend200));
+        verify(recordsHistorian).trackPrecedingChildRecord(eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend201));
+
+        final var bodies = bodyCaptor.getAllValues();
+        assertEquals(
+                expectedSyntheticBlockedAccountCreate(EVM_ADDRESS_1, MEMO_1),
+                bodies.get(0).build());
+        assertEquals(
+                expectedSyntheticBlockedAccountCreate(EVM_ADDRESS_2, MEMO_2),
+                bodies.get(1).build());
+
+        assertThat(
+                logCaptor.infoLogs(),
+                contains(
+                        Matchers.startsWith("Published synthetic CryptoCreate for staking fund account 0.0."
+                                + stakingRewardAccount),
+                        Matchers.startsWith(
+                                "Published synthetic CryptoCreate for staking fund account 0.0." + nodeRewardAccount),
+                        Matchers.startsWith(
+                                "Published synthetic CryptoCreate for blocked account 0.0." + blockedAccountNum1),
+                        Matchers.startsWith(
+                                "Published synthetic CryptoCreate for blocked account 0.0." + blockedAccountNum2)));
+
+        verify(networkCtx).markMigrationRecordsStreamed();
+        verify(systemAccountsCreator).forgetCreations();
+        verify(blocklistAccountCreator).forgetCreatedBlockedAccounts();
+    }
+
+    @Test
     void ifContextIndicatesRecordsNeedToBeStreamedThenDoesSo() {
-        final ArgumentCaptor<TransactionBody.Builder> bodyCaptor =
-                forClass(TransactionBody.Builder.class);
+        final ArgumentCaptor<TransactionBody.Builder> bodyCaptor = forClass(TransactionBody.Builder.class);
         final var rewardSynthBody = expectedSyntheticRewardAccount();
         final var cloneSynthBody = expectedSyntheticTreasuryClone();
 
@@ -293,13 +389,9 @@ class MigrationRecordsManagerTest {
                 .willReturn(pretend800);
         given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker801, MEMO))
                 .willReturn(pretend801);
-        given(
-                        creator.createSuccessfulSyntheticRecord(
-                                NO_CUSTOM_FEES, tracker200, TREASURY_CLONE_MEMO))
+        given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker200, TREASURY_CLONE_MEMO))
                 .willReturn(pretend200);
-        given(
-                        creator.createSuccessfulSyntheticRecord(
-                                NO_CUSTOM_FEES, tracker201, TREASURY_CLONE_MEMO))
+        given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker201, TREASURY_CLONE_MEMO))
                 .willReturn(pretend201);
         given(accountNumbers.stakingRewardAccount()).willReturn(stakingRewardAccount);
         given(accountNumbers.nodeRewardAccount()).willReturn(nodeRewardAccount);
@@ -309,22 +401,16 @@ class MigrationRecordsManagerTest {
 
         verify(sigImpactHistorian).markEntityChanged(800L);
         verify(sigImpactHistorian).markEntityChanged(801L);
-        verify(tracker800).trackAutoCreation(AccountID.newBuilder().setAccountNum(800L).build());
-        verify(tracker801).trackAutoCreation(AccountID.newBuilder().setAccountNum(801L).build());
-        verify(recordsHistorian)
-                .trackPrecedingChildRecord(
-                        eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend800));
-        verify(recordsHistorian)
-                .trackPrecedingChildRecord(
-                        eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend801));
+        verify(tracker800)
+                .trackAutoCreation(AccountID.newBuilder().setAccountNum(800L).build());
+        verify(tracker801)
+                .trackAutoCreation(AccountID.newBuilder().setAccountNum(801L).build());
+        verify(recordsHistorian).trackPrecedingChildRecord(eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend800));
+        verify(recordsHistorian).trackPrecedingChildRecord(eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend801));
         verify(networkCtx).markMigrationRecordsStreamed();
         verify(systemAccountsCreator).forgetCreations();
-        verify(recordsHistorian)
-                .trackPrecedingChildRecord(
-                        eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend200));
-        verify(recordsHistorian)
-                .trackPrecedingChildRecord(
-                        eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend201));
+        verify(recordsHistorian).trackPrecedingChildRecord(eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend200));
+        verify(recordsHistorian).trackPrecedingChildRecord(eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend201));
         final var bodies = bodyCaptor.getAllValues();
         assertEquals(rewardSynthBody, bodies.get(0).build());
         assertEquals(rewardSynthBody, bodies.get(1).build());
@@ -336,24 +422,27 @@ class MigrationRecordsManagerTest {
     void ifContextIndicatesContractRenewRecordsNeedToBeStreamedThenDoesSo() {
         registerConstructables();
 
-        final ArgumentCaptor<TransactionBody.Builder> bodyCaptor =
-                forClass(TransactionBody.Builder.class);
-        final ArgumentCaptor<ExpirableTxnRecord.Builder> recordCaptor =
-                forClass(ExpirableTxnRecord.Builder.class);
+        final ArgumentCaptor<TransactionBody.Builder> bodyCaptor = forClass(TransactionBody.Builder.class);
+        final ArgumentCaptor<ExpirableTxnRecord.Builder> recordCaptor = forClass(ExpirableTxnRecord.Builder.class);
 
         accounts.clear();
         accounts.put(
                 contract1Id.asNum(),
-                MerkleAccountFactory.newContract().expirationTime(contract1Expiry).get());
+                MerkleAccountFactory.newContract()
+                        .expirationTime(contract1Expiry)
+                        .get());
         accounts.put(
                 contract2Id.asNum(),
-                MerkleAccountFactory.newContract().expirationTime(contract2Expiry).get());
+                MerkleAccountFactory.newContract()
+                        .expirationTime(contract2Expiry)
+                        .get());
         accounts.put(
-                deletedContractId.asNum(), MerkleAccountFactory.newContract().deleted(true).get());
-        final var contractUpdateSynthBody1 =
-                factory.synthContractAutoRenew(contract1Id.asNum(), contract1Expiry).build();
-        final var contractUpdateSynthBody2 =
-                factory.synthContractAutoRenew(contract2Id.asNum(), contract2Expiry).build();
+                deletedContractId.asNum(),
+                MerkleAccountFactory.newContract().deleted(true).get());
+        final var contractUpdateSynthBody1 = factory.synthContractAutoRenew(contract1Id.asNum(), contract1Expiry)
+                .build();
+        final var contractUpdateSynthBody2 = factory.synthContractAutoRenew(contract2Id.asNum(), contract2Expiry)
+                .build();
 
         given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
@@ -362,8 +451,7 @@ class MigrationRecordsManagerTest {
         subject.publishMigrationRecords(now);
 
         verify(recordsHistorian, times(2))
-                .trackPrecedingChildRecord(
-                        eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), recordCaptor.capture());
+                .trackPrecedingChildRecord(eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), recordCaptor.capture());
         verify(networkCtx).markMigrationRecordsStreamed();
 
         final var bodies = bodyCaptor.getAllValues();
@@ -390,12 +478,10 @@ class MigrationRecordsManagerTest {
         verifyNoInteractions(recordsHistorian);
     }
 
-    private ExpirableTxnRecord.Builder expectedContractUpdateRecord(
-            final EntityId num, final long newExpiry) {
+    private ExpirableTxnRecord.Builder expectedContractUpdateRecord(final EntityId num, final long newExpiry) {
         final var receipt = TxnReceipt.newBuilder().setStatus(SUCCESS_LITERAL).build();
 
-        final var memo =
-                String.format(MigrationRecordsManager.AUTO_RENEW_MEMO_TPL, num.num(), newExpiry);
+        final var memo = String.format(MigrationRecordsManager.AUTO_RENEW_MEMO_TPL, num.num(), newExpiry);
         return ExpirableTxnRecord.newBuilder()
                 .setTxnId(new TxnId())
                 .setMemo(memo)
@@ -435,65 +521,64 @@ class MigrationRecordsManagerTest {
     }
 
     private TransactionBody expectedSyntheticRewardAccount() {
-        final var txnBody =
-                CryptoCreateTransactionBody.newBuilder()
-                        .setKey(EXPECTED_KEY)
-                        .setMemo(EMPTY_MEMO)
-                        .setInitialBalance(0)
-                        .setAutoRenewPeriod(
-                                Duration.newBuilder()
-                                        .setSeconds(fundingExpiry - now.getEpochSecond()))
-                        .build();
+        final var txnBody = CryptoCreateTransactionBody.newBuilder()
+                .setKey(EXPECTED_KEY)
+                .setMemo(EMPTY_MEMO)
+                .setInitialBalance(0)
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(fundingExpiry - now.getEpochSecond()))
+                .build();
         return TransactionBody.newBuilder().setCryptoCreateAccount(txnBody).build();
     }
 
     private TransactionBody expectedSystemAccountCreationSynthBody() {
-        final var txnBody =
-                CryptoCreateTransactionBody.newBuilder()
-                        .setKey(MiscUtils.asKeyUnchecked(systemAccountKey))
-                        .setMemo("123")
-                        .setInitialBalance(0L)
-                        .setReceiverSigRequired(true)
-                        .setAutoRenewPeriod(
-                                Duration.newBuilder()
-                                        .setSeconds(systemAccount - now.getEpochSecond()))
-                        .build();
+        final var txnBody = CryptoCreateTransactionBody.newBuilder()
+                .setKey(MiscUtils.asKeyUnchecked(systemAccountKey))
+                .setMemo("123")
+                .setInitialBalance(0L)
+                .setReceiverSigRequired(true)
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(systemAccount - now.getEpochSecond()))
+                .build();
         return TransactionBody.newBuilder().setCryptoCreateAccount(txnBody).build();
     }
 
     private TransactionBody expectedTreasuryAccountCreationSynthBody() {
-        final var txnBody =
-                CryptoCreateTransactionBody.newBuilder()
-                        .setKey(MiscUtils.asKeyUnchecked(pretendTreasuryKey))
-                        .setMemo("123")
-                        .setInitialBalance(MAX_PENDING_REWARDS)
-                        .setReceiverSigRequired(true)
-                        .setAutoRenewPeriod(
-                                Duration.newBuilder()
-                                        .setSeconds(pretendExpiry - now.getEpochSecond()))
-                        .build();
+        final var txnBody = CryptoCreateTransactionBody.newBuilder()
+                .setKey(MiscUtils.asKeyUnchecked(pretendTreasuryKey))
+                .setMemo("123")
+                .setInitialBalance(MAX_PENDING_REWARDS)
+                .setReceiverSigRequired(true)
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(pretendExpiry - now.getEpochSecond()))
+                .build();
         return TransactionBody.newBuilder().setCryptoCreateAccount(txnBody).build();
     }
 
     private TransactionBody expectedSyntheticTreasuryClone() {
-        final var txnBody =
-                CryptoCreateTransactionBody.newBuilder()
-                        .setKey(MiscUtils.asKeyUnchecked(pretendTreasuryKey))
-                        .setMemo("123")
-                        .setInitialBalance(0)
-                        .setReceiverSigRequired(true)
-                        .setAutoRenewPeriod(
-                                Duration.newBuilder()
-                                        .setSeconds(pretendExpiry - now.getEpochSecond()))
-                        .build();
+        final var txnBody = CryptoCreateTransactionBody.newBuilder()
+                .setKey(MiscUtils.asKeyUnchecked(pretendTreasuryKey))
+                .setMemo("123")
+                .setInitialBalance(0)
+                .setReceiverSigRequired(true)
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(pretendExpiry - now.getEpochSecond()))
+                .build();
+        return TransactionBody.newBuilder().setCryptoCreateAccount(txnBody).build();
+    }
+
+    private TransactionBody expectedSyntheticBlockedAccountCreate(String evmAddress, String memo) {
+        final var txnBody = CryptoCreateTransactionBody.newBuilder()
+                .setKey(MiscUtils.asKeyUnchecked(genesisKey))
+                .setMemo(memo)
+                .setDeclineReward(true)
+                .setReceiverSigRequired(true)
+                .setInitialBalance(0)
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(pretendExpiry - now.getEpochSecond()))
+                .setAlias(ByteString.copyFromUtf8(evmAddress))
+                .build();
         return TransactionBody.newBuilder().setCryptoCreateAccount(txnBody).build();
     }
 
     private void givenSomeTreasuryClones() {
-        treasuryClones.addAll(
-                List.of(
-                        accountWith(pretendExpiry, pretendTreasuryKey),
-                        accountWith(pretendExpiry, pretendTreasuryKey)));
+        treasuryClones.addAll(List.of(
+                accountWith(pretendExpiry, pretendTreasuryKey), accountWith(pretendExpiry, pretendTreasuryKey)));
         treasuryClones.get(0).setEntityNum(EntityNum.fromLong(200L));
         treasuryClones.get(1).setEntityNum(EntityNum.fromLong(201L));
         given(systemAccountsCreator.getTreasuryClonesCreated()).willReturn(treasuryClones);
@@ -501,12 +586,33 @@ class MigrationRecordsManagerTest {
 
     private void givenSystemAccountsCreated() {
         systemAccounts.addAll(
-                List.of(
-                        accountWith(systemAccount, systemAccountKey),
-                        accountWith(systemAccount, systemAccountKey)));
+                List.of(accountWith(systemAccount, systemAccountKey), accountWith(systemAccount, systemAccountKey)));
         systemAccounts.get(0).setEntityNum(EntityNum.fromLong(100L));
         systemAccounts.get(1).setEntityNum(EntityNum.fromLong(101L));
         given(systemAccountsCreator.getSystemAccountsCreated()).willReturn(systemAccounts);
+    }
+
+    private void givenBlocklistedAccountsCreated() throws DecoderException {
+        blocklistedAccounts.addAll(List.of(
+                blockedAccount(ByteString.copyFromUtf8(EVM_ADDRESS_1), MEMO_1),
+                blockedAccount(ByteString.copyFromUtf8(EVM_ADDRESS_2), MEMO_2)));
+        blocklistedAccounts.get(0).setEntityNum(EntityNum.fromInt(blockedAccountNum1));
+        blocklistedAccounts.get(1).setEntityNum(EntityNum.fromInt(blockedAccountNum2));
+        given(blocklistAccountCreator.getBlockedAccountsCreated()).willReturn(blocklistedAccounts);
+    }
+
+    private HederaAccount blockedAccount(ByteString evmAddress, String memo) throws DecoderException {
+        return new HederaAccountCustomizer()
+                .isReceiverSigRequired(true)
+                .isDeclinedReward(true)
+                .isDeleted(false)
+                .expiry(pretendExpiry)
+                .memo(memo)
+                .isSmartContract(false)
+                .key(genesisKey)
+                .autoRenewPeriod(pretendExpiry)
+                .alias(evmAddress)
+                .customizing(new MerkleAccount());
     }
 
     private void givenFreeRenewalsOnly() {
@@ -517,27 +623,20 @@ class MigrationRecordsManagerTest {
     private void registerConstructables() {
         try {
             ConstructableRegistry.getInstance()
-                    .registerConstructable(
-                            new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
+                    .registerConstructable(new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
+            ConstructableRegistry.getInstance()
+                    .registerConstructable(new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
+            ConstructableRegistry.getInstance()
+                    .registerConstructable(new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
             ConstructableRegistry.getInstance()
                     .registerConstructable(
-                            new ClassConstructorPair(
-                                    MerkleBinaryTree.class, MerkleBinaryTree::new));
+                            new ClassConstructorPair(MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
             ConstructableRegistry.getInstance()
                     .registerConstructable(
-                            new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
+                            new ClassConstructorPair(MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
             ConstructableRegistry.getInstance()
-                    .registerConstructable(
-                            new ClassConstructorPair(
-                                    MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
-            ConstructableRegistry.getInstance()
-                    .registerConstructable(
-                            new ClassConstructorPair(
-                                    MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
-            ConstructableRegistry.getInstance()
-                    .registerConstructable(
-                            new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
-        } catch (ConstructableRegistryException e) {
+                    .registerConstructable(new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
+        } catch (final ConstructableRegistryException e) {
             throw new IllegalStateException(e);
         }
     }

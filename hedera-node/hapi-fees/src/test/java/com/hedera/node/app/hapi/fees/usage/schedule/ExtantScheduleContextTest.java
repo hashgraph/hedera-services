@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.schedule;
 
 import static com.hedera.node.app.hapi.fees.usage.schedule.ExtantScheduleContextTest.SettableField.ADMIN_KEY;
@@ -55,13 +56,12 @@ class ExtantScheduleContextTest {
         // given:
         final var ctx = builderWith(EnumSet.allOf(SettableField.class)).build();
         // and:
-        final long expectedNonBaseRb =
-                ExtantScheduleContext.METADATA_SIZE
-                        + BASIC_RICH_INSTANT_SIZE
-                        + memo.getBytes().length
-                        + getAccountKeyStorageSize(adminKey)
-                        + scheduledTxn.getSerializedSize()
-                        + numSigners * KEY_SIZE;
+        final long expectedNonBaseRb = ExtantScheduleContext.METADATA_SIZE
+                + BASIC_RICH_INSTANT_SIZE
+                + memo.getBytes().length
+                + getAccountKeyStorageSize(adminKey)
+                + scheduledTxn.getSerializedSize()
+                + numSigners * KEY_SIZE;
 
         // then:
         assertTrue(ctx.isResolved());
@@ -78,12 +78,11 @@ class ExtantScheduleContextTest {
         // given:
         final var ctx = builderWith(EnumSet.complementOf(EnumSet.of(ADMIN_KEY))).build();
         // and:
-        final long expectedNonBaseRb =
-                ExtantScheduleContext.METADATA_SIZE
-                        + BASIC_RICH_INSTANT_SIZE
-                        + memo.getBytes().length
-                        + scheduledTxn.getSerializedSize()
-                        + ctx.numSigners() * KEY_SIZE;
+        final long expectedNonBaseRb = ExtantScheduleContext.METADATA_SIZE
+                + BASIC_RICH_INSTANT_SIZE
+                + memo.getBytes().length
+                + scheduledTxn.getSerializedSize()
+                + ctx.numSigners() * KEY_SIZE;
 
         // then:
         assertTrue(ctx.isResolved());
@@ -99,13 +98,10 @@ class ExtantScheduleContextTest {
     void requiresAllFieldsSet() {
         final var numSigners = builderWith(EnumSet.complementOf(EnumSet.of(NUM_SIGNERS)));
         final var adminAndNoAdmin =
-                builderWith(
-                        EnumSet.complementOf(EnumSet.of(SettableField.ADMIN_KEY, NO_ADMIN_KEY)));
+                builderWith(EnumSet.complementOf(EnumSet.of(SettableField.ADMIN_KEY, NO_ADMIN_KEY)));
         final var memo = builderWith(EnumSet.of(SettableField.MEMO));
-        final var scheduleTxn =
-                builderWith(EnumSet.complementOf(EnumSet.of(SettableField.SCHEDULED_TXN)));
-        final var isResolved =
-                builderWith(EnumSet.complementOf(EnumSet.of(SettableField.IS_RESOLVED)));
+        final var scheduleTxn = builderWith(EnumSet.complementOf(EnumSet.of(SettableField.SCHEDULED_TXN)));
+        final var isResolved = builderWith(EnumSet.complementOf(EnumSet.of(SettableField.IS_RESOLVED)));
         // expect:
         Assertions.assertThrows(IllegalStateException.class, () -> numSigners.build());
         Assertions.assertThrows(IllegalStateException.class, () -> adminAndNoAdmin.build());

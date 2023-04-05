@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.contracts.execution;
 
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
@@ -21,7 +22,6 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
-import com.hedera.node.app.service.evm.store.contracts.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import java.util.HashMap;
 import java.util.Map;
@@ -81,17 +81,14 @@ public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
     }
 
     protected void executeHederaPrecompile(
-            final PrecompiledContract contract,
-            final MessageFrame frame,
-            final OperationTracer operationTracer) {
+            final PrecompiledContract contract, final MessageFrame frame, final OperationTracer operationTracer) {
         if (contract instanceof EvmHTSPrecompiledContract htsPrecompile) {
-            var updater = (HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater();
-            final var costedResult =
-                    htsPrecompile.computeCosted(
-                            frame.getInputData(),
-                            frame,
-                            (now, minimumTinybarCost) -> minimumTinybarCost,
-                            updater.tokenAccessor());
+            var updater = (AbstractLedgerEvmWorldUpdater) frame.getWorldUpdater();
+            final var costedResult = htsPrecompile.computeCosted(
+                    frame.getInputData(),
+                    frame,
+                    (now, minimumTinybarCost) -> minimumTinybarCost,
+                    updater.tokenAccessor());
             output = costedResult.getValue();
             gasRequirement = costedResult.getKey();
         }
@@ -117,8 +114,7 @@ public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
         }
     }
 
-    protected void executeLazyCreate(
-            final MessageFrame frame, final OperationTracer operationTracer) {
+    protected void executeLazyCreate(final MessageFrame frame, final OperationTracer operationTracer) {
         // no-op
     }
 }

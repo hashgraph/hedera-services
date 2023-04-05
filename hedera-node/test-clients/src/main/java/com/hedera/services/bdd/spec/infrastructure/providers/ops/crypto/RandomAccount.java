@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -43,13 +44,10 @@ public class RandomAccount implements OpProvider {
     private final AtomicInteger opNo = new AtomicInteger();
     private final EntityNameProvider<Key> keys;
     private final RegistrySourcedNameProvider<AccountID> accounts;
-    private final ResponseCodeEnum[] permissibleOutcomes =
-            standardOutcomesAnd(INVALID_ACCOUNT_ID, INVALID_ALIAS_KEY);
-    private final ResponseCodeEnum[] permissiblePrechecks =
-            standardPrechecksAnd(KEY_REQUIRED, INVALID_ALIAS_KEY);
+    private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(INVALID_ACCOUNT_ID, INVALID_ALIAS_KEY);
+    private final ResponseCodeEnum[] permissiblePrechecks = standardPrechecksAnd(KEY_REQUIRED, INVALID_ALIAS_KEY);
 
-    public RandomAccount(
-            EntityNameProvider<Key> keys, RegistrySourcedNameProvider<AccountID> accounts) {
+    public RandomAccount(EntityNameProvider<Key> keys, RegistrySourcedNameProvider<AccountID> accounts) {
         this(keys, accounts, false);
     }
 
@@ -85,15 +83,14 @@ public class RandomAccount implements OpProvider {
 
         int id = opNo.getAndIncrement();
         final var name = my("account" + id);
-        final var op =
-                cryptoCreate(name)
-                        .key(key.get())
-                        .fuzzingIdentifiersIfEcdsaKey(fuzzIdentifiers)
-                        .memo("randomlycreated" + id)
-                        .balance(INITIAL_BALANCE)
-                        .sendThreshold(SEND_THRESHOLD)
-                        .hasPrecheckFrom(permissiblePrechecks)
-                        .hasKnownStatusFrom(permissibleOutcomes);
+        final var op = cryptoCreate(name)
+                .key(key.get())
+                .fuzzingIdentifiersIfEcdsaKey(fuzzIdentifiers)
+                .memo("randomlycreated" + id)
+                .balance(INITIAL_BALANCE)
+                .sendThreshold(SEND_THRESHOLD)
+                .hasPrecheckFrom(permissiblePrechecks)
+                .hasKnownStatusFrom(permissibleOutcomes);
         return Optional.of(op);
     }
 

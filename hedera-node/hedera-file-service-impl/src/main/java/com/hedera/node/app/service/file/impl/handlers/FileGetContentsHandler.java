@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,40 +13,44 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.file.impl.handlers;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.QueryHeader;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.file.FileGetContentsResponse;
+import com.hedera.hapi.node.transaction.Query;
+import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hederahashgraph.api.proto.java.FileGetContentsResponse;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.QueryHeader;
-import com.hederahashgraph.api.proto.java.Response;
-import com.hederahashgraph.api.proto.java.ResponseHeader;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#FileGetContents}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#FILE_GET_CONTENTS}.
  */
 @Singleton
 public class FileGetContentsHandler extends PaidQueryHandler {
     @Inject
-    public FileGetContentsHandler() {}
+    public FileGetContentsHandler() {
+        // Exists for injection
+    }
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
-        return query.getFileGetContents().getHeader();
+        return query.fileGetContentsOrThrow().header();
     }
 
     @Override
     public Response createEmptyResponse(@NonNull final ResponseHeader header) {
-        final var response = FileGetContentsResponse.newBuilder().setHeader(header);
-        return Response.newBuilder().setFileGetContents(response).build();
+        final var response = FileGetContentsResponse.newBuilder().header(header);
+        return Response.newBuilder().fileGetContents(response).build();
     }
 
     /**
@@ -60,7 +64,7 @@ public class FileGetContentsHandler extends PaidQueryHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      * @throws PreCheckException if validation fails
      */
-    public void validate(@NonNull final Query query) throws PreCheckException {
+    public ResponseCodeEnum validate(@NonNull final Query query) throws PreCheckException {
         throw new UnsupportedOperationException("Not implemented");
     }
 

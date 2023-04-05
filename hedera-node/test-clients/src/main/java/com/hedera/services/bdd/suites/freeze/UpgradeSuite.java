@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.freeze;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -79,8 +80,8 @@ public class UpgradeSuite extends HapiSuite {
             poeticUpgradeHash = sha384.digest(poeticUpgrade);
             heavyPoeticUpgrade = Files.readAllBytes(Paths.get(heavyPoeticUpgradeLoc));
             heavyPoeticUpgradeHash = sha384.digest(heavyPoeticUpgrade);
-            log.info("Poetic upgrade hash: " + CommonUtils.hex(poeticUpgradeHash));
-            log.info("Heavy poetic upgrade hash: " + CommonUtils.hex(heavyPoeticUpgradeHash));
+            log.info("Poetic upgrade hash: {}", CommonUtils.hex(poeticUpgradeHash));
+            log.info("Heavy poetic upgrade hash: {}", CommonUtils.hex(heavyPoeticUpgradeHash));
         } catch (NoSuchAlgorithmException | IOException e) {
             throw new IllegalStateException("UpgradeSuite environment is unsuitable", e);
         }
@@ -93,17 +94,16 @@ public class UpgradeSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    precheckRejectsUnknownFreezeType(),
-                    freezeOnlyPrecheckRejectsInvalid(),
-                    freezeUpgradeValidationRejectsInvalid(),
-                    prepareUpgradeValidationRejectsInvalid(),
-                    telemetryUpgradeValidationRejectsInvalid(),
-                    canFreezeUpgradeWithPreparedUpgrade(),
-                    canTelemetryUpgradeWithValid(),
-                    freezeAbortIsIdempotent(),
-                });
+        return List.of(new HapiSpec[] {
+            precheckRejectsUnknownFreezeType(),
+            freezeOnlyPrecheckRejectsInvalid(),
+            freezeUpgradeValidationRejectsInvalid(),
+            prepareUpgradeValidationRejectsInvalid(),
+            telemetryUpgradeValidationRejectsInvalid(),
+            canFreezeUpgradeWithPreparedUpgrade(),
+            canTelemetryUpgradeWithValid(),
+            freezeAbortIsIdempotent(),
+        });
     }
 
     private HapiSpec precheckRejectsUnknownFreezeType() {
@@ -118,22 +118,11 @@ public class UpgradeSuite extends HapiSuite {
                 .given()
                 .when()
                 .then(
-                        freezeOnly()
-                                .withRejectedStartHr()
-                                .hasPrecheck(INVALID_FREEZE_TRANSACTION_BODY),
-                        freezeOnly()
-                                .withRejectedStartMin()
-                                .hasPrecheck(INVALID_FREEZE_TRANSACTION_BODY),
-                        freezeOnly()
-                                .withRejectedEndHr()
-                                .hasPrecheck(INVALID_FREEZE_TRANSACTION_BODY),
-                        freezeOnly()
-                                .withRejectedEndMin()
-                                .hasPrecheck(INVALID_FREEZE_TRANSACTION_BODY),
-                        freezeOnly()
-                                .startingIn(-60)
-                                .minutes()
-                                .hasPrecheck(FREEZE_START_TIME_MUST_BE_FUTURE));
+                        freezeOnly().withRejectedStartHr().hasPrecheck(INVALID_FREEZE_TRANSACTION_BODY),
+                        freezeOnly().withRejectedStartMin().hasPrecheck(INVALID_FREEZE_TRANSACTION_BODY),
+                        freezeOnly().withRejectedEndHr().hasPrecheck(INVALID_FREEZE_TRANSACTION_BODY),
+                        freezeOnly().withRejectedEndMin().hasPrecheck(INVALID_FREEZE_TRANSACTION_BODY),
+                        freezeOnly().startingIn(-60).minutes().hasPrecheck(FREEZE_START_TIME_MUST_BE_FUTURE));
     }
 
     private HapiSpec freezeUpgradeValidationRejectsInvalid() {
@@ -141,22 +130,11 @@ public class UpgradeSuite extends HapiSuite {
                 .given()
                 .when()
                 .then(
-                        freezeUpgrade()
-                                .withRejectedStartHr()
-                                .hasPrecheck(INVALID_FREEZE_TRANSACTION_BODY),
-                        freezeUpgrade()
-                                .withRejectedStartMin()
-                                .hasPrecheck(INVALID_FREEZE_TRANSACTION_BODY),
-                        freezeUpgrade()
-                                .withRejectedEndHr()
-                                .hasPrecheck(INVALID_FREEZE_TRANSACTION_BODY),
-                        freezeUpgrade()
-                                .withRejectedEndMin()
-                                .hasPrecheck(INVALID_FREEZE_TRANSACTION_BODY),
-                        freezeUpgrade()
-                                .startingIn(-60)
-                                .minutes()
-                                .hasPrecheck(FREEZE_START_TIME_MUST_BE_FUTURE),
+                        freezeUpgrade().withRejectedStartHr().hasPrecheck(INVALID_FREEZE_TRANSACTION_BODY),
+                        freezeUpgrade().withRejectedStartMin().hasPrecheck(INVALID_FREEZE_TRANSACTION_BODY),
+                        freezeUpgrade().withRejectedEndHr().hasPrecheck(INVALID_FREEZE_TRANSACTION_BODY),
+                        freezeUpgrade().withRejectedEndMin().hasPrecheck(INVALID_FREEZE_TRANSACTION_BODY),
+                        freezeUpgrade().startingIn(-60).minutes().hasPrecheck(FREEZE_START_TIME_MUST_BE_FUTURE),
                         freezeUpgrade()
                                 .startingIn(2)
                                 .minutes()
@@ -202,11 +180,10 @@ public class UpgradeSuite extends HapiSuite {
                                 .withUpdateFile(standardUpdateFile)
                                 .havingHash(poeticUpgradeHash)
                                 .hasKnownStatus(FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH))
-                .when(
-                        fileUpdate(standardUpdateFile)
-                                .signedBy(FREEZE_ADMIN)
-                                .contents(pragmatism)
-                                .payingWith(FREEZE_ADMIN))
+                .when(fileUpdate(standardUpdateFile)
+                        .signedBy(FREEZE_ADMIN)
+                        .contents(pragmatism)
+                        .payingWith(FREEZE_ADMIN))
                 .then(
                         prepareUpgrade()
                                 .withUpdateFile(standardUpdateFile)
@@ -217,19 +194,13 @@ public class UpgradeSuite extends HapiSuite {
                                 .path(poeticUpgradeLoc)
                                 .payingWith(FREEZE_ADMIN),
                         getFileContents(standardUpdateFile)
-                                .hasByteStringContents(
-                                        ignore -> ByteString.copyFrom(poeticUpgrade)),
-                        prepareUpgrade()
-                                .withUpdateFile(standardUpdateFile)
-                                .havingHash(poeticUpgradeHash),
+                                .hasByteStringContents(ignore -> ByteString.copyFrom(poeticUpgrade)),
+                        prepareUpgrade().withUpdateFile(standardUpdateFile).havingHash(poeticUpgradeHash),
                         prepareUpgrade()
                                 .withUpdateFile(standardUpdateFile)
                                 .havingHash(poeticUpgradeHash)
                                 .hasKnownStatus(FREEZE_UPGRADE_IN_PROGRESS),
-                        freezeOnly()
-                                .startingIn(60)
-                                .minutes()
-                                .hasKnownStatus(FREEZE_UPGRADE_IN_PROGRESS),
+                        freezeOnly().startingIn(60).minutes().hasKnownStatus(FREEZE_UPGRADE_IN_PROGRESS),
                         telemetryUpgrade()
                                 .withUpdateFile(standardUpdateFile)
                                 .havingHash(poeticUpgradeHash)
@@ -271,18 +242,16 @@ public class UpgradeSuite extends HapiSuite {
                                 .withUpdateFile(standardTelemetryFile)
                                 .havingHash(notEvenASha384Hash)
                                 .hasPrecheck(FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH))
-                .when(
-                        fileUpdate(standardTelemetryFile)
-                                .signedBy(FREEZE_ADMIN)
-                                .contents(pragmatism)
-                                .payingWith(FREEZE_ADMIN))
-                .then(
-                        telemetryUpgrade()
-                                .startingIn(3)
-                                .minutes()
-                                .withUpdateFile(standardTelemetryFile)
-                                .havingHash(poeticUpgradeHash)
-                                .hasKnownStatus(FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH));
+                .when(fileUpdate(standardTelemetryFile)
+                        .signedBy(FREEZE_ADMIN)
+                        .contents(pragmatism)
+                        .payingWith(FREEZE_ADMIN))
+                .then(telemetryUpgrade()
+                        .startingIn(3)
+                        .minutes()
+                        .withUpdateFile(standardTelemetryFile)
+                        .havingHash(poeticUpgradeHash)
+                        .hasKnownStatus(FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH));
     }
 
     private HapiSpec canFreezeUpgradeWithPreparedUpgrade() {
@@ -293,10 +262,7 @@ public class UpgradeSuite extends HapiSuite {
                                 .signedBy(FREEZE_ADMIN)
                                 .path(poeticUpgradeLoc)
                                 .payingWith(FREEZE_ADMIN))
-                .when(
-                        prepareUpgrade()
-                                .withUpdateFile(standardUpdateFile)
-                                .havingHash(poeticUpgradeHash))
+                .when(prepareUpgrade().withUpdateFile(standardUpdateFile).havingHash(poeticUpgradeHash))
                 .then(
                         freezeUpgrade()
                                 .startingIn(60)
@@ -327,13 +293,11 @@ public class UpgradeSuite extends HapiSuite {
                                 .path(heavyPoeticUpgradeLoc)
                                 .payingWith(FREEZE_ADMIN),
                         getFileContents(standardUpdateFile)
-                                .hasByteStringContents(
-                                        ignore -> ByteString.copyFrom(heavyPoeticUpgrade)))
-                .then(
-                        telemetryUpgrade()
-                                .startingIn(60)
-                                .minutes()
-                                .withUpdateFile(standardUpdateFile)
-                                .havingHash(heavyPoeticUpgradeHash));
+                                .hasByteStringContents(ignore -> ByteString.copyFrom(heavyPoeticUpgrade)))
+                .then(telemetryUpgrade()
+                        .startingIn(60)
+                        .minutes()
+                        .withUpdateFile(standardUpdateFile)
+                        .havingHash(heavyPoeticUpgradeHash));
     }
 }

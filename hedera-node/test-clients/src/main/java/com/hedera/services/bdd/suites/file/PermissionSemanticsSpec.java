@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.file;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -90,8 +91,7 @@ public class PermissionSemanticsSpec extends HapiSuite {
                                 .contents("This is something new.")
                                 .via("unauthorizedTxn"))
                 .then(
-                        getTxnRecord("unauthorizedTxn")
-                                .hasPriority(recordWith().feeDifferentThan(0L)),
+                        getTxnRecord("unauthorizedTxn").hasPriority(recordWith().feeDifferentThan(0L)),
                         getTxnRecord("authorizedTxn").hasPriority(recordWith().fee(0L)));
     }
 
@@ -125,19 +125,15 @@ public class PermissionSemanticsSpec extends HapiSuite {
                                 .wacl(NEVER_TO_BE_USED)
                                 .hasKnownStatus(UNAUTHORIZED))
                 .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    approxExpiry.set(
-                                            spec.registry().getTimestamp(ETERNAL).getSeconds());
-                                }),
+                        withOpContext((spec, opLog) -> approxExpiry.set(
+                                spec.registry().getTimestamp(ETERNAL).getSeconds())),
                         fileUpdate(ETERNAL)
                                 .payingWith(CIVILIAN)
                                 .signedBy(CIVILIAN)
                                 .extendingExpiryBy(extensionSecs),
                         getFileInfo(ETERNAL)
                                 .isUnmodifiable()
-                                .hasExpiryPassing(
-                                        l -> Math.abs(l - approxExpiry.get() - extensionSecs) < 5));
+                                .hasExpiryPassing(l -> Math.abs(l - approxExpiry.get() - extensionSecs) < 5));
     }
 
     private HapiSpec allowsDeleteWithOneTopLevelSig() {
@@ -166,9 +162,7 @@ public class PermissionSemanticsSpec extends HapiSuite {
                                 .signedBy(GENESIS, WACL)
                                 .sigControl(ControlForKey.forKey(WACL, failedDeleteSig))
                                 .hasKnownStatus(INVALID_SIGNATURE),
-                        fileDelete("tbd")
-                                .signedBy(GENESIS, WACL)
-                                .sigControl(ControlForKey.forKey(WACL, deleteSig)));
+                        fileDelete("tbd").signedBy(GENESIS, WACL).sigControl(ControlForKey.forKey(WACL, deleteSig)));
     }
 
     @Override

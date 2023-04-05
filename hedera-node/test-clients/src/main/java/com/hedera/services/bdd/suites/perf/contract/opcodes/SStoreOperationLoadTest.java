@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.perf.contract.opcodes;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -49,7 +50,7 @@ public class SStoreOperationLoadTest extends LoadTest {
         // parsing local argument specific to this test
         if (args.length > usedArgs) {
             size = Integer.parseInt(args[usedArgs]);
-            log.info("Set sizeInKb as " + size);
+            log.info("Set sizeInKb as {}", size);
         }
 
         SStoreOperationLoadTest suite = new SStoreOperationLoadTest();
@@ -66,20 +67,15 @@ public class SStoreOperationLoadTest extends LoadTest {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         final AtomicInteger submittedSoFar = new AtomicInteger(0);
         long setValue = 0x1234abdeL;
-        Supplier<HapiSpecOperation[]> callBurst =
-                () ->
-                        new HapiSpecOperation[] {
-                            contractCall(contract, "changeArray", setValue)
-                                    .noLogging()
-                                    .payingWith("sender")
-                                    .suppressStats(true)
-                                    .hasKnownStatusFrom(UNKNOWN, SUCCESS)
-                                    .hasRetryPrecheckFrom(
-                                            BUSY,
-                                            DUPLICATE_TRANSACTION,
-                                            PLATFORM_TRANSACTION_NOT_CREATED)
-                                    .deferStatusResolution()
-                        };
+        Supplier<HapiSpecOperation[]> callBurst = () -> new HapiSpecOperation[] {
+            contractCall(contract, "changeArray", setValue)
+                    .noLogging()
+                    .payingWith("sender")
+                    .suppressStats(true)
+                    .hasKnownStatusFrom(UNKNOWN, SUCCESS)
+                    .hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
+                    .deferStatusResolution()
+        };
 
         return defaultHapiSpec("runContractCalls")
                 .given(
@@ -91,28 +87,15 @@ public class SStoreOperationLoadTest extends LoadTest {
                                 .balance(initialBalance.getAsLong())
                                 .withRecharging()
                                 .rechargeWindow(3)
-                                .hasRetryPrecheckFrom(
-                                        BUSY,
-                                        DUPLICATE_TRANSACTION,
-                                        PLATFORM_TRANSACTION_NOT_CREATED),
-                        uploadSingleInitCode(
-                                contract,
-                                BUSY,
-                                DUPLICATE_TRANSACTION,
-                                PLATFORM_TRANSACTION_NOT_CREATED),
+                                .hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
+                        uploadSingleInitCode(contract, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
                         contractCreate(contract)
-                                .hasRetryPrecheckFrom(
-                                        BUSY,
-                                        DUPLICATE_TRANSACTION,
-                                        PLATFORM_TRANSACTION_NOT_CREATED),
+                                .hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
                         getContractInfo(contract).hasExpectedInfo().logged(),
 
                         // Initialize storage size
                         contractCall(contract, "setSize", size)
-                                .hasRetryPrecheckFrom(
-                                        BUSY,
-                                        DUPLICATE_TRANSACTION,
-                                        PLATFORM_TRANSACTION_NOT_CREATED)
+                                .hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
                                 .gas(300_000))
                 .then(defaultLoadTest(callBurst, settings));
     }

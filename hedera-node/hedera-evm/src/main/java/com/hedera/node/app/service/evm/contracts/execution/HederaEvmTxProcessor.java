@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.contracts.execution;
 
 import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
@@ -93,7 +94,8 @@ public abstract class HederaEvmTxProcessor {
         this.mcps = mcps;
         this.ccps = ccps;
         this.messageCallProcessor = mcps.get(dynamicProperties.evmVersion()).get();
-        this.contractCreationProcessor = ccps.get(dynamicProperties.evmVersion()).get();
+        this.contractCreationProcessor =
+                ccps.get(dynamicProperties.evmVersion()).get();
         this.blockMetaSource = blockMetaSource;
     }
 
@@ -130,24 +132,23 @@ public abstract class HederaEvmTxProcessor {
         final var valueAsWei = Wei.of(value);
         final var stackedUpdater = updater.updater();
         final var senderEvmAddress = sender.canonicalAddress();
-        final MessageFrame.Builder commonInitialFrame =
-                MessageFrame.builder()
-                        .messageFrameStack(messageFrameStack)
-                        .maxStackSize(MAX_STACK_SIZE)
-                        .worldUpdater(stackedUpdater)
-                        .initialGas(gasAvailable)
-                        .originator(senderEvmAddress)
-                        .gasPrice(Wei.of(gasPrice))
-                        .sender(senderEvmAddress)
-                        .value(valueAsWei)
-                        .apparentValue(valueAsWei)
-                        .blockValues(blockValues)
-                        .depth(0)
-                        .completer(unused -> {})
-                        .isStatic(isStatic)
-                        .miningBeneficiary(coinbase)
-                        .blockHashLookup(blockMetaSource::getBlockHash)
-                        .contextVariables(Map.of("HederaFunctionality", getFunctionType()));
+        final MessageFrame.Builder commonInitialFrame = MessageFrame.builder()
+                .messageFrameStack(messageFrameStack)
+                .maxStackSize(MAX_STACK_SIZE)
+                .worldUpdater(stackedUpdater)
+                .initialGas(gasAvailable)
+                .originator(senderEvmAddress)
+                .gasPrice(Wei.of(gasPrice))
+                .sender(senderEvmAddress)
+                .value(valueAsWei)
+                .apparentValue(valueAsWei)
+                .blockValues(blockValues)
+                .depth(0)
+                .completer(unused -> {})
+                .isStatic(isStatic)
+                .miningBeneficiary(coinbase)
+                .blockHashLookup(blockMetaSource::getBlockHash)
+                .contextVariables(Map.of("HederaFunctionality", getFunctionType()));
 
         this.initialFrame = buildInitialFrame(commonInitialFrame, receiver, payload, value);
         messageFrameStack.addFirst(initialFrame);
@@ -167,15 +168,12 @@ public abstract class HederaEvmTxProcessor {
         this.gasUsed = calculateGasUsedByTX(gasLimit, initialFrame);
         this.sbhRefund = updater.getSbhRefund();
 
+        tracer.finalizeOperation(initialFrame);
+
         // Externalise result
         if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
             return HederaEvmTransactionProcessingResult.successful(
-                    initialFrame.getLogs(),
-                    gasUsed,
-                    sbhRefund,
-                    gasPrice,
-                    initialFrame.getOutputData(),
-                    mirrorReceiver);
+                    initialFrame.getLogs(), gasUsed, sbhRefund, gasPrice, initialFrame.getOutputData(), mirrorReceiver);
         } else {
             return HederaEvmTransactionProcessingResult.failed(
                     gasUsed,
@@ -187,8 +185,7 @@ public abstract class HederaEvmTxProcessor {
     }
 
     public void setupFields(final boolean contractCreation) {
-        this.intrinsicGas =
-                gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
+        this.intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
         this.updater = worldState.updater();
         this.coinbase = dynamicProperties.fundingAccountAddress();
     }
@@ -196,26 +193,22 @@ public abstract class HederaEvmTxProcessor {
     protected long calculateGasUsedByTX(final long txGasLimit, final MessageFrame initialFrame) {
         long gasUsedByTransaction = txGasLimit - initialFrame.getRemainingGas();
         /* Return leftover gas */
-        final long selfDestructRefund =
-                gasCalculator.getSelfDestructRefundAmount()
-                        * Math.min(
-                                initialFrame.getSelfDestructs().size(),
-                                gasUsedByTransaction / (gasCalculator.getMaxRefundQuotient()));
+        final long selfDestructRefund = gasCalculator.getSelfDestructRefundAmount()
+                * Math.min(
+                        initialFrame.getSelfDestructs().size(),
+                        gasUsedByTransaction / (gasCalculator.getMaxRefundQuotient()));
 
-        gasUsedByTransaction =
-                gasUsedByTransaction - selfDestructRefund - initialFrame.getGasRefund();
+        gasUsedByTransaction = gasUsedByTransaction - selfDestructRefund - initialFrame.getGasRefund();
 
         final var maxRefundPercent = dynamicProperties.maxGasRefundPercentage();
-        gasUsedByTransaction =
-                Math.max(gasUsedByTransaction, txGasLimit - txGasLimit * maxRefundPercent / 100);
+        gasUsedByTransaction = Math.max(gasUsedByTransaction, txGasLimit - txGasLimit * maxRefundPercent / 100);
 
         return gasUsedByTransaction;
     }
 
     protected long gasPriceTinyBarsGiven(final Instant consensusTime, final boolean isEthTxn) {
         return livePricesSource.currentGasPrice(
-                consensusTime,
-                isEthTxn ? HederaFunctionality.EthereumTransaction : getFunctionType());
+                consensusTime, isEthTxn ? HederaFunctionality.EthereumTransaction : getFunctionType());
     }
 
     protected abstract HederaFunctionality getFunctionType();

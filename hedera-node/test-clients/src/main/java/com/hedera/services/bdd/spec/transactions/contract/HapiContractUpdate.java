@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.contract;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
@@ -165,7 +166,8 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
             return;
         }
         if (!useDeprecatedAdminKey) {
-            newKey.ifPresent(k -> spec.registry().saveKey(contract, spec.registry().getKey(k)));
+            newKey.ifPresent(
+                    k -> spec.registry().saveKey(contract, spec.registry().getKey(k)));
         }
         if (useEmptyAdminKeyList) {
             spec.registry().forgetAdminKey(contract);
@@ -175,75 +177,50 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
         Optional<Key> key = newKey.map(spec.registry()::getKey);
-        ContractUpdateTransactionBody opBody =
-                spec.txns()
-                        .<ContractUpdateTransactionBody, ContractUpdateTransactionBody.Builder>body(
-                                ContractUpdateTransactionBody.class,
-                                b -> {
-                                    if (contract.length() == HEXED_EVM_ADDRESS_LEN) {
-                                        b.setContractID(
-                                                ContractID.newBuilder()
-                                                        .setEvmAddress(
-                                                                ByteString.copyFrom(
-                                                                        CommonUtils.unhex(
-                                                                                contract))));
-                                    } else {
-                                        b.setContractID(TxnUtils.asContractId(contract, spec));
-                                    }
-                                    newProxy.ifPresent(p -> b.setProxyAccountID(asId(p, spec)));
-                                    if (useDeprecatedAdminKey) {
-                                        b.setAdminKey(DEPRECATED_CID_ADMIN_KEY);
-                                    } else if (wipeToThresholdKey) {
-                                        b.setAdminKey(TxnUtils.EMPTY_THRESHOLD_KEY);
-                                    } else if (useEmptyAdminKeyList) {
-                                        b.setAdminKey(TxnUtils.EMPTY_KEY_LIST);
-                                    } else {
-                                        key.ifPresent(b::setAdminKey);
-                                    }
-                                    newExpirySecs.ifPresent(
-                                            t ->
-                                                    b.setExpirationTime(
-                                                            Timestamp.newBuilder()
-                                                                    .setSeconds(t)
-                                                                    .build()));
-                                    newMemo.ifPresent(
-                                            s -> {
-                                                if (useDeprecatedMemoField) {
-                                                    b.setMemo(s);
-                                                } else {
-                                                    b.setMemoWrapper(
-                                                            StringValue.newBuilder()
-                                                                    .setValue(s)
-                                                                    .build());
-                                                }
-                                            });
-                                    newAutoRenew.ifPresent(
-                                            autoRenew ->
-                                                    b.setAutoRenewPeriod(
-                                                            Duration.newBuilder()
-                                                                    .setSeconds(autoRenew)
-                                                                    .build()));
-                                    bytecode.ifPresent(
-                                            f ->
-                                                    b.setFileID(
-                                                                    TxnUtils.asFileId(
-                                                                            bytecode.get(), spec))
-                                                            .build());
-                                    newAutoRenewAccount.ifPresent(
-                                            p -> b.setAutoRenewAccountId(asId(p, spec)));
-                                    newMaxAutomaticAssociations.ifPresent(
-                                            p ->
-                                                    b.setMaxAutomaticTokenAssociations(
-                                                            Int32Value.of(p)));
+        ContractUpdateTransactionBody opBody = spec.txns()
+                .<ContractUpdateTransactionBody, ContractUpdateTransactionBody.Builder>body(
+                        ContractUpdateTransactionBody.class, b -> {
+                            if (contract.length() == HEXED_EVM_ADDRESS_LEN) {
+                                b.setContractID(ContractID.newBuilder()
+                                        .setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(contract))));
+                            } else {
+                                b.setContractID(TxnUtils.asContractId(contract, spec));
+                            }
+                            newProxy.ifPresent(p -> b.setProxyAccountID(asId(p, spec)));
+                            if (useDeprecatedAdminKey) {
+                                b.setAdminKey(DEPRECATED_CID_ADMIN_KEY);
+                            } else if (wipeToThresholdKey) {
+                                b.setAdminKey(TxnUtils.EMPTY_THRESHOLD_KEY);
+                            } else if (useEmptyAdminKeyList) {
+                                b.setAdminKey(TxnUtils.EMPTY_KEY_LIST);
+                            } else {
+                                key.ifPresent(b::setAdminKey);
+                            }
+                            newExpirySecs.ifPresent(t -> b.setExpirationTime(
+                                    Timestamp.newBuilder().setSeconds(t).build()));
+                            newMemo.ifPresent(s -> {
+                                if (useDeprecatedMemoField) {
+                                    b.setMemo(s);
+                                } else {
+                                    b.setMemoWrapper(
+                                            StringValue.newBuilder().setValue(s).build());
+                                }
+                            });
+                            newAutoRenew.ifPresent(autoRenew -> b.setAutoRenewPeriod(
+                                    Duration.newBuilder().setSeconds(autoRenew).build()));
+                            bytecode.ifPresent(f -> b.setFileID(TxnUtils.asFileId(bytecode.get(), spec))
+                                    .build());
+                            newAutoRenewAccount.ifPresent(p -> b.setAutoRenewAccountId(asId(p, spec)));
+                            newMaxAutomaticAssociations.ifPresent(
+                                    p -> b.setMaxAutomaticTokenAssociations(Int32Value.of(p)));
 
-                                    if (newStakedAccountId.isPresent()) {
-                                        b.setStakedAccountId(asId(newStakedAccountId.get(), spec));
-                                    } else {
-                                        newStakedNodeId.ifPresent(b::setStakedNodeId);
-                                    }
-                                    newDeclinedReward.ifPresent(
-                                            p -> b.setDeclineReward(BoolValue.of(p)));
-                                });
+                            if (newStakedAccountId.isPresent()) {
+                                b.setStakedAccountId(asId(newStakedAccountId.get(), spec));
+                            } else {
+                                newStakedNodeId.ifPresent(b::setStakedNodeId);
+                            }
+                            newDeclinedReward.ifPresent(p -> b.setDeclineReward(BoolValue.of(p)));
+                        });
         return builder -> builder.setContractUpdateInstance(opBody);
     }
 
@@ -258,9 +235,8 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
     }
 
     private List<Function<HapiSpec, Key>> oldDefaults() {
-        return List.of(
-                spec -> spec.registry().getKey(effectivePayer(spec)),
-                spec -> spec.registry().getKey(contract));
+        return List.of(spec -> spec.registry().getKey(effectivePayer(spec)), spec -> spec.registry()
+                .getKey(contract));
     }
 
     @Override
@@ -273,14 +249,10 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
         Timestamp newExpiry =
                 TxnFactory.expiryGiven(newExpirySecs.orElse(spec.setup().defaultExpirationSecs()));
         Timestamp oldExpiry = TxnUtils.currContractExpiry(contract, spec);
-        final Timestamp expiry =
-                TxnUtils.inConsensusOrder(oldExpiry, newExpiry) ? newExpiry : oldExpiry;
+        final Timestamp expiry = TxnUtils.inConsensusOrder(oldExpiry, newExpiry) ? newExpiry : oldExpiry;
         FeeCalculator.ActivityMetrics metricsCalc =
-                (txBody, sigUsage) ->
-                        scFees.getContractUpdateTxFeeMatrices(txBody, expiry, sigUsage);
-        return spec.fees()
-                .forActivityBasedOp(
-                        HederaFunctionality.ContractUpdate, metricsCalc, txn, numPayerKeys);
+                (txBody, sigUsage) -> scFees.getContractUpdateTxFeeMatrices(txBody, expiry, sigUsage);
+        return spec.fees().forActivityBasedOp(HederaFunctionality.ContractUpdate, metricsCalc, txn, numPayerKeys);
     }
 
     @Override

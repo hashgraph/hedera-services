@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
@@ -77,12 +78,12 @@ public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
         /* --- Validate and initialize custom fees list --- */
         final var tooManyFees = op.getCustomFeesCount() > dynamicProperties.maxCustomFeesAllowed();
         validateFalse(tooManyFees, CUSTOM_FEES_LIST_TOO_LONG);
-        final var customFees = op.getCustomFeesList().stream().map(grpcFeeConverter).toList();
-        customFees.forEach(
-                fee -> {
-                    fee.validateWith(token, accountStore, tokenStore);
-                    fee.nullOutCollector();
-                });
+        final var customFees =
+                op.getCustomFeesList().stream().map(grpcFeeConverter).toList();
+        customFees.forEach(fee -> {
+            fee.validateWith(token, accountStore, tokenStore);
+            fee.nullOutCollector();
+        });
         token.setCustomFees(customFees);
 
         /* --- Persist the updated models --- */

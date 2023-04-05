@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
@@ -22,6 +23,7 @@ import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.bytecodePath;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
@@ -31,17 +33,21 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ShardID;
+import java.security.SecureRandom;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 
 public class HapiSpecSetup {
-    private final Random r = new Random();
+    private final SecureRandom r = new SecureRandom();
 
     private static final HapiPropertySource defaultNodeProps;
 
@@ -55,8 +61,7 @@ public class HapiSpecSetup {
 
     private HapiPropertySource ciPropertiesMap = null;
     private static HapiPropertySource DEFAULT_PROPERTY_SOURCE = null;
-    private static final HapiPropertySource BASE_DEFAULT_PROPERTY_SOURCE =
-            JutilPropertySource.getDefaultInstance();
+    private static final HapiPropertySource BASE_DEFAULT_PROPERTY_SOURCE = JutilPropertySource.getDefaultInstance();
 
     public static final HapiPropertySource getDefaultPropertySource() {
         if (DEFAULT_PROPERTY_SOURCE == null) {
@@ -64,13 +69,9 @@ public class HapiSpecSetup {
             globals = (globals == null) ? "" : globals;
             String[] sources = globals.length() > 0 ? globals.split(",") : new String[0];
             DEFAULT_PROPERTY_SOURCE =
-                    inPriorityOrder(
-                            asSources(
-                                    Stream.of(
-                                                    Stream.of(sources),
-                                                    Stream.of(BASE_DEFAULT_PROPERTY_SOURCE))
-                                            .flatMap(Function.identity())
-                                            .toArray(n -> new Object[n])));
+                    inPriorityOrder(asSources(Stream.of(Stream.of(sources), Stream.of(BASE_DEFAULT_PROPERTY_SOURCE))
+                            .flatMap(Function.identity())
+                            .toArray(n -> new Object[n])));
         }
         return DEFAULT_PROPERTY_SOURCE;
     }
@@ -116,7 +117,6 @@ public class HapiSpecSetup {
      */
     public void addOverrides(final Map<String, Object> props) {
         this.props = HapiPropertySource.inPriorityOrder(new MapPropertySource(props), this.props);
-        System.out.println("addOverrides = " + this.props);
     }
 
     public String defaultRecordLoc() {
@@ -181,10 +181,18 @@ public class HapiSpecSetup {
 
     public HapiPropertySource ciPropertiesMap() {
         if (null == ciPropertiesMap) {
-            ciPropertiesMap =
-                    MapPropertySource.parsedFromCommaDelimited(props.get("ci.properties.map"));
+            ciPropertiesMap = MapPropertySource.parsedFromCommaDelimited(props.get("ci.properties.map"));
         }
         return ciPropertiesMap;
+    }
+
+    public Set<HederaFunctionality> txnTypesToSchedule() {
+        final var commaDelimited = props.get("spec.autoScheduledTxns");
+        return commaDelimited.isBlank()
+                ? Collections.emptySet()
+                : Arrays.stream(commaDelimited.split(","))
+                        .map(HederaFunctionality::valueOf)
+                        .collect(toSet());
     }
 
     public Duration defaultAutoRenewPeriod() {
@@ -473,7 +481,9 @@ public class HapiSpecSetup {
 
     public List<NodeConnectInfo> nodes() {
         NodeConnectInfo.NEXT_DEFAULT_ACCOUNT_NUM = 3;
-        return Stream.of(props.get("nodes").split(",")).map(NodeConnectInfo::new).collect(toList());
+        return Stream.of(props.get("nodes").split(","))
+                .map(NodeConnectInfo::new)
+                .collect(toList());
     }
 
     public NodeSelection nodeSelector() {
@@ -524,12 +534,20 @@ public class HapiSpecSetup {
         return asAccount("0.0.800");
     }
 
+    public AccountID feeCollectorAccount() {
+        return asAccount("0.0.802");
+    }
+
     public String nodeRewardAccountName() {
         return "NODE_REWARD";
     }
 
     public String stakingRewardAccountName() {
         return "STAKING_REWARD";
+    }
+
+    public String feeCollectorAccountName() {
+        return "FEE_COLLECTOR";
     }
 
     public FileID throttleDefinitionsId() {
@@ -597,5 +615,20 @@ public class HapiSpecSetup {
 
     public String systemUndeleteAdminName() {
         return props.get("systemUndeleteAdmin.name");
+    }
+
+    /**
+     * Stream the set of HAPI operations that should be submitted to workflow port 60211/60212.
+     * This code is needed to test each operation through the new workflow code.
+     * @return set of hapi operations
+     */
+    public Set<HederaFunctionality> workflowOperations() {
+        final var workflowOps = props.get("client.workflow.operations");
+        if (workflowOps.isEmpty()) {
+            return Collections.emptySet();
+        }
+        return Stream.of(workflowOps.split(","))
+                .map(HederaFunctionality::valueOf)
+                .collect(toSet());
     }
 }

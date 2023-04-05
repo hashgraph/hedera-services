@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils;
 
 import static com.hedera.node.app.service.mono.keys.HederaKeyTraversal.visitSimpleKeys;
@@ -26,7 +27,6 @@ import static com.hedera.test.factories.keys.NodeFactory.list;
 import static com.hedera.test.factories.sigs.SigWrappers.asValid;
 import static com.swirlds.common.crypto.VerificationStatus.INVALID;
 import static com.swirlds.common.crypto.VerificationStatus.VALID;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -34,28 +34,20 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
-import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JHollowKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils;
 import com.hedera.node.app.service.mono.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.swirlds.common.crypto.TransactionSignature;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
-import org.hyperledger.besu.datatypes.Hash;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -63,21 +55,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class RationalizedSigMetaTest {
-    @Mock private EthTxSigs ethTxSigs;
-    @Mock private TxnAccessor accessor;
+    @Mock
+    private EthTxSigs ethTxSigs;
+
+    @Mock
+    private TxnAccessor accessor;
 
     private final Map<String, Object> spanMap = new HashMap<>();
 
     private final JKey payerKey = TxnHandlingScenario.MISC_ACCOUNT_KT.asJKeyUnchecked();
-    private final List<JKey> othersKeys =
-            List.of(TxnHandlingScenario.MISC_ADMIN_KT.asJKeyUnchecked());
+    private final List<JKey> othersKeys = List.of(TxnHandlingScenario.MISC_ADMIN_KT.asJKeyUnchecked());
     private final List<TransactionSignature> rationalizedSigs = List.of(EXPECTED_SIG);
-
-    private final byte[] expectedEVMAddressBytes =
-            new byte[] {
-                47, 97, -126, 54, 72, -109, -39, 3, -84, -92, 61, -120, -48, 49, -54, 100, 4, 77,
-                97, 17
-            };
 
     private RationalizedSigMeta subject;
 
@@ -93,9 +81,7 @@ class RationalizedSigMetaTest {
         given(accessor.getSpanMap()).willReturn(spanMap);
         givenEthTxSigs();
 
-        subject =
-                RationalizedSigMeta.forPayerAndOthers(
-                        relayerKey, othersKeys, asValid(sigs), accessor);
+        subject = RationalizedSigMeta.forPayerAndOthers(relayerKey, othersKeys, asValid(sigs), accessor);
         final var verifiedSigsFn = subject.pkToVerifiedSigFn();
 
         // First confirm that all relayer keys have valid crypto signatures
@@ -152,9 +138,7 @@ class RationalizedSigMetaTest {
     void forBothHaveExpectedInfo() {
         givenNonEthTx();
 
-        subject =
-                RationalizedSigMeta.forPayerAndOthers(
-                        payerKey, othersKeys, rationalizedSigs, accessor);
+        subject = RationalizedSigMeta.forPayerAndOthers(payerKey, othersKeys, rationalizedSigs, accessor);
 
         assertTrue(subject.couldRationalizePayer());
         assertTrue(subject.couldRationalizeOthers());
@@ -171,9 +155,7 @@ class RationalizedSigMetaTest {
         given(accessor.getSpanMap()).willReturn(spanMap);
         givenEthTxSigs();
 
-        subject =
-                RationalizedSigMeta.forPayerAndOthers(
-                        payerKey, othersKeys, rationalizedSigs, accessor);
+        subject = RationalizedSigMeta.forPayerAndOthers(payerKey, othersKeys, rationalizedSigs, accessor);
 
         assertTrue(subject.couldRationalizePayer());
         assertTrue(subject.couldRationalizeOthers());
@@ -187,72 +169,6 @@ class RationalizedSigMetaTest {
         // and:
         final var ethSigStatus = verifiedSigsFn.apply(ethTxSigs.publicKey()).getSignatureStatus();
         assertEquals(VALID, ethSigStatus);
-    }
-
-    @Test
-    void shouldNotReplacePayerHollowKeyWhenPayerKeyNotHollow() {
-        subject = RationalizedSigMeta.forPayerOnly(payerKey, rationalizedSigs, accessor);
-
-        subject.replacePayerHollowKeyIfNeeded();
-
-        assertFalse(subject.hasReplacedHollowKey());
-    }
-
-    @Test
-    void shouldNotReplacePayerHollowKeyWhenPayerReqSigIsNull() {
-        subject = RationalizedSigMeta.forPayerOnly(null, rationalizedSigs, accessor);
-
-        subject.replacePayerHollowKeyIfNeeded();
-
-        assertFalse(subject.hasReplacedHollowKey());
-    }
-
-    @Test
-    void shouldNotReplacePayerHollowKeyHollowKeyAddressNotMatchingRationalizedSig() {
-        var bytes = new byte[20];
-        var hollowKey = new JHollowKey(bytes);
-        subject = RationalizedSigMeta.forPayerOnly(hollowKey, rationalizedSigs, accessor);
-
-        subject.replacePayerHollowKeyIfNeeded();
-
-        assertFalse(subject.hasReplacedHollowKey());
-    }
-
-    @Test
-    void replacePayerHollowKeyHappyPath() {
-        var ecdsaCompressedBytes =
-                ((ECPublicKeyParameters) KeyFactory.ecdsaKpGenerator.generateKeyPair().getPublic())
-                        .getQ()
-                        .getEncoded(true);
-        var ecdsaDecompressedBytes = MiscCryptoUtils.decompressSecp256k1(ecdsaCompressedBytes);
-        var ecdsaHash = Hash.hash(Bytes.of(ecdsaDecompressedBytes)).toArrayUnsafe();
-        var hollowKey =
-                new JHollowKey(
-                        Arrays.copyOfRange(ecdsaHash, ecdsaHash.length - 20, ecdsaHash.length));
-
-        var rationalizedSig =
-                new TransactionSignature(
-                        EXPECTED_SIG,
-                        ecdsaDecompressedBytes,
-                        0,
-                        ecdsaDecompressedBytes.length,
-                        EXPECTED_SIG.getSignatureLength(),
-                        EXPECTED_SIG.getMessageLength());
-
-        subject = RationalizedSigMeta.forPayerOnly(hollowKey, List.of(rationalizedSig), accessor);
-
-        var sigMap =
-                SignatureMap.newBuilder()
-                        .addSigPair(
-                                SignaturePair.newBuilder()
-                                        .setPubKeyPrefix(ByteString.copyFrom(ecdsaCompressedBytes)))
-                        .build();
-
-        subject.replacePayerHollowKeyIfNeeded();
-
-        assertTrue(subject.hasReplacedHollowKey());
-        assertTrue(subject.payerKey().hasECDSAsecp256k1Key());
-        assertArrayEquals(subject.payerKey().getECDSASecp256k1Key(), ecdsaCompressedBytes);
     }
 
     private void givenEthTxSigs() {
@@ -269,9 +185,7 @@ class RationalizedSigMetaTest {
         givenEthTx();
         given(accessor.getSpanMap()).willReturn(spanMap);
 
-        subject =
-                RationalizedSigMeta.forPayerAndOthers(
-                        payerKey, othersKeys, rationalizedSigs, accessor);
+        subject = RationalizedSigMeta.forPayerAndOthers(payerKey, othersKeys, rationalizedSigs, accessor);
 
         assertTrue(subject.couldRationalizePayer());
         assertTrue(subject.couldRationalizeOthers());
@@ -288,9 +202,7 @@ class RationalizedSigMetaTest {
         final byte[] sig = "mockSignatures".getBytes();
         final byte[] data = "mockData".getBytes();
         final byte[] publicKey =
-                key.hasEd25519Key()
-                        ? key.getEd25519()
-                        : decompressSecp256k1(key.getECDSASecp256k1Key());
+                key.hasEd25519Key() ? key.getEd25519() : decompressSecp256k1(key.getECDSASecp256k1Key());
         final byte[] contents = new byte[sig.length + data.length];
         System.arraycopy(sig, 0, contents, 0, sig.length);
         System.arraycopy(data, 0, contents, sig.length, data.length);
@@ -299,19 +211,15 @@ class RationalizedSigMetaTest {
     }
 
     private void extractRelayerKeys(
-            final JKey relayerKey,
-            final List<TransactionSignature> sigs,
-            final List<byte[]> relayerPublicKeys) {
-        visitSimpleKeys(
-                relayerKey,
-                key -> {
-                    if (key.hasEd25519Key()) {
-                        relayerPublicKeys.add(key.getEd25519());
-                    } else {
-                        relayerPublicKeys.add(key.getECDSASecp256k1Key());
-                    }
-                    sigs.add(mockValidSigWithKey(key));
-                });
+            final JKey relayerKey, final List<TransactionSignature> sigs, final List<byte[]> relayerPublicKeys) {
+        visitSimpleKeys(relayerKey, key -> {
+            if (key.hasEd25519Key()) {
+                relayerPublicKeys.add(key.getEd25519());
+            } else {
+                relayerPublicKeys.add(key.getECDSASecp256k1Key());
+            }
+            sigs.add(mockValidSigWithKey(key));
+        });
     }
 
     private void givenNonEthTx() {

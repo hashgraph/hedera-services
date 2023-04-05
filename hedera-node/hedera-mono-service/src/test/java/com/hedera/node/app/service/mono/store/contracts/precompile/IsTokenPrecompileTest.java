@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.IsTokenPrecompile.decodeIsToken;
@@ -27,8 +28,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class IsTokenPrecompileTest {
     private static final Bytes IS_TOKEN_INPUT =
-            Bytes.fromHexString(
-                    "0x19f373610000000000000000000000000000000000000000000000000000000000000b03");
+            Bytes.fromHexString("0x19f373610000000000000000000000000000000000000000000000000000000000000b03");
 
     @Test
     void decodeIsTokenAsExpected() {

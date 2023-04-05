@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.state;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -34,7 +35,7 @@ public interface WritableStates extends ReadableStates {
      */
     @Override
     @NonNull
-    <K extends Comparable<K>, V> WritableKVState<K, V> get(@NonNull String stateKey);
+    <K extends Comparable<? super K>, V> WritableKVState<K, V> get(@NonNull String stateKey);
 
     @Override
     @NonNull

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.misc;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
@@ -49,13 +50,12 @@ public class KeyExport extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    updateTreasuryKey(),
-                    //						exportCurrentTreasuryKey(),
-                    //						exportGenesisKey(),
-                    //						validateNewKey(),
-                });
+        return List.of(new HapiSpec[] {
+            updateTreasuryKey(),
+            //						exportCurrentTreasuryKey(),
+            //						exportGenesisKey(),
+            //						validateNewKey(),
+        });
     }
 
     private HapiSpec updateTreasuryKey() {
@@ -82,11 +82,10 @@ public class KeyExport extends HapiSuite {
 
     private HapiSpec validateNewKey() {
         return defaultHapiSpec("validateNewKey")
-                .given(
-                        keyFromPem(PEM_FILE_NAME)
-                                .name("newKey")
-                                .passphrase("P1WUX2Xla2wFslpoPTN39avz")
-                                .simpleWacl())
+                .given(keyFromPem(PEM_FILE_NAME)
+                        .name("newKey")
+                        .passphrase("P1WUX2Xla2wFslpoPTN39avz")
+                        .simpleWacl())
                 .when()
                 .then(fileCreate("testFile").key("newKey"));
     }
@@ -97,35 +96,27 @@ public class KeyExport extends HapiSuite {
         return defaultHapiSpec("ExportCurrentTreasuryKeyAsPem")
                 .given()
                 .when()
-                .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    spec.keys().exportSimpleWacl("devGenesisKeypair.pem", GENESIS);
-                                }));
+                .then(withOpContext((spec, opLog) -> spec.keys().exportSimpleWacl("devGenesisKeypair.pem", GENESIS)));
     }
 
     private HapiSpec exportGenesisKey() {
         final var r = new Random();
         final int passphraseLength = 24;
-        final char[] choices =
-                "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".toCharArray();
+        final char[] choices = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".toCharArray();
         final KeyShape listOfSizeOne = listOf(1);
 
-        KeyFactory.PEM_PASSPHRASE =
-                IntStream.range(0, passphraseLength)
-                        .map(ignore -> r.nextInt(choices.length))
-                        .mapToObj(i -> Character.valueOf(choices[i]).toString())
-                        .collect(Collectors.joining(""));
+        KeyFactory.PEM_PASSPHRASE = IntStream.range(0, passphraseLength)
+                .map(ignore -> r.nextInt(choices.length))
+                .mapToObj(i -> Character.valueOf(choices[i]).toString())
+                .collect(Collectors.joining(""));
 
         return defaultHapiSpec("ExportGenesisKey")
                 .given(newKeyNamed("ab-initio").shape(listOfSizeOne))
                 .when()
-                .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    opLog.info("Passphrase is: {}", KeyFactory.PEM_PASSPHRASE);
-                                    spec.keys().exportSimpleWacl(PEM_FILE_NAME, "ab-initio");
-                                }));
+                .then(withOpContext((spec, opLog) -> {
+                    opLog.info("Passphrase is: {}", KeyFactory.PEM_PASSPHRASE);
+                    spec.keys().exportSimpleWacl(PEM_FILE_NAME, "ab-initio");
+                }));
     }
 
     @Override

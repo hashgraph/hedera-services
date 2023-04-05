@@ -13,13 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.legacy.core.jproto;
 
 import static com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt.MISSING_NEW_TOTAL_SUPPLY;
 import static com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt.MISSING_RUNNING_HASH_VERSION;
 import static com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt.MISSING_TOPIC_SEQ_NO;
 import static com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt.REVERTED_SUCCESS_LITERAL;
+import static com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -78,5 +81,40 @@ class TxnReceiptBuilderTest {
         assertEquals(MISSING_TOPIC_SEQ_NO, subject.getTopicSequenceNumber());
         assertEquals(MISSING_NEW_TOTAL_SUPPLY, subject.getNewTotalSupply());
         assertEquals(MISSING_RUNNING_HASH_VERSION, subject.getRunningHashVersion());
+    }
+
+    @Test
+    void doesNotRevertIfNonRevertable() {
+        subject.setStatus(SUCCESS_LITERAL);
+        subject.setAccountId(MISSING_ENTITY_ID);
+        subject.setContractId(MISSING_ENTITY_ID);
+        subject.setFileId(MISSING_ENTITY_ID);
+        subject.setTokenId(MISSING_ENTITY_ID);
+        subject.setTopicId(MISSING_ENTITY_ID);
+        subject.setScheduleId(MISSING_ENTITY_ID);
+        final TxnId scheduledTxnId = new TxnId();
+        subject.setScheduledTxnId(scheduledTxnId);
+        subject.setNewTotalSupply(123);
+        final long[] serialNumbers = {1, 2, 3};
+        subject.setSerialNumbers(serialNumbers);
+        subject.setRunningHashVersion(1);
+        subject.setTopicRunningHash("ABC".getBytes());
+        subject.setTopicSequenceNumber(321);
+        subject.nonRevertable();
+
+        subject.revert();
+
+        assertEquals(SUCCESS_LITERAL, subject.getStatus());
+        assertEquals(MISSING_ENTITY_ID, subject.getAccountId());
+        assertEquals(MISSING_ENTITY_ID, subject.getContractId());
+        assertEquals(MISSING_ENTITY_ID, subject.getFileId());
+        assertEquals(MISSING_ENTITY_ID, subject.getTokenId());
+        assertEquals(MISSING_ENTITY_ID, subject.getTopicId());
+        assertEquals(MISSING_ENTITY_ID, subject.getScheduleId());
+        assertEquals(MISSING_ENTITY_ID, subject.getScheduleId());
+        assertEquals(scheduledTxnId, subject.getScheduledTxnId());
+        assertEquals(123, subject.getNewTotalSupply());
+        assertArrayEquals(serialNumbers, subject.getSerialNumbers());
+        assertEquals(1, subject.getRunningHashVersion());
     }
 }

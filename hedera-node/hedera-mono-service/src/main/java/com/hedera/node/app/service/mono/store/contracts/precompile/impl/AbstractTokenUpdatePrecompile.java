@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.UPDATE;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -60,12 +62,7 @@ public abstract class AbstractTokenUpdatePrecompile extends AbstractWritePrecomp
             final SyntheticTxnFactory syntheticTxnFactory,
             final InfrastructureFactory infrastructureFactory,
             final PrecompilePricingUtils pricingUtils) {
-        super(
-                ledgers,
-                sideEffectsTracker,
-                syntheticTxnFactory,
-                infrastructureFactory,
-                pricingUtils);
+        super(ledgers, sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, pricingUtils);
         this.aliases = aliases;
         this.keyValidator = keyValidator;
         this.legacyKeyValidator = legacyKeyValidator;
@@ -85,13 +82,8 @@ public abstract class AbstractTokenUpdatePrecompile extends AbstractWritePrecomp
         final var hederaTokenStore = initializeHederaTokenStore();
 
         /* --- Check required signatures --- */
-        final var hasAdminSig =
-                keyValidator.validateKey(
-                        frame,
-                        tokenId.asEvmAddress(),
-                        sigsVerifier::hasActiveAdminKey,
-                        ledgers,
-                        aliases);
+        final var hasAdminSig = keyValidator.validateKey(
+                frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveAdminKey, ledgers, aliases, TokenUpdate);
         validateTrue(hasAdminSig, INVALID_SIGNATURE);
         if (updateOp.hasTreasury()) {
             validateTreasurySig(frame, updateOp);
@@ -116,26 +108,19 @@ public abstract class AbstractTokenUpdatePrecompile extends AbstractWritePrecomp
         }
     }
 
-    private void validateTreasurySig(
-            final MessageFrame frame, final TokenUpdateTransactionBody updateOp) {
+    private void validateTreasurySig(final MessageFrame frame, final TokenUpdateTransactionBody updateOp) {
         validateLegacyAccountSig(updateOp.getTreasury(), frame, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
     }
 
-    private void validateAutoRenewSig(
-            final MessageFrame frame, final TokenUpdateTransactionBody updateOp) {
+    private void validateAutoRenewSig(final MessageFrame frame, final TokenUpdateTransactionBody updateOp) {
         validateLegacyAccountSig(updateOp.getAutoRenewAccount(), frame, INVALID_AUTORENEW_ACCOUNT);
     }
 
     private void validateLegacyAccountSig(
             final AccountID id, final MessageFrame frame, final ResponseCodeEnum rcWhenMissing) {
         validateTrue(ledgers.accounts().exists(id), rcWhenMissing);
-        final var hasSig =
-                legacyKeyValidator.validateKey(
-                        frame,
-                        asTypedEvmAddress(id),
-                        sigsVerifier::hasLegacyActiveKey,
-                        ledgers,
-                        aliases);
+        final var hasSig = legacyKeyValidator.validateKey(
+                frame, asTypedEvmAddress(id), sigsVerifier::hasLegacyActiveKey, ledgers, aliases, TokenUpdate);
         validateTrue(hasSig, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE);
     }
 

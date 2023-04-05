@@ -13,13 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.workflows;
 
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.QueryHeader;
-import com.hederahashgraph.api.proto.java.Response;
-import com.hederahashgraph.api.proto.java.ResponseHeader;
-import com.hederahashgraph.api.proto.java.ResponseType;
+import com.hedera.hapi.node.base.QueryHeader;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.base.ResponseType;
+import com.hedera.hapi.node.transaction.Query;
+import com.hedera.hapi.node.transaction.Response;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /** A {@code QueryHandler} contains all methods for the different stages of a single query. */
@@ -35,9 +37,8 @@ public interface QueryHandler {
     QueryHeader extractHeader(@NonNull Query query);
 
     /**
-     * Creates an empty {@link Response} with a provided header. This is typically used, if an error
-     * occurred. The {@code header} contains a {@link
-     * com.hederahashgraph.api.proto.java.ResponseCodeEnum} with the error code.
+     * Creates an empty {@link Response} with a provided header. This is typically used, if an error occurred. The
+     * {@code header} contains a {@link ResponseCodeEnum} with the error code.
      *
      * @param header the {@link ResponseHeader} that needs to be included
      * @return the created {@link Response}
@@ -46,11 +47,10 @@ public interface QueryHandler {
     Response createEmptyResponse(@NonNull ResponseHeader header);
 
     /**
-     * Returns {@code true}, if the query associated with this handler is only requesting the cost
-     * of this query alone (i.e. the query won't be executed)
+     * Returns {@code true}, if the query associated with this handler is only requesting the cost of this query alone
+     * (i.e. the query won't be executed)
      *
-     * @param responseType the {@link ResponseType} of a query, because payment can depend on the
-     *     response type
+     * @param responseType the {@link ResponseType} of a query, because payment can depend on the response type
      * @return {@code true} if payment is required, {@code false} otherwise
      * @throws NullPointerException if {@code responseType} is {@code null}
      */
@@ -59,8 +59,7 @@ public interface QueryHandler {
     /**
      * Returns {@code true}, if a query associated with this handler returns only the costs
      *
-     * @param responseType the {@link ResponseType} of a query, because the result can depend on the
-     *     response type
+     * @param responseType the {@link ResponseType} of a query, because the result can depend on the response type
      * @return {@code true} if only costs need to returned, {@code false} otherwise
      * @throws NullPointerException if {@code responseType} is {@code null}
      */

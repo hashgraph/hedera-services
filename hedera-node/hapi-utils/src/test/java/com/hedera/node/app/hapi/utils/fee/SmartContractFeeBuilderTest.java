@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.fee;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,13 +32,10 @@ class SmartContractFeeBuilderTest {
 
     @Test
     void assertGetFileContentQueryFeeMatrices() throws InvalidTxBodyException {
-        var transactionBody =
-                transactionBodyBuilder
-                        .setEthereumTransaction(EthereumTransactionBody.newBuilder())
-                        .build();
-        var result =
-                smartContractFeeBuilder.getEthereumTransactionFeeMatrices(
-                        transactionBody, signValueObj);
+        var transactionBody = transactionBodyBuilder
+                .setEthereumTransaction(EthereumTransactionBody.newBuilder())
+                .build();
+        var result = smartContractFeeBuilder.getEthereumTransactionFeeMatrices(transactionBody, signValueObj);
         assertEquals(1, result.getNodedata().getConstant());
         assertEquals(229, result.getNodedata().getBpt());
         assertEquals(2, result.getNodedata().getVpt());
@@ -58,11 +56,8 @@ class SmartContractFeeBuilderTest {
     @Test
     void assertGetFileDeleteTxFeeMatricesThrowsException() {
         var transactionBody = transactionBodyBuilder.build();
-        assertThrows(
-                InvalidTxBodyException.class,
-                () -> {
-                    smartContractFeeBuilder.getEthereumTransactionFeeMatrices(
-                            transactionBody, signValueObj);
-                });
+        assertThrows(InvalidTxBodyException.class, () -> {
+            smartContractFeeBuilder.getEthereumTransactionFeeMatrices(transactionBody, signValueObj);
+        });
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.compose;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -43,6 +44,7 @@ import org.apache.logging.log4j.Logger;
 
 public class PerpetualLocalCalls extends HapiSuite {
     private static final Logger log = LogManager.getLogger(PerpetualLocalCalls.class);
+    public static final String CHILD_STORAGE = "ChildStorage";
 
     private AtomicLong duration = new AtomicLong(Long.MAX_VALUE);
     private AtomicReference<TimeUnit> unit = new AtomicReference<>(MINUTES);
@@ -55,54 +57,42 @@ public class PerpetualLocalCalls extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    localCallsForever(),
-                });
+        return List.of(new HapiSpec[] {
+            localCallsForever(),
+        });
     }
 
     private HapiSpec localCallsForever() {
         return defaultHapiSpec("LocalCallsForever")
                 .given()
                 .when()
-                .then(
-                        runWithProvider(localCallsFactory())
-                                .lasting(duration::get, unit::get)
-                                .maxOpsPerSec(maxOpsPerSec::get));
+                .then(runWithProvider(localCallsFactory())
+                        .lasting(duration::get, unit::get)
+                        .maxOpsPerSec(maxOpsPerSec::get));
     }
 
     private Function<HapiSpec, OpProvider> localCallsFactory() {
-        return spec ->
-                new OpProvider() {
-                    @Override
-                    public List<HapiSpecOperation> suggestedInitializers() {
-                        return List.of(
-                                uploadInitCode("ChildStorage"), contractCreate("ChildStorage"));
-                    }
+        return spec -> new OpProvider() {
+            @Override
+            public List<HapiSpecOperation> suggestedInitializers() {
+                return List.of(uploadInitCode(CHILD_STORAGE), contractCreate(CHILD_STORAGE));
+            }
 
-                    @Override
-                    public Optional<HapiSpecOperation> get() {
-                        var op =
-                                contractCallLocal("ChildStorage", "getMyValue")
-                                        .noLogging()
-                                        .has(
-                                                resultWith()
-                                                        .resultThruAbi(
-                                                                getABIFor(
-                                                                        FUNCTION,
-                                                                        "getMyValue",
-                                                                        "ChildStorage"),
-                                                                isLiteralResult(
-                                                                        new Object[] {
-                                                                            BigInteger.valueOf(73)
-                                                                        })));
-                        var soFar = totalBeforeFailure.getAndIncrement();
-                        if (soFar % 1000 == 0) {
-                            log.info("--- " + soFar);
-                        }
-                        return Optional.of(op);
-                    }
-                };
+            @Override
+            public Optional<HapiSpecOperation> get() {
+                var op = contractCallLocal(CHILD_STORAGE, "getMyValue")
+                        .noLogging()
+                        .has(resultWith()
+                                .resultThruAbi(
+                                        getABIFor(FUNCTION, "getMyValue", CHILD_STORAGE),
+                                        isLiteralResult(new Object[] {BigInteger.valueOf(73)})));
+                var soFar = totalBeforeFailure.getAndIncrement();
+                if (soFar % 1000 == 0) {
+                    log.info("--- {}", soFar);
+                }
+                return Optional.of(op);
+            }
+        };
     }
 
     @Override

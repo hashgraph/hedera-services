@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
@@ -20,6 +21,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiCon
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKENS;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.DissociatePrecompile.decodeDissociate;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.MultiDissociatePrecompile.decodeMultipleDissociations;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
@@ -106,45 +108,110 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("rawtypes")
 class DissociatePrecompilesTest {
-    @Mock private AccountStore accountStore;
-    @Mock private TypedTokenStore tokenStore;
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private GasCalculator gasCalculator;
-    @Mock private MessageFrame frame;
-    @Mock private MessageFrame parentFrame;
-    @Mock private Deque<MessageFrame> frameDeque;
-    @Mock private Iterator<MessageFrame> dequeIterator;
-    @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
-    @Mock private RecordsHistorian recordsHistorian;
-    @Mock private EncodingFacade encoder;
-    @Mock private EvmEncodingFacade evmEncoder;
-    @Mock private DissociateLogic dissociateLogic;
-    @Mock private SideEffectsTracker sideEffects;
-    @Mock private TransactionBody.Builder mockSynthBodyBuilder;
-    @Mock private ExpirableTxnRecord.Builder mockRecordBuilder;
-    @Mock private SyntheticTxnFactory syntheticTxnFactory;
-    @Mock private HederaStackedWorldStateUpdater worldUpdater;
-    @Mock private WorldLedgers wrappedLedgers;
-    @Mock private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nfts;
-    @Mock private AccessorFactory accessorFactory;
+    @Mock
+    private AccountStore accountStore;
 
     @Mock
-    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
-            tokenRels;
+    private TypedTokenStore tokenStore;
 
-    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
-    @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
-    @Mock private ExpiringCreations creator;
-    @Mock private FeeCalculator feeCalculator;
-    @Mock private FeeObject mockFeeObject;
-    @Mock private StateView stateView;
-    @Mock private ContractAliases aliases;
-    @Mock private UsagePricesProvider resourceCosts;
-    @Mock private InfrastructureFactory infrastructureFactory;
-    @Mock private AssetsLoader assetLoader;
-    @Mock private HbarCentExchange exchange;
-    @Mock private ExchangeRate exchangeRate;
-    @Mock private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private GasCalculator gasCalculator;
+
+    @Mock
+    private MessageFrame frame;
+
+    @Mock
+    private MessageFrame parentFrame;
+
+    @Mock
+    private Deque<MessageFrame> frameDeque;
+
+    @Mock
+    private Iterator<MessageFrame> dequeIterator;
+
+    @Mock
+    private TxnAwareEvmSigsVerifier sigsVerifier;
+
+    @Mock
+    private RecordsHistorian recordsHistorian;
+
+    @Mock
+    private EncodingFacade encoder;
+
+    @Mock
+    private EvmEncodingFacade evmEncoder;
+
+    @Mock
+    private DissociateLogic dissociateLogic;
+
+    @Mock
+    private SideEffectsTracker sideEffects;
+
+    @Mock
+    private TransactionBody.Builder mockSynthBodyBuilder;
+
+    @Mock
+    private ExpirableTxnRecord.Builder mockRecordBuilder;
+
+    @Mock
+    private SyntheticTxnFactory syntheticTxnFactory;
+
+    @Mock
+    private HederaStackedWorldStateUpdater worldUpdater;
+
+    @Mock
+    private WorldLedgers wrappedLedgers;
+
+    @Mock
+    private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nfts;
+
+    @Mock
+    private AccessorFactory accessorFactory;
+
+    @Mock
+    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel> tokenRels;
+
+    @Mock
+    private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
+
+    @Mock
+    private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
+
+    @Mock
+    private ExpiringCreations creator;
+
+    @Mock
+    private FeeCalculator feeCalculator;
+
+    @Mock
+    private FeeObject mockFeeObject;
+
+    @Mock
+    private StateView stateView;
+
+    @Mock
+    private ContractAliases aliases;
+
+    @Mock
+    private UsagePricesProvider resourceCosts;
+
+    @Mock
+    private InfrastructureFactory infrastructureFactory;
+
+    @Mock
+    private AssetsLoader assetLoader;
+
+    @Mock
+    private HbarCentExchange exchange;
+
+    @Mock
+    private ExchangeRate exchangeRate;
+
+    @Mock
+    private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
     private static final long TEST_SERVICE_FEE = 5_000_000;
     private static final long TEST_NETWORK_FEE = 400_000;
@@ -152,16 +219,11 @@ class DissociatePrecompilesTest {
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
     private static final long EXPECTED_GAS_PRICE =
-            (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE)
-                    / HTSTestsUtil.DEFAULT_GAS_PRICE
-                    * 6
-                    / 5;
-    private static final Bytes DISSOCIATE_INPUT =
-            Bytes.fromHexString(
-                    "0x099794e8000000000000000000000000000000000000000000000000000000000000048e000000000000000000000000000000000000000000000000000000000000048c");
-    private static final Bytes MULTIPLE_DISSOCIATE_INPUT =
-            Bytes.fromHexString(
-                    "0x78b6391800000000000000000000000000000000000000000000000000000000000004940000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000004920000000000000000000000000000000000000000000000000000000000000492");
+            (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / HTSTestsUtil.DEFAULT_GAS_PRICE * 6 / 5;
+    private static final Bytes DISSOCIATE_INPUT = Bytes.fromHexString(
+            "0x099794e8000000000000000000000000000000000000000000000000000000000000048e000000000000000000000000000000000000000000000000000000000000048c");
+    private static final Bytes MULTIPLE_DISSOCIATE_INPUT = Bytes.fromHexString(
+            "0x78b6391800000000000000000000000000000000000000000000000000000000000004940000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000004920000000000000000000000000000000000000000000000000000000000000492");
     private static final Bytes INVALID_INPUT = Bytes.fromHexString("0x00000000");
 
     private HTSPrecompiledContract subject;
@@ -171,33 +233,24 @@ class DissociatePrecompilesTest {
     @BeforeEach
     void setUp() throws IOException {
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
-        canonicalPrices.put(
-                HederaFunctionality.TokenDissociateFromAccount,
-                Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
+        canonicalPrices.put(TokenDissociateFromAccount, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
-        final PrecompilePricingUtils precompilePricingUtils =
-                new PrecompilePricingUtils(
-                        assetLoader,
-                        exchange,
-                        () -> feeCalculator,
-                        resourceCosts,
-                        stateView,
-                        accessorFactory);
-        subject =
-                new HTSPrecompiledContract(
-                        dynamicProperties,
-                        gasCalculator,
-                        recordsHistorian,
-                        sigsVerifier,
-                        encoder,
-                        evmEncoder,
-                        syntheticTxnFactory,
-                        creator,
-                        () -> feeCalculator,
-                        stateView,
-                        precompilePricingUtils,
-                        infrastructureFactory,
-                        evmHTSPrecompiledContract);
+        final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
+                assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
+        subject = new HTSPrecompiledContract(
+                dynamicProperties,
+                gasCalculator,
+                recordsHistorian,
+                sigsVerifier,
+                encoder,
+                evmEncoder,
+                syntheticTxnFactory,
+                creator,
+                () -> feeCalculator,
+                stateView,
+                precompilePricingUtils,
+                infrastructureFactory,
+                evmHTSPrecompiledContract);
 
         dissociatePrecompile = Mockito.mockStatic(DissociatePrecompile.class);
         multiDissociatePrecompile = Mockito.mockStatic(MultiDissociatePrecompile.class);
@@ -218,25 +271,22 @@ class DissociatePrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        given(
-                        sigsVerifier.hasActiveKey(
-                                false,
-                                HTSTestsUtil.accountAddr,
-                                HTSTestsUtil.senderAddr,
-                                wrappedLedgers))
+        given(sigsVerifier.hasActiveKey(
+                        false,
+                        HTSTestsUtil.accountAddr,
+                        HTSTestsUtil.senderAddr,
+                        wrappedLedgers,
+                        TokenDissociateFromAccount))
                 .willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
-        given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE))
-                .willReturn(mockRecordBuilder);
+        given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
         dissociatePrecompile
                 .when(() -> decodeDissociate(eq(pretendArguments), any()))
                 .thenReturn(HTSTestsUtil.dissociateToken);
-        given(
-                        feeCalculator.estimatedGasPriceInTinybars(
-                                HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
+        given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
                 .willReturn(1L);
-        given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
-        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
-                .willReturn(mockSynthBodyBuilder);
+        given(mockSynthBodyBuilder.build())
+                .willReturn(TransactionBody.newBuilder().build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
         given(syntheticTxnFactory.createDissociate(HTSTestsUtil.dissociateToken))
@@ -251,8 +301,7 @@ class DissociatePrecompilesTest {
         // then:
         Assertions.assertEquals(HTSTestsUtil.invalidSigResult, result);
 
-        verify(worldUpdater)
-                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }
 
     @Test
@@ -265,27 +314,23 @@ class DissociatePrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        given(
-                        sigsVerifier.hasActiveKey(
-                                false,
-                                HTSTestsUtil.accountAddr,
-                                HTSTestsUtil.senderAddr,
-                                wrappedLedgers))
+        given(sigsVerifier.hasActiveKey(
+                        false,
+                        HTSTestsUtil.accountAddr,
+                        HTSTestsUtil.senderAddr,
+                        wrappedLedgers,
+                        TokenDissociateFromAccount))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
-        given(
-                        infrastructureFactory.newTokenStore(
-                                accountStore, sideEffects, tokens, nfts, tokenRels))
+        given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
                 .willReturn(tokenStore);
         given(infrastructureFactory.newDissociateLogic(accountStore, tokenStore))
                 .willReturn(dissociateLogic);
-        given(
-                        feeCalculator.estimatedGasPriceInTinybars(
-                                HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
+        given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
                 .willReturn(1L);
-        given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
-        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
-                .willReturn(mockSynthBodyBuilder);
+        given(mockSynthBodyBuilder.build())
+                .willReturn(TransactionBody.newBuilder().build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
         dissociatePrecompile
@@ -322,32 +367,26 @@ class DissociatePrecompilesTest {
                 .thenReturn(HTSTestsUtil.multiDissociateOp);
         given(syntheticTxnFactory.createDissociate(HTSTestsUtil.multiDissociateOp))
                 .willReturn(mockSynthBodyBuilder);
-        given(
-                        sigsVerifier.hasActiveKey(
-                                false,
-                                HTSTestsUtil.accountAddr,
-                                HTSTestsUtil.senderAddr,
-                                wrappedLedgers))
+        given(sigsVerifier.hasActiveKey(
+                        false,
+                        HTSTestsUtil.accountAddr,
+                        HTSTestsUtil.senderAddr,
+                        wrappedLedgers,
+                        TokenDissociateFromAccount))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
-        given(
-                        infrastructureFactory.newTokenStore(
-                                accountStore, sideEffects, tokens, nfts, tokenRels))
+        given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
                 .willReturn(tokenStore);
         given(infrastructureFactory.newDissociateLogic(accountStore, tokenStore))
                 .willReturn(dissociateLogic);
-        given(
-                        feeCalculator.estimatedGasPriceInTinybars(
-                                HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
+        given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
                 .willReturn(1L);
-        given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
-        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
-                .willReturn(mockSynthBodyBuilder);
+        given(mockSynthBodyBuilder.build())
+                .willReturn(TransactionBody.newBuilder().build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
-        given(
-                        creator.createSuccessfulSyntheticRecord(
-                                Collections.emptyList(), sideEffects, EMPTY_MEMO))
+        given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(mockRecordBuilder);
         given(dissociateLogic.validateSyntax(any())).willReturn(OK);
 
@@ -359,11 +398,9 @@ class DissociatePrecompilesTest {
 
         // then:
         Assertions.assertEquals(HTSTestsUtil.successResult, result);
-        verify(dissociateLogic)
-                .dissociate(HTSTestsUtil.accountId, HTSTestsUtil.multiDissociateOp.tokenIds());
+        verify(dissociateLogic).dissociate(HTSTestsUtil.accountId, HTSTestsUtil.multiDissociateOp.tokenIds());
         verify(wrappedLedgers).commit();
-        verify(worldUpdater)
-                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }
 
     @Test
@@ -386,15 +423,13 @@ class DissociatePrecompilesTest {
                 .willReturn(TransactionBody.newBuilder().setTokenDissociate(builder));
         given(feeCalculator.computeFee(any(), any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
-        given(feeCalculator.estimatedGasPriceInTinybars(any(), any()))
-                .willReturn(HTSTestsUtil.DEFAULT_GAS_PRICE);
+        given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(HTSTestsUtil.DEFAULT_GAS_PRICE);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
-        final long result =
-                subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        final long result = subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -409,25 +444,20 @@ class DissociatePrecompilesTest {
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        dissociatePrecompile
-                .when(() -> decodeDissociate(any(), any()))
-                .thenReturn(HTSTestsUtil.dissociateToken);
+        dissociatePrecompile.when(() -> decodeDissociate(any(), any())).thenReturn(HTSTestsUtil.dissociateToken);
         given(syntheticTxnFactory.createDissociate(any()))
-                .willReturn(
-                        TransactionBody.newBuilder()
-                                .setTokenDissociate(
-                                        TokenDissociateTransactionBody.newBuilder().build()));
+                .willReturn(TransactionBody.newBuilder()
+                        .setTokenDissociate(
+                                TokenDissociateTransactionBody.newBuilder().build()));
         given(feeCalculator.computeFee(any(), any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
-        given(feeCalculator.estimatedGasPriceInTinybars(any(), any()))
-                .willReturn(HTSTestsUtil.DEFAULT_GAS_PRICE);
+        given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(HTSTestsUtil.DEFAULT_GAS_PRICE);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
-        final long result =
-                subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        final long result = subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -464,9 +494,7 @@ class DissociatePrecompilesTest {
         multiDissociatePrecompile
                 .when(() -> decodeMultipleDissociations(INVALID_INPUT, identity))
                 .thenCallRealMethod();
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> decodeMultipleDissociations(INVALID_INPUT, identity));
+        assertThrows(IllegalArgumentException.class, () -> decodeMultipleDissociations(INVALID_INPUT, identity));
     }
 
     private void givenFrameContext() {
@@ -486,8 +514,7 @@ class DissociatePrecompilesTest {
         given(worldUpdater.parentUpdater()).willReturn(parent);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         given(worldUpdater.aliases()).willReturn(aliases);
-        given(aliases.resolveForEvm(any()))
-                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
     }
 
     private void givenLedgers() {

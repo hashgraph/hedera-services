@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
@@ -32,8 +33,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
-public class IsFrozenPrecompile extends AbstractReadOnlyPrecompile
-        implements EvmIsFrozenPrecompile {
+public class IsFrozenPrecompile extends AbstractReadOnlyPrecompile implements EvmIsFrozenPrecompile {
 
     private AccountID accountId;
 
@@ -48,8 +48,7 @@ public class IsFrozenPrecompile extends AbstractReadOnlyPrecompile
     }
 
     @Override
-    public TransactionBody.Builder body(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var tokenIsFrozenWrapper = decodeIsFrozen(input, aliasResolver);
         tokenId = tokenIsFrozenWrapper.token();
         accountId = tokenIsFrozenWrapper.account();
@@ -67,7 +66,6 @@ public class IsFrozenPrecompile extends AbstractReadOnlyPrecompile
         final var rawTokenFreezeUnfreezeWrapper = EvmIsFrozenPrecompile.decodeIsFrozen(input);
         return TokenFreezeUnfreezeWrapper.forIsFrozen(
                 convertAddressBytesToTokenID(rawTokenFreezeUnfreezeWrapper.token()),
-                convertLeftPaddedAddressToAccountId(
-                        rawTokenFreezeUnfreezeWrapper.account(), aliasResolver));
+                convertLeftPaddedAddressToAccountId(rawTokenFreezeUnfreezeWrapper.account(), aliasResolver));
     }
 }

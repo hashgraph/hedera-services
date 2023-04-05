@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -24,7 +25,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 public class VirtualBlobValue implements VirtualValue {
-    static final int CURRENT_VERSION = 1;
+    public static final int CURRENT_VERSION = 1;
     static final long CLASS_ID = 0x7eb72381159d8402L;
 
     private byte[] data;

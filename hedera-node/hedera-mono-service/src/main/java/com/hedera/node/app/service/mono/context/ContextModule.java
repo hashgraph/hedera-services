@@ -13,12 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context;
 
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.swirlds.common.system.Platform;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.function.Supplier;
 import javax.inject.Singleton;
@@ -43,5 +46,11 @@ public interface ContextModule {
     @Singleton
     static AccountID provideEffectiveNodeAccount(NodeInfo nodeInfo) {
         return nodeInfo.hasSelfAccount() ? nodeInfo.selfAccount() : AccountID.getDefaultInstance();
+    }
+
+    @Provides
+    @Singleton
+    static NodeInfo provideNodeInfo(@NonNull final Platform platform) {
+        return new NodeInfo(platform.getSelfId().getId(), () -> platform.getAddressBook());
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.perf.contract;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -51,18 +52,16 @@ public class ContractPerformanceSuite extends HapiSuite {
     private static final Logger LOG = LogManager.getLogger(ContractPerformanceSuite.class);
 
     private static final String PERF_RESOURCES = "src/main/resource/contract/performance/";
-    private static final String LOADER_TEMPLATE =
-            "608060405234801561001057600080fd5b5061%04x806100206000396000f3fe%s";
+    private static final String LOADER_TEMPLATE = "608060405234801561001057600080fd5b5061%04x806100206000396000f3fe%s";
     private static final String RETURN_PROGRAM = "3360005260206000F3";
     private static final String REVERT_PROGRAM = "6055605555604360A052600160A0FD";
 
     private static final String EXTERNAL_CONTRACT_MARKER = "7465737420636f6e7472616374";
     private static final String RETURN_CONTRACT = "returnContract";
-    private static final String RETURN_CONTRACT_ADDRESS =
-            "72657475726e207465737420636f6e7472616374";
+    private static final String RETURN_CONTRACT_ADDRESS = "72657475726e207465737420636f6e7472616374";
     private static final String REVERT_CONTRACT = "revertContract";
-    private static final String REVERT_CONTRACT_ADDRESS =
-            "726576657274207465737420636f6e7472616374";
+    private static final String REVERT_CONTRACT_ADDRESS = "726576657274207465737420636f6e7472616374";
+    private static final String BYTECODE = "bytecode";
 
     public static void main(String... args) {
         new ContractPerformanceSuite().runSuiteAsync();
@@ -76,20 +75,13 @@ public class ContractPerformanceSuite extends HapiSuite {
             String test, ContractID returnAccountAddress, ContractID revertAccountAddress) {
         String path = PERF_RESOURCES + test;
         try {
-            var contentString =
-                    new String(Files.toByteArray(new File(path)), StandardCharsets.US_ASCII)
-                            .replace(
-                                    RETURN_CONTRACT_ADDRESS,
-                                    asSolidityAddress(returnAccountAddress))
-                            .replace(
-                                    REVERT_CONTRACT_ADDRESS,
-                                    asSolidityAddress(revertAccountAddress));
-            return fileCreate(test + "bytecode")
-                    .contents(contentString.getBytes(StandardCharsets.US_ASCII));
+            var contentString = new String(Files.toByteArray(new File(path)), StandardCharsets.US_ASCII)
+                    .replace(RETURN_CONTRACT_ADDRESS, asSolidityAddress(returnAccountAddress))
+                    .replace(REVERT_CONTRACT_ADDRESS, asSolidityAddress(revertAccountAddress));
+            return fileCreate(test + BYTECODE).contents(contentString.getBytes(StandardCharsets.US_ASCII));
         } catch (Exception e) {
-            LOG.warn(
-                    "createTestProgram for " + test + " failed to read bytes from '" + path + "'!",
-                    e);
+            String message = String.format("createTestProgram for %s failed to read bytes from '%s'!", test, path);
+            LOG.warn(message, e);
             return fileCreate(test);
         }
     }
@@ -99,9 +91,7 @@ public class ContractPerformanceSuite extends HapiSuite {
         List<String> perfTests;
         try {
             perfTests =
-                    Files.readLines(
-                                    new File(PERF_RESOURCES + "performanceContracts.csv"),
-                                    Charset.defaultCharset())
+                    Files.readLines(new File(PERF_RESOURCES + "performanceContracts.csv"), Charset.defaultCharset())
                             .stream()
                             .filter(s -> !s.isEmpty() && !s.startsWith("#"))
                             .collect(Collectors.toList());
@@ -117,62 +107,45 @@ public class ContractPerformanceSuite extends HapiSuite {
             String via = test.substring(0, test.length() - 4);
             String contractCode;
             try {
-                contractCode =
-                        new String(Files.toByteArray(new File(path)), StandardCharsets.US_ASCII);
+                contractCode = new String(Files.toByteArray(new File(path)), StandardCharsets.US_ASCII);
             } catch (IOException e) {
-                LOG.warn(
-                        "createTestProgram for "
-                                + test
-                                + " failed to read bytes from '"
-                                + path
-                                + "'!",
-                        e);
+                String message = String.format("createTestProgram for %s failed to read bytes from '%s'!", test, path);
+                LOG.warn(message, e);
                 contractCode = "FE";
             }
             HapiSpecOperation[] givenBlock;
             if (contractCode.contains(EXTERNAL_CONTRACT_MARKER)) {
-                givenBlock =
-                        new HapiSpecOperation[] {
-                            createProgramFile(RETURN_CONTRACT + "bytecode", RETURN_PROGRAM),
-                            contractCreate(RETURN_CONTRACT).bytecode(RETURN_CONTRACT + "bytecode"),
-                            createProgramFile(REVERT_CONTRACT + "bytecode", REVERT_PROGRAM),
-                            contractCreate(REVERT_CONTRACT).bytecode(REVERT_CONTRACT + "bytecode"),
-                            withOpContext(
-                                    (spec, opLog) ->
-                                            allRunFor(
-                                                    spec,
-                                                    createTestProgram(
-                                                            test,
-                                                            spec.registry()
-                                                                    .getContractId(RETURN_CONTRACT),
-                                                            spec.registry()
-                                                                    .getContractId(
-                                                                            REVERT_CONTRACT)))),
-                            contractCreate(test).bytecode(test + "bytecode")
-                        };
+                givenBlock = new HapiSpecOperation[] {
+                    createProgramFile(RETURN_CONTRACT + BYTECODE, RETURN_PROGRAM),
+                    contractCreate(RETURN_CONTRACT).bytecode(RETURN_CONTRACT + BYTECODE),
+                    createProgramFile(REVERT_CONTRACT + BYTECODE, REVERT_PROGRAM),
+                    contractCreate(REVERT_CONTRACT).bytecode(REVERT_CONTRACT + BYTECODE),
+                    withOpContext((spec, opLog) -> allRunFor(
+                            spec,
+                            createTestProgram(
+                                    test,
+                                    spec.registry().getContractId(RETURN_CONTRACT),
+                                    spec.registry().getContractId(REVERT_CONTRACT)))),
+                    contractCreate(test).bytecode(test + BYTECODE)
+                };
             } else {
-                givenBlock =
-                        new HapiSpecOperation[] {
-                            fileCreate("bytecode").path(PERF_RESOURCES + test),
-                            contractCreate(test).bytecode("bytecode")
-                        };
+                givenBlock = new HapiSpecOperation[] {
+                    fileCreate(BYTECODE).path(PERF_RESOURCES + test),
+                    contractCreate(test).bytecode(BYTECODE)
+                };
             }
-            hapiSpecs.add(
-                    defaultHapiSpec("Perf_" + test)
-                            .given(givenBlock)
-                            .when(contractCall(test, "<empty>").gas(35000000).via(via))
-                            .then(
-                                    getExecTime(via)
-                                            .payingWith(GENESIS)
-                                            .logged()
-                                            .assertingNoneLongerThan(20, ChronoUnit.SECONDS),
-                                    getReceipt(via).hasPriorityStatus(ResponseCodeEnum.SUCCESS),
-                                    getTxnRecord(via)
-                                            .hasPriority(
-                                                    recordWith()
-                                                            .contractCallResult(
-                                                                    resultWith()
-                                                                            .gasUsed(gasCost)))));
+            hapiSpecs.add(defaultHapiSpec("Perf_" + test)
+                    .given(givenBlock)
+                    .when(contractCall(test, "<empty>").gas(35000000).via(via))
+                    .then(
+                            getExecTime(via)
+                                    .payingWith(GENESIS)
+                                    .logged()
+                                    .assertingNoneLongerThan(20, ChronoUnit.SECONDS),
+                            getReceipt(via).hasPriorityStatus(ResponseCodeEnum.SUCCESS),
+                            getTxnRecord(via)
+                                    .hasPriority(recordWith()
+                                            .contractCallResult(resultWith().gasUsed(gasCost)))));
         }
         return hapiSpecs;
     }
@@ -183,8 +156,6 @@ public class ContractPerformanceSuite extends HapiSuite {
     }
 
     public static String asSolidityAddress(final ContractID id) {
-        return hex(
-                HapiPropertySource.asSolidityAddress(
-                        (int) id.getShardNum(), id.getRealmNum(), id.getContractNum()));
+        return hex(HapiPropertySource.asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getContractNum()));
     }
 }

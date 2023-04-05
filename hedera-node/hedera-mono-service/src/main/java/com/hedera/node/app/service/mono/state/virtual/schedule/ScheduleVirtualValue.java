@@ -13,9 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual.schedule;
 
 import static com.google.protobuf.ByteString.copyFrom;
+import static com.hedera.node.app.hapi.utils.CommonUtils.functionOf;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asTimestamp;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.describe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
@@ -26,7 +28,7 @@ import com.google.common.hash.HashCode;
 import com.google.common.hash.Hashing;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.node.app.service.mono.exceptions.UnknownHederaFunctionality;
+import com.hedera.node.app.hapi.utils.exception.UnknownHederaFunctionality;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSchedule;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
@@ -67,23 +69,38 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ScheduleVirtualValue extends PartialMerkleLeaf
         implements VirtualValue, Keyed<EntityNumVirtualKey>, MerkleLeaf {
 
-    static final int CURRENT_VERSION = 1;
+    public static final int CURRENT_VERSION = 1;
     static final long RUNTIME_CONSTRUCTABLE_ID = 0xadfd7f9e613385fcL;
 
-    @Nullable private long number;
-    @Nullable private Key grpcAdminKey = null;
-    @Nullable private JKey adminKey = null;
+    @Nullable
+    private long number;
+
+    @Nullable
+    private Key grpcAdminKey = null;
+
+    @Nullable
+    private JKey adminKey = null;
+
     private String memo;
     private boolean deleted = false;
     private boolean executed = false;
     private boolean calculatedWaitForExpiry = false;
     private boolean waitForExpiryProvided = false;
-    @Nullable private EntityId payer = null;
+
+    @Nullable
+    private EntityId payer = null;
+
     private EntityId schedulingAccount;
     private RichInstant schedulingTXValidStart;
-    @Nullable private RichInstant expirationTimeProvided = null;
-    @Nullable private RichInstant calculatedExpirationTime = null;
-    @Nullable private RichInstant resolutionTime = null;
+
+    @Nullable
+    private RichInstant expirationTimeProvided = null;
+
+    @Nullable
+    private RichInstant calculatedExpirationTime = null;
+
+    @Nullable
+    private RichInstant resolutionTime = null;
 
     private byte[] bodyBytes;
     private TransactionBody ordinaryScheduledTxn;
@@ -171,18 +188,16 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
 
     public Transaction asSignedTxn() {
         return Transaction.newBuilder()
-                .setSignedTransactionBytes(
-                        SignedTransaction.newBuilder()
-                                .setBodyBytes(ordinaryScheduledTxn.toByteString())
-                                .build()
-                                .toByteString())
+                .setSignedTransactionBytes(SignedTransaction.newBuilder()
+                        .setBodyBytes(ordinaryScheduledTxn.toByteString())
+                        .build()
+                        .toByteString())
                 .build();
     }
 
     public final TransactionID scheduledTransactionId() {
         if (schedulingAccount == null || schedulingTXValidStart == null) {
-            throw new IllegalStateException(
-                    "Cannot invoke scheduledTransactionId on a content-addressable view!");
+            throw new IllegalStateException("Cannot invoke scheduledTransactionId on a content-addressable view!");
         }
         return TransactionID.newBuilder()
                 .setAccountID(schedulingAccount.toGrpcAccountId())
@@ -223,8 +238,7 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
 
     @Override
     public int hashCode() {
-        return Objects.hash(
-                memo, grpcAdminKey, scheduledTxn, expirationTimeProvided, waitForExpiryProvided);
+        return Objects.hash(memo, grpcAdminKey, scheduledTxn, expirationTimeProvided, waitForExpiryProvided);
     }
 
     public long equalityCheckKey() {
@@ -242,41 +256,39 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
                 memo != null ? memo.getBytes(StandardCharsets.UTF_8) : new byte[] {},
                 grpcAdminKey != null ? grpcAdminKey.toByteArray() : new byte[] {},
                 scheduledTxn.toByteArray(),
-                expirationTimeProvided != null
-                        ? expirationTimeProvided.toGrpc().toByteArray()
-                        : new byte[] {},
+                expirationTimeProvided != null ? expirationTimeProvided.toGrpc().toByteArray() : new byte[] {},
                 waitForExpiryProvided ? new byte[] {1} : new byte[] {0});
     }
 
     @Override
     public String toString() {
-        final var helper =
-                MoreObjects.toStringHelper(ScheduleVirtualValue.class)
-                        .add("scheduledTxn", scheduledTxn)
-                        .add("expirationTimeProvided", expirationTimeProvided)
-                        .add("calculatedExpirationTime", calculatedExpirationTime)
-                        .add("executed", executed)
-                        .add("waitForExpiryProvided", waitForExpiryProvided)
-                        .add("calculatedWaitForExpiry", calculatedWaitForExpiry)
-                        .add("deleted", deleted)
-                        .add("memo", memo)
-                        .add("payer", readablePayer())
-                        .add("schedulingAccount", schedulingAccount)
-                        .add("schedulingTXValidStart", schedulingTXValidStart)
-                        .add("signatories", signatories.stream().map(CommonUtils::hex).toList())
-                        .add("adminKey", describe(adminKey))
-                        .add("resolutionTime", resolutionTime)
-                        .add("number", number);
+        final var helper = MoreObjects.toStringHelper(ScheduleVirtualValue.class)
+                .add("scheduledTxn", scheduledTxn)
+                .add("expirationTimeProvided", expirationTimeProvided)
+                .add("calculatedExpirationTime", calculatedExpirationTime)
+                .add("executed", executed)
+                .add("waitForExpiryProvided", waitForExpiryProvided)
+                .add("calculatedWaitForExpiry", calculatedWaitForExpiry)
+                .add("deleted", deleted)
+                .add("memo", memo)
+                .add("payer", readablePayer())
+                .add("schedulingAccount", schedulingAccount)
+                .add("schedulingTXValidStart", schedulingTXValidStart)
+                .add("signatories", signatories.stream().map(CommonUtils::hex).toList())
+                .add("adminKey", describe(adminKey))
+                .add("resolutionTime", resolutionTime)
+                .add("number", number);
         return helper.toString();
     }
 
     private String readablePayer() {
-        return Optional.ofNullable(effectivePayer()).map(EntityId::toAbbrevString).orElse("<N/A>");
+        return Optional.ofNullable(effectivePayer())
+                .map(EntityId::toAbbrevString)
+                .orElse("<N/A>");
     }
 
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version)
-            throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         int n = in.readInt();
         bodyBytes = new byte[n];
         in.readFully(bodyBytes);
@@ -522,7 +534,7 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
 
     public HederaFunctionality scheduledFunction() {
         try {
-            return MiscUtils.functionOf(ordinaryScheduledTxn);
+            return functionOf(ordinaryScheduledTxn);
         } catch (final UnknownHederaFunctionality ignore) {
             return NONE;
         }
@@ -553,9 +565,7 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
                 memo = creationOp.getMemo();
             }
             expirationTimeProvided =
-                    creationOp.hasExpirationTime()
-                            ? RichInstant.fromGrpc(creationOp.getExpirationTime())
-                            : null;
+                    creationOp.hasExpirationTime() ? RichInstant.fromGrpc(creationOp.getExpirationTime()) : null;
             waitForExpiryProvided = creationOp.getWaitForExpiry();
             if (creationOp.hasPayerAccountID()) {
                 payer = EntityId.fromGrpcAccountId(creationOp.getPayerAccountID());
@@ -574,9 +584,7 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
             ordinaryScheduledTxn = MiscUtils.asOrdinary(scheduledTxn, scheduledTransactionId());
         } catch (final InvalidProtocolBufferException e) {
             throw new IllegalArgumentException(
-                    String.format(
-                            "Argument bodyBytes=0x%s was not a TransactionBody!",
-                            CommonUtils.hex(bodyBytes)));
+                    String.format("Argument bodyBytes=0x%s was not a TransactionBody!", CommonUtils.hex(bodyBytes)));
         }
     }
 

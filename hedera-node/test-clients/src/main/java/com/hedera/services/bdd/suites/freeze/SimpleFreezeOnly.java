@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.freeze;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -50,12 +51,15 @@ public class SimpleFreezeOnly extends HapiSuite {
         return Arrays.asList(simpleFreezeWithTimestamp());
     }
 
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
+    }
+
     private HapiSpec simpleFreezeWithTimestamp() {
         return defaultHapiSpec("SimpleFreezeWithTimeStamp")
                 .given(freezeOnly().payingWith(GENESIS).startingAt(Instant.now().plusSeconds(10)))
                 .when(sleepFor(11000))
-                .then(
-                        cryptoCreate("not_going_to_happen")
-                                .hasPrecheck(ResponseCodeEnum.PLATFORM_NOT_ACTIVE));
+                .then(cryptoCreate("not_going_to_happen").hasPrecheck(ResponseCodeEnum.PLATFORM_NOT_ACTIVE));
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.keys;
 
 import static java.util.stream.Collectors.collectingAndThen;
@@ -77,8 +78,7 @@ public class TrieSigMapGenerator implements SigMapGenerator {
     }
 
     @Override
-    public SignatureMap forPrimitiveSigs(
-            final HapiSpec spec, final List<Map.Entry<byte[], byte[]>> keySigs) {
+    public SignatureMap forPrimitiveSigs(final HapiSpec spec, final List<Map.Entry<byte[], byte[]>> keySigs) {
         List<byte[]> keys = keySigs.stream().map(Map.Entry::getKey).collect(toList());
         ByteTrie trie = new ByteTrie(keys);
 
@@ -87,29 +87,27 @@ public class TrieSigMapGenerator implements SigMapGenerator {
 
         final Function<byte[], byte[]> prefixCalc = getPrefixCalcFor(trie);
         return keySigs.stream()
-                .map(
-                        keySig -> {
-                            final var key = keySig.getKey();
-                            final var wrappedKey = ByteString.copyFrom(key);
-                            final var effPrefix =
-                                    alwaysFullPrefixes.contains(wrappedKey)
-                                            ? wrappedKey
-                                            : ByteString.copyFrom(prefixCalc.apply(key));
-                            if (key.length == 32) {
-                                return SignaturePair.newBuilder()
-                                        .setPubKeyPrefix(effPrefix)
-                                        .setEd25519(ByteString.copyFrom(keySig.getValue()))
-                                        .build();
-                            } else {
-                                return SignaturePair.newBuilder()
-                                        .setPubKeyPrefix(effPrefix)
-                                        .setECDSASecp256K1(ByteString.copyFrom(keySig.getValue()))
-                                        .build();
-                            }
-                        })
-                .collect(
-                        collectingAndThen(
-                                toList(), l -> SignatureMap.newBuilder().addAllSigPair(l).build()));
+                .map(keySig -> {
+                    final var key = keySig.getKey();
+                    final var wrappedKey = ByteString.copyFrom(key);
+                    final var effPrefix = alwaysFullPrefixes.contains(wrappedKey)
+                            ? wrappedKey
+                            : ByteString.copyFrom(prefixCalc.apply(key));
+                    if (key.length == 32) {
+                        return SignaturePair.newBuilder()
+                                .setPubKeyPrefix(effPrefix)
+                                .setEd25519(ByteString.copyFrom(keySig.getValue()))
+                                .build();
+                    } else {
+                        return SignaturePair.newBuilder()
+                                .setPubKeyPrefix(effPrefix)
+                                .setECDSASecp256K1(ByteString.copyFrom(keySig.getValue()))
+                                .build();
+                    }
+                })
+                .collect(collectingAndThen(
+                        toList(),
+                        l -> SignatureMap.newBuilder().addAllSigPair(l).build()));
     }
 
     private Set<ByteString> fullPrefixSetFor(final HapiSpec spec) {
@@ -152,7 +150,8 @@ public class TrieSigMapGenerator implements SigMapGenerator {
                     prefix = trie.randomPrefix(key.length);
                     break;
             }
-            log.debug(CommonUtils.hex(key) + " gets prefix " + CommonUtils.hex(prefix));
+            final String message = String.format("%s gets prefix %s", CommonUtils.hex(key), CommonUtils.hex(prefix));
+            log.debug(message);
             return prefix;
         };
     }

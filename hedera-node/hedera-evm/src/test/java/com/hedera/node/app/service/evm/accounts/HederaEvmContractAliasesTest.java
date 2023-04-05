@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.accounts;
 
 import static com.swirlds.common.utility.CommonUtils.unhex;
@@ -27,23 +28,19 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class HederaEvmContractAliasesTest {
 
-    private final MockedHederaEvmContractAliases hederaEvmContractAliases =
-            new MockedHederaEvmContractAliases();
+    private final MockedHederaEvmContractAliases hederaEvmContractAliases = new MockedHederaEvmContractAliases();
     byte[] byteArray = new byte[20];
 
     @Test
     void non20ByteStringCannotBeMirror() {
         assertFalse(hederaEvmContractAliases.isMirror(new byte[] {(byte) 0xab, (byte) 0xcd}));
-        assertFalse(
-                hederaEvmContractAliases.isMirror(
-                        unhex("abcdefabcdefabcdefbabcdefabcdefabcdefbbbde")));
+        assertFalse(hederaEvmContractAliases.isMirror(unhex("abcdefabcdefabcdefbabcdefabcdefabcdefbbbde")));
     }
 
     @Test
     void with20Byte() {
         assertTrue(hederaEvmContractAliases.isMirror(byteArray));
         assertTrue(
-                hederaEvmContractAliases.isMirror(
-                        Address.fromHexString("0x000000000000000000000000000000000000071e")));
+                hederaEvmContractAliases.isMirror(Address.fromHexString("0x000000000000000000000000000000000000071e")));
     }
 }

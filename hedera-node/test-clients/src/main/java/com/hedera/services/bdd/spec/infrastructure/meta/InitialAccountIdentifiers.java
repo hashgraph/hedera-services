@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.meta;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
@@ -42,8 +43,7 @@ import java.util.function.Function;
  * @param address the address to give as initial identifier (null if none)
  */
 @SuppressWarnings({"java:S6218", "java:S3358"})
-public record InitialAccountIdentifiers(
-        @Nullable Key key, @Nullable byte[] alias, @Nullable byte[] address) {
+public record InitialAccountIdentifiers(@Nullable Key key, @Nullable byte[] alias, @Nullable byte[] address) {
 
     private enum KeyStatus {
         ABSENT,
@@ -56,30 +56,18 @@ public record InitialAccountIdentifiers(
         INCONGRUENT_WITH_KEY
     }
 
-    private static final byte[] INCONGRUENT_ALIAS =
-            Key.newBuilder()
-                    .setECDSASecp256K1(ByteString.copyFrom(randomCompressedKey()))
-                    .build()
-                    .toByteArray();
+    private static final byte[] INCONGRUENT_ALIAS = Key.newBuilder()
+            .setECDSASecp256K1(ByteString.copyFrom(randomCompressedKey()))
+            .build()
+            .toByteArray();
     private static final byte[] INCONGRUENT_ADDRESS = randomUtf8Bytes(20);
 
-    private static final List<Function<Key, InitialAccountIdentifiers>> ALL_COMBINATIONS =
-            Arrays.stream(KeyStatus.values())
-                    .flatMap(
-                            keyStatus ->
-                                    Arrays.stream(SecondaryIdStatus.values())
-                                            .flatMap(
-                                                    aliasStatus ->
-                                                            Arrays.stream(
-                                                                            SecondaryIdStatus
-                                                                                    .values())
-                                                                    .map(
-                                                                            addressStatus ->
-                                                                                    fuzzerFor(
-                                                                                            keyStatus,
-                                                                                            aliasStatus,
-                                                                                            addressStatus))))
-                    .toList();
+    private static final List<Function<Key, InitialAccountIdentifiers>> ALL_COMBINATIONS = Arrays.stream(
+                    KeyStatus.values())
+            .flatMap(keyStatus -> Arrays.stream(SecondaryIdStatus.values())
+                    .flatMap(aliasStatus -> Arrays.stream(SecondaryIdStatus.values())
+                            .map(addressStatus -> fuzzerFor(keyStatus, aliasStatus, addressStatus))))
+            .toList();
 
     private static final SplittableRandom RANDOM = new SplittableRandom();
 
@@ -103,22 +91,17 @@ public record InitialAccountIdentifiers(
     }
 
     private static Function<Key, InitialAccountIdentifiers> fuzzerFor(
-            final KeyStatus keyStatus,
-            final SecondaryIdStatus aliasStatus,
-            final SecondaryIdStatus addressStatus) {
-        return key ->
-                new InitialAccountIdentifiers(
-                        keyStatus == KeyStatus.ABSENT ? null : key,
-                        aliasStatus == SecondaryIdStatus.ABSENT
-                                ? null
-                                : (aliasStatus == SecondaryIdStatus.CONGRUENT_WITH_KEY
-                                        ? key.toByteArray()
-                                        : INCONGRUENT_ALIAS),
-                        addressStatus == SecondaryIdStatus.ABSENT
-                                ? null
-                                : (addressStatus == SecondaryIdStatus.CONGRUENT_WITH_KEY
-                                        ? EthSigsUtils.recoverAddressFromPubKey(key.toByteArray())
-                                        : INCONGRUENT_ADDRESS));
+            final KeyStatus keyStatus, final SecondaryIdStatus aliasStatus, final SecondaryIdStatus addressStatus) {
+        return key -> new InitialAccountIdentifiers(
+                keyStatus == KeyStatus.ABSENT ? null : key,
+                aliasStatus == SecondaryIdStatus.ABSENT
+                        ? null
+                        : (aliasStatus == SecondaryIdStatus.CONGRUENT_WITH_KEY ? key.toByteArray() : INCONGRUENT_ALIAS),
+                addressStatus == SecondaryIdStatus.ABSENT
+                        ? null
+                        : (addressStatus == SecondaryIdStatus.CONGRUENT_WITH_KEY
+                                ? EthSigsUtils.recoverAddressFromPubKey(key.toByteArray())
+                                : INCONGRUENT_ADDRESS));
     }
 
     public static void throwIfNotEcdsa(final Key key) {

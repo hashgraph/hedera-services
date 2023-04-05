@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.state;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -36,8 +37,7 @@ public class ReadableSingletonStateBase<T> implements ReadableSingletonState<T> 
      * @param backingStoreAccessor A {@link Supplier} that provides access to the value in the
      *     backing store.
      */
-    public ReadableSingletonStateBase(
-            @NonNull final String stateKey, @NonNull final Supplier<T> backingStoreAccessor) {
+    public ReadableSingletonStateBase(@NonNull final String stateKey, @NonNull final Supplier<T> backingStoreAccessor) {
         this.stateKey = Objects.requireNonNull(stateKey);
         this.backingStoreAccessor = Objects.requireNonNull(backingStoreAccessor);
     }

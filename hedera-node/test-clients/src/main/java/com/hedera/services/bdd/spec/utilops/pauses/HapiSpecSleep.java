@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.utilops.pauses;
 
 import com.google.common.base.MoreObjects;
@@ -32,7 +33,7 @@ public class HapiSpecSleep extends UtilOp {
 
     @Override
     protected boolean submitOp(HapiSpec spec) throws Throwable {
-        log.info("Sleeping for " + timeMs + "ms now...");
+        log.info("Sleeping for {}ms now...", timeMs);
         Thread.sleep(timeMs);
         return false;
     }

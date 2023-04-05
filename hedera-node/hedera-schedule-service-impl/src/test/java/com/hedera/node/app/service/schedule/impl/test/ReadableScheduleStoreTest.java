@@ -13,20 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.schedule.impl.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.ScheduleID;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
-import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,12 +36,21 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+@SuppressWarnings({"unchecked", "rawtypes"})
 @ExtendWith(MockitoExtension.class)
 class ReadableScheduleStoreTest {
-    @Mock ReadableStates states;
-    @Mock ReadableKVState state;
-    @Mock ScheduleVirtualValue schedule;
-    @Mock JKey adminKey;
+    @Mock
+    ReadableStates states;
+
+    @Mock
+    ReadableKVState state;
+
+    @Mock
+    ScheduleVirtualValue schedule;
+
+    @Mock
+    JKey adminKey;
+
     private ReadableScheduleStore subject;
 
     @BeforeEach
@@ -58,38 +69,39 @@ class ReadableScheduleStoreTest {
         given(state.get(1L)).willReturn(null);
 
         assertEquals(
-                Optional.empty(), subject.get(ScheduleID.newBuilder().setScheduleNum(1L).build()));
+                Optional.empty(),
+                subject.get(ScheduleID.newBuilder().scheduleNum(1L).build()));
     }
 
     @Test
     void getsScheduleMetaFromFetchedSchedule() {
         given(state.get(1L)).willReturn(schedule);
         given(schedule.ordinaryViewOfScheduledTxn())
-                .willReturn(TransactionBody.getDefaultInstance());
+                .willReturn(PbjConverter.fromPbj(TransactionBody.newBuilder().build()));
         given(schedule.adminKey()).willReturn(Optional.of(adminKey));
         given(schedule.hasExplicitPayer()).willReturn(true);
         given(schedule.payer()).willReturn(EntityId.fromNum(2L));
 
-        final var meta = subject.get(ScheduleID.newBuilder().setScheduleNum(1L).build());
+        final var meta = subject.get(ScheduleID.newBuilder().scheduleNum(1L).build());
 
         assertEquals(Optional.of(adminKey), meta.get().adminKey());
-        assertEquals(TransactionBody.getDefaultInstance(), meta.get().scheduledTxn());
+        assertEquals(TransactionBody.newBuilder().build(), meta.get().scheduledTxn());
         assertEquals(
-                Optional.of(EntityId.fromNum(2L).toGrpcAccountId()), meta.get().designatedPayer());
+                Optional.of(EntityId.fromNum(2L).toPbjAccountId()), meta.get().designatedPayer());
     }
 
     @Test
     void getsScheduleMetaFromFetchedScheduleNoExplicitPayer() {
         given(state.get(1L)).willReturn(schedule);
         given(schedule.ordinaryViewOfScheduledTxn())
-                .willReturn(TransactionBody.getDefaultInstance());
+                .willReturn(PbjConverter.fromPbj(TransactionBody.newBuilder().build()));
         given(schedule.adminKey()).willReturn(Optional.of(adminKey));
         given(schedule.hasExplicitPayer()).willReturn(false);
 
-        final var meta = subject.get(ScheduleID.newBuilder().setScheduleNum(1L).build());
+        final var meta = subject.get(ScheduleID.newBuilder().scheduleNum(1L).build());
 
         assertEquals(Optional.of(adminKey), meta.get().adminKey());
-        assertEquals(TransactionBody.getDefaultInstance(), meta.get().scheduledTxn());
+        assertEquals(TransactionBody.newBuilder().build(), meta.get().scheduledTxn());
         assertEquals(Optional.empty(), meta.get().designatedPayer());
     }
 }

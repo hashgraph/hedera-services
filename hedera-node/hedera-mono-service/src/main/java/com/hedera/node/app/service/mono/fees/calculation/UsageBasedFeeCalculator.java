@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation;
 
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
@@ -99,10 +100,8 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
     @Override
     public void init() {
         usagePrices.loadPriceSchedules();
-        autoRenewCalcs.setAccountRenewalPriceSeq(
-                usagePrices.activePricingSequence(CryptoAccountAutoRenew));
-        autoRenewCalcs.setContractRenewalPriceSeq(
-                usagePrices.activePricingSequence(ContractAutoRenew));
+        autoRenewCalcs.setAccountRenewalPriceSeq(usagePrices.activePricingSequence(CryptoAccountAutoRenew));
+        autoRenewCalcs.setContractRenewalPriceSeq(usagePrices.activePricingSequence(ContractAutoRenew));
     }
 
     @Override
@@ -117,46 +116,44 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 
     @Override
     public FeeObject computePayment(
-            Query query,
-            FeeData usagePrices,
-            StateView view,
-            Timestamp at,
-            Map<String, Object> queryCtx) {
-        return compute(
-                query, usagePrices, at, estimator -> estimator.usageGiven(query, view, queryCtx));
+            Query query, FeeData usagePrices, StateView view, Timestamp at, Map<String, Object> queryCtx) {
+        return compute(query, usagePrices, at, estimator -> estimator.usageGiven(query, view, queryCtx));
     }
 
     @Override
     public FeeObject estimatePayment(
             Query query, FeeData usagePrices, StateView view, Timestamp at, ResponseType type) {
-        return compute(
-                query, usagePrices, at, estimator -> estimator.usageGivenType(query, view, type));
+        return compute(query, usagePrices, at, estimator -> estimator.usageGivenType(query, view, type));
     }
 
     private FeeObject compute(
-            Query query,
-            FeeData usagePrices,
-            Timestamp at,
-            Function<QueryResourceUsageEstimator, FeeData> usageFn) {
+            Query query, FeeData usagePrices, Timestamp at, Function<QueryResourceUsageEstimator, FeeData> usageFn) {
         var usageEstimator = getQueryUsageEstimator(query);
         var queryUsage = usageFn.apply(usageEstimator);
+        return computeFromQueryResourceUsage(queryUsage, usagePrices, at);
+    }
+
+    /**
+     * Computes the fees for a query, given the query's resource usage, the current prices,
+     * and the estimated consensus time.
+     *
+     * @param queryUsage the resource usage of the query
+     * @param usagePrices the current prices
+     * @param at the estimated consensus time
+     * @return the fees for the query
+     */
+    public FeeObject computeFromQueryResourceUsage(
+            final FeeData queryUsage, final FeeData usagePrices, final Timestamp at) {
         return getFeeObject(usagePrices, queryUsage, exchange.rate(at));
     }
 
     @Override
     public FeeObject computeFee(TxnAccessor accessor, JKey payerKey, StateView view, Instant now) {
-        return feeGiven(
-                accessor,
-                payerKey,
-                view,
-                usagePrices.activePrices(accessor),
-                exchange.activeRate(now),
-                true);
+        return feeGiven(accessor, payerKey, view, usagePrices.activePrices(accessor), exchange.activeRate(now), true);
     }
 
     @Override
-    public FeeObject estimateFee(
-            TxnAccessor accessor, JKey payerKey, StateView view, Timestamp at) {
+    public FeeObject estimateFee(TxnAccessor accessor, JKey payerKey, StateView view, Timestamp at) {
         Map<SubType, FeeData> prices = uncheckedPricesGiven(accessor, at);
 
         return feeGiven(accessor, payerKey, view, prices, exchange.rate(at), false);
@@ -189,8 +186,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
             case ContractCreate:
                 var contractCreateOp = accessor.getTxn().getContractCreateInstance();
                 return -contractCreateOp.getInitialBalance()
-                        - contractCreateOp.getGas()
-                                * estimatedGasPriceInTinybars(ContractCreate, at);
+                        - contractCreateOp.getGas() * estimatedGasPriceInTinybars(ContractCreate, at);
             case ContractCall:
                 var contractCallOp = accessor.getTxn().getContractCall();
                 return -contractCallOp.getAmount()
@@ -208,14 +204,11 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
         return Math.max(priceInTinyBars, 1L);
     }
 
-    private Map<SubType, FeeData> uncheckedPricesGiven(TxnAccessor accessor, Timestamp at) {
+    public Map<SubType, FeeData> uncheckedPricesGiven(TxnAccessor accessor, Timestamp at) {
         try {
             return usagePrices.pricesGiven(accessor.getFunction(), at);
         } catch (Exception e) {
-            log.warn(
-                    "Using default usage prices to calculate fees for {}!",
-                    accessor.getSignedTxnWrapper(),
-                    e);
+            log.warn("Using default usage prices to calculate fees for {}!", accessor.getSignedTxnWrapper(), e);
         }
         return BasicFcfsUsagePrices.DEFAULT_RESOURCE_PRICES;
     }
@@ -232,19 +225,14 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
             final var applicablePrices = prices.get(accessor.getSubType());
             return inHandle
                     ? pricedUsageCalculator.inHandleFees(accessor, applicablePrices, rate, payerKey)
-                    : pricedUsageCalculator.extraHandleFees(
-                            accessor, applicablePrices, rate, payerKey);
+                    : pricedUsageCalculator.extraHandleFees(accessor, applicablePrices, rate, payerKey);
         } else {
             var sigUsage = getSigUsage(accessor, payerKey);
             var usageEstimator = getTxnUsageEstimator(accessor);
             try {
                 final var usage = usageEstimator.usageGiven(accessor.getTxn(), sigUsage, view);
                 final var applicablePrices = prices.get(usage.getSubType());
-                return getFeeObject(
-                        applicablePrices,
-                        usage,
-                        rate,
-                        feeMultiplierSource.currentMultiplier(accessor));
+                return feesIncludingCongestion(usage, applicablePrices, accessor, rate);
             } catch (InvalidTxBodyException e) {
                 log.warn(
                         "Argument accessor={} malformed for implied estimator {}!",
@@ -253,6 +241,11 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
                 throw new IllegalArgumentException(e);
             }
         }
+    }
+
+    public FeeObject feesIncludingCongestion(
+            final FeeData usage, final FeeData typedPrices, final TxnAccessor accessor, final ExchangeRate rate) {
+        return getFeeObject(typedPrices, usage, rate, feeMultiplierSource.currentMultiplier(accessor));
     }
 
     private QueryResourceUsageEstimator getQueryUsageEstimator(Query query) {
@@ -266,9 +259,8 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 
     private TxnResourceUsageEstimator getTxnUsageEstimator(TxnAccessor accessor) {
         var txn = accessor.getTxn();
-        var estimators =
-                Optional.ofNullable(txnUsageEstimators.get(accessor.getFunction()))
-                        .orElse(Collections.emptyList());
+        var estimators = Optional.ofNullable(txnUsageEstimators.get(accessor.getFunction()))
+                .orElse(Collections.emptyList());
         for (TxnResourceUsageEstimator estimator : estimators) {
             if (estimator.applicableTo(txn)) {
                 return estimator;
@@ -277,7 +269,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
         throw new NoSuchElementException("No estimator exists for the given transaction");
     }
 
-    private SigValueObj getSigUsage(TxnAccessor accessor, JKey payerKey) {
+    public SigValueObj getSigUsage(TxnAccessor accessor, JKey payerKey) {
         int numPayerKeys = numSimpleKeys(payerKey);
         final var sigUsage = accessor.usageGiven(numPayerKeys);
         return new SigValueObj(sigUsage.numSigs(), numPayerKeys, sigUsage.sigsSize());

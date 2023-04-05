@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.schedule;
 /*
  * ‌
@@ -41,7 +42,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_FUTUR
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
-import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
+import com.hedera.node.app.service.mono.state.logic.ScheduledTransactions;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
@@ -74,7 +75,7 @@ public class ScheduleProcessing {
     private final ScheduleExecutor scheduleExecutor;
     private final GlobalDynamicProperties dynamicProperties;
     private final TimedFunctionalityThrottling scheduleThrottling;
-    private final Supplier<MerkleScheduledTransactions> schedules;
+    private final Supplier<ScheduledTransactions> schedules;
 
     SigMapScheduleClassifier classifier = new SigMapScheduleClassifier();
     SignatoryUtils.ScheduledSigningsWitness signingsWitness = SignatoryUtils::witnessScoped;
@@ -88,7 +89,7 @@ public class ScheduleProcessing {
             final GlobalDynamicProperties dynamicProperties,
             final ScheduleSigsVerifier scheduleSigsVerifier,
             @ScheduleThrottle final TimedFunctionalityThrottling scheduleThrottling,
-            final Supplier<MerkleScheduledTransactions> schedules) {
+            final Supplier<ScheduledTransactions> schedules) {
         this.sigImpactHistorian = sigImpactHistorian;
         this.store = store;
         this.scheduleExecutor = scheduleExecutor;
@@ -120,9 +121,8 @@ public class ScheduleProcessing {
             }
         }
 
-        log.warn(
-                "maxProcessingLoopIterations reached in expire. Waiting for next call to continue."
-                        + " Scheduled Transaction expiration may be delayed.");
+        log.warn("maxProcessingLoopIterations reached in expire. Waiting for next call to continue."
+                + " Scheduled Transaction expiration may be delayed.");
     }
 
     /**
@@ -137,9 +137,7 @@ public class ScheduleProcessing {
      */
     @Nullable
     public TxnAccessor triggerNextTransactionExpiringAsNeeded(
-            final Instant consensusTime,
-            @Nullable final TxnAccessor previous,
-            final boolean onlyExpire) {
+            final Instant consensusTime, @Nullable final TxnAccessor previous, final boolean onlyExpire) {
 
         LongHashSet seen = null;
 
@@ -198,8 +196,7 @@ public class ScheduleProcessing {
 
                 } else {
 
-                    final var triggerResult =
-                            scheduleExecutor.getTriggeredTxnAccessor(next, store, false);
+                    final var triggerResult = scheduleExecutor.getTriggeredTxnAccessor(next, store, false);
 
                     if (triggerResult.getLeft() != OK) {
                         log.error(
@@ -214,8 +211,7 @@ public class ScheduleProcessing {
                 }
             } catch (final Exception e) {
                 log.error(
-                        "SCHEDULED TRANSACTION SKIPPED!! Failed to triggered transaction due"
-                                + " unexpected error! {}",
+                        "SCHEDULED TRANSACTION SKIPPED!! Failed to triggered transaction due" + " unexpected error! {}",
                         next,
                         e);
 
@@ -228,10 +224,9 @@ public class ScheduleProcessing {
             }
         }
 
-        log.warn(
-                "maxProcessingLoopIterations reached in triggerNextTransactionExpiringAsNeeded."
-                    + " Waiting for next call to continue. Scheduled Transaction expiration may be"
-                    + " delayed.");
+        log.warn("maxProcessingLoopIterations reached in triggerNextTransactionExpiringAsNeeded."
+                + " Waiting for next call to continue. Scheduled Transaction expiration may be"
+                + " delayed.");
 
         return null;
     }
@@ -247,8 +242,7 @@ public class ScheduleProcessing {
         if (dynamicProperties.schedulingLongTermEnabled()) {
             scheduleThrottling.resetUsage();
 
-            final TreeMap<RichInstant, List<TxnAccessor>> transactionsInExecutionOrder =
-                    new TreeMap<>();
+            final TreeMap<RichInstant, List<TxnAccessor>> transactionsInExecutionOrder = new TreeMap<>();
 
             final var curSecond = schedule.calculatedExpirationTime().getSeconds();
 
@@ -257,55 +251,39 @@ public class ScheduleProcessing {
             if (bySecond != null) {
                 bySecond.getIds()
                         .values()
-                        .forEach(
-                                ids ->
-                                        ids.forEach(
-                                                id -> {
-                                                    final var existingScheduleId =
-                                                            EntityNum.fromLong(id)
-                                                                    .toGrpcScheduleId();
-                                                    final var existing =
-                                                            store.getNoError(existingScheduleId);
+                        .forEach(ids -> ids.forEach(id -> {
+                            final var existingScheduleId =
+                                    EntityNum.fromLong(id).toGrpcScheduleId();
+                            final var existing = store.getNoError(existingScheduleId);
 
-                                                    if (existing != null) {
-                                                        if (existing.calculatedExpirationTime()
-                                                                        .getSeconds()
-                                                                != curSecond) {
-                                                            log.warn(
-                                                                    "bySecond contained a schedule"
-                                                                        + " in the wrong spot!"
-                                                                        + " Ignoring it! spot={},"
-                                                                        + " id={}, schedule={}",
-                                                                    curSecond,
-                                                                    id,
-                                                                    existing);
-                                                        } else {
-                                                            final var list =
-                                                                    transactionsInExecutionOrder
-                                                                            .computeIfAbsent(
-                                                                                    existing
-                                                                                            .calculatedExpirationTime(),
-                                                                                    k ->
-                                                                                            new ArrayList<>());
-                                                            list.add(
-                                                                    getTxnAccessorForThrottleCheck(
-                                                                            existingScheduleId,
-                                                                            existing));
-                                                        }
-                                                    } else {
-                                                        log.warn(
-                                                                "bySecond contained a schedule that"
-                                                                    + " does not exist! Ignoring"
-                                                                    + " it! second={}, id={}",
-                                                                curSecond,
-                                                                id);
-                                                    }
-                                                }));
+                            if (existing != null) {
+                                if (existing.calculatedExpirationTime().getSeconds() != curSecond) {
+                                    log.warn(
+                                            "bySecond contained a schedule"
+                                                    + " in the wrong spot!"
+                                                    + " Ignoring it! spot={},"
+                                                    + " id={}, schedule={}",
+                                            curSecond,
+                                            id,
+                                            existing);
+                                } else {
+                                    final var list = transactionsInExecutionOrder.computeIfAbsent(
+                                            existing.calculatedExpirationTime(), k -> new ArrayList<>());
+                                    list.add(getTxnAccessorForThrottleCheck(existingScheduleId, existing));
+                                }
+                            } else {
+                                log.warn(
+                                        "bySecond contained a schedule that"
+                                                + " does not exist! Ignoring"
+                                                + " it! second={}, id={}",
+                                        curSecond,
+                                        id);
+                            }
+                        }));
             }
 
-            final var list =
-                    transactionsInExecutionOrder.computeIfAbsent(
-                            schedule.calculatedExpirationTime(), k -> new ArrayList<>());
+            final var list = transactionsInExecutionOrder.computeIfAbsent(
+                    schedule.calculatedExpirationTime(), k -> new ArrayList<>());
             list.add(getTxnAccessorForThrottleCheck(scheduleId, schedule));
 
             Instant timestamp = Instant.ofEpochSecond(curSecond);

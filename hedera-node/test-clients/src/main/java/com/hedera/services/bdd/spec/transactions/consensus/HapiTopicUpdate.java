@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.consensus;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asDuration;
@@ -116,22 +117,20 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
         if (actualStatus != ResponseCodeEnum.SUCCESS) {
             return;
         }
-        newAdminKey.ifPresent(
-                k -> {
-                    if (newAdminKey.get() == EMPTY_KEY) {
-                        spec.registry().removeKey(topic);
-                    } else {
-                        spec.registry().saveKey(topic, k);
-                    }
-                });
-        newSubmitKey.ifPresent(
-                k -> {
-                    if (newSubmitKey.get() == EMPTY_KEY) {
-                        spec.registry().removeKey(submitKeyName());
-                    } else {
-                        spec.registry().saveKey(submitKeyName(), k);
-                    }
-                });
+        newAdminKey.ifPresent(k -> {
+            if (newAdminKey.get() == EMPTY_KEY) {
+                spec.registry().removeKey(topic);
+            } else {
+                spec.registry().saveKey(topic, k);
+            }
+        });
+        newSubmitKey.ifPresent(k -> {
+            if (newSubmitKey.get() == EMPTY_KEY) {
+                spec.registry().removeKey(submitKeyName());
+            } else {
+                spec.registry().saveKey(submitKeyName(), k);
+            }
+        });
         try {
             final TransactionBody txn = CommonUtils.extractTransactionBody(txnSubmitted);
             spec.registry().saveTopicMeta(topic, txn.getConsensusUpdateTopic());
@@ -142,28 +141,21 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
 
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
-        newAdminKeyName.ifPresent(name -> newAdminKey = Optional.of(spec.registry().getKey(name)));
+        newAdminKeyName.ifPresent(
+                name -> newAdminKey = Optional.of(spec.registry().getKey(name)));
         newSubmitKeyName.ifPresent(
                 name -> newSubmitKey = Optional.of(spec.registry().getKey(name)));
-        final ConsensusUpdateTopicTransactionBody opBody =
-                spec.txns()
-                        .<ConsensusUpdateTopicTransactionBody,
-                                ConsensusUpdateTopicTransactionBody.Builder>
-                                body(
-                                        ConsensusUpdateTopicTransactionBody.class,
-                                        b -> {
-                                            b.setTopicID(asTopicId(topic, spec));
-                                            topicMemo.ifPresent(
-                                                    memo -> b.setMemo(StringValue.of(memo)));
-                                            newAdminKey.ifPresent(b::setAdminKey);
-                                            newSubmitKey.ifPresent(b::setSubmitKey);
-                                            newExpiry.ifPresent(
-                                                    s -> b.setExpirationTime(asTimestamp(s)));
-                                            newAutoRenewPeriod.ifPresent(
-                                                    s -> b.setAutoRenewPeriod(asDuration(s)));
-                                            newAutoRenewAccount.ifPresent(
-                                                    id -> b.setAutoRenewAccount(asId(id, spec)));
-                                        });
+        final ConsensusUpdateTopicTransactionBody opBody = spec.txns()
+                .<ConsensusUpdateTopicTransactionBody, ConsensusUpdateTopicTransactionBody.Builder>body(
+                        ConsensusUpdateTopicTransactionBody.class, b -> {
+                            b.setTopicID(asTopicId(topic, spec));
+                            topicMemo.ifPresent(memo -> b.setMemo(StringValue.of(memo)));
+                            newAdminKey.ifPresent(b::setAdminKey);
+                            newSubmitKey.ifPresent(b::setSubmitKey);
+                            newExpiry.ifPresent(s -> b.setExpirationTime(asTimestamp(s)));
+                            newAutoRenewPeriod.ifPresent(s -> b.setAutoRenewPeriod(asDuration(s)));
+                            newAutoRenewAccount.ifPresent(id -> b.setAutoRenewAccount(asId(id, spec)));
+                        });
         return b -> b.setConsensusUpdateTopic(opBody);
     }
 
@@ -172,34 +164,31 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
         final List<Function<HapiSpec, Key>> signers = new ArrayList<>();
         signers.add(spec -> spec.registry().getKey(effectivePayer(spec)));
         signers.add(
-                spec -> {
-                    return spec.registry().hasKey(topic)
-                            ? spec.registry().getKey(topic)
-                            : Key.getDefaultInstance(); // same as no key
-                });
-        newAdminKey.ifPresent(
-                key -> {
-                    if (key != EMPTY_KEY) {
-                        signers.add(ignored -> key);
-                    }
-                });
-        newAutoRenewAccount.ifPresent(
-                id -> {
-                    if (!id.equalsIgnoreCase("0.0.0")) {
-                        signers.add(spec -> spec.registry().getKey(id));
-                    }
-                });
+                spec -> spec.registry().hasKey(topic)
+                        ? spec.registry().getKey(topic)
+                        : Key.getDefaultInstance() // same as no key
+                );
+        newAdminKey.ifPresent(key -> {
+            if (key != EMPTY_KEY) {
+                signers.add(ignored -> key);
+            }
+        });
+        newAutoRenewAccount.ifPresent(id -> {
+            if (!id.equalsIgnoreCase("0.0.0")) {
+                signers.add(spec -> spec.registry().getKey(id));
+            }
+        });
         return signers;
     }
 
     @Override
     protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
-        return spec.clients().getConsSvcStub(targetNodeFor(spec), useTls)::updateTopic;
+        return spec.clients()
+                .getConsSvcStub(targetNodeFor(spec), useTls, spec.setup().workflowOperations())::updateTopic;
     }
 
     @Override
-    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys)
-            throws Throwable {
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
         if (!spec.registry().hasTopicMeta(topic)) {
             return spec.fees().maxFeeTinyBars();
         } else {
@@ -211,29 +200,25 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
             long tentativeRbsIncrease = 0;
             try {
                 final TransactionBody updateTxn = CommonUtils.extractTransactionBody(txn);
-                tentativeRbsIncrease =
-                        ConsensusServiceFeeBuilder.getUpdateTopicRbsIncrease(
-                                updateTxn.getTransactionID().getTransactionValidStart(),
-                                oldMeta.getAdminKey(),
-                                oldMeta.getSubmitKey(),
-                                oldMeta.getMemo(),
-                                oldMeta.hasAutoRenewAccount(),
-                                Timestamp.newBuilder().setSeconds(oldExpiry).build(),
-                                updateTxn.getConsensusUpdateTopic());
+                tentativeRbsIncrease = ConsensusServiceFeeBuilder.getUpdateTopicRbsIncrease(
+                        updateTxn.getTransactionID().getTransactionValidStart(),
+                        oldMeta.getAdminKey(),
+                        oldMeta.getSubmitKey(),
+                        oldMeta.getMemo(),
+                        oldMeta.hasAutoRenewAccount(),
+                        Timestamp.newBuilder().setSeconds(oldExpiry).build(),
+                        updateTxn.getConsensusUpdateTopic());
             } catch (final Exception impossible) {
                 throw new IllegalStateException(impossible);
             }
 
             /* Create a custom activity metrics calculator based on the rbsIncrease. */
             final long rbsIncrease = tentativeRbsIncrease;
-            final FeeCalculator.ActivityMetrics metricsCalc =
-                    (txBody, sigUsage) ->
-                            ConsensusServiceFeeBuilder.getConsensusUpdateTopicFee(
-                                    txBody, rbsIncrease, sigUsage);
+            final FeeCalculator.ActivityMetrics metricsCalc = (txBody, sigUsage) ->
+                    ConsensusServiceFeeBuilder.getConsensusUpdateTopicFee(txBody, rbsIncrease, sigUsage);
 
             /* Return the net fee. */
-            return spec.fees()
-                    .forActivityBasedOp(ConsensusUpdateTopic, metricsCalc, txn, numPayerKeys);
+            return spec.fees().forActivityBasedOp(ConsensusUpdateTopic, metricsCalc, txn, numPayerKeys);
         }
     }
 

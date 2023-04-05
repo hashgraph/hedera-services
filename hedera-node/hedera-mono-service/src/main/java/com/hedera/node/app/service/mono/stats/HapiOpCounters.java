@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stats;
 
 import static com.hedera.node.app.service.mono.stats.ServicesStatsConfig.COUNTER_ANSWERED_DESC_TPL;
@@ -41,34 +42,30 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
+@Singleton
 public class HapiOpCounters {
-    static Supplier<HederaFunctionality[]> allFunctions =
-            HederaFunctionality.class::getEnumConstants;
+    static Supplier<HederaFunctionality[]> allFunctions = HederaFunctionality.class::getEnumConstants;
     private final MiscRunningAvgs runningAvgs;
     private final TransactionContext txnCtx;
     private final Function<HederaFunctionality, String> statNameFn;
 
-    private final EnumMap<HederaFunctionality, Counter> receivedOps =
-            new EnumMap<>(HederaFunctionality.class);
-    private final EnumMap<HederaFunctionality, Counter> handledTxns =
-            new EnumMap<>(HederaFunctionality.class);
-    private final EnumMap<HederaFunctionality, Counter> submittedTxns =
-            new EnumMap<>(HederaFunctionality.class);
-    private final EnumMap<HederaFunctionality, Counter> answeredQueries =
-            new EnumMap<>(HederaFunctionality.class);
+    private final EnumMap<HederaFunctionality, Counter> receivedOps = new EnumMap<>(HederaFunctionality.class);
+    private final EnumMap<HederaFunctionality, Counter> handledTxns = new EnumMap<>(HederaFunctionality.class);
+    private final EnumMap<HederaFunctionality, Counter> submittedTxns = new EnumMap<>(HederaFunctionality.class);
+    private final EnumMap<HederaFunctionality, Counter> answeredQueries = new EnumMap<>(HederaFunctionality.class);
     private Counter deprecatedTxns;
 
-    private EnumMap<HederaFunctionality, Counter.Config> receivedOpsConfig =
-            new EnumMap<>(HederaFunctionality.class);
-    private EnumMap<HederaFunctionality, Counter.Config> handledTxnsConfig =
-            new EnumMap<>(HederaFunctionality.class);
-    private EnumMap<HederaFunctionality, Counter.Config> submittedTxnsConfig =
-            new EnumMap<>(HederaFunctionality.class);
+    private EnumMap<HederaFunctionality, Counter.Config> receivedOpsConfig = new EnumMap<>(HederaFunctionality.class);
+    private EnumMap<HederaFunctionality, Counter.Config> handledTxnsConfig = new EnumMap<>(HederaFunctionality.class);
+    private EnumMap<HederaFunctionality, Counter.Config> submittedTxnsConfig = new EnumMap<>(HederaFunctionality.class);
     private EnumMap<HederaFunctionality, Counter.Config> answeredQueriesConfig =
             new EnumMap<>(HederaFunctionality.class);
     private Counter.Config deprecatedTxnsConfig;
 
+    @Inject
     public HapiOpCounters(
             final MiscRunningAvgs runningAvgs,
             final TransactionContext txnCtx,
@@ -79,39 +76,24 @@ public class HapiOpCounters {
 
         Arrays.stream(allFunctions.get())
                 .filter(function -> !IGNORED_FUNCTIONS.contains(function))
-                .forEach(
-                        function -> {
-                            receivedOpsConfig.put(
-                                    function,
-                                    counterConfigFor(
-                                            function,
-                                            COUNTER_RECEIVED_NAME_TPL,
-                                            COUNTER_RECEIVED_DESC_TPL));
-                            if (QUERY_FUNCTIONS.contains(function)) {
-                                answeredQueriesConfig.put(
-                                        function,
-                                        counterConfigFor(
-                                                function,
-                                                COUNTER_ANSWERED_NAME_TPL,
-                                                COUNTER_ANSWERED_DESC_TPL));
-                            } else {
-                                submittedTxnsConfig.put(
-                                        function,
-                                        counterConfigFor(
-                                                function,
-                                                COUNTER_SUBMITTED_NAME_TPL,
-                                                COUNTER_SUBMITTED_DESC_TPL));
-                                handledTxnsConfig.put(
-                                        function,
-                                        counterConfigFor(
-                                                function,
-                                                COUNTER_HANDLED_NAME_TPL,
-                                                COUNTER_HANDLED_DESC_TPL));
-                            }
-                        });
-        deprecatedTxnsConfig =
-                new Config(STAT_CATEGORY, COUNTER_DEPRECATED_TXNS_NAME)
-                        .withDescription(COUNTER_RECEIVED_DEPRECATED_DESC);
+                .forEach(function -> {
+                    receivedOpsConfig.put(
+                            function, counterConfigFor(function, COUNTER_RECEIVED_NAME_TPL, COUNTER_RECEIVED_DESC_TPL));
+                    if (QUERY_FUNCTIONS.contains(function)) {
+                        answeredQueriesConfig.put(
+                                function,
+                                counterConfigFor(function, COUNTER_ANSWERED_NAME_TPL, COUNTER_ANSWERED_DESC_TPL));
+                    } else {
+                        submittedTxnsConfig.put(
+                                function,
+                                counterConfigFor(function, COUNTER_SUBMITTED_NAME_TPL, COUNTER_SUBMITTED_DESC_TPL));
+                        handledTxnsConfig.put(
+                                function,
+                                counterConfigFor(function, COUNTER_HANDLED_NAME_TPL, COUNTER_HANDLED_DESC_TPL));
+                    }
+                });
+        deprecatedTxnsConfig = new Config(STAT_CATEGORY, COUNTER_DEPRECATED_TXNS_NAME)
+                .withDescription(COUNTER_RECEIVED_DEPRECATED_DESC);
     }
 
     private Counter.Config counterConfigFor(
@@ -139,9 +121,8 @@ public class HapiOpCounters {
             final Platform platform,
             final Map<HederaFunctionality, Counter> counters,
             final Map<HederaFunctionality, Counter.Config> configs) {
-        configs.forEach(
-                (function, config) ->
-                        counters.put(function, platform.getMetrics().getOrCreate(config)));
+        configs.forEach((function, config) ->
+                counters.put(function, platform.getMetrics().getOrCreate(config)));
     }
 
     public void countReceived(final HederaFunctionality op) {
@@ -177,11 +158,12 @@ public class HapiOpCounters {
     }
 
     public long answeredSoFar(final HederaFunctionality query) {
-        return IGNORED_FUNCTIONS.contains(query) ? 0 : answeredQueries.get(query).get();
+        return IGNORED_FUNCTIONS.contains(query)
+                ? 0
+                : answeredQueries.get(query).get();
     }
 
-    private void safeIncrement(
-            final Map<HederaFunctionality, Counter> counters, final HederaFunctionality function) {
+    private void safeIncrement(final Map<HederaFunctionality, Counter> counters, final HederaFunctionality function) {
         if (!IGNORED_FUNCTIONS.contains(function)) {
             counters.get(function).increment();
         }

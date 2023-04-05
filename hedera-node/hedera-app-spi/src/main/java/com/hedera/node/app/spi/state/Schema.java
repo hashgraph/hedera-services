@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,10 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.state;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.spi.SemanticVersionComparator;
-import com.hederahashgraph.api.proto.java.SemanticVersion;
+import com.hedera.pbj.runtime.Codec;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.Objects;
@@ -59,8 +61,8 @@ public abstract class Schema implements Comparable<Schema> {
      * a {@link StateDefinition} specifying the metadata for that state.
      *
      * <p>If a state is defined in this set that already exists, it will be redefined based on the
-     * returned values. This can be used if a state exists but needs to use a new {@link Serdes},
-     * for example.
+     * returned values. This can be used if a state exists but needs to use a new {@link Codec}, for
+     * example.
      *
      * @return A map of all states to be created. Possibly empty.
      */

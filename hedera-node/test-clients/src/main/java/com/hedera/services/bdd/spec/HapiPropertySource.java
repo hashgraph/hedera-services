@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec;
 
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
@@ -43,6 +44,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 public interface HapiPropertySource {
+
+    String ENTITY_STRING = "%d.%d.%d";
+
     String get(String property);
 
     boolean has(String property);
@@ -52,15 +56,12 @@ public interface HapiPropertySource {
             return sources[0];
         } else {
             HapiPropertySource overrides = sources[0];
-            HapiPropertySource defaults =
-                    inPriorityOrder(Arrays.copyOfRange(sources, 1, sources.length));
+            HapiPropertySource defaults = inPriorityOrder(Arrays.copyOfRange(sources, 1, sources.length));
 
             return new HapiPropertySource() {
                 @Override
                 public String get(String property) {
-                    return overrides.has(property)
-                            ? overrides.get(property)
-                            : defaults.get(property);
+                    return overrides.has(property) ? overrides.get(property) : defaults.get(property);
                 }
 
                 @Override
@@ -165,13 +166,9 @@ public interface HapiPropertySource {
 
     static HapiPropertySource[] asSources(Object... sources) {
         return Stream.of(sources)
-                .map(
-                        s ->
-                                (s instanceof HapiPropertySource)
-                                        ? s
-                                        : ((s instanceof Map)
-                                                ? new MapPropertySource((Map) s)
-                                                : new JutilPropertySource((String) s)))
+                .map(s -> (s instanceof HapiPropertySource)
+                        ? s
+                        : ((s instanceof Map) ? new MapPropertySource((Map) s) : new JutilPropertySource((String) s)))
                 .toArray(n -> new HapiPropertySource[n]);
     }
 
@@ -185,8 +182,7 @@ public interface HapiPropertySource {
     }
 
     static String asTokenString(TokenID token) {
-        return String.format(
-                "%d.%d.%d", token.getShardNum(), token.getRealmNum(), token.getTokenNum());
+        return String.format(ENTITY_STRING, token.getShardNum(), token.getRealmNum(), token.getTokenNum());
     }
 
     static AccountID asAccount(String v) {
@@ -203,8 +199,7 @@ public interface HapiPropertySource {
     }
 
     static String asAccountString(AccountID account) {
-        return String.format(
-                "%d.%d.%d", account.getShardNum(), account.getRealmNum(), account.getAccountNum());
+        return String.format(ENTITY_STRING, account.getShardNum(), account.getRealmNum(), account.getAccountNum());
     }
 
     static String asAliasableAccountString(final AccountID account) {
@@ -212,8 +207,7 @@ public interface HapiPropertySource {
             return asAccountString(account);
         } else {
             final var literalAlias = account.getAlias().toString();
-            return String.format(
-                    "%d.%d.%s", account.getShardNum(), account.getRealmNum(), literalAlias);
+            return String.format(ENTITY_STRING, account.getShardNum(), account.getRealmNum(), literalAlias);
         }
     }
 
@@ -227,8 +221,7 @@ public interface HapiPropertySource {
     }
 
     static String asTopicString(TopicID topic) {
-        return String.format(
-                "%d.%d.%d", topic.getShardNum(), topic.getRealmNum(), topic.getTopicNum());
+        return String.format(ENTITY_STRING, topic.getShardNum(), topic.getRealmNum(), topic.getTopicNum());
     }
 
     static ContractID asContract(String v) {
@@ -241,9 +234,7 @@ public interface HapiPropertySource {
     }
 
     static String asContractString(ContractID contract) {
-        return String.format(
-                "%d.%d.%d",
-                contract.getShardNum(), contract.getRealmNum(), contract.getContractNum());
+        return String.format(ENTITY_STRING, contract.getShardNum(), contract.getRealmNum(), contract.getContractNum());
     }
 
     static ScheduleID asSchedule(String v) {
@@ -256,9 +247,7 @@ public interface HapiPropertySource {
     }
 
     static String asScheduleString(ScheduleID schedule) {
-        return String.format(
-                "%d.%d.%d",
-                schedule.getShardNum(), schedule.getRealmNum(), schedule.getScheduleNum());
+        return String.format(ENTITY_STRING, schedule.getShardNum(), schedule.getRealmNum(), schedule.getScheduleNum());
     }
 
     static SemanticVersion asSemVer(String v) {
@@ -280,7 +269,7 @@ public interface HapiPropertySource {
     }
 
     static String asFileString(FileID file) {
-        return String.format("%d.%d.%d", file.getShardNum(), file.getRealmNum(), file.getFileNum());
+        return String.format(ENTITY_STRING, file.getShardNum(), file.getRealmNum(), file.getFileNum());
     }
 
     static long[] asDotDelimitedLongArray(String s) {
@@ -289,22 +278,17 @@ public interface HapiPropertySource {
     }
 
     static byte[] asSolidityAddress(final AccountID accountId) {
-        return asSolidityAddress(
-                (int) accountId.getShardNum(), accountId.getRealmNum(), accountId.getAccountNum());
+        return asSolidityAddress((int) accountId.getShardNum(), accountId.getRealmNum(), accountId.getAccountNum());
     }
 
     static Address idAsHeadlongAddress(final AccountID accountId) {
         return asHeadlongAddress(
-                asSolidityAddress(
-                        (int) accountId.getShardNum(),
-                        accountId.getRealmNum(),
-                        accountId.getAccountNum()));
+                asSolidityAddress((int) accountId.getShardNum(), accountId.getRealmNum(), accountId.getAccountNum()));
     }
 
     static Address idAsHeadlongAddress(final TokenID tokenId) {
         return asHeadlongAddress(
-                asSolidityAddress(
-                        (int) tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum()));
+                asSolidityAddress((int) tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum()));
     }
 
     static String asHexedSolidityAddress(final AccountID accountId) {
@@ -320,15 +304,11 @@ public interface HapiPropertySource {
     }
 
     static byte[] asSolidityAddress(final ContractID contractId) {
-        return asSolidityAddress(
-                (int) contractId.getShardNum(),
-                contractId.getRealmNum(),
-                contractId.getContractNum());
+        return asSolidityAddress((int) contractId.getShardNum(), contractId.getRealmNum(), contractId.getContractNum());
     }
 
     static byte[] asSolidityAddress(final TokenID tokenId) {
-        return asSolidityAddress(
-                (int) tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum());
+        return asSolidityAddress((int) tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum());
     }
 
     static byte[] asSolidityAddress(final int shard, final long realm, final long num) {
@@ -347,26 +327,19 @@ public interface HapiPropertySource {
 
     static ContractID contractIdFromHexedMirrorAddress(final String hexedEvm) {
         return ContractID.newBuilder()
-                .setContractNum(
-                        Longs.fromByteArray(
-                                Arrays.copyOfRange(CommonUtils.unhex(hexedEvm), 12, 20)))
+                .setContractNum(Longs.fromByteArray(Arrays.copyOfRange(CommonUtils.unhex(hexedEvm), 12, 20)))
                 .build();
     }
 
     static AccountID accountIdFromHexedMirrorAddress(final String hexedEvm) {
         return AccountID.newBuilder()
-                .setAccountNum(
-                        Longs.fromByteArray(
-                                Arrays.copyOfRange(CommonUtils.unhex(hexedEvm), 12, 20)))
+                .setAccountNum(Longs.fromByteArray(Arrays.copyOfRange(CommonUtils.unhex(hexedEvm), 12, 20)))
                 .build();
     }
 
     static String literalIdFromHexedMirrorAddress(final String hexedEvm) {
-        return HapiPropertySource.asContractString(
-                ContractID.newBuilder()
-                        .setContractNum(
-                                Longs.fromByteArray(
-                                        Arrays.copyOfRange(CommonUtils.unhex(hexedEvm), 12, 20)))
-                        .build());
+        return HapiPropertySource.asContractString(ContractID.newBuilder()
+                .setContractNum(Longs.fromByteArray(Arrays.copyOfRange(CommonUtils.unhex(hexedEvm), 12, 20)))
+                .build());
     }
 }

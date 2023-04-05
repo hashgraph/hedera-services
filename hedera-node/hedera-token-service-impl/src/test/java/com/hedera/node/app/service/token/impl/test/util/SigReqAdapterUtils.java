@@ -13,8 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.test.util;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.mockStates;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_IMMUTABLE;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_NO_SPECIAL_KEYS;
@@ -26,6 +29,7 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKE
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_SUPPLY;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_WIPE;
 
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
@@ -33,7 +37,6 @@ import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.StateKeyAdapter;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,8 +48,7 @@ public class SigReqAdapterUtils {
     /**
      * Returns the {@link ReadableTokenStore} containing the "well-known" tokens that exist in a
      * {@code SigRequirementsTest} scenario. This allows us to re-use these scenarios in unit tests
-     * of {@link com.hedera.node.app.spi.PreTransactionHandler} implementations that require a
-     * {@link ReadableTokenStore}.
+     * that require a {@link ReadableTokenStore}.
      *
      * @return the well-known token store
      */
@@ -54,37 +56,35 @@ public class SigReqAdapterUtils {
         final var source = sigReqsMockTokenStore();
         final Map<EntityNum, MerkleToken> destination = new HashMap<>();
         List.of(
-                        KNOWN_TOKEN_IMMUTABLE,
-                        KNOWN_TOKEN_NO_SPECIAL_KEYS,
-                        KNOWN_TOKEN_WITH_PAUSE,
-                        KNOWN_TOKEN_WITH_FREEZE,
-                        KNOWN_TOKEN_WITH_KYC,
-                        KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY,
-                        KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK,
-                        KNOWN_TOKEN_WITH_SUPPLY,
-                        KNOWN_TOKEN_WITH_WIPE)
-                .forEach(id -> destination.put(EntityNum.fromTokenId(id), source.get(id)));
+                        toPbj(KNOWN_TOKEN_IMMUTABLE),
+                        toPbj(KNOWN_TOKEN_NO_SPECIAL_KEYS),
+                        toPbj(KNOWN_TOKEN_WITH_PAUSE),
+                        toPbj(KNOWN_TOKEN_WITH_FREEZE),
+                        toPbj(KNOWN_TOKEN_WITH_KYC),
+                        toPbj(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY),
+                        toPbj(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK),
+                        toPbj(KNOWN_TOKEN_WITH_SUPPLY),
+                        toPbj(KNOWN_TOKEN_WITH_WIPE))
+                .forEach(id -> destination.put(EntityNum.fromLong(id.tokenNum()), source.get(fromPbj(id))));
         final var wrappedState = new MapReadableKVState<>("TOKENS", destination);
         final var state = new StateKeyAdapter<>(wrappedState, EntityNum::fromLong);
         return new ReadableTokenStore(mockStates(Map.of(TOKENS_KEY, state)));
     }
 
     @SuppressWarnings("java:S1604")
-    private static com.hedera.node.app.service.mono.store.tokens.TokenStore
-            sigReqsMockTokenStore() {
-        final var dummyScenario =
-                new TxnHandlingScenario() {
-                    @Override
-                    public PlatformTxnAccessor platformTxn() {
-                        throw new NotImplementedException();
-                    }
-                };
+    private static com.hedera.node.app.service.mono.store.tokens.TokenStore sigReqsMockTokenStore() {
+        final var dummyScenario = new TxnHandlingScenario() {
+            @Override
+            public PlatformTxnAccessor platformTxn() {
+                throw new NotImplementedException();
+            }
+        };
         return dummyScenario.tokenStore();
     }
 
     public static TransactionBody txnFrom(final TxnHandlingScenario scenario) {
         try {
-            return scenario.platformTxn().getTxn();
+            return toPbj(scenario.platformTxn().getTxn());
         } catch (final Throwable e) {
             throw new RuntimeException(e);
         }

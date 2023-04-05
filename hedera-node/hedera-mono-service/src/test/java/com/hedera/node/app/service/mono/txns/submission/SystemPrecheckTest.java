@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.submission;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
@@ -44,38 +45,29 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class SystemPrecheckTest {
     private final AccountID systemPayer = IdUtils.asAccount("0.0.50");
     private final AccountID civilianPayer = IdUtils.asAccount("0.0.1234");
-    private final SignedTxnAccessor civilianXferAccessor =
-            SignedTxnAccessor.uncheckedFrom(
-                    Transaction.newBuilder()
-                            .setBodyBytes(
-                                    TransactionBody.newBuilder()
-                                            .setTransactionID(
-                                                    TransactionID.newBuilder()
-                                                            .setAccountID(civilianPayer))
-                                            .setCryptoTransfer(
-                                                    CryptoTransferTransactionBody
-                                                            .getDefaultInstance())
-                                            .build()
-                                            .toByteString())
-                            .build());
-    private final SignedTxnAccessor systemXferAccessor =
-            SignedTxnAccessor.uncheckedFrom(
-                    Transaction.newBuilder()
-                            .setBodyBytes(
-                                    TransactionBody.newBuilder()
-                                            .setTransactionID(
-                                                    TransactionID.newBuilder()
-                                                            .setAccountID(systemPayer))
-                                            .setCryptoTransfer(
-                                                    CryptoTransferTransactionBody
-                                                            .getDefaultInstance())
-                                            .build()
-                                            .toByteString())
-                            .build());
+    private final SignedTxnAccessor civilianXferAccessor = SignedTxnAccessor.uncheckedFrom(Transaction.newBuilder()
+            .setBodyBytes(TransactionBody.newBuilder()
+                    .setTransactionID(TransactionID.newBuilder().setAccountID(civilianPayer))
+                    .setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
+                    .build()
+                    .toByteString())
+            .build());
+    private final SignedTxnAccessor systemXferAccessor = SignedTxnAccessor.uncheckedFrom(Transaction.newBuilder()
+            .setBodyBytes(TransactionBody.newBuilder()
+                    .setTransactionID(TransactionID.newBuilder().setAccountID(systemPayer))
+                    .setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
+                    .build()
+                    .toByteString())
+            .build());
 
-    @Mock private SystemOpPolicies systemOpPolicies;
-    @Mock private HapiOpPermissions hapiOpPermissions;
-    @Mock private TransactionThrottling txnThrottling;
+    @Mock
+    private SystemOpPolicies systemOpPolicies;
+
+    @Mock
+    private HapiOpPermissions hapiOpPermissions;
+
+    @Mock
+    private TransactionThrottling txnThrottling;
 
     private SystemPrecheck subject;
 
@@ -86,8 +78,7 @@ class SystemPrecheckTest {
 
     @Test
     void rejectsUnsupportedOp() {
-        given(hapiOpPermissions.permissibilityOf(CryptoTransfer, civilianPayer))
-                .willReturn(NOT_SUPPORTED);
+        given(hapiOpPermissions.permissibilityOf(CryptoTransfer, civilianPayer)).willReturn(NOT_SUPPORTED);
 
         // when:
         var actual = subject.screen(civilianXferAccessor);
@@ -99,8 +90,7 @@ class SystemPrecheckTest {
     @Test
     void rejectsUnprivilegedPayer() {
         givenPermissible(civilianPayer);
-        given(systemOpPolicies.checkAccessor(civilianXferAccessor))
-                .willReturn(SystemOpAuthorization.IMPERMISSIBLE);
+        given(systemOpPolicies.checkAccessor(civilianXferAccessor)).willReturn(SystemOpAuthorization.IMPERMISSIBLE);
 
         // when:
         var actual = subject.screen(civilianXferAccessor);

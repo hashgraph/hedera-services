@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.perf;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -58,6 +59,7 @@ import org.apache.logging.log4j.Logger;
 public class QueryOnlyLoadTest extends LoadTest {
     private static final Logger log = LogManager.getLogger(QueryOnlyLoadTest.class);
     private static final Random r = new Random();
+    private static final String ACCOUNT_PATTERN = "0.0.%d";
 
     private static int startingScheduleNum = 0;
     private static int startingTokenNum = 0;
@@ -77,27 +79,21 @@ public class QueryOnlyLoadTest extends LoadTest {
     private HapiSpec runQueryLoadTest() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
 
-        Supplier<HapiSpecOperation[]> mixedQueries =
-                () ->
-                        new HapiSpecOperation[] {
-                            opGetAcctInfo(settings),
-                            opGetTopicInfo(settings),
-                            // TODO: need to generate a new state file for queries of tokens and
-                            // schedule transactions to
-                            //  work satisfactorily
-                            (r.nextInt(100) < 10)
-                                    ? opGetTokenInfo(settings)
-                                    : opGetAcctInfo(settings),
-                            (r.nextInt(100) < 5)
-                                    ? opGetScheduleInfo(settings)
-                                    : opGetTopicInfo(settings)
+        Supplier<HapiSpecOperation[]> mixedQueries = () -> new HapiSpecOperation[] {
+            opGetAcctInfo(settings),
+            opGetTopicInfo(settings),
+            // TODO: need to generate a new state file for queries of tokens and
+            // schedule transactions to
+            //  work satisfactorily
+            (r.nextInt(100) < 10) ? opGetTokenInfo(settings) : opGetAcctInfo(settings),
+            (r.nextInt(100) < 5) ? opGetScheduleInfo(settings) : opGetTopicInfo(settings)
 
-                            // These statement are commented out for now.They may be enabled later
-                            // when we decide
-                            // how to enable and combine all types of queries in the perf test.
-                            // opGetAcctBalance(settings),
-                            // opGetAcctRecords(settings)
-                        };
+            // These statement are commented out for now.They may be enabled later
+            // when we decide
+            // how to enable and combine all types of queries in the perf test.
+            // opGetAcctBalance(settings),
+            // opGetAcctRecords(settings)
+        };
 
         return defaultHapiSpec("runQueryLoadTest")
                 .given(
@@ -109,32 +105,21 @@ public class QueryOnlyLoadTest extends LoadTest {
     }
 
     private static HapiSpecOperation opGetAcctBalance(PerfTestLoadSettings settings) {
-        String acctToQuery =
-                String.format(
-                        "0.0.%d",
-                        settings.getTestTreasureStartAccount()
-                                + r.nextInt(settings.getTotalAccounts()));
+        String acctToQuery = String.format(
+                ACCOUNT_PATTERN, settings.getTestTreasureStartAccount() + r.nextInt(settings.getTotalAccounts()));
 
         return QueryVerbs.getAccountBalance(acctToQuery)
                 .payingWith(GENESIS)
                 .fee(ONE_HUNDRED_HBARS)
                 .noLogging()
-                .hasAnswerOnlyPrecheckFrom(
-                        DUPLICATE_TRANSACTION, OK, PLATFORM_TRANSACTION_NOT_CREATED)
+                .hasAnswerOnlyPrecheckFrom(DUPLICATE_TRANSACTION, OK, PLATFORM_TRANSACTION_NOT_CREATED)
                 .hasCostAnswerPrecheckFrom(
-                        OK,
-                        INSUFFICIENT_PAYER_BALANCE,
-                        INVALID_ACCOUNT_ID,
-                        ACCOUNT_DELETED,
-                        ACCOUNT_ID_DOES_NOT_EXIST);
+                        OK, INSUFFICIENT_PAYER_BALANCE, INVALID_ACCOUNT_ID, ACCOUNT_DELETED, ACCOUNT_ID_DOES_NOT_EXIST);
     }
 
     private static HapiSpecOperation opGetAcctRecords(PerfTestLoadSettings settings) {
-        String acctRecordsQuery =
-                String.format(
-                        "0.0.%d",
-                        settings.getTestTreasureStartAccount()
-                                + r.nextInt(settings.getTotalAccounts()));
+        String acctRecordsQuery = String.format(
+                ACCOUNT_PATTERN, settings.getTestTreasureStartAccount() + r.nextInt(settings.getTotalAccounts()));
 
         return QueryVerbs.getAccountRecords(acctRecordsQuery)
                 .payingWith(GENESIS)
@@ -143,19 +128,12 @@ public class QueryOnlyLoadTest extends LoadTest {
                 .noLogging()
                 .hasAnswerOnlyPrecheckFrom(DUPLICATE_TRANSACTION, OK)
                 .hasCostAnswerPrecheckFrom(
-                        OK,
-                        INSUFFICIENT_PAYER_BALANCE,
-                        INVALID_ACCOUNT_ID,
-                        ACCOUNT_DELETED,
-                        ACCOUNT_ID_DOES_NOT_EXIST);
+                        OK, INSUFFICIENT_PAYER_BALANCE, INVALID_ACCOUNT_ID, ACCOUNT_DELETED, ACCOUNT_ID_DOES_NOT_EXIST);
     }
 
     private static HapiSpecOperation opGetAcctInfo(PerfTestLoadSettings settings) {
-        String acctInfoQuery =
-                String.format(
-                        "0.0.%d",
-                        settings.getTestTreasureStartAccount()
-                                + r.nextInt(settings.getTotalAccounts()));
+        String acctInfoQuery = String.format(
+                ACCOUNT_PATTERN, settings.getTestTreasureStartAccount() + r.nextInt(settings.getTotalAccounts()));
 
         return QueryVerbs.getAccountInfo(acctInfoQuery)
                 .payingWith(GENESIS)
@@ -163,16 +141,9 @@ public class QueryOnlyLoadTest extends LoadTest {
                 .nodePayment(ONE_HUNDRED_HBARS)
                 .noLogging()
                 .hasAnswerOnlyPrecheckFrom(
-                        DUPLICATE_TRANSACTION,
-                        OK,
-                        PLATFORM_TRANSACTION_NOT_CREATED,
-                        TRANSACTION_EXPIRED)
+                        DUPLICATE_TRANSACTION, OK, PLATFORM_TRANSACTION_NOT_CREATED, TRANSACTION_EXPIRED)
                 .hasCostAnswerPrecheckFrom(
-                        OK,
-                        INSUFFICIENT_PAYER_BALANCE,
-                        INVALID_ACCOUNT_ID,
-                        ACCOUNT_DELETED,
-                        ACCOUNT_ID_DOES_NOT_EXIST);
+                        OK, INSUFFICIENT_PAYER_BALANCE, INVALID_ACCOUNT_ID, ACCOUNT_DELETED, ACCOUNT_ID_DOES_NOT_EXIST);
     }
 
     private static HapiSpecOperation opGetTopicInfo(PerfTestLoadSettings settings) {
@@ -180,8 +151,7 @@ public class QueryOnlyLoadTest extends LoadTest {
             // This and the two assignments should be thread-safe in this context.
             startingTopicNum = settings.getTestTreasureStartAccount() + settings.getTotalAccounts();
         }
-        String topicInfoQuery =
-                String.format("0.0.%d", startingTopicNum + r.nextInt(settings.getTotalTopics()));
+        String topicInfoQuery = String.format(ACCOUNT_PATTERN, startingTopicNum + r.nextInt(settings.getTotalTopics()));
 
         return QueryVerbs.getTopicInfo(topicInfoQuery)
                 .payingWith(GENESIS)
@@ -194,20 +164,16 @@ public class QueryOnlyLoadTest extends LoadTest {
                         INVALID_TOPIC_ID,
                         PLATFORM_TRANSACTION_NOT_CREATED,
                         TRANSACTION_EXPIRED)
-                .hasCostAnswerPrecheckFrom(
-                        OK, INSUFFICIENT_PAYER_BALANCE, INVALID_TOPIC_ID, TOPIC_EXPIRED);
+                .hasCostAnswerPrecheckFrom(OK, INSUFFICIENT_PAYER_BALANCE, INVALID_TOPIC_ID, TOPIC_EXPIRED);
     }
 
     private static HapiSpecOperation opGetTokenInfo(PerfTestLoadSettings settings) {
         if (startingTokenNum == 0) {
             startingTokenNum =
-                    settings.getTestTreasureStartAccount()
-                            + settings.getTotalAccounts()
-                            + settings.getTotalTopics();
+                    settings.getTestTreasureStartAccount() + settings.getTotalAccounts() + settings.getTotalTopics();
         }
 
-        String tokenInfoQuery =
-                String.format("0.0.%d", startingTokenNum + r.nextInt(settings.getTotalTokens()));
+        String tokenInfoQuery = String.format(ACCOUNT_PATTERN, startingTokenNum + r.nextInt(settings.getTotalTokens()));
 
         return QueryVerbs.getTokenInfo(tokenInfoQuery)
                 .payingWith(GENESIS)
@@ -220,22 +186,19 @@ public class QueryOnlyLoadTest extends LoadTest {
                         INVALID_TOKEN_ID,
                         PLATFORM_TRANSACTION_NOT_CREATED,
                         TRANSACTION_EXPIRED)
-                .hasCostAnswerPrecheckFrom(
-                        OK, INSUFFICIENT_PAYER_BALANCE, INVALID_TOKEN_ID, TOKEN_WAS_DELETED);
+                .hasCostAnswerPrecheckFrom(OK, INSUFFICIENT_PAYER_BALANCE, INVALID_TOKEN_ID, TOKEN_WAS_DELETED);
     }
 
     private static HapiSpecOperation opGetScheduleInfo(PerfTestLoadSettings settings) {
         if (startingScheduleNum == 0) {
-            startingScheduleNum =
-                    settings.getTestTreasureStartAccount()
-                            + settings.getTotalAccounts()
-                            + settings.getTotalTopics()
-                            + settings.getTotalTokens()
-                            + settings.getTotalTokenAssociations();
+            startingScheduleNum = settings.getTestTreasureStartAccount()
+                    + settings.getTotalAccounts()
+                    + settings.getTotalTopics()
+                    + settings.getTotalTokens()
+                    + settings.getTotalTokenAssociations();
         }
         String scheduleInfoQuery =
-                String.format(
-                        "0.0.%d", startingScheduleNum + r.nextInt(settings.getTotalScheduled()));
+                String.format(ACCOUNT_PATTERN, startingScheduleNum + r.nextInt(settings.getTotalScheduled()));
 
         return QueryVerbs.getScheduleInfo(scheduleInfoQuery)
                 .payingWith(GENESIS)

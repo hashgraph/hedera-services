@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils;
 
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asEvmAddress;
@@ -59,16 +60,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class EntityIdUtilsTest {
-    @Mock private AliasManager aliasManager;
+    @Mock
+    private AliasManager aliasManager;
 
     @Test
     void echoesUnaliasedContractId() {
         final var literalId = ContractID.newBuilder().setContractNum(1234).build();
 
         assertEquals(EntityNum.fromLong(1234), EntityIdUtils.unaliased(literalId, aliasManager));
-        assertEquals(
-                EntityNum.MISSING_NUM,
-                EntityIdUtils.unaliased(ContractID.getDefaultInstance(), aliasManager));
+        assertEquals(EntityNum.MISSING_NUM, EntityIdUtils.unaliased(ContractID.getDefaultInstance(), aliasManager));
     }
 
     @Test
@@ -76,8 +76,9 @@ class EntityIdUtilsTest {
         final byte[] mockAddr = unhex("0000000000000000000000009abcdefabcdefbbb");
         final var num = Longs.fromByteArray(Arrays.copyOfRange(mockAddr, 12, 20));
         final var expectedId = EntityNum.fromLong(num);
-        final var input =
-                ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(mockAddr)).build();
+        final var input = ContractID.newBuilder()
+                .setEvmAddress(ByteString.copyFrom(mockAddr))
+                .build();
 
         assertEquals(expectedId, EntityIdUtils.unaliased(input, aliasManager));
     }
@@ -93,8 +94,9 @@ class EntityIdUtilsTest {
     void returnsResolvedContractIdIfNonMirro() {
         final byte[] mockAddr = unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb");
         final var extantNum = EntityNum.fromLong(1_234_567L);
-        final var input =
-                ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(mockAddr)).build();
+        final var input = ContractID.newBuilder()
+                .setEvmAddress(ByteString.copyFrom(mockAddr))
+                .build();
         given(aliasManager.lookupIdBy(ByteString.copyFrom(mockAddr))).willReturn(extantNum);
 
         assertEquals(extantNum, EntityIdUtils.unaliased(input, aliasManager));
@@ -105,8 +107,7 @@ class EntityIdUtilsTest {
         final var literalId = AccountID.newBuilder().setAccountNum(1234).build();
 
         assertEquals(EntityNum.fromLong(1234), unaliased(literalId, aliasManager));
-        assertEquals(
-                EntityNum.MISSING_NUM, unaliased(AccountID.getDefaultInstance(), aliasManager));
+        assertEquals(EntityNum.MISSING_NUM, unaliased(AccountID.getDefaultInstance(), aliasManager));
     }
 
     @Test
@@ -114,7 +115,8 @@ class EntityIdUtilsTest {
         final byte[] mockAddr = unhex("0000000000000000000000009abcdefabcdefbbb");
         final var num = Longs.fromByteArray(Arrays.copyOfRange(mockAddr, 12, 20));
         final var expectedId = EntityNum.fromLong(num);
-        final var input = AccountID.newBuilder().setAlias(ByteString.copyFrom(mockAddr)).build();
+        final var input =
+                AccountID.newBuilder().setAlias(ByteString.copyFrom(mockAddr)).build();
 
         assertEquals(expectedId, unaliased(input, aliasManager));
     }
@@ -123,7 +125,8 @@ class EntityIdUtilsTest {
     void returnsResolvedAccountIdIfNonMirro() {
         final byte[] mockAddr = unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb");
         final var extantNum = EntityNum.fromLong(1_234_567L);
-        final var input = AccountID.newBuilder().setAlias(ByteString.copyFrom(mockAddr)).build();
+        final var input =
+                AccountID.newBuilder().setAlias(ByteString.copyFrom(mockAddr)).build();
         given(aliasManager.lookupIdBy(ByteString.copyFrom(mockAddr))).willReturn(extantNum);
 
         assertEquals(extantNum, unaliased(input, aliasManager));
@@ -133,7 +136,8 @@ class EntityIdUtilsTest {
     void observesUnalising() {
         final byte[] mockAddr = unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb");
         final var extantNum = EntityNum.fromLong(1_234_567L);
-        final var input = AccountID.newBuilder().setAlias(ByteString.copyFrom(mockAddr)).build();
+        final var input =
+                AccountID.newBuilder().setAlias(ByteString.copyFrom(mockAddr)).build();
         given(aliasManager.lookupIdBy(ByteString.copyFrom(mockAddr))).willReturn(extantNum);
 
         AtomicReference<ByteString> observer = new AtomicReference<>();
@@ -164,9 +168,9 @@ class EntityIdUtilsTest {
         };
         final var num = Longs.fromByteArray(numBytes);
         final byte[] expected = {
-            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xAB,
-            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xCD,
-            (byte) 0xFE, (byte) 0x00, (byte) 0x00, (byte) 0xFE,
+            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00,
+            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00,
+            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00,
             (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xDE,
             (byte) 0xBA, (byte) 0x00, (byte) 0x00, (byte) 0xBA
         };
@@ -174,12 +178,11 @@ class EntityIdUtilsTest {
         final var equivAccount = asAccount(String.format("%d.%d.%d", shard, realm, num));
         final var equivContract = asContract(String.format("%d.%d.%d", shard, realm, num));
         final var equivToken = asToken(String.format("%d.%d.%d", shard, realm, num));
-        final var create2Contract =
-                ContractID.newBuilder()
-                        .setEvmAddress(ByteString.copyFrom(create2AddressBytes))
-                        .build();
+        final var create2Contract = ContractID.newBuilder()
+                .setEvmAddress(ByteString.copyFrom(create2AddressBytes))
+                .build();
 
-        final var actual = asEvmAddress(shard, realm, num);
+        final var actual = asEvmAddress(num);
         final var typedActual = EntityIdUtils.asTypedEvmAddress(equivAccount);
         final var typedToken = EntityIdUtils.asTypedEvmAddress(equivToken);
         final var anotherActual = EntityIdUtils.asEvmAddress(equivContract);
@@ -192,9 +195,9 @@ class EntityIdUtilsTest {
         assertArrayEquals(expected, typedToken.toArray());
         assertArrayEquals(create2AddressBytes, create2Actual);
         assertEquals(CommonUtils.hex(expected), actualHex);
-        assertEquals(equivAccount, EntityIdUtils.accountIdFromEvmAddress(actual));
-        assertEquals(equivContract, contractIdFromEvmAddress(actual));
-        assertEquals(equivToken, tokenIdFromEvmAddress(actual));
+        assertEquals(asAccount(String.format("%d.%d.%d", 0, 0, num)), EntityIdUtils.accountIdFromEvmAddress(actual));
+        assertEquals(asContract(String.format("%d.%d.%d", 0, 0, num)), contractIdFromEvmAddress(actual));
+        assertEquals(asToken(String.format("%d.%d.%d", 0, 0, num)), tokenIdFromEvmAddress(actual));
     }
 
     @ParameterizedTest
@@ -226,8 +229,11 @@ class EntityIdUtilsTest {
 
     @Test
     void prettyPrintsScheduleIds() {
-        final var id =
-                ScheduleID.newBuilder().setShardNum(1).setRealmNum(2).setScheduleNum(3).build();
+        final var id = ScheduleID.newBuilder()
+                .setShardNum(1)
+                .setRealmNum(2)
+                .setScheduleNum(3)
+                .build();
 
         assertEquals("1.2.3", EntityIdUtils.readableId(id));
     }
@@ -236,60 +242,76 @@ class EntityIdUtilsTest {
     void asSolidityAddressHexWorksProperly() {
         final var id = new Id(1, 2, 3);
 
-        assertEquals(
-                "0000000100000000000000020000000000000003", EntityIdUtils.asHexedEvmAddress(id));
+        assertEquals("0000000000000000000000000000000000000003", EntityIdUtils.asHexedEvmAddress(id));
     }
 
     @Test
     void asSolidityAddressBytesWorksProperly() {
-        final var id =
-                AccountID.newBuilder().setShardNum(1).setRealmNum(2).setAccountNum(3).build();
+        final var id = AccountID.newBuilder()
+                .setShardNum(1)
+                .setRealmNum(2)
+                .setAccountNum(3)
+                .build();
 
         final var result = EntityIdUtils.asEvmAddress(id);
 
-        final var expectedBytes =
-                new byte[] {0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 3};
+        final var expectedBytes = new byte[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3};
 
         assertArrayEquals(expectedBytes, result);
     }
 
     @Test
     void asSolidityAddressBytesFromToken() {
-        final var id = TokenID.newBuilder().setShardNum(1).setRealmNum(2).setTokenNum(3).build();
+        final var id = TokenID.newBuilder()
+                .setShardNum(1)
+                .setRealmNum(2)
+                .setTokenNum(3)
+                .build();
 
         final var result = EntityIdUtils.asEvmAddress(id);
 
-        final var expectedBytes =
-                new byte[] {0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 3};
+        final var expectedBytes = new byte[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3};
 
         assertArrayEquals(expectedBytes, result);
     }
 
     @Test
     void prettyPrintsTokenIds() {
-        final var id = TokenID.newBuilder().setShardNum(1).setRealmNum(2).setTokenNum(3).build();
+        final var id = TokenID.newBuilder()
+                .setShardNum(1)
+                .setRealmNum(2)
+                .setTokenNum(3)
+                .build();
 
         assertEquals("1.2.3", EntityIdUtils.readableId(id));
     }
 
     @Test
     void prettyPrintsTopicIds() {
-        final var id = TopicID.newBuilder().setShardNum(1).setRealmNum(2).setTopicNum(3).build();
+        final var id = TopicID.newBuilder()
+                .setShardNum(1)
+                .setRealmNum(2)
+                .setTopicNum(3)
+                .build();
 
         assertEquals("1.2.3", EntityIdUtils.readableId(id));
     }
 
     @Test
     void prettyPrintsAccountIds() {
-        final var id =
-                AccountID.newBuilder().setShardNum(1).setRealmNum(2).setAccountNum(3).build();
+        final var id = AccountID.newBuilder()
+                .setShardNum(1)
+                .setRealmNum(2)
+                .setAccountNum(3)
+                .build();
 
         assertEquals("1.2.3", EntityIdUtils.readableId(id));
     }
 
     @Test
     void prettyPrintsFileIds() {
-        final var id = FileID.newBuilder().setShardNum(1).setRealmNum(2).setFileNum(3).build();
+        final var id =
+                FileID.newBuilder().setShardNum(1).setRealmNum(2).setFileNum(3).build();
 
         assertEquals("1.2.3", EntityIdUtils.readableId(id));
     }
@@ -311,10 +333,16 @@ class EntityIdUtilsTest {
 
     @Test
     void asContractWorks() {
-        final var expected =
-                ContractID.newBuilder().setShardNum(1).setRealmNum(2).setContractNum(3).build();
-        final var id =
-                AccountID.newBuilder().setShardNum(1).setRealmNum(2).setAccountNum(3).build();
+        final var expected = ContractID.newBuilder()
+                .setShardNum(1)
+                .setRealmNum(2)
+                .setContractNum(3)
+                .build();
+        final var id = AccountID.newBuilder()
+                .setShardNum(1)
+                .setRealmNum(2)
+                .setAccountNum(3)
+                .build();
 
         final var cid = EntityIdUtils.asContract(id);
 
@@ -323,10 +351,16 @@ class EntityIdUtilsTest {
 
     @Test
     void asAccountFromContractWorks() {
-        final var expected =
-                AccountID.newBuilder().setShardNum(1).setRealmNum(2).setAccountNum(3).build();
-        final var id =
-                ContractID.newBuilder().setShardNum(1).setRealmNum(2).setContractNum(3).build();
+        final var expected = AccountID.newBuilder()
+                .setShardNum(1)
+                .setRealmNum(2)
+                .setAccountNum(3)
+                .build();
+        final var id = ContractID.newBuilder()
+                .setShardNum(1)
+                .setRealmNum(2)
+                .setContractNum(3)
+                .build();
 
         final var aid = EntityIdUtils.asAccount(id);
 
@@ -335,15 +369,16 @@ class EntityIdUtilsTest {
 
     @Test
     void asAccountFromEntityWorks() {
-        final var expected =
-                AccountID.newBuilder().setShardNum(1).setRealmNum(2).setAccountNum(3).build();
-        final var id =
-                EntityId.fromGrpcAccountId(
-                        AccountID.newBuilder()
-                                .setShardNum(1)
-                                .setRealmNum(2)
-                                .setAccountNum(3)
-                                .build());
+        final var expected = AccountID.newBuilder()
+                .setShardNum(1)
+                .setRealmNum(2)
+                .setAccountNum(3)
+                .build();
+        final var id = EntityId.fromGrpcAccountId(AccountID.newBuilder()
+                .setShardNum(1)
+                .setRealmNum(2)
+                .setAccountNum(3)
+                .build());
 
         final var aid = EntityIdUtils.asAccount(id);
 
@@ -354,8 +389,11 @@ class EntityIdUtilsTest {
     void asFileWorks() {
         final var expected =
                 FileID.newBuilder().setShardNum(1).setRealmNum(2).setFileNum(3).build();
-        final var id =
-                AccountID.newBuilder().setShardNum(1).setRealmNum(2).setAccountNum(3).build();
+        final var id = AccountID.newBuilder()
+                .setShardNum(1)
+                .setRealmNum(2)
+                .setAccountNum(3)
+                .build();
 
         final var fid = EntityIdUtils.asFile(id);
 
@@ -393,8 +431,7 @@ class EntityIdUtilsTest {
         final var serialNo = bigNum + 1;
 
         // given:
-        final var lit =
-                EntityIdUtils.asScopedSerialNoLiteral(BitPackUtils.packedNums(bigNum, serialNo));
+        final var lit = EntityIdUtils.asScopedSerialNoLiteral(BitPackUtils.packedNums(bigNum, serialNo));
 
         // expect:
         assertEquals("0.0." + bigNum + "." + serialNo, lit);
@@ -415,8 +452,7 @@ class EntityIdUtilsTest {
         "-2,Argument literal='-2' is not a valid range literal",
         "123-,Argument literal='123-' is not a valid range literal",
         "456-123,Range left endpoint 456 should be <= right endpoint 123",
-        "12345678901234567890-123,Argument literal='12345678901234567890-123' has malformatted long"
-                + " value"
+        "12345678901234567890-123,Argument literal='12345678901234567890-123' has malformatted long" + " value"
     })
     @ParameterizedTest
     void rejectsInvalidRanges(String literal, String iaeMsg) {

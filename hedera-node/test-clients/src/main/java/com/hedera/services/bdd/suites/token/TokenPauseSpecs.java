@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -69,8 +70,7 @@ import org.apache.logging.log4j.Logger;
 
 public final class TokenPauseSpecs extends HapiSuite {
     private static final Logger LOG = LogManager.getLogger(TokenPauseSpecs.class);
-    public static final String LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION =
-            "ledger.autoRenewPeriod.minDuration";
+    public static final String LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION = "ledger.autoRenewPeriod.minDuration";
     public static final String DEFAULT_MIN_AUTO_RENEW_PERIOD =
             HapiSpecSetup.getDefaultNodeProps().get(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION);
 
@@ -122,19 +122,14 @@ public final class TokenPauseSpecs extends HapiSuite {
                 .when(tokenCreate(PRIMARY), tokenCreate(SECONDARY).adminKey(ADMIN_KEY))
                 .then(
                         tokenUpdate(PRIMARY).pauseKey(PAUSE_KEY).hasKnownStatus(TOKEN_IS_IMMUTABLE),
-                        tokenUpdate(SECONDARY)
-                                .pauseKey(PAUSE_KEY)
-                                .hasKnownStatus(TOKEN_HAS_NO_PAUSE_KEY));
+                        tokenUpdate(SECONDARY).pauseKey(PAUSE_KEY).hasKnownStatus(TOKEN_HAS_NO_PAUSE_KEY));
     }
 
     private HapiSpec cannotPauseWithInvalidPauseKey() {
         return defaultHapiSpec("CannotPauseWithInvlaidPauseKey")
                 .given(newKeyNamed(PAUSE_KEY), newKeyNamed(OTHER_KEY))
                 .when(tokenCreate(PRIMARY).pauseKey(PAUSE_KEY))
-                .then(
-                        tokenPause(PRIMARY)
-                                .signedBy(DEFAULT_PAYER, OTHER_KEY)
-                                .hasKnownStatus(INVALID_SIGNATURE));
+                .then(tokenPause(PRIMARY).signedBy(DEFAULT_PAYER, OTHER_KEY).hasKnownStatus(INVALID_SIGNATURE));
     }
 
     private HapiSpec pausedTokenInCustomFeeCaseStudy() {
@@ -175,11 +170,10 @@ public final class TokenPauseSpecs extends HapiSuite {
                         cryptoTransfer(moving(10, PRIMARY).between(TOKEN_TREASURY, SECOND_USER)),
                         cryptoTransfer(moving(100, SECONDARY).between(TOKEN_TREASURY, SECOND_USER)),
                         tokenPause(PRIMARY))
-                .then(
-                        cryptoTransfer(moving(10, SECONDARY).between(SECOND_USER, THIRD_USER))
-                                .fee(ONE_HBAR)
-                                .payingWith(SECOND_USER)
-                                .hasKnownStatus(TOKEN_IS_PAUSED));
+                .then(cryptoTransfer(moving(10, SECONDARY).between(SECOND_USER, THIRD_USER))
+                        .fee(ONE_HBAR)
+                        .payingWith(SECOND_USER)
+                        .hasKnownStatus(TOKEN_IS_PAUSED));
     }
 
     private HapiSpec unpauseWorks() {
@@ -257,14 +251,11 @@ public final class TokenPauseSpecs extends HapiSuite {
                                 .kycKey(KYC_KEY)
                                 .treasury(TOKEN_TREASURY),
                         tokenAssociate(firstUser, uniqueToken),
-                        mintToken(
-                                uniqueToken,
-                                List.of(metadata("firstMinted"), metadata("SecondMinted"))),
+                        mintToken(uniqueToken, List.of(metadata("firstMinted"), metadata("SecondMinted"))),
                         grantTokenKyc(uniqueToken, firstUser),
                         tokenAssociate(thirdUser, otherToken),
                         grantTokenKyc(otherToken, thirdUser),
-                        cryptoTransfer(
-                                movingUnique(uniqueToken, 1L).between(TOKEN_TREASURY, firstUser)),
+                        cryptoTransfer(movingUnique(uniqueToken, 1L).between(TOKEN_TREASURY, firstUser)),
                         tokenPause(uniqueToken))
                 .then(
                         getTokenInfo(uniqueToken)
@@ -276,13 +267,10 @@ public final class TokenPauseSpecs extends HapiSuite {
                                 .withCustom(fixedHtsFee(1, uniqueToken, firstUser))
                                 .hasKnownStatus(INVALID_TOKEN_ID_IN_CUSTOM_FEES),
                         tokenAssociate(secondUser, uniqueToken).hasKnownStatus(TOKEN_IS_PAUSED),
-                        cryptoTransfer(
-                                        movingUnique(uniqueToken, 2L)
-                                                .between(TOKEN_TREASURY, firstUser))
+                        cryptoTransfer(movingUnique(uniqueToken, 2L).between(TOKEN_TREASURY, firstUser))
                                 .hasKnownStatus(TOKEN_IS_PAUSED),
                         tokenDissociate(firstUser, uniqueToken).hasKnownStatus(TOKEN_IS_PAUSED),
-                        mintToken(uniqueToken, List.of(metadata("thirdMinted")))
-                                .hasKnownStatus(TOKEN_IS_PAUSED),
+                        mintToken(uniqueToken, List.of(metadata("thirdMinted"))).hasKnownStatus(TOKEN_IS_PAUSED),
                         burnToken(uniqueToken, List.of(2L)).hasKnownStatus(TOKEN_IS_PAUSED),
                         tokenFreeze(uniqueToken, firstUser).hasKnownStatus(TOKEN_IS_PAUSED),
                         tokenUnfreeze(uniqueToken, firstUser).hasKnownStatus(TOKEN_IS_PAUSED),
@@ -291,14 +279,12 @@ public final class TokenPauseSpecs extends HapiSuite {
                         tokenFeeScheduleUpdate(uniqueToken)
                                 .withCustom(fixedHbarFee(100, TOKEN_TREASURY))
                                 .hasKnownStatus(TOKEN_IS_PAUSED),
-                        wipeTokenAccount(uniqueToken, firstUser, List.of(1L))
-                                .hasKnownStatus(TOKEN_IS_PAUSED),
+                        wipeTokenAccount(uniqueToken, firstUser, List.of(1L)).hasKnownStatus(TOKEN_IS_PAUSED),
                         tokenUpdate(uniqueToken).name("newName").hasKnownStatus(TOKEN_IS_PAUSED),
                         tokenDelete(uniqueToken).hasKnownStatus(TOKEN_IS_PAUSED),
                         cryptoTransfer(
                                         moving(100, otherToken).between(TOKEN_TREASURY, thirdUser),
-                                        movingUnique(uniqueToken, 2L)
-                                                .between(TOKEN_TREASURY, firstUser))
+                                        movingUnique(uniqueToken, 2L).between(TOKEN_TREASURY, firstUser))
                                 .via("rolledBack")
                                 .hasKnownStatus(TOKEN_IS_PAUSED),
                         getAccountInfo(TOKEN_TREASURY)
@@ -403,12 +389,8 @@ public final class TokenPauseSpecs extends HapiSuite {
                                 .maxSupply(100)
                                 .treasury(TOKEN_TREASURY))
                 .then(
-                        tokenPause(PRIMARY)
-                                .signedBy(GENESIS)
-                                .hasKnownStatus(ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY),
-                        tokenUnpause(PRIMARY)
-                                .signedBy(GENESIS)
-                                .hasKnownStatus(ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY),
+                        tokenPause(PRIMARY).signedBy(GENESIS).hasKnownStatus(ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY),
+                        tokenUnpause(PRIMARY).signedBy(GENESIS).hasKnownStatus(ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY),
                         tokenPause(NON_FUNGIBLE_UNIQUE_PRIMARY)
                                 .signedBy(GENESIS)
                                 .hasKnownStatus(ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY),
@@ -434,23 +416,16 @@ public final class TokenPauseSpecs extends HapiSuite {
                                 .pauseKey(PAUSE_KEY)
                                 .treasury(TOKEN_TREASURY)
                                 .payingWith(civilian),
-                        tokenPause(token)
-                                .blankMemo()
-                                .payingWith(civilian)
-                                .via(tokenPauseTransaction),
+                        tokenPause(token).blankMemo().payingWith(civilian).via(tokenPauseTransaction),
                         getTokenInfo(token).hasPauseStatus(Paused),
-                        tokenUnpause(token)
-                                .blankMemo()
-                                .payingWith(civilian)
-                                .via(tokenUnpauseTransaction),
+                        tokenUnpause(token).blankMemo().payingWith(civilian).via(tokenUnpauseTransaction),
                         getTokenInfo(token).hasPauseStatus(Unpaused))
                 .then(
                         validateChargedUsd(tokenPauseTransaction, expectedBaseFee),
                         validateChargedUsd(tokenUnpauseTransaction, expectedBaseFee));
     }
 
-    public static class TokenIdOrderingAsserts
-            extends BaseErroringAssertsProvider<List<TokenTransferList>> {
+    public static class TokenIdOrderingAsserts extends BaseErroringAssertsProvider<List<TokenTransferList>> {
         private final String[] expectedTokenIds;
 
         public TokenIdOrderingAsserts(final String[] expectedTokenIds) {
@@ -467,8 +442,7 @@ public final class TokenPauseSpecs extends HapiSuite {
             return tokenTransfers -> {
                 final var registry = spec.registry();
                 try {
-                    assertEquals(
-                            expectedTokenIds.length, tokenTransfers.size(), "Wrong # of token ids");
+                    assertEquals(expectedTokenIds.length, tokenTransfers.size(), "Wrong # of token ids");
                     var nextI = 0;
                     for (final var expected : expectedTokenIds) {
                         final var expectedId = registry.getTokenID(expected);

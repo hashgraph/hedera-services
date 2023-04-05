@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,28 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.test.handlers;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
+
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
-import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 
 public class ParityTestBase {
-    protected AccountKeyLookup keyLookup;
+    protected ReadableAccountStore readableAccountStore;
     protected ReadableTokenStore readableTokenStore;
 
     @BeforeEach
     void setUp() {
-        keyLookup = AdapterUtils.wellKnownKeyLookupAt();
+        readableAccountStore = AdapterUtils.wellKnownAccountStoreAt();
         readableTokenStore = SigReqAdapterUtils.wellKnownTokenStoreAt();
     }
 
     protected TransactionBody txnFrom(final TxnHandlingScenario scenario) {
         try {
-            return scenario.platformTxn().getTxn();
+            return toPbj(scenario.platformTxn().getTxn());
         } catch (final Throwable e) {
             throw new RuntimeException(e);
         }

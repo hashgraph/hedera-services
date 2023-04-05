@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files.interceptors;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_THROTTLE_DEFINITIONS;
@@ -60,17 +61,11 @@ public class ThrottleDefsManager implements FileUpdateInterceptor {
     private final Supplier<AddressBook> addressBook;
     private final Consumer<ThrottleDefinitions> postUpdateCb;
 
-    Function<
-                    ThrottleDefinitions,
-                    com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions>
-            toPojo =
-                    com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions
-                            ::fromProto;
+    Function<ThrottleDefinitions, com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions>
+            toPojo = com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions::fromProto;
 
     public ThrottleDefsManager(
-            FileNumbers fileNums,
-            Supplier<AddressBook> addressBook,
-            Consumer<ThrottleDefinitions> postUpdateCb) {
+            FileNumbers fileNums, Supplier<AddressBook> addressBook, Consumer<ThrottleDefinitions> postUpdateCb) {
         this.fileNums = fileNums;
         this.addressBook = addressBook;
         this.postUpdateCb = postUpdateCb;
@@ -107,9 +102,7 @@ public class ThrottleDefsManager implements FileUpdateInterceptor {
             }
         }
 
-        return expectedOps.equals(EnumSet.copyOf(customizedOps))
-                ? YES_VERDICT
-                : YES_BUT_MISSING_OP_VERDICT;
+        return expectedOps.equals(EnumSet.copyOf(customizedOps)) ? YES_VERDICT : YES_BUT_MISSING_OP_VERDICT;
     }
 
     @Override

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.sysfiles.serdes;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -48,37 +49,27 @@ public class FeesJsonToProtoSerde {
     };
 
     private FeesJsonToProtoSerde() {
-        throw new UnsupportedOperationException(
-                "Static utilities class, should not be instantiated");
+        throw new UnsupportedOperationException("Static utilities class, should not be instantiated");
     }
 
     public static CurrentAndNextFeeSchedule loadFeeScheduleFromJson(String jsonResource)
-            throws IOException, InvocationTargetException, NoSuchMethodException,
-                    IllegalAccessException {
-        return buildFrom(
-                om ->
-                        om.readValue(
-                                FeesJsonToProtoSerde.class
-                                        .getClassLoader()
-                                        .getResourceAsStream(jsonResource),
-                                List.class));
+            throws IOException, InvocationTargetException, NoSuchMethodException, IllegalAccessException {
+        return buildFrom(om -> om.readValue(
+                FeesJsonToProtoSerde.class.getClassLoader().getResourceAsStream(jsonResource), List.class));
     }
 
     public static CurrentAndNextFeeSchedule loadFeeScheduleFromStream(InputStream in)
-            throws IOException, InvocationTargetException, NoSuchMethodException,
-                    IllegalAccessException {
+            throws IOException, InvocationTargetException, NoSuchMethodException, IllegalAccessException {
         return buildFrom(om -> om.readValue(in, List.class));
     }
 
     public static CurrentAndNextFeeSchedule parseFeeScheduleFromJson(String literal)
-            throws IOException, InvocationTargetException, NoSuchMethodException,
-                    IllegalAccessException {
+            throws IOException, InvocationTargetException, NoSuchMethodException, IllegalAccessException {
         return buildFrom(om -> om.readValue(literal, List.class));
     }
 
     private static CurrentAndNextFeeSchedule buildFrom(ThrowingReader reader)
-            throws IOException, InvocationTargetException, NoSuchMethodException,
-                    IllegalAccessException {
+            throws IOException, InvocationTargetException, NoSuchMethodException, IllegalAccessException {
         final var feeSchedules = CurrentAndNextFeeSchedule.newBuilder();
 
         final var om = new ObjectMapper();
@@ -103,8 +94,7 @@ public class FeesJsonToProtoSerde {
                     rawFeeSchedule,
                     FeeSchedule.class,
                     bindFeeScheduleFrom(
-                            (List<Map<String, Object>>)
-                                    rawFeeSchedules.get(i++).get(rawFeeSchedule)));
+                            (List<Map<String, Object>>) rawFeeSchedules.get(i++).get(rawFeeSchedule)));
         }
     }
 
@@ -118,16 +108,14 @@ public class FeesJsonToProtoSerde {
                 feeSchedule.setExpiryTime(TimestampSeconds.newBuilder().setSeconds(expiry));
             } else {
                 feeSchedule.addTransactionFeeSchedule(
-                        bindTxnFeeScheduleFrom(
-                                (Map<String, Object>) part.get(TXN_FEE_SCHEDULE_KEY)));
+                        bindTxnFeeScheduleFrom((Map<String, Object>) part.get(TXN_FEE_SCHEDULE_KEY)));
             }
         }
 
         return feeSchedule.build();
     }
 
-    private static TransactionFeeSchedule bindTxnFeeScheduleFrom(
-            Map<String, Object> rawTxnFeeSchedule)
+    private static TransactionFeeSchedule bindTxnFeeScheduleFrom(Map<String, Object> rawTxnFeeSchedule)
             throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
         final var txnFeeSchedule = TransactionFeeSchedule.newBuilder();
         var key = translateClaimFunction((String) rawTxnFeeSchedule.get(HEDERA_FUNCTION_KEY));
@@ -164,12 +152,9 @@ public class FeesJsonToProtoSerde {
         }
 
         for (String feeComponent : FEE_COMPONENT_KEYS) {
-            set(
-                    FeeData.Builder.class,
-                    feeData,
-                    feeComponent,
-                    FeeComponents.class,
-                    bindFeeComponentsFrom((Map<String, Object>) rawFeeData.get(feeComponent)));
+            set(FeeData.Builder.class, feeData, feeComponent, FeeComponents.class, bindFeeComponentsFrom((Map<
+                            String, Object>)
+                    rawFeeData.get(feeComponent)));
         }
 
         return feeData.build();
@@ -206,8 +191,7 @@ public class FeesJsonToProtoSerde {
         return feeComponents.build();
     }
 
-    static <R, T> void set(
-            Class<R> builderType, R builder, String property, Class<T> valueType, T value)
+    static <R, T> void set(Class<R> builderType, R builder, String property, Class<T> valueType, T value)
             throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         Method setter = builderType.getDeclaredMethod(setterName(property), valueType);
         setter.invoke(builder, value);

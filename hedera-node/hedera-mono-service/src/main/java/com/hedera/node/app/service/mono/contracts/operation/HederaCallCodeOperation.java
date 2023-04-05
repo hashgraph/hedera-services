@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.operation;
 
 /*
@@ -85,6 +86,7 @@ public class HederaCallCodeOperation extends CallCodeOperation {
                 () -> cost(frame),
                 () -> super.execute(frame, evm),
                 addressValidator,
-                precompiledContractMap);
+                precompiledContractMap,
+                () -> isStatic(frame));
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.queries;
 
 import static com.hedera.services.bdd.spec.queries.contract.HapiContractCallLocal.fromDetails;
@@ -108,8 +109,7 @@ public class QueryVerbs {
         return new HapiGetContractInfo(contract);
     }
 
-    public static HapiGetContractInfo getContractInfo(
-            final String contract, final boolean idPredefined) {
+    public static HapiGetContractInfo getContractInfo(final String contract, final boolean idPredefined) {
         return new HapiGetContractInfo(contract, idPredefined);
     }
 
@@ -153,9 +153,7 @@ public class QueryVerbs {
     }
 
     public static HapiContractCallLocal contractCallLocal(
-            final String contract,
-            final String functionName,
-            final Function<HapiSpec, Object[]> fn) {
+            final String contract, final String functionName, final Function<HapiSpec, Object[]> fn) {
         final var abi = getABIFor(FUNCTION, functionName, contract);
         return new HapiContractCallLocal(abi, contract, fn);
     }
@@ -164,8 +162,7 @@ public class QueryVerbs {
         return new HapiGetAccountBalance(account);
     }
 
-    public static HapiGetAccountBalance getAccountBalance(
-            final String account, final boolean isContract) {
+    public static HapiGetAccountBalance getAccountBalance(final String account, final boolean isContract) {
         return new HapiGetAccountBalance(account, isContract);
     }
 
@@ -213,13 +210,11 @@ public class QueryVerbs {
         return new HapiGetTokenNftInfo(token, serialNum);
     }
 
-    public static HapiGetTokenNftInfos getTokenNftInfos(
-            final String token, final long start, final long end) {
+    public static HapiGetTokenNftInfos getTokenNftInfos(final String token, final long start, final long end) {
         return new HapiGetTokenNftInfos(token, start, end);
     }
 
-    public static HapiGetAccountNftInfos getAccountNftInfos(
-            final String account, final long start, final long end) {
+    public static HapiGetAccountNftInfos getAccountNftInfos(final String account, final long start, final long end) {
         return new HapiGetAccountNftInfos(account, start, end);
     }
 }

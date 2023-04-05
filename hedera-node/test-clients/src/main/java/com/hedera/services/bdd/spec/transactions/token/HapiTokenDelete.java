@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.token;
 
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
@@ -65,37 +66,28 @@ public class HapiTokenDelete extends HapiTxnOp<HapiTokenDelete> {
     }
 
     @Override
-    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys)
-            throws Throwable {
-        return spec.fees()
-                .forActivityBasedOp(
-                        HederaFunctionality.TokenDelete, this::usageEstimate, txn, numPayerKeys);
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
+        return spec.fees().forActivityBasedOp(HederaFunctionality.TokenDelete, this::usageEstimate, txn, numPayerKeys);
     }
 
     private FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo) {
-        return TokenDeleteUsage.newEstimate(
-                        txn, new TxnUsageEstimator(suFrom(svo), txn, ESTIMATOR_UTILS))
+        return TokenDeleteUsage.newEstimate(txn, new TxnUsageEstimator(suFrom(svo), txn, ESTIMATOR_UTILS))
                 .get();
     }
 
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         final var tId = TxnUtils.asTokenId(token, spec);
-        final TokenDeleteTransactionBody opBody =
-                spec.txns()
-                        .<TokenDeleteTransactionBody, TokenDeleteTransactionBody.Builder>body(
-                                TokenDeleteTransactionBody.class,
-                                b -> {
-                                    b.setToken(tId);
-                                });
+        final TokenDeleteTransactionBody opBody = spec.txns()
+                .<TokenDeleteTransactionBody, TokenDeleteTransactionBody.Builder>body(
+                        TokenDeleteTransactionBody.class, b -> b.setToken(tId));
         return b -> b.setTokenDeletion(opBody);
     }
 
     @Override
     protected List<Function<HapiSpec, Key>> defaultSigners() {
-        return List.of(
-                spec -> spec.registry().getKey(effectivePayer(spec)),
-                spec -> spec.registry().getAdminKey(token));
+        return List.of(spec -> spec.registry().getKey(effectivePayer(spec)), spec -> spec.registry()
+                .getAdminKey(token));
     }
 
     @Override

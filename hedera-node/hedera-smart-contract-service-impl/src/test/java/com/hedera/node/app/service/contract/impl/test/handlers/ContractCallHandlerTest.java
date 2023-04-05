@@ -13,16 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.contract.ContractCallTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
-import com.hedera.node.app.spi.meta.PreHandleContext;
-import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,7 +31,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ContractCallHandlerTest extends ContractHandlerTestBase {
-    private ContractCallHandler subject = new ContractCallHandler();
+    private final ContractCallHandler subject = new ContractCallHandler();
 
     @Test
     @DisplayName("Succeeds for valid payer account")
@@ -43,17 +44,13 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
     }
 
     private TransactionBody contractCallTransaction() {
-        final var transactionID =
-                TransactionID.newBuilder()
-                        .setAccountID(payer)
-                        .setTransactionValidStart(consensusTimestamp);
+        final var transactionID = TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
         return TransactionBody.newBuilder()
-                .setTransactionID(transactionID)
-                .setContractCall(
-                        ContractCallTransactionBody.newBuilder()
-                                .setGas(1_234)
-                                .setAmount(1_234L)
-                                .setContractID(targetContract))
+                .transactionID(transactionID)
+                .contractCall(ContractCallTransactionBody.newBuilder()
+                        .gas(1_234)
+                        .amount(1_234L)
+                        .contractID(targetContract))
                 .build();
     }
 }

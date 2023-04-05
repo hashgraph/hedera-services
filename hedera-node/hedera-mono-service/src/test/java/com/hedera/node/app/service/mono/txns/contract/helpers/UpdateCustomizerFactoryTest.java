@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.contract.helpers;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ADMIN_KT;
@@ -67,7 +68,8 @@ class UpdateCustomizerFactoryTest {
 
     private UpdateCustomizerFactory subject = new UpdateCustomizerFactory();
 
-    @Mock private OptionValidator optionValidator;
+    @Mock
+    private OptionValidator optionValidator;
 
     @Test
     void makesExpectedChanges() {
@@ -75,24 +77,22 @@ class UpdateCustomizerFactoryTest {
         final var newExpiryTime = Timestamp.newBuilder().setSeconds(newExpiry).build();
 
         // given:
-        var mutableContract =
-                MerkleAccountFactory.newContract()
-                        .accountKeys(MISC_ADMIN_KT.asJKeyUnchecked())
-                        .get();
+        var mutableContract = MerkleAccountFactory.newContract()
+                .accountKeys(MISC_ADMIN_KT.asJKeyUnchecked())
+                .get();
         mutableContract.setExpiredAndPendingRemoval(true);
         // and:
-        var op =
-                ContractUpdateTransactionBody.newBuilder()
-                        .setContractID(target)
-                        .setAdminKey(newAdminKey)
-                        .setAutoRenewPeriod(newAutoRenew)
-                        .setProxyAccountID(newProxy)
-                        .setStakedNodeId(newStakedId.getAccountNum())
-                        .setMemoWrapper(StringValue.newBuilder().setValue(newMemo))
-                        .setExpirationTime(newExpiryTime)
-                        .setAutoRenewAccountId(newAutoRenewAccount)
-                        .setMaxAutomaticTokenAssociations(Int32Value.of(maxAutoAssociations))
-                        .build();
+        var op = ContractUpdateTransactionBody.newBuilder()
+                .setContractID(target)
+                .setAdminKey(newAdminKey)
+                .setAutoRenewPeriod(newAutoRenew)
+                .setProxyAccountID(newProxy)
+                .setStakedNodeId(newStakedId.getAccountNum())
+                .setMemoWrapper(StringValue.newBuilder().setValue(newMemo))
+                .setExpirationTime(newExpiryTime)
+                .setAutoRenewAccountId(newAutoRenewAccount)
+                .setMaxAutomaticTokenAssociations(Int32Value.of(maxAutoAssociations))
+                .build();
 
         given(optionValidator.isValidExpiry(newExpiryTime)).willReturn(true);
 
@@ -120,13 +120,13 @@ class UpdateCustomizerFactoryTest {
         final var newExpiryTime = Timestamp.newBuilder().setSeconds(newExpiry).build();
 
         // given:
-        var mutableContract =
-                MerkleAccountFactory.newContract()
-                        .accountKeys(MISC_ADMIN_KT.asJKeyUnchecked())
-                        .get();
+        var mutableContract = MerkleAccountFactory.newContract()
+                .accountKeys(MISC_ADMIN_KT.asJKeyUnchecked())
+                .get();
         // and:
-        var op =
-                ContractUpdateTransactionBody.newBuilder().setExpirationTime(newExpiryTime).build();
+        var op = ContractUpdateTransactionBody.newBuilder()
+                .setExpirationTime(newExpiryTime)
+                .build();
 
         // when:
         var result = subject.customizerFor(mutableContract, optionValidator, op);
@@ -139,42 +139,34 @@ class UpdateCustomizerFactoryTest {
     @Test
     void rejectsExcessAutoAssociations() {
         // given:
-        var mutableContract =
-                MerkleAccountFactory.newContract()
-                        .accountKeys(MISC_ADMIN_KT.asJKeyUnchecked())
-                        .get();
+        var mutableContract = MerkleAccountFactory.newContract()
+                .accountKeys(MISC_ADMIN_KT.asJKeyUnchecked())
+                .get();
         // and:
-        var op =
-                ContractUpdateTransactionBody.newBuilder()
-                        .setMaxAutomaticTokenAssociations(
-                                Int32Value.newBuilder()
-                                        .setValue(
-                                                CryptoCreateChecks.MAX_CHARGEABLE_AUTO_ASSOCIATIONS
-                                                        + 1))
-                        .build();
+        var op = ContractUpdateTransactionBody.newBuilder()
+                .setMaxAutomaticTokenAssociations(
+                        Int32Value.newBuilder().setValue(CryptoCreateChecks.MAX_CHARGEABLE_AUTO_ASSOCIATIONS + 1))
+                .build();
 
         // when:
         var result = subject.customizerFor(mutableContract, optionValidator, op);
 
         // then:
         assertTrue(result.getLeft().isEmpty());
-        assertEquals(
-                REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT, result.getRight());
+        assertEquals(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT, result.getRight());
     }
 
     @Test
     void permitsMakingImmutableWithSentinel() {
         // given:
-        var mutableContract =
-                MerkleAccountFactory.newContract()
-                        .accountKeys(MISC_ADMIN_KT.asJKeyUnchecked())
-                        .get();
+        var mutableContract = MerkleAccountFactory.newContract()
+                .accountKeys(MISC_ADMIN_KT.asJKeyUnchecked())
+                .get();
         // and:
-        var op =
-                ContractUpdateTransactionBody.newBuilder()
-                        .setContractID(target)
-                        .setAdminKey(ImmutableKeyUtils.IMMUTABILITY_SENTINEL_KEY)
-                        .build();
+        var op = ContractUpdateTransactionBody.newBuilder()
+                .setContractID(target)
+                .setAdminKey(ImmutableKeyUtils.IMMUTABILITY_SENTINEL_KEY)
+                .build();
 
         // when:
         var result = subject.customizerFor(mutableContract, optionValidator, op);
@@ -188,16 +180,13 @@ class UpdateCustomizerFactoryTest {
     @Test
     void disallowsInvalidKey() {
         // given:
-        var mutableContract =
-                MerkleAccountFactory.newContract()
-                        .accountKeys(MISC_ADMIN_KT.asJKeyUnchecked())
-                        .get();
+        var mutableContract = MerkleAccountFactory.newContract()
+                .accountKeys(MISC_ADMIN_KT.asJKeyUnchecked())
+                .get();
         // and:
-        var op =
-                ContractUpdateTransactionBody.newBuilder()
-                        .setAdminKey(
-                                Key.newBuilder().setEd25519(ByteString.copyFrom("1".getBytes())))
-                        .build();
+        var op = ContractUpdateTransactionBody.newBuilder()
+                .setAdminKey(Key.newBuilder().setEd25519(ByteString.copyFrom("1".getBytes())))
+                .build();
 
         // when:
         var result = subject.customizerFor(mutableContract, optionValidator, op);
@@ -210,21 +199,15 @@ class UpdateCustomizerFactoryTest {
     @Test
     void disallowsNotExtendingExpiryIfDetached() {
         // given:
-        var mutableContract =
-                MerkleAccountFactory.newContract()
-                        .accountKeys(MISC_ADMIN_KT.asJKeyUnchecked())
-                        .get();
+        var mutableContract = MerkleAccountFactory.newContract()
+                .accountKeys(MISC_ADMIN_KT.asJKeyUnchecked())
+                .get();
         mutableContract.setExpiredAndPendingRemoval(true);
 
         // and:
-        var op =
-                ContractUpdateTransactionBody.newBuilder()
-                        .setAdminKey(
-                                Key.newBuilder()
-                                        .setEd25519(
-                                                ByteString.copyFromUtf8(
-                                                        "01234567890123456789012345678901")))
-                        .build();
+        var op = ContractUpdateTransactionBody.newBuilder()
+                .setAdminKey(Key.newBuilder().setEd25519(ByteString.copyFromUtf8("01234567890123456789012345678901")))
+                .build();
 
         // when:
         var result = subject.customizerFor(mutableContract, optionValidator, op);
@@ -237,15 +220,13 @@ class UpdateCustomizerFactoryTest {
     @Test
     void disallowsExplicitContractKey() {
         // given:
-        var mutableContract =
-                MerkleAccountFactory.newContract()
-                        .accountKeys(MISC_ADMIN_KT.asJKeyUnchecked())
-                        .get();
+        var mutableContract = MerkleAccountFactory.newContract()
+                .accountKeys(MISC_ADMIN_KT.asJKeyUnchecked())
+                .get();
         // and:
-        var op =
-                ContractUpdateTransactionBody.newBuilder()
-                        .setAdminKey(Key.newBuilder().setContractID(target))
-                        .build();
+        var op = ContractUpdateTransactionBody.newBuilder()
+                .setAdminKey(Key.newBuilder().setContractID(target))
+                .build();
 
         // when:
         var result = subject.customizerFor(mutableContract, optionValidator, op);
@@ -261,16 +242,14 @@ class UpdateCustomizerFactoryTest {
         long then = curExpiry;
 
         // given:
-        var mutableContract =
-                MerkleAccountFactory.newContract()
-                        .accountKeys(MISC_ADMIN_KT.asJKeyUnchecked())
-                        .expirationTime(then)
-                        .get();
+        var mutableContract = MerkleAccountFactory.newContract()
+                .accountKeys(MISC_ADMIN_KT.asJKeyUnchecked())
+                .expirationTime(then)
+                .get();
         // and:
-        var op =
-                ContractUpdateTransactionBody.newBuilder()
-                        .setExpirationTime(Timestamp.newBuilder().setSeconds(then - 1).build())
-                        .build();
+        var op = ContractUpdateTransactionBody.newBuilder()
+                .setExpirationTime(Timestamp.newBuilder().setSeconds(then - 1).build())
+                .build();
 
         // when:
         var result = subject.customizerFor(mutableContract, optionValidator, op);
@@ -283,13 +262,13 @@ class UpdateCustomizerFactoryTest {
     @Test
     void refusesToCustomizeNonExpiryChangeToImmutableContract() {
         // given:
-        var immutableContract =
-                MerkleAccountFactory.newContract().accountKeys(new JContractIDKey(0, 0, 2)).get();
+        var immutableContract = MerkleAccountFactory.newContract()
+                .accountKeys(new JContractIDKey(0, 0, 2))
+                .get();
         // and:
-        var op =
-                ContractUpdateTransactionBody.newBuilder()
-                        .setProxyAccountID(IdUtils.asAccount("0.0.1234"))
-                        .build();
+        var op = ContractUpdateTransactionBody.newBuilder()
+                .setProxyAccountID(IdUtils.asAccount("0.0.1234"))
+                .build();
 
         // when:
         var result = subject.customizerFor(immutableContract, optionValidator, op);
@@ -303,12 +282,12 @@ class UpdateCustomizerFactoryTest {
     void accountMutabilityUnderstood() {
         // given:
         var contractWithMissingKey = MerkleAccountFactory.newContract().get();
-        var contractWithNotionalKey =
-                MerkleAccountFactory.newContract().accountKeys(new JContractIDKey(0, 0, 2)).get();
-        var contractWithEd25519Key =
-                MerkleAccountFactory.newContract()
-                        .accountKeys(TxnHandlingScenario.FIRST_TOKEN_SENDER_KT.asJKeyUnchecked())
-                        .get();
+        var contractWithNotionalKey = MerkleAccountFactory.newContract()
+                .accountKeys(new JContractIDKey(0, 0, 2))
+                .get();
+        var contractWithEd25519Key = MerkleAccountFactory.newContract()
+                .accountKeys(TxnHandlingScenario.FIRST_TOKEN_SENDER_KT.asJKeyUnchecked())
+                .get();
 
         // expect:
         assertFalse(subject.isMutable(contractWithMissingKey));
@@ -319,53 +298,34 @@ class UpdateCustomizerFactoryTest {
     @Test
     void understandsNonExpiryEffects() {
         // expect:
-        assertFalse(
-                subject.onlyAffectsExpiry(
-                        ContractUpdateTransactionBody.newBuilder()
-                                .setAdminKey(ImmutableKeyUtils.IMMUTABILITY_SENTINEL_KEY)
-                                .build()));
-        assertFalse(
-                subject.onlyAffectsExpiry(
-                        ContractUpdateTransactionBody.newBuilder()
-                                .setMemoWrapper(
-                                        StringValue.newBuilder()
-                                                .setValue("You're not from these parts, are you?"))
-                                .build()));
-        assertFalse(
-                subject.onlyAffectsExpiry(
-                        ContractUpdateTransactionBody.newBuilder()
-                                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(123L))
-                                .build()));
-        assertFalse(
-                subject.onlyAffectsExpiry(
-                        ContractUpdateTransactionBody.newBuilder()
-                                .setFileID(IdUtils.asFile("0.0.4321"))
-                                .build()));
-        assertFalse(
-                subject.onlyAffectsExpiry(
-                        ContractUpdateTransactionBody.newBuilder()
-                                .setProxyAccountID(IdUtils.asAccount("0.0.1234"))
-                                .build()));
-        assertTrue(
-                subject.onlyAffectsExpiry(
-                        ContractUpdateTransactionBody.newBuilder()
-                                .setExpirationTime(Timestamp.newBuilder().setSeconds(1_234_567L))
-                                .build()));
+        assertFalse(subject.onlyAffectsExpiry(ContractUpdateTransactionBody.newBuilder()
+                .setAdminKey(ImmutableKeyUtils.IMMUTABILITY_SENTINEL_KEY)
+                .build()));
+        assertFalse(subject.onlyAffectsExpiry(ContractUpdateTransactionBody.newBuilder()
+                .setMemoWrapper(StringValue.newBuilder().setValue("You're not from these parts, are you?"))
+                .build()));
+        assertFalse(subject.onlyAffectsExpiry(ContractUpdateTransactionBody.newBuilder()
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(123L))
+                .build()));
+        assertFalse(subject.onlyAffectsExpiry(ContractUpdateTransactionBody.newBuilder()
+                .setFileID(IdUtils.asFile("0.0.4321"))
+                .build()));
+        assertFalse(subject.onlyAffectsExpiry(ContractUpdateTransactionBody.newBuilder()
+                .setProxyAccountID(IdUtils.asAccount("0.0.1234"))
+                .build()));
+        assertTrue(subject.onlyAffectsExpiry(ContractUpdateTransactionBody.newBuilder()
+                .setExpirationTime(Timestamp.newBuilder().setSeconds(1_234_567L))
+                .build()));
     }
 
     @Test
     void understandsMemoImpact() {
         // expect:
         assertFalse(subject.affectsMemo(ContractUpdateTransactionBody.getDefaultInstance()));
-        assertTrue(
-                subject.affectsMemo(
-                        ContractUpdateTransactionBody.newBuilder().setMemo("Hi!").build()));
-        assertTrue(
-                subject.affectsMemo(
-                        ContractUpdateTransactionBody.newBuilder()
-                                .setMemoWrapper(
-                                        StringValue.newBuilder()
-                                                .setValue("Interesting to see you here!"))
-                                .build()));
+        assertTrue(subject.affectsMemo(
+                ContractUpdateTransactionBody.newBuilder().setMemo("Hi!").build()));
+        assertTrue(subject.affectsMemo(ContractUpdateTransactionBody.newBuilder()
+                .setMemoWrapper(StringValue.newBuilder().setValue("Interesting to see you here!"))
+                .build()));
     }
 }

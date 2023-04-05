@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.validation;
 
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
@@ -23,6 +24,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
@@ -44,16 +46,13 @@ public class QueryFeeCheck {
     private final Supplier<AccountStorageAdapter> accounts;
 
     @Inject
-    public QueryFeeCheck(
-            final OptionValidator validator, final Supplier<AccountStorageAdapter> accounts) {
+    public QueryFeeCheck(final OptionValidator validator, final Supplier<AccountStorageAdapter> accounts) {
         this.accounts = accounts;
         this.validator = validator;
     }
 
     public ResponseCodeEnum nodePaymentValidity(
-            @NonNull final List<AccountAmount> transfers,
-            final long queryFee,
-            final AccountID node) {
+            @NonNull final List<AccountAmount> transfers, final long queryFee, final AccountID node) {
         final var plausibility = transfersPlausibility(transfers);
         if (plausibility != OK) {
             return plausibility;
@@ -163,8 +162,22 @@ public class QueryFeeCheck {
         return OK;
     }
 
-    private ResponseCodeEnum balanceCheck(
-            @Nullable final HederaAccount payingAccount, final long req) {
+    public com.hedera.hapi.node.base.ResponseCodeEnum validateQueryPaymentTransfers2(
+            final com.hedera.hapi.node.transaction.TransactionBody txn) {
+        final var googleTx = PbjConverter.fromPbj(txn);
+        return PbjConverter.toPbj(validateQueryPaymentTransfers(googleTx));
+    }
+
+    public com.hedera.hapi.node.base.ResponseCodeEnum nodePaymentValidity2(
+            @NonNull final List<com.hedera.hapi.node.base.AccountAmount> transfers,
+            final long queryFee,
+            final com.hedera.hapi.node.base.AccountID node) {
+        final var acct = PbjConverter.fromPbj(node);
+        final var txs = transfers.stream().map(PbjConverter::fromPbj).toList();
+        return PbjConverter.toPbj(nodePaymentValidity(txs, queryFee, acct));
+    }
+
+    private ResponseCodeEnum balanceCheck(@Nullable final HederaAccount payingAccount, final long req) {
         if (payingAccount == null) {
             return ACCOUNT_ID_DOES_NOT_EXIST;
         }
@@ -172,11 +185,8 @@ public class QueryFeeCheck {
         if (balance >= req) {
             return OK;
         } else {
-            final var expiryStatus =
-                    validator.expiryStatusGiven(
-                            balance,
-                            payingAccount.isExpiredAndPendingRemoval(),
-                            payingAccount.isSmartContract());
+            final var expiryStatus = validator.expiryStatusGiven(
+                    balance, payingAccount.isExpiredAndPendingRemoval(), payingAccount.isSmartContract());
             return (expiryStatus == OK) ? INSUFFICIENT_PAYER_BALANCE : expiryStatus;
         }
     }

@@ -13,266 +13,158 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package grpc;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.grpc.GrpcServiceBuilder;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
-import com.hederahashgraph.api.proto.java.*;
-import com.hederahashgraph.service.proto.java.ConsensusServiceGrpc;
-import com.hederahashgraph.service.proto.java.CryptoServiceGrpc;
-import com.hederahashgraph.service.proto.java.NetworkServiceGrpc;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import io.grpc.ManagedChannelBuilder;
 import io.grpc.Status;
+import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
-import io.helidon.grpc.client.ClientServiceDescriptor;
-import io.helidon.grpc.client.GrpcServiceClient;
-import io.helidon.grpc.server.GrpcRouting;
-import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
-import org.junit.jupiter.api.BeforeEach;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * This test generates and sends *real* GRPC transactions using the Google protobuf library and the
- * Helidon gRPC client. This is basically a smoke-test. Nothing is done with these transactions,
- * other than to make the call and verify that the call succeeds
+ * This test verifies gRPC calls made over the network. Since our gRPC code deals with bytes, and
+ * all serialization and deserialization of protobuf objects happens in the workflows, these tests
+ * can work on simple primitives such as Strings, making the tests easier to understand without
+ * missing any possible cases.
  */
 class GrpcTransactionTest extends GrpcTestBase {
-    private IngestWorkflow ingestWorkflow;
-    private QueryWorkflow queryWorkflow;
+    private static final String SERVICE = "proto.TestService";
+    private static final String METHOD = "testMethod";
+    private static final String GOOD_RESPONSE = "All Good";
+    private static final byte[] GOOD_RESPONSE_BYTES = GOOD_RESPONSE.getBytes(StandardCharsets.UTF_8);
 
-    private GrpcServiceClient consensusClient;
-    private GrpcServiceClient cryptoClient;
-    private GrpcServiceClient networkClient;
+    private static final IngestWorkflow GOOD_INGEST = (session, req, res) -> res.writeBytes(GOOD_RESPONSE_BYTES);
+    private static final QueryWorkflow UNIMPLEMENTED_QUERY = (s, r, r2) -> fail("The Query should not be called");
 
-    @BeforeEach
-    @Override
-    void setUp() throws InterruptedException, UnknownHostException {
-        super.setUp();
-
-        final var channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
-
-        consensusClient =
-                GrpcServiceClient.create(
-                        channel,
-                        ClientServiceDescriptor.builder(ConsensusServiceGrpc.getServiceDescriptor())
-                                .build());
-        networkClient =
-                GrpcServiceClient.create(
-                        channel,
-                        ClientServiceDescriptor.builder(NetworkServiceGrpc.getServiceDescriptor())
-                                .build());
-        cryptoClient =
-                GrpcServiceClient.create(
-                        channel,
-                        ClientServiceDescriptor.builder(CryptoServiceGrpc.getServiceDescriptor())
-                                .build());
-    }
-
-    @Override
-    protected void configureRouting(GrpcRouting.Builder rb) {
-        final var iw =
-                new IngestWorkflow() {
-                    @Override
-                    public void submitTransaction(
-                            @NonNull SessionContext session,
-                            @NonNull ByteBuffer requestBuffer,
-                            @NonNull ByteBuffer responseBuffer) {
-                        if (ingestWorkflow != null) {
-                            ingestWorkflow.submitTransaction(
-                                    session, requestBuffer, responseBuffer);
-                        }
-                    }
-                };
-
-        final var qw =
-                new QueryWorkflow() {
-                    @Override
-                    public void handleQuery(
-                            @NonNull SessionContext session,
-                            @NonNull ByteBuffer requestBuffer,
-                            @NonNull ByteBuffer responseBuffer) {
-                        if (queryWorkflow != null) {
-                            queryWorkflow.handleQuery(session, requestBuffer, responseBuffer);
-                        }
-                    }
-                };
-
-        var serviceBuilder =
-                new GrpcServiceBuilder("proto.ConsensusService", iw, qw)
-                        .query("getTopicInfo")
-                        .transaction("submitMessage");
-        rb.register(serviceBuilder.build(metrics));
-
-        serviceBuilder =
-                new GrpcServiceBuilder("proto.CryptoService", iw, qw).query("getAccountRecords");
-        rb.register(serviceBuilder.build(metrics));
+    private void setUp(@NonNull final IngestWorkflow ingest) {
+        registerService(new GrpcServiceBuilder(SERVICE, ingest, UNIMPLEMENTED_QUERY).transaction(METHOD));
+        startServer();
     }
 
     @Test
-    @DisplayName("Send a valid transaction and receive an OK response code")
+    @DisplayName("Call a function on a gRPC service endpoint that succeeds")
     void sendGoodTransaction() {
-        final var tx = createSubmitMessageTransaction(1001, "sendGoodTransaction");
-        final TransactionResponse response = consensusClient.blockingUnary("submitMessage", tx);
-        assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
+        // Given a server with a service endpoint and an IngestWorkflow that returns a good response
+        setUp(GOOD_INGEST);
+
+        // When we call the service
+        final var response = send(SERVICE, METHOD, "A Message");
+
+        // Then the response is good, and no exception is thrown.
+        assertEquals(GOOD_RESPONSE, response);
     }
 
     @Test
-    @DisplayName("Send a transaction to a missing account and receive an error code")
-    void sendBadTransaction() {
-        ingestWorkflow =
-                (session, requestBuffer, responseBuffer) -> {
-                    final var response =
-                            TransactionResponse.newBuilder()
-                                    .setNodeTransactionPrecheckCode(
-                                            ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST)
-                                    .build();
-                    responseBuffer.put(response.toByteArray());
-                };
+    @DisplayName("A function throwing a RuntimeException returns the UNKNOWN status code")
+    void functionThrowingRuntimeExceptionReturnsUNKNOWNError() {
+        // Given a server where the service will throw a RuntimeException
+        setUp((session, req, res) -> {
+            throw new RuntimeException("Failing with RuntimeException");
+        });
 
-        final var tx = createSubmitMessageTransaction(5000, "sendBadTransaction");
-        final TransactionResponse response = consensusClient.blockingUnary("submitMessage", tx);
-        assertEquals(
-                ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST,
-                response.getNodeTransactionPrecheckCode());
-    }
+        // When we invoke that service
+        final var e = assertThrows(StatusRuntimeException.class, () -> send(SERVICE, METHOD, "A Message"));
 
-    @Test
-    @DisplayName("Send a valid transaction but the server fails unexpectedly")
-    void sendTransactionAndServerFails() {
-        ingestWorkflow =
-                (session, requestBuffer, responseBuffer) -> {
-                    throw new RuntimeException(
-                            "Something really unexpected and bad happened that should never"
-                                    + " happen");
-                };
-
-        final var tx = createSubmitMessageTransaction(1001, "sendTransactionAndServerFails");
-        final var e =
-                assertThrows(
-                        StatusRuntimeException.class,
-                        () -> consensusClient.blockingUnary("submitMessage", tx));
+        // Then the Status code will be UNKNOWN.
         assertEquals(Status.UNKNOWN, e.getStatus());
     }
 
     @Test
-    @DisplayName("Send a valid transaction to an unknown endpoint")
-    void sendTransactionToUnknownEndpoint() {
-        // I never registered "createTopic" with the server end. The client understands it (because
-        // it is
-        // part of the actual protobuf service definition), but since I didn't register it with the
-        // server,
-        // I can verify the behavior should a client call a method on a service that the server
-        // doesn't know about
+    @DisplayName("A function throwing an Error returns the UNKNOWN status code")
+    void functionThrowingErrorReturnsUNKNOWNError() {
+        // Given a server where the service will throw an Error
+        setUp((session, req, res) -> {
+            throw new Error("Whoops!");
+        });
 
-        final var tx = createCreateTopicTransaction("sendTransactionToUnknownEndpoint");
-        final var e =
-                assertThrows(
-                        StatusRuntimeException.class,
-                        () -> consensusClient.blockingUnary("createTopic", tx));
+        // When we invoke that service
+        final var e = assertThrows(StatusRuntimeException.class, () -> send(SERVICE, METHOD, "A Message"));
+
+        // Then the Status code will be UNKNOWN.
+        assertEquals(Status.UNKNOWN, e.getStatus());
+    }
+
+    public static Stream<Arguments> badStatusCodes() {
+        return Arrays.stream(Status.Code.values()).filter(c -> c != Code.OK).map(Arguments::of);
+    }
+
+    @ParameterizedTest(name = "{0} Should Fail")
+    @MethodSource("badStatusCodes")
+    @DisplayName("Explicitly thrown StatusRuntimeException passes the code through to the response")
+    void explicitlyThrowStatusRuntimeException(@NonNull final Status.Code code) {
+        // Given a server where the service will throw a specific StatusRuntimeException
+        setUp((session, req, res) -> {
+            throw new StatusRuntimeException(code.toStatus());
+        });
+
+        // When we invoke that service
+        final var e = assertThrows(StatusRuntimeException.class, () -> send(SERVICE, METHOD, "A Message"));
+
+        // Then the Status code will match the exception
+        assertEquals(code.toStatus(), e.getStatus());
+    }
+
+    @Test
+    @DisplayName("Send a valid transaction to an unknown endpoint and get back UNIMPLEMENTED")
+    void sendTransactionToUnknownEndpoint() {
+        // Given a client that knows about a method that DOES NOT EXIST on the server
+        registerServiceOnClientOnly(
+                new GrpcServiceBuilder(SERVICE, NOOP_INGEST_WORKFLOW, NOOP_QUERY_WORKFLOW).transaction("unknown"));
+        setUp(GOOD_INGEST);
+
+        // When I call the service but with an unknown method
+        final var e = assertThrows(StatusRuntimeException.class, () -> send(SERVICE, "unknown", "payload"));
+
+        // Then the resulting status code is UNIMPLEMENTED
         assertEquals(Status.UNIMPLEMENTED.getCode(), e.getStatus().getCode());
     }
 
     @Test
     @DisplayName("Send a valid transaction to an unknown service")
     void sendTransactionToUnknownService() {
-        // I never registered Network service endpoints with the server end. The client understands
-        // it (because it is
-        // part of the actual protobuf service definition), but since I didn't register it with the
-        // server, I can
-        // verify the behavior should a client call a service that the server doesn't know about
-        final var tx = createUncheckedSubmitTransaction();
-        final var e =
-                assertThrows(
-                        StatusRuntimeException.class,
-                        () -> networkClient.blockingUnary("uncheckedSubmit", tx));
+        // Given a client that knows about a service that DOES NOT exist on the server
+        registerServiceOnClientOnly(new GrpcServiceBuilder("UnknownService", NOOP_INGEST_WORKFLOW, NOOP_QUERY_WORKFLOW)
+                .transaction(METHOD));
+        setUp(GOOD_INGEST);
+
+        // When I call the unknown service
+        final var e = assertThrows(StatusRuntimeException.class, () -> send("UnknownService", METHOD, "payload"));
+
+        // Then the resulting status code is UNIMPLEMENTED
         assertEquals(Status.UNIMPLEMENTED.getCode(), e.getStatus().getCode());
     }
 
+    // Interestingly, I thought it should return INVALID_ARGUMENT, and I attempted to update the
+    // NoopMarshaller
+    // to return INVALID_ARGUMENT by throwing a StatusRuntimeException. But the gRPC library we are
+    // using
+    // DOES NOT special case for StatusRuntimeException thrown in the marshaller, and always returns
+    // UNKNOWN
+    // to the client. So there is really no other response code possible for this case.
     @Test
-    @DisplayName("Send a valid query and receive a good response")
-    void sendGoodQuery() {
-        queryWorkflow =
-                (session, requestBuffer, responseBuffer) -> {
-                    final var topicId = TopicID.newBuilder().setTopicNum(1001).build();
-                    final var response =
-                            Response.newBuilder()
-                                    .setConsensusGetTopicInfo(
-                                            ConsensusGetTopicInfoResponse.newBuilder()
-                                                    .setTopicID(topicId)
-                                                    .setTopicInfo(
-                                                            ConsensusTopicInfo.newBuilder()
-                                                                    .setMemo("Topic memo")
-                                                                    .setSequenceNumber(1234))
-                                                    .build())
-                                    .build();
-                    responseBuffer.put(response.toByteArray());
-                };
+    @DisplayName("Sending way too many bytes leads to UNKNOWN")
+    void sendTooMuchData() {
+        // Given a service
+        setUp(GOOD_INGEST);
 
-        final var q = createGetTopicInfoQuery(1001);
-        final Response response = consensusClient.blockingUnary("getTopicInfo", q);
-        assertTrue(response.hasConsensusGetTopicInfo());
+        // When I call a method on the service and pass too many bytes
+        final var payload = randomString(1024 * 10);
+        final var e = assertThrows(StatusRuntimeException.class, () -> send(SERVICE, METHOD, payload));
 
-        final var info = response.getConsensusGetTopicInfo();
-        assertEquals(1001, info.getTopicID().getTopicNum());
-        assertEquals("Topic memo", info.getTopicInfo().getMemo());
-        assertEquals(1234, info.getTopicInfo().getSequenceNumber());
-    }
-
-    @Test
-    @DisplayName("Send a valid query but the server fails unexpectedly")
-    void sendQueryAndServerFails() {
-        queryWorkflow =
-                (session, requestBuffer, responseBuffer) -> {
-                    throw new RuntimeException(
-                            "Something really unexpected and bad happened that should never"
-                                    + " happen");
-                };
-
-        final var q = createGetTopicInfoQuery(1001);
-        final var e =
-                assertThrows(
-                        StatusRuntimeException.class,
-                        () -> consensusClient.blockingUnary("getTopicInfo", q));
-        assertEquals(Status.UNKNOWN, e.getStatus());
-    }
-
-    @Test
-    @DisplayName("Send a valid query to an unknown endpoint")
-    void sendQueryToUnknownEndpoint() {
-        // I never registered "getLiveHash" with the server end. The client understands it (because
-        // it is
-        // part of the actual protobuf service definition), but since I didn't register it with the
-        // server,
-        // I can verify the behavior should a client call a method on a service that the server
-        // doesn't know about
-        final var q = createGetLiveHashQuery();
-        final var e =
-                assertThrows(
-                        StatusRuntimeException.class,
-                        () -> cryptoClient.blockingUnary("getLiveHash", q));
-        assertEquals(Status.UNIMPLEMENTED.getCode(), e.getStatus().getCode());
-    }
-
-    @Test
-    @DisplayName("Send a valid query to an unknown service")
-    void sendQueryToUnknownService() {
-        // I never registered Network service endpoints with the server end. The client understands
-        // it (because it is
-        // part of the actual protobuf service definition), but since I didn't register it with the
-        // server, I can
-        // verify the behavior should a client call a service that the server doesn't know about
-        final var q = createGetExecutionTimeQuery();
-        final var e =
-                assertThrows(
-                        StatusRuntimeException.class,
-                        () -> networkClient.blockingUnary("getExecutionTime", q));
-        assertEquals(Status.UNIMPLEMENTED.getCode(), e.getStatus().getCode());
+        // Then the resulting status code is UNKNOWN
+        assertEquals(Status.UNKNOWN.getCode(), e.getStatus().getCode());
     }
 }

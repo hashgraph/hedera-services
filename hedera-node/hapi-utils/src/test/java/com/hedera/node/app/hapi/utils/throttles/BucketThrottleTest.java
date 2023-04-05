@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.throttles;
 
 import static com.hedera.node.app.hapi.utils.throttles.BucketThrottle.CAPACITY_UNITS_PER_NANO_TXN;
@@ -32,25 +33,17 @@ class BucketThrottleTest {
     @Test
     void factoryRejectsNeverPassableThrottle() {
         // expect:
-        final var aMsg =
-                assertThrows(
-                                IllegalArgumentException.class,
-                                () -> BucketThrottle.withMtpsAndBurstPeriod(499, 2))
-                        .getMessage();
-        final var bMsg =
-                assertThrows(
-                                IllegalArgumentException.class,
-                                () -> BucketThrottle.withMtpsAndBurstPeriod(Long.MAX_VALUE, 2))
-                        .getMessage();
-        final var cMsg =
-                assertThrows(
-                                IllegalArgumentException.class,
-                                () -> BucketThrottle.withMtpsAndBurstPeriod(184467440L, 789))
-                        .getMessage();
+        final var aMsg = assertThrows(
+                        IllegalArgumentException.class, () -> BucketThrottle.withMtpsAndBurstPeriod(499, 2))
+                .getMessage();
+        final var bMsg = assertThrows(
+                        IllegalArgumentException.class, () -> BucketThrottle.withMtpsAndBurstPeriod(Long.MAX_VALUE, 2))
+                .getMessage();
+        final var cMsg = assertThrows(
+                        IllegalArgumentException.class, () -> BucketThrottle.withMtpsAndBurstPeriod(184467440L, 789))
+                .getMessage();
         // and:
-        assertEquals(
-                "A throttle with 499 MTPS and 2000ms burst period can never allow a transaction",
-                aMsg);
+        assertEquals("A throttle with 499 MTPS and 2000ms burst period can never allow a transaction", aMsg);
         assertEquals("Base bucket capacity calculation outside numeric range", bMsg);
         assertEquals("Scaled bucket capacity calculation outside numeric range", cMsg);
     }
@@ -66,10 +59,8 @@ class BucketThrottleTest {
         var fromMtps = BucketThrottle.withMtps(tps * MTPS_PER_TPS);
         var fromTpsAndBurstPeriod = BucketThrottle.withTpsAndBurstPeriod(tps / 2, 2);
         var fromTpsAndBurstPeriodMs = BucketThrottle.withTpsAndBurstPeriodMs(tps / 2, 2000);
-        var fromMtpsAndBurstPeriod =
-                BucketThrottle.withMtpsAndBurstPeriod(tps / 2 * MTPS_PER_TPS, 2);
-        var fromMtpsAndBurstPeriodMs =
-                BucketThrottle.withMtpsAndBurstPeriodMs(tps / 2 * MTPS_PER_TPS, 2000);
+        var fromMtpsAndBurstPeriod = BucketThrottle.withMtpsAndBurstPeriod(tps / 2 * MTPS_PER_TPS, 2);
+        var fromMtpsAndBurstPeriodMs = BucketThrottle.withMtpsAndBurstPeriodMs(tps / 2 * MTPS_PER_TPS, 2000);
 
         // expect:
         assertEquals(expectedCapacity, fromTps.bucket().totalCapacity());

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
@@ -47,6 +48,8 @@ public class ContractDeleteSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ContractDeleteSuite.class);
     private static final String CONTRACT = "Multipurpose";
     private static final String PAYABLE_CONSTRUCTOR = "PayableConstructor";
+    private static final String CONTRACT_DESTROY = "destroy";
+    private static final String RECEIVER_CONTRACT_NAME = "receiver";
 
     public static void main(String... args) {
         new ContractDeleteSuite().runSuiteAsync();
@@ -74,9 +77,7 @@ public class ContractDeleteSuite extends HapiSuite {
 
     private HapiSpec cannotUseMoreThanChildContractLimit() {
         final var illegalNumChildren =
-                HapiSpecSetup.getDefaultNodeProps()
-                                .getInteger("consensus.handle.maxFollowingRecords")
-                        + 1;
+                HapiSpecSetup.getDefaultNodeProps().getInteger("consensus.handle.maxFollowingRecords") + 1;
         final var fungible = "fungible";
         final var contract = "ManyChildren";
         final var precompileViolation = "precompileViolation";
@@ -86,49 +87,36 @@ public class ContractDeleteSuite extends HapiSuite {
         return defaultHapiSpec("CannotUseMoreThanChildContractLimit")
                 .given(
                         cryptoCreate(TOKEN_TREASURY)
-                                .exposingCreatedIdTo(
-                                        id -> treasuryMirrorAddr.set(asHexedSolidityAddress(id))),
+                                .exposingCreatedIdTo(id -> treasuryMirrorAddr.set(asHexedSolidityAddress(id))),
                         tokenCreate(fungible).treasury(TOKEN_TREASURY),
                         tokenCreate(fungible)
                                 .tokenType(FUNGIBLE_COMMON)
                                 .treasury(TOKEN_TREASURY)
                                 .initialSupply(1234567)
-                                .exposingCreatedIdTo(
-                                        idLit ->
-                                                tokenMirrorAddr.set(
-                                                        asHexedSolidityAddress(
-                                                                HapiPropertySource.asToken(
-                                                                        idLit)))))
+                                .exposingCreatedIdTo(idLit ->
+                                        tokenMirrorAddr.set(asHexedSolidityAddress(HapiPropertySource.asToken(idLit)))))
                 .when(
                         uploadInitCode(contract),
                         contractCreate(contract),
-                        sourcing(
-                                () ->
-                                        contractCall(
-                                                        contract,
-                                                        "checkBalanceRepeatedly",
-                                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                                        asHeadlongAddress(treasuryMirrorAddr.get()),
-                                                        BigInteger.valueOf(illegalNumChildren))
-                                                .via(precompileViolation)
-                                                .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED)),
-                        sourcing(
-                                () ->
-                                        contractCall(
-                                                        contract,
-                                                        "createThingsRepeatedly",
-                                                        BigInteger.valueOf(illegalNumChildren))
-                                                .via(internalCreateViolation)
-                                                .gas(15_000_000)
-                                                .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED)))
+                        sourcing(() -> contractCall(
+                                        contract,
+                                        "checkBalanceRepeatedly",
+                                        asHeadlongAddress(tokenMirrorAddr.get()),
+                                        asHeadlongAddress(treasuryMirrorAddr.get()),
+                                        BigInteger.valueOf(illegalNumChildren))
+                                .via(precompileViolation)
+                                .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED)),
+                        sourcing(() -> contractCall(
+                                        contract, "createThingsRepeatedly", BigInteger.valueOf(illegalNumChildren))
+                                .via(internalCreateViolation)
+                                .gas(15_000_000)
+                                .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED)))
                 .then(
                         getTxnRecord(precompileViolation)
                                 .andAllChildRecords()
-                                .hasChildRecords(
-                                        IntStream.range(0, 50)
-                                                .mapToObj(
-                                                        i -> recordWith().status(REVERTED_SUCCESS))
-                                                .toArray(TransactionRecordAsserts[]::new)),
+                                .hasChildRecords(IntStream.range(0, 50)
+                                        .mapToObj(i -> recordWith().status(REVERTED_SUCCESS))
+                                        .toArray(TransactionRecordAsserts[]::new)),
                         getTxnRecord(internalCreateViolation)
                                 .andAllChildRecords()
                                 // Reverted internal CONTRACT_CREATION messages are not externalized
@@ -152,38 +140,26 @@ public class ContractDeleteSuite extends HapiSuite {
                                 .treasury(TOKEN_TREASURY)
                                 .initialSupply(0)
                                 .supplyKey(multiKey)
-                                .exposingCreatedIdTo(
-                                        idLit ->
-                                                tokenMirrorAddr.set(
-                                                        asHexedSolidityAddress(
-                                                                HapiPropertySource.asToken(
-                                                                        idLit)))))
+                                .exposingCreatedIdTo(idLit ->
+                                        tokenMirrorAddr.set(asHexedSolidityAddress(HapiPropertySource.asToken(idLit)))))
                 .when(
                         uploadInitCode(contract),
                         contractCreate(contract),
-                        sourcing(
-                                () ->
-                                        contractCall(
-                                                        contract,
-                                                        "sendSomeValueTo",
-                                                        asHeadlongAddress(tokenMirrorAddr.get()))
-                                                .sending(ONE_HBAR)
-                                                .payingWith(TOKEN_TREASURY)
-                                                .via(internalViolation)
-                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
-                        sourcing(
-                                (() ->
-                                        contractCall(tokenMirrorAddr.get())
-                                                .sending(1L)
-                                                .payingWith(TOKEN_TREASURY)
-                                                .via(externalViolation)
-                                                .hasKnownStatus(
-                                                        LOCAL_CALL_MODIFICATION_EXCEPTION))))
+                        sourcing(() -> contractCall(
+                                        contract, "sendSomeValueTo", asHeadlongAddress(tokenMirrorAddr.get()))
+                                .sending(ONE_HBAR)
+                                .payingWith(TOKEN_TREASURY)
+                                .via(internalViolation)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                        sourcing((() -> contractCall(tokenMirrorAddr.get())
+                                .sending(1L)
+                                .payingWith(TOKEN_TREASURY)
+                                .refusingEthConversion()
+                                .via(externalViolation)
+                                .hasKnownStatus(LOCAL_CALL_MODIFICATION_EXCEPTION))))
                 .then(
-                        getTxnRecord(internalViolation)
-                                .hasPriority(recordWith().feeGreaterThan(0L)),
-                        getTxnRecord(externalViolation)
-                                .hasPriority(recordWith().feeGreaterThan(0L)));
+                        getTxnRecord(internalViolation).hasPriority(recordWith().feeGreaterThan(0L)),
+                        getTxnRecord(externalViolation).hasPriority(recordWith().feeGreaterThan(0L)));
     }
 
     HapiSpec cannotDeleteOrSelfDestructTokenTreasury() {
@@ -203,20 +179,17 @@ public class ContractDeleteSuite extends HapiSuite {
                         contractCustomCreate(selfDestructCallable, "2")
                                 .adminKey(multiKey)
                                 .balance(321),
-                        tokenCreate(someToken)
-                                .adminKey(multiKey)
-                                .treasury(selfDestructCallable + "1"))
+                        tokenCreate(someToken).adminKey(multiKey).treasury(selfDestructCallable + "1"))
                 .when(
-                        contractDelete(selfDestructCallable + "1")
-                                .hasKnownStatus(ACCOUNT_IS_TREASURY),
+                        contractDelete(selfDestructCallable + "1").hasKnownStatus(ACCOUNT_IS_TREASURY),
                         tokenAssociate(selfDestructCallable + "2", someToken),
                         tokenUpdate(someToken).treasury(selfDestructCallable + "2"),
                         contractDelete(selfDestructCallable + "1"),
-                        contractCall(selfDestructCallable + "2", "destroy")
+                        contractCall(selfDestructCallable + "2", CONTRACT_DESTROY)
                                 .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION),
                         tokenAssociate(escapeRoute, someToken),
                         tokenUpdate(someToken).treasury(escapeRoute))
-                .then(contractCall(selfDestructCallable + "2", "destroy"));
+                .then(contractCall(selfDestructCallable + "2", CONTRACT_DESTROY));
     }
 
     HapiSpec cannotDeleteOrSelfDestructContractWithNonZeroBalance() {
@@ -229,7 +202,9 @@ public class ContractDeleteSuite extends HapiSuite {
                 .given(
                         newKeyNamed(multiKey),
                         uploadInitCode(selfDestructableContract),
-                        contractCreate(selfDestructableContract).adminKey(multiKey).balance(123),
+                        contractCreate(selfDestructableContract)
+                                .adminKey(multiKey)
+                                .balance(123),
                         uploadInitCode(otherMiscContract),
                         contractCreate(otherMiscContract),
                         tokenCreate(someToken)
@@ -242,13 +217,11 @@ public class ContractDeleteSuite extends HapiSuite {
                 .when(
                         mintToken(someToken, List.of(ByteString.copyFromUtf8("somemetadata"))),
                         tokenAssociate(otherMiscContract, someToken),
-                        cryptoTransfer(
-                                TokenMovement.movingUnique(someToken, 1)
-                                        .between(selfDestructableContract, otherMiscContract)))
+                        cryptoTransfer(TokenMovement.movingUnique(someToken, 1)
+                                .between(selfDestructableContract, otherMiscContract)))
                 .then(
-                        contractDelete(otherMiscContract)
-                                .hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES),
-                        contractCall(selfDestructableContract, "destroy")
+                        contractDelete(otherMiscContract).hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES),
+                        contractCall(selfDestructableContract, CONTRACT_DESTROY)
                                 .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION));
     }
 
@@ -280,9 +253,7 @@ public class ContractDeleteSuite extends HapiSuite {
                 .given(
                         fileCreate(tbdFile),
                         fileDelete(tbdFile),
-                        createDefaultContract(tbdContract)
-                                .bytecode(tbdFile)
-                                .hasKnownStatus(FILE_DELETED))
+                        createDefaultContract(tbdContract).bytecode(tbdFile).hasKnownStatus(FILE_DELETED))
                 .when(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .then(
                         contractDelete(CONTRACT),
@@ -299,11 +270,11 @@ public class ContractDeleteSuite extends HapiSuite {
     private HapiSpec deleteTransfersToAccount() {
         return defaultHapiSpec("DeleteTransfersToAccount")
                 .given(
-                        cryptoCreate("receiver").balance(0L),
+                        cryptoCreate(RECEIVER_CONTRACT_NAME).balance(0L),
                         uploadInitCode(PAYABLE_CONSTRUCTOR),
                         contractCreate(PAYABLE_CONSTRUCTOR).balance(1L))
-                .when(contractDelete(PAYABLE_CONSTRUCTOR).transferAccount("receiver"))
-                .then(getAccountBalance("receiver").hasTinyBars(1L));
+                .when(contractDelete(PAYABLE_CONSTRUCTOR).transferAccount(RECEIVER_CONTRACT_NAME))
+                .then(getAccountBalance(RECEIVER_CONTRACT_NAME).hasTinyBars(1L));
     }
 
     private HapiSpec deleteTransfersToContract() {
@@ -314,9 +285,7 @@ public class ContractDeleteSuite extends HapiSuite {
                         uploadInitCode(PAYABLE_CONSTRUCTOR),
                         contractCreate(PAYABLE_CONSTRUCTOR).balance(0L),
                         contractCustomCreate(PAYABLE_CONSTRUCTOR, suffix).balance(1L))
-                .when(
-                        contractDelete(PAYABLE_CONSTRUCTOR)
-                                .transferContract(PAYABLE_CONSTRUCTOR + suffix))
+                .when(contractDelete(PAYABLE_CONSTRUCTOR).transferContract(PAYABLE_CONSTRUCTOR + suffix))
                 .then(getAccountBalance(PAYABLE_CONSTRUCTOR + suffix).hasTinyBars(1L));
     }
 

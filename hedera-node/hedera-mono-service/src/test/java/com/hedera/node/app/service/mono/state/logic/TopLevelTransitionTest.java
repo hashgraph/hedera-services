@@ -13,17 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.logic;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.fees.charging.TxnChargingPolicyAgent;
+import com.hedera.node.app.service.mono.txns.crypto.HollowAccountFinalizationLogic;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,28 +43,50 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TopLevelTransitionTest {
     private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
 
-    @Mock private TransactionContext txnCtx;
-    @Mock private NetworkCtxManager networkCtxManager;
-    @Mock private TxnChargingPolicyAgent chargingPolicyAgent;
-    @Mock private PlatformTxnAccessor accessor;
-    @Mock private RequestedTransition requestedTransition;
-    @Mock private SigsAndPayerKeyScreen sigsAndPayerKeyScreen;
-    @Mock private NonPayerKeysScreen nonPayerKeysScreen;
-    @Mock private NetworkUtilization networkUtilization;
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private NetworkCtxManager networkCtxManager;
+
+    @Mock
+    private TxnChargingPolicyAgent chargingPolicyAgent;
+
+    @Mock
+    private PlatformTxnAccessor accessor;
+
+    @Mock
+    private RequestedTransition requestedTransition;
+
+    @Mock
+    private SigsAndPayerKeyScreen sigsAndPayerKeyScreen;
+
+    @Mock
+    private NonPayerKeysScreen nonPayerKeysScreen;
+
+    @Mock
+    private NetworkUtilization networkUtilization;
+
+    @Mock
+    private HollowAccountFinalizationLogic hollowAccountFinalizationLogic;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
 
     private TopLevelTransition subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new TopLevelTransition(
-                        sigsAndPayerKeyScreen,
-                        networkCtxManager,
-                        requestedTransition,
-                        txnCtx,
-                        nonPayerKeysScreen,
-                        networkUtilization,
-                        chargingPolicyAgent);
+        subject = new TopLevelTransition(
+                sigsAndPayerKeyScreen,
+                networkCtxManager,
+                requestedTransition,
+                txnCtx,
+                nonPayerKeysScreen,
+                networkUtilization,
+                chargingPolicyAgent,
+                hollowAccountFinalizationLogic,
+                dynamicProperties);
     }
 
     @Test
@@ -79,14 +106,14 @@ class TopLevelTransitionTest {
     @Test
     void happyPathScopedProcessFlows() {
         // setup:
-        InOrder inOrder =
-                Mockito.inOrder(
-                        networkCtxManager,
-                        sigsAndPayerKeyScreen,
-                        chargingPolicyAgent,
-                        networkUtilization,
-                        nonPayerKeysScreen,
-                        requestedTransition);
+        InOrder inOrder = Mockito.inOrder(
+                networkCtxManager,
+                sigsAndPayerKeyScreen,
+                chargingPolicyAgent,
+                networkUtilization,
+                nonPayerKeysScreen,
+                hollowAccountFinalizationLogic,
+                requestedTransition);
 
         given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
         given(txnCtx.consensusTime()).willReturn(consensusNow);
@@ -94,6 +121,8 @@ class TopLevelTransitionTest {
         given(chargingPolicyAgent.applyPolicyFor(accessor)).willReturn(true);
         given(nonPayerKeysScreen.reqKeysAreActiveGiven(OK)).willReturn(true);
         given(networkUtilization.screenForAvailableCapacity()).willReturn(true);
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
+        given(hollowAccountFinalizationLogic.perform()).willReturn(OK);
         // when:
         subject.run();
 
@@ -103,6 +132,7 @@ class TopLevelTransitionTest {
         inOrder.verify(networkUtilization).trackUserTxn(accessor, consensusNow);
         inOrder.verify(chargingPolicyAgent).applyPolicyFor(accessor);
         inOrder.verify(nonPayerKeysScreen).reqKeysAreActiveGiven(OK);
+        inOrder.verify(hollowAccountFinalizationLogic).perform();
         inOrder.verify(networkUtilization).screenForAvailableCapacity();
         inOrder.verify(requestedTransition).finishFor(accessor);
     }
@@ -110,14 +140,13 @@ class TopLevelTransitionTest {
     @Test
     void gasThrottledProcessFlows() {
         // setup:
-        InOrder inOrder =
-                Mockito.inOrder(
-                        networkCtxManager,
-                        sigsAndPayerKeyScreen,
-                        chargingPolicyAgent,
-                        nonPayerKeysScreen,
-                        txnCtx,
-                        networkUtilization);
+        InOrder inOrder = Mockito.inOrder(
+                networkCtxManager,
+                sigsAndPayerKeyScreen,
+                chargingPolicyAgent,
+                nonPayerKeysScreen,
+                txnCtx,
+                networkUtilization);
 
         given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
         given(txnCtx.consensusTime()).willReturn(consensusNow);
@@ -162,5 +191,23 @@ class TopLevelTransitionTest {
 
         // then:
         verify(requestedTransition, never()).finishFor(accessor);
+    }
+
+    @Test
+    void abortsWhenHollowFinalizationLogicFails() {
+        given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
+        given(txnCtx.consensusTime()).willReturn(consensusNow);
+        given(sigsAndPayerKeyScreen.applyTo(accessor)).willReturn(OK);
+        given(chargingPolicyAgent.applyPolicyFor(accessor)).willReturn(true);
+        given(nonPayerKeysScreen.reqKeysAreActiveGiven(any())).willReturn(true);
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
+        given(hollowAccountFinalizationLogic.perform()).willReturn(MAX_CHILD_RECORDS_EXCEEDED);
+
+        // when:
+        subject.run();
+
+        // then:
+        verify(requestedTransition, never()).finishFor(accessor);
+        verify(txnCtx).setStatus(MAX_CHILD_RECORDS_EXCEEDED);
     }
 }

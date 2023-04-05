@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.persistence;
 
 import static com.hedera.services.bdd.spec.persistence.Entity.UNUSED_KEY;
@@ -36,16 +37,12 @@ public class Contract {
 
     public void registerWhatIsKnown(HapiSpec spec, String name, Optional<EntityId> entityId) {
         if (bytecodeFile == UNSPECIFIED_BYTECODE_FILE) {
-            throw new IllegalStateException(
-                    String.format("Contract '%s' has no given bytecode file!", name));
+            throw new IllegalStateException(String.format("Contract '%s' has no given bytecode file!", name));
         }
         if (adminKey != UNUSED_KEY) {
             adminKey.registerWith(spec, asAdminKeyFor(name));
         }
-        entityId.ifPresent(
-                id -> {
-                    spec.registry().saveContractId(name, id.asContract());
-                });
+        entityId.ifPresent(id -> spec.registry().saveContractId(name, id.asContract()));
     }
 
     public HapiQueryOp<?> existenceCheck(String name) {

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
@@ -34,8 +35,7 @@ public interface EvmOwnerOfPrecompile {
     ABIType<Tuple> OWNER_OF_NFT_DECODER = TypeFactory.create(UINT256);
 
     public static OwnerOfAndTokenURIWrapper decodeOwnerOf(final Bytes input) {
-        final Tuple decodedArguments =
-                decodeFunctionCall(input, OWNER_OF_NFT_SELECTOR, OWNER_OF_NFT_DECODER);
+        final Tuple decodedArguments = decodeFunctionCall(input, OWNER_OF_NFT_SELECTOR, OWNER_OF_NFT_DECODER);
 
         final var tokenId = (BigInteger) decodedArguments.get(0);
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.expiry.removal;
 
 import static com.hedera.node.app.service.mono.state.expiry.removal.FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS;
@@ -67,8 +68,7 @@ public class AccountGC {
         this.treasuryReturns = treasuryReturns;
     }
 
-    public CryptoGcOutcome expireBestEffort(
-            final EntityNum num, final HederaAccount expiredAccount) {
+    public CryptoGcOutcome expireBestEffort(final EntityNum num, final HederaAccount expiredAccount) {
         final var nftReturns = treasuryReturns.returnNftsFrom(expiredAccount);
         if (nftReturns.finished()) {
             final var unitReturns = treasuryReturns.returnFungibleUnitsFrom(expiredAccount);

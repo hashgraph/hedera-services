@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts;
 
 import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
@@ -20,6 +21,9 @@ import static org.hyperledger.besu.evm.operation.SStoreOperation.FRONTIER_MINIMU
 
 import com.hedera.node.app.service.evm.contracts.operations.HederaBalanceOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaDelegateCallOperation;
+import com.hedera.node.app.service.evm.contracts.operations.HederaEvmChainIdOperation;
+import com.hedera.node.app.service.evm.contracts.operations.HederaEvmCreate2Operation;
+import com.hedera.node.app.service.evm.contracts.operations.HederaEvmCreateOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeCopyOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeHashOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeSizeOperation;
@@ -28,9 +32,6 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.contracts.ContractsModule.V_0_30;
 import com.hedera.node.app.service.mono.contracts.operation.HederaCallCodeOperation;
 import com.hedera.node.app.service.mono.contracts.operation.HederaCallOperation;
-import com.hedera.node.app.service.mono.contracts.operation.HederaChainIdOperation;
-import com.hedera.node.app.service.mono.contracts.operation.HederaCreate2Operation;
-import com.hedera.node.app.service.mono.contracts.operation.HederaCreateOperation;
 import com.hedera.node.app.service.mono.contracts.operation.HederaLogOperation;
 import com.hedera.node.app.service.mono.contracts.operation.HederaSLoadOperation;
 import com.hedera.node.app.service.mono.contracts.operation.HederaSStoreOperation;
@@ -69,10 +70,9 @@ public interface ContractsV_0_30Module {
     @V_0_30
     static BiPredicate<Address, MessageFrame> provideAddressValidator(
             final Map<String, PrecompiledContract> precompiledContractMap) {
-        final var precompiles =
-                precompiledContractMap.keySet().stream()
-                        .map(Address::fromHexString)
-                        .collect(Collectors.toSet());
+        final var precompiles = precompiledContractMap.keySet().stream()
+                .map(Address::fromHexString)
+                .collect(Collectors.toSet());
         return (address, frame) ->
                 precompiles.contains(address) || frame.getWorldUpdater().get(address) != null;
     }
@@ -121,19 +121,19 @@ public interface ContractsV_0_30Module {
     @Singleton
     @IntoSet
     @V_0_30
-    Operation bindChainIdOperation(HederaChainIdOperation chainIdOperation);
+    Operation bindChainIdOperation(HederaEvmChainIdOperation chainIdOperation);
 
     @Binds
     @Singleton
     @IntoSet
     @V_0_30
-    Operation bindCreateOperation(HederaCreateOperation createOperation);
+    Operation bindCreateOperation(HederaEvmCreateOperation createOperation);
 
     @Binds
     @Singleton
     @IntoSet
     @V_0_30
-    Operation bindCreate2Operation(HederaCreate2Operation create2Operation);
+    Operation bindCreate2Operation(HederaEvmCreate2Operation create2Operation);
 
     @Provides
     @Singleton
@@ -144,8 +144,7 @@ public interface ContractsV_0_30Module {
             final GasCalculator gasCalculator,
             @V_0_30 final BiPredicate<Address, MessageFrame> addressValidator,
             final Map<String, PrecompiledContract> precompiledContractMap) {
-        return new HederaCallCodeOperation(
-                sigsVerifier, gasCalculator, addressValidator, precompiledContractMap);
+        return new HederaCallCodeOperation(sigsVerifier, gasCalculator, addressValidator, precompiledContractMap);
     }
 
     @Provides
@@ -157,8 +156,7 @@ public interface ContractsV_0_30Module {
             final GasCalculator gasCalculator,
             @V_0_30 final BiPredicate<Address, MessageFrame> addressValidator,
             final Map<String, PrecompiledContract> precompiledContractMap) {
-        return new HederaCallOperation(
-                sigsVerifier, gasCalculator, addressValidator, precompiledContractMap);
+        return new HederaCallOperation(sigsVerifier, gasCalculator, addressValidator, precompiledContractMap);
     }
 
     @Provides
@@ -166,8 +164,7 @@ public interface ContractsV_0_30Module {
     @IntoSet
     @V_0_30
     static Operation bindDelegateCallOperation(
-            GasCalculator gasCalculator,
-            @V_0_30 BiPredicate<Address, MessageFrame> addressValidator) {
+            GasCalculator gasCalculator, @V_0_30 BiPredicate<Address, MessageFrame> addressValidator) {
         return new HederaDelegateCallOperation(gasCalculator, addressValidator);
     }
 
@@ -177,11 +174,9 @@ public interface ContractsV_0_30Module {
     @V_0_30
     static Operation bindStaticCallOperation(
             final GasCalculator gasCalculator,
-            final EvmSigsVerifier sigsVerifier,
             @V_0_30 final BiPredicate<Address, MessageFrame> addressValidator,
             final Map<String, PrecompiledContract> precompiledContractMap) {
-        return new HederaStaticCallOperation(
-                gasCalculator, sigsVerifier, addressValidator, precompiledContractMap);
+        return new HederaStaticCallOperation(gasCalculator, addressValidator, precompiledContractMap);
     }
 
     @Provides
@@ -189,8 +184,7 @@ public interface ContractsV_0_30Module {
     @IntoSet
     @V_0_30
     static Operation bindBalanceOperation(
-            GasCalculator gasCalculator,
-            @V_0_30 BiPredicate<Address, MessageFrame> addressValidator) {
+            GasCalculator gasCalculator, @V_0_30 BiPredicate<Address, MessageFrame> addressValidator) {
         return new HederaBalanceOperation(gasCalculator, addressValidator);
     }
 
@@ -199,8 +193,7 @@ public interface ContractsV_0_30Module {
     @IntoSet
     @V_0_30
     static Operation bindExtCodeCopyOperation(
-            GasCalculator gasCalculator,
-            @V_0_30 BiPredicate<Address, MessageFrame> addressValidator) {
+            GasCalculator gasCalculator, @V_0_30 BiPredicate<Address, MessageFrame> addressValidator) {
         return new HederaExtCodeCopyOperation(gasCalculator, addressValidator);
     }
 
@@ -209,8 +202,7 @@ public interface ContractsV_0_30Module {
     @IntoSet
     @V_0_30
     static Operation bindExtCodeHashOperation(
-            GasCalculator gasCalculator,
-            @V_0_30 BiPredicate<Address, MessageFrame> addressValidator) {
+            GasCalculator gasCalculator, @V_0_30 BiPredicate<Address, MessageFrame> addressValidator) {
         return new HederaExtCodeHashOperation(gasCalculator, addressValidator);
     }
 
@@ -219,8 +211,7 @@ public interface ContractsV_0_30Module {
     @IntoSet
     @V_0_30
     static Operation bindExtCodeSizeOperation(
-            GasCalculator gasCalculator,
-            @V_0_30 BiPredicate<Address, MessageFrame> addressValidator) {
+            GasCalculator gasCalculator, @V_0_30 BiPredicate<Address, MessageFrame> addressValidator) {
         return new HederaExtCodeSizeOperation(gasCalculator, addressValidator);
     }
 
@@ -231,8 +222,9 @@ public interface ContractsV_0_30Module {
     static Operation bindSelfDestructOperation(
             GasCalculator gasCalculator,
             final TransactionContext txnCtx,
-            @V_0_30 BiPredicate<Address, MessageFrame> addressValidator) {
-        return new HederaSelfDestructOperation(gasCalculator, txnCtx, addressValidator);
+            @V_0_30 BiPredicate<Address, MessageFrame> addressValidator,
+            final EvmSigsVerifier evmSigsVerifier) {
+        return new HederaSelfDestructOperation(gasCalculator, txnCtx, addressValidator, evmSigsVerifier);
     }
 
     @Provides
@@ -253,22 +245,19 @@ public interface ContractsV_0_30Module {
     @Provides
     @Singleton
     @V_0_30
-    static EVM provideV_0_30EVM(
-            @V_0_30 Set<Operation> hederaOperations, GasCalculator gasCalculator) {
+    static EVM provideV_0_30EVM(@V_0_30 Set<Operation> hederaOperations, GasCalculator gasCalculator) {
         var operationRegistry = new OperationRegistry();
         // ChainID will be overridden
         registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         hederaOperations.forEach(operationRegistry::put);
 
-        return new EVM(
-                operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.LONDON);
+        return new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.LONDON);
     }
 
     @Provides
     @Singleton
     @V_0_30
-    static PrecompileContractRegistry providePrecompiledContractRegistry(
-            GasCalculator gasCalculator) {
+    static PrecompileContractRegistry providePrecompiledContractRegistry(GasCalculator gasCalculator) {
         final var precompileContractRegistry = new PrecompileContractRegistry();
         MainnetPrecompiledContracts.populateForIstanbul(precompileContractRegistry, gasCalculator);
         return precompileContractRegistry;

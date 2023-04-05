@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.consensus;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTopicId;
@@ -61,15 +62,9 @@ public class HapiTopicDelete extends HapiTxnOp<HapiTopicDelete> {
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
         TopicID id = resolveTopicId(spec);
-        ConsensusDeleteTopicTransactionBody opBody =
-                spec.txns()
-                        .<ConsensusDeleteTopicTransactionBody,
-                                ConsensusDeleteTopicTransactionBody.Builder>
-                                body(
-                                        ConsensusDeleteTopicTransactionBody.class,
-                                        b -> {
-                                            b.setTopicID(id);
-                                        });
+        ConsensusDeleteTopicTransactionBody opBody = spec.txns()
+                .<ConsensusDeleteTopicTransactionBody, ConsensusDeleteTopicTransactionBody.Builder>body(
+                        ConsensusDeleteTopicTransactionBody.class, b -> b.setTopicID(id));
         return b -> b.setConsensusDeleteTopic(opBody);
     }
 
@@ -87,7 +82,8 @@ public class HapiTopicDelete extends HapiTxnOp<HapiTopicDelete> {
 
     @Override
     protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        return spec.clients().getConsSvcStub(targetNodeFor(spec), useTls)::deleteTopic;
+        return spec.clients()
+                .getConsSvcStub(targetNodeFor(spec), useTls, spec.setup().workflowOperations())::deleteTopic;
     }
 
     @Override
@@ -105,16 +101,13 @@ public class HapiTopicDelete extends HapiTxnOp<HapiTopicDelete> {
         List<Function<HapiSpec, Key>> signers =
                 new ArrayList<>(List.of(spec -> spec.registry().getKey(effectivePayer(spec))));
         // Key may not be present when testing for failure cases.
-        topic.ifPresent(
-                topic ->
-                        signers.add(
-                                spec -> {
-                                    if (spec.registry().hasKey(topic)) {
-                                        return spec.registry().getKey(topic);
-                                    } else {
-                                        return Key.getDefaultInstance(); // = no key
-                                    }
-                                }));
+        topic.ifPresent(topic -> signers.add(spec -> {
+            if (spec.registry().hasKey(topic)) {
+                return spec.registry().getKey(topic);
+            } else {
+                return Key.getDefaultInstance(); // = no key
+            }
+        }));
 
         return signers;
     }

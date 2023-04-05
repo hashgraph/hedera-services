@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.init;
 
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
@@ -70,13 +71,11 @@ public class StoreInitializationFlow {
         log.info("Backing stores rebuilt");
 
         usageLimits.resetNumContracts();
-        aliasManager.rebuildAliasesMap(
-                workingState.accounts(),
-                (num, account) -> {
-                    if (account.isSmartContract()) {
-                        usageLimits.recordContracts(1);
-                    }
-                });
+        aliasManager.rebuildAliasesMap(workingState.accounts(), (num, account) -> {
+            if (account.isSmartContract()) {
+                usageLimits.recordContracts(1);
+            }
+        });
         log.info("Account aliases map rebuilt");
     }
 }
