@@ -196,6 +196,7 @@ import com.swirlds.platform.sync.ShadowGraph;
 import com.swirlds.platform.sync.ShadowGraphEventObserver;
 import com.swirlds.platform.sync.ShadowGraphSynchronizer;
 import com.swirlds.platform.sync.SimultaneousSyncThrottle;
+import com.swirlds.platform.sync.SingleNodeNetworkSync;
 import com.swirlds.platform.sync.SyncProtocolResponder;
 import com.swirlds.platform.sync.protocol.PeerAgnosticSyncChecks;
 import com.swirlds.platform.sync.protocol.SyncProtocol;

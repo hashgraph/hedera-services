@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform;
+package com.swirlds.platform.sync;
 
 import com.swirlds.base.ArgumentUtils;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
