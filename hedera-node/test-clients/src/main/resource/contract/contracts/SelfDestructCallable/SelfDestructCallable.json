@@ -10,5 +10,18 @@
     "outputs": [],
     "stateMutability": "payable",
     "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "beneficiary",
+        "type": "address"
+      }
+    ],
+    "name": "destroyExplicitBeneficiary",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
   }
 ]

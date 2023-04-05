@@ -18,6 +18,7 @@ package com.swirlds.platform;
 
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
+import com.swirlds.base.function.CheckedConsumer;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.metrics.Metrics;
@@ -49,6 +50,7 @@ import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.SwirldStateManagerImpl;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.PlatformConstructionException;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.KeyManagementException;
@@ -81,8 +83,7 @@ final class PlatformConstructor {
     /**
      * Create a parallel executor.
      *
-     * @param threadManager
-     * 		responsible for managing thread lifecycles
+     * @param threadManager responsible for managing thread lifecycles
      */
     static ParallelExecutor parallelExecutor(final ThreadManager threadManager) {
         return new CachedPoolParallelExecutor(threadManager, "node-sync");
@@ -120,12 +121,9 @@ final class PlatformConstructor {
      * Creates the {@link QueueThread} that stores and handles signed states that need to be hashed and have signatures
      * collected.
      *
-     * @param threadManager
-     * 		responsible for managing thread lifecycles
-     * @param selfId
-     * 		this node's id
-     * @param signedStateConsumer
-     * 		consumer of signed states that hashes the state and collects signatures
+     * @param threadManager       responsible for managing thread lifecycles
+     * @param selfId              this node's id
+     * @param signedStateConsumer consumer of signed states that hashes the state and collects signatures
      */
     static QueueThread<SignedState> stateHashSignQueue(
             final ThreadManager threadManager,
@@ -144,18 +142,12 @@ final class PlatformConstructor {
     /**
      * Creates a new instance of {@link SwirldStateManager}.
      *
-     * @param selfId
-     * 		this node's id
-     * @param preConsensusSystemTransactionManager
-     * 		the manager which handles system transactions pre-consensus
-     * @param postConsensusSystemTransactionManager
-     * 		the manager which handles system transactions post-consensus
-     * @param metrics
-     * 		reference to the metrics-system
-     * @param settings
-     * 		static settings provider
-     * @param initialState
-     * 		the initial state
+     * @param selfId                                this node's id
+     * @param preConsensusSystemTransactionManager  the manager which handles system transactions pre-consensus
+     * @param postConsensusSystemTransactionManager the manager which handles system transactions post-consensus
+     * @param metrics                               reference to the metrics-system
+     * @param settings                              static settings provider
+     * @param initialState                          the initial state
      * @return the newly constructed instance of {@link SwirldStateManager}
      */
     static SwirldStateManager swirldStateManager(
@@ -180,14 +172,10 @@ final class PlatformConstructor {
     /**
      * Constructs a new {@link PreConsensusEventHandler}.
      *
-     * @param threadManager
-     * 		responsible for creating and managing threads
-     * @param selfId
-     * 		this node's id
-     * @param swirldStateManager
-     * 		the instance of {@link SwirldStateManager}
-     * @param consensusMetrics
-     * 		the class that records stats relating to {@link SwirldStateManager}
+     * @param threadManager      responsible for creating and managing threads
+     * @param selfId             this node's id
+     * @param swirldStateManager the instance of {@link SwirldStateManager}
+     * @param consensusMetrics   the class that records stats relating to {@link SwirldStateManager}
      * @return the newly constructed instance of {@link PreConsensusEventHandler}
      */
     static PreConsensusEventHandler preConsensusEventHandler(
@@ -202,40 +190,32 @@ final class PlatformConstructor {
     /**
      * Constructs a new {@link ConsensusRoundHandler}.
      *
-     * @param threadManager
-     * 		responsible for creating and managing threads
-     * @param selfId
-     * 		this node's id
-     * @param settingsProvider
-     * 		a static settings provider
-     * @param swirldStateManager
-     * 		the instance of {@link SwirldStateManager}
-     * @param consensusHandlingMetrics
-     * 		the class that records stats relating to {@link SwirldStateManager}
-     * @param eventStreamManager
-     * 		the instance that streams consensus events to disk
-     * @param stateHashSignQueue
-     * 		the queue for signed states that need signatures collected
-     * @param enterFreezePeriod
-     * 		a runnable executed when a freeze is entered
-     * @param roundAppliedToStateConsumer
-     * 		the consumer to invoke when a round has just been applied to the state
-     * @param softwareVersion
-     * 		the software version of the application
+     * @param threadManager               responsible for creating and managing threads
+     * @param selfId                      this node's id
+     * @param settingsProvider            a static settings provider
+     * @param swirldStateManager          the instance of {@link SwirldStateManager}
+     * @param consensusHandlingMetrics    the class that records stats relating to {@link SwirldStateManager}
+     * @param eventStreamManager          the instance that streams consensus events to disk
+     * @param stateHashSignQueue          the queue for signed states that need signatures collected
+     * @param waitForEventDurability      a method that blocks until an event becomes durable.
+     * @param enterFreezePeriod           a runnable executed when a freeze is entered
+     * @param roundAppliedToStateConsumer the consumer to invoke when a round has just been applied to the state
+     * @param softwareVersion             the software version of the application
      * @return the newly constructed instance of {@link ConsensusRoundHandler}
      */
     static ConsensusRoundHandler consensusHandler(
-            final PlatformContext platformContext,
-            final ThreadManager threadManager,
+            @NonNull final PlatformContext platformContext,
+            @NonNull final ThreadManager threadManager,
             final long selfId,
-            final SettingsProvider settingsProvider,
-            final SwirldStateManager swirldStateManager,
-            final ConsensusHandlingMetrics consensusHandlingMetrics,
-            final EventStreamManager<EventImpl> eventStreamManager,
-            final BlockingQueue<SignedState> stateHashSignQueue,
-            final Runnable enterFreezePeriod,
-            final RoundAppliedToStateConsumer roundAppliedToStateConsumer,
-            final SoftwareVersion softwareVersion) {
+            @NonNull final SettingsProvider settingsProvider,
+            @NonNull final SwirldStateManager swirldStateManager,
+            @NonNull final ConsensusHandlingMetrics consensusHandlingMetrics,
+            @NonNull final EventStreamManager<EventImpl> eventStreamManager,
+            @NonNull final BlockingQueue<SignedState> stateHashSignQueue,
+            @NonNull final CheckedConsumer<EventImpl, InterruptedException> waitForEventDurability,
+            @NonNull final Runnable enterFreezePeriod,
+            @NonNull final RoundAppliedToStateConsumer roundAppliedToStateConsumer,
+            @NonNull final SoftwareVersion softwareVersion) {
 
         return new ConsensusRoundHandler(
                 platformContext,
@@ -246,6 +226,7 @@ final class PlatformConstructor {
                 consensusHandlingMetrics,
                 eventStreamManager,
                 stateHashSignQueue,
+                waitForEventDurability,
                 enterFreezePeriod,
                 roundAppliedToStateConsumer,
                 softwareVersion);

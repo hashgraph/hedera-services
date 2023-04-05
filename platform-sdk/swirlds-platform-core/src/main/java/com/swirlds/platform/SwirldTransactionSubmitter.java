@@ -30,7 +30,6 @@ import java.util.function.Supplier;
 public class SwirldTransactionSubmitter {
 
     private final Supplier<PlatformStatus> platformStatusSupplier;
-    private final boolean isZeroStakeNode;
     private final SettingsProvider settings;
     private final BooleanFunction<SwirldTransaction> addToTransactionPool;
     private final TransactionMetrics transactionMetrics;
@@ -42,8 +41,6 @@ public class SwirldTransactionSubmitter {
      * 		supplier of the current status of the platform
      * @param settings
      * 		provider of static settings
-     * @param isZeroStakeNode
-     * 		true is this node is a zero-stake node
      * @param addToTransactionPool
      * 		a function that adds the transaction to the transaction pool, if room is available
      * @param transactionMetrics
@@ -52,13 +49,11 @@ public class SwirldTransactionSubmitter {
     public SwirldTransactionSubmitter(
             final Supplier<PlatformStatus> platformStatusSupplier,
             final SettingsProvider settings,
-            final boolean isZeroStakeNode,
             final BooleanFunction<SwirldTransaction> addToTransactionPool,
             final TransactionMetrics transactionMetrics) {
 
         this.platformStatusSupplier = platformStatusSupplier;
         this.settings = settings;
-        this.isZeroStakeNode = isZeroStakeNode;
         this.addToTransactionPool = addToTransactionPool;
         this.transactionMetrics = transactionMetrics;
     }
@@ -74,13 +69,6 @@ public class SwirldTransactionSubmitter {
 
         // if the platform is not active, it is better to reject transactions submitted by the app
         if (platformStatusSupplier.get() != PlatformStatus.ACTIVE) {
-            return false;
-        }
-
-        // create a transaction to be added to the next Event when it is created.
-        // The "system" boolean is set to false, because this is an app-generated transaction.
-        // Refuse to create any type of transaction if this node has zero stake
-        if (isZeroStakeNode) {
             return false;
         }
 

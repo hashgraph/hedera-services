@@ -18,32 +18,40 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.QueryHeader;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.token.CryptoGetAccountRecordsResponse;
+import com.hedera.hapi.node.transaction.Query;
+import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hederahashgraph.api.proto.java.*;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoGetAccountRecords}.
+ * HederaFunctionality#CRYPTO_GET_ACCOUNT_RECORDS}.
  */
 @Singleton
 public class CryptoGetAccountRecordsHandler extends PaidQueryHandler {
     @Inject
-    public CryptoGetAccountRecordsHandler() {}
+    public CryptoGetAccountRecordsHandler() {
+        // Exists for injection
+    }
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
-        return query.getCryptoGetAccountRecords().getHeader();
+        return query.cryptoGetAccountRecordsOrThrow().header();
     }
 
     @Override
     public Response createEmptyResponse(@NonNull final ResponseHeader header) {
-        final var response = CryptoGetAccountRecordsResponse.newBuilder().setHeader(header);
-        return Response.newBuilder().setCryptoGetAccountRecords(response).build();
+        final var response = CryptoGetAccountRecordsResponse.newBuilder().header(requireNonNull(header));
+        return Response.newBuilder().cryptoGetAccountRecords(response).build();
     }
 
     /**
@@ -58,6 +66,7 @@ public class CryptoGetAccountRecordsHandler extends PaidQueryHandler {
      * @throws PreCheckException if validation fails
      */
     public ResponseCodeEnum validate(@NonNull final Query query) throws PreCheckException {
+        requireNonNull(query);
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -74,6 +83,8 @@ public class CryptoGetAccountRecordsHandler extends PaidQueryHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public Response findResponse(@NonNull final Query query, @NonNull final ResponseHeader header) {
+        requireNonNull(query);
+        requireNonNull(header);
         throw new UnsupportedOperationException("Not implemented");
     }
 }

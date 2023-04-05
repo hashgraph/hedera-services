@@ -16,13 +16,15 @@
 
 package com.hedera.node.app.fees;
 
-import static com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter.fromPbjKey;
-import static com.hedera.node.app.service.consensus.impl.handlers.PbjKeyConverter.unwrapPbj;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjKey;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbjTopicId;
 
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.mono.fees.calculation.consensus.queries.GetTopicInfoResourceUsage;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
@@ -62,7 +64,7 @@ public class MonoGetTopicInfoUsage {
         final var topicInfoQuery = query.getConsensusGetTopicInfo();
         final var topicId = topicInfoQuery.getTopicID();
         final var responseType = topicInfoQuery.getHeader().getResponseType();
-        final var maybeTopic = topicStore.getTopicLeaf(topicId);
+        final var maybeTopic = topicStore.getTopicLeaf(toPbjTopicId(topicId));
         return delegate.usageGivenTypeAndTopic(
                 maybeTopic.map(MonoGetTopicInfoUsage::monoTopicFrom).orElse(null), responseType);
     }
@@ -74,16 +76,15 @@ public class MonoGetTopicInfoUsage {
      * @param topic the PBJ topic
      * @return the Merkle topic
      */
-    @SuppressWarnings("unchecked")
     public static MerkleTopic monoTopicFrom(@NonNull final Topic topic) {
-        final var monoTopic = new MerkleTopic(
+        final MerkleTopic monoTopic = new MerkleTopic(
                 topic.memo(),
-                (JKey) fromPbjKey(topic.adminKey()).orElse(null),
-                (JKey) fromPbjKey(topic.submitKey()).orElse(null),
+                (JKey) fromPbjKey(topic.adminKeyOrElse(Key.DEFAULT)).orElse(null),
+                (JKey) fromPbjKey(topic.submitKeyOrElse(Key.DEFAULT)).orElse(null),
                 topic.autoRenewPeriod(),
                 new EntityId(0, 0, topic.autoRenewAccountNumber()),
                 new RichInstant(topic.expiry(), 0));
-        monoTopic.setRunningHash(unwrapPbj(topic.runningHash()));
+        monoTopic.setRunningHash(PbjConverter.asBytes(topic.runningHash()));
         monoTopic.setSequenceNumber(topic.sequenceNumber());
         monoTopic.setDeleted(topic.deleted());
         return monoTopic;

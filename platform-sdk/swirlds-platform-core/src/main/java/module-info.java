@@ -118,6 +118,7 @@ module com.swirlds.platform {
     exports com.swirlds.platform.components.transaction;
     exports com.swirlds.platform.components.transaction.system.internal;
     exports com.swirlds.platform.components.transaction.system;
+    exports com.swirlds.platform.event.preconsensus;
 
     /* Swirlds Libraries */
     requires com.swirlds.base;

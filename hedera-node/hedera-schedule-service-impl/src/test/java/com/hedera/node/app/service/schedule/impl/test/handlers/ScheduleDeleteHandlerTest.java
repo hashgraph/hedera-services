@@ -16,35 +16,40 @@
 
 package com.hedera.node.app.service.schedule.impl.test.handlers;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ScheduleID;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.scheduled.ScheduleDeleteTransactionBody;
+import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
-import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.BDDMockito;
 import org.mockito.Mock;
 
 class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
     private final ScheduleID scheduleID =
-            ScheduleID.newBuilder().setScheduleNum(100L).build();
+            ScheduleID.newBuilder().scheduleNum(100L).build();
+    private final AccountID scheduleDeleter =
+            AccountID.newBuilder().accountNum(3001L).build();
+    private final ScheduleDeleteHandler subject = new ScheduleDeleteHandler();
+    protected TransactionBody scheduledTxn;
 
     @Mock
     private ScheduleVirtualValue schedule;
@@ -54,26 +59,19 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
 
     private ReadableScheduleStore scheduleStore;
 
-    private final AccountID scheduleDeleter =
-            AccountID.newBuilder().setAccountNum(3001L).build();
-
-    protected TransactionBody scheduledTxn;
-
     @BeforeEach
     void setUp() {
-        given(states.<Long, ScheduleVirtualValue>get("SCHEDULES_BY_ID")).willReturn(schedulesById);
+        BDDMockito.given(states.<Long, ScheduleVirtualValue>get("SCHEDULES_BY_ID"))
+                .willReturn(schedulesById);
         scheduleStore = new ReadableScheduleStore(states);
     }
-
-    private final ScheduleDeleteHandler subject = new ScheduleDeleteHandler();
 
     @Test
     void scheduleDeleteHappyPath() throws DecoderException {
         final var txn = scheduleDeleteTransaction();
-        givenSetupForScheduleDelete(txn);
-        given(schedule.adminKey()).willReturn(Optional.of(JKey.mapKey(key)));
-        given(keyLookup.getKey(scheduleDeleter)).willReturn(KeyOrLookupFailureReason.withKey(adminKey));
-        given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(schedule);
+        scheduledTxn = givenSetupForScheduleDelete(txn);
+        BDDMockito.given(schedule.adminKey()).willReturn(Optional.of(JKey.mapKey(TEST_KEY)));
+        BDDMockito.given(schedulesById.get(scheduleID.scheduleNum())).willReturn(schedule);
 
         final var context = new PreHandleContext(keyLookup, txn, scheduleDeleter);
         subject.preHandle(context, scheduleStore);
@@ -86,9 +84,8 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
     // when schedule id to delete is not found, fail with INVALID_SCHEDULE_ID
     void scheduleDeleteFailsIfScheduleMissing() {
         final var txn = scheduleDeleteTransaction();
-        givenSetupForScheduleDelete(txn);
+        scheduledTxn = givenSetupForScheduleDelete(txn);
 
-        given(keyLookup.getKey(scheduleDeleter)).willReturn(KeyOrLookupFailureReason.withKey(adminKey));
         final var context = new PreHandleContext(keyLookup, txn, scheduleDeleter);
         subject.preHandle(context, scheduleStore);
         assertEquals(scheduleDeleter, context.getPayer());
@@ -99,9 +96,8 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
     // when admin key not set in scheduled tx, fail with SCHEDULE_IS_IMMUTABLE
     void scheduleDeleteScheduleIsImmutable() {
         final var txn = scheduleDeleteTransaction();
-        givenSetupForScheduleDelete(txn);
-        given(keyLookup.getKey(scheduleDeleter)).willReturn(KeyOrLookupFailureReason.withKey(adminKey));
-        given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(schedule);
+        scheduledTxn = givenSetupForScheduleDelete(txn);
+        BDDMockito.given(schedulesById.get(scheduleID.scheduleNum())).willReturn(schedule);
 
         final var context = new PreHandleContext(keyLookup, txn, scheduleDeleter);
         subject.preHandle(context, scheduleStore);
@@ -109,18 +105,21 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
         assertEquals(SCHEDULE_IS_IMMUTABLE, context.getStatus());
     }
 
-    private void givenSetupForScheduleDelete(TransactionBody txn) {
-        scheduledTxn = TransactionBody.newBuilder()
-                .setTransactionID(
-                        TransactionID.newBuilder().setAccountID(scheduler).build())
-                .setCryptoCreateAccount(CryptoCreateTransactionBody.getDefaultInstance())
+    private TransactionBody givenSetupForScheduleDelete(TransactionBody txn) {
+        final TransactionBody scheduledTxn = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(scheduler).build())
+                .cryptoCreateAccount(CryptoCreateTransactionBody.newBuilder().build())
                 .build();
+        // must be lenient here, because Mockito is a bit too sensitive, and not setting this causes NPE's
+        BDDMockito.lenient().when(schedule.ordinaryViewOfScheduledTxn()).thenReturn(PbjConverter.fromPbj(scheduledTxn));
+        BDDMockito.given(keyLookup.getKey(scheduleDeleter)).willReturn(KeyOrLookupFailureReason.withKey(adminKey));
+        return scheduledTxn;
     }
 
     private TransactionBody scheduleDeleteTransaction() {
         return TransactionBody.newBuilder()
-                .setTransactionID(TransactionID.newBuilder().setAccountID(scheduleDeleter))
-                .setScheduleDelete(ScheduleDeleteTransactionBody.newBuilder().setScheduleID(scheduleID))
+                .transactionID(TransactionID.newBuilder().accountID(scheduleDeleter))
+                .scheduleDelete(ScheduleDeleteTransactionBody.newBuilder().scheduleID(scheduleID))
                 .build();
     }
 }
