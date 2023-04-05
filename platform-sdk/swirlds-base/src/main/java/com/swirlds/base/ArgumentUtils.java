@@ -16,6 +16,9 @@
 
 package com.swirlds.base;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 /**
  * Class that contains common checks like null checks as static methods.
  */
@@ -34,7 +37,9 @@ public final class ArgumentUtils {
      * @param argument     the argument to check
      * @param argumentName the name of the argument
      */
-    public static <T> T throwArgNull(final T argument, final String argumentName) throws NullPointerException {
+    @NonNull
+    public static <T> T throwArgNull(@Nullable final T argument, @NonNull final String argumentName)
+            throws NullPointerException {
         if (argument == null) {
             throw new NullPointerException("The supplied argument '%s' cannot be null!".formatted(argumentName));
         }
@@ -49,7 +54,8 @@ public final class ArgumentUtils {
      * @param argName the name of the argument
      * @see String#isBlank()
      */
-    public static String throwArgBlank(final String arg, final String argName)
+    @NonNull
+    public static String throwArgBlank(@Nullablefinal final String arg, @NonNull final String argName)
             throws NullPointerException, IllegalArgumentException {
         throwArgNull(arg, argName);
         if (arg.isBlank()) {
