@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.swirlds.platform.sync.protocol;
 
 import static com.swirlds.base.ArgumentUtils.throwArgNull;
@@ -29,8 +45,8 @@ public class SyncProtocolPermitProvider {
     /**
      * The current status of the sync protocol
      */
-    private final AtomicReference<SyncProtocolPermitStatus> status = new AtomicReference<>(
-            SyncProtocolPermitStatus.NOT_SYNCING);
+    private final AtomicReference<SyncProtocolPermitStatus> status =
+            new AtomicReference<>(SyncProtocolPermitStatus.NOT_SYNCING);
 
     /**
      * A lock for safely acquiring and releasing permits
@@ -44,8 +60,7 @@ public class SyncProtocolPermitProvider {
      * @param incomingSyncSemaphore the semaphore for incoming syncs, common across all instances of the sync protocol
      */
     public SyncProtocolPermitProvider(
-            final @NonNull Semaphore outgoingSyncSemaphore,
-            final @NonNull Semaphore incomingSyncSemaphore) {
+            final @NonNull Semaphore outgoingSyncSemaphore, final @NonNull Semaphore incomingSyncSemaphore) {
 
         this.outgoingSyncSemaphore = throwArgNull(outgoingSyncSemaphore, "outgoingSyncSemaphore");
         this.incomingSyncSemaphore = throwArgNull(incomingSyncSemaphore, "incomingSyncSemaphore");
