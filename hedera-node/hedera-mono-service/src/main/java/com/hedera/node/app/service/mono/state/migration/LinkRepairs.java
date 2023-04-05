@@ -61,7 +61,7 @@ public class LinkRepairs implements InterruptableConsumer<Pair<ContractKey, Iter
         // First remove any keys reachable using the undesired hashCode()
         ContractKey.setUseStableHashCode(false);
         allKeys.forEach(this::tryToRemove);
-        // Now switch to purely using
+        // Now switch to using the v0.35 stable hashCode() before we rebuild the map
         ContractKey.setUseStableHashCode(true);
 
         mappingsToRepair.forEach((num, mappingList) -> {
