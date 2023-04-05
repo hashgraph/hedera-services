@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.signature;
 
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.swirlds.common.crypto.TransactionSignature;
 import java.util.List;
 

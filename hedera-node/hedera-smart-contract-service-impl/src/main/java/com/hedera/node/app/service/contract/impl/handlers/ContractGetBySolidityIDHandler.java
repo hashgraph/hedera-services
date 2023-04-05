@@ -18,32 +18,40 @@ package com.hedera.node.app.service.contract.impl.handlers;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.QueryHeader;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.contract.GetBySolidityIDResponse;
+import com.hedera.hapi.node.transaction.Query;
+import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hederahashgraph.api.proto.java.*;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#GetBySolidityID}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#GET_BY_SOLIDITY_ID}.
  */
 @Singleton
 public class ContractGetBySolidityIDHandler extends PaidQueryHandler {
     @Inject
-    public ContractGetBySolidityIDHandler() {}
+    public ContractGetBySolidityIDHandler() {
+        // Exists for injection
+    }
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
-        return query.getGetBySolidityID().getHeader();
+        return query.getBySolidityIDOrThrow().header();
     }
 
     @Override
     public Response createEmptyResponse(@NonNull final ResponseHeader header) {
-        final var response = GetBySolidityIDResponse.newBuilder().setHeader(header);
-        return Response.newBuilder().setGetBySolidityID(response).build();
+        final var response = GetBySolidityIDResponse.newBuilder().header(header);
+        return Response.newBuilder().getBySolidityID(response).build();
     }
 
     /**
@@ -58,6 +66,7 @@ public class ContractGetBySolidityIDHandler extends PaidQueryHandler {
      * @throws PreCheckException if validation fails
      */
     public ResponseCodeEnum validate(@NonNull final Query query) throws PreCheckException {
+        Objects.requireNonNull(query);
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -74,6 +83,8 @@ public class ContractGetBySolidityIDHandler extends PaidQueryHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public Response findResponse(@NonNull final Query query, @NonNull final ResponseHeader header) {
+        Objects.requireNonNull(query);
+        Objects.requireNonNull(header);
         throw new UnsupportedOperationException("Not implemented");
     }
 }

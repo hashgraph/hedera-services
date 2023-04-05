@@ -441,4 +441,67 @@ class StateSigningTests {
         assertEquals(0, signedState.getSigningStake());
         assertFalse(signedState.isComplete());
     }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    @DisplayName("Signatures Invalid Due To Zero Stake")
+    void signaturesInvalidDueToZeroStakeTest(final boolean evenStaking) {
+        final Random random = getRandomPrintSeed();
+
+        final int nodeCount = random.nextInt(10, 20);
+
+        final AddressBook addressBook = new RandomAddressBookGenerator(random)
+                .setStakeDistributionStrategy(
+                        evenStaking
+                                ? RandomAddressBookGenerator.StakeDistributionStrategy.BALANCED
+                                : RandomAddressBookGenerator.StakeDistributionStrategy.GAUSSIAN)
+                .setSequentialIds(false)
+                .setSize(nodeCount)
+                .build();
+
+        // set node to zero stake
+        final long nodeWithZeroStake = addressBook.getId(0);
+        addressBook.updateStake(nodeWithZeroStake, 0);
+
+        final SignedState signedState = new RandomSignedStateGenerator(random)
+                .setAddressBook(addressBook)
+                .setSignatures(new HashMap<>())
+                .build();
+
+        final SigSet sigSet = signedState.getSigSet();
+
+        // Randomize address order
+        final List<Address> nodes = new ArrayList<>(addressBook.getSize());
+        for (final Address address : addressBook) {
+            nodes.add(address);
+        }
+        Collections.shuffle(nodes, random);
+
+        final List<Signature> signatures = new ArrayList<>(nodeCount);
+        for (final Address address : nodes) {
+            signatures.add(buildFakeSignature(
+                    address.getSigPublicKey(), signedState.getState().getHash()));
+        }
+
+        for (int index = 0; index < nodeCount; index++) {
+            signedState.addSignature(nodes.get(index).getId(), signatures.get(index));
+        }
+
+        assertFalse(sigSet.hasSignature(nodeWithZeroStake), "Signature for node with zero stake should not be added");
+        assertTrue(signedState.isComplete());
+
+        final AddressBook newAddressBook = new AddressBook();
+        int i = 0;
+        for (final Address address : addressBook) {
+            newAddressBook.add(address.copySetStake(0));
+            assertTrue(address.equalsWithoutStake(newAddressBook.getAddress(newAddressBook.getId(i))));
+            i++;
+        }
+
+        signedState.pruneInvalidSignatures(newAddressBook);
+
+        assertEquals(0, sigSet.size());
+        assertEquals(0, signedState.getSigningStake());
+        assertFalse(signedState.isComplete());
+    }
 }

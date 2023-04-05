@@ -186,6 +186,7 @@ public class HollowAccountFinalizationLogic {
         sideEffects.trackHollowAccountUpdate(accountID);
         final var childRecordBuilder =
                 creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, null);
+        childRecordBuilder.getReceiptBuilder().nonRevertable();
         final var inProgress = new InProgressChildRecord(
                 DEFAULT_SOURCE_ID, syntheticUpdate, childRecordBuilder, Collections.emptyList());
         final var childRecord = inProgress.recordBuilder();

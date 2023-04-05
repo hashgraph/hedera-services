@@ -22,7 +22,6 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
-import com.hedera.node.app.service.evm.store.contracts.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import java.util.HashMap;
 import java.util.Map;
@@ -84,7 +83,7 @@ public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
     protected void executeHederaPrecompile(
             final PrecompiledContract contract, final MessageFrame frame, final OperationTracer operationTracer) {
         if (contract instanceof EvmHTSPrecompiledContract htsPrecompile) {
-            var updater = (HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater();
+            var updater = (AbstractLedgerEvmWorldUpdater) frame.getWorldUpdater();
             final var costedResult = htsPrecompile.computeCosted(
                     frame.getInputData(),
                     frame,

@@ -32,7 +32,12 @@ public enum ExceptionalEntityIdSource implements EntityIdSource {
     }
 
     @Override
-    public AccountID newAccountId(AccountID newAccountSponsor) {
+    public AccountID newAccountId() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long newAccountNumber() {
         throw new UnsupportedOperationException();
     }
 

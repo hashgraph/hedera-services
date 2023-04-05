@@ -17,22 +17,21 @@
 package com.hedera.node.app.workflows.handle.validation;
 
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.store.AccountStore;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
-import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hedera.node.app.spi.workflows.HandleException;
 import java.time.DateTimeException;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
@@ -74,10 +73,11 @@ class MonoExpiryValidatorTest {
         given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(now));
 
         assertFailsWith(
-                INVALID_EXPIRATION_TIME,
+                ResponseCodeEnum.INVALID_EXPIRATION_TIME,
                 () -> subject.resolveCreationAttempt(false, new ExpiryMeta(NA, NA, anAutoRenewNum)));
         assertFailsWith(
-                INVALID_EXPIRATION_TIME, () -> subject.resolveCreationAttempt(false, new ExpiryMeta(NA, aPeriod, NA)));
+                ResponseCodeEnum.INVALID_EXPIRATION_TIME,
+                () -> subject.resolveCreationAttempt(false, new ExpiryMeta(NA, aPeriod, NA)));
     }
 
     @Test
@@ -86,7 +86,8 @@ class MonoExpiryValidatorTest {
 
         given(validator.isValidExpiry(aTime)).willThrow(new DateTimeException("NOPE"));
         assertFailsWith(
-                INVALID_EXPIRATION_TIME, () -> subject.resolveCreationAttempt(false, new ExpiryMeta(aTime, NA, NA)));
+                ResponseCodeEnum.INVALID_EXPIRATION_TIME,
+                () -> subject.resolveCreationAttempt(false, new ExpiryMeta(aTime, NA, NA)));
     }
 
     @Test
@@ -94,9 +95,8 @@ class MonoExpiryValidatorTest {
         given(numbers.shard()).willReturn(1L);
         final var newMeta = new ExpiryMeta(aTime, aPeriod, 2L, 2L, anAutoRenewNum);
 
-        final var failure =
-                assertThrows(HandleStatusException.class, () -> subject.resolveCreationAttempt(false, newMeta));
-        assertEquals(INVALID_AUTORENEW_ACCOUNT, failure.getStatus());
+        final var failure = assertThrows(HandleException.class, () -> subject.resolveCreationAttempt(false, newMeta));
+        assertEquals(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT, failure.getStatus());
     }
 
     @Test
@@ -105,9 +105,8 @@ class MonoExpiryValidatorTest {
         given(numbers.realm()).willReturn(2L);
         final var newMeta = new ExpiryMeta(aTime, aPeriod, 1L, 3L, anAutoRenewNum);
 
-        final var failure =
-                assertThrows(HandleStatusException.class, () -> subject.resolveCreationAttempt(false, newMeta));
-        assertEquals(INVALID_AUTORENEW_ACCOUNT, failure.getStatus());
+        final var failure = assertThrows(HandleException.class, () -> subject.resolveCreationAttempt(false, newMeta));
+        assertEquals(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT, failure.getStatus());
     }
 
     @Test
@@ -116,7 +115,7 @@ class MonoExpiryValidatorTest {
 
         given(validator.isValidExpiry(aTime)).willReturn(false);
         assertFailsWith(
-                INVALID_EXPIRATION_TIME,
+                ResponseCodeEnum.INVALID_EXPIRATION_TIME,
                 () -> subject.resolveCreationAttempt(false, new ExpiryMeta(aTime, NA, anAutoRenewNum)));
     }
 
@@ -126,7 +125,7 @@ class MonoExpiryValidatorTest {
                 .willThrow(new InvalidTransactionException(INVALID_AUTORENEW_ACCOUNT));
 
         assertFailsWith(
-                INVALID_AUTORENEW_ACCOUNT,
+                ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT,
                 () -> subject.resolveCreationAttempt(false, new ExpiryMeta(aTime, aPeriod, anAutoRenewNum)));
     }
 
@@ -145,7 +144,7 @@ class MonoExpiryValidatorTest {
 
         given(validator.isValidExpiry(now + aPeriod)).willReturn(false);
         assertFailsWith(
-                INVALID_EXPIRATION_TIME,
+                ResponseCodeEnum.INVALID_EXPIRATION_TIME,
                 () -> subject.resolveCreationAttempt(false, new ExpiryMeta(NA, aPeriod, anAutoRenewNum)));
     }
 
@@ -155,7 +154,7 @@ class MonoExpiryValidatorTest {
 
         given(validator.isValidExpiry(aTime)).willReturn(true);
         assertFailsWith(
-                AUTORENEW_DURATION_NOT_IN_RANGE,
+                ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE,
                 () -> subject.resolveCreationAttempt(false, new ExpiryMeta(aTime, aPeriod, NA)));
     }
 
@@ -165,7 +164,7 @@ class MonoExpiryValidatorTest {
 
         given(validator.isValidExpiry(aTime)).willReturn(true);
         assertFailsWith(
-                AUTORENEW_DURATION_NOT_IN_RANGE,
+                ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE,
                 () -> subject.resolveCreationAttempt(false, new ExpiryMeta(aTime, aPeriod, NA)));
     }
 
@@ -210,7 +209,8 @@ class MonoExpiryValidatorTest {
         final var current = new ExpiryMeta(aTime, NA, NA);
         final var update = new ExpiryMeta(aTime - 1, NA, NA);
 
-        assertFailsWith(EXPIRATION_REDUCTION_NOT_ALLOWED, () -> subject.resolveUpdateAttempt(current, update));
+        assertFailsWith(
+                ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED, () -> subject.resolveUpdateAttempt(current, update));
     }
 
     @Test
@@ -218,7 +218,8 @@ class MonoExpiryValidatorTest {
         final var current = new ExpiryMeta(aTime, NA, NA);
         final var update = new ExpiryMeta(aTime - 1, NA, NA);
 
-        assertFailsWith(EXPIRATION_REDUCTION_NOT_ALLOWED, () -> subject.resolveUpdateAttempt(current, update));
+        assertFailsWith(
+                ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED, () -> subject.resolveUpdateAttempt(current, update));
     }
 
     @Test
@@ -226,7 +227,8 @@ class MonoExpiryValidatorTest {
         final var current = new ExpiryMeta(aTime, 0, NA);
         final var update = new ExpiryMeta(NA, NA, anAutoRenewNum);
 
-        assertFailsWith(AUTORENEW_DURATION_NOT_IN_RANGE, () -> subject.resolveUpdateAttempt(current, update));
+        assertFailsWith(
+                ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE, () -> subject.resolveUpdateAttempt(current, update));
     }
 
     @Test
@@ -234,7 +236,8 @@ class MonoExpiryValidatorTest {
         final var current = new ExpiryMeta(aTime, 0, NA);
         final var update = new ExpiryMeta(NA, bPeriod, anAutoRenewNum);
 
-        assertFailsWith(AUTORENEW_DURATION_NOT_IN_RANGE, () -> subject.resolveUpdateAttempt(current, update));
+        assertFailsWith(
+                ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE, () -> subject.resolveUpdateAttempt(current, update));
     }
 
     @Test
@@ -245,7 +248,8 @@ class MonoExpiryValidatorTest {
         given(accountStore.loadAccountOrFailWith(new Id(0, 0, anAutoRenewNum), INVALID_AUTORENEW_ACCOUNT))
                 .willThrow(new InvalidTransactionException(INVALID_AUTORENEW_ACCOUNT));
 
-        assertFailsWith(INVALID_AUTORENEW_ACCOUNT, () -> subject.resolveUpdateAttempt(current, update));
+        assertFailsWith(
+                ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT, () -> subject.resolveUpdateAttempt(current, update));
     }
 
     @Test
@@ -253,7 +257,7 @@ class MonoExpiryValidatorTest {
         final var current = new ExpiryMeta(aTime, 0, NA);
         final var update = new ExpiryMeta(bTime, bPeriod, anAutoRenewNum);
 
-        assertFailsWith(INVALID_EXPIRATION_TIME, () -> subject.resolveUpdateAttempt(current, update));
+        assertFailsWith(ResponseCodeEnum.INVALID_EXPIRATION_TIME, () -> subject.resolveUpdateAttempt(current, update));
     }
 
     @Test
@@ -279,7 +283,7 @@ class MonoExpiryValidatorTest {
     }
 
     private static void assertFailsWith(final ResponseCodeEnum expected, final Runnable runnable) {
-        final var e = assertThrows(HandleStatusException.class, runnable::run);
+        final var e = assertThrows(HandleException.class, runnable::run);
         assertEquals(expected, e.getStatus());
     }
 }
