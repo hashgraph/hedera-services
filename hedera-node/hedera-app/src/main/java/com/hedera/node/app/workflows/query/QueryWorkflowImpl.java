@@ -53,8 +53,6 @@ import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
-import com.swirlds.common.metrics.Counter;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.Status;
@@ -62,10 +60,8 @@ import io.grpc.StatusRuntimeException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Instant;
-import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
@@ -89,11 +85,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     private final QueryChecker checker;
     private final QueryDispatcher dispatcher;
 
-    /** A map of counter metrics for each type of query received */
-    private final Map<HederaFunctionality, Counter> received = new EnumMap<>(HederaFunctionality.class);
-    /** A map of counter metrics for each type of query answered */
-    private final Map<HederaFunctionality, Counter> answered = new EnumMap<>(HederaFunctionality.class);
-
     private final FeeAccumulator feeAccumulator;
     private final Codec<Query> queryParser;
 
@@ -108,7 +99,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
      * @param submissionManager the {@link SubmissionManager} to submit transactions to the platform
      * @param checker the {@link QueryChecker} with specific checks of an ingest-workflow
      * @param dispatcher the {@link QueryDispatcher} that will call query-specific methods
-     * @param metrics the {@link Metrics} with workflow-specific metrics
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject
@@ -120,7 +110,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             @NonNull final SubmissionManager submissionManager,
             @NonNull final QueryChecker checker,
             @NonNull final QueryDispatcher dispatcher,
-            @NonNull final Metrics metrics,
             @NonNull final FeeAccumulator feeAccumulator,
             @NonNull final Codec<Query> queryParser) {
         this.nodeInfo = requireNonNull(nodeInfo);
@@ -132,17 +121,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         this.dispatcher = requireNonNull(dispatcher);
         this.feeAccumulator = requireNonNull(feeAccumulator);
         this.queryParser = requireNonNull(queryParser);
-
-        // Create metrics for tracking each query received and answered per query type
-        for (var function : HederaFunctionality.values()) {
-            var name = function.name() + "Received";
-            var desc = "The number of queries received for " + function.name();
-            received.put(function, metrics.getOrCreate(new Counter.Config("app", name).withDescription(desc)));
-
-            name = function.name() + "Answered";
-            desc = "The number of queries answered for " + function.name();
-            answered.put(function, metrics.getOrCreate(new Counter.Config("app", name).withDescription(desc)));
-        }
     }
 
     @Override
@@ -168,7 +146,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         }
 
         final var functionality = functionOf(query);
-        received.get(functionality).increment();
 
         final var handler = dispatcher.getHandler(query);
         final var queryHeader = handler.extractHeader(query);
@@ -254,8 +231,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 final var header = createResponseHeader(responseType, validity, fee);
                 response = dispatcher.getResponse(storeFactory, query, header);
             }
-
-            answered.get(functionality).increment();
         } catch (InsufficientBalanceException e) {
             final var header = createResponseHeader(responseType, e.responseCode(), e.getEstimatedFee());
             response = handler.createEmptyResponse(header);
