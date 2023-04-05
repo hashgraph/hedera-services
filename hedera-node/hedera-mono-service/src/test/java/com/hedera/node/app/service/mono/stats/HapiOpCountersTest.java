@@ -20,6 +20,8 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSu
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -100,7 +102,7 @@ class HapiOpCountersTest {
 
     @Test
     void registersExpectedStatEntries() {
-        verify(metrics, times(9)).getOrCreate(any());
+        verify(metrics, times(301)).getOrCreate(any());
     }
 
     @Test
@@ -146,8 +148,10 @@ class HapiOpCountersTest {
         subject.countReceived(TokenGetInfo);
         subject.countAnswered(TokenGetInfo);
         subject.countAnswered(TokenGetInfo);
+        subject.countResponseCodes(PAYER_ACCOUNT_NOT_FOUND);
+        subject.countResponseCodes(PAYER_ACCOUNT_NOT_FOUND);
 
-        verify(counter, times(12)).increment();
+        verify(counter, times(14)).increment();
     }
 
     @Test
@@ -156,11 +160,13 @@ class HapiOpCountersTest {
         assertDoesNotThrow(() -> subject.countSubmitted(NONE));
         assertDoesNotThrow(() -> subject.countHandled(NONE));
         assertDoesNotThrow(() -> subject.countAnswered(NONE));
+        assertDoesNotThrow(() -> subject.countResponseCodes(OK));
 
         assertEquals(0L, subject.receivedSoFar(NONE));
         assertEquals(0L, subject.submittedSoFar(NONE));
         assertEquals(0L, subject.handledSoFar(NONE));
         assertEquals(0L, subject.answeredSoFar(NONE));
+        assertEquals(0L, subject.responseCodeSoFar(OK));
     }
 
     @Test

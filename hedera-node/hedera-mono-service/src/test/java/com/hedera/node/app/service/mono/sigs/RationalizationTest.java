@@ -29,6 +29,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.sigs.factories.ReusableBodySigningFactory;
@@ -88,11 +89,14 @@ class RationalizationTest {
     @Mock
     private LinkedRefs linkedRefs;
 
+    @Mock
+    private AliasManager aliasManager;
+
     private Rationalization subject;
 
     @BeforeEach
     void setUp() {
-        subject = new Rationalization(syncVerifier, sigImpactHistorian, keyOrderer, sigFactory);
+        subject = new Rationalization(syncVerifier, sigImpactHistorian, keyOrderer, sigFactory, aliasManager);
     }
 
     @Test
