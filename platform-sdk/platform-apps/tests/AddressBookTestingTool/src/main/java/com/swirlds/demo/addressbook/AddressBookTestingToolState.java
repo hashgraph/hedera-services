@@ -26,7 +26,14 @@ package com.swirlds.demo.addressbook;
  * DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
  */
 
+import static com.swirlds.logging.LogMarker.DEMO_INFO;
+import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.platform.AddressBookInitializer.CONFIG_ADDRESS_BOOK_HEADER;
+import static com.swirlds.platform.AddressBookInitializer.CONFIG_ADDRESS_BOOK_USED;
+import static com.swirlds.platform.AddressBookInitializer.STATE_ADDRESS_BOOK_HEADER;
+import static com.swirlds.platform.AddressBookInitializer.STATE_ADDRESS_BOOK_NULL;
+import static com.swirlds.platform.AddressBookInitializer.USED_ADDRESS_BOOK_HEADER;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -41,14 +48,25 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.address.AddressBookUtils;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.utility.ByteUtils;
+import com.swirlds.common.utility.StackTrace;
+import com.swirlds.platform.Network;
+import com.swirlds.platform.config.AddressBookConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.net.SocketException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.text.ParseException;
 import java.util.Iterator;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -58,9 +76,17 @@ import org.apache.logging.log4j.Logger;
 public class AddressBookTestingToolState extends PartialMerkleLeaf implements SwirldState, MerkleLeaf {
 
     private static final Logger logger = LogManager.getLogger(AddressBookTestingToolState.class);
+    //
+    //    /** modify this value to change how updateStake behaves. */
+    //    private final int stakingBehavior;
+    //
+    //    /** modify this value to change the test scenario being run and validated. */
+    //    private final int testScenario;
 
-    /** modify this value to change how updateStake behaves. */
-    private int stakingBehavior = 0;
+    private final AddressBookTestingToolConfig testingToolConfig =
+            ConfigurationHolder.getConfigData(AddressBookTestingToolConfig.class);
+    /** the address book configuration */
+    private final AddressBookConfig addressBookConfig = ConfigurationHolder.getConfigData(AddressBookConfig.class);
 
     private static class ClassVersion {
         public static final int ORIGINAL = 1;
@@ -70,6 +96,11 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
 
     private long selfId;
 
+    /** false until the test scenario has been validated, true afterwards. */
+    private final AtomicBoolean validationPerformed = new AtomicBoolean(false);
+
+    private Platform platform = null;
+
     /**
      * The true "state" of this app. Each transaction is just an integer that gets added to this value.
      */
@@ -77,8 +108,6 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
 
     public AddressBookTestingToolState() {
         logger.info(STARTUP.getMarker(), "New State Constructed.");
-        stakingBehavior = ConfigurationHolder.getConfigData(AddressBookTestingToolConfig.class)
-                .stakingBehavior();
     }
 
     /**
@@ -89,6 +118,8 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         Objects.requireNonNull(that, "the address book testing tool state to copy cannot be null");
         this.runningSum = that.runningSum;
         this.selfId = that.selfId;
+        this.platform = that.platform;
+        this.validationPerformed.set(that.validationPerformed.get());
     }
 
     /**
@@ -112,6 +143,8 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         Objects.requireNonNull(platform, "the platform cannot be null");
         Objects.requireNonNull(swirldDualState, "the swirld dual state cannot be null");
         Objects.requireNonNull(trigger, "the init trigger cannot be null");
+
+        this.platform = platform;
 
         logger.info(STARTUP.getMarker(), "init called in State.");
         throwIfImmutable();
@@ -137,6 +170,10 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         while (eventIterator.hasNext()) {
             final ConsensusEvent event = eventIterator.next();
             event.consensusTransactionIterator().forEachRemaining(this::handleTransaction);
+        }
+
+        if (!validationPerformed.getAndSet(true)) {
+            validateTestScenario();
         }
     }
 
@@ -200,6 +237,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     @NonNull
     public AddressBook updateStake(@NonNull final AddressBook addressBook) {
         Objects.requireNonNull(addressBook, "the address book cannot be null");
+        final int stakingBehavior = testingToolConfig.stakingBehavior();
         logger.info("updateStake called in State. Staking Behavior: {}", stakingBehavior);
         switch (stakingBehavior) {
             case 1:
@@ -240,5 +278,291 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
             addressBook.updateStake(i, i);
         }
         return addressBook;
+    }
+
+    private void validateTestScenario() {
+        if (platform == null) {
+            throw new IllegalStateException("platform is null, init has not been called.");
+        }
+        final int testScenario = testingToolConfig.testScenario();
+        logger.info(DEMO_INFO.getMarker(), "Validating test scenario {}.", testScenario);
+        switch (testScenario) {
+            case 1:
+                validateForceUseOfConfigAddressBookScenario();
+                break;
+            case 2:
+                swirldStateUpdateStakeOnGenesis();
+                break;
+            case 3:
+                noSoftwareUpdateUseSavedStateAddressBook();
+            default:
+                logger.info(DEMO_INFO.getMarker(), "Test Scenario {}: no validation performed.", testScenario);
+        }
+    }
+
+    private boolean noSoftwareUpdateUseSavedStateAddressBook() {
+        // preconditions check
+        if (addressBookConfig.forceUseOfConfigAddressBook() == true) {
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "The test scenario requires the setting `addressBook.forceUseOfConfigAddressBook, false`");
+            return false;
+        }
+
+        final AddressBook platformAddressBook = platform.getAddressBook();
+        final AddressBook configAddressBook = getConfigAddressBook();
+        final AddressBook stateAddressBook = getStateAddressBook();
+        final AddressBook usedAddressBook = getUsedAddressBook();
+        final AddressBook updatedAddressBook = updateStake(configAddressBook.copy());
+
+        return equalsAsConfigText(platformAddressBook, configAddressBook, false)
+                && equalsAsConfigText(platformAddressBook, usedAddressBook, true)
+                && equalsAsConfigText(platformAddressBook, stateAddressBook, true)
+                && equalsAsConfigText(platformAddressBook, updatedAddressBook, false);
+    }
+
+    private boolean swirldStateUpdateStakeOnGenesis() {
+        // preconditions check
+        if (addressBookConfig.forceUseOfConfigAddressBook() == true) {
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "The test scenario requires the setting `addressBook.forceUseOfConfigAddressBook, false`");
+            return false;
+        }
+
+        final AddressBook platformAddressBook = platform.getAddressBook();
+        final AddressBook configAddressBook = getConfigAddressBook();
+        final AddressBook usedAddressBook = getUsedAddressBook();
+        final AddressBook updatedAddressBook = updateStake(configAddressBook.copy());
+
+        return equalsAsConfigText(platformAddressBook, configAddressBook, false)
+                && equalsAsConfigText(platformAddressBook, usedAddressBook, true)
+                && equalsAsConfigText(platformAddressBook, updatedAddressBook, true)
+                && theStateAddressBookWasNull(true);
+    }
+
+    private boolean validateForceUseOfConfigAddressBookScenario() {
+        // preconditions check
+        if (addressBookConfig.forceUseOfConfigAddressBook() == false) {
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "The test scenario requires the setting `addressBook.forceUseOfConfigAddressBook, true`");
+            return false;
+        }
+
+        final AddressBook platformAddressBook = platform.getAddressBook();
+        final AddressBook configAddressBook = getConfigAddressBook();
+        final AddressBook usedAddressBook = getUsedAddressBook();
+
+        return equalsAsConfigText(platformAddressBook, configAddressBook, true)
+                && equalsAsConfigText(platformAddressBook, usedAddressBook, true)
+                && theStateAddressBookWasNull(true)
+                && theConfigurationAddressBookWasUsed();
+    }
+
+    /**
+     * This test compares the equality of two address books against the expected result.  The equality comparison is
+     * performed by converting them to config text and comparing the strings.
+     *
+     * @param addressBook1 the first address book
+     * @param addressBook2 the second address book
+     * @return true if the comparison matches the expected result, false otherwise.
+     */
+    private boolean equalsAsConfigText(
+            @NonNull final AddressBook addressBook1,
+            @NonNull final AddressBook addressBook2,
+            final boolean expectedResult) {
+        final String addressBook1ConfigText = addressBook1.toConfigText();
+        final String addressBook2ConfigText = addressBook2.toConfigText();
+        final boolean pass = addressBook1ConfigText.equals(addressBook2ConfigText) == expectedResult;
+        if (!pass) {
+            if (expectedResult == true) {
+                logger.error(
+                        EXCEPTION.getMarker(),
+                        "The address books are not equal as config text. {}",
+                        StackTrace.getStackTrace());
+            } else {
+                logger.error(
+                        EXCEPTION.getMarker(),
+                        "The address books are equal as config text. {}",
+                        StackTrace.getStackTrace());
+            }
+        }
+        return pass;
+    }
+
+    /**
+     * This test passes if expectedResult is true and the state address book was null, or if expectedResult is false and
+     * the state address book was not null.
+     *
+     * @param expectedResult the expected result of the test.
+     * @return true if the test passes, false otherwise.
+     */
+    private boolean theStateAddressBookWasNull(final boolean expectedResult) {
+        try {
+            final String fileContents = getLastAddressBookFileEndsWith("debug");
+            final String textAfterStateHeader = getTextAfterHeader(fileContents, STATE_ADDRESS_BOOK_HEADER);
+            final boolean pass = textAfterStateHeader.contains(STATE_ADDRESS_BOOK_NULL) == expectedResult;
+            if (!pass) {
+                if (expectedResult == true) {
+                    logger.error(
+                            EXCEPTION.getMarker(),
+                            "The state address book was not null. {}",
+                            StackTrace.getStackTrace());
+                } else {
+                    logger.error(
+                            EXCEPTION.getMarker(), "The state address book was null. {}", StackTrace.getStackTrace());
+                }
+            }
+            return pass;
+        } catch (IOException e) {
+            logger.error(EXCEPTION.getMarker(), "Unable to read address book files", e);
+            return !expectedResult;
+        }
+    }
+
+    /**
+     * Checks if the configuration address book was used.
+     *
+     * @return true if the configuration address book was used, false otherwise.
+     */
+    private boolean theConfigurationAddressBookWasUsed() {
+        try {
+            final String fileContents = getLastAddressBookFileEndsWith("debug");
+            final String textAfterUsedHeader = getTextAfterHeader(fileContents, USED_ADDRESS_BOOK_HEADER);
+            final boolean pass = textAfterUsedHeader.contains(CONFIG_ADDRESS_BOOK_USED);
+            if (!pass) {
+                logger.error(
+                        EXCEPTION.getMarker(),
+                        "The configuration address book was not used. {}",
+                        StackTrace.getStackTrace());
+            }
+            return pass;
+        } catch (IOException e) {
+            logger.error(EXCEPTION.getMarker(), "Unable to read address book files", e);
+            return false;
+        }
+    }
+
+    /**
+     * Get the address book in the last usedAddressBook file.
+     *
+     * @return the address book in the last usedAddressBook file.
+     */
+    @Nullable
+    private AddressBook getUsedAddressBook() {
+        try {
+            final String fileContents = getLastAddressBookFileEndsWith("txt");
+            return parseAddressBook(fileContents);
+        } catch (IOException | ParseException e) {
+            logger.error(EXCEPTION.getMarker(), "Unable to read address book files", e);
+            return null;
+        }
+    }
+
+    /**
+     * Get the config address book from the last debug addressBook file.
+     *
+     * @return the config address book from the last debug addressBook file.
+     */
+    @Nullable
+    private AddressBook getConfigAddressBook() {
+        return getDebugAddressBookAfterHeader(CONFIG_ADDRESS_BOOK_HEADER);
+    }
+
+    /**
+     * Get the state address book from the last debug addressBook file.
+     *
+     * @return the state address book from the last debug addressBook file.
+     */
+    @Nullable
+    private AddressBook getStateAddressBook() {
+        return getDebugAddressBookAfterHeader(STATE_ADDRESS_BOOK_HEADER);
+    }
+
+    /**
+     * Get the address book in the last debug addressBook file after the header.
+     *
+     * @param header the header to find.
+     * @return the address book in the last debug addressBook file after the header.
+     */
+    @Nullable
+    AddressBook getDebugAddressBookAfterHeader(String header) {
+        try {
+            final String fileContents = getLastAddressBookFileEndsWith("debug");
+            final String addressBookString = getTextAfterHeader(fileContents, header);
+            return parseAddressBook(addressBookString);
+        } catch (IOException | ParseException e) {
+            logger.error(EXCEPTION.getMarker(), "Unable to read address book files", e);
+            return null;
+        }
+    }
+
+    /**
+     * Get the text from the fileContents after the header.
+     *
+     * @param fileContents the file contents.
+     * @param header       the header to find.
+     * @return the text from the fileContents after the header.
+     */
+    @Nullable
+    String getTextAfterHeader(String fileContents, String header) {
+        final int headerStartIndex = fileContents.indexOf(header);
+        final int addressBookStartIndex = headerStartIndex + header.length();
+        final int addressBookEndIndex = fileContents.indexOf("\n\n", addressBookStartIndex);
+        return fileContents
+                .substring(addressBookStartIndex, addressBookEndIndex)
+                .trim();
+    }
+
+    /**
+     * Parse the address book from the given string.
+     *
+     * @param addressBookString the address book string.
+     * @return the address book.
+     * @throws ParseException if unable to parse the address book.
+     */
+    @Nullable
+    private AddressBook parseAddressBook(@Nullable final String addressBookString) throws ParseException {
+        if (addressBookString == null || addressBookString.isEmpty()) {
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "Unable to parse address book from null or empty string. {}",
+                    StackTrace.getStackTrace());
+            return null;
+        }
+        return AddressBookUtils.parseAddressBookConfigText(
+                addressBookString,
+                id -> id,
+                ip -> {
+                    try {
+                        return Network.isOwn(ip);
+                    } catch (SocketException e) {
+                        logger.error(EXCEPTION.getMarker(), "Unable to determine if {} is own ip address", ip, e);
+                        return false;
+                    }
+                },
+                id -> id.toString());
+    }
+
+    /**
+     * Get the last address book file that ends with the given suffix.
+     *
+     * @param suffix the suffix to match.
+     * @return the last address book file that ends with the given suffix.
+     * @throws IOException if unable to read the file.
+     */
+    @Nullable
+    private String getLastAddressBookFileEndsWith(String suffix) throws IOException {
+        final Path addressBookDirectory = Path.of(addressBookConfig.addressBookDirectory());
+        final AtomicReference<Path> lastAddressBookDebugFile = new AtomicReference<>(null);
+        try (final Stream<Path> files = Files.list(addressBookDirectory)) {
+            files.sorted().forEach(file -> {
+                if (file.toString().endsWith(suffix)) {
+                    lastAddressBookDebugFile.set(file);
+                }
+            });
+            return Files.readString(lastAddressBookDebugFile.get());
+        }
     }
 }

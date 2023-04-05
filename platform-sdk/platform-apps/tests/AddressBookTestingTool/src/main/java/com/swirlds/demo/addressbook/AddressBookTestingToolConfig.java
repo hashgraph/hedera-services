@@ -26,8 +26,11 @@ import com.swirlds.config.api.ConfigProperty;
  * 		The integer value of the software version of the AddressBookTestingToolMain SwirldMain application.
  * @param stakingBehavior
  *      The integer value of the staking behavior of the AddressBookTestingToolState SwirldState.
+ * @param testScenario
+ *     The integer value of the test scenario being run for validation.
  */
 @ConfigData("addressBookTestingTool")
 public record AddressBookTestingToolConfig(
         @ConfigProperty(defaultValue = "1") int softwareVersion,
-        @ConfigProperty(defaultValue = "1") int stakingBehavior) {}
+        @ConfigProperty(defaultValue = "0") int stakingBehavior,
+        @ConfigProperty(defaultValue = "0") int testScenario) {}

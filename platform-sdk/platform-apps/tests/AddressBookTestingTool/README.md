@@ -26,12 +26,15 @@ addressBookTestingTool.stakingBehavior, 1
 ```
 ## Testing Genesis Behavior
 
-### Force Use of Config Address Book on Genesis
+### Test Scenario 1: Force Use of Config Address Book on Genesis
 #### Instructions
 1. Delete `sdk/data/saved` directory if it exists
-2. Ensure settings.txt has `state.saveStatePeriod,     0`
-3. Add to settings.txt the value `addressBook.forceUseOfConfigAddressBook, true`
-4. Run the app for a short time.
+2. Ensure settings.txt has the value `state.saveStatePeriod,     0`
+3. Ensure settings.txt has the value `addressBook.forceUseOfConfigAddressBook, true`
+4. Ensure settings.txt has the value `addressBookTestingTool.testScenario, 1`
+5. Ensure settings.txt has the value `addressBookTestingTool.softwareVersion, 1`
+6. Ensure settings.txt has the value `addressBookTestingTool.stakingBehavior, 1`
+7. Run the app for 60 seconds
 
 #### Validation
 
@@ -40,6 +43,14 @@ addressBookTestingTool.stakingBehavior, 1
 ```
 AddressBookInitializer: Overriding the address book in the state with the address book from config.txt
 ```
+and
+```
+AddressBookTestingToolState: Validating test scenario 1.
+```
+
+* check that there are no errors or exceptions in the swirlds.log
+
+Errors are logged if any of the following conditions are violated.
 
 * check the directory `sdk/data/saved/address_book` for files
   * usedAddressBook_v1_<date>.txt
@@ -49,13 +60,15 @@ AddressBookInitializer: Overriding the address book in the state with the addres
     * the state saved address book was null
     * the used address book text says `The Configuration Address Book Was Used.`
 
-
-### Call to SwirldState.updateStake() on Genesis
+### Test Scenario 2: Call to SwirldState.updateStake() on Genesis
 #### Instructions
 1. Delete `sdk/data/saved` directory if it exists
-2. **Ensure settings.txt has `state.saveStatePeriod,     10` (differs from previous section)**
-3. **Ensure settings.txt has the value `addressBook.forceUseOfConfigAddressBook, false` (differs from previous section)**
-4. **Run the app for 20 seconds.  (differs from previous section)**
+2. Ensure settings.txt has the value `state.saveStatePeriod,     0`
+3. Ensure settings.txt has the value `addressBook.forceUseOfConfigAddressBook, false`
+4. Ensure settings.txt has the value `addressBookTestingTool.testScenario, 2`
+5. Ensure settings.txt has the value `addressBookTestingTool.softwareVersion, 1`
+6. Ensure settings.txt has the value `addressBookTestingTool.stakingBehavior, 1`
+7. Run the app for 60 seconds
 
 #### Validation
 
@@ -64,6 +77,14 @@ AddressBookInitializer: Overriding the address book in the state with the addres
 ```
 AddressBookInitializer: The loaded signed state is null. The candidateAddressBook is set to genesisSwirldState.updateStake(configAddressBook, null).
 ```
+and
+```
+AddressBookTestingToolState: Validating test scenario 2.
+```
+
+* check that there are no errors or exceptions in the swirlds.log
+
+Errors are logged if any of the following conditions are violated.
 
 * check the directory `sdk/data/saved/address_book` for files
   * usedAddressBook_v1_<date>.txt
@@ -75,11 +96,22 @@ AddressBookInitializer: The loaded signed state is null. The candidateAddressBoo
 
 ## Testing Non-Genesis Behavior, No Software Upgrade
 
-### No Software Upgrade, Use Saved State Address Book
+### Test Scenario 3: No Software Upgrade, Use Saved State Address Book
 #### Instructions
-1. Ensure settings.txt has `state.saveStatePeriod,     10`
-2. Ensure settings.txt has the value `addressBook.forceUseOfConfigAddressBook, false`
-3. Run the app for 20 seconds.
+1. Delete `sdk/data/saved` directory if it exists
+2. Ensure settings.txt has the value `state.saveStatePeriod,     10`
+3. Ensure settings.txt has the value `addressBook.forceUseOfConfigAddressBook, false`
+4. Ensure settings.txt has the value `addressBookTestingTool.testScenario, 0`
+5. Ensure settings.txt has the value `addressBookTestingTool.softwareVersion, 1`
+6. Ensure settings.txt has the value `addressBookTestingTool.stakingBehavior, 1`
+7. Run the app for 60 seconds
+8. Stop the app
+9. Ensure settings.txt has the value `state.saveStatePeriod,     10`
+10. Ensure settings.txt has the value `addressBook.forceUseOfConfigAddressBook, false`
+11. Ensure settings.txt has the value `addressBookTestingTool.testScenario, 3`
+12. Ensure settings.txt has the value `addressBookTestingTool.softwareVersion, 1`
+13. Ensure settings.txt has the value `addressBookTestingTool.stakingBehavior, 2`
+14. Run the app for 60 seconds.
 
 #### Validation
 
@@ -88,6 +120,14 @@ AddressBookInitializer: The loaded signed state is null. The candidateAddressBoo
 ```
 AddressBookInitializer: No Software Upgrade. Continuing with software version 1 and using the loaded signed state's address book and stake values.
 ```
+and
+```
+AddressBookTestingToolState: Validating test scenario 3.
+```
+
+* check that there are no errors or exceptions in the swirlds.log
+
+Errors are logged if any of the following conditions are violated.
 
 * check the directory `sdk/data/saved/address_book` for the latest files
   * usedAddressBook_v1_<date>.txt
@@ -98,6 +138,7 @@ AddressBookInitializer: No Software Upgrade. Continuing with software version 1 
     * **the used address book has the text `The State Saved Address Book Was Used.` (differs from previous section)**
 
 ### No Software Upgrade, Force Use of Config Address Book
+# **START HERE TO CONTINUE UPDATING TEST DEFINITIONS**
 #### Instructions
 1. Ensure settings.txt has `state.saveStatePeriod,     10`
 2. **Ensure settings.txt has the value `addressBook.forceUseOfConfigAddressBook, true` (differs from previous section)**
