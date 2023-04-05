@@ -66,8 +66,7 @@ class FixedFeeAssessorTest {
                 .willReturn(OK);
 
         // when:
-        final var result =
-                subject.assess(payer, chargingMeta, hbarFee, changeManager, mockAccum, false);
+        final var result = subject.assess(payer, chargingMeta, hbarFee, changeManager, mockAccum, false);
 
         // then:
         assertEquals(OK, result);
@@ -83,13 +82,11 @@ class FixedFeeAssessorTest {
                 .willReturn(OK);
 
         // when:
-        final var result =
-                subject.assess(payer, chargingMeta, htsFee, changeManager, mockAccum, false);
+        final var result = subject.assess(payer, chargingMeta, htsFee, changeManager, mockAccum, false);
 
         // then:
         assertEquals(OK, result);
-        BDDMockito.verify(htsFeeAssessor)
-                .assess(payer, chargingMeta, htsFee, changeManager, mockAccum, false);
+        BDDMockito.verify(htsFeeAssessor).assess(payer, chargingMeta, htsFee, changeManager, mockAccum, false);
     }
 
     @Test
@@ -100,9 +97,7 @@ class FixedFeeAssessorTest {
                 .willReturn(true);
 
         // when:
-        final var result =
-                subject.assess(
-                        chargingToken, chargingMeta, htsFee, changeManager, mockAccum, false);
+        final var result = subject.assess(chargingToken, chargingMeta, htsFee, changeManager, mockAccum, false);
 
         // then:
         assertEquals(OK, result);

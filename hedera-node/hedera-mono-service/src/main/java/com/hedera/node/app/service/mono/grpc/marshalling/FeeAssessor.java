@@ -113,13 +113,7 @@ public class FeeAssessor {
             }
             if (fee.getFeeType() == FIXED_FEE) {
                 // This is a top-level fixed fee, not a fallback royalty fee
-                fixedFeeAssessor.assess(
-                        payer,
-                        feeMeta,
-                        fee,
-                        balanceChangeManager,
-                        accumulator,
-                        IS_NOT_FALLBACK_FEE);
+                fixedFeeAssessor.assess(payer, feeMeta, fee, balanceChangeManager, accumulator, IS_NOT_FALLBACK_FEE);
                 if (balanceChangeManager.numChangesSoFar() > maxBalanceChanges) {
                     return ASSESSMENT_FAILED_WITH_TOO_MANY_ADJUSTMENTS_REQUIRED;
                 }

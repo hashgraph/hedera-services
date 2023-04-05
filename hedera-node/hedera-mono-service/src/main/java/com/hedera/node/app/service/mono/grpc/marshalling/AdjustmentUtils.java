@@ -112,8 +112,7 @@ public final class AdjustmentUtils {
         if (isFallbackFee) {
             payerChange.setIncludesFallbackFee();
         }
-        payerChange.setCodeForInsufficientBalance(
-                INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
+        payerChange.setCodeForInsufficientBalance(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
         adjustedChange(collector, chargingToken, denom, +amount, manager);
     }
 

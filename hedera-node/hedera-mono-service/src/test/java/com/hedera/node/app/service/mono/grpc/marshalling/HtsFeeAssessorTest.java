@@ -83,8 +83,7 @@ class HtsFeeAssessorTest {
         // then:
         verify(balanceChangeManager).includeChange(expectedPayerChange);
         verify(balanceChangeManager)
-                .includeChange(
-                        BalanceChange.tokenCustomFeeAdjust(feeCollector, denom, +amountOfHtsFee));
+                .includeChange(BalanceChange.tokenCustomFeeAdjust(feeCollector, denom, +amountOfHtsFee));
         // and:
         assertEquals(1, accumulator.size());
         assertEquals(expectedAssess, accumulator.get(0));
@@ -94,15 +93,12 @@ class HtsFeeAssessorTest {
     void addsNewChangesWithFallbackFeeIfNotPresent() {
         // setup:
         final var expectedAssess =
-                new AssessedCustomFeeWrapper(
-                        htsFeeCollector, feeDenom, amountOfHtsFee, effPayerNums);
+                new AssessedCustomFeeWrapper(htsFeeCollector, feeDenom, amountOfHtsFee, effPayerNums);
 
         // given:
-        final var expectedPayerChange =
-                BalanceChange.tokenCustomFeeAdjust(payer, denom, -amountOfHtsFee);
+        final var expectedPayerChange = BalanceChange.tokenCustomFeeAdjust(payer, denom, -amountOfHtsFee);
         expectedPayerChange.setIncludesFallbackFee();
-        expectedPayerChange.setCodeForInsufficientBalance(
-                INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
+        expectedPayerChange.setCodeForInsufficientBalance(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
 
         // when:
         subject.assess(payer, nonDenomFeeMeta, htsFee, balanceChangeManager, accumulator, true);

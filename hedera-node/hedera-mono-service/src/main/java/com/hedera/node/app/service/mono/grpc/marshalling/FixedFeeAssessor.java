@@ -69,8 +69,7 @@ public class FixedFeeAssessor {
         if (fixedSpec.getTokenDenomination() == null) {
             return hbarFeeAssessor.assess(payer, fee, changeManager, accumulator, isFallbackFee);
         } else {
-            return htsFeeAssessor.assess(
-                    payer, feeMeta, fee, changeManager, accumulator, isFallbackFee);
+            return htsFeeAssessor.assess(payer, feeMeta, fee, changeManager, accumulator, isFallbackFee);
         }
     }
 }

@@ -286,23 +286,22 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
                                     Duration.newBuilder().setSeconds(s).build()));
                             maxAutomaticTokenAssociations.ifPresent(b::setMaxAutomaticTokenAssociations);
 
-                                    if (stakedAccountId.isPresent()) {
-                                        b.setStakedAccountId(asId(stakedAccountId.get(), spec));
-                                    } else if (stakedNodeId.isPresent()) {
-                                        b.setStakedNodeId(stakedNodeId.get());
-                                    }
-                                    b.setDeclineReward(isDeclinedReward);
+                            if (stakedAccountId.isPresent()) {
+                                b.setStakedAccountId(asId(stakedAccountId.get(), spec));
+                            } else if (stakedNodeId.isPresent()) {
+                                b.setStakedNodeId(stakedNodeId.get());
+                            }
+                            b.setDeclineReward(isDeclinedReward);
 
-                                    if (fuzzingIdentifiers && key.hasECDSASecp256K1()) {
-                                        InitialAccountIdentifiers.fuzzedFrom(key).customize(b);
-                                    } else if (setEvmAddressAliasFromKey) {
-                                        final var congruentAddress =
-                                                EthSigsUtils.recoverAddressFromPubKey(
-                                                        key.getECDSASecp256K1().toByteArray());
-                                        b.setKey(key);
-                                        b.setAlias(ByteString.copyFrom(congruentAddress));
-                                    }
-                                });
+                            if (fuzzingIdentifiers && key.hasECDSASecp256K1()) {
+                                InitialAccountIdentifiers.fuzzedFrom(key).customize(b);
+                            } else if (setEvmAddressAliasFromKey) {
+                                final var congruentAddress = EthSigsUtils.recoverAddressFromPubKey(
+                                        key.getECDSASecp256K1().toByteArray());
+                                b.setKey(key);
+                                b.setAlias(ByteString.copyFrom(congruentAddress));
+                            }
+                        });
         return b -> b.setCryptoCreateAccount(opBody);
     }
 
