@@ -21,8 +21,10 @@ import static com.swirlds.platform.test.DispatchBuilderUtils.getDefaultDispatchC
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.time.OSTime;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
@@ -518,7 +520,7 @@ class IssHandlerTests {
 
         dispatchBuilder.start();
 
-        handler.catastrophicIssObserver(1234L, null);
+        handler.catastrophicIssObserver(1234L, mock(Hash.class));
 
         assertEquals(0, dumpCount.get(), "unexpected dump count");
         assertEquals(0, freezeCount.get(), "unexpected freeze count");
@@ -565,14 +567,14 @@ class IssHandlerTests {
 
         dispatchBuilder.start();
 
-        handler.catastrophicIssObserver(1234L, null);
+        handler.catastrophicIssObserver(1234L, mock(Hash.class));
 
         assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(1, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
 
         // Once frozen, this should become a no-op
-        handler.catastrophicIssObserver(1234L, null);
+        handler.catastrophicIssObserver(1234L, mock(Hash.class));
 
         assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(1, freezeCount.get(), "unexpected freeze count");
@@ -619,14 +621,14 @@ class IssHandlerTests {
 
         dispatchBuilder.start();
 
-        handler.catastrophicIssObserver(1234L, null);
+        handler.catastrophicIssObserver(1234L, mock(Hash.class));
 
         assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(1, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
 
         // Once frozen, this should become a no-op
-        handler.catastrophicIssObserver(1234L, null);
+        handler.catastrophicIssObserver(1234L, mock(Hash.class));
 
         assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(1, freezeCount.get(), "unexpected freeze count");
@@ -673,14 +675,14 @@ class IssHandlerTests {
 
         dispatchBuilder.start();
 
-        handler.catastrophicIssObserver(1234L, null);
+        handler.catastrophicIssObserver(1234L, mock(Hash.class));
 
         assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(0, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
 
         // Throttle should prevent double dump
-        handler.catastrophicIssObserver(1234L, null);
+        handler.catastrophicIssObserver(1234L, mock(Hash.class));
 
         assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(0, freezeCount.get(), "unexpected freeze count");
