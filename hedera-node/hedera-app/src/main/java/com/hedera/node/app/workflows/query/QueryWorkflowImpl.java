@@ -120,19 +120,10 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         requireNonNull(responseBuffer);
 
         // 1. Parse and check header
-        final Query query;
-        try {
-            query = queryParser.parseStrict(requestBuffer.toReadableSequentialData());
-        } catch (IOException e) {
-            // TODO there may be other types of errors here. Please cross check with ingest parsing
-            throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
-        }
+        final Query query = parseQuery(requestBuffer);
+        logger.debug("Received query: {}", query);
 
-        if (logger.isDebugEnabled()) {
-            logger.debug("Received query: {}", query);
-        }
-
-        final var functionality = functionOf(query);
+        final var function = functionOf(query);
 
         final var handler = dispatcher.getHandler(query);
         final var queryHeader = handler.extractHeader(query);
@@ -140,7 +131,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
         }
         final ResponseType responseType = queryHeader.responseType();
-        logger.debug("Started answering a {} query of type {}", functionality, responseType);
+        logger.debug("Started answering a {} query of type {}", function, responseType);
 
         Response response;
         long fee = 0L;
@@ -152,7 +143,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
 
             // 2. Check query throttles
-            final var function = functionOf(query);
             if (throttleAccumulator.shouldThrottleQuery(function, query)) {
                 throw new PreCheckException(BUSY);
             }
@@ -229,6 +219,15 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         }
     }
 
+    private Query parseQuery(Bytes requestBuffer) {
+        try {
+            return queryParser.parseStrict(requestBuffer.toReadableSequentialData());
+        } catch (IOException e) {
+            // TODO there may be other types of errors here. Please cross check with ingest parsing
+            throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
+        }
+    }
+
     private long totalFee(final FeeObject costs) {
         return costs.getNetworkFee() + costs.getServiceFee() + costs.getNodeFee();
     }
@@ -250,7 +249,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         }
     }
 
-    final class ByteArrayDataOutput extends WritableStreamingData {
+    private static final class ByteArrayDataOutput extends WritableStreamingData {
         private final ByteArrayOutputStream out;
 
         public ByteArrayDataOutput(ByteArrayOutputStream out) {
