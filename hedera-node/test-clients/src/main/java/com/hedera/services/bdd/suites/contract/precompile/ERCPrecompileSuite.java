@@ -2924,7 +2924,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                         spec,
                         contractCall(
                                         ERC_721_CONTRACT,
-                                        "isApprovedForAll",
+                                        IS_APPROVED_FOR_ALL,
                                         HapiParserUtil.asHeadlongAddress(
                                                 asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
                                         HapiParserUtil.asHeadlongAddress(
@@ -2937,7 +2937,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER),
                         contractCall(
                                         ERC_721_CONTRACT,
-                                        "isApprovedForAll",
+                                        IS_APPROVED_FOR_ALL,
                                         HapiParserUtil.asHeadlongAddress(
                                                 asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
                                         HapiParserUtil.asHeadlongAddress(
@@ -3039,7 +3039,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                         spec,
                         contractCall(
                                         ERC_721_CONTRACT,
-                                        "getApproved",
+                                        GET_APPROVED,
                                         HapiParserUtil.asHeadlongAddress(
                                                 asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
                                         BigInteger.ONE)
