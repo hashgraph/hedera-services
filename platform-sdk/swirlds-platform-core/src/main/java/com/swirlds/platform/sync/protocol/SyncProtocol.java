@@ -19,8 +19,7 @@ package com.swirlds.platform.sync.protocol;
 import static com.swirlds.base.ArgumentUtils.throwArgNull;
 
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.threading.SyncPermit;
-import com.swirlds.common.threading.locks.locked.MaybeLocked;
+import com.swirlds.common.threading.SyncPermitProvider;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.platform.Connection;
 import com.swirlds.platform.Utilities;
@@ -39,6 +38,8 @@ import java.util.function.LongSupplier;
 /**
  * Executes the sync protocol where events are exchanged with a peer and all events are sent and received in topological
  * order.
+ * <p>
+ * This object will be instantiated once per set of peers, and is bidirectional
  */
 public class SyncProtocol implements Protocol {
     /**
@@ -57,11 +58,6 @@ public class SyncProtocol implements Protocol {
     private final FallenBehindManager fallenBehindManager;
 
     /**
-     * Provides permits to initiate syncs
-     */
-    private final SyncPermit initiateSyncPermit;
-
-    /**
      * The critical quorum, which determines whether a peer is a good candidate to sync with
      */
     private final CriticalQuorum criticalQuorum;
@@ -69,8 +65,11 @@ public class SyncProtocol implements Protocol {
     /**
      * Peer agnostic checks which are performed to determine whether this node should sync or not
      */
-    private final PeerAgnosticSyncChecks peerAgnosticSyncCheck;
+    private final PeerAgnosticSyncChecks peerAgnosticSyncChecks;
 
+    /**
+     * Supplier for the amount of time to sleep after a sync
+     */
     private final LongSupplier sleepAfterSyncSupplier;
 
     /**
@@ -79,39 +78,44 @@ public class SyncProtocol implements Protocol {
     private final SyncMetrics syncMetrics;
 
     /**
-     * Contains a permit, if it has been received from {@link #initiateSyncPermit}
+     * Manages the permits for this protocol. Ensures that only one sync is in progress at a time, and that the node
+     * doesn't exceed concurrent incoming/outgoing sync maximums
      */
-    private MaybeLocked maybeAcquiredPermit;
+    private final SyncProtocolPermitManager permitManager;
 
     /**
      * Constructs a new sync protocol
      *
-     * @param peerId                the id of the peer being synced with in this protocol
-     * @param synchronizer          the shadow graph synchronizer, responsible for actually doing the sync
-     * @param fallenBehindManager   manager to determine whether this node has fallen behind
-     * @param initiateSyncPermit    provides permits to initiate syncs
-     * @param criticalQuorum        determines whether a peer is a good candidate to sync with
-     * @param peerAgnosticSyncCheck peer agnostic checks which are performed to determine whether this node should sync
-     * @param syncMetrics           metrics tracking syncing
+     * @param peerId                     the id of the peer being synced with in this protocol
+     * @param synchronizer               the shadow graph synchronizer, responsible for actually doing the sync
+     * @param fallenBehindManager        manager to determine whether this node has fallen behind
+     * @param outgoingSyncPermitProvider provides permits to initiate syncs
+     * @param incomingSyncPermitProvider provides permits to receive syncs
+     * @param criticalQuorum             determines whether a peer is a good candidate to sync with
+     * @param peerAgnosticSyncChecks     peer agnostic checks which are performed to determine whether this node should
+     *                                   sync
+     * @param syncMetrics                metrics tracking syncing
      */
     public SyncProtocol(
             @NonNull final NodeId peerId,
             @NonNull final ShadowGraphSynchronizer synchronizer,
             @NonNull final FallenBehindManager fallenBehindManager,
-            @NonNull final SyncPermit initiateSyncPermit,
+            @NonNull final SyncPermitProvider outgoingSyncPermitProvider,
+            @NonNull final SyncPermitProvider incomingSyncPermitProvider,
             @NonNull final CriticalQuorum criticalQuorum,
-            @NonNull final PeerAgnosticSyncChecks peerAgnosticSyncCheck,
+            @NonNull final PeerAgnosticSyncChecks peerAgnosticSyncChecks,
             @NonNull final LongSupplier sleepAfterSyncSupplier,
             @NonNull final SyncMetrics syncMetrics) {
 
         this.peerId = throwArgNull(peerId, "peerId");
         this.synchronizer = throwArgNull(synchronizer, "synchronizer");
         this.fallenBehindManager = throwArgNull(fallenBehindManager, "fallenBehindManager");
-        this.initiateSyncPermit = throwArgNull(initiateSyncPermit, "initiateSyncPermit");
         this.criticalQuorum = throwArgNull(criticalQuorum, "criticalQuorum");
-        this.peerAgnosticSyncCheck = throwArgNull(peerAgnosticSyncCheck, "peerAgnosticSyncCheck");
+        this.peerAgnosticSyncChecks = throwArgNull(peerAgnosticSyncChecks, "peerAgnosticSyncCheck");
         this.sleepAfterSyncSupplier = throwArgNull(sleepAfterSyncSupplier, "sleepAfterSyncSupplier");
         this.syncMetrics = throwArgNull(syncMetrics, "syncMetrics");
+
+        this.permitManager = new SyncProtocolPermitManager(outgoingSyncPermitProvider, incomingSyncPermitProvider);
     }
 
     /**
@@ -126,39 +130,18 @@ public class SyncProtocol implements Protocol {
     }
 
     /**
-     * Attempts to acquire a permit to initiate a sync
-     *
-     * @return true if the permit was successfully acquired, otherwise false
-     */
-    private boolean tryAcquirePermit() {
-        maybeAcquiredPermit = initiateSyncPermit.tryAcquire();
-
-        return maybeAcquiredPermit.isLockAcquired();
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
     public boolean shouldInitiate() {
-        if (!peerAgnosticSyncCheck.shouldSync() || fallenBehindManager.hasFallenBehind()) {
+        if (!peerAgnosticSyncChecks.shouldSync() || fallenBehindManager.hasFallenBehind()) {
             return false;
         }
 
         if (peerNeededForFallenBehind() || criticalQuorum.isInCriticalQuorum(peerId.getId())) {
-            return tryAcquirePermit();
-        }
-
-        return false;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void initiateFailed() {
-        if (maybeAcquiredPermit != null && maybeAcquiredPermit.isLockAcquired()) {
-            maybeAcquiredPermit.close();
+            return permitManager.tryAcquirePermit(true);
+        } else {
+            return false;
         }
     }
 
@@ -167,15 +150,22 @@ public class SyncProtocol implements Protocol {
      */
     @Override
     public boolean shouldAccept() {
-        if (!peerAgnosticSyncCheck.shouldSync() || fallenBehindManager.hasFallenBehind()) {
+        if (!peerAgnosticSyncChecks.shouldSync() || fallenBehindManager.hasFallenBehind()) {
             syncMetrics.updateRejectedSyncRatio(true);
             return false;
         }
 
-        final boolean permitAcquired = tryAcquirePermit();
+        final boolean permitAcquired = permitManager.tryAcquirePermit(false);
         syncMetrics.updateRejectedSyncRatio(!permitAcquired);
-
         return permitAcquired;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void initiateFailed() {
+        permitManager.closePermits();
     }
 
     /**
@@ -195,9 +185,10 @@ public class SyncProtocol implements Protocol {
 
         throwArgNull(connection, "connection");
 
-        if (maybeAcquiredPermit == null || !maybeAcquiredPermit.isLockAcquired()) {
+        if (!permitManager.isAcquired()) {
             throw new NetworkProtocolException("sync permit not acquired prior to executing sync protocol");
         }
+
         try {
             synchronizer.synchronize(connection);
         } catch (final ParallelExecutionException | SyncException e) {
@@ -207,11 +198,8 @@ public class SyncProtocol implements Protocol {
 
             throw new NetworkProtocolException(e);
         } finally {
-            if (maybeAcquiredPermit.isLockAcquired()) {
-                maybeAcquiredPermit.close();
-            }
+            permitManager.closePermits();
 
-            // TODO: should the sleep be in the `try` after `synchronize`, or here?
             final long sleepAfterSyncDuration = sleepAfterSyncSupplier.getAsLong();
             if (sleepAfterSyncDuration > 0) {
                 Thread.sleep(sleepAfterSyncDuration);

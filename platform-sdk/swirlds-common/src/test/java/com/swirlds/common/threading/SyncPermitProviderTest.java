@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-public class SyncPermitTest {
+public class SyncPermitProviderTest {
 
     /**
      * Verify that permits are acquired and release properly.
@@ -33,7 +33,7 @@ public class SyncPermitTest {
     @Test
     void testPermitRelease() {
         final int numPermits = 3;
-        final SyncPermit syncPermit = new SyncPermit(numPermits);
+        final SyncPermitProvider syncPermit = new SyncPermitProvider(numPermits);
 
         assertEquals(numPermits, syncPermit.getNumAvailable(), "all permits should be available");
 
@@ -57,7 +57,7 @@ public class SyncPermitTest {
     @Test
     void testAllPermitsAcquired() {
         final int numPermits = 9;
-        final SyncPermit syncPermit = new SyncPermit(numPermits);
+        final SyncPermitProvider syncPermit = new SyncPermitProvider(numPermits);
 
         assertEquals(numPermits, syncPermit.getNumAvailable(), "all permits should be available");
 

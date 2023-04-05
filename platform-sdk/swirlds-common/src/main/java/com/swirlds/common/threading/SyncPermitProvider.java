@@ -25,9 +25,15 @@ import java.util.concurrent.Semaphore;
  * Manages the permits that allow syncs to occur in the protocol paradigm. Syncs should only proceed once a permit is
  * acquired. This class is thread safe.
  */
-public class SyncPermit {
-
+public class SyncPermitProvider {
+    /**
+     * A semaphore that is used to manage the number of concurrent syncs
+     */
     private final Semaphore syncPermits;
+
+    /**
+     * The object returned when a permit is successfully obtained
+     */
     private final AcquiredOnTry acquired;
 
     /**
@@ -35,7 +41,7 @@ public class SyncPermit {
      *
      * @param numPermits the number of concurrent outgoing syncs to allow
      */
-    public SyncPermit(final int numPermits) {
+    public SyncPermitProvider(final int numPermits) {
         this.syncPermits = new Semaphore(numPermits);
         this.acquired = new AcquiredOnTry(syncPermits::release);
     }
