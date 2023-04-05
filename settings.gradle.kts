@@ -98,6 +98,7 @@ gitRepositories {
   include("hedera-protobufs") {
     uri.set("https://github.com/hashgraph/hedera-protobufs.git")
     // choose tag or branch of HAPI you would like to test with
+    // this looks for a tag in hedera-protobufs repo
     // This version needs to match tha HAPI version below in versionCatalogs
     tag.set("v0.37.0")
     // do not load project from repo
@@ -113,8 +114,9 @@ dependencyResolutionManagement {
     // distribution. These libs can be depended on during compilation, or bundled as part of
     // runtime.
     create("libs") {
-      // The HAPI API version to use, this need to match the tag set on gitRepositories above
-      version("hapi-version", "0.36.1")
+      // The HAPI API version to use, this need to match the Hapi protubuf java version from pom.xml
+      // (https://github.com/hashgraph/hedera-protobufs-java.git)
+      version("hapi-version", "0.37.0-SNAPSHOT")
 
       // Definition of version numbers for all libraries
       version("pbj-version", "0.3.0")
