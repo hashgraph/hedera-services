@@ -64,6 +64,7 @@ public class VirtualMapFactory {
 
     private static final String BLOBS_VM_NAME = "fileStore";
     private static final String ITERABLE_STORAGE_VM_NAME = "smartContractIterableKvStore";
+    //    private static final String ITERABLE_STORAGE_VM_NAME = "smartContractIterableKeyValueStore";
     private static final String SCHEDULE_LIST_STORAGE_VM_NAME = "scheduleListStore";
     private static final String SCHEDULE_TEMPORAL_STORAGE_VM_NAME = "scheduleTemporalStore";
     private static final String SCHEDULE_EQUALITY_STORAGE_VM_NAME = "scheduleEqualityStore";

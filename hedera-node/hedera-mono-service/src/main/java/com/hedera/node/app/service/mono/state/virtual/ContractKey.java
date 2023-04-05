@@ -19,7 +19,6 @@ package com.hedera.node.app.service.mono.state.virtual;
 import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.deserializeUint256Key;
 import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.serializePackedBytes;
 import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.serializePackedBytesToBuffer;
-import static com.swirlds.common.utility.NonCryptographicHashing.hash32;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -55,12 +54,6 @@ public final class ContractKey implements VirtualKey<ContractKey> {
 
     static final long RUNTIME_CONSTRUCTABLE_ID = 0xb2c0a1f733950abdL;
     public static final int MERKLE_VERSION = 1;
-
-    private static boolean useStableHashCode = true;
-
-    public static void setUseStableHashCode(final boolean useStableHashCode) {
-        ContractKey.useStableHashCode = useStableHashCode;
-    }
 
     public ContractKey() {
         // there has to be a default constructor for deserialize
@@ -136,30 +129,19 @@ public final class ContractKey implements VirtualKey<ContractKey> {
         return contractId == that.contractId && Arrays.equals(uint256Key, that.uint256Key);
     }
 
-    /** Special hash to make sure we get good distribution. */
+    /** Special hash to make sure we get good distribution - must NEVER change per {@code VirtualKey} contract. */
     @Override
     public int hashCode() {
-        return useStableHashCode
-                ? (int) stableHash64(
-                        contractId,
-                        uint256Key[7],
-                        uint256Key[6],
-                        uint256Key[5],
-                        uint256Key[4],
-                        uint256Key[3],
-                        uint256Key[2],
-                        uint256Key[1],
-                        uint256Key[0])
-                : hash32(
-                        contractId,
-                        uint256Key[7],
-                        uint256Key[6],
-                        uint256Key[5],
-                        uint256Key[4],
-                        uint256Key[3],
-                        uint256Key[2],
-                        uint256Key[1],
-                        uint256Key[0]);
+        return (int) stableHash64(
+                contractId,
+                uint256Key[7],
+                uint256Key[6],
+                uint256Key[5],
+                uint256Key[4],
+                uint256Key[3],
+                uint256Key[2],
+                uint256Key[1],
+                uint256Key[0]);
     }
 
     @Override
@@ -347,7 +329,8 @@ public final class ContractKey implements VirtualKey<ContractKey> {
     }
 
     /**
-     * An unchanging, UNTOUCHABLE implementation of {@code hashCode()} for the {@link VirtualKey} contract.
+     * An unchanging, UNTOUCHABLE implementation of {@code hashCode()} to reduce hash collisions.
+     *
      * @param x0 the first long to hash
      * @param x1 the second long to hash
      * @param x2 the third long to hash

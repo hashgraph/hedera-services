@@ -290,38 +290,11 @@ public class ServicesState extends PartialNaryMerkleInternal
             @NonNull final SoftwareVersion deserializedVersion) {
         log.info("Init called on Services node {} WITH Merkle saved state", platform.getSelfId());
 
-        log.info("Self-reported size of storage map = {}", contractStorage().size());
-        StorageLinksFixer.fixAnyBrokenLinks(this, LinkRepairs::new, VirtualMapMigration::extractVirtualMapData);
-        // Validate the # of storage K/V pairs reachable via linked lists match the pre-migration count
-        reportAllReachableStorageSlots();
-
         final var bootstrapProps = getBootstrapProperties();
         enableVirtualAccounts = bootstrapProps.getBooleanProperty(PropertyNames.ACCOUNTS_STORE_ON_DISK);
         enableVirtualTokenRels = bootstrapProps.getBooleanProperty(PropertyNames.TOKENS_STORE_RELS_ON_DISK);
         enabledVirtualNft = bootstrapProps.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE);
         return internalInit(platform, bootstrapProps, dualState, trigger, deserializedVersion);
-    }
-
-    private void reportAllReachableStorageSlots() {
-        accounts().forEach((num, account) -> {
-            if (account.isSmartContract() && account.getFirstContractStorageKey() != null) {
-                final var n = countReachableStorageMappings(account.getFirstContractStorageKey(), contractStorage());
-                log.info("Found {} reachable storage mappings for contract 0.0.{}", n, num.longValue());
-            }
-        });
-    }
-
-    private int countReachableStorageMappings(
-            final ContractKey firstKey, final VirtualMapLike<ContractKey, IterableContractValue> storage) {
-        final long contractId = firstKey.getContractId();
-        ContractKey nextKey = firstKey;
-        int reachablePairs = 0;
-        while (nextKey != null) {
-            final var value = storage.get(nextKey);
-            nextKey = value.getNextKeyScopedTo(contractId);
-            reachablePairs++;
-        }
-        return reachablePairs;
     }
 
     private void genesisInit(final Platform platform, final SwirldDualState dualState) {
@@ -636,6 +609,9 @@ public class ServicesState extends PartialNaryMerkleInternal
 
     @VisibleForTesting
     void migrateFrom(@NonNull final SoftwareVersion deserializedVersion) {
+        // Will be removed on the next 0.36 tag
+        StorageLinksFixer.fixAnyBrokenLinks(this, LinkRepairs::new, VirtualMapMigration::extractVirtualMapData);
+
         // Keep the MutableStateChildren up-to-date (no harm done if they are already are)
         final var app = getMetadata().app();
         app.workingState().updatePrimitiveChildrenFrom(this);

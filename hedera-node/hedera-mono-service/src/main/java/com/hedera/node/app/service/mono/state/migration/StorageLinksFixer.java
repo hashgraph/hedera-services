@@ -49,7 +49,8 @@ public class StorageLinksFixer {
         final var linkRepairs = repairsFactory.from(contracts.getInMemoryAccounts(), storage);
         try {
             scanForReason("to build in-memory storage mapping and links", linkRepairs, storage, dataAccess);
-            linkRepairs.rebuildStorageMapAndLinks();
+            final var newStorage = linkRepairs.rebuildStorageMapAndLinks();
+            initializingState.setChild(CONTRACT_STORAGE, newStorage);
         } catch (InterruptedException e) {
             log.error("Interrupted while re-building storage mapping and links", e);
             Thread.currentThread().interrupt();

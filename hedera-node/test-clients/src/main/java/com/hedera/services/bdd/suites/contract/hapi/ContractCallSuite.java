@@ -206,7 +206,7 @@ public class ContractCallSuite extends HapiSuite {
         return List.of(
                 consTimeManagementWorksWithRevertedInternalCreations(),
                 // Just useful for local testing with hashCode() migration code
-                //                createMapWorks(),
+                createMapWorks(),
                 payableSuccess(),
                 depositSuccess(),
                 depositDeleteSuccess(),
@@ -2161,16 +2161,17 @@ public class ContractCallSuite extends HapiSuite {
         return onlyDefaultHapiSpec("CreateMapWorks")
                 .given()
                 .when(
-                        //                        uploadInitCode(contract),
-                        //                        contractCreate(contract),
-                        //                        contractCall(contract, "create_map", r.nextLong(16L))
-                        //                                .gas(GAS_TO_OFFER)
-                        )
-                .then(contractCallWithFunctionAbi(
-                                wellKnownToCall,
-                                "{\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"n\",\"type\":\"uint32\"}],\"name\":\"create_map\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}",
-                                r.nextLong(16L))
-                        .gas(GAS_TO_OFFER));
+                        uploadInitCode(contract),
+                        contractCreate(contract),
+                        contractCall(contract, "create_map", r.nextLong(16L)).gas(GAS_TO_OFFER))
+                .then(
+                        //                        contractCallWithFunctionAbi(
+                        //                                wellKnownToCall,
+                        //
+                        // "{\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"n\",\"type\":\"uint32\"}],\"name\":\"create_map\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}",
+                        //                                r.nextLong(16L))
+                        //                        .gas(GAS_TO_OFFER)
+                        );
     }
 
     private String getNestedContractAddress(final String contract, final HapiSpec spec) {

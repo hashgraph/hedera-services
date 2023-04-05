@@ -20,14 +20,18 @@ import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
+import com.hedera.node.app.service.mono.state.virtual.VirtualMapFactory;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Accepts key/value pairs from a full scans of the storage {@code VirtualMap}, building up
@@ -35,6 +39,7 @@ import org.apache.commons.lang3.tuple.Pair;
  * using the stable {@link ContractKey#hashCode()} implementation.
  */
 public class LinkRepairs implements InterruptableConsumer<Pair<ContractKey, IterableContractValue>> {
+    private static final Logger log = LogManager.getLogger(LinkRepairs.class);
     private final Map<EntityNum, List<Pair<ContractKey, IterableContractValue>>> mappingsToRepair = new TreeMap<>();
     private final MerkleMapLike<EntityNum, MerkleAccount> contracts;
     private final VirtualMap<ContractKey, IterableContractValue> storage;
@@ -57,12 +62,9 @@ public class LinkRepairs implements InterruptableConsumer<Pair<ContractKey, Iter
                 .add(kvPair);
     }
 
-    public void rebuildStorageMapAndLinks() {
-        // First remove any keys reachable using the undesired hashCode()
-        ContractKey.setUseStableHashCode(false);
-        allKeys.forEach(this::tryToRemove);
-        // Now switch to using the v0.35 stable hashCode() before we rebuild the map
-        ContractKey.setUseStableHashCode(true);
+    public VirtualMap<ContractKey, IterableContractValue> rebuildStorageMapAndLinks() {
+        final var factory = new VirtualMapFactory();
+        final var newStorage = factory.newVirtualizedIterableStorage();
 
         mappingsToRepair.forEach((num, mappingList) -> {
             final var contract = contracts.getForModify(num);
@@ -86,19 +88,20 @@ public class LinkRepairs implements InterruptableConsumer<Pair<ContractKey, Iter
                     final var nextMapping = mappingList.get(i + 1);
                     value.setNextKey(nextMapping.getLeft().getKey());
                 }
-                storage.put(mapping.getKey(), value);
+                newStorage.put(mapping.getKey(), value);
             }
             contract.setNumContractKvPairs(n);
         });
-    }
-
-    private void tryToRemove(final ContractKey key) {
-        try {
-            storage.remove(key);
-        } catch (final IllegalArgumentException | NullPointerException ignore) {
-            // Ignore any exceptions like:
-            //  - IllegalArgumentException: path (X) is not valid; must be in range (Y,Z)
-            //  - NullPointerException: Cannot invoke "VirtualLeafRecord.setPath(long)" because "lastLeaf" is null
-        }
+        // Revisit all keys in new map one more time to make sure we can read them all
+        mappingsToRepair.forEach((num, mappingList) -> {
+            mappingList.forEach(mapping -> {
+                final var readValue = newStorage.get(mapping.getKey());
+                final var expectedValue = mapping.getValue();
+                if (!Arrays.equals(readValue.getValue(), expectedValue.getValue())) {
+                    log.error("Expected {} but got {} for key {}", expectedValue, readValue, mapping.getKey());
+                }
+            });
+        });
+        return newStorage;
     }
 }
