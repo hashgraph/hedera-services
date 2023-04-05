@@ -24,12 +24,9 @@ import java.util.function.Function;
 /**
  * Similar to {@link java.util.function.Function} but throws an exception.
  *
- * @param <T>
- * 		the type accepted by the function
- * @param <R>
- * 		the return type of the function
- * @param <E>
- * 		the type thrown by the function
+ * @param <T> the type accepted by the function
+ * @param <R> the return type of the function
+ * @param <E> the type thrown by the function
  */
 @FunctionalInterface
 public interface CheckedFunction<T, R, E extends Exception> {
@@ -53,6 +50,7 @@ public interface CheckedFunction<T, R, E extends Exception> {
      * @param <E>      the type thrown by the function
      * @return the {@link CheckedFunction}
      */
+    @NonNull
     static <T, R, E extends Exception> CheckedFunction<T, R, E> of(@NonNull final Function<T, R> function) {
         ArgumentUtils.throwArgNull(function, "function");
         return function::apply;

@@ -18,6 +18,7 @@ package com.swirlds.base.function;
 
 import com.swirlds.base.ArgumentUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Consumer;
 
 /**
@@ -35,7 +36,7 @@ public interface CheckedConsumer<T, E extends Exception> {
      * @param t the value to accept
      * @throws E the exception type thrown by the consumer
      */
-    void accept(T t) throws E;
+    void accept(@Nullable T t) throws E;
 
     /**
      * Convert a {@link Consumer} to a {@link CheckedConsumer}.
@@ -45,6 +46,7 @@ public interface CheckedConsumer<T, E extends Exception> {
      * @param <E>      the type thrown by the consumer
      * @return the {@link CheckedConsumer}
      */
+    @NonNull
     static <T, E extends Exception> CheckedConsumer<T, E> of(@NonNull final Consumer<T> consumer) {
         ArgumentUtils.throwArgNull(consumer, "consumer");
         return consumer::accept;
