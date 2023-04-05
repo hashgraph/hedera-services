@@ -141,10 +141,10 @@ public class ContractCallSuite extends HapiSuite {
     private static final String OWNER = "owner";
     private static final String INSERT = "insert";
     private static final String TOKEN_ISSUER = "tokenIssuer";
-    private static final String DECIMALS = "decimals";
+    public static final String DECIMALS = "decimals";
     private static final String BALANCE_OF = "balanceOf";
     private static final String ISSUER_TOKEN_BALANCE = "issuerTokenBalance";
-    private static final String TRANSFER = "transfer";
+    public static final String TRANSFER = "transfer";
     private static final String ALICE_TOKEN_BALANCE = "aliceTokenBalance";
     private static final String CAROL_TOKEN_BALANCE = "carolTokenBalance";
     private static final String BOB_TOKEN_BALANCE = "bobTokenBalance";
