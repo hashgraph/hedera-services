@@ -76,11 +76,11 @@ import java.time.Duration;
 @ConfigData("event.preconsensus")
 public record PreConsensusEventStreamConfig(
         @ConfigProperty(defaultValue = "1000") int writeQueueCapacity,
-        @ConfigProperty(defaultValue = "1d") Duration minimumRetentionPeriod,
-        @ConfigProperty(defaultValue = "100") int preferredFileSizeMegabytes,
-        @ConfigProperty(defaultValue = "50") int bootstrapGenerationalSpan,
-        @ConfigProperty(defaultValue = "30") int generationalUtilizationSpanRunningAverageLength,
-        @Min(1) @ConfigProperty(defaultValue = "1.2") double generationalSpanOverlapFactor,
+        @ConfigProperty(defaultValue = "1h") Duration minimumRetentionPeriod,
+        @ConfigProperty(defaultValue = "10") int preferredFileSizeMegabytes,
+        @ConfigProperty(defaultValue = "1000") int bootstrapGenerationalSpan,
+        @ConfigProperty(defaultValue = "5") int generationalUtilizationSpanRunningAverageLength,
+        @Min(1) @ConfigProperty(defaultValue = "2") double generationalSpanOverlapFactor,
         @ConfigProperty(defaultValue = "5") int minimumGenerationalCapacity,
         @ConfigProperty(defaultValue = "false") boolean permitGaps,
         @ConfigProperty(defaultValue = "preconsensus-events") Path databaseDirectory,

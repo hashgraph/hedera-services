@@ -95,19 +95,14 @@ public class SignedStateViewFactory {
         if (provider == null) {
             return false;
         }
-        // Since we can't get the enclosing platform SignedState, we don't know exactly when this
-        // state was signed.
-        // So we just use, as a guaranteed lower bound, the consensus time of its last-handled
-        // transaction.
+        // Since we can't get the enclosing platform SignedState, we don't know exactly when this state was signed.
+        // So we just use, as a guaranteed lower bound, the consensus time of its last-handled transaction.
         final var latestSigningTime = provider.getTimeOfLastHandledTxn();
 
         // There are a few edge cases that disqualify a state:
-        //   1. No transactions have been handled (latestSigningTime == null); abort now to avoid
-        // downstream NPE
-        //   2. The state isn't of the CURRENT_VERSION---this likely means a larger problem is at
-        // hand
-        //   3. The state has not completed an init() call---again, likely a symptom of a larger
-        // problem
+        //   1. No transactions have been handled (latestSigningTime == null); abort now to avoid downstream NPE
+        //   2. The state isn't of the CURRENT_VERSION---this likely means a larger problem is at hand
+        //   3. The state has not completed an init() call---again, likely a symptom of a larger problem
         return latestSigningTime != null
                 && provider.getStateVersion() == StateVersions.CURRENT_VERSION
                 && provider.isInitialized();

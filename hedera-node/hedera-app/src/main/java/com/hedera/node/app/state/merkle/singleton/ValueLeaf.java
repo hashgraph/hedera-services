@@ -17,6 +17,8 @@
 package com.hedera.node.app.state.merkle.singleton;
 
 import com.hedera.node.app.state.merkle.StateMetadata;
+import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
+import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
@@ -97,15 +99,21 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
     /** {@inheritDoc} */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        final var valueSerdes = md.stateDefinition().valueSerdes();
-        valueSerdes.write(val, out);
+        if (md == null) {
+            throw new IllegalStateException("Metadata is null, meaning this is not a proper object");
+        }
+        final var valueSerdes = md.stateDefinition().valueCodec();
+        valueSerdes.write(val, new WritableStreamingData(out));
     }
 
     /** {@inheritDoc} */
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        final var valueSerdes = md.stateDefinition().valueSerdes();
-        this.val = valueSerdes.parse(in);
+        if (md == null) {
+            throw new IllegalStateException("Metadata is null, meaning this is not a proper object");
+        }
+        final var valueSerdes = md.stateDefinition().valueCodec();
+        this.val = valueSerdes.parse(new ReadableStreamingData(in));
     }
 
     /**

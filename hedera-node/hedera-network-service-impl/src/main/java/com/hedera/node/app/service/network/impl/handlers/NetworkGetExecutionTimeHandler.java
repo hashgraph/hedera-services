@@ -18,32 +18,39 @@ package com.hedera.node.app.service.network.impl.handlers;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.QueryHeader;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.network.NetworkGetExecutionTimeResponse;
+import com.hedera.hapi.node.transaction.Query;
+import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hederahashgraph.api.proto.java.*;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#NetworkGetExecutionTime}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#NETWORK_GET_EXECUTION_TIME}.
  */
 @Singleton
 public class NetworkGetExecutionTimeHandler extends PaidQueryHandler {
     @Inject
-    public NetworkGetExecutionTimeHandler() {}
+    public NetworkGetExecutionTimeHandler() {
+        // Exists for injection
+    }
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
-        return query.getNetworkGetExecutionTime().getHeader();
+        return query.networkGetExecutionTimeOrThrow().header();
     }
 
     @Override
     public Response createEmptyResponse(@NonNull final ResponseHeader header) {
-        final var response = NetworkGetExecutionTimeResponse.newBuilder().setHeader(header);
-        return Response.newBuilder().setNetworkGetExecutionTime(response).build();
+        final var response = NetworkGetExecutionTimeResponse.newBuilder().header(header);
+        return Response.newBuilder().networkGetExecutionTime(response).build();
     }
 
     /**

@@ -19,25 +19,21 @@ package com.hedera.node.app.service.consensus.impl.test.handlers;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CUSTOM_PAYER_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.EXISTING_TOPIC;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
-import static com.hedera.test.utils.KeyUtils.sanityRestored;
+import static com.hedera.test.utils.KeyUtils.sanityRestoredToPbj;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 
-import com.google.protobuf.ByteString;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.mono.Utils;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -46,14 +42,14 @@ import org.assertj.core.api.Assertions;
 public final class ConsensusTestUtils {
 
     static final Key SIMPLE_KEY_A = Key.newBuilder()
-            .setEd25519(ByteString.copyFrom("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes()))
+            .ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes()))
             .build();
     static final Key SIMPLE_KEY_B = Key.newBuilder()
-            .setEd25519(ByteString.copyFrom("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".getBytes()))
+            .ed25519(Bytes.wrap("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".getBytes()))
             .build();
     static final HederaKey A_NONNULL_KEY = new HederaKey() {};
 
-    static final AccountID ACCOUNT_ID_4 = IdUtils.asAccount("0.0.4");
+    static final AccountID ACCOUNT_ID_4 = AccountID.newBuilder().accountNum(4L).build();
 
     private ConsensusTestUtils() {
         throw new UnsupportedOperationException("Utility class");
@@ -71,23 +67,15 @@ public final class ConsensusTestUtils {
     }
 
     static void assertDefaultPayer(PreHandleContext context) {
-        assertPayer(DEFAULT_PAYER_KT.asKey(), context);
+        assertPayer(DEFAULT_PAYER_KT.asPbjKey(), context);
     }
 
     static void assertCustomPayer(PreHandleContext context) {
-        assertPayer(CUSTOM_PAYER_ACCOUNT_KT.asKey(), context);
+        assertPayer(CUSTOM_PAYER_ACCOUNT_KT.asPbjKey(), context);
     }
 
     static void assertPayer(Key expected, PreHandleContext context) {
-        Assertions.assertThat(sanityRestored(context.getPayerKey())).isEqualTo(expected);
-    }
-
-    static TransactionBody txnFrom(final TxnHandlingScenario scenario) {
-        try {
-            return scenario.platformTxn().getTxn();
-        } catch (final Throwable e) {
-            return fail(e);
-        }
+        Assertions.assertThat(sanityRestoredToPbj(context.getPayerKey())).isEqualTo(expected);
     }
 
     static void mockTopicLookup(Key adminKey, Key submitKey, ReadableTopicStore topicStore) {
