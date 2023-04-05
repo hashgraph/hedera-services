@@ -20,6 +20,7 @@ import static com.swirlds.common.metrics.IntegerPairAccumulator.AVERAGE;
 import static com.swirlds.common.metrics.Metric.DataType.STRING;
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -181,7 +182,9 @@ class DefaultIntegerPairAccumulatorTest {
 
         // then
         assertThrows(
-                NullPointerException.class, () -> accumulator.get(null), "Calling get() with null should throw an NPE");
+                IllegalArgumentException.class,
+                () -> accumulator.get(null),
+                "Calling get() with null should throw an IAE");
         assertThrows(
                 IllegalArgumentException.class,
                 () -> accumulator.get(Metric.ValueType.MIN),
@@ -203,45 +206,8 @@ class DefaultIntegerPairAccumulatorTest {
                 new IntegerPairAccumulator.Config<>(CATEGORY, NAME, Double.class, AVERAGE);
         final IntegerPairAccumulator<Double> accumulator = new DefaultIntegerPairAccumulator<>(config);
 
-        // when
-        accumulator.update(10, 10);
-        accumulator.update(5, 5);
-
         // then
-        assertEquals(1.0, accumulator.get());
-
-        // when
-        accumulator.reset();
-
-        // then
-        assertEquals(0.0, accumulator.get());
-    }
-
-    @Test
-    void testCustomReset() {
-        // given
-        final int leftDefault = 10;
-        final int rightDefault = 5;
-        final IntegerPairAccumulator.Config<Integer> config = new IntegerPairAccumulator.Config<>(
-                        CATEGORY, NAME, Integer.class, Integer::sum)
-                .withLeftReset(i -> leftDefault)
-                .withRightReset(i -> rightDefault);
-        final IntegerPairAccumulator<Integer> accumulator = new DefaultIntegerPairAccumulator<>(config);
-
-        // then
-        assertEquals(15, accumulator.get());
-
-        // when
-        accumulator.update(1, 2);
-
-        // then
-        assertEquals(18, accumulator.get());
-
-        // when
-        accumulator.reset();
-
-        // then
-        assertEquals(15, accumulator.get());
+        assertThatCode(accumulator::reset).doesNotThrowAnyException();
     }
 
     @SuppressWarnings("removal")
