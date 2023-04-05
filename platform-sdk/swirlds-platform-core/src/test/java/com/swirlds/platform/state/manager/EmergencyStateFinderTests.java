@@ -43,7 +43,7 @@ public class EmergencyStateFinderTests extends AbstractSignedStateManagerTest {
     @DisplayName("Emergency State Finder Test")
     @Test
     void testFind() {
-        final SignedStateManager manager = new SignedStateManagerBuilder(stateConfig).build();
+        final SignedStateManager manager = new SignedStateManagerBuilder(buildStateConfig()).build();
 
         final int roundAgeToSign = 3;
 

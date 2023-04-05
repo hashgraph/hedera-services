@@ -70,7 +70,7 @@ class OldCompleteStateEventuallyReleasedTest extends AbstractSignedStateManagerT
     @DisplayName("Old Complete State Eventually Released")
     void oldCompleteStateEventuallyReleased() throws InterruptedException {
 
-        final SignedStateManager manager = new SignedStateManagerBuilder(stateConfig)
+        final SignedStateManager manager = new SignedStateManagerBuilder(buildStateConfig())
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .build();
 

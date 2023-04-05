@@ -285,7 +285,7 @@ public class SignedStateManager implements SignedStateFinder {
      * if no state causes the criteria to pass.
      */
     @Override
-    public synchronized @NonNull AutoCloseableWrapper<SignedState> find( // TODO test
+    public synchronized @NonNull AutoCloseableWrapper<SignedState> find(
             @NonNull final Predicate<SignedState> criteria) {
 
         final List<SignedState> allStates = new ArrayList<>();

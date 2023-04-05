@@ -18,8 +18,11 @@ package com.swirlds.platform.state.manager;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
@@ -78,7 +81,8 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
     @Test
     @DisplayName("Sequential Signatures Test")
     void sequentialSignaturesTest() throws InterruptedException {
-        final SignedStateManager manager = new SignedStateManagerBuilder(stateConfig)
+        this.roundsToKeepAfterSigning = 4;
+        final SignedStateManager manager = new SignedStateManagerBuilder(buildStateConfig())
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();
@@ -122,8 +126,34 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
             validateCallbackCounts(0, Math.max(0, round - roundAgeToSign + 1));
         }
 
+        final long lastCompletedRound;
+        try (final AutoCloseableWrapper<SignedState> wrapper = manager.getLatestSignedState()) {
+            lastCompletedRound = wrapper.get().getRound();
+        }
+
+        for (int round = 0; round < count; round++) {
+            final long finalRound = round;
+            try (final AutoCloseableWrapper<SignedState> wrapper =
+                    manager.find(state -> state.getRound() == finalRound)) {
+
+                final SignedState foundState = wrapper.get();
+
+                if (round < count - roundsToKeepAfterSigning - 1) {
+                    assertNull(foundState);
+                    continue;
+                }
+                assertNotNull(foundState);
+
+                if (foundState.getRound() <= lastCompletedRound) {
+                    assertTrue(foundState.isComplete());
+                } else {
+                    assertFalse(foundState.isComplete());
+                }
+            }
+        }
+
         // Check reservation counts.
-        validateReservationCounts(round -> round < signedStates.size() - roundAgeToSign - 1);
+        validateReservationCounts(round -> round < signedStates.size() - roundsToKeepAfterSigning - 1);
 
         // We don't expect any further callbacks. But wait a little while longer in case there is something unexpected.
         SECONDS.sleep(1);

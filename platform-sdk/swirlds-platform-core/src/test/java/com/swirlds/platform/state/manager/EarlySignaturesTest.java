@@ -20,6 +20,7 @@ import static com.swirlds.platform.state.manager.SignedStateManagerTestUtils.bui
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.utility.AutoCloseableWrapper;
@@ -77,6 +78,7 @@ public class EarlySignaturesTest extends AbstractSignedStateManagerTest {
     @DisplayName("Early Signatures Test")
     void earlySignaturesTest() throws InterruptedException {
         final int count = 100;
+        final StateConfig stateConfig = buildStateConfig();
         final int futureSignatures = stateConfig.maxAgeOfFutureStateSignatures();
         SignedStateManager manager = new SignedStateManagerBuilder(stateConfig)
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())

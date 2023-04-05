@@ -87,7 +87,7 @@ class AddIncompleteStateTest extends AbstractSignedStateManagerTest {
     @DisplayName("Add Incomplete State Test")
     void addIncompleteStateTest() {
 
-        SignedStateManager manager = new SignedStateManagerBuilder(stateConfig)
+        SignedStateManager manager = new SignedStateManagerBuilder(buildStateConfig())
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();

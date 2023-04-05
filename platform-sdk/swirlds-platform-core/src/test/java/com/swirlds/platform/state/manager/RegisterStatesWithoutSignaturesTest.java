@@ -82,7 +82,7 @@ public class RegisterStatesWithoutSignaturesTest extends AbstractSignedStateMana
     @Test
     @DisplayName("Register States Without Signatures")
     void registerStatesWithoutSignatures() throws InterruptedException {
-        final SignedStateManager manager = new SignedStateManagerBuilder(stateConfig)
+        final SignedStateManager manager = new SignedStateManagerBuilder(buildStateConfig())
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();
