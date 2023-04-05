@@ -16,6 +16,10 @@
 
 package com.hedera.node.app.workflows.prehandle;
 
+import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
+import com.hedera.node.app.service.mono.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
+import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.node.app.service.mono.txns.ProcessLogic;
 import com.hedera.node.app.signature.MonoSignaturePreparer;
 import com.hedera.node.app.signature.SignaturePreparer;
@@ -25,9 +29,15 @@ import dagger.Module;
 import dagger.Provides;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
+import java.util.function.Function;
 
 @Module
 public interface PreHandleWorkflowModule {
+    @Provides
+    static Function<SignatureMap, PubKeyToSigBytes> provideKeyToSigFactory() {
+        return signatureMap -> new PojoSigMapPubKeyToSigBytes(PbjConverter.fromPbj(signatureMap));
+    }
+
     @Binds
     PreHandleWorkflow bindPreHandleWorkflow(PreHandleWorkflowImpl preHandleWorkflow);
 

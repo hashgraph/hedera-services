@@ -16,22 +16,22 @@
 
 package com.hedera.node.app.spi.workflows;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.node.app.spi.workflows.PreHandleContextListUpdatesTest.A_COMPLEX_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,8 +40,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class PreHandleContextTest {
-    private static final AccountID PAYER =
-            AccountID.newBuilder().setAccountNum(3L).build();
+    private static final AccountID PAYER = AccountID.newBuilder().accountNum(3L).build();
 
     @Mock
     private HederaKey payerKey;
@@ -85,17 +84,16 @@ class PreHandleContextTest {
 
     private TransactionBody createAccountTransaction() {
         final var transactionID = TransactionID.newBuilder()
-                .setAccountID(PAYER)
-                .setTransactionValidStart(
-                        Timestamp.newBuilder().setSeconds(123_456L).build());
+                .accountID(PAYER)
+                .transactionValidStart(Timestamp.newBuilder().seconds(123_456L).build());
         final var createTxnBody = CryptoCreateTransactionBody.newBuilder()
-                .setKey(A_COMPLEX_KEY)
-                .setReceiverSigRequired(true)
-                .setMemo("Create Account")
+                .key(A_COMPLEX_KEY)
+                .receiverSigRequired(true)
+                .memo("Create Account")
                 .build();
         return TransactionBody.newBuilder()
-                .setTransactionID(transactionID)
-                .setCryptoCreateAccount(createTxnBody)
+                .transactionID(transactionID)
+                .cryptoCreateAccount(createTxnBody)
                 .build();
     }
 }

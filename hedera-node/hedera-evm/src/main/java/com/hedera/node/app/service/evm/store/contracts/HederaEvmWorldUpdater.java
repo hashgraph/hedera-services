@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.evm.store.contracts;
 
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 /**
@@ -24,6 +25,15 @@ import org.hyperledger.besu.evm.worldstate.WorldUpdater;
  * of the state during EVM transaction execution
  */
 public interface HederaEvmWorldUpdater extends WorldUpdater {
+    /**
+     * Allocates new Contract address based on the realm and shard of the sponsor IMPORTANT - The Id
+     * must be reclaimed if the MessageFrame reverts
+     *
+     * @param sponsor sponsor of the new contract
+     * @return newly generated contract {@link Address}
+     */
+    Address newContractAddress(Address sponsor);
+
     /**
      * Tracks how much Gas should be refunded to the sender account for the TX. SBH price is
      * refunded for the first allocation of new contract storage in order to prevent double charging

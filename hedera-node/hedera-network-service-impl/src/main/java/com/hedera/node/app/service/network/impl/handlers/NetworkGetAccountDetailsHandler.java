@@ -18,32 +18,39 @@ package com.hedera.node.app.service.network.impl.handlers;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.QueryHeader;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.token.GetAccountDetailsResponse;
+import com.hedera.hapi.node.transaction.Query;
+import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hederahashgraph.api.proto.java.*;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#GetAccountDetails}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#GET_ACCOUNT_DETAILS}.
  */
 @Singleton
 public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
     @Inject
-    public NetworkGetAccountDetailsHandler() {}
+    public NetworkGetAccountDetailsHandler() {
+        // Exists for injection
+    }
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
-        return query.getAccountDetails().getHeader();
+        return query.accountDetailsOrThrow().header();
     }
 
     @Override
     public Response createEmptyResponse(@NonNull final ResponseHeader header) {
-        final var response = GetAccountDetailsResponse.newBuilder().setHeader(header);
-        return Response.newBuilder().setAccountDetails(response).build();
+        final var response = GetAccountDetailsResponse.newBuilder().header(header);
+        return Response.newBuilder().accountDetails(response).build();
     }
 
     /**

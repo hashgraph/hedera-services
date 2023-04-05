@@ -41,6 +41,7 @@ package com.hedera.node.app.service.mono.contracts.sources;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.LegacyActivationTest;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.hyperledger.besu.datatypes.Address;
 
 public interface EvmSigsVerifier {
@@ -60,10 +61,15 @@ public interface EvmSigsVerifier {
      *     invoked via {@code delegatecall}
      * @param account the address of the account to test for key activation
      * @param activeContract the address of the contract that is deemed active
-     * @param worldLedgers the worldLedgers representing current state
+     * @param worldLedger the worldLedgers representing current state
      * @return whether the target account's key has an active signature
      */
-    boolean hasActiveKey(boolean isDelegateCall, Address account, Address activeContract, WorldLedgers worldLedgers);
+    boolean hasActiveKey(
+            boolean isDelegateCall,
+            Address account,
+            Address activeContract,
+            WorldLedgers worldLedger,
+            HederaFunctionality function);
 
     /**
      * Determines if the target account has an active key given the cryptographic signatures from
@@ -90,7 +96,8 @@ public interface EvmSigsVerifier {
             Address account,
             Address activeContract,
             WorldLedgers worldLedgers,
-            LegacyActivationTest legacyActivationTest);
+            LegacyActivationTest legacyActivationTest,
+            HederaFunctionality function);
 
     /**
      * Determines if the target account <b>either</b> has no receiver sig requirement; or an active
@@ -112,7 +119,11 @@ public interface EvmSigsVerifier {
      * @return false if the account requires a receiver sig but has no active key; true otherwise
      */
     boolean hasActiveKeyOrNoReceiverSigReq(
-            boolean isDelegateCall, Address target, Address activeContract, WorldLedgers worldLedgers);
+            boolean isDelegateCall,
+            Address target,
+            Address activeContract,
+            WorldLedgers worldLedgers,
+            HederaFunctionality function);
 
     /**
      * Determines if the target token has an active supply key given the cryptographic signatures
@@ -134,14 +145,32 @@ public interface EvmSigsVerifier {
      * @return whether the target account's key has an active signature
      */
     boolean hasActiveSupplyKey(
-            boolean isDelegateCall, Address token, Address activeContract, WorldLedgers worldLedgers);
+            boolean isDelegateCall,
+            Address token,
+            Address activeContract,
+            WorldLedgers worldLedgers,
+            HederaFunctionality function);
 
-    boolean hasActiveKycKey(boolean isDelegateCall, Address token, Address activeContract, WorldLedgers worldLedgers);
+    boolean hasActiveKycKey(
+            boolean isDelegateCall,
+            Address token,
+            Address activeContract,
+            WorldLedgers worldLedgers,
+            HederaFunctionality function);
 
-    boolean hasActiveWipeKey(boolean isDelegateCall, Address token, Address activeContract, WorldLedgers worldLedgers);
+    boolean hasActiveWipeKey(
+            boolean isDelegateCall,
+            Address token,
+            Address activeContract,
+            WorldLedgers worldLedgers,
+            HederaFunctionality function);
 
     boolean hasActiveFreezeKey(
-            boolean isDelegateCall, Address token, Address activeContract, WorldLedgers worldLedgers);
+            boolean isDelegateCall,
+            Address token,
+            Address activeContract,
+            WorldLedgers worldLedgers,
+            HederaFunctionality function);
 
     /**
      * Determines if the target token has an active pause key given the cryptographic signatures
@@ -163,7 +192,11 @@ public interface EvmSigsVerifier {
      * @return whether the target account's key has an active signature
      */
     boolean hasActivePauseKey(
-            boolean isDelegateCall, Address tokenAddress, Address activeContract, WorldLedgers worldLedgers);
+            boolean isDelegateCall,
+            Address tokenAddress,
+            Address activeContract,
+            WorldLedgers worldLedgers,
+            HederaFunctionality function);
 
     /**
      * Determines if the target token has an active admin key given the cryptographic signatures
@@ -184,7 +217,12 @@ public interface EvmSigsVerifier {
      * @param worldLedgers the worldLedgers representing current state
      * @return whether the target account's key has an active signature
      */
-    boolean hasActiveAdminKey(boolean isDelegateCall, Address token, Address activeContract, WorldLedgers worldLedgers);
+    boolean hasActiveAdminKey(
+            boolean isDelegateCall,
+            Address token,
+            Address activeContract,
+            WorldLedgers worldLedgers,
+            HederaFunctionality function);
 
     /**
      * Determines if the supplied key is active in the context of the transaction, i.e. has signed
