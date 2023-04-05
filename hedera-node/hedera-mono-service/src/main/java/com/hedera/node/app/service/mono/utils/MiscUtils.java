@@ -904,7 +904,7 @@ public final class MiscUtils {
         return !msg.getUnknownFields().asMap().isEmpty();
     }
 
-    public static boolean isRecordingFacilityMocks() {
+    public static boolean isFacilityRecordingOn() {
         return Objects.equals("true", System.getProperty("recording.mockFacilities"));
     }
 }

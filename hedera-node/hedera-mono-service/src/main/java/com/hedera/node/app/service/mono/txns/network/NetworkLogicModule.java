@@ -23,6 +23,7 @@ import com.hedera.node.app.service.mono.fees.annotations.FunctionKey;
 import com.hedera.node.app.service.mono.state.DualStateAccessor;
 import com.hedera.node.app.service.mono.txns.TransitionLogic;
 import com.hedera.node.app.service.mono.utils.UnzipUtility;
+import com.hedera.node.app.service.mono.utils.replay.IsFacilityRecordingOn;
 import com.swirlds.common.system.SwirldDualState;
 import dagger.Module;
 import dagger.Provides;
@@ -51,9 +52,7 @@ public final class NetworkLogicModule {
     @Provides
     @IntoMap
     @FunctionKey(Freeze)
-    public static List<TransitionLogic> provideFreezeLogic(
-            final FreezeTransitionLogic freezeLogic,
-            @NonNull final BooleanSupplier isRecordingFacilityMocks) {
+    public static List<TransitionLogic> provideFreezeLogic(final FreezeTransitionLogic freezeLogic) {
         return List.of(freezeLogic);
     }
 

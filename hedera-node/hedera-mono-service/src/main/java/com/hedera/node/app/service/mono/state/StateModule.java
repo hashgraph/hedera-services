@@ -45,6 +45,8 @@ import com.hedera.node.app.service.mono.state.initialization.SystemAccountsCreat
 import com.hedera.node.app.service.mono.state.initialization.SystemFilesManager;
 import com.hedera.node.app.service.mono.state.logic.HandleLogicModule;
 import com.hedera.node.app.service.mono.state.logic.ReconnectListener;
+import com.hedera.node.app.service.mono.state.logic.RecordingProcessLogic;
+import com.hedera.node.app.service.mono.state.logic.RecordingStatusChangeListener;
 import com.hedera.node.app.service.mono.state.logic.ScheduledTransactions;
 import com.hedera.node.app.service.mono.state.logic.StateWriteToDiskListener;
 import com.hedera.node.app.service.mono.state.logic.StatusChangeListener;
@@ -58,6 +60,7 @@ import com.hedera.node.app.service.mono.state.migration.RecordsStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
 import com.hedera.node.app.service.mono.state.submerkle.ExchangeRates;
+import com.hedera.node.app.service.mono.state.submerkle.RecordingSequenceNumber;
 import com.hedera.node.app.service.mono.state.submerkle.SequenceNumber;
 import com.hedera.node.app.service.mono.state.validation.BasedLedgerValidator;
 import com.hedera.node.app.service.mono.state.validation.LedgerValidator;
@@ -74,6 +77,8 @@ import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
 import com.hedera.node.app.service.mono.utils.Pause;
 import com.hedera.node.app.service.mono.utils.SleepingPause;
 import com.hedera.node.app.service.mono.utils.SystemExits;
+import com.hedera.node.app.service.mono.utils.replay.IsFacilityRecordingOn;
+import com.hedera.node.app.service.mono.utils.replay.ReplayAssetRecording;
 import com.swirlds.common.Console;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.notification.NotificationEngine;
@@ -89,13 +94,17 @@ import com.swirlds.common.utility.CommonUtils;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
+import java.io.File;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.inject.Singleton;
@@ -107,6 +116,25 @@ public interface StateModule {
 
         @Nullable
         Console createConsole(Platform platform, boolean visible);
+    }
+
+    @Provides
+    @Singleton
+    static ReplayAssetRecording provideReplayAssetRecording() {
+        return new ReplayAssetRecording(new File(ReplayAssetRecording.DEFAULT_REPLAY_ASSETS_DIR));
+    }
+
+    @Provides
+    @Singleton
+    static PlatformStatusChangeListener provideStatusChangeListener(
+            @NonNull final MutableStateChildren stateChildren,
+            @NonNull final StatusChangeListener statusChangeListener,
+            @IsFacilityRecordingOn @NonNull final BooleanSupplier isRecordingFacilityMocks) {
+        if (isRecordingFacilityMocks.getAsBoolean()) {
+            return new RecordingStatusChangeListener(stateChildren, statusChangeListener);
+        } else {
+            return statusChangeListener;
+        }
     }
 
     @Binds
@@ -128,10 +156,6 @@ public interface StateModule {
     @Binds
     @Singleton
     StateWriteToDiskCompleteListener bindStateWrittenToDiskListener(StateWriteToDiskListener stateWriteToDiskListener);
-
-    @Binds
-    @Singleton
-    PlatformStatusChangeListener bindStatusChangeListener(StatusChangeListener statusChangeListener);
 
     @Binds
     @Singleton
@@ -332,8 +356,17 @@ public interface StateModule {
 
     @Provides
     @Singleton
-    static EntityIdSource provideWorkingEntityIdSource(final MutableStateChildren workingState) {
-        return new SeqNoEntityIdSource(() -> workingState.networkCtx().seqNo());
+    static EntityIdSource provideWorkingEntityIdSource(
+            @NonNull final ReplayAssetRecording assetRecording,
+            @NonNull final MutableStateChildren workingState,
+            @IsFacilityRecordingOn @NonNull final BooleanSupplier isRecordingFacilityMocks) {
+        if (isRecordingFacilityMocks.getAsBoolean()) {
+            return new SeqNoEntityIdSource(() -> new RecordingSequenceNumber(
+                    assetRecording,
+                    workingState.networkCtx().seqNo()));
+        } else {
+            return new SeqNoEntityIdSource(() -> workingState.networkCtx().seqNo());
+        }
     }
 
     @Provides

@@ -17,30 +17,26 @@
 package com.hedera.node.app.service.mono.state.logic;
 
 import com.hedera.node.app.service.mono.txns.ProcessLogic;
-import com.hedera.node.app.service.mono.utils.MiscUtils;
-import dagger.Binds;
+import com.hedera.node.app.service.mono.utils.replay.IsFacilityRecordingOn;
+import com.hedera.node.app.service.mono.utils.replay.ReplayAssetRecording;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 import javax.inject.Singleton;
+import java.io.File;
 import java.util.function.BooleanSupplier;
 
 @Module
 public interface ProcessLogicModule {
     @Provides
     @Singleton
-    static BooleanSupplier provideFacilityRecordingTest() {
-        return MiscUtils::isRecordingFacilityMocks;
-    }
-
-    @Provides
-    @Singleton
     static ProcessLogic provideProcessLogic(
+            @NonNull final ReplayAssetRecording assetRecording,
             @NonNull final StandardProcessLogic standardProcessLogic,
-            @NonNull final BooleanSupplier isRecordingFacilityMocks) {
+            @IsFacilityRecordingOn @NonNull final BooleanSupplier isRecordingFacilityMocks) {
         if (isRecordingFacilityMocks.getAsBoolean()) {
-            return new TxnRecordingProcessLogic(standardProcessLogic);
+            return new RecordingProcessLogic(standardProcessLogic, assetRecording);
         } else {
             return standardProcessLogic;
         }

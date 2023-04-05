@@ -112,6 +112,9 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.sigs to
             com.fasterxml.jackson.databind,
             com.hedera.node.app;
+    exports com.hedera.node.app.service.mono.utils.replay to
+            com.hedera.node.app,
+            com.fasterxml.jackson.databind;
 
     opens com.hedera.node.app.service.mono to
             com.swirlds.common;

@@ -51,7 +51,7 @@ import static com.hedera.node.app.service.mono.utils.MiscUtils.describe;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.functionalityOfQuery;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.getTxnStat;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.isGasThrottled;
-import static com.hedera.node.app.service.mono.utils.MiscUtils.isRecordingFacilityMocks;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.isFacilityRecordingOn;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.isSchedulable;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.nonNegativeNanosOffset;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.perm64;
@@ -234,9 +234,9 @@ class MiscUtilsTest {
     @Test
     void detectsMockFacilitiesRecordingMode() {
         System.setProperty("recording.mockFacilities", "true");
-        assertTrue(isRecordingFacilityMocks());
+        assertTrue(isFacilityRecordingOn());
         System.setProperty("recording.mockFacilities", "false");
-        assertFalse(isRecordingFacilityMocks());
+        assertFalse(isFacilityRecordingOn());
     }
 
     @Test

@@ -16,10 +16,16 @@
 
 package com.hedera.node.app.service.mono.config;
 
+import com.hedera.node.app.service.mono.utils.MiscUtils;
+import com.hedera.node.app.service.mono.utils.replay.IsFacilityRecordingOn;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import dagger.Binds;
 import dagger.Module;
+import dagger.Provides;
+
+import javax.inject.Singleton;
+import java.util.function.BooleanSupplier;
 
 @Module
 public interface ConfigModule {
@@ -28,4 +34,11 @@ public interface ConfigModule {
 
     @Binds
     HederaAccountNumbers bindAccountNumbers(AccountNumbers accountNumbers);
+
+    @Provides
+    @Singleton
+    @IsFacilityRecordingOn
+    static BooleanSupplier provideIsFacilityRecordingOn() {
+        return MiscUtils::isFacilityRecordingOn;
+    }
 }

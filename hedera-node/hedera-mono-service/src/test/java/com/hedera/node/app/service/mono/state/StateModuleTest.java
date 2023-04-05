@@ -21,6 +21,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_GENESIS_PUB
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -28,10 +29,19 @@ import static org.mockito.Mockito.mock;
 import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
+import com.hedera.node.app.service.mono.ledger.ids.SeqNoEntityIdSource;
+import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
+import com.hedera.node.app.service.mono.state.submerkle.RecordingSequenceNumber;
+import com.hedera.node.app.service.mono.state.submerkle.SequenceNumber;
 import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
+import com.hedera.node.app.service.mono.utils.replay.IsFacilityRecordingOn;
+import com.hedera.node.app.service.mono.utils.replay.ReplayAssetRecording;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.CommonUtils;
 import java.nio.charset.Charset;
+import java.util.function.BooleanSupplier;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -42,6 +52,8 @@ class StateModuleTest {
 
     @Mock
     private ScheduleStore scheduleStore;
+    @Mock
+    private BooleanSupplier isRecordingFacilityMocks;
 
     @Mock
     private MutableStateChildren workingState;
@@ -53,7 +65,33 @@ class StateModuleTest {
     private NetworkInfo networkInfo;
 
     @Mock
+    private ReplayAssetRecording assetRecording;
+    @Mock
+    private MerkleNetworkContext networkContext;
+
+    @Mock
     private StateModule.ConsoleCreator consoleCreator;
+
+    @Test
+    void providesRecordingSeqNumbersIfApropos() {
+        given(isRecordingFacilityMocks.getAsBoolean()).willReturn(true);
+        given(workingState.networkCtx()).willReturn(networkContext);
+        given(networkContext.seqNo()).willReturn(new SequenceNumber());
+        final var ids = StateModule.provideWorkingEntityIdSource(
+                assetRecording, workingState, isRecordingFacilityMocks);
+        final var seqNo = ((SeqNoEntityIdSource) ids).getSeqNo().get();
+        assertInstanceOf(RecordingSequenceNumber.class, seqNo);
+    }
+
+    @Test
+    void providesNormalSeqNumbersOtherwise() {
+        given(workingState.networkCtx()).willReturn(networkContext);
+        given(networkContext.seqNo()).willReturn(new SequenceNumber());
+        final var ids = StateModule.provideWorkingEntityIdSource(
+                assetRecording, workingState, isRecordingFacilityMocks);
+        final var seqNo = ((SeqNoEntityIdSource) ids).getSeqNo().get();
+        assertInstanceOf(SequenceNumber.class, seqNo);
+    }
 
     @Test
     void providesDefaultCharset() {

@@ -30,6 +30,7 @@ buildNumber.properties
 *.pidb
 *.resources
 test-results/
+hedera-node/replay-assets/
 
 ### NotepadPP template
 # Notepad++ backups #

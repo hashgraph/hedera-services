@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.ledger.ids;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.SequenceNumber;
 import com.hedera.node.app.service.mono.txns.TransitionLogic;
@@ -134,5 +135,10 @@ public class SeqNoEntityIdSource implements EntityIdSource {
     /* --- Only used by unit tests --- */
     int getProvisionalIds() {
         return provisionalIds;
+    }
+
+    @VisibleForTesting
+    public Supplier<SequenceNumber> getSeqNo() {
+        return seqNo;
     }
 }
