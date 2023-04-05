@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.state.merkle.memory;
 
+import static com.hedera.node.app.state.merkle.StateUtils.readFromStream;
+import static com.hedera.node.app.state.merkle.StateUtils.writeToStream;
+
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -27,7 +30,6 @@ import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.Objects;
 
@@ -134,20 +136,20 @@ public final class InMemoryValue<K extends Comparable<? super K>, V> extends Par
 
     /** {@inheritDoc} */
     @Override
-    public void deserialize(SerializableDataInputStream serializableDataInputStream, int ignored) throws IOException {
-        final var keySerdes = md.stateDefinition().keySerdes();
-        final var valueSerdes = md.stateDefinition().valueSerdes();
-        final var k = keySerdes.parse(new DataInputStream(serializableDataInputStream));
+    public void deserialize(@NonNull final SerializableDataInputStream in, final int ignored) throws IOException {
+        final var keySerdes = md.stateDefinition().keyCodec();
+        final var valueSerdes = md.stateDefinition().valueCodec();
+        final var k = readFromStream(in, keySerdes);
         this.key = new InMemoryKey<>(k);
-        this.val = valueSerdes.parse(new DataInputStream(serializableDataInputStream));
+        this.val = readFromStream(in, valueSerdes);
     }
 
     /** {@inheritDoc} */
     @Override
-    public void serialize(SerializableDataOutputStream serializableDataOutputStream) throws IOException {
-        final var keySerdes = md.stateDefinition().keySerdes();
-        final var valueSerdes = md.stateDefinition().valueSerdes();
-        keySerdes.write(key.key(), serializableDataOutputStream);
-        valueSerdes.write(val, serializableDataOutputStream);
+    public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
+        final var keySerdes = md.stateDefinition().keyCodec();
+        final var valueSerdes = md.stateDefinition().valueCodec();
+        writeToStream(out, keySerdes, key.key());
+        writeToStream(out, valueSerdes, val);
     }
 }

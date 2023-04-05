@@ -18,8 +18,9 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -28,29 +29,30 @@ import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#TokenGrantKycToAccount}.
+ * HederaFunctionality#TOKEN_GRANT_KYC_TO_ACCOUNT}.
  */
 @Singleton
 public class TokenGrantKycToAccountHandler implements TransactionHandler {
     @Inject
-    public TokenGrantKycToAccountHandler() {}
+    public TokenGrantKycToAccountHandler() {
+        // Exists for injection
+    }
 
     /**
-     * Pre-handles a {@link
-     * com.hederahashgraph.api.proto.java.HederaFunctionality#TokenGrantKycToAccount} transaction,
+     * Pre-handles a {@link HederaFunctionality#TOKEN_GRANT_KYC_TO_ACCOUNT} transaction,
      * returning the metadata required to, at minimum, validate the signatures of all required
      * signing keys.
      *
-     * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@link #handle(TransactionMetadata)}
+     * @param context the {@link PreHandleContext} which collects all information
+     *
      * @param tokenStore the {@link ReadableTokenStore} to use to resolve token metadata
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore) {
         requireNonNull(context);
-        final var op = context.getTxn().getTokenGrantKyc();
+        final var op = context.getTxn().tokenGrantKycOrThrow();
 
-        final var tokenMeta = tokenStore.getTokenMeta(op.getToken());
+        final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
 
         if (tokenMeta.failed()) {
             context.status(tokenMeta.failureReason());
@@ -66,11 +68,9 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
-     * @param metadata the {@link TransactionMetadata} that was generated during pre-handle.
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(@NonNull final TransactionMetadata metadata) {
-        requireNonNull(metadata);
+    public void handle() {
         throw new UnsupportedOperationException("Not implemented");
     }
 }

@@ -16,14 +16,16 @@
 
 package com.hedera.node.app.service.token.impl;
 
+import static java.util.Objects.requireNonNull;
+
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 
@@ -70,13 +72,11 @@ public class ReadableTokenStore {
      * @param id token id being looked up
      * @return token's metadata
      */
-    public TokenMetaOrLookupFailureReason getTokenMeta(final TokenID id) {
+    public TokenMetaOrLookupFailureReason getTokenMeta(@NonNull final TokenID id) {
+        requireNonNull(id);
         final var token = getTokenLeaf(id);
-
-        if (token.isEmpty()) {
-            return new TokenMetaOrLookupFailureReason(null, ResponseCodeEnum.INVALID_TOKEN_ID);
-        }
-        return new TokenMetaOrLookupFailureReason(tokenMetaFrom(token.get()), null);
+        return token.map(merkleToken -> new TokenMetaOrLookupFailureReason(tokenMetaFrom(merkleToken), null))
+                .orElseGet(() -> new TokenMetaOrLookupFailureReason(null, ResponseCodeEnum.INVALID_TOKEN_ID));
     }
 
     private TokenMetadata tokenMetaFrom(final MerkleToken token) {
@@ -115,7 +115,7 @@ public class ReadableTokenStore {
      * @return merkleToken leaf for the given tokenId
      */
     private Optional<MerkleToken> getTokenLeaf(final TokenID id) {
-        final var token = tokenState.get(id.getTokenNum());
+        final var token = tokenState.get(id.tokenNum());
         return Optional.ofNullable(token);
     }
 }

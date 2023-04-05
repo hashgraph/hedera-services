@@ -16,21 +16,30 @@
 
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
-import static com.hedera.test.factories.scenarios.ContractCreateScenarios.MISC_ADMIN_KT;
-import static com.hedera.test.factories.scenarios.ContractCreateScenarios.SIMPLE_NEW_ADMIN_KT;
-import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.*;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
+import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRACT_UPDATE_EXPIRATION_ONLY_SCENARIO;
+import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_ADMIN_KEY_SCENARIO;
+import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_AUTORENEW_SCENARIO;
+import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_DEPRECATED_CID_ADMIN_KEY_SCENARIO;
+import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_FILE_SCENARIO;
+import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_MEMO;
+import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_PROXY_SCENARIO;
+import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRACT_UPDATE_NEW_AUTO_RENEW_SCENARIO;
+import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRACT_UPDATE_WITH_NEW_ADMIN_KEY;
+import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.MISC_ACCOUNT_KT;
+import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.MISC_ADMIN_KT;
+import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.SIMPLE_NEW_ADMIN_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.utils.KeyUtils.sanityRestored;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.handlers.ContractUpdateHandler;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -50,9 +59,9 @@ class ContractUpdateHandlerParityTest {
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
+        assertEquals(
                 sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(MISC_ADMIN_KT.asKey(), SIMPLE_NEW_ADMIN_KT.asKey()));
+                List.of(MISC_ADMIN_KT.asKey(), SIMPLE_NEW_ADMIN_KT.asKey()));
     }
 
     @Test
@@ -82,9 +91,9 @@ class ContractUpdateHandlerParityTest {
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
+        assertEquals(
                 sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(MISC_ADMIN_KT.asKey(), SIMPLE_NEW_ADMIN_KT.asKey()));
+                List.of(MISC_ADMIN_KT.asKey(), SIMPLE_NEW_ADMIN_KT.asKey()));
     }
 
     @Test
@@ -94,7 +103,7 @@ class ContractUpdateHandlerParityTest {
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(MISC_ADMIN_KT.asKey()));
+        assertEquals(sanityRestored(context.getRequiredNonPayerKeys()), List.of(MISC_ADMIN_KT.asKey()));
     }
 
     @Test
@@ -104,7 +113,7 @@ class ContractUpdateHandlerParityTest {
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(MISC_ADMIN_KT.asKey()));
+        assertEquals(sanityRestored(context.getRequiredNonPayerKeys()), List.of(MISC_ADMIN_KT.asKey()));
     }
 
     @Test
@@ -114,7 +123,7 @@ class ContractUpdateHandlerParityTest {
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(MISC_ADMIN_KT.asKey()));
+        assertEquals(sanityRestored(context.getRequiredNonPayerKeys()), List.of(MISC_ADMIN_KT.asKey()));
     }
 
     @Test
@@ -124,7 +133,7 @@ class ContractUpdateHandlerParityTest {
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(MISC_ADMIN_KT.asKey()));
+        assertEquals(sanityRestored(context.getRequiredNonPayerKeys()), List.of(MISC_ADMIN_KT.asKey()));
     }
 
     @Test
@@ -134,12 +143,12 @@ class ContractUpdateHandlerParityTest {
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(MISC_ACCOUNT_KT.asKey()));
+        assertEquals(sanityRestored(context.getRequiredNonPayerKeys()), List.of(MISC_ACCOUNT_KT.asKey()));
     }
 
     private TransactionBody txnFrom(final TxnHandlingScenario scenario) {
         try {
-            return scenario.platformTxn().getTxn();
+            return toPbj(scenario.platformTxn().getTxn());
         } catch (final Throwable e) {
             throw new RuntimeException(e);
         }
