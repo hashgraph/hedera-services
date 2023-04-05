@@ -17,8 +17,11 @@
 
 package com.hedera.node.app.info;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.spi.info.CurrentPlatformStatus;
 import com.swirlds.common.system.PlatformStatus;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Implementation of {@link CurrentPlatformStatus} that delegates to the mono-service.
@@ -31,14 +34,17 @@ public class MonoCurrentPlatformStatus implements CurrentPlatformStatus {
      * Constructs a {@link MonoCurrentPlatformStatus} with the given delegate.
      *
      * @param delegate the delegate
+     * @throws NullPointerException if {@code delegate} is {@code null}
      */
-    public MonoCurrentPlatformStatus(com.hedera.node.app.service.mono.context.CurrentPlatformStatus delegate) {
-        this.delegate = delegate;
+    public MonoCurrentPlatformStatus(@NonNull com.hedera.node.app.service.mono.context.CurrentPlatformStatus delegate) {
+        this.delegate = requireNonNull(delegate);
     }
 
     @Override
+    @NonNull
     public PlatformStatus get() {
-        return delegate.get();
+        final var status = delegate.get();
+        return status != null ? status : PlatformStatus.STARTING_UP;
     }
 
 }

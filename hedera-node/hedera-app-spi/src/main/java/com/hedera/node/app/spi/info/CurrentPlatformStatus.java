@@ -18,6 +18,7 @@
 package com.hedera.node.app.spi.info;
 
 import com.swirlds.common.system.PlatformStatus;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Provides the current platform status.
@@ -29,5 +30,6 @@ public interface CurrentPlatformStatus {
      *
      * @return the current platform status
      */
+    @NonNull
     PlatformStatus get();
 }

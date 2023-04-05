@@ -18,6 +18,7 @@
 package com.hedera.node.app.spi.info;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Provides information about the network.
@@ -29,6 +30,7 @@ public interface NetworkInfo {
      *
      * @return the {@link Bytes} of the current ledger ID
      */
+    @NonNull
     Bytes ledgerId();
 
 }

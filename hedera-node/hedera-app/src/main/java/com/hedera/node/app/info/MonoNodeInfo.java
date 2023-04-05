@@ -17,7 +17,10 @@
 
 package com.hedera.node.app.info;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.spi.info.NodeInfo;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Implementation of {@link NodeInfo} that delegates to the mono-service.
@@ -30,9 +33,10 @@ public class MonoNodeInfo implements NodeInfo {
      * Constructs a {@link MonoNodeInfo} with the given delegate.
      *
      * @param delegate the delegate
+     * @throws NullPointerException if {@code delegate} is {@code null}
      */
-    public MonoNodeInfo(com.hedera.node.app.service.mono.context.NodeInfo delegate) {
-        this.delegate = delegate;
+    public MonoNodeInfo(@NonNull com.hedera.node.app.service.mono.context.NodeInfo delegate) {
+        this.delegate = requireNonNull(delegate);
     }
 
     @Override

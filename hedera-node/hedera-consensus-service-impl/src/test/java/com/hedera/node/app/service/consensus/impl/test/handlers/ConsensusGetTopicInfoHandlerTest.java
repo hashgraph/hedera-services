@@ -44,7 +44,6 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -62,11 +61,6 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
     @BeforeEach
     void setUp() {
         subject = new ConsensusGetTopicInfoHandler(networkInfo);
-    }
-
-    @Test
-    void emptyConstructor() {
-        Assertions.assertThatCode(ConsensusGetTopicInfoHandler::new).doesNotThrowAnyException();
     }
 
     @Test

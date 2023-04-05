@@ -17,21 +17,35 @@
 
 package com.hedera.node.app.info;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * Implementation of {@link NetworkInfo} that delegates to the mono-service.
+ */
 public class MonoNetworkInfo implements NetworkInfo {
 
 
     private final com.hedera.node.app.service.mono.config.NetworkInfo delegate;
 
-    public MonoNetworkInfo(com.hedera.node.app.service.mono.config.NetworkInfo delegate) {
-        this.delegate = delegate;
+    /**
+     * Constructs a {@link MonoNetworkInfo} with the given delegate.
+     *
+     * @param delegate the delegate
+     * @throws NullPointerException if {@code delegate} is {@code null}
+     */
+    public MonoNetworkInfo(@NonNull com.hedera.node.app.service.mono.config.NetworkInfo delegate) {
+        this.delegate = requireNonNull(delegate);
     }
 
     @Override
+    @NonNull
     public Bytes ledgerId() {
-        return Bytes.wrap(delegate.ledgerId().toByteArray());
+        final var ledgerId = delegate.ledgerId();
+        return ledgerId != null ? Bytes.wrap(ledgerId.toByteArray()) : Bytes.EMPTY;
     }
 
 }
