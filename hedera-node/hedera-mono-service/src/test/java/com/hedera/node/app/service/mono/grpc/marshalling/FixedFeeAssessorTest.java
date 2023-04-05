@@ -62,14 +62,16 @@ class FixedFeeAssessorTest {
         final var hbarFee = FcCustomFee.fixedFee(1, null, otherCollector, false);
 
         given(customFeePayerExemptions.isPayerExempt(any(), any(), any())).willReturn(false);
-        given(hbarFeeAssessor.assess(payer, hbarFee, changeManager, mockAccum)).willReturn(OK);
+        given(hbarFeeAssessor.assess(payer, hbarFee, changeManager, mockAccum, false))
+                .willReturn(OK);
 
         // when:
-        final var result = subject.assess(payer, chargingMeta, hbarFee, changeManager, mockAccum);
+        final var result =
+                subject.assess(payer, chargingMeta, hbarFee, changeManager, mockAccum, false);
 
         // then:
         assertEquals(OK, result);
-        BDDMockito.verify(hbarFeeAssessor).assess(payer, hbarFee, changeManager, mockAccum);
+        BDDMockito.verify(hbarFeeAssessor).assess(payer, hbarFee, changeManager, mockAccum, false);
     }
 
     @Test
@@ -77,15 +79,17 @@ class FixedFeeAssessorTest {
         FcCustomFee htsFee = FcCustomFee.fixedFee(1, feeDenom, otherCollector, false);
 
         given(customFeePayerExemptions.isPayerExempt(any(), any(), any())).willReturn(false);
-        given(htsFeeAssessor.assess(payer, chargingMeta, htsFee, changeManager, mockAccum))
+        given(htsFeeAssessor.assess(payer, chargingMeta, htsFee, changeManager, mockAccum, false))
                 .willReturn(OK);
 
         // when:
-        final var result = subject.assess(payer, chargingMeta, htsFee, changeManager, mockAccum);
+        final var result =
+                subject.assess(payer, chargingMeta, htsFee, changeManager, mockAccum, false);
 
         // then:
         assertEquals(OK, result);
-        BDDMockito.verify(htsFeeAssessor).assess(payer, chargingMeta, htsFee, changeManager, mockAccum);
+        BDDMockito.verify(htsFeeAssessor)
+                .assess(payer, chargingMeta, htsFee, changeManager, mockAccum, false);
     }
 
     @Test
@@ -96,7 +100,9 @@ class FixedFeeAssessorTest {
                 .willReturn(true);
 
         // when:
-        final var result = subject.assess(chargingToken, chargingMeta, htsFee, changeManager, mockAccum);
+        final var result =
+                subject.assess(
+                        chargingToken, chargingMeta, htsFee, changeManager, mockAccum, false);
 
         // then:
         assertEquals(OK, result);

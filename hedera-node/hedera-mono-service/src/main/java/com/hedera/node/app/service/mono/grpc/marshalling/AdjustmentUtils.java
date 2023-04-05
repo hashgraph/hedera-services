@@ -73,19 +73,47 @@ public final class AdjustmentUtils {
     }
 
     static void adjustForAssessedHbar(
-            final Id payer, final Id collector, final long amount, final BalanceChangeManager manager) {
-        adjustForAssessed(payer, MISSING_ID, collector, MISSING_ID, amount, manager);
+            final Id payer,
+            final Id collector,
+            final long amount,
+            final BalanceChangeManager manager,
+            final boolean isFallbackFee) {
+        adjustForAssessed(payer, MISSING_ID, collector, MISSING_ID, amount, manager, isFallbackFee);
     }
 
+    /**
+     * Examines a custom fee (that is, an {@code amount} of a {@code denom} token being charged by a
+     * {@code chargingToken}); and updates the balance changes for its payer and collector in the
+     * given {@link BalanceChangeManager}.
+     *
+     * <p>If the fee is a fallback royalty fee, marks the payer's balance change with a special
+     * flag. When the contract service {@code TransferPrecompile} sees this flag, it <i>always</i>
+     * requires a payer authorization. (This is different from the normal case with custom fees,
+     * where the payer's authorization of the top-level token transfer <i>also</i> authorizes the
+     * network to charge the custom fee.)
+     *
+     * @param payer the payer of the fee
+     * @param chargingToken the token charging the fee
+     * @param collector the collector of the fee
+     * @param denom the denomination of the fee
+     * @param amount the amount of the fee
+     * @param manager the balance change manager
+     * @param isFallbackFee whether the fee is a fallback fee
+     */
     static void adjustForAssessed(
             final Id payer,
             final Id chargingToken,
             final Id collector,
             final Id denom,
             final long amount,
-            final BalanceChangeManager manager) {
+            final BalanceChangeManager manager,
+            final boolean isFallbackFee) {
         final var payerChange = adjustedChange(payer, chargingToken, denom, -amount, manager);
-        payerChange.setCodeForInsufficientBalance(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
+        if (isFallbackFee) {
+            payerChange.setIncludesFallbackFee();
+        }
+        payerChange.setCodeForInsufficientBalance(
+                INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
         adjustedChange(collector, chargingToken, denom, +amount, manager);
     }
 

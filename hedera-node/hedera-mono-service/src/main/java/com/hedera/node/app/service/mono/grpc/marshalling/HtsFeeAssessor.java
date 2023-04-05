@@ -38,13 +38,20 @@ public class HtsFeeAssessor {
             CustomFeeMeta chargingTokenMeta,
             FcCustomFee htsFee,
             BalanceChangeManager changeManager,
-            List<AssessedCustomFeeWrapper> accumulator) {
+            List<AssessedCustomFeeWrapper> accumulator,
+            boolean isFallbackFee) {
         final var collector = htsFee.getFeeCollectorAsId();
         final var fixedSpec = htsFee.getFixedFeeSpec();
         final var amount = fixedSpec.getUnitsToCollect();
         final var denominatingToken = fixedSpec.getTokenDenomination().asId();
         AdjustmentUtils.adjustForAssessed(
-                payer, chargingTokenMeta.tokenId(), collector, denominatingToken, amount, changeManager);
+                payer,
+                chargingTokenMeta.tokenId(),
+                collector,
+                denominatingToken,
+                amount,
+                changeManager,
+                isFallbackFee);
 
         final var effPayerAccountNums = new AccountID[] {payer.asGrpcAccount()};
         final var assessed = new AssessedCustomFeeWrapper(

@@ -51,6 +51,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTes
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.hbarOnlyChanges;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.hbarOnlyChangesAliased;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.nftTransferChanges;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.nftTransferChangesWithCustomFeesForRoyalty;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.nftTransferChangesWithCustomFeesThatAreAlsoApproved;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.nftTransferList;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.nftsTransferChanges;
@@ -747,6 +748,111 @@ class TransferPrecompilesTest {
         verify(transferLogic).doZeroSum(nftsTransferChanges);
         verify(wrappedLedgers).commit();
         verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+    }
+
+    @Test
+    void transferNftsHappyPathWithRoyaltyFeeWorks() throws InvalidProtocolBufferException {
+        final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFTS));
+
+        final var recipientAddr = Address.ALTBN128_ADD;
+        final var senderId = Id.fromGrpcAccount(sender);
+        final var receiverId = Id.fromGrpcAccount(receiver);
+
+        givenMinimalFrameContext();
+        givenLedgers();
+        givenPricingUtilsContext();
+        given(frame.getRecipientAddress()).willReturn(recipientAddr);
+        given(frame.getSenderAddress()).willReturn(contractAddress);
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(infrastructureFactory.newImpliedTransfersMarshal(any()))
+                .willReturn(impliedTransfersMarshal);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftsTransferList)))
+                .willReturn(mockSynthBodyBuilder);
+        given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
+        given(
+                        sigsVerifier.hasActiveKey(
+                                Mockito.anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
+                .willReturn(true);
+        given(
+                        sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                                Mockito.anyBoolean(), any(), any(), any(), eq(CryptoTransfer)))
+                .willReturn(true);
+        transferPrecompile
+                .when(() -> decodeTransferNFTs(eq(pretendArguments), any(), any()))
+                .thenReturn(CRYPTO_TRANSFER_NFTS_WRAPPER);
+        given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody))
+                .willReturn(OK);
+
+        given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
+                .willReturn(hederaTokenStore);
+
+        given(
+                        infrastructureFactory.newTransferLogic(
+                                hederaTokenStore, sideEffects, nfts, accounts, tokenRels))
+                .willReturn(transferLogic);
+        given(
+                        feeCalculator.estimatedGasPriceInTinybars(
+                                HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
+        given(mockSynthBodyBuilder.build())
+                .willReturn(
+                        TransactionBody.newBuilder()
+                                .setCryptoTransfer(cryptoTransferTransactionBody)
+                                .build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+                .willReturn(mockSynthBodyBuilder);
+        given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(
+                        creator.createSuccessfulSyntheticRecord(
+                                Collections.emptyList(), sideEffects, EMPTY_MEMO))
+                .willReturn(mockRecordBuilder);
+        given(
+                        impliedTransfersMarshal.assessCustomFeesAndValidate(
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
+                .willReturn(impliedTransfers);
+        given(impliedTransfers.getAllBalanceChanges())
+                .willReturn(nftTransferChangesWithCustomFeesForRoyalty);
+        given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
+        given(impliedTransfersMeta.code()).willReturn(OK);
+        given(aliases.resolveForEvm(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(worldUpdater.aliases()).willReturn(aliases);
+        given(frame.getSenderAddress()).willReturn(contractAddress);
+        when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
+        when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
+
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        assertEquals(successResult, result);
+        // and:
+        verify(transferLogic).doZeroSum(nftTransferChangesWithCustomFeesForRoyalty);
+        verify(wrappedLedgers).commit();
+        verify(worldUpdater)
+                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+
+        verify(sigsVerifier)
+                .hasActiveKey(
+                        true,
+                        senderId.asEvmAddress(),
+                        recipientAddr,
+                        wrappedLedgers,
+                        CryptoTransfer);
+        verify(sigsVerifier)
+                .hasActiveKey(
+                        true,
+                        receiverId.asEvmAddress(),
+                        recipientAddr,
+                        wrappedLedgers,
+                        CryptoTransfer);
     }
 
     @Test
