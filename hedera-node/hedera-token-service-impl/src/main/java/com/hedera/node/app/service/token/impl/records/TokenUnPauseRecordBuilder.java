@@ -22,4 +22,4 @@ import com.hedera.node.app.spi.records.RecordBuilder;
  * A {@code RecordBuilder} specialization for tracking the side-effects of a
  * {@code TokenPause} transaction.
  */
-public interface TokenUnpauseRecordBuilder extends RecordBuilder<TokenUnpauseRecordBuilder> {}
+public interface TokenUnPauseRecordBuilder extends RecordBuilder<TokenUnPauseRecordBuilder> {}

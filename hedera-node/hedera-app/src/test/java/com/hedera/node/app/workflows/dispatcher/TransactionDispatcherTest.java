@@ -108,6 +108,7 @@ import com.hedera.node.app.service.schedule.impl.handlers.ScheduleCreateHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleSignHandler;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoAddLiveHashHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoApproveAllowanceHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoCreateHandler;
@@ -131,6 +132,8 @@ import com.hedera.node.app.service.token.impl.handlers.TokenRevokeKycFromAccount
 import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
+import com.hedera.node.app.service.token.impl.records.TokenPauseRecordBuilder;
+import com.hedera.node.app.service.token.impl.records.TokenUnPauseRecordBuilder;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.key.HederaKey;
@@ -308,6 +311,9 @@ class TransactionDispatcherTest {
 
     @Mock
     private WritableTopicStore writableTopicStore;
+
+    @Mock
+    private WritableTokenStore writableTokenStore;
 
     @Mock
     private UsageLimits usageLimits;
@@ -529,6 +535,30 @@ class TransactionDispatcherTest {
         dispatcher.dispatchHandle(HederaFunctionality.CONSENSUS_SUBMIT_MESSAGE, transactionBody, writableStoreFactory);
 
         verify(txnCtx).setTopicRunningHash(newRunningHash, 2);
+    }
+
+    @Test
+    void dispatchesTokenPauseAsExpected() {
+        final var tokenPauseBuilder = mock(TokenPauseRecordBuilder.class);
+
+        given(tokenPauseHandler.newRecordBuilder()).willReturn(tokenPauseBuilder);
+        given(writableStoreFactory.createTokenStore()).willReturn(writableTokenStore);
+
+        dispatcher.dispatchHandle(HederaFunctionality.TOKEN_PAUSE, transactionBody, writableStoreFactory);
+
+        verify(writableTokenStore).commit();
+    }
+
+    @Test
+    void dispatchesTokenUnpauseAsExpected() {
+    final var tokenUnPauseBuilder = mock(TokenUnPauseRecordBuilder.class);
+
+        given(tokenUnpauseHandler.newRecordBuilder()).willReturn(tokenUnPauseBuilder);
+        given(writableStoreFactory.createTokenStore()).willReturn(writableTokenStore);
+
+        dispatcher.dispatchHandle(HederaFunctionality.TOKEN_UNPAUSE, transactionBody, writableStoreFactory);
+
+        verify(writableTokenStore).commit();
     }
 
     @Test

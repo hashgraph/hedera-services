@@ -18,10 +18,10 @@ package com.hedera.node.app.service.token.impl.records;
 
 import com.hedera.node.app.spi.records.UniversalRecordBuilder;
 
-public class UnpauseTokenRecordBuilder extends UniversalRecordBuilder<TokenUnpauseRecordBuilder>
-        implements TokenUnpauseRecordBuilder {
+public class UnpauseTokenRecordBuilder extends UniversalRecordBuilder<TokenUnPauseRecordBuilder>
+    implements TokenUnPauseRecordBuilder {
     @Override
-    protected TokenUnpauseRecordBuilder self() {
+    protected TokenUnPauseRecordBuilder self() {
         return this;
     }
 }

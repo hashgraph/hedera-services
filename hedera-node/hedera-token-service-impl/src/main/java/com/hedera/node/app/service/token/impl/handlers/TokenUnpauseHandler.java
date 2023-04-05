@@ -27,7 +27,7 @@ import com.hedera.hapi.node.token.TokenPauseTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.service.token.impl.records.TokenUnpauseRecordBuilder;
+import com.hedera.node.app.service.token.impl.records.TokenUnPauseRecordBuilder;
 import com.hedera.node.app.service.token.impl.records.UnpauseTokenRecordBuilder;
 import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
@@ -89,7 +89,7 @@ public class TokenUnpauseHandler implements TransactionHandler {
      */
     public void handle(
             @NonNull final TransactionBody txn,
-            @NonNull final TokenUnpauseRecordBuilder recordBuilder,
+            @NonNull final TokenUnPauseRecordBuilder recordBuilder,
             @NonNull final WritableTokenStore tokenStore) {
         requireNonNull(txn);
         requireNonNull(recordBuilder);
@@ -124,7 +124,7 @@ public class TokenUnpauseHandler implements TransactionHandler {
     }
 
     @Override
-    public TokenUnpauseRecordBuilder newRecordBuilder() {
+    public TokenUnPauseRecordBuilder newRecordBuilder() {
         return new UnpauseTokenRecordBuilder();
     }
 }

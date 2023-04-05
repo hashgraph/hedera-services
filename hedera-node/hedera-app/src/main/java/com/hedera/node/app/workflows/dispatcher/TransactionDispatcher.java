@@ -279,14 +279,24 @@ public class TransactionDispatcher {
         topicStore.commit();
     }
 
-    private void dispatchTokenUnpause(TransactionBody tokenUnpause, WritableTokenStore tokenStore) {
-        final var handler = handlers.tokenPauseHandler();
+    /**
+     * Dispatches the token unpause transaction to the appropriate handler.
+     * @param tokenUnpause the token unpause transaction
+     * @param tokenStore the token store
+     */
+    private void dispatchTokenUnpause(@NonNull final TransactionBody tokenUnpause, @NonNull final WritableTokenStore tokenStore) {
+        final var handler = handlers.tokenUnpauseHandler();
         final var recordBuilder = handler.newRecordBuilder();
         handler.handle(tokenUnpause, recordBuilder, tokenStore);
         tokenStore.commit();
     }
 
-    private void dispatchTokenPause(TransactionBody tokenPause, WritableTokenStore tokenStore) {
+    /**
+     * Dispatches the token pause transaction to the appropriate handler.
+     * @param tokenPause the token pause transaction
+     * @param tokenStore the token store
+     */
+    private void dispatchTokenPause(@NonNull final TransactionBody tokenPause, @NonNull final WritableTokenStore tokenStore) {
         final var handler = handlers.tokenPauseHandler();
         final var recordBuilder = handler.newRecordBuilder();
         handler.handle(tokenPause, recordBuilder, tokenStore);
