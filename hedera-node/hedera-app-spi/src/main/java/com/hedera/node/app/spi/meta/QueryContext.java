@@ -16,11 +16,11 @@
 
 package com.hedera.node.app.spi.meta;
 
-import com.google.protobuf.ByteString;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 
 /**
  * Provides context for query processing.
  */
 public interface QueryContext {
-    ByteString getLedgerId();
+    Bytes getLedgerId();
 }

@@ -30,6 +30,8 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class StateUtilsTest extends MerkleTestBase {
+    /** A *static* pseudo-random number generator used to generate the legal identifiers */
+    private static final Random RAND = new Random(8892381L);
 
     @Test
     @DisplayName("Validating a null service name throws an NPE")
@@ -174,11 +176,11 @@ class StateUtilsTest extends MerkleTestBase {
                 + ":"
                 + fruitMetadata.stateDefinition().stateKey()
                 + ":v"
-                + ver.getMajor()
+                + ver.major()
                 + "."
-                + ver.getMinor()
+                + ver.minor()
                 + "."
-                + ver.getPatch()
+                + ver.patch()
                 + ":C");
         assertThat(StateUtils.computeClassId(fruitMetadata, "C")).isEqualTo(classId);
     }
@@ -196,9 +198,7 @@ class StateUtilsTest extends MerkleTestBase {
         for (final var serviceName : fakeServiceNames) {
             for (final var stateKey : fakeStateKeys) {
                 final var md = new StateMetadata<>(
-                        serviceName,
-                        new TestSchema(1),
-                        StateDefinition.inMemory(stateKey, STRING_SERDES, STRING_SERDES));
+                        serviceName, new TestSchema(1), StateDefinition.inMemory(stateKey, STRING_CODEC, STRING_CODEC));
                 final var hash = StateUtils.computeClassId(md, "extra string");
                 hashes.add(hash);
             }
@@ -266,7 +266,7 @@ class StateUtilsTest extends MerkleTestBase {
 
         // Test scenarios where we have a set of valid chars
         for (int i = 0; i < 100; i++) {
-            args.add(Arguments.of(randomString(validChars, 12)));
+            args.add(Arguments.of(randomString(RAND, validChars, 12)));
         }
 
         return args.stream();

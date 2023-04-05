@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.hapi.node.base.TopicID;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.test.utils.IdUtils;
@@ -57,9 +58,12 @@ class EntityNumTest {
 
     @Test
     void factoriesWorkForValidShardRealm() {
+        final var pbjTopicId = TopicID.newBuilder().topicNum(123).build();
+
         final var expected = EntityNum.fromInt(123);
 
         assertEquals(expected, EntityNum.fromLong(123L));
+        assertEquals(expected, EntityNum.fromTopicId(pbjTopicId));
         assertEquals(expected, EntityNum.fromAccountId(IdUtils.asAccount("0.0.123")));
         assertEquals(expected, EntityNum.fromTokenId(IdUtils.asToken("0.0.123")));
         assertEquals(expected, EntityNum.fromScheduleId(IdUtils.asSchedule("0.0.123")));

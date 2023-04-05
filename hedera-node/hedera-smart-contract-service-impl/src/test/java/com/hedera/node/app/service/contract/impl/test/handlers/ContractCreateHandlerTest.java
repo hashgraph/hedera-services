@@ -16,20 +16,25 @@
 
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hederahashgraph.api.proto.java.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class ContractCreateHandlerTest extends ContractHandlerTestBase {
-    private ContractCreateHandler subject = new ContractCreateHandler();
+    private final ContractCreateHandler subject = new ContractCreateHandler();
 
     @Test
     @DisplayName("Adds valid admin key")
@@ -106,23 +111,22 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
     }
 
     private TransactionBody contractCreateTransaction(final Key adminKey, final AccountID autoRenewId) {
-        final var transactionID =
-                TransactionID.newBuilder().setAccountID(payer).setTransactionValidStart(consensusTimestamp);
-        final var createTxnBody = ContractCreateTransactionBody.newBuilder().setMemo("Create Contract");
+        final var transactionID = TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
+        final var createTxnBody = ContractCreateTransactionBody.newBuilder().memo("Create Contract");
         if (adminKey != null) {
-            createTxnBody.setAdminKey(adminKey);
+            createTxnBody.adminKey(adminKey);
         }
 
         if (autoRenewId != null) {
             if (!autoRenewId.equals(asAccount("0.0.0"))) {
                 given(keyLookup.getKey(autoRenewId)).willReturn(KeyOrLookupFailureReason.withKey(autoRenewHederaKey));
             }
-            createTxnBody.setAutoRenewAccountId(autoRenewId);
+            createTxnBody.autoRenewAccountId(autoRenewId);
         }
 
         return TransactionBody.newBuilder()
-                .setTransactionID(transactionID)
-                .setContractCreateInstance(createTxnBody)
+                .transactionID(transactionID)
+                .contractCreateInstance(createTxnBody)
                 .build();
     }
 }

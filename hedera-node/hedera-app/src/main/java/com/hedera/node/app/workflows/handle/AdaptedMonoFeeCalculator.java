@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusUpdateTopic;
 
 import com.hedera.node.app.fees.MonoGetTopicInfoUsage;
@@ -164,7 +165,7 @@ public class AdaptedMonoFeeCalculator implements FeeCalculator {
         final var storeFactory = new ReadableStoreFactory(state);
         final var topicStore = storeFactory.createTopicStore();
         final var topic = topicStore.getTopicLeaf(
-                accessor.getTxn().getConsensusUpdateTopic().getTopicID());
+                toPbj(accessor.getTxn().getConsensusUpdateTopic().getTopicID()));
         try {
             final var usage = monoUpdateTopicUsage.usageGivenExplicit(
                     accessor.getTxn(),
