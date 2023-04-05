@@ -160,8 +160,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         final var response = Response.newBuilder().fileGetInfo(fileGetInfo).build();
 
         when(dispatcher.getHandler(query)).thenReturn(handler);
-        when(dispatcher.getResponse(any(), eq(query), eq(responseHeader)))
-                .thenReturn(response);
+        when(dispatcher.getResponse(any(), eq(query), eq(responseHeader))).thenReturn(response);
 
         workflow = new QueryWorkflowImpl(
                 stateAccessor,
@@ -177,31 +176,13 @@ class QueryWorkflowImplTest extends AppTestBase {
     @Test
     void testConstructorWithIllegalParameters() {
         assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        null,
-                        throttleAccumulator,
-                        submissionManager,
-                        checker,
-                        dispatcher,
-                        feeAccumulator,
-                        queryParser))
+                        null, throttleAccumulator, submissionManager, checker, dispatcher, feeAccumulator, queryParser))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        stateAccessor,
-                        null,
-                        submissionManager,
-                        checker,
-                        dispatcher,
-                        feeAccumulator,
-                        queryParser))
+                        stateAccessor, null, submissionManager, checker, dispatcher, feeAccumulator, queryParser))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        stateAccessor,
-                        throttleAccumulator,
-                        null,
-                        checker,
-                        dispatcher,
-                        feeAccumulator,
-                        queryParser))
+                        stateAccessor, throttleAccumulator, null, checker, dispatcher, feeAccumulator, queryParser))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -222,13 +203,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         queryParser))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        stateAccessor,
-                        throttleAccumulator,
-                        submissionManager,
-                        checker,
-                        dispatcher,
-                        null,
-                        queryParser))
+                        stateAccessor, throttleAccumulator, submissionManager, checker, dispatcher, null, queryParser))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,

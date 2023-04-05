@@ -270,8 +270,7 @@ class QueryDispatcherTest {
         final var header = ResponseHeader.newBuilder().build();
 
         // then
-        assertThatThrownBy(() -> dispatcher.getResponse(null, query, header))
-                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> dispatcher.getResponse(null, query, header)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> dispatcher.getResponse(storeFactory, null, header))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> dispatcher.getResponse(storeFactory, query, null))

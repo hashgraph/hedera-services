@@ -95,32 +95,81 @@ class QueryCheckerTest {
 
         ctx = new SessionContext();
 
-        checker =
-                new QueryChecker(nodeInfo, currentPlatformStatus, transactionChecker, accountNumbers, queryFeeCheck, authorizer, cryptoTransferHandler);
+        checker = new QueryChecker(
+                nodeInfo,
+                currentPlatformStatus,
+                transactionChecker,
+                accountNumbers,
+                queryFeeCheck,
+                authorizer,
+                cryptoTransferHandler);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalArguments() {
-        assertThatThrownBy(
-                () -> new QueryChecker(null, currentPlatformStatus, transactionChecker, accountNumbers, queryFeeCheck, authorizer, cryptoTransferHandler))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                () -> new QueryChecker(nodeInfo, null, transactionChecker, accountNumbers, queryFeeCheck, authorizer, cryptoTransferHandler))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                () -> new QueryChecker(nodeInfo, currentPlatformStatus, null, accountNumbers, queryFeeCheck, authorizer, cryptoTransferHandler))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() ->
-                        new QueryChecker(nodeInfo, currentPlatformStatus, transactionChecker, null, queryFeeCheck, authorizer, cryptoTransferHandler))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() ->
-                        new QueryChecker(nodeInfo, currentPlatformStatus, transactionChecker, accountNumbers, null, authorizer, cryptoTransferHandler))
+        assertThatThrownBy(() -> new QueryChecker(
+                        null,
+                        currentPlatformStatus,
+                        transactionChecker,
+                        accountNumbers,
+                        queryFeeCheck,
+                        authorizer,
+                        cryptoTransferHandler))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryChecker(
-                nodeInfo, currentPlatformStatus, transactionChecker, accountNumbers, queryFeeCheck, null, cryptoTransferHandler))
+                        nodeInfo,
+                        null,
+                        transactionChecker,
+                        accountNumbers,
+                        queryFeeCheck,
+                        authorizer,
+                        cryptoTransferHandler))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryChecker(nodeInfo, currentPlatformStatus, transactionChecker, accountNumbers, queryFeeCheck, authorizer, null))
+        assertThatThrownBy(() -> new QueryChecker(
+                        nodeInfo,
+                        currentPlatformStatus,
+                        null,
+                        accountNumbers,
+                        queryFeeCheck,
+                        authorizer,
+                        cryptoTransferHandler))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new QueryChecker(
+                        nodeInfo,
+                        currentPlatformStatus,
+                        transactionChecker,
+                        null,
+                        queryFeeCheck,
+                        authorizer,
+                        cryptoTransferHandler))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new QueryChecker(
+                        nodeInfo,
+                        currentPlatformStatus,
+                        transactionChecker,
+                        accountNumbers,
+                        null,
+                        authorizer,
+                        cryptoTransferHandler))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new QueryChecker(
+                        nodeInfo,
+                        currentPlatformStatus,
+                        transactionChecker,
+                        accountNumbers,
+                        queryFeeCheck,
+                        null,
+                        cryptoTransferHandler))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new QueryChecker(
+                        nodeInfo,
+                        currentPlatformStatus,
+                        transactionChecker,
+                        accountNumbers,
+                        queryFeeCheck,
+                        authorizer,
+                        null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -133,7 +182,14 @@ class QueryCheckerTest {
     void testZeroStakeNodeFails(@Mock NodeInfo localNodeInfo) {
         // given
         when(localNodeInfo.isSelfZeroStake()).thenReturn(true);
-        checker = new QueryChecker(localNodeInfo, currentPlatformStatus, transactionChecker, accountNumbers, queryFeeCheck, authorizer, cryptoTransferHandler);
+        checker = new QueryChecker(
+                localNodeInfo,
+                currentPlatformStatus,
+                transactionChecker,
+                accountNumbers,
+                queryFeeCheck,
+                authorizer,
+                cryptoTransferHandler);
 
         // then
         assertThatThrownBy(() -> checker.checkNodeState())
@@ -145,7 +201,14 @@ class QueryCheckerTest {
     void testInactivePlatformFails(@Mock CurrentPlatformStatus localCurrentPlatformStatus) {
         // given
         when(localCurrentPlatformStatus.get()).thenReturn(PlatformStatus.MAINTENANCE);
-        checker = new QueryChecker(nodeInfo, localCurrentPlatformStatus, transactionChecker, accountNumbers, queryFeeCheck, authorizer, cryptoTransferHandler);
+        checker = new QueryChecker(
+                nodeInfo,
+                localCurrentPlatformStatus,
+                transactionChecker,
+                accountNumbers,
+                queryFeeCheck,
+                authorizer,
+                cryptoTransferHandler);
 
         // then
         assertThatThrownBy(() -> checker.checkNodeState())
@@ -187,8 +250,14 @@ class QueryCheckerTest {
         // given
         final var transaction = Transaction.newBuilder().build();
         when(transactionChecker.check(ctx, transaction)).thenThrow(new PreCheckException(INVALID_TRANSACTION));
-        final var checker =
-                new QueryChecker(nodeInfo, currentPlatformStatus, transactionChecker, accountNumbers, queryFeeCheck, authorizer, cryptoTransferHandler);
+        final var checker = new QueryChecker(
+                nodeInfo,
+                currentPlatformStatus,
+                transactionChecker,
+                accountNumbers,
+                queryFeeCheck,
+                authorizer,
+                cryptoTransferHandler);
 
         // then
         assertThatThrownBy(() -> checker.validateCryptoTransfer(ctx, transaction))
@@ -205,8 +274,14 @@ class QueryCheckerTest {
                 new TransactionInfo(Transaction.newBuilder().build(), txBody, signatureMap, CONSENSUS_CREATE_TOPIC);
         final var transaction = Transaction.newBuilder().build();
         when(transactionChecker.check(ctx, transaction)).thenReturn(onsetResult);
-        final var checker =
-                new QueryChecker(nodeInfo, currentPlatformStatus, transactionChecker, accountNumbers, queryFeeCheck, authorizer, cryptoTransferHandler);
+        final var checker = new QueryChecker(
+                nodeInfo,
+                currentPlatformStatus,
+                transactionChecker,
+                accountNumbers,
+                queryFeeCheck,
+                authorizer,
+                cryptoTransferHandler);
 
         // then
         assertThatThrownBy(() -> checker.validateCryptoTransfer(ctx, transaction))
@@ -226,8 +301,14 @@ class QueryCheckerTest {
         doThrow(new PreCheckException(INVALID_ACCOUNT_AMOUNTS))
                 .when(cryptoTransferHandler)
                 .validate(txBody);
-        final var checker =
-                new QueryChecker(nodeInfo, currentPlatformStatus, transactionChecker, accountNumbers, queryFeeCheck, authorizer, cryptoTransferHandler);
+        final var checker = new QueryChecker(
+                nodeInfo,
+                currentPlatformStatus,
+                transactionChecker,
+                accountNumbers,
+                queryFeeCheck,
+                authorizer,
+                cryptoTransferHandler);
 
         // then
         assertThatThrownBy(() -> checker.validateCryptoTransfer(ctx, transaction))

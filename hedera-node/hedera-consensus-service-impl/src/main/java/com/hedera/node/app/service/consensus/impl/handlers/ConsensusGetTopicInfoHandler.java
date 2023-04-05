@@ -150,8 +150,7 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
      * @return the information about the topic
      */
     private Optional<ConsensusTopicInfo> infoForTopic(
-            @NonNull final TopicID topicID,
-            @NonNull final ReadableTopicStore topicStore) {
+            @NonNull final TopicID topicID, @NonNull final ReadableTopicStore topicStore) {
         final var metaOrFailure = topicStore.getTopicMetadata(topicID);
         if (metaOrFailure.failed()) {
             return Optional.empty();
