@@ -99,7 +99,7 @@ gitRepositories {
     uri.set("https://github.com/hashgraph/hedera-protobufs.git")
     // choose tag or branch of HAPI you would like to test with
     // This version needs to match tha HAPI version below in versionCatalogs
-    tag.set("v0.36.1")
+    tag.set("v0.37.0")
     // do not load project from repo
     autoInclude.set(false)
   }
