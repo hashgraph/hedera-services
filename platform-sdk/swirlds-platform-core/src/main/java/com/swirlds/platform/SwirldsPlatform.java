@@ -1267,6 +1267,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         // a genesis event could be created here, but it isn't needed. This member will naturally create an
         // event after their first sync, where the first sync will involve sending no events.
 
+        final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
+
         final ParallelExecutor shadowgraphExecutor = PlatformConstructor.parallelExecutor(threadManager);
         shadowgraphExecutor.start();
         shadowgraphSynchronizer = new ShadowGraphSynchronizer(
@@ -1278,8 +1280,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 eventTaskCreator::addEvent,
                 syncManager,
                 shadowgraphExecutor,
-                // TODO: how to make this configured based on state of sync-as-protocol configuration?
-                false,
+                !basicConfig.syncAsProtocolEnabled(),
                 () -> {});
 
         final Runnable stopGossip = settings.getChatter().isChatterUsed()
