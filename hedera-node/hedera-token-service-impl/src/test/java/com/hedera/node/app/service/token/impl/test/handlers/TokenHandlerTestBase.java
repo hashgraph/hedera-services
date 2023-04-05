@@ -114,7 +114,7 @@ public class TokenHandlerTestBase {
         writableStore = new WritableTokenStore(writableStates);
     }
 
-    protected void refreshStoresWithCurrentTopicInBothReadableAndWritable() {
+    protected void refreshStoresWithCurrentTokenInWritable() {
         readableTokenState = readableTokenState();
         writableTokenState = writableTokenStateWithOneKey();
         given(readableStates.<EntityNum, Token>get(TOKENS)).willReturn(readableTokenState);

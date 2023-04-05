@@ -95,15 +95,13 @@ public class TokenPauseHandler implements TransactionHandler {
         requireNonNull(tokenStore);
 
         var op = txn.tokenPause();
-        var tokenId = op.token();
-
-        var token = tokenStore.get(tokenId.tokenNum());
+        var token = tokenStore.get(op.token().tokenNum());
         if (token.isEmpty()) {
             throw new HandleStatusException(INVALID_TOKEN_ID);
         }
 
         final var copyBuilder = token.get().copyBuilder();
-        copyBuilder.paused(false);
+        copyBuilder.paused(true);
         tokenStore.put(copyBuilder.build());
     }
 

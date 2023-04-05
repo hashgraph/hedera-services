@@ -16,39 +16,85 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.txnFrom;
-import static com.hedera.test.factories.scenarios.TokenUnpauseScenarios.VALID_UNPAUSE_WITH_EXTANT_TOKEN;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_PAUSE_KT;
-import static com.hedera.test.utils.KeyUtils.sanityRestoredToPbj;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.token.TokenUnpauseTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.service.token.impl.records.UnPauseTokenRecordBuilder;
+import com.hedera.node.app.spi.workflows.HandleStatusException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class TokenUnpauseHandlerTest extends ParityTestBase {
+class TokenUnpauseHandlerTest extends TokenHandlerTestBase {
     private TokenUnpauseHandler subject;
+    private TransactionBody tokenUnpauseTxn;
 
     @BeforeEach
     void setUp() {
         subject = new TokenUnpauseHandler();
+        givenValidTxn();
+        refreshStoresWithCurrentTokenInWritable();
     }
 
     @Test
-    void tokenWipeWithValidExtantTokenScenario() {
-        final var theTxn = txnFrom(VALID_UNPAUSE_WITH_EXTANT_TOKEN);
+    void unPausesToken() {
+        pauseKnownToken();
+        assertTrue(writableStore.get(tokenId.tokenNum()).get().paused());
 
-        final var context = new PreHandleContext(readableAccountStore, theTxn);
-        subject.preHandle(context, readableTokenStore);
+        subject.handle(tokenUnpauseTxn, new UnPauseTokenRecordBuilder(), writableStore);
 
-        assertFalse(context.failed());
-        assertEquals(OK, context.getStatus());
-        assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(sanityRestoredToPbj(context.getRequiredNonPayerKeys()), contains(TOKEN_PAUSE_KT.asPbjKey()));
+        final var unpausedToken = writableStore.get(tokenId.tokenNum()).get();
+        assertFalse(unpausedToken.paused());
+    }
+
+    @Test
+    void unPausesTokenFailsIfInvalidToken() {
+        pauseKnownToken();
+        assertTrue(writableStore.get(tokenId.tokenNum()).get().paused());
+        givenInvalidTokenInTxn();
+
+        final var msg = assertThrows(
+                HandleStatusException.class,
+                () -> subject.handle(tokenUnpauseTxn, new UnPauseTokenRecordBuilder(), writableStore));
+        assertEquals(INVALID_TOKEN_ID, msg.getStatus());
+    }
+
+    @Test
+    void failsForNullArguments() {
+        assertThrows(
+                NullPointerException.class, () -> subject.handle(null, new UnPauseTokenRecordBuilder(), writableStore));
+        assertThrows(NullPointerException.class, () -> subject.handle(tokenUnpauseTxn, null, writableStore));
+        assertThrows(
+                NullPointerException.class,
+                () -> subject.handle(tokenUnpauseTxn, new UnPauseTokenRecordBuilder(), null));
+    }
+
+    private void givenValidTxn() {
+        tokenUnpauseTxn = TransactionBody.newBuilder()
+                .tokenUnpause(TokenUnpauseTransactionBody.newBuilder().token(tokenId))
+                .build();
+    }
+
+    private void givenInvalidTokenInTxn() {
+        tokenUnpauseTxn = TransactionBody.newBuilder()
+                .tokenUnpause(TokenUnpauseTransactionBody.newBuilder()
+                        .token(TokenID.newBuilder().tokenNum(2).build()))
+                .build();
+    }
+
+    private void pauseKnownToken() {
+        final var token = writableStore
+                .get(tokenId.tokenNum())
+                .get()
+                .copyBuilder()
+                .paused(true)
+                .build();
+        writableStore.put(token);
     }
 }
