@@ -253,6 +253,7 @@ public final class BootstrapProperties implements PropertySource {
                     CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST,
                     CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS,
                     CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE,
+                    CONTRACTS_PRECOMPILE_HTS_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS,
                     CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED,
                     CONTRACTS_EVM_VERSION,
                     CONTRACTS_DYNAMIC_EVM_VERSION,
@@ -551,6 +552,9 @@ public final class BootstrapProperties implements PropertySource {
                     entry(CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST, AS_LONG),
                     entry(CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS, AS_BOOLEAN),
                     entry(CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE, AS_BOOLEAN),
+                    entry(
+                            CONTRACTS_PRECOMPILE_HTS_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS,
+                            AS_CUSTOM_FEES_TYPE),
                     entry(CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED, AS_BOOLEAN),
                     entry(CONTRACTS_THROTTLE_THROTTLE_BY_GAS, AS_BOOLEAN),
                     entry(CONTRACTS_EVM_VERSION, AS_STRING),

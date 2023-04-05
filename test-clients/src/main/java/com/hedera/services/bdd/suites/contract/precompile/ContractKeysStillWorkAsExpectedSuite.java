@@ -41,6 +41,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFeeInheritingRoyaltyCollector;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFeeInheritingRoyaltyCollector;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeWithFallback;
@@ -60,6 +61,7 @@ import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_K
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -109,7 +111,91 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
                 topLevelSigsStillWorkWithDefaultGrandfatherNum(),
                 contractCanStillTransferItsOwnAssets(),
                 fallbackFeeForHtsPayerMustSign(),
-                fallbackFeePayerMustSign());
+                fallbackFeePayerMustSign(),
+                fixedFeeFailsWhenDisabledButWorksWhenEnabled());
+    }
+
+    private HapiSpec fixedFeeFailsWhenDisabledButWorksWhenEnabled() {
+        final AtomicReference<Address> senderAddr = new AtomicReference<>();
+        final AtomicReference<Address> receiverAddr = new AtomicReference<>();
+        final AtomicReference<Address> nonFungibleTokenMirrorAddr = new AtomicReference<>();
+
+        final var treasury = "treasury";
+        final var sender = "sender";
+        final var receiver = "receiver";
+        final var nft = "nft";
+        final var failedCallTxn = "failedCallTxn";
+
+        return propertyPreservingHapiSpec("FixedFeeFailsWhenNotEnabled")
+                .preserving(EVM_ALIAS_ENABLED_PROP)
+                .given(
+                        overriding(EVM_ALIAS_ENABLED_PROP, "true"),
+                        uploadInitCode(WELL_KNOWN_TREASURY_CONTRACT),
+                        contractCreate(WELL_KNOWN_TREASURY_CONTRACT),
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(treasury),
+                        cryptoCreate(sender)
+                                .keyShape(SECP256K1_ON)
+                                .exposingEvmAddressTo(senderAddr::set),
+                        getAccountInfo(sender).logged(),
+                        cryptoCreate(receiver)
+                                .keyShape(SECP256K1_ON)
+                                .balance(ONE_HBAR)
+                                .exposingEvmAddressTo(receiverAddr::set))
+                .when(
+                        tokenCreate(nft)
+                                .exposingAddressTo(nonFungibleTokenMirrorAddr::set)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0)
+                                .supplyKey(MULTI_KEY)
+                                .withCustom(fixedHbarFee(1, treasury, false))
+                                .treasury(treasury),
+                        getTokenInfo(nft).logged(),
+                        tokenAssociate(sender, nft),
+                        tokenAssociate(receiver, nft),
+                        mintToken(
+                                nft,
+                                List.of(
+                                        ByteString.copyFromUtf8("serialNo1"),
+                                        ByteString.copyFromUtf8("serialNo2"))),
+                        cryptoTransfer(movingUnique(nft, 1, 2).between(treasury, sender)))
+                .then(
+                        // override config to not allow fixed fees
+                        overriding(
+                                "contracts.precompile.unsupportedCustomFeeReceiverDebits",
+                                "FIXED_FEE"),
+                        sourcing(
+                                () ->
+                                        contractCall(
+                                                        WELL_KNOWN_TREASURY_CONTRACT,
+                                                        "transferSerialNo1FromToOthers",
+                                                        nonFungibleTokenMirrorAddr.get(),
+                                                        senderAddr.get(),
+                                                        receiverAddr.get())
+                                                .gas(2_000_000)
+                                                .via(failedCallTxn)
+                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                                .alsoSigningWithFullPrefix(sender)),
+                        childRecordsCheck(
+                                failedCallTxn,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(NOT_SUPPORTED)),
+                        // And no hbar were deducted from the receiver
+                        getAccountBalance(receiver).hasTinyBars(ONE_HBAR),
+                        // override config to  allow fixed fees
+                        overriding("contracts.precompile.unsupportedCustomFeeReceiverDebits", ""),
+                        sourcing(
+                                () ->
+                                        contractCall(
+                                                        WELL_KNOWN_TREASURY_CONTRACT,
+                                                        "transferSerialNo1FromToOthers",
+                                                        nonFungibleTokenMirrorAddr.get(),
+                                                        senderAddr.get(),
+                                                        receiverAddr.get())
+                                                .gas(2_000_000)
+                                                .via(failedCallTxn)
+                                                .hasKnownStatus(SUCCESS)
+                                                .alsoSigningWithFullPrefix(sender)));
     }
 
     private HapiSpec fallbackFeePayerMustSign() {
@@ -163,6 +249,7 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
                         cryptoTransfer(movingUnique(nft, 1, 2).between(treasury, sender)))
                 .then(
                         // Without the receiver signature, will fail with INVALID_SIGNATURE
+                        overriding("contracts.precompile.unsupportedCustomFeeReceiverDebits", ""),
                         sourcing(
                                 () ->
                                         contractCall(
@@ -181,7 +268,31 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
                                 recordWith().status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)),
                         // And no hbar were deducted from the receiver
                         getAccountBalance(receiver).hasTinyBars(ONE_HBAR),
+                        // override config to not allow royalty fee
+                        overriding(
+                                "contracts.precompile.unsupportedCustomFeeReceiverDebits",
+                                "ROYALTY_FALLBACK_FEE"),
                         // But now sign with receiver as well
+                        sourcing(
+                                () ->
+                                        contractCall(
+                                                        WELL_KNOWN_TREASURY_CONTRACT,
+                                                        "transferSerialNo1FromToOthers",
+                                                        nonFungibleTokenMirrorAddr.get(),
+                                                        senderAddr.get(),
+                                                        receiverAddr.get())
+                                                .gas(2_000_000)
+                                                .via("removeRoyaltyFee")
+                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                                .alsoSigningWithFullPrefix(sender, receiver)),
+                        childRecordsCheck(
+                                "removeRoyaltyFee",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(NOT_SUPPORTED)),
+                        // And no hbar were deducted from the receiver
+                        getAccountBalance(receiver).hasTinyBars(ONE_HBAR),
+                        // But now sign with receiver as well and allow royalty fee
+                        overriding("contracts.precompile.unsupportedCustomFeeReceiverDebits", ""),
                         sourcing(
                                 () ->
                                         contractCall(
