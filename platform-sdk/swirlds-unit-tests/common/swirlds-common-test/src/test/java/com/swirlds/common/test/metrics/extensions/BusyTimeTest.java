@@ -16,27 +16,15 @@
 
 package com.swirlds.common.test.metrics.extensions;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import com.swirlds.common.metrics.IntegerPairAccumulator;
-import com.swirlds.common.metrics.Metric;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.extensions.BusyTime;
-import com.swirlds.common.metrics.extensions.DefaultMetricConfig;
-import com.swirlds.common.metrics.platform.DefaultIntegerPairAccumulator;
-import com.swirlds.common.metrics.platform.DefaultMetric;
-import com.swirlds.common.metrics.platform.Snapshot;
 import com.swirlds.common.test.fixtures.FakeTime;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.stubbing.Answer;
+
+import java.time.Duration;
+import java.time.Instant;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class BusyTimeTest {
     private final FakeTime clock = new FakeTime(Instant.EPOCH, Duration.ZERO);
@@ -45,12 +33,7 @@ class BusyTimeTest {
     @BeforeEach
     void reset() {
         clock.reset();
-        final Metrics metrics = mock(Metrics.class);
-        when(metrics.getOrCreate(any())).thenAnswer((Answer<IntegerPairAccumulator<Double>>) invocation -> {
-            final IntegerPairAccumulator.Config<Double> config = invocation.getArgument(0);
-            return new DefaultIntegerPairAccumulator<>(config);
-        });
-        metric = new BusyTime(metrics, new DefaultMetricConfig("a", "b", "c"), clock);
+        metric = new BusyTime(clock);
     }
 
     /**
@@ -114,7 +97,7 @@ class BusyTimeTest {
                 0.01,
                 "3 second of work, 4 seconds of idle, so the busy fraction should be 0.43");
         assertEquals(
-                0.43, snapshot(), 0.01, "the snapshot should contain the same value returned by getBusyFraction()");
+                0.43, metric.getAndReset(), 0.01, "the snapshot should contain the same value returned by getBusyFraction()");
         assertEquals(0.0, metric.getBusyFraction(), "the snapshotting should reset the value");
 
         clock.tick(Duration.ofSeconds(1)); // time == 9
@@ -127,13 +110,13 @@ class BusyTimeTest {
     @Test
     void noUpdateBetweenSnapshots() {
         clock.tick(Duration.ofSeconds(10));
-        assertEquals(0.0, snapshot(), "no work has been done, expect 0");
+        assertEquals(0.0, metric.getAndReset(), "no work has been done, expect 0");
         clock.tick(Duration.ofSeconds(5));
         metric.startingWork();
         clock.tick(Duration.ofSeconds(5));
-        assertEquals(0.5, snapshot(), "half the time was spend doing work, expect 0.5");
+        assertEquals(0.5, metric.getAndReset(), "half the time was spend doing work, expect 0.5");
         clock.tick(Duration.ofSeconds(10));
-        assertEquals(1.0, snapshot(), "all the time was spent doing work, expect 1");
+        assertEquals(1.0, metric.getAndReset(), "all the time was spent doing work, expect 1");
     }
 
     @Test
@@ -144,21 +127,13 @@ class BusyTimeTest {
         // starting work again without finishing the previous work
         metric.startingWork();
         clock.tick(Duration.ofSeconds(1));
-        assertEquals(0.5, snapshot(), "the second startingWork() should be ignored, so 0.5 is expected");
+        assertEquals(0.5, metric.getAndReset(), "the second startingWork() should be ignored, so 0.5 is expected");
         clock.tick(Duration.ofSeconds(1));
         metric.finishedWork();
         clock.tick(Duration.ofSeconds(1));
         metric.finishedWork();
         clock.tick(Duration.ofSeconds(1));
-        assertEquals(0.33, snapshot(), 0.01, "the second finishedWork() should be ignored, so 0.33 is expected");
+        assertEquals(0.33, metric.getAndReset(), 0.01, "the second finishedWork() should be ignored, so 0.33 is expected");
     }
 
-    private double snapshot() {
-        final List<Snapshot.SnapshotEntry> snapshotEntries = ((DefaultMetric) metric.getAccumulator()).takeSnapshot();
-        assertEquals(1, snapshotEntries.size(), "there should be 1 entry in the snapshot");
-        final Snapshot.SnapshotEntry snapshotEntry = snapshotEntries.get(0);
-        assertEquals(Metric.ValueType.VALUE, snapshotEntry.valueType());
-        assertTrue(snapshotEntry.value() instanceof Double, "the snapshot should contain a double");
-        return (Double) snapshotEntry.value();
-    }
 }

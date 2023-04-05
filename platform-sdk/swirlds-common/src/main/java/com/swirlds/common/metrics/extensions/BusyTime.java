@@ -17,11 +17,14 @@
 package com.swirlds.common.metrics.extensions;
 
 import com.swirlds.common.metrics.FloatFormats;
+import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.time.IntegerEpochTime;
 import com.swirlds.common.time.OSTime;
 import com.swirlds.common.time.Time;
+
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * A metric that measures the fraction of time that a thread is busy. This metric could be used to track the overall busy
@@ -29,74 +32,89 @@ import com.swirlds.common.time.Time;
  * snapshot of this metric must be taken at least once every 34 minutes in order to get accurate data.
  */
 public class BusyTime {
-    /** passed to the accumulator method to indicate that work has started */
+	/** passed to the accumulator method to indicate that work has started */
     private static final int WORK_START = 0;
     /** passed to the accumulator method to indicate that work has ended */
     private static final int WORK_END = 1;
-    /** An instance that provides the current time */
+	/** the initial value of status when the instance is created */
+	private static final int INITIAL_STATUS = -1;
+	/** An instance that provides the current time */
     private final IntegerEpochTime time;
 
     /** Used to atomically update and reset the time and status */
-    private final IntegerPairAccumulator<Double> accumulator;
+    private final AtomicLong accumulator;
 
     /**
-     * The default constructor, uses the {@link OSTime}
-     *
-     * @param metrics the metrics instance to use
-     * @param config
-     * 		the configuration for this metric
+     * The default constructor, uses the {@link OSTime} instance to get the current time
      */
-    public BusyTime(final Metrics metrics, final DefaultMetricConfig config) {
-        this(metrics, config, OSTime.getInstance());
+    public BusyTime() {
+        this(OSTime.getInstance());
     }
 
     /**
      * A constructor where a custom {@link Time} instance could be supplied
      *
-     * @param metrics the metrics instance to use
-     * @param config
-     * 		the configuration for this metric
      * @param time
      * 		provides the current time
      */
-    public BusyTime(final Metrics metrics, final DefaultMetricConfig config, final Time time) {
+    public BusyTime(final Time time) {
         this.time = new IntegerEpochTime(time);
-        this.accumulator = metrics.getOrCreate(new IntegerPairAccumulator.Config<>(
-                        config.getCategory(), config.getName(), Double.class, this::busyFraction)
-                .withDescription(config.getDescription())
-                .withUnit("fraction")
-                .withFormat(FloatFormats.FORMAT_1_3)
-                .withCombinedAccumulator(this::statusUpdate)
-                .withLeftInitializer(this.time::getMicroTime)
-                .withRightReset(this::resetStatus));
+        this.accumulator = new AtomicLong(IntPairUtils.combine(
+				this.time.getMicroTime(),
+				INITIAL_STATUS
+		));
     }
+
+	/**
+	 * Adds a {@link FunctionGauge} to the given {@link Metrics} instance
+	 *
+	 * @param metrics
+	 * 		the metrics instance to add the metric to
+	 * @param config
+	 * 		the configuration for this metric
+	 */
+	public void addMetric(final Metrics metrics, final DefaultMetricConfig config){
+		metrics.getOrCreate(
+				new FunctionGauge.Config<>(
+						config.getCategory(),
+						config.getName(),
+						Double.class,
+						this::getAndReset)
+						.withDescription(config.getDescription())
+						.withUnit("fraction")
+						.withFormat(FloatFormats.FORMAT_1_3)
+		);
+	}
 
     /**
      * Notifies the metric that work has started
      */
     public void startingWork() {
-        accumulator.update(time.getMicroTime(), WORK_START);
+        accumulator.accumulateAndGet(IntPairUtils.combine(time.getMicroTime(), WORK_START), this::statusUpdate);
     }
 
     /**
      * Notifies the metric that work has finished
      */
     public void finishedWork() {
-        accumulator.update(time.getMicroTime(), WORK_END);
+        accumulator.accumulateAndGet(IntPairUtils.combine(time.getMicroTime(), WORK_END), this::statusUpdate);
     }
 
     /**
      * @return the fraction of time that the thread has been busy, where 0.0 means the thread is not at all busy, and 1.0 means that the thread is 100% busy
      */
     public double getBusyFraction() {
-        return accumulator.get();
+        final long pair = accumulator.get();
+        return busyFraction(IntPairUtils.extractLeft(pair), IntPairUtils.extractRight(pair));
     }
 
-    /**
-     * @return the accumulator that is used to update the metric
-     */
-    public IntegerPairAccumulator<Double> getAccumulator() {
-        return accumulator;
+    public double getAndReset(){
+        final long pair = accumulator.getAndUpdate(this::reset);
+        return busyFraction(IntPairUtils.extractLeft(pair), IntPairUtils.extractRight(pair));
+    }
+
+    private long reset(final long currentPair){
+        return IntPairUtils.combine(time.getMicroTime(), resetStatus(IntPairUtils.extractRight(currentPair)));
     }
 
     private double busyFraction(final int measurementStart, final int status) {
