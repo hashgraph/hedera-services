@@ -24,6 +24,7 @@ plugins {
 dependencies {
   // Individual Dependencies
   api(project(":swirlds-common"))
+  api(project(":swirlds-base"))
   compileOnly(libs.spotbugs.annotations)
 
   // Test Dependencies

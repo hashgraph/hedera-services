@@ -250,7 +250,7 @@ class BucketTest {
         bucket.setBucketIndex(0);
         final String nonEmptyBucketRepr = "Bucket{bucketIndex=0, entryCount=1, size=32\n"
                 + "    ENTRY[0] value= 5124 keyHashCode=2056 keyVer=3054"
-                + " key=LongVirtualKey{value=5124, hashCode=5124} keySize=8\n"
+                + " key=LongVirtualKey{value=2056, hashCode=2056} keySize=8\n"
                 + "} RAW DATA = 00 00 00 00 00 00 00 20 00 00 00 01 00 00 08 08 00 00 00 00 00"
                 + " 00 14 04 00 00 00 00 00 00 08 08 ";
         assertEquals(nonEmptyBucketRepr, bucket.toString(), "Non-empty bucket represent as expected");
