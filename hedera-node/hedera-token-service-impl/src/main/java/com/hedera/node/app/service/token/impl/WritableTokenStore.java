@@ -74,8 +74,8 @@ public class WritableTokenStore {
      * @param TokenNum - the number of the Token to be retrieved.
      */
     public Optional<Token> get(final long TokenNum) {
-        final var Token = Objects.requireNonNull(tokenState).get(EntityNum.fromLong(TokenNum));
-        return Optional.ofNullable(Token);
+        final var token = Objects.requireNonNull(tokenState).get(EntityNum.fromLong(TokenNum));
+        return Optional.ofNullable(token);
     }
 
     /**

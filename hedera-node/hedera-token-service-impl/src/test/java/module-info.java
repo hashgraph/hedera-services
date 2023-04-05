@@ -23,12 +23,15 @@ module com.hedera.node.app.service.token.impl.test {
             org.junit.platform.commons;
     opens com.hedera.node.app.service.token.impl.test.util to
             org.junit.platform.commons;
-    opens com.hedera.node.app.service.token.impl.test.serdes to
+    opens com.hedera.node.app.service.token.impl.test.codec to
             org.junit.platform.commons;
     opens com.hedera.node.app.service.token.impl.test to
             org.junit.platform.commons,
             org.mockito;
     opens com.hedera.node.app.service.token.impl.test.handlers to
+            org.junit.platform.commons,
+            org.mockito;
+    opens com.hedera.node.app.service.token.impl.test.records to
             org.junit.platform.commons,
             org.mockito;
 }

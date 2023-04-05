@@ -65,11 +65,12 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
 
     @Test
     void failsForNullArguments() {
+        final var builder = new PauseTokenRecordBuilder();
         assertThrows(
-                NullPointerException.class, () -> subject.handle(null, new PauseTokenRecordBuilder(), writableStore));
+                NullPointerException.class, () -> subject.handle(null, builder, writableStore));
         assertThrows(NullPointerException.class, () -> subject.handle(tokenPauseTxn, null, writableStore));
         assertThrows(
-                NullPointerException.class, () -> subject.handle(tokenPauseTxn, new PauseTokenRecordBuilder(), null));
+                NullPointerException.class, () -> subject.handle(tokenPauseTxn, builder, null));
     }
 
     private void givenValidTxn() {

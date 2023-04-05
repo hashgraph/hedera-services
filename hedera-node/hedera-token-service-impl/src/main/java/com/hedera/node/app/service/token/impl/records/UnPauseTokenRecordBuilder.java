@@ -28,7 +28,7 @@ public class UnPauseTokenRecordBuilder extends UniversalRecordBuilder<TokenUnPau
      * {@inheritDoc}
      */
     @Override
-    protected UnPauseTokenRecordBuilder self() {
+    public UnPauseTokenRecordBuilder self() {
         return this;
     }
 }
