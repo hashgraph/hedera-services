@@ -44,7 +44,6 @@ import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Optional;
@@ -56,9 +55,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class FreezeHandlerTest {
-    @Mock
-    private PreHandleContext preHandleContext;
-
     @Mock
     ReadableSpecialFileStore specialFileStore;
 
@@ -89,9 +85,9 @@ class FreezeHandlerTest {
                         .build())
                 .build();
         final var context = new PreHandleContext(keyLookup, txn);
-        PreCheckException e = assertThrows(PreCheckException.class, () -> subject.preHandle(context, specialFileStore));
+        subject.preHandle(context, specialFileStore);
 
-        assertSame(INVALID_FREEZE_TRANSACTION_BODY, e.responseCode());
+        assertEquals(INVALID_FREEZE_TRANSACTION_BODY, context.getStatus());
     }
 
     @Test

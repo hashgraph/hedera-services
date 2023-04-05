@@ -18,7 +18,6 @@ package com.hedera.node.app.service.admin.impl.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.node.app.service.admin.FreezeService;
 import com.hedera.node.app.service.admin.impl.FreezeServiceImpl;
@@ -54,11 +53,10 @@ class FreezeServiceImplTest {
     void registersExpectedSchema() {
         final var subject = FreezeService.getInstance();
         ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
-        final var schema = schemaCaptor.getValue();
 
         subject.registerSchemas(registry);
         verify(registry).register(schemaCaptor.capture());
-        verifyNoInteractions(registry);
+        final var schema = schemaCaptor.getValue();
 
         final var statesToCreate = schema.statesToCreate();
         assertEquals(1, statesToCreate.size());
