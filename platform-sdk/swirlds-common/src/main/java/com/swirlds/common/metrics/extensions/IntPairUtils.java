@@ -17,10 +17,6 @@
 package com.swirlds.common.metrics.extensions;
 
 import com.swirlds.common.metrics.atomic.AtomicIntPair;
-import java.util.function.IntBinaryOperator;
-import java.util.function.IntUnaryOperator;
-import java.util.function.LongBinaryOperator;
-import java.util.function.LongUnaryOperator;
 
 /**
  * Utility methods for working with {@link AtomicIntPair}
@@ -33,34 +29,6 @@ public final class IntPairUtils {
      */
     public static int noChangeAccumulator(final int currentValue, final int ignored) {
         return currentValue;
-    }
-
-    /**
-     * Combines the two int accumulators into a single method
-     * @param leftAccumulator the accumulator used to update the left integer
-     * @param rightAccumulator the accumulator used to update the right integer
-     * @return a method that will update both integers
-     */
-    public static LongBinaryOperator createAccumulator(
-            final IntBinaryOperator leftAccumulator, final IntBinaryOperator rightAccumulator) {
-        return (current, supplied) -> {
-            final int left = leftAccumulator.applyAsInt(extractLeft(current), extractLeft(supplied));
-            final int right = rightAccumulator.applyAsInt(extractRight(current), extractRight(supplied));
-            return combine(left, right);
-        };
-    }
-
-    /**
-     * @param leftReset        the method that will be used to calculate the new value for the left integer when it is being reset
-     * @param rightReset      the method that will be used to calculate the new value for the right integer when it is being reset
-     */
-    public static LongUnaryOperator createCombinedReset(
-            final IntUnaryOperator leftReset, final IntUnaryOperator rightReset) {
-        return current -> {
-            final int left = leftReset.applyAsInt(extractLeft(current));
-            final int right = rightReset.applyAsInt(extractRight(current));
-            return combine(left, right);
-        };
     }
 
     /**

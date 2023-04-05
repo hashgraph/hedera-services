@@ -15,6 +15,7 @@ This code is maintained by the "Platform Base" team.
 - [Configuration](./base/configuration/configuration.md)
 - Metrics
     - Prometheus
+    - [Busy time metrics](./base/metrics/busy-time-metric.md)
 - Logging
 - Thread Management
 
