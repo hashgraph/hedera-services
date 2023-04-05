@@ -19,7 +19,6 @@ package com.swirlds.platform.sync.protocol;
 import static com.swirlds.base.ArgumentUtils.throwArgNull;
 
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.threading.SyncPermitProvider;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.platform.Connection;
 import com.swirlds.platform.Utilities;
@@ -33,13 +32,14 @@ import com.swirlds.platform.sync.SyncException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.Semaphore;
 import java.util.function.LongSupplier;
 
 /**
  * Executes the sync protocol where events are exchanged with a peer and all events are sent and received in topological
  * order.
  * <p>
- * This object will be instantiated once per set of peers, and is bidirectional
+ * This object will be instantiated once per pair of peers, and is bidirectional
  */
 public class SyncProtocol implements Protocol {
     /**
@@ -78,30 +78,31 @@ public class SyncProtocol implements Protocol {
     private final SyncMetrics syncMetrics;
 
     /**
-     * Manages the permits for this protocol. Ensures that only one sync is in progress at a time, and that the node
-     * doesn't exceed concurrent incoming/outgoing sync maximums
+     * Provides sync permits to this protocol
+     * <p>
+     * Ensures that only one sync is in progress at a time, and that the node doesn't exceed concurrent
+     * incoming/outgoing sync maximums
      */
-    private final SyncProtocolPermitManager permitManager;
+    private final SyncProtocolPermitProvider permitProvider;
 
     /**
      * Constructs a new sync protocol
      *
-     * @param peerId                     the id of the peer being synced with in this protocol
-     * @param synchronizer               the shadow graph synchronizer, responsible for actually doing the sync
-     * @param fallenBehindManager        manager to determine whether this node has fallen behind
-     * @param outgoingSyncPermitProvider provides permits to initiate syncs
-     * @param incomingSyncPermitProvider provides permits to receive syncs
-     * @param criticalQuorum             determines whether a peer is a good candidate to sync with
-     * @param peerAgnosticSyncChecks     peer agnostic checks which are performed to determine whether this node should
-     *                                   sync
-     * @param syncMetrics                metrics tracking syncing
+     * @param peerId                 the id of the peer being synced with in this protocol
+     * @param synchronizer           the shadow graph synchronizer, responsible for actually doing the sync
+     * @param fallenBehindManager    manager to determine whether this node has fallen behind
+     * @param outgoingSyncSemaphore  provides permits to initiate syncs
+     * @param incomingSyncSemaphore  provides permits to receive syncs
+     * @param criticalQuorum         determines whether a peer is a good candidate to sync with
+     * @param peerAgnosticSyncChecks peer agnostic checks to determine whether this node should sync
+     * @param syncMetrics            metrics tracking syncing
      */
     public SyncProtocol(
             @NonNull final NodeId peerId,
             @NonNull final ShadowGraphSynchronizer synchronizer,
             @NonNull final FallenBehindManager fallenBehindManager,
-            @NonNull final SyncPermitProvider outgoingSyncPermitProvider,
-            @NonNull final SyncPermitProvider incomingSyncPermitProvider,
+            @NonNull final Semaphore outgoingSyncSemaphore,
+            @NonNull final Semaphore incomingSyncSemaphore,
             @NonNull final CriticalQuorum criticalQuorum,
             @NonNull final PeerAgnosticSyncChecks peerAgnosticSyncChecks,
             @NonNull final LongSupplier sleepAfterSyncSupplier,
@@ -115,7 +116,7 @@ public class SyncProtocol implements Protocol {
         this.sleepAfterSyncSupplier = throwArgNull(sleepAfterSyncSupplier, "sleepAfterSyncSupplier");
         this.syncMetrics = throwArgNull(syncMetrics, "syncMetrics");
 
-        this.permitManager = new SyncProtocolPermitManager(outgoingSyncPermitProvider, incomingSyncPermitProvider);
+        this.permitProvider = new SyncProtocolPermitProvider(outgoingSyncSemaphore, incomingSyncSemaphore);
     }
 
     /**
@@ -139,7 +140,7 @@ public class SyncProtocol implements Protocol {
         }
 
         if (peerNeededForFallenBehind() || criticalQuorum.isInCriticalQuorum(peerId.getId())) {
-            return permitManager.tryAcquirePermit(true);
+            return permitProvider.tryAcquirePermit(true);
         } else {
             return false;
         }
@@ -155,7 +156,7 @@ public class SyncProtocol implements Protocol {
             return false;
         }
 
-        final boolean permitAcquired = permitManager.tryAcquirePermit(false);
+        final boolean permitAcquired = permitProvider.tryAcquirePermit(false);
         syncMetrics.updateRejectedSyncRatio(!permitAcquired);
         return permitAcquired;
     }
@@ -165,7 +166,7 @@ public class SyncProtocol implements Protocol {
      */
     @Override
     public void initiateFailed() {
-        permitManager.closePermits();
+        permitProvider.closePermit();
     }
 
     /**
@@ -185,7 +186,7 @@ public class SyncProtocol implements Protocol {
 
         throwArgNull(connection, "connection");
 
-        if (!permitManager.isAcquired()) {
+        if (!permitProvider.isAcquired()) {
             throw new NetworkProtocolException("sync permit not acquired prior to executing sync protocol");
         }
 
@@ -198,7 +199,7 @@ public class SyncProtocol implements Protocol {
 
             throw new NetworkProtocolException(e);
         } finally {
-            permitManager.closePermits();
+            permitProvider.closePermit();
 
             final long sleepAfterSyncDuration = sleepAfterSyncSupplier.getAsLong();
             if (sleepAfterSyncDuration > 0) {

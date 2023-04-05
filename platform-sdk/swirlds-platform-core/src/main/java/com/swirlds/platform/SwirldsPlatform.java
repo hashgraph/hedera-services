@@ -61,7 +61,6 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.PlatformEvent;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
-import com.swirlds.common.threading.SyncPermitProvider;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
@@ -227,6 +226,7 @@ import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -1670,9 +1670,9 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         final PeerAgnosticSyncChecks peerAgnosticSyncChecks = new PeerAgnosticSyncChecks(
                 List.of(() -> !gossipHalted.get(), () -> intakeQueue.size() <= settings.getEventIntakeQueueSize()));
 
-        final SyncPermitProvider initiateSyncPermit = new SyncPermitProvider(settings.getMaxOutgoingSyncs());
-        final SyncPermitProvider receiveSyncPermit =
-                new SyncPermitProvider(settings.getMaxOutgoingSyncs() + settings.getMaxIncomingSyncsInc());
+        final Semaphore outgoingSyncSemaphore = new Semaphore(settings.getMaxOutgoingSyncs());
+        final Semaphore incomingSyncSemaphore =
+                new Semaphore(settings.getMaxOutgoingSyncs() + settings.getMaxIncomingSyncsInc());
 
         for (final NodeId otherId : topology.getNeighbors()) {
             syncProtocolThreads.add(new StoppableThreadConfiguration<>(threadManager)
@@ -1716,8 +1716,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                                             otherId,
                                             shadowgraphSynchronizer,
                                             fallenBehindManager,
-                                            initiateSyncPermit,
-                                            receiveSyncPermit,
+                                            outgoingSyncSemaphore,
+                                            incomingSyncSemaphore,
                                             criticalQuorum,
                                             peerAgnosticSyncChecks,
                                             this::getSleepAfterSync,
