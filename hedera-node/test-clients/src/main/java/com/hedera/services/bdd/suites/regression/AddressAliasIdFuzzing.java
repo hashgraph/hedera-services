@@ -63,26 +63,20 @@ public class AddressAliasIdFuzzing extends HapiSuite {
 
     private HapiSpec transferToEVMAddressFuzzing() {
         return defaultHapiSpec("TransferToEVMAddressFuzzing")
-                .given(
-                        cryptoCreate(UNIQUE_PAYER_ACCOUNT)
-                                .balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE)
-                                .withRecharging())
+                .given(cryptoCreate(UNIQUE_PAYER_ACCOUNT)
+                        .balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE)
+                        .withRecharging())
                 .when()
-                .then(
-                        runWithProvider(idTransferToEVMAddressWith(PROPERTIES))
-                                .lasting(10L, TimeUnit.SECONDS));
+                .then(runWithProvider(idTransferToEVMAddressWith(PROPERTIES)).lasting(10L, TimeUnit.SECONDS));
     }
 
     private HapiSpec transferToKeyFuzzing() {
         return defaultHapiSpec("TransferToKeyFuzzing")
-                .given(
-                        cryptoCreate(UNIQUE_PAYER_ACCOUNT)
-                                .balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE)
-                                .withRecharging())
+                .given(cryptoCreate(UNIQUE_PAYER_ACCOUNT)
+                        .balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE)
+                        .withRecharging())
                 .when()
-                .then(
-                        runWithProvider(idTransferToRandomKeyWith(PROPERTIES))
-                                .lasting(10L, TimeUnit.SECONDS));
+                .then(runWithProvider(idTransferToRandomKeyWith(PROPERTIES)).lasting(10L, TimeUnit.SECONDS));
     }
 
     @Override

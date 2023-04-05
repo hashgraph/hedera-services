@@ -71,18 +71,14 @@ public class IdFuzzingProviderFactory {
         return spec -> {
             final var props = RegressionProviderFactory.propsFrom(resource);
 
-            final var keys =
-                    new RegistrySourcedNameProvider<>(
-                            Key.class, spec.registry(), new RandomSelector());
+            final var keys = new RegistrySourcedNameProvider<>(Key.class, spec.registry(), new RandomSelector());
 
             return new BiasedDelegatingProvider()
                     /* --- <inventory> --- */
                     .withInitialization(onlyEcdsaKeys())
                     .shouldLogNormalFlow(true)
                     /* ----- CRYPTO ----- */
-                    .withOp(
-                            new TransferToRandomEVMAddress(keys),
-                            intPropOrElse("randomTransfer.bias", 0, props));
+                    .withOp(new TransferToRandomEVMAddress(keys), intPropOrElse("randomTransfer.bias", 0, props));
         };
     }
 
@@ -90,9 +86,7 @@ public class IdFuzzingProviderFactory {
         return spec -> {
             final var props = RegressionProviderFactory.propsFrom(resource);
 
-            final var keys =
-                    new RegistrySourcedNameProvider<>(
-                            Key.class, spec.registry(), new RandomSelector());
+            final var keys = new RegistrySourcedNameProvider<>(Key.class, spec.registry(), new RandomSelector());
             KeyInventoryCreation keyInventory = new KeyInventoryCreation();
 
             return new BiasedDelegatingProvider()
@@ -100,9 +94,7 @@ public class IdFuzzingProviderFactory {
                     .withInitialization(keyInventory.creationOps())
                     .shouldLogNormalFlow(true)
                     /* ----- CRYPTO ----- */
-                    .withOp(
-                            new TransferToRandomKey(keys),
-                            intPropOrElse("randomTransfer.bias", 0, props));
+                    .withOp(new TransferToRandomKey(keys), intPropOrElse("randomTransfer.bias", 0, props));
         };
     }
 

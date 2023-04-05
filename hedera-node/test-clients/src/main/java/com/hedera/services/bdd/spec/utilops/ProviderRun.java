@@ -156,22 +156,20 @@ public class ProviderRun extends UtilOp {
                 break;
             }
             if (numPending < MAX_PENDING_OPS) {
-                HapiSpecOperation[] burst =
-                        IntStream.range(
-                                        0,
-                                        Math.min(
-                                                MAX_N,
-                                                fixedOpSubmission
-                                                        ? Math.min(
-                                                                remainingOpsToSubmit.get(),
-                                                                MAX_OPS_PER_SEC
-                                                                        - opsThisSecond.get())
-                                                        : MAX_OPS_PER_SEC - opsThisSecond.get()))
-                                .mapToObj(ignore -> provider.get())
-                                .flatMap(Optional::stream)
-                                .filter(op -> op != Stream.empty())
-                                .peek(op -> counts.get(op.type()).getAndIncrement())
-                                .toArray(HapiSpecOperation[]::new);
+                HapiSpecOperation[] burst = IntStream.range(
+                                0,
+                                Math.min(
+                                        MAX_N,
+                                        fixedOpSubmission
+                                                ? Math.min(
+                                                        remainingOpsToSubmit.get(),
+                                                        MAX_OPS_PER_SEC - opsThisSecond.get())
+                                                : MAX_OPS_PER_SEC - opsThisSecond.get()))
+                        .mapToObj(ignore -> provider.get())
+                        .flatMap(Optional::stream)
+                        .filter(op -> op != Stream.empty())
+                        .peek(op -> counts.get(op.type()).getAndIncrement())
+                        .toArray(HapiSpecOperation[]::new);
                 if (burst.length > 0) {
                     allRunFor(spec, inParallel(burst));
                     submittedSoFar += burst.length;

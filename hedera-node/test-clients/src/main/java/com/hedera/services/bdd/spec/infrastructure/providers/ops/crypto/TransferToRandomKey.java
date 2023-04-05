@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -51,10 +52,9 @@ public class TransferToRandomKey implements OpProvider {
             return Optional.empty();
         }
 
-        HapiCryptoTransfer op =
-                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, to, 5))
-                        .hasKnownStatusFrom(SUCCESS, INVALID_ALIAS_KEY)
-                        .payingWith(UNIQUE_PAYER_ACCOUNT);
+        HapiCryptoTransfer op = cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, to, 5))
+                .hasKnownStatusFrom(SUCCESS, INVALID_ALIAS_KEY)
+                .payingWith(UNIQUE_PAYER_ACCOUNT);
 
         return Optional.of(op);
     }

@@ -336,11 +336,11 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
             if (toEvmAddress) {
                 final var key = spec.registry().getKey(to);
                 throwIfNotEcdsa(key);
-                final var address =
-                        EthSigsUtils.recoverAddressFromPubKey(
-                                key.getECDSASecp256K1().toByteArray());
-                final var toAccId =
-                        AccountID.newBuilder().setAlias(ByteString.copyFrom(address)).build();
+                final var address = EthSigsUtils.recoverAddressFromPubKey(
+                        key.getECDSASecp256K1().toByteArray());
+                final var toAccId = AccountID.newBuilder()
+                        .setAlias(ByteString.copyFrom(address))
+                        .build();
                 return xFromTo(fromId, toAccId, amount);
             }
             final var toId = spec.registry().aliasIdFor(to);
