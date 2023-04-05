@@ -56,6 +56,12 @@ public final class ContractKey implements VirtualKey<ContractKey> {
     static final long RUNTIME_CONSTRUCTABLE_ID = 0xb2c0a1f733950abdL;
     public static final int MERKLE_VERSION = 1;
 
+    private static boolean useStableHashCode = false;
+
+    public static void setUseStableHashCode(final boolean useStableHashCode) {
+        ContractKey.useStableHashCode = useStableHashCode;
+    }
+
     public ContractKey() {
         // there has to be a default constructor for deserialize
     }
@@ -133,16 +139,27 @@ public final class ContractKey implements VirtualKey<ContractKey> {
     /** Special hash to make sure we get good distribution. */
     @Override
     public int hashCode() {
-        return hash32(
-                contractId,
-                uint256Key[7],
-                uint256Key[6],
-                uint256Key[5],
-                uint256Key[4],
-                uint256Key[3],
-                uint256Key[2],
-                uint256Key[1],
-                uint256Key[0]);
+        return useStableHashCode
+                ? (int) stableHash64(
+                        contractId,
+                        uint256Key[7],
+                        uint256Key[6],
+                        uint256Key[5],
+                        uint256Key[4],
+                        uint256Key[3],
+                        uint256Key[2],
+                        uint256Key[1],
+                        uint256Key[0])
+                : hash32(
+                        contractId,
+                        uint256Key[7],
+                        uint256Key[6],
+                        uint256Key[5],
+                        uint256Key[4],
+                        uint256Key[3],
+                        uint256Key[2],
+                        uint256Key[1],
+                        uint256Key[0]);
     }
 
     @Override
@@ -327,5 +344,41 @@ public final class ContractKey implements VirtualKey<ContractKey> {
     @Override
     public int getMinimumSupportedVersion() {
         return 1;
+    }
+
+    /**
+     * An unchanging, UNTOUCHABLE implementation of {@code hashCode()} for the {@link VirtualKey} contract.
+     * @param x0 the first long to hash
+     * @param x1 the second long to hash
+     * @param x2 the third long to hash
+     * @param x3 the fourth long to hash
+     * @param x4 the fifth long to hash
+     * @param x5 the sixth long to hash
+     * @param x6 the seventh long to hash
+     * @param x7 the eighth long to hash
+     * @param x8 the ninth long to hash
+     * @return a near-optimal non-cryptographic hash of the given longs
+     */
+    private static long stableHash64(long x0, long x1, long x2, long x3, long x4, long x5, long x6, long x7, long x8) {
+        return stablePerm64(stablePerm64(stablePerm64(stablePerm64(stablePerm64(stablePerm64(
+                                                        stablePerm64(stablePerm64(stablePerm64(x0) ^ x1) ^ x2) ^ x3)
+                                                ^ x4)
+                                        ^ x5)
+                                ^ x6)
+                        ^ x7)
+                ^ x8);
+    }
+
+    private static long stablePerm64(long x) {
+        x += x << 30;
+        x ^= x >>> 27;
+        x += x << 16;
+        x ^= x >>> 20;
+        x += x << 5;
+        x ^= x >>> 18;
+        x += x << 10;
+        x ^= x >>> 24;
+        x += x << 30;
+        return x;
     }
 }
