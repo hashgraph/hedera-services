@@ -38,7 +38,8 @@ Override the existing `AbstractAssociatePrecompile` and `AbstractDissociatePreco
 of being called via the proxy contract.  The new overwritten classes will differ from the existing classes in that they will
 be passed the token id and the sender address as constructor arguments and construct the associate and dissociate operator 
 classes from these arguments.  The `getGasRequirement` method can be moved to the parent class as the functionality will be
-common to both the existing and new classes. The getSuccessResultFor and get
+common to both the existing and new classes. The `getSuccessResultFor` and `getFailureResultFor` function need to be overridden
+in order to return a boolean value consistent with other like ERC functions.
 
 The class `RedirectViewExecutor` will also be updated to include the cost to perform the `associate` and `dissociate` functions.
 
