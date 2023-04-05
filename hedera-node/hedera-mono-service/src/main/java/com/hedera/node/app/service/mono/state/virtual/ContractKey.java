@@ -56,7 +56,7 @@ public final class ContractKey implements VirtualKey<ContractKey> {
     static final long RUNTIME_CONSTRUCTABLE_ID = 0xb2c0a1f733950abdL;
     public static final int MERKLE_VERSION = 1;
 
-    private static boolean useStableHashCode = false;
+    private static boolean useStableHashCode = true;
 
     public static void setUseStableHashCode(final boolean useStableHashCode) {
         ContractKey.useStableHashCode = useStableHashCode;
