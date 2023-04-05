@@ -292,6 +292,7 @@ public class ServicesState extends PartialNaryMerkleInternal
 
         log.info("Self-reported size of storage map = {}", contractStorage().size());
         StorageLinksFixer.fixAnyBrokenLinks(this, LinkRepairs::new, VirtualMapMigration::extractVirtualMapData);
+        // Validate the # of storage K/V pairs reachable via linked lists match the pre-migration count
         reportAllReachableStorageSlots();
 
         final var bootstrapProps = getBootstrapProperties();
