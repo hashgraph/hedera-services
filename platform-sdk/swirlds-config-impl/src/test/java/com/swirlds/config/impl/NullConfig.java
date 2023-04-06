@@ -27,5 +27,4 @@ import java.util.Set;
 public record NullConfig(
         @ConfigProperty(defaultValue = NULL_DEFAULT_VALUE) List<Integer> list,
         @ConfigProperty(defaultValue = NULL_DEFAULT_VALUE) Set<Integer> set,
-        @ConfigProperty(defaultValue = NULL_DEFAULT_VALUE) String value) {
-}
+        @ConfigProperty(defaultValue = NULL_DEFAULT_VALUE) String value) {}

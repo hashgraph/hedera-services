@@ -262,8 +262,10 @@ public class ConfigApiRecordsTests {
                 .build();
 
         // when
-        final List<Integer> list = configuration.getConfigData(EmptyCollectionConfig.class).list();
-        final Set<Integer> set = configuration.getConfigData(EmptyCollectionConfig.class).set();
+        final List<Integer> list =
+                configuration.getConfigData(EmptyCollectionConfig.class).list();
+        final Set<Integer> set =
+                configuration.getConfigData(EmptyCollectionConfig.class).set();
 
         // then
         Assertions.assertIterableEquals(List.of(), list);

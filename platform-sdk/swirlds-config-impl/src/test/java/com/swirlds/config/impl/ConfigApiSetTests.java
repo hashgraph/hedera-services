@@ -39,12 +39,12 @@ public class ConfigApiSetTests {
 
         // then
         Assertions.assertEquals(3, values.size(), "A property that is defined as set should be parsed correctly");
-        Assertions.assertTrue(values.contains(1),
-                "A property that is defined as set should contain the defined values");
-        Assertions.assertTrue(values.contains(2),
-                "A property that is defined as set should contain the defined values");
-        Assertions.assertTrue(values.contains(3),
-                "A property that is defined as set should contain the defined values");
+        Assertions.assertTrue(
+                values.contains(1), "A property that is defined as set should contain the defined values");
+        Assertions.assertTrue(
+                values.contains(2), "A property that is defined as set should contain the defined values");
+        Assertions.assertTrue(
+                values.contains(3), "A property that is defined as set should contain the defined values");
     }
 
     @Test
@@ -59,8 +59,8 @@ public class ConfigApiSetTests {
 
         // then
         Assertions.assertEquals(1, values.size(), "A property that is defined as set should be parsed correctly");
-        Assertions.assertTrue(values.contains(123),
-                "A property that is defined as set should contain the defined values");
+        Assertions.assertTrue(
+                values.contains(123), "A property that is defined as set should contain the defined values");
     }
 
     @Test
@@ -117,9 +117,7 @@ public class ConfigApiSetTests {
 
         // then
         Assertions.assertThrows(
-                UnsupportedOperationException.class,
-                () -> values.add(10),
-                "Set properties should always be immutable");
+                UnsupportedOperationException.class, () -> values.add(10), "Set properties should always be immutable");
     }
 
     @Test

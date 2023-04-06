@@ -22,6 +22,6 @@ import java.util.List;
 import java.util.Set;
 
 @ConfigData("empty")
-public record EmptyCollectionConfig(@ConfigProperty(defaultValue = "[]") List<Integer> list,
-                                    @ConfigProperty(defaultValue = "[]") Set<Integer> set) {
-}
+public record EmptyCollectionConfig(
+        @ConfigProperty(defaultValue = "[]") List<Integer> list,
+        @ConfigProperty(defaultValue = "[]") Set<Integer> set) {}

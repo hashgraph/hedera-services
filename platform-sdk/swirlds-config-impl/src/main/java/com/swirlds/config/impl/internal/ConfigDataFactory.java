@@ -16,11 +16,14 @@
 
 package com.swirlds.config.impl.internal;
 
+import static com.swirlds.base.ArgumentUtils.throwArgNull;
+
 import com.swirlds.common.config.reflection.ConfigReflectionUtils;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import com.swirlds.config.api.Configuration;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.ParameterizedType;
@@ -109,31 +112,34 @@ class ConfigDataFactory {
         }
     }
 
-    private static <T> Class<T> getGenericSetType(final RecordComponent component) {
-        final ParameterizedType stringListType = (ParameterizedType) component.getGenericType();
-        if (!Objects.equals(Set.class, stringListType.getRawType())) {
+    private static boolean isGenericType(@NonNull final RecordComponent component, @NonNull final Class<?> type) {
+        throwArgNull(component, "component");
+        throwArgNull(type, "type");
+        final ParameterizedType stringSetType = (ParameterizedType) component.getGenericType();
+        return Objects.equals(type, stringSetType.getRawType());
+    }
+
+    private static <T> Class<T> getGenericSetType(@NonNull final RecordComponent component) {
+        if (!isGenericType(component, Set.class)) {
             throw new IllegalArgumentException("Only Set interface is supported");
         }
-        return (Class<T>) ConfigReflectionUtils.getSingleGenericTypeArgument(stringListType);
+        return (Class<T>) ConfigReflectionUtils.getSingleGenericTypeArgument(
+                (ParameterizedType) component.getGenericType());
     }
 
     @SuppressWarnings("unchecked")
     private static <T> Class<T> getGenericListType(final RecordComponent component) {
-        final ParameterizedType stringListType = (ParameterizedType) component.getGenericType();
-        if (!Objects.equals(List.class, stringListType.getRawType())) {
+        if (!isGenericType(component, List.class)) {
             throw new IllegalArgumentException("Only List interface is supported");
         }
-        return (Class<T>) ConfigReflectionUtils.getSingleGenericTypeArgument(stringListType);
+        return (Class<T>) ConfigReflectionUtils.getSingleGenericTypeArgument(
+                (ParameterizedType) component.getGenericType());
     }
 
     private <T> Set<T> getDefaultValueSet(final RecordComponent component) {
         CommonUtils.throwArgNull(component, "component");
         final Class<?> type = getGenericSetType(component);
-        final Optional<String> rawDefaultValue = getRawDefaultValue(component);
-        if (rawDefaultValue.isEmpty()) {
-            throw new IllegalArgumentException("Default value not defined for parameter");
-        }
-        final String rawValue = rawDefaultValue.get();
+        final String rawValue = getRawValue(component);
         if (Objects.equals(ConfigProperty.NULL_DEFAULT_VALUE, rawValue)) {
             return null;
         }
@@ -146,17 +152,22 @@ class ConfigDataFactory {
     private <T> List<T> getDefaultValues(final RecordComponent component) {
         CommonUtils.throwArgNull(component, "component");
         final Class<?> type = getGenericListType(component);
-        final Optional<String> rawDefaultValue = getRawDefaultValue(component);
-        if (rawDefaultValue.isEmpty()) {
-            throw new IllegalArgumentException("Default value not defined for parameter");
-        }
-        final String rawValue = rawDefaultValue.get();
+        final String rawValue = getRawValue(component);
         if (Objects.equals(ConfigProperty.NULL_DEFAULT_VALUE, rawValue)) {
             return null;
         }
         return (List<T>) ConfigListUtils.createList(rawValue).stream()
                 .map(value -> converterService.convert(value, type))
                 .toList();
+    }
+
+    private String getRawValue(final RecordComponent component) {
+        final Optional<String> rawDefaultValue = getRawDefaultValue(component);
+        if (rawDefaultValue.isEmpty()) {
+            throw new IllegalArgumentException("Default value not defined for parameter");
+        }
+        final String rawValue = rawDefaultValue.get();
+        return rawValue;
     }
 
     private static <T extends Record> String getNamePrefix(final Class<T> type) {
@@ -167,11 +178,7 @@ class ConfigDataFactory {
 
     @SuppressWarnings("unchecked")
     private <T> T getDefaultValue(final RecordComponent component) {
-        final Optional<String> rawDefaultValue = getRawDefaultValue(component);
-        if (rawDefaultValue.isEmpty()) {
-            throw new IllegalArgumentException("Default value not defined for parameter");
-        }
-        final String rawValue = rawDefaultValue.get();
+        final String rawValue = getRawValue(component);
         if (Objects.equals(ConfigProperty.NULL_DEFAULT_VALUE, rawValue)) {
             return null;
         }

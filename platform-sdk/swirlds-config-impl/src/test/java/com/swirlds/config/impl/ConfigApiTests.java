@@ -250,7 +250,7 @@ public class ConfigApiTests {
                 },
                 "Autoboxing of null as default value should throw an exception for int");
     }
-    
+
     @Test
     public void getConfigProxyUndefinedValue() {
         // given
@@ -500,5 +500,4 @@ public class ConfigApiTests {
         Assertions.assertNull(
                 value6, "The value must be null since a default is only used if a property is not defined");
     }
-
 }
