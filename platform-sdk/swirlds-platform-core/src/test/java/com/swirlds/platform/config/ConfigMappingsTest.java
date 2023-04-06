@@ -24,7 +24,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import org.junit.jupiter.api.Test;
 
-class ConfigAliasesTest {
+class ConfigMappingsTest {
     @Test
     void testAliases() {
         final int valueNonAncient = 10;
@@ -36,7 +36,7 @@ class ConfigAliasesTest {
                 .withValue("state.roundsExpired", String.valueOf(valueExpired))
                 .withValue("coinFreq", String.valueOf(valueCoin));
         final Configuration configuration = ConfigurationBuilder.create()
-                .withSource(ConfigAliases.addConfigAliases(configSource))
+                .withSource(ConfigMappings.addConfigAliases(configSource))
                 .withConfigDataType(ConsensusConfig.class)
                 .build();
 
