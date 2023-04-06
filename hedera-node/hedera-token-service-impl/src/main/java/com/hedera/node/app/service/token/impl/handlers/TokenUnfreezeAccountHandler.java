@@ -56,7 +56,7 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
     public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore) {
         requireNonNull(context);
         final var op = context.getTxn().tokenUnfreezeOrThrow();
-        final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
+        final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT).tokenNum());
 
         if (!tokenMeta.failed()) {
             tokenMeta.metadata().freezeKey().ifPresent(context::addToReqNonPayerKeys);

@@ -87,7 +87,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         requireNonNull(tokenStore);
         final var op = context.getTxn().cryptoTransferOrThrow();
         for (final var transfers : op.tokenTransfersOrElse(emptyList())) {
-            final var tokenMeta = tokenStore.getTokenMeta(transfers.tokenOrElse(TokenID.DEFAULT));
+            final var tokenMeta = tokenStore.getTokenMeta(transfers.tokenOrElse(TokenID.DEFAULT).tokenNum());
             if (!tokenMeta.failed()) {
                 handleTokenTransfers(transfers.transfersOrElse(emptyList()), context, accountStore);
                 handleNftTransfers(transfers.nftTransfersOrElse(emptyList()), context, tokenMeta, op, accountStore);

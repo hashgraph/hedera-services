@@ -52,7 +52,7 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
         requireNonNull(context);
         final var op = context.getTxn().tokenFreezeOrThrow();
 
-        final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
+        final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT).tokenNum());
 
         if (tokenMeta.failed()) {
             context.status(tokenMeta.failureReason());

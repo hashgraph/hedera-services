@@ -68,7 +68,7 @@ public class TokenUpdateHandler implements TransactionHandler {
         final var op = context.getTxn().tokenUpdateOrThrow();
         final var tokenId = op.tokenOrElse(TokenID.DEFAULT);
 
-        final var tokenMeta = tokenStore.getTokenMeta(tokenId);
+        final var tokenMeta = tokenStore.getTokenMeta(tokenId.tokenNum());
         if (tokenMeta.failed()) {
             context.status(tokenMeta.failureReason());
             return;

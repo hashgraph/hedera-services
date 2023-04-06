@@ -53,7 +53,7 @@ public class TokenBurnHandler implements TransactionHandler {
         requireNonNull(context);
         final var op = context.getTxn().tokenBurnOrThrow();
         final var tokenId = op.tokenOrElse(TokenID.DEFAULT);
-        final var tokenMeta = tokenStore.getTokenMeta(tokenId);
+        final var tokenMeta = tokenStore.getTokenMeta(tokenId.tokenNum());
         if (tokenMeta.failed()) {
             context.status(tokenMeta.failureReason());
         } else {

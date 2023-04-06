@@ -60,7 +60,7 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
         requireNonNull(context);
         final var op = context.getTxn().tokenFeeScheduleUpdateOrThrow();
         final var tokenId = op.tokenIdOrElse(TokenID.DEFAULT);
-        final var tokenMeta = tokenStore.getTokenMeta(tokenId);
+        final var tokenMeta = tokenStore.getTokenMeta(tokenId.tokenNum());
         if (tokenMeta.failed()) {
             context.status(tokenMeta.failureReason());
         } else {

@@ -73,8 +73,8 @@ public class WritableTokenStore {
      * Returns the {@link Token} with the given number. If no such Token exists, returns {@code Optional.empty()}
      * @param TokenNum - the number of the Token to be retrieved.
      */
-    public Optional<Token> get(final long TokenNum) {
-        final var token = Objects.requireNonNull(tokenState).get(EntityNum.fromLong(TokenNum));
+    public Optional<Token> get(final long tokenNum) {
+        final var token = Objects.requireNonNull(tokenState).get(EntityNum.fromLong(tokenNum));
         return Optional.ofNullable(token);
     }
 

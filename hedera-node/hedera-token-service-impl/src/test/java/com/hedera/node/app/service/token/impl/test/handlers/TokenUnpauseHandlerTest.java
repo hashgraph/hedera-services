@@ -17,29 +17,47 @@
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.token.TokenUnpauseTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
 import com.hedera.node.app.service.token.impl.records.UnPauseTokenRecordBuilder;
+import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.workflows.HandleStatusException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class TokenUnpauseHandlerTest extends TokenHandlerTestBase {
     private TokenUnpauseHandler subject;
     private TransactionBody tokenUnpauseTxn;
+    private PreHandleContext preHandleContext;
+
+    @Mock
+    private AccountAccess accountAccess;
 
     @BeforeEach
     void setUp() {
+        given(accountAccess.getKey(AccountID.newBuilder().accountNum(3L).build()))
+        .willReturn(withKey(payerHederaKey));
         subject = new TokenUnpauseHandler();
         givenValidTxn();
         refreshStoresWithCurrentTokenInWritable();
+        preHandleContext = new PreHandleContext(accountAccess, tokenUnpauseTxn, payerId);
     }
 
     @Test
@@ -74,6 +92,31 @@ class TokenUnpauseHandlerTest extends TokenHandlerTestBase {
         assertThrows(
                 NullPointerException.class,
                 () -> subject.handle(tokenUnpauseTxn, builder, null));
+    }
+
+    @Test
+    void validatesTokenExistsInPreHandle(){
+        givenInvalidTokenInTxn();
+        preHandleContext = new PreHandleContext(accountAccess, tokenUnpauseTxn, payerId);
+        assertEquals(OK, preHandleContext.getStatus());
+
+        subject.preHandle(preHandleContext, readableStore);
+
+        assertEquals(INVALID_TOKEN_ID, preHandleContext.getStatus());
+    }
+
+    @Test
+    void failsInPreCheckIfTxnBodyHasNoToken(){
+        final var txn = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(payerId).build())
+                .tokenUnpause(TokenUnpauseTransactionBody.newBuilder())
+                .build();
+        preHandleContext = new PreHandleContext(accountAccess, txn, payerId);
+        assertEquals(OK, preHandleContext.getStatus());
+
+        subject.preHandle(preHandleContext, readableStore);
+
+        assertEquals(INVALID_TOKEN_ID, preHandleContext.getStatus());
     }
 
     private void givenValidTxn() {

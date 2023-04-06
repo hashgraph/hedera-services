@@ -56,6 +56,7 @@ public class TokenHandlerTestBase {
     protected final Key feeScheduleKey = A_COMPLEX_KEY;
     protected final Key supplyKey = A_COMPLEX_KEY;
     protected final Key freezeKey = A_COMPLEX_KEY;
+    protected final Key payerKey = A_COMPLEX_KEY;
     protected final AccountID payerId = protoToPbj(asAccount("0.0.3"), AccountID.class);
     protected final AccountID treasury = protoToPbj(asAccount("0.0.100"), AccountID.class);
     protected final AccountID autoRenewId = AccountID.newBuilder().accountNum(4).build();
@@ -66,6 +67,7 @@ public class TokenHandlerTestBase {
     protected final HederaKey freezeHederaKey = asHederaKey(freezeKey).get();
     protected final HederaKey feeScheduleHederaKey = asHederaKey(feeScheduleKey).get();
     protected final HederaKey pauseHederaKey = asHederaKey(A_COMPLEX_KEY).get();
+    protected static final HederaKey payerHederaKey = asHederaKey(A_COMPLEX_KEY).get();
     protected final EntityNum tokenEntityNum = EntityNum.fromLong(1L);
     protected final TokenID tokenId =
             TokenID.newBuilder().tokenNum(tokenEntityNum.longValue()).build();
@@ -89,7 +91,6 @@ public class TokenHandlerTestBase {
 
     @Mock
     protected ReadableStates readableStates;
-
     @Mock
     protected WritableStates writableStates;
 
@@ -140,11 +141,6 @@ public class TokenHandlerTestBase {
         return MapReadableKVState.<EntityNum, Token>builder(TOKENS)
                 .value(tokenEntityNum, token)
                 .build();
-    }
-
-    @NonNull
-    protected MapReadableKVState<EntityNum, Token> emptyReadableTokenState() {
-        return MapReadableKVState.<EntityNum, Token>builder(TOKENS).build();
     }
 
     protected void givenValidToken() {

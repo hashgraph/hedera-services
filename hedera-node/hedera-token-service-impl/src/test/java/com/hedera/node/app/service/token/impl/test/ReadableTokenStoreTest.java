@@ -102,7 +102,7 @@ class ReadableTokenStoreTest {
     void getsMerkleTokenIfTokenIdPresent() {
         given(tokens.get(tokenId.tokenNum())).willReturn(token);
 
-        final var result = subject.getTokenMeta(tokenId);
+        final var result = subject.getTokenMeta(tokenId.tokenNum());
 
         assertFalse(result.failed());
         assertNull(result.failureReason());
@@ -123,7 +123,7 @@ class ReadableTokenStoreTest {
     void getsNullKeyIfMissingAccount() {
         given(tokens.get(tokenId.tokenNum())).willReturn(null);
 
-        final var result = subject.getTokenMeta(tokenId);
+        final var result = subject.getTokenMeta(tokenId.tokenNum());
 
         assertTrue(result.failed());
         assertEquals(INVALID_TOKEN_ID, result.failureReason());
@@ -137,7 +137,7 @@ class ReadableTokenStoreTest {
                 List.of(FcCustomFee.royaltyFee(1, 2, new FixedFeeSpec(1, null), new EntityId(1, 2, 5), false)));
         given(tokens.get(tokenId.tokenNum())).willReturn(token);
 
-        final var result = subject.getTokenMeta(tokenId);
+        final var result = subject.getTokenMeta(tokenId.tokenNum());
 
         assertFalse(result.failed());
         assertNull(result.failureReason());
@@ -151,7 +151,7 @@ class ReadableTokenStoreTest {
         token.setFeeSchedule(List.of(FcCustomFee.royaltyFee(1, 2, null, new EntityId(1, 2, 5), false)));
         given(tokens.get(tokenId.tokenNum())).willReturn(token);
 
-        final var result = subject.getTokenMeta(tokenId);
+        final var result = subject.getTokenMeta(tokenId.tokenNum());
 
         assertFalse(result.failed());
         assertNull(result.failureReason());
