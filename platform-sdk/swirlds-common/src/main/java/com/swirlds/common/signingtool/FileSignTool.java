@@ -115,6 +115,11 @@ public class FileSignTool {
     private static final String RECORD_STREAM_EXTENSION = "rcd";
 
     /**
+     * name of compressed rcd file
+     */
+    private static final String COMPRESSED_RECORD_STREAM_EXTENSION = "rcd.gz";
+
+    /**
      * Digitally sign the data with the private key. Return null if anything goes wrong (e.g., bad private
      * key).
      * <p>
@@ -472,11 +477,18 @@ public class FileSignTool {
                 new File(Files.createDirectories(Paths.get(destDir)).toUri());
 
         final File folder = new File(sourceDir);
-        final File[] streamFiles = folder.listFiles((dir, name) -> streamType.isStreamFile(name));
+        final File[] streamFiles = folder.listFiles((dir, name) -> streamType.isStreamFile(name) || name.endsWith(
+                COMPRESSED_RECORD_STREAM_EXTENSION));
+        if (streamFiles == null || streamFiles.length == 0) {
+            logger.error(FILE_SIGN.getMarker(), "No stream files found in {}", sourceDir);
+        }
         final File[] accountBalanceFiles = folder.listFiles((dir, name) -> {
             final String lowerCaseName = name.toLowerCase();
             return lowerCaseName.endsWith(CSV_EXTENSION) || lowerCaseName.endsWith(ACCOUNT_BALANCE_EXTENSION);
         });
+        if (accountBalanceFiles == null || accountBalanceFiles.length == 0) {
+            logger.error(FILE_SIGN.getMarker(), "No account balance files found in {}", sourceDir);
+        }
         final List<File> totalList = new ArrayList<>();
         totalList.addAll(Arrays.asList(Optional.ofNullable(streamFiles).orElse(new File[0])));
         totalList.addAll(Arrays.asList(Optional.ofNullable(accountBalanceFiles).orElse(new File[0])));
