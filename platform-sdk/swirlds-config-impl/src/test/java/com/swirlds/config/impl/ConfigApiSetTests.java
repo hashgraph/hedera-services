@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
 public class ConfigApiSetTests {
 
     @Test
-    public void readListProperty() {
+    public void readSetProperty() {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
                 .withSource(new SimpleConfigSource().withIntegerValues("testNumbers", List.of(1, 2, 3)))
@@ -48,7 +48,7 @@ public class ConfigApiSetTests {
     }
 
     @Test
-    public void readListPropertyWithOneEntry() {
+    public void readSetPropertyWithOneEntry() {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
                 .withSource(new SimpleConfigSource("testNumbers", 123))
@@ -64,7 +64,7 @@ public class ConfigApiSetTests {
     }
 
     @Test
-    public void readBadListProperty() {
+    public void readBadSetProperty() {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
                 .withSource(new SimpleConfigSource("testNumbers", "1,2,   3,4"))
@@ -78,7 +78,7 @@ public class ConfigApiSetTests {
     }
 
     @Test
-    public void readDefaultListProperty() {
+    public void readDefaultSetProperty() {
         // given
         final Configuration configuration = ConfigurationBuilder.create().build();
 
@@ -94,7 +94,7 @@ public class ConfigApiSetTests {
     }
 
     @Test
-    public void readNullDefaultListProperty() {
+    public void readNullDefaultSetProperty() {
         // given
         final Configuration configuration = ConfigurationBuilder.create().build();
 
@@ -106,7 +106,7 @@ public class ConfigApiSetTests {
     }
 
     @Test
-    public void checkListPropertyImmutable() {
+    public void checkSetPropertyImmutable() {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
                 .withSource(new SimpleConfigSource("testNumbers", "1,2,3"))
@@ -121,7 +121,7 @@ public class ConfigApiSetTests {
     }
 
     @Test
-    public void testNotDefinedEmptyList() {
+    public void testNotDefinedEmptySet() {
         // given
         final Configuration configuration = ConfigurationBuilder.create().build();
 

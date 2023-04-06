@@ -123,8 +123,8 @@ class ConfigDataFactory {
         if (!isGenericType(component, Set.class)) {
             throw new IllegalArgumentException("Only Set interface is supported");
         }
-        return (Class<T>) ConfigReflectionUtils.getSingleGenericTypeArgument(
-                (ParameterizedType) component.getGenericType());
+        return (Class<T>)
+                ConfigReflectionUtils.getSingleGenericTypeArgument((ParameterizedType) component.getGenericType());
     }
 
     @SuppressWarnings("unchecked")
@@ -132,8 +132,8 @@ class ConfigDataFactory {
         if (!isGenericType(component, List.class)) {
             throw new IllegalArgumentException("Only List interface is supported");
         }
-        return (Class<T>) ConfigReflectionUtils.getSingleGenericTypeArgument(
-                (ParameterizedType) component.getGenericType());
+        return (Class<T>)
+                ConfigReflectionUtils.getSingleGenericTypeArgument((ParameterizedType) component.getGenericType());
     }
 
     private <T> Set<T> getDefaultValueSet(final RecordComponent component) {
