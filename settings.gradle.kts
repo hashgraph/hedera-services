@@ -98,6 +98,7 @@ gitRepositories {
   include("hedera-protobufs") {
     uri.set("https://github.com/hashgraph/hedera-protobufs.git")
     // choose tag or branch of HAPI you would like to test with
+    // this looks for a tag in hedera-protobufs repo
     // This version needs to match tha HAPI version below in versionCatalogs
     tag.set("05111-use-pbj-for-token-state")
     // do not load project from repo
