@@ -28,12 +28,8 @@ import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hederahashgraph.api.proto.java.Key;
 import java.util.Optional;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class TransferToRandomKey implements OpProvider {
-    private static final Logger log = LogManager.getLogger(TransferToRandomKey.class);
-
     private final EntityNameProvider<Key> keys;
 
     public TransferToRandomKey(EntityNameProvider<Key> keys) {
@@ -48,10 +44,6 @@ public class TransferToRandomKey implements OpProvider {
         }
 
         var to = involvedKey.get();
-        if (to.startsWith("account")) {
-            return Optional.empty();
-        }
-
         HapiCryptoTransfer op = cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, to, 5))
                 .hasKnownStatusFrom(SUCCESS, INVALID_ALIAS_KEY)
                 .payingWith(UNIQUE_PAYER_ACCOUNT);

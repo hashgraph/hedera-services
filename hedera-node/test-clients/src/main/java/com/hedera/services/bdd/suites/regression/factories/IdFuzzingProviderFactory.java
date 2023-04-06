@@ -76,7 +76,6 @@ public class IdFuzzingProviderFactory {
             return new BiasedDelegatingProvider()
                     /* --- <inventory> --- */
                     .withInitialization(onlyEcdsaKeys())
-                    .shouldLogNormalFlow(true)
                     /* ----- CRYPTO ----- */
                     .withOp(new TransferToRandomEVMAddress(keys), intPropOrElse("randomTransfer.bias", 0, props));
         };
@@ -92,7 +91,6 @@ public class IdFuzzingProviderFactory {
             return new BiasedDelegatingProvider()
                     /* --- <inventory> --- */
                     .withInitialization(keyInventory.creationOps())
-                    .shouldLogNormalFlow(true)
                     /* ----- CRYPTO ----- */
                     .withOp(new TransferToRandomKey(keys), intPropOrElse("randomTransfer.bias", 0, props));
         };

@@ -27,12 +27,8 @@ import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hederahashgraph.api.proto.java.Key;
 import java.util.Optional;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class TransferToRandomEVMAddress implements OpProvider {
-    private static final Logger log = LogManager.getLogger(TransferToRandomEVMAddress.class);
-
     private final EntityNameProvider<Key> keys;
 
     public TransferToRandomEVMAddress(EntityNameProvider<Key> keys) {
@@ -47,10 +43,6 @@ public class TransferToRandomEVMAddress implements OpProvider {
         }
 
         var to = involvedKey.get();
-        if (to.startsWith("account")) {
-            return Optional.empty();
-        }
-
         HapiCryptoTransfer op = cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, to, 5, true))
                 .hasKnownStatusFrom(SUCCESS)
                 .payingWith(UNIQUE_PAYER_ACCOUNT);
