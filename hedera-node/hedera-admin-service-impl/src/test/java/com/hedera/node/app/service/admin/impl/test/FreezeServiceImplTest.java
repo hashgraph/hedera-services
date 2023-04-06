@@ -62,6 +62,6 @@ class FreezeServiceImplTest {
         assertEquals(1, statesToCreate.size());
         final var iter =
                 statesToCreate.stream().map(StateDefinition::stateKey).sorted().iterator();
-        assertEquals(FreezeServiceImpl.SPECIAL_FILES_KEY, iter.next());
+        assertEquals(FreezeServiceImpl.UPGRADE_FILES_KEY, iter.next());
     }
 }

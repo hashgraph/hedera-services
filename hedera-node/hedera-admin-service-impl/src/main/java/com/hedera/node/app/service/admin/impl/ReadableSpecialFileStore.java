@@ -39,7 +39,7 @@ public class ReadableSpecialFileStore {
      */
     public ReadableSpecialFileStore(@NonNull final ReadableStates states) {
         Objects.requireNonNull(states);
-        this.freezeFilesById = states.get(FreezeServiceImpl.SPECIAL_FILES_KEY);
+        this.freezeFilesById = states.get(FreezeServiceImpl.UPGRADE_FILES_KEY);
     }
 
     /**

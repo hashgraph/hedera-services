@@ -780,7 +780,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             @Override
             public MerkleSpecialFiles specialFiles() {
                 return ((SingletonNode<MerkleSpecialFiles>)
-                                getChild(findNodeIndex(FreezeService.NAME, FreezeServiceImpl.SPECIAL_FILES_KEY)))
+                                getChild(findNodeIndex(FreezeService.NAME, FreezeServiceImpl.UPGRADE_FILES_KEY)))
                         .getValue();
             }
 

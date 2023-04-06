@@ -27,7 +27,7 @@ import java.util.Set;
 
 /** Standard implementation of the {@link FreezeService} {@link com.hedera.node.app.spi.Service}. */
 public final class FreezeServiceImpl implements FreezeService {
-    public static final String SPECIAL_FILES_KEY = "SPECIAL_FILES";
+    public static final String UPGRADE_FILES_KEY = "SPECIAL_FILES";
 
     private static final SemanticVersion CURRENT_VERSION =
             SemanticVersion.newBuilder().minor(34).build();
@@ -42,7 +42,7 @@ public final class FreezeServiceImpl implements FreezeService {
             @NonNull
             @Override
             public Set<StateDefinition> statesToCreate() {
-                return Set.of(StateDefinition.singleton(SPECIAL_FILES_KEY, new MonoSpecialFilesAdapterCodec()));
+                return Set.of(StateDefinition.singleton(UPGRADE_FILES_KEY, new MonoSpecialFilesAdapterCodec()));
             }
         };
     }
