@@ -18,8 +18,11 @@ package com.hedera.node.app.workflows.query;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
+import static com.swirlds.common.system.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -31,6 +34,8 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.authorization.Authorizer;
 import com.hedera.node.app.service.mono.queries.validation.QueryFeeCheck;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
+import com.hedera.node.app.spi.info.CurrentPlatformStatus;
+import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -44,6 +49,8 @@ import javax.inject.Singleton;
 @Singleton
 public class QueryChecker {
 
+    private final NodeInfo nodeInfo;
+    private final CurrentPlatformStatus currentPlatformStatus;
     private final TransactionChecker transactionChecker;
     private final HederaAccountNumbers accountNumbers;
     private final QueryFeeCheck queryFeeCheck;
@@ -53,6 +60,8 @@ public class QueryChecker {
     /**
      * Constructor of {@code QueryChecker}
      *
+     * @param nodeInfo the {@link NodeInfo} that contains information about the node
+     * @param currentPlatformStatus the {@link CurrentPlatformStatus} that contains the current status of the platform
      * @param transactionChecker the {@link TransactionChecker} that (eventually) pre-processes the CryptoTransfer
      * @param accountNumbers the {@link HederaAccountNumbers} that contains a list of special accounts
      * @param queryFeeCheck the {@link QueryFeeCheck} that checks if fees can be paid
@@ -63,16 +72,35 @@ public class QueryChecker {
      */
     @Inject
     public QueryChecker(
+            @NonNull final NodeInfo nodeInfo,
+            @NonNull final CurrentPlatformStatus currentPlatformStatus,
             @NonNull final TransactionChecker transactionChecker,
             @NonNull final HederaAccountNumbers accountNumbers,
             @NonNull final QueryFeeCheck queryFeeCheck,
             @NonNull final Authorizer authorizer,
             @NonNull final CryptoTransferHandler cryptoTransferHandler) {
+        this.nodeInfo = requireNonNull(nodeInfo);
+        this.currentPlatformStatus = requireNonNull(currentPlatformStatus);
         this.transactionChecker = requireNonNull(transactionChecker);
         this.accountNumbers = requireNonNull(accountNumbers);
         this.queryFeeCheck = requireNonNull(queryFeeCheck);
         this.authorizer = requireNonNull(authorizer);
         this.cryptoTransferHandler = requireNonNull(cryptoTransferHandler);
+    }
+
+    /**
+     * Checks the general state of the node
+     *
+     * @throws PreCheckException if the node is unable to process queries
+     */
+    public void checkNodeState() throws PreCheckException {
+        if (nodeInfo.isSelfZeroStake()) {
+            // Zero stake nodes are currently not supported
+            throw new PreCheckException(INVALID_NODE_ACCOUNT);
+        }
+        if (currentPlatformStatus.get() != ACTIVE) {
+            throw new PreCheckException(PLATFORM_NOT_ACTIVE);
+        }
     }
 
     /**

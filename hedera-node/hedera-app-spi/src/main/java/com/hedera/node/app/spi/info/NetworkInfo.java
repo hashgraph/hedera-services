@@ -14,13 +14,21 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.meta;
+package com.hedera.node.app.spi.info;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Provides context for query processing.
+ * Provides information about the network.
  */
-public interface QueryContext {
-    Bytes getLedgerId();
+public interface NetworkInfo {
+
+    /**
+     * Returns the current ledger ID.
+     *
+     * @return the {@link Bytes} of the current ledger ID
+     */
+    @NonNull
+    Bytes ledgerId();
 }
