@@ -100,6 +100,7 @@ public class MonoServicesMain implements SwirldMain {
     }
 
     private void doStagedInit() {
+        // Construct BootstrapProperties with false to suppress redundant property listing in logs
         final var disableJULogging = new BootstrapProperties(false).getBooleanProperty(NETTY_LOGGING_OFF);
         if (disableJULogging) {
             java.util.logging.LogManager.getLogManager().reset();
