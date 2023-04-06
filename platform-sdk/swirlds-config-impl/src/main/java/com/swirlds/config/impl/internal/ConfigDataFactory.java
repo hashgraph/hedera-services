@@ -139,7 +139,7 @@ class ConfigDataFactory {
     }
 
     @NonNull
-    private static <T extends Record> String getNamePrefix(final @NonNull Class<T> type) {
+    private static <T extends Record> String getNamePrefix(@NonNull final Class<T> type) {
         ArgumentUtils.throwArgNull(type, "type");
         return Optional.ofNullable(type.getAnnotation(ConfigData.class))
                 .map(ConfigData::value)
