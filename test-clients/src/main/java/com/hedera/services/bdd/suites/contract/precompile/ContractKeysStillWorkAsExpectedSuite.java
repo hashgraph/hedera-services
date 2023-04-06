@@ -86,6 +86,21 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
             "cryptoCreateWithAliasAndEvmAddress.enabled";
     public static final String CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS =
             "contracts.maxNumWithHapiSigsAccess";
+    private static final String TREASURY = "treasury";
+    private static final String SENDER = "sender";
+    private static final String RECEIVER = "receiver";
+    private static final String FAILED_CALL_TXN = "failedCallTxn";
+    private static final String SERIAL_NO_1 = "serialNo1";
+    private static final String SERIAL_NO_2 = "serialNo2";
+    private static final String CONTRACTS_PRECOMPILE_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS =
+            "contracts.precompile.unsupportedCustomFeeReceiverDebits";
+    private static final String TRANSFER_SERIAL_NO_1_FROM_TO_OTHERS =
+            "transferSerialNo1FromToOthers";
+    private static final String CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS =
+            "contracts.allowSystemUseOfHapiSigs";
+    private static final String TOKEN = "token";
+    private static final String CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS =
+            "contracts.withSpecialHapiSigsAccess";
 
     public static void main(String... args) {
         new ContractKeysStillWorkAsExpectedSuite().runSuiteSync();
@@ -120,11 +135,11 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
         final AtomicReference<Address> receiverAddr = new AtomicReference<>();
         final AtomicReference<Address> nonFungibleTokenMirrorAddr = new AtomicReference<>();
 
-        final var treasury = "treasury";
-        final var sender = "sender";
-        final var receiver = "receiver";
+        final var treasury = TREASURY;
+        final var sender = SENDER;
+        final var receiver = RECEIVER;
         final var nft = "nft";
-        final var failedCallTxn = "failedCallTxn";
+        final var failedCallTxn = FAILED_CALL_TXN;
 
         return propertyPreservingHapiSpec("FixedFeeFailsWhenNotEnabled")
                 .preserving(EVM_ALIAS_ENABLED_PROP)
@@ -156,19 +171,19 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
                         mintToken(
                                 nft,
                                 List.of(
-                                        ByteString.copyFromUtf8("serialNo1"),
-                                        ByteString.copyFromUtf8("serialNo2"))),
+                                        ByteString.copyFromUtf8(SERIAL_NO_1),
+                                        ByteString.copyFromUtf8(SERIAL_NO_2))),
                         cryptoTransfer(movingUnique(nft, 1, 2).between(treasury, sender)))
                 .then(
                         // override config to not allow fixed fees
                         overriding(
-                                "contracts.precompile.unsupportedCustomFeeReceiverDebits",
+                                CONTRACTS_PRECOMPILE_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS,
                                 "FIXED_FEE"),
                         sourcing(
                                 () ->
                                         contractCall(
                                                         WELL_KNOWN_TREASURY_CONTRACT,
-                                                        "transferSerialNo1FromToOthers",
+                                                        TRANSFER_SERIAL_NO_1_FROM_TO_OTHERS,
                                                         nonFungibleTokenMirrorAddr.get(),
                                                         senderAddr.get(),
                                                         receiverAddr.get())
@@ -183,12 +198,12 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
                         // And no hbar were deducted from the receiver
                         getAccountBalance(receiver).hasTinyBars(ONE_HBAR),
                         // override config to  allow fixed fees
-                        overriding("contracts.precompile.unsupportedCustomFeeReceiverDebits", ""),
+                        overriding(CONTRACTS_PRECOMPILE_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS, ""),
                         sourcing(
                                 () ->
                                         contractCall(
                                                         WELL_KNOWN_TREASURY_CONTRACT,
-                                                        "transferSerialNo1FromToOthers",
+                                                        TRANSFER_SERIAL_NO_1_FROM_TO_OTHERS,
                                                         nonFungibleTokenMirrorAddr.get(),
                                                         senderAddr.get(),
                                                         receiverAddr.get())
@@ -203,11 +218,11 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
         final AtomicReference<Address> receiverAddr = new AtomicReference<>();
         final AtomicReference<Address> nonFungibleTokenMirrorAddr = new AtomicReference<>();
 
-        final var treasury = "treasury";
-        final var sender = "sender";
-        final var receiver = "receiver";
+        final var treasury = TREASURY;
+        final var sender = SENDER;
+        final var receiver = RECEIVER;
         final var nft = "nft";
-        final var failedCallTxn = "failedCallTxn";
+        final var failedCallTxn = FAILED_CALL_TXN;
 
         return propertyPreservingHapiSpec("FallbackFeePayerMustSign")
                 .preserving(EVM_ALIAS_ENABLED_PROP)
@@ -244,17 +259,17 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
                         mintToken(
                                 nft,
                                 List.of(
-                                        ByteString.copyFromUtf8("serialNo1"),
-                                        ByteString.copyFromUtf8("serialNo2"))),
+                                        ByteString.copyFromUtf8(SERIAL_NO_1),
+                                        ByteString.copyFromUtf8(SERIAL_NO_2))),
                         cryptoTransfer(movingUnique(nft, 1, 2).between(treasury, sender)))
                 .then(
                         // Without the receiver signature, will fail with INVALID_SIGNATURE
-                        overriding("contracts.precompile.unsupportedCustomFeeReceiverDebits", ""),
+                        overriding(CONTRACTS_PRECOMPILE_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS, ""),
                         sourcing(
                                 () ->
                                         contractCall(
                                                         WELL_KNOWN_TREASURY_CONTRACT,
-                                                        "transferSerialNo1FromToOthers",
+                                                        TRANSFER_SERIAL_NO_1_FROM_TO_OTHERS,
                                                         nonFungibleTokenMirrorAddr.get(),
                                                         senderAddr.get(),
                                                         receiverAddr.get())
@@ -270,14 +285,14 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
                         getAccountBalance(receiver).hasTinyBars(ONE_HBAR),
                         // override config to not allow royalty fee
                         overriding(
-                                "contracts.precompile.unsupportedCustomFeeReceiverDebits",
+                                CONTRACTS_PRECOMPILE_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS,
                                 "ROYALTY_FALLBACK_FEE"),
                         // But now sign with receiver as well
                         sourcing(
                                 () ->
                                         contractCall(
                                                         WELL_KNOWN_TREASURY_CONTRACT,
-                                                        "transferSerialNo1FromToOthers",
+                                                        TRANSFER_SERIAL_NO_1_FROM_TO_OTHERS,
                                                         nonFungibleTokenMirrorAddr.get(),
                                                         senderAddr.get(),
                                                         receiverAddr.get())
@@ -292,12 +307,12 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
                         // And no hbar were deducted from the receiver
                         getAccountBalance(receiver).hasTinyBars(ONE_HBAR),
                         // But now sign with receiver as well and allow royalty fee
-                        overriding("contracts.precompile.unsupportedCustomFeeReceiverDebits", ""),
+                        overriding(CONTRACTS_PRECOMPILE_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS, ""),
                         sourcing(
                                 () ->
                                         contractCall(
                                                         WELL_KNOWN_TREASURY_CONTRACT,
-                                                        "transferSerialNo1FromToOthers",
+                                                        TRANSFER_SERIAL_NO_1_FROM_TO_OTHERS,
                                                         nonFungibleTokenMirrorAddr.get(),
                                                         senderAddr.get(),
                                                         receiverAddr.get())
@@ -312,12 +327,12 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
         final AtomicReference<Address> receiverAddr = new AtomicReference<>();
         final AtomicReference<Address> nonFungibleTokenMirrorAddr = new AtomicReference<>();
 
-        final var treasury = "treasury";
-        final var sender = "sender";
-        final var receiver = "receiver";
+        final var treasury = TREASURY;
+        final var sender = SENDER;
+        final var receiver = RECEIVER;
         final var nft = "nft";
         final var fungible = "fungible";
-        final var failedCallTxn = "failedCallTxn";
+        final var failedCallTxn = FAILED_CALL_TXN;
 
         return propertyPreservingHapiSpec("FallbackFeeHtsPayerMustSign")
                 .preserving(EVM_ALIAS_ENABLED_PROP)
@@ -361,8 +376,8 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
                         mintToken(
                                 nft,
                                 List.of(
-                                        ByteString.copyFromUtf8("serialNo1"),
-                                        ByteString.copyFromUtf8("serialNo2"))),
+                                        ByteString.copyFromUtf8(SERIAL_NO_1),
+                                        ByteString.copyFromUtf8(SERIAL_NO_2))),
                         cryptoTransfer(movingUnique(nft, 1, 2).between(treasury, sender)))
                 .then(
                         // Without the receiver signature, will fail with INVALID_SIGNATURE
@@ -370,7 +385,7 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
                                 () ->
                                         contractCall(
                                                         WELL_KNOWN_TREASURY_CONTRACT,
-                                                        "transferSerialNo1FromToOthers",
+                                                        TRANSFER_SERIAL_NO_1_FROM_TO_OTHERS,
                                                         nonFungibleTokenMirrorAddr.get(),
                                                         senderAddr.get(),
                                                         receiverAddr.get())
@@ -389,7 +404,7 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
                                 () ->
                                         contractCall(
                                                         WELL_KNOWN_TREASURY_CONTRACT,
-                                                        "transferSerialNo1FromToOthers",
+                                                        TRANSFER_SERIAL_NO_1_FROM_TO_OTHERS,
                                                         nonFungibleTokenMirrorAddr.get(),
                                                         senderAddr.get(),
                                                         receiverAddr.get())
@@ -440,7 +455,7 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
                                 () ->
                                         contractCall(
                                                         WELL_KNOWN_TREASURY_CONTRACT,
-                                                        "transferSerialNo1FromToOthers",
+                                                        TRANSFER_SERIAL_NO_1_FROM_TO_OTHERS,
                                                         nonFungibleTokenMirrorAddr.get(),
                                                         treasuryContractAddr.get(),
                                                         aReceiverAddr.get())
@@ -706,7 +721,7 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
                         () ->
                                 contractCall(
                                                 WELL_KNOWN_TREASURY_CONTRACT,
-                                                "transferSerialNo1FromToOthers",
+                                                TRANSFER_SERIAL_NO_1_FROM_TO_OTHERS,
                                                 nonFungibleTokenMirrorAddr.get(),
                                                 aSenderAddr.get(),
                                                 aReceiverAddr.get())
@@ -745,28 +760,28 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
     }
 
     private HapiSpec canStillTransferByVirtueOfContractIdInEOAThreshold() {
-        final var fungibleToken = "token";
-        final var managementContract = "DoTokenManagement";
+        final var fungibleToken = TOKEN;
+        final var managementContract = WELL_KNOWN_TREASURY_CONTRACT;
         final AtomicReference<Address> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<Address> controlledSpenderAddr = new AtomicReference<>();
         final AtomicReference<Address> receiverAddr = new AtomicReference<>();
         final var threshKeyShape = KeyShape.threshOf(1, CONTRACT, SECP256K1);
         final var controlledSpender = "controlledSpender";
-        final var receiver = "receiver";
+        final var receiver = RECEIVER;
         final var controlledSpenderKey = "controlledSpenderKey";
 
         return propertyPreservingHapiSpec("CanStillTransferByVirtueOfContractIdInEOAThreshold")
                 .preserving(
                         CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
-                        "contracts.withSpecialHapiSigsAccess",
-                        "contracts.allowSystemUseOfHapiSigs")
+                        CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS,
+                        CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
                 .given(
                         overridingThree(
                                 CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
                                 "0",
-                                "contracts.withSpecialHapiSigsAccess",
+                                CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS,
                                 "",
-                                "contracts.allowSystemUseOfHapiSigs",
+                                CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
                                 ""),
                         uploadInitCode(managementContract),
                         // Create an immutable contract with a method
@@ -811,8 +826,8 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
     }
 
     private HapiSpec contractKeysWorkAsExpectedForFungibleTokenMgmt() {
-        final var fungibleToken = "token";
-        final var managementContract = "DoTokenManagement";
+        final var fungibleToken = TOKEN;
+        final var managementContract = WELL_KNOWN_TREASURY_CONTRACT;
         final var mgmtContractAsKey = "mgmtContractAsKey";
         final var tmpAdminKey = "tmpAdminKey";
         final var associatedAccount = "associatedAccount";
@@ -822,17 +837,17 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
         return propertyPreservingHapiSpec("ContractKeysWorkAsExpectedForFungibleTokenMgmt")
                 .preserving(
                         CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
-                        "contracts.withSpecialHapiSigsAccess",
-                        "contracts.allowSystemUseOfHapiSigs",
+                        CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS,
+                        CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
                         EVM_ALIAS_ENABLED_PROP)
                 .given(
                         overridingAllOf(
                                 Map.of(
                                         CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
                                         "0",
-                                        "contracts.withSpecialHapiSigsAccess",
+                                        CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS,
                                         "",
-                                        "contracts.allowSystemUseOfHapiSigs",
+                                        CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
                                         "",
                                         EVM_ALIAS_ENABLED_PROP,
                                         "true")),
@@ -879,8 +894,8 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
     }
 
     private HapiSpec contractKeysStillHaveSpecificityNoMatterTopLevelSignatures() {
-        final var fungibleToken = "token";
-        final var managementContract = "DoTokenManagement";
+        final var fungibleToken = TOKEN;
+        final var managementContract = WELL_KNOWN_TREASURY_CONTRACT;
         final var otherContractAsKey = "otherContractAsKey";
         final var tmpAdminKey = "tmpAdminKey";
         final var associatedAccount = "associatedAccount";

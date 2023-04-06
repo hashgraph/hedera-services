@@ -130,7 +130,6 @@ import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompil
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.TOKEN_CREATE_CONTRACT_AS_KEY;
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.TOKEN_NAME;
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.TOKEN_SYMBOL;
-import static com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSSuite.DELEGATE_KEY;
 import static com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSSuite.TOTAL_SUPPLY;
 import static com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSSuite.TRANSFER_MULTIPLE_TOKENS;
 import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.ALLOWANCE;
@@ -249,6 +248,12 @@ public class LeakyContractTestsSuite extends HapiSuite {
     private static final String CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY =
             "contracts.allowAutoAssociations";
     private static final String TRANSFER_CONTRACT = "NonDelegateCryptoTransfer";
+    private static final String HEDERA_ALLOWANCES_IS_ENABLED = "hedera.allowances.isEnabled";
+    private static final String CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS =
+            "contracts.allowSystemUseOfHapiSigs";
+    private static final String CRYPTO_TRANSFER = "CryptoTransfer";
+    private static final String FALSE = "false";
+    private static final String TRUE = "true";
 
     public static void main(String... args) {
         new LeakyContractTestsSuite().runSuiteSync();
@@ -302,9 +307,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
     private HapiSpec erc20TransferFromSelf() {
         return propertyPreservingHapiSpec("Erc20TransferFromSelf")
-                .preserving("hedera.allowances.isEnabled")
+                .preserving(HEDERA_ALLOWANCES_IS_ENABLED)
                 .given(
-                        overriding("hedera.allowances.isEnabled", "true"),
+                        overriding(HEDERA_ALLOWANCES_IS_ENABLED, TRUE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(RECIPIENT),
                         cryptoCreate(TOKEN_TREASURY),
@@ -359,9 +364,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var allowanceTxn2 = "allowanceTxn2";
 
         return propertyPreservingHapiSpec("ERC_20_ALLOWANCE")
-                .preserving("hedera.allowances.isEnabled")
+                .preserving(HEDERA_ALLOWANCES_IS_ENABLED)
                 .given(
-                        overriding("hedera.allowances.isEnabled", "true"),
+                        overriding(HEDERA_ALLOWANCES_IS_ENABLED, TRUE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
                         cryptoCreate(RECIPIENT),
@@ -504,7 +509,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
         return defaultHapiSpec("someERC20ApproveAllowanceScenariosPass")
                 .given(
-                        overriding("hedera.allowances.isEnabled", "true"),
+                        overriding(HEDERA_ALLOWANCES_IS_ENABLED, TRUE),
                         newKeyNamed(MULTI_KEY_NAME),
                         cryptoCreate(A_CIVILIAN)
                                 .exposingCreatedIdTo(
@@ -700,9 +705,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final AtomicReference<String> zCivilianMirrorAddr = new AtomicReference<>();
 
         return propertyPreservingHapiSpec("someERC20NegativeTransferFromScenariosPass")
-                .preserving("hedera.allowances.isEnabled")
+                .preserving(HEDERA_ALLOWANCES_IS_ENABLED)
                 .given(
-                        overriding("hedera.allowances.isEnabled", "true"),
+                        overriding(HEDERA_ALLOWANCES_IS_ENABLED, TRUE),
                         newKeyNamed(MULTI_KEY_NAME),
                         cryptoCreate(A_CIVILIAN)
                                 .exposingCreatedIdTo(
@@ -868,9 +873,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final AtomicReference<String> zCivilianMirrorAddr = new AtomicReference<>();
 
         return propertyPreservingHapiSpec("someERC20ApproveAllowanceScenarioInOneCall")
-                .preserving("hedera.allowances.isEnabled")
+                .preserving(HEDERA_ALLOWANCES_IS_ENABLED)
                 .given(
-                        overriding("hedera.allowances.isEnabled", "true"),
+                        overriding(HEDERA_ALLOWANCES_IS_ENABLED, TRUE),
                         newKeyNamed(MULTI_KEY_NAME),
                         cryptoCreate(A_CIVILIAN)
                                 .exposingCreatedIdTo(
@@ -937,9 +942,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
     private HapiSpec erc20Allowance() {
         return propertyPreservingHapiSpec("ERC_20_ALLOWANCE")
-                .preserving("hedera.allowances.isEnabled")
+                .preserving(HEDERA_ALLOWANCES_IS_ENABLED)
                 .given(
-                        overriding("hedera.allowances.isEnabled", "true"),
+                        overriding(HEDERA_ALLOWANCES_IS_ENABLED, TRUE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
                         cryptoCreate(SPENDER),
@@ -1010,9 +1015,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var approveTxn = "approveTxn";
 
         return propertyPreservingHapiSpec("ERC_20_APPROVE")
-                .preserving("hedera.allowances.isEnabled")
+                .preserving(HEDERA_ALLOWANCES_IS_ENABLED)
                 .given(
-                        overriding("hedera.allowances.isEnabled", "true"),
+                        overriding(HEDERA_ALLOWANCES_IS_ENABLED, TRUE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
                         cryptoCreate(SPENDER),
@@ -1061,9 +1066,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var invalidDecimalsTxn = "decimalsFromErc721Txn";
 
         return propertyPreservingHapiSpec("ERC_20_DECIMALS_FROM_ERC_721_TOKEN")
-                .preserving("hedera.allowances.isEnabled")
+                .preserving(HEDERA_ALLOWANCES_IS_ENABLED)
                 .given(
-                        overriding("hedera.allowances.isEnabled", "true"),
+                        overriding(HEDERA_ALLOWANCES_IS_ENABLED, TRUE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY),
@@ -1099,9 +1104,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
     private HapiSpec transferErc20TokenFromErc721TokenFails() {
         return propertyPreservingHapiSpec("ERC_20_TRANSFER_FROM_ERC_721_TOKEN")
-                .preserving("hedera.allowances.isEnabled")
+                .preserving(HEDERA_ALLOWANCES_IS_ENABLED)
                 .given(
-                        overriding("hedera.allowances.isEnabled", "true"),
+                        overriding(HEDERA_ALLOWANCES_IS_ENABLED, TRUE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_MILLION_HBARS),
                         cryptoCreate(RECIPIENT),
@@ -1154,7 +1159,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var nestedContract = "NestedERC20Contract";
 
         return propertyPreservingHapiSpec("ERC_20_TRANSFER_FROM_CONTRACT_WITH_APPROVAL")
-                .preserving("contracts.allowSystemUseOfHapiSigs")
+                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(10 * ONE_MILLION_HBARS),
@@ -1170,7 +1175,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         newKeyNamed(TRANSFER_SIG_NAME).shape(SIMPLE.signedWith(ON)),
                         contractCreate(ERC_20_CONTRACT).adminKey(TRANSFER_SIG_NAME),
                         contractCreate(nestedContract).adminKey(TRANSFER_SIG_NAME),
-                        overriding("contracts.allowSystemUseOfHapiSigs", "CryptoTransfer"))
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CRYPTO_TRANSFER))
                 .when(
                         withOpContext(
                                 (spec, opLog) ->
@@ -1359,9 +1364,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
 
         return propertyPreservingHapiSpec("ERC_20_DECIMALS")
-                .preserving("hedera.allowances.isEnabled")
+                .preserving(HEDERA_ALLOWANCES_IS_ENABLED)
                 .given(
-                        overriding("hedera.allowances.isEnabled", "true"),
+                        overriding(HEDERA_ALLOWANCES_IS_ENABLED, TRUE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY),
@@ -1422,9 +1427,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
     private HapiSpec getErc20TokenName() {
         return propertyPreservingHapiSpec("ERC_20_NAME")
-                .preserving("hedera.allowances.isEnabled")
+                .preserving(HEDERA_ALLOWANCES_IS_ENABLED)
                 .given(
-                        overriding("hedera.allowances.isEnabled", "true"),
+                        overriding(HEDERA_ALLOWANCES_IS_ENABLED, TRUE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY),
@@ -1472,7 +1477,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     }
 
     private HapiSpec transferDontWorkWithoutTopLevelSignatures() {
-        final String ALLOW_SYSTEM_USE_OF_HAPI_SIGS = "contracts.allowSystemUseOfHapiSigs";
+        final String ALLOW_SYSTEM_USE_OF_HAPI_SIGS = CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS;
         final var transferTokenTxn = "transferTokenTxn";
         final var transferTokensTxn = "transferTokensTxn";
         final var transferNFTTxn = "transferNFTTxn";
@@ -1636,7 +1641,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     }
 
     private HapiSpec transferWorksWithTopLevelSignatures() {
-        final String ALLOW_SYSTEM_USE_OF_HAPI_SIGS = "contracts.allowSystemUseOfHapiSigs";
+        final String ALLOW_SYSTEM_USE_OF_HAPI_SIGS = CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS;
         final var transferTokenTxn = "transferTokenTxn";
         final var transferTokensTxn = "transferTokensTxn";
         final var transferNFTTxn = "transferNFTTxn";
@@ -1651,7 +1656,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .given(
                         // enable top level signatures for
                         // transferToken/transferTokens/transferNft/transferNfts
-                        overriding(ALLOW_SYSTEM_USE_OF_HAPI_SIGS, "CryptoTransfer"),
+                        overriding(ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CRYPTO_TRANSFER),
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
@@ -2347,7 +2352,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 .nonce(0)
                                 .gasLimit(GAS_LIMIT)
                                 .hasKnownStatus(INVALID_ACCOUNT_ID))
-                .then(overriding(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, "true"));
+                .then(overriding(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, TRUE));
     }
 
     private HapiSpec transferToCaller() {
@@ -2687,11 +2692,11 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .given(
                         overridingThree(
                                 "entities.limitTokenAssociations",
-                                "true",
+                                TRUE,
                                 "tokens.maxPerAccount",
                                 "" + 1,
                                 CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY,
-                                "true"))
+                                TRUE))
                 .when()
                 .then(
                         newKeyNamed(ADMIN_KEY),
@@ -2937,7 +2942,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     }
 
     private HapiSpec lazyCreateThroughPrecompileNotSupportedWhenFlagDisabled() {
-        final var CONTRACT = "CryptoTransfer";
+        final var CONTRACT = CRYPTO_TRANSFER;
         final var SENDER = "sender";
         final var FUNGIBLE_TOKEN = "fungibleToken";
         final var DELEGATE_KEY = "contractKey";
@@ -2948,8 +2953,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
         return propertyPreservingHapiSpec("lazyCreateThroughPrecompileNotSupportedWhenFlagDisabled")
                 .preserving(ALLOW_AUTO_ASSOCIATIONS_PROPERTY, LAZY_CREATION_ENABLED)
                 .given(
-                        overriding(ALLOW_AUTO_ASSOCIATIONS_PROPERTY, "true"),
-                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, "false"),
+                        overriding(ALLOW_AUTO_ASSOCIATIONS_PROPERTY, TRUE),
+                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, FALSE),
                         cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(FUNGIBLE_TOKEN)
@@ -3032,11 +3037,11 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .given(
                         overridingThree(
                                 lazyCreationProperty,
-                                "true",
+                                TRUE,
                                 contractsEvmVersionProperty,
                                 "v0.34",
                                 contractsEvmVersionDynamicProperty,
-                                "true"),
+                                TRUE),
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         uploadInitCode(LAZY_CREATE_CONTRACT),
                         contractCreate(LAZY_CREATE_CONTRACT).via(CALL_TX_REC),
@@ -3107,7 +3112,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var amountPerTransfer = 50L;
         return propertyPreservingHapiSpec(
                         "RequiresTopLevelSignatureOrApprovalDependingOnControllingProperty")
-                .preserving("contracts.allowSystemUseOfHapiSigs")
+                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
                 .given(
                         cryptoCreate(SENDER)
                                 .keyShape(SECP256K1_ON)
@@ -3129,7 +3134,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         uploadInitCode(TRANSFER_CONTRACT),
                         contractCreate(TRANSFER_CONTRACT),
                         // First revoke use of top-level signatures from all precompiles
-                        overriding("contracts.allowSystemUseOfHapiSigs", ""))
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, ""))
                 .when(
                         // Then, try to transfer tokens using a top-level signature
                         sourcing(
@@ -3159,7 +3164,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                 .gas(GAS_TO_OFFER)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         // Switch to allow use of top-level signatures from CryptoTransfer
-                        overriding("contracts.allowSystemUseOfHapiSigs", "CryptoTransfer"),
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CRYPTO_TRANSFER),
                         // Validate now the top-level signature works
                         sourcing(
                                 () ->
@@ -3223,7 +3228,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         // Then revoke use of top-level signatures once more, so the approval will
                         // be used automatically
-                        overriding("contracts.allowSystemUseOfHapiSigs", ""))
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, ""))
                 .then(
                         // Validate the approval is used automatically (although not specified in
                         // the contract)
@@ -3309,12 +3314,12 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         contractsEvmVersionDynamicProperty,
                         contractsEvmVersionDynamicProperty)
                 .given(
-                        overridingTwo(lazyCreationProperty, "true", maxPrecedingRecords, "1"),
+                        overridingTwo(lazyCreationProperty, TRUE, maxPrecedingRecords, "1"),
                         overridingTwo(
                                 contractsEvmVersionProperty,
                                 "v0.34",
                                 contractsEvmVersionDynamicProperty,
-                                "true"),
+                                TRUE),
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(ECDSA_KEY2).shape(SECP_256K1_SHAPE),
                         uploadInitCode(LAZY_CREATE_CONTRACT),
@@ -3360,7 +3365,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     private HapiSpec rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled() {
         return propertyPreservingHapiSpec("rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled")
                 .preserving(CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY)
-                .given(overriding(CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY, "false"))
+                .given(overriding(CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY, FALSE))
                 .when(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .then(
                         contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
@@ -3376,7 +3381,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     private HapiSpec erc20TransferFromDoesNotWorkIfFlagIsDisabled() {
         return defaultHapiSpec("erc20TransferFromDoesNotWorkIfFlagIsDisabled")
                 .given(
-                        overriding("hedera.allowances.isEnabled", "false"),
+                        overriding(HEDERA_ALLOWANCES_IS_ENABLED, FALSE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
                         cryptoCreate(RECIPIENT),
@@ -3426,7 +3431,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         getTxnRecord(TRANSFER_FROM_ACCOUNT_TXN)
                                 .logged(), // has gasUsed little less than supplied 500K in
                         // contractCall result
-                        overriding("hedera.allowances.isEnabled", "true"));
+                        overriding(HEDERA_ALLOWANCES_IS_ENABLED, TRUE));
     }
 
     @Override

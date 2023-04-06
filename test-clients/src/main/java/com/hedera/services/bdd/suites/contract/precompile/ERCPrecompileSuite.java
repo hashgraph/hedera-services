@@ -89,15 +89,13 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.tuweni.bytes.Bytes;
-
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes;
 
 public class ERCPrecompileSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ERCPrecompileSuite.class);
@@ -950,7 +948,6 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith().status(SPENDER_DOES_NOT_HAVE_ALLOWANCE)));
     }
-
 
     private HapiSpec getErc721TokenName() {
         return defaultHapiSpec("ERC_721_NAME")
