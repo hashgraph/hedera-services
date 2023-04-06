@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.cli;
 
-import static com.swirlds.platform.system.SystemExitReason.BROWSER_WINDOW_CLOSED;
 import static com.swirlds.platform.system.SystemExitReason.FATAL_ERROR;
+import static java.util.concurrent.TimeUnit.MINUTES;
 
 import com.swirlds.cli.PlatformCli;
 import com.swirlds.cli.utility.AbstractCommand;
@@ -54,6 +54,7 @@ public class BrowseCommand extends AbstractCommand {
      *
      * @return return code of the program
      */
+    @SuppressWarnings("InfiniteLoopStatement")
     @Override
     public Integer call() throws IOException, InterruptedException {
         try {
@@ -63,7 +64,9 @@ public class BrowseCommand extends AbstractCommand {
             return FATAL_ERROR.getExitCode();
         }
 
-        Browser.join();
-        return BROWSER_WINDOW_CLOSED.getExitCode();
+        // Sleep forever to keep the process alive.
+        while (true) {
+            MINUTES.sleep(1);
+        }
     }
 }
