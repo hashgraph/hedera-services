@@ -5,6 +5,7 @@ module com.hedera.node.app.spi {
     requires com.google.protobuf;
     requires com.swirlds.config;
     requires com.github.spotbugs.annotations;
+    requires com.hedera.hashgraph.protobuf.java.api;
 
     exports com.hedera.node.app.spi;
     exports com.hedera.node.app.spi.state;
