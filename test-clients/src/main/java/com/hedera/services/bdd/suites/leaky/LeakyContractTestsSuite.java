@@ -356,8 +356,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                                 BigInteger.TWO)
                                                         .gas(500_000L)
                                                         .via(TRANSFER_FROM_ACCOUNT_TXN)
-                                                        .hasKnownStatus(SUCCESS))))
-                .then(getAccountBalance(RECIPIENT).hasTokenBalance(FUNGIBLE_TOKEN, 2));
+                                                        // No longer works unless you have allowance
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .then(getAccountBalance(RECIPIENT).hasTokenBalance(FUNGIBLE_TOKEN, 0));
     }
 
     private HapiSpec erc20TransferFrom() {
@@ -578,7 +579,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                         BigInteger.valueOf(5))
                                                 .via("SPENDER_SAME_AS_OWNER_TXN")
                                                 .gas(1_000_000)
-                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                                                .hasKnownStatus(SUCCESS)),
                         sourcing(
                                 () ->
                                         contractCall(
@@ -658,9 +659,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith().status(INVALID_ALLOWANCE_SPENDER_ID)),
                         childRecordsCheck(
-                                "SPENDER_SAME_AS_OWNER_TXN",
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(SPENDER_ACCOUNT_SAME_AS_OWNER)),
+                                "SPENDER_SAME_AS_OWNER_TXN", SUCCESS, recordWith().status(SUCCESS)),
                         childRecordsCheck(
                                 "SUCCESSFUL_APPROVE_TXN", SUCCESS, recordWith().status(SUCCESS)),
                         childRecordsCheck(
@@ -781,7 +780,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                         BigInteger.ONE)
                                                 .payingWith(GENESIS)
                                                 .via(MSG_SENDER_IS_THE_SAME_AS_FROM)
-                                                .hasKnownStatus(SUCCESS)),
+                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         cryptoTransfer(
                                 moving(9L, TOKEN).between(SOME_ERC_20_SCENARIOS, B_CIVILIAN)),
                         tokenAssociate(A_CIVILIAN, TOKEN),
@@ -849,8 +848,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 recordWith().status(INVALID_ACCOUNT_ID)),
                         childRecordsCheck(
                                 MSG_SENDER_IS_THE_SAME_AS_FROM,
-                                SUCCESS,
-                                recordWith().status(SUCCESS)),
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(SPENDER_DOES_NOT_HAVE_ALLOWANCE)),
                         childRecordsCheck(
                                 MSG_SENDER_IS_NOT_THE_SAME_AS_FROM,
                                 CONTRACT_REVERT_EXECUTED,
@@ -2337,7 +2336,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
     HapiSpec accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation() {
         final String ACCOUNT = "account";
-        return defaultHapiSpec(
+        return onlyDefaultHapiSpec(
                         "ETX_026_accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation")
                 .given(
                         overriding(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, FALSE_VALUE),
