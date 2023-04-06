@@ -23,7 +23,9 @@ import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
+import com.hedera.hapi.node.freeze.FreezeTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.admin.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.mono.context.TransactionContext;
@@ -108,6 +110,8 @@ public class TransactionDispatcher {
             case CONSENSUS_UPDATE_TOPIC -> dispatchConsensusUpdateTopic(txn.consensusUpdateTopicOrThrow(), topicStore);
             case CONSENSUS_DELETE_TOPIC -> dispatchConsensusDeleteTopic(txn.consensusDeleteTopicOrThrow(), topicStore);
             case CONSENSUS_SUBMIT_MESSAGE -> dispatchConsensusSubmitMessage(txn, topicStore);
+            case FREEZE -> dispatchFreeze(txn.freezeOrThrow(), writableStoreFactory.createUpgradeFileStore());
+
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
         }
     }
@@ -161,7 +165,7 @@ public class TransactionDispatcher {
             case FILE_DELETE -> handlers.fileDeleteHandler().preHandle(context);
             case FILE_APPEND -> handlers.fileAppendHandler().preHandle(context);
 
-            case FREEZE -> handlers.freezeHandler().preHandle(context, storeFactory.createSpecialFileStore());
+            case FREEZE -> handlers.freezeHandler().preHandle(context, storeFactory.createUpgradeFileStore());
 
             case UNCHECKED_SUBMIT -> handlers.networkUncheckedSubmitHandler().preHandle(context);
 
@@ -272,5 +276,12 @@ public class TransactionDispatcher {
                 topicStore);
         txnCtx.setTopicRunningHash(recordBuilder.getNewTopicRunningHash(), recordBuilder.getNewTopicSequenceNumber());
         topicStore.commit();
+    }
+
+    private void dispatchFreeze(
+            @NonNull final FreezeTransactionBody freezeTxn, @NonNull final WritableUpgradeFileStore upgradeFileStore) {
+        final var handler = handlers.freezeHandler();
+        handler.handle(freezeTxn, upgradeFileStore);
+        upgradeFileStore.commit();
     }
 }
