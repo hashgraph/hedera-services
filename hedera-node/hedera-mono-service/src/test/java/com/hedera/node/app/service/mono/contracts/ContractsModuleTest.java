@@ -16,6 +16,18 @@
 
 package com.hedera.node.app.service.mono.contracts;
 
+import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+import static com.hedera.node.app.service.mono.contracts.ContractsModule.provideCallLocalEvmTxProcessorFactory;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doNothing;
+
 import com.hedera.node.app.service.evm.contracts.operations.HederaBalanceOperation;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -35,6 +47,11 @@ import com.hedera.node.app.service.mono.store.contracts.CodeCache;
 import com.hedera.node.app.service.mono.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic;
 import com.hedera.node.app.service.mono.txns.util.PrngLogic;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.function.BiPredicate;
+import java.util.function.Supplier;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -55,24 +72,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.function.BiPredicate;
-import java.util.function.Supplier;
-
-import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
-import static com.hedera.node.app.service.mono.contracts.ContractsModule.provideCallLocalEvmTxProcessorFactory;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doNothing;
 
 @ExtendWith(MockitoExtension.class)
 class ContractsModuleTest {
@@ -198,13 +197,15 @@ class ContractsModuleTest {
     void precompileDetectorWorksAsExpected() {
         final var addressPredicate = ContractsModule.providePrecompileDetector();
 
-        assertFalse(addressPredicate.test(Address.fromHexString("0x000000000000000000000000000000000010000"))); // 18th byte is not 0
+        assertFalse(addressPredicate.test(
+                Address.fromHexString("0x000000000000000000000000000000000010000"))); // 18th byte is not 0
+        assertTrue(addressPredicate.test(Address.fromHexString("0x0000000000000000000000000000000000000000"))); // 0
         assertFalse(addressPredicate.test(Address.fromHexString("0x00000000000000000000000000000000000002EF"))); // 751
-        assertFalse(addressPredicate.test(Address.fromHexString("0x0000000000000000000000000000000000000000")));
         assertTrue(addressPredicate.test(Address.fromHexString("0x00000000000000000000000000000000000002EE"))); // 750
-        assertTrue(addressPredicate.test(Address.fromHexString("0x0000000000000000000000000000000000000001")));
-        assertTrue(addressPredicate.test(Address.fromHexString("0x0000000000000000000000000000000000000020")));
-        assertFalse(addressPredicate.test(Address.fromHexString("0x0000000000000000000000000000000050000011"))); // < 0 int
+        assertTrue(addressPredicate.test(Address.fromHexString("0x0000000000000000000000000000000000000001"))); // 1
+        assertTrue(addressPredicate.test(Address.fromHexString("0x0000000000000000000000000000000000000020"))); // 32
+        assertFalse(
+                addressPredicate.test(Address.fromHexString("0x0000000000000000000000000000000050000011"))); // < 0 int
     }
 
     @Test

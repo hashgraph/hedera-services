@@ -145,8 +145,10 @@ public interface ContractsV_0_30Module {
             final EvmSigsVerifier sigsVerifier,
             final GasCalculator gasCalculator,
             @V_0_30 final BiPredicate<Address, MessageFrame> addressValidator,
-            final @Named("PrecompileDetector") Predicate<Address> precompileDetector) {
-        return new HederaCallCodeOperation(sigsVerifier, gasCalculator, addressValidator, precompileDetector);
+            final @Named("PrecompileDetector") Predicate<Address> precompileDetector,
+            @ContractsModule.V_0_30 final PrecompileContractRegistry precompileContractRegistry) {
+        return new HederaCallCodeOperation(
+                sigsVerifier, gasCalculator, addressValidator, precompileDetector, precompileContractRegistry);
     }
 
     @Provides
@@ -157,8 +159,10 @@ public interface ContractsV_0_30Module {
             final EvmSigsVerifier sigsVerifier,
             final GasCalculator gasCalculator,
             @V_0_30 final BiPredicate<Address, MessageFrame> addressValidator,
-            final @Named("PrecompileDetector") Predicate<Address> precompileDetector) {
-        return new HederaCallOperation(sigsVerifier, gasCalculator, addressValidator, precompileDetector);
+            final @Named("PrecompileDetector") Predicate<Address> precompileDetector,
+            @ContractsModule.V_0_30 final PrecompileContractRegistry precompileContractRegistry) {
+        return new HederaCallOperation(
+                sigsVerifier, gasCalculator, addressValidator, precompileDetector, precompileContractRegistry);
     }
 
     @Provides
@@ -166,8 +170,10 @@ public interface ContractsV_0_30Module {
     @IntoSet
     @V_0_30
     static Operation bindDelegateCallOperation(
-            GasCalculator gasCalculator, @V_0_30 BiPredicate<Address, MessageFrame> addressValidator) {
-        return new HederaDelegateCallOperation(gasCalculator, addressValidator);
+            GasCalculator gasCalculator,
+            @V_0_30 BiPredicate<Address, MessageFrame> addressValidator,
+            @ContractsModule.V_0_30 final PrecompileContractRegistry precompileContractRegistry) {
+        return new HederaDelegateCallOperation(gasCalculator, addressValidator, precompileContractRegistry);
     }
 
     @Provides
@@ -177,8 +183,10 @@ public interface ContractsV_0_30Module {
     static Operation bindStaticCallOperation(
             final GasCalculator gasCalculator,
             @V_0_30 final BiPredicate<Address, MessageFrame> addressValidator,
-            final @Named("PrecompileDetector") Predicate<Address> precompileDetector) {
-        return new HederaStaticCallOperation(gasCalculator, addressValidator, precompileDetector);
+            final @Named("PrecompileDetector") Predicate<Address> precompileDetector,
+            @ContractsModule.V_0_30 final PrecompileContractRegistry precompileContractRegistry) {
+        return new HederaStaticCallOperation(
+                gasCalculator, addressValidator, precompileDetector, precompileContractRegistry);
     }
 
     @Provides

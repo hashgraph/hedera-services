@@ -16,32 +16,14 @@
 
 package com.hedera.node.app.service.mono.contracts.operation;
 
-/*
- * -
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ‍
- *
- */
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
@@ -50,6 +32,7 @@ import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
+import com.hedera.node.app.service.mono.store.contracts.precompile.HTSPrecompiledContract;
 import java.util.ArrayDeque;
 import java.util.Map;
 import java.util.Optional;
@@ -67,6 +50,8 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.operation.Operation;
+import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -107,27 +92,10 @@ class HederaOperationUtilTest {
     @Mock
     private BooleanSupplier isChildStatic;
 
+    @Mock
+    private PrecompileContractRegistry precompileContractRegistry;
+
     private final long expectedHaltGas = 10L;
-
-    @Test
-    void shortCircuitsForPrecompileSigCheck() {
-        final var degenerateResult = new Operation.OperationResult(0, null);
-        given(precompileDetector.test(PRETEND_RECIPIENT_ADDR)).willReturn(true);
-        given(executionSupplier.get()).willReturn(degenerateResult);
-
-        final var result = HederaOperationUtil.addressSignatureCheckExecution(
-                sigsVerifier,
-                messageFrame,
-                PRETEND_RECIPIENT_ADDR,
-                Wei.ZERO,
-                gasSupplier,
-                executionSupplier,
-                (a, b) -> false,
-                precompileDetector,
-                isChildStatic);
-
-        assertSame(degenerateResult, result);
-    }
 
     @Test
     void shortCircuitsForStaticChild() {
@@ -144,6 +112,7 @@ class HederaOperationUtilTest {
                 executionSupplier,
                 (a, b) -> true,
                 precompileDetector,
+                precompileContractRegistry,
                 isChildStatic);
 
         assertSame(degenerateResult, result);
@@ -165,6 +134,7 @@ class HederaOperationUtilTest {
                 executionSupplier,
                 (a, b) -> false,
                 precompileDetector,
+                precompileContractRegistry,
                 isChildStatic);
 
         // then:
@@ -199,6 +169,7 @@ class HederaOperationUtilTest {
                 executionSupplier,
                 (a, b) -> true,
                 precompileDetector,
+                precompileContractRegistry,
                 isChildStatic);
 
         // then:
@@ -210,6 +181,106 @@ class HederaOperationUtilTest {
         verify(worldStateAccount).getAddress();
         verify(sigsVerifier).hasActiveKeyOrNoReceiverSigReq(true, mockTarget, PRETEND_RECIPIENT_ADDR, ledgers);
         verify(gasSupplier).getAsLong();
+        verify(executionSupplier, never()).get();
+    }
+
+    @Test
+    void shortCircuitsPrecompileCallWithoutValue() {
+        // given:
+        given(precompileDetector.test(Address.ECREC)).willReturn(true);
+        given(precompileContractRegistry.get(Address.ECREC)).willReturn(mock(PrecompiledContract.class));
+        final var operationResult = mock(Operation.OperationResult.class);
+        given(executionSupplier.get()).willReturn(operationResult);
+        // when:
+        final var result = HederaOperationUtil.addressSignatureCheckExecution(
+                sigsVerifier,
+                messageFrame,
+                Address.ECREC,
+                Wei.ZERO,
+                gasSupplier,
+                executionSupplier,
+                (a, b) -> true,
+                precompileDetector,
+                precompileContractRegistry,
+                isChildStatic);
+        // then:
+        assertEquals(operationResult, result);
+        verify(executionSupplier).get();
+    }
+
+    @Test
+    void shortCircuitsHTSPrecompileCallWithValue() {
+        // given:
+        given(precompileDetector.test(HTSPrecompiledContract.HTS_PRECOMPILE_MIRROR_ENTITY_ID.toEvmAddress()))
+                .willReturn(true);
+        given(precompileContractRegistry.get(HTSPrecompiledContract.HTS_PRECOMPILE_MIRROR_ENTITY_ID.toEvmAddress()))
+                .willReturn(mock(PrecompiledContract.class));
+        final var operationResult = mock(Operation.OperationResult.class);
+        given(executionSupplier.get()).willReturn(operationResult);
+        // when:
+        final var result = HederaOperationUtil.addressSignatureCheckExecution(
+                sigsVerifier,
+                messageFrame,
+                HTSPrecompiledContract.HTS_PRECOMPILE_MIRROR_ENTITY_ID.toEvmAddress(),
+                Wei.ONE,
+                gasSupplier,
+                executionSupplier,
+                (a, b) -> true,
+                precompileDetector,
+                precompileContractRegistry,
+                isChildStatic);
+        // then:
+        assertEquals(operationResult, result);
+        verify(executionSupplier).get();
+    }
+
+    @Test
+    void haltsWithPrecompileErrorWhenCallingNonHtsPrecompileWithValue() {
+        // given:
+        given(precompileDetector.test(Address.ECREC)).willReturn(true);
+        given(precompileContractRegistry.get(Address.ECREC)).willReturn(mock(PrecompiledContract.class));
+        final var gas = 10L;
+        given(gasSupplier.getAsLong()).willReturn(gas);
+        // when:
+        final var result = HederaOperationUtil.addressSignatureCheckExecution(
+                sigsVerifier,
+                messageFrame,
+                Address.ECREC,
+                Wei.ONE,
+                gasSupplier,
+                executionSupplier,
+                (a, b) -> true,
+                precompileDetector,
+                precompileContractRegistry,
+                isChildStatic);
+        // then:
+        assertEquals(gas, result.getGasCost());
+        assertEquals(HederaExceptionalHaltReason.INVALID_FEE_SUBMITTED, result.getHaltReason());
+        verify(executionSupplier, never()).get();
+    }
+
+    @Test
+    void haltsWithInvalidSolidityAddressWhenCallingNonExistingPrecompileAddress() {
+        // given:
+        given(precompileDetector.test(Address.ECREC)).willReturn(true);
+        given(precompileContractRegistry.get(Address.ECREC)).willReturn(null);
+        final var gas = 10L;
+        given(gasSupplier.getAsLong()).willReturn(gas);
+        // when:
+        final var result = HederaOperationUtil.addressSignatureCheckExecution(
+                sigsVerifier,
+                messageFrame,
+                Address.ECREC,
+                Wei.ONE,
+                gasSupplier,
+                executionSupplier,
+                (a, b) -> true,
+                precompileDetector,
+                precompileContractRegistry,
+                isChildStatic);
+        // then:
+        assertEquals(gas, result.getGasCost());
+        assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, result.getHaltReason());
         verify(executionSupplier, never()).get();
     }
 
@@ -237,6 +308,7 @@ class HederaOperationUtilTest {
                 executionSupplier,
                 (a, b) -> true,
                 precompileDetector,
+                precompileContractRegistry,
                 isChildStatic);
 
         // then:
@@ -275,6 +347,7 @@ class HederaOperationUtilTest {
                 executionSupplier,
                 (a, b) -> true,
                 precompileDetector,
+                precompileContractRegistry,
                 isChildStatic);
 
         // then:

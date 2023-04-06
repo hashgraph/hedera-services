@@ -59,6 +59,7 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.operation.Operation;
+import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 
 /** Utility methods used by Hedera adapted {@link org.hyperledger.besu.evm.operation.Operation} */
 public final class HederaOperationUtil {
@@ -77,15 +78,16 @@ public final class HederaOperationUtil {
      * true, verification of the provided signature is performed. If the signature is not active,
      * the execution is halted with {@link HederaExceptionalHaltReason#INVALID_SIGNATURE}.
      *
-     * @param sigsVerifier          The signature
-     * @param frame                 The current message frame
-     * @param address               The target address
-     * @param value                 The value to be transferred as part of the call
-     * @param supplierHaltGasCost   Supplier for the gas cost
-     * @param supplierExecution     Supplier with the execution
-     * @param addressValidator      Address validator predicate
-     * @param precompileDetector    A predicate that determines if an address is a precompile address
-     * @param supplierIsChildStatic Supplier for is child static check
+     * @param sigsVerifier               The signature
+     * @param frame                      The current message frame
+     * @param address                    The target address
+     * @param value                      The value to be transferred as part of the call
+     * @param supplierHaltGasCost        Supplier for the gas cost
+     * @param supplierExecution          Supplier with the execution
+     * @param addressValidator           Address validator predicate
+     * @param precompileDetector         A predicate that determines if an address is a precompile address
+     * @param precompileContractRegistry A registry of all existing/active precompiled contracts.
+     * @param supplierIsChildStatic      Supplier for is child static check
      * @return The operation result of the execution
      */
     public static Operation.OperationResult addressSignatureCheckExecution(
@@ -97,20 +99,26 @@ public final class HederaOperationUtil {
             final Supplier<Operation.OperationResult> supplierExecution,
             final BiPredicate<Address, MessageFrame> addressValidator,
             final Predicate<Address> precompileDetector,
+            final PrecompileContractRegistry precompileContractRegistry,
             final BooleanSupplier supplierIsChildStatic) {
-        // Addresses mapping to lower than 0.0.800 are never calling the Hedera account.
-        // Short circuit and approve.
         if (precompileDetector.test(address)) {
-            // cannot send value to _most_ protected addresses.
-            if (value.isZero() || address.getInt(16) == HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS_INT) {
-                return supplierExecution.get();
+            // we have a call to a precompile address, but make sure an actual precompile exists at that address
+            if (precompileContractRegistry.get(address) != null) {
+                // value cannot be sent to precompiles (except for the HTSPrecompiledContract)
+                if (value.isZero()
+                        || address.getInt(16) == HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS_INT) {
+                    return supplierExecution.get();
+                } else {
+                    return failingOperationResultFrom(
+                            supplierHaltGasCost.getAsLong(), HederaExceptionalHaltReason.INVALID_FEE_SUBMITTED);
+                }
             } else {
-                return new Operation.OperationResult(
-                        supplierHaltGasCost.getAsLong(), ExceptionalHaltReason.PRECOMPILE_ERROR);
+                return failingOperationResultFrom(
+                        supplierHaltGasCost.getAsLong(), HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
             }
         }
         if (Boolean.FALSE.equals(addressValidator.test(address, frame))) {
-            return new Operation.OperationResult(
+            return failingOperationResultFrom(
                     supplierHaltGasCost.getAsLong(), HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
         }
         // static frames are guaranteed to be read-only and cannot change state, so no signature verification is needed
@@ -120,7 +128,7 @@ public final class HederaOperationUtil {
         // non-static frame, sig check required
         final var isSigReqMet = isSigReqMetFor(address, frame, sigsVerifier);
         if (!isSigReqMet) {
-            return new Operation.OperationResult(
+            return failingOperationResultFrom(
                     supplierHaltGasCost.getAsLong(), HederaExceptionalHaltReason.INVALID_SIGNATURE);
         }
         return supplierExecution.get();
@@ -169,5 +177,10 @@ public final class HederaOperationUtil {
                     .computeIfAbsent(address, addr -> new TreeMap<>());
             addressSlots.computeIfAbsent(key, slot -> new MutablePair<>(storageValue, null));
         }
+    }
+
+    private static Operation.OperationResult failingOperationResultFrom(
+            final long gasCost, final ExceptionalHaltReason exceptionalHaltReason) {
+        return new Operation.OperationResult(gasCost, exceptionalHaltReason);
     }
 }

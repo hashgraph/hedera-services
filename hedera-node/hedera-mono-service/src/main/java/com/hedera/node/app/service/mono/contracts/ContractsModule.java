@@ -219,10 +219,8 @@ public interface ContractsModule {
     @Singleton
     @Named("PrecompileDetector")
     static Predicate<Address> providePrecompileDetector() {
-        // Addresses mapping to 0.0.0 < x < 0.0.751 are never calling the Hedera account.
-        return address -> {
-            final var numberOfLeadingZeroBytes = address.numberOfLeadingZeroBytes();
-            return numberOfLeadingZeroBytes >= 18 && numberOfLeadingZeroBytes < Address.SIZE && Integer.compareUnsigned(address.getInt(16), 750) <= 0;
-        };
+        // all addresses between 0-750 (inclusive) are treated as precompile accounts from the perspective of the EVM.
+        return address ->
+                address.numberOfLeadingZeroBytes() >= 18 && Integer.compareUnsigned(address.getInt(16), 750) <= 0;
     }
 }

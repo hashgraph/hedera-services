@@ -26,6 +26,7 @@ import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.CallOperation;
+import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 
 /**
  * Hedera adapted version of the {@link CallOperation}.
@@ -42,16 +43,19 @@ public class HederaCallOperation extends CallOperation {
     private final EvmSigsVerifier sigsVerifier;
     private final BiPredicate<Address, MessageFrame> addressValidator;
     final Predicate<Address> precompileDetector;
+    private final PrecompileContractRegistry precompileContractRegistry;
 
     public HederaCallOperation(
             final EvmSigsVerifier sigsVerifier,
             final GasCalculator gasCalculator,
             final BiPredicate<Address, MessageFrame> addressValidator,
-            final Predicate<Address> precompileDetector) {
+            final Predicate<Address> precompileDetector,
+            final PrecompileContractRegistry precompileContractRegistry) {
         super(gasCalculator);
         this.sigsVerifier = sigsVerifier;
         this.addressValidator = addressValidator;
         this.precompileDetector = precompileDetector;
+        this.precompileContractRegistry = precompileContractRegistry;
     }
 
     @Override
@@ -65,6 +69,7 @@ public class HederaCallOperation extends CallOperation {
                 () -> super.execute(frame, evm),
                 addressValidator,
                 precompileDetector,
+                precompileContractRegistry,
                 () -> isStatic(frame));
     }
 }

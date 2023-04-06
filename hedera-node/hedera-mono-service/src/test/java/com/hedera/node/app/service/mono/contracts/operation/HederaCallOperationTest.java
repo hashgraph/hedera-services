@@ -37,6 +37,7 @@ import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -70,12 +71,16 @@ class HederaCallOperationTest {
     @Mock
     private Predicate<Address> precompileDetector;
 
+    @Mock
+    private PrecompileContractRegistry precompileContractRegistry;
+
     private final long cost = 100L;
     private HederaCallOperation subject;
 
     @BeforeEach
     void setup() {
-        subject = new HederaCallOperation(sigsVerifier, calc, addressValidator, precompileDetector);
+        subject = new HederaCallOperation(
+                sigsVerifier, calc, addressValidator, precompileDetector, precompileContractRegistry);
     }
 
     @Test

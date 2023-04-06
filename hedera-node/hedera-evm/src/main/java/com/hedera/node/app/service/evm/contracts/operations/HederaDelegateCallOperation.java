@@ -44,6 +44,7 @@ import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.DelegateCallOperation;
+import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 
 /**
  * Hedera adapted version of the {@link DelegateCallOperation}.
@@ -57,7 +58,9 @@ public class HederaDelegateCallOperation extends DelegateCallOperation {
     private final BiPredicate<Address, MessageFrame> addressValidator;
 
     public HederaDelegateCallOperation(
-            GasCalculator gasCalculator, BiPredicate<Address, MessageFrame> addressValidator) {
+            GasCalculator gasCalculator,
+            BiPredicate<Address, MessageFrame> addressValidator,
+            PrecompileContractRegistry precompileContractRegistry) {
         super(gasCalculator);
         this.addressValidator = addressValidator;
     }
