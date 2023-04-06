@@ -41,6 +41,7 @@ public final class FreezeServiceImpl implements FreezeService {
         return new Schema(CURRENT_VERSION) {
             @NonNull
             @Override
+            @SuppressWarnings("rawtypes")
             public Set<StateDefinition> statesToCreate() {
                 return Set.of(StateDefinition.singleton(UPGRADE_FILES_KEY, new MonoSpecialFilesAdapterCodec()));
             }
