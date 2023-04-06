@@ -19,7 +19,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLong
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
@@ -500,7 +499,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
                         Address.toChecksumAddress("0xabababababababababababababababababababab"));
         final var txn = "txn";
 
-        return onlyDefaultHapiSpec("AssociateWithMissingEvmAddressHasSaneTxnAndRecord")
+        return defaultHapiSpec("AssociateWithMissingEvmAddressHasSaneTxnAndRecord")
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
                         uploadInitCode(INNER_CONTRACT),
