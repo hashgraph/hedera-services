@@ -2336,7 +2336,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
     HapiSpec accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation() {
         final String ACCOUNT = "account";
-        return onlyDefaultHapiSpec(
+        return defaultHapiSpec(
                         "ETX_026_accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation")
                 .given(
                         overriding(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, FALSE_VALUE),
