@@ -228,6 +228,7 @@ public class PropertyNames {
     public static final String HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION = "hedera.recordStream.logEveryTransaction";
     public static final String ISS_RESET_PERIOD = "iss.resetPeriod";
     public static final String ISS_ROUNDS_TO_LOG = "iss.roundsToLog";
+    public static final String NETTY_LOGGING_OFF = "netty.loggingOff";
     public static final String NETTY_MODE = "netty.mode";
     public static final String NETTY_PROD_FLOW_CONTROL_WINDOW = "netty.prod.flowControlWindow";
     public static final String NETTY_PROD_MAX_CONCURRENT_CALLS = "netty.prod.maxConcurrentCalls";

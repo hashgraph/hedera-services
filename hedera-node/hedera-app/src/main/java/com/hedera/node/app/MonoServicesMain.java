@@ -18,10 +18,12 @@ package com.hedera.node.app;
 
 import static com.hedera.node.app.service.mono.context.AppsManager.APPS;
 import static com.hedera.node.app.service.mono.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_LOGGING_OFF;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.hedera.node.app.service.mono.ServicesApp;
 import com.hedera.node.app.service.mono.ServicesState;
+import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
@@ -98,6 +100,11 @@ public class MonoServicesMain implements SwirldMain {
     }
 
     private void doStagedInit() {
+        final var disableJULogging = new BootstrapProperties(false).getBooleanProperty(NETTY_LOGGING_OFF);
+        if (disableJULogging) {
+            java.util.logging.LogManager.getLogManager().reset();
+        }
+
         validateLedgerState();
         log.info("Ledger state ok");
 

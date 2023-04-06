@@ -163,6 +163,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOKEN_TRANSFER
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TRANSFERS_MAX_LEN;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_XFER_BAL_CHANGES_MAX_LEN;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_LOGGING_OFF;
 import static com.hedera.node.app.spi.config.PropertyNames.NETTY_MODE;
 import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_FLOW_CONTROL_WINDOW;
 import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_KEEP_ALIVE_TIME;
@@ -576,6 +577,7 @@ public final class BootstrapProperties implements PropertySource {
             HEDERA_RECORD_STREAM_QUEUE_CAPACITY,
             ISS_RESET_PERIOD,
             ISS_ROUNDS_TO_LOG,
+            NETTY_LOGGING_OFF,
             NETTY_MODE,
             NETTY_PROD_FLOW_CONTROL_WINDOW,
             NETTY_PROD_MAX_CONCURRENT_CALLS,
@@ -680,6 +682,7 @@ public final class BootstrapProperties implements PropertySource {
             entry(AUTO_RENEW_GRANT_FREE_RENEWALS, AS_BOOLEAN),
             entry(LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION, AS_LONG),
             entry(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION, AS_LONG),
+            entry(NETTY_LOGGING_OFF, AS_BOOLEAN),
             entry(NETTY_MODE, AS_PROFILE),
             entry(QUERIES_BLOB_LOOK_UP_RETRIES, AS_INT),
             entry(NETTY_START_RETRIES, AS_INT),

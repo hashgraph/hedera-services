@@ -169,6 +169,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOKEN_TRANSFER
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TRANSFERS_MAX_LEN;
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_XFER_BAL_CHANGES_MAX_LEN;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_LOGGING_OFF;
 import static com.hedera.node.app.spi.config.PropertyNames.NETTY_MODE;
 import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_FLOW_CONTROL_WINDOW;
 import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_KEEP_ALIVE_TIME;
@@ -434,6 +435,7 @@ class BootstrapPropertiesTest {
             entry(LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS, 1800),
             entry(ISS_RESET_PERIOD, 60),
             entry(ISS_ROUNDS_TO_LOG, 5000),
+            entry(NETTY_LOGGING_OFF, true),
             entry(NETTY_MODE, Profile.PROD),
             entry(NETTY_PROD_FLOW_CONTROL_WINDOW, 10240),
             entry(NETTY_PROD_MAX_CONCURRENT_CALLS, 10),

@@ -40,6 +40,7 @@ module com.hedera.node.app {
     requires com.hedera.hashgraph.protobuf.java.api;
     requires com.hedera.node.app.hapi.fees;
     requires com.hedera.node.hapi;
+    requires java.logging;
 
     exports com.hedera.node.app to
             com.swirlds.platform;
