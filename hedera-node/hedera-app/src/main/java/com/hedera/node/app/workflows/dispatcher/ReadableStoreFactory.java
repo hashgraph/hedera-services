@@ -20,6 +20,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
+import com.hedera.node.app.service.network.NetworkService;
+import com.hedera.node.app.service.network.impl.ReadableRunningHashLeafStore;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
 import com.hedera.node.app.service.token.TokenService;
@@ -32,7 +34,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Factory for all readable stores. It creates new readable stores based on the {@link HederaState}.
  */
 public class ReadableStoreFactory {
-
     private final HederaState state;
 
     public ReadableStoreFactory(@NonNull final HederaState state) {
@@ -81,5 +82,14 @@ public class ReadableStoreFactory {
     public ReadableTokenStore createTokenStore() {
         final var tokenStates = state.createReadableStates(TokenService.NAME);
         return new ReadableTokenStore(tokenStates);
+    }
+
+    /**
+     * Get a {@link ReadableRunningHashLeafStore}
+     * @return a new {@link ReadableRunningHashLeafStore}
+     */
+    public ReadableRunningHashLeafStore createRunningHashLeafStore() {
+        final var runningHashLeafStates = state.createReadableStates(NetworkService.NAME);
+        return new ReadableRunningHashLeafStore(runningHashLeafStates);
     }
 }

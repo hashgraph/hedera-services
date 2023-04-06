@@ -20,6 +20,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
+import com.hedera.node.app.service.network.NetworkService;
+import com.hedera.node.app.service.network.impl.WritableRunningHashLeafStore;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -51,5 +53,11 @@ public class WritableStoreFactory {
     public WritableTopicStore createTopicStore() {
         final var topicStates = stateAccessor.getHederaState().createWritableStates(ConsensusService.NAME);
         return new WritableTopicStore(topicStates);
+    }
+
+    @NonNull
+    public WritableRunningHashLeafStore createRunningHashLeafStore() {
+        final var runningHashLeafStates = stateAccessor.getHederaState().createWritableStates(NetworkService.NAME);
+        return new WritableRunningHashLeafStore(runningHashLeafStates);
     }
 }

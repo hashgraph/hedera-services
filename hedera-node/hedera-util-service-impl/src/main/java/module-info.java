@@ -7,6 +7,9 @@ module com.hedera.node.app.service.util.impl {
     requires dagger;
     requires com.hedera.pbj.runtime;
     requires com.hedera.node.hapi;
+    requires com.swirlds.common;
+    requires org.apache.logging.log4j;
+    requires com.google.common;
 
     provides com.hedera.node.app.service.util.UtilService with
             UtilServiceImpl;
@@ -16,4 +19,5 @@ module com.hedera.node.app.service.util.impl {
             com.hedera.node.app.service.util.impl.test;
     exports com.hedera.node.app.service.util.impl.handlers;
     exports com.hedera.node.app.service.util.impl.components;
+    exports com.hedera.node.app.service.util.impl.config;
 }

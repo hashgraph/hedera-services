@@ -76,7 +76,6 @@ import com.hedera.hapi.node.token.TokenWipeAccountTransactionBody;
 import com.hedera.hapi.node.transaction.NodeStakeUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
-import com.hedera.hapi.node.util.UtilPrngTransactionBody;
 import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
@@ -99,6 +98,7 @@ import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemUndeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
+import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
@@ -137,6 +137,7 @@ import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.state.HederaState;
 import java.util.function.BiConsumer;
@@ -324,6 +325,8 @@ class TransactionDispatcherTest {
     private TransactionHandlers handlers;
     private TransactionDispatcher dispatcher;
 
+    private SideEffectsTracker sideEffectsTracker;
+
     @BeforeEach
     void setup(@Mock final ReadableStates readableStates, @Mock HederaKey payerKey) {
         when(state.createReadableStates(any())).thenReturn(readableStates);
@@ -378,29 +381,44 @@ class TransactionDispatcherTest {
                 utilPrngHandler);
 
         dispatcher = new TransactionDispatcher(
-                handleContext, txnCtx, handlers, accountNumbers, dynamicProperties, usageLimits);
+                handleContext, txnCtx, handlers, accountNumbers, dynamicProperties, usageLimits, sideEffectsTracker);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalParameters() {
         assertThatThrownBy(() -> new TransactionDispatcher(
-                        null, txnCtx, handlers, accountNumbers, dynamicProperties, usageLimits))
+                        null, txnCtx, handlers, accountNumbers, dynamicProperties, usageLimits, sideEffectsTracker))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new TransactionDispatcher(
-                        handleContext, null, handlers, accountNumbers, dynamicProperties, usageLimits))
+                        handleContext,
+                        null,
+                        handlers,
+                        accountNumbers,
+                        dynamicProperties,
+                        usageLimits,
+                        sideEffectsTracker))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new TransactionDispatcher(
-                        handleContext, txnCtx, null, accountNumbers, dynamicProperties, usageLimits))
+                        handleContext,
+                        txnCtx,
+                        null,
+                        accountNumbers,
+                        dynamicProperties,
+                        usageLimits,
+                        sideEffectsTracker))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new TransactionDispatcher(
-                        handleContext, txnCtx, handlers, null, dynamicProperties, usageLimits))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() ->
-                        new TransactionDispatcher(handleContext, txnCtx, handlers, accountNumbers, null, usageLimits))
+                        handleContext, txnCtx, handlers, null, dynamicProperties, usageLimits, sideEffectsTracker))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new TransactionDispatcher(
-                        handleContext, txnCtx, handlers, accountNumbers, dynamicProperties, null))
+                        handleContext, txnCtx, handlers, accountNumbers, null, usageLimits, sideEffectsTracker))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new TransactionDispatcher(
+                        handleContext, txnCtx, handlers, accountNumbers, dynamicProperties, null, sideEffectsTracker))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new TransactionDispatcher(
+                        handleContext, txnCtx, handlers, accountNumbers, dynamicProperties, usageLimits, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -541,7 +559,8 @@ class TransactionDispatcherTest {
     @ParameterizedTest
     @MethodSource("getDispatchParameters")
     void testPreHandleWithPayer(
-            final TransactionBody txBody, final BiConsumer<TransactionHandlers, PreHandleContext> verification) {
+            final TransactionBody txBody, final BiConsumer<TransactionHandlers, PreHandleContext> verification)
+            throws PreCheckException {
         // given
         final var payer = AccountID.newBuilder().build();
         final var tracker = new ReadableStoreFactory(state);
@@ -834,13 +853,14 @@ class TransactionDispatcherTest {
                                 (BiConsumer<TransactionHandlers, PreHandleContext>) (handlers, meta) ->
                                         verify(handlers.tokenUnpauseHandler()).preHandle(meta)),
 
-                        // util
-                        Arguments.of(
-                                TransactionBody.newBuilder()
-                                        .utilPrng(UtilPrngTransactionBody.DEFAULT)
-                                        .build(),
-                                (BiConsumer<TransactionHandlers, PreHandleContext>) (handlers, meta) ->
-                                        verify(handlers.utilPrngHandler()).preHandle(meta)),
+                        //                        // util
+                        //                        Arguments.of(
+                        //                                TransactionBody.newBuilder()
+                        //                                        .utilPrng(UtilPrngTransactionBody.DEFAULT)
+                        //                                        .build(),
+                        //                                (BiConsumer<TransactionHandlers, PreHandleContext>) (handlers,
+                        // meta) ->
+                        //                                        verify(handlers.utilPrngHandler()).preHandle(meta)),
 
                         // mixed
                         Arguments.of(

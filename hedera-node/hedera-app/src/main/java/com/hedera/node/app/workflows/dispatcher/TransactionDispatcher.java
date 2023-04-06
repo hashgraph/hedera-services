@@ -26,15 +26,19 @@ import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
+import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
+import com.hedera.node.app.service.network.impl.WritableRunningHashLeafStore;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
+import com.hedera.node.app.service.util.impl.config.PrngConfig;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -58,6 +62,7 @@ public class TransactionDispatcher {
     private final CryptoSignatureWaivers cryptoSignatureWaivers;
     private final GlobalDynamicProperties dynamicProperties;
     private final UsageLimits usageLimits;
+    private final SideEffectsTracker sideEffectsTracker;
 
     /**
      * Creates a {@code TransactionDispatcher}.
@@ -75,13 +80,15 @@ public class TransactionDispatcher {
             @NonNull final TransactionHandlers handlers,
             @NonNull final HederaAccountNumbers accountNumbers,
             @NonNull final GlobalDynamicProperties dynamicProperties,
-            @NonNull final UsageLimits usageLimits) {
+            @NonNull final UsageLimits usageLimits,
+            @NonNull final SideEffectsTracker sideEffectsTracker) {
         this.txnCtx = requireNonNull(txnCtx);
         this.handlers = requireNonNull(handlers);
         this.handleContext = requireNonNull(handleContext);
         this.dynamicProperties = requireNonNull(dynamicProperties);
         this.cryptoSignatureWaivers = new CryptoSignatureWaiversImpl(requireNonNull(accountNumbers));
         this.usageLimits = requireNonNull(usageLimits);
+        this.sideEffectsTracker = requireNonNull(sideEffectsTracker);
     }
 
     /**
@@ -108,6 +115,7 @@ public class TransactionDispatcher {
             case CONSENSUS_UPDATE_TOPIC -> dispatchConsensusUpdateTopic(txn.consensusUpdateTopicOrThrow(), topicStore);
             case CONSENSUS_DELETE_TOPIC -> dispatchConsensusDeleteTopic(txn.consensusDeleteTopicOrThrow(), topicStore);
             case CONSENSUS_SUBMIT_MESSAGE -> dispatchConsensusSubmitMessage(txn, topicStore);
+            case UTIL_PRNG -> dispatchPrng(txn, writableStoreFactory.createRunningHashLeafStore());
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
         }
     }
@@ -122,7 +130,8 @@ public class TransactionDispatcher {
      */
     //    @SuppressWarnings("java:S1479") // ignore too many branches warning
     public void dispatchPreHandle(
-            @NonNull final ReadableStoreFactory storeFactory, @NonNull final PreHandleContext context) {
+            @NonNull final ReadableStoreFactory storeFactory, @NonNull final PreHandleContext context)
+            throws PreCheckException {
         requireNonNull(storeFactory);
         requireNonNull(context);
 
@@ -215,7 +224,13 @@ public class TransactionDispatcher {
     }
 
     private PreHandleDispatcher setupPreHandleDispatcher(@NonNull final ReadableStoreFactory storeFactory) {
-        return context -> dispatchPreHandle(storeFactory, context);
+        return context -> {
+            try {
+                dispatchPreHandle(storeFactory, context);
+            } catch (PreCheckException e) {
+                throw new PreCheckException(e.responseCode());
+            }
+        };
     }
 
     private void dispatchConsensusDeleteTopic(
@@ -272,5 +287,31 @@ public class TransactionDispatcher {
                 topicStore);
         txnCtx.setTopicRunningHash(recordBuilder.getNewTopicRunningHash(), recordBuilder.getNewTopicSequenceNumber());
         topicStore.commit();
+    }
+
+    private void dispatchPrng(
+            @NonNull final TransactionBody utilPrng, @NonNull final WritableRunningHashLeafStore runningHashLeafStore) {
+        final var handler = handlers.utilPrngHandler();
+        final var recordBuilder = handler.newRecordBuilder();
+        try {
+            handler.handle(
+                    utilPrng.utilPrng(),
+                    new PrngConfig(dynamicProperties.isUtilPrngEnabled()),
+                    recordBuilder,
+                    runningHashLeafStore.getNMinusThreeRunningHash());
+            // is it okay to use runningHashLeafStore from other service here ?
+        } catch (InterruptedException e) {
+            // log an error or throw HandleStatusException?
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted when computing n-3 running hash");
+        }
+
+        if (recordBuilder.hasPrngNumber()) {
+            sideEffectsTracker.trackRandomNumber(
+                    recordBuilder.getGeneratedNumber().getAsInt());
+        } else {
+            sideEffectsTracker.trackRandomBytes(
+                    PbjConverter.asBytes(recordBuilder.getGeneratedBytes().get()));
+        }
     }
 }

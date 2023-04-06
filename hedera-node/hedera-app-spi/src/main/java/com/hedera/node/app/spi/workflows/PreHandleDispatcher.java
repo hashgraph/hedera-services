@@ -29,5 +29,5 @@ public interface PreHandleDispatcher {
      * @param context the {@link PreHandleContext} for the dispatched transaction
      * @throws NullPointerException if {@code transactionBody} is {@code null}
      */
-    void dispatch(@NonNull PreHandleContext context);
+    void dispatch(@NonNull PreHandleContext context) throws PreCheckException;
 }
