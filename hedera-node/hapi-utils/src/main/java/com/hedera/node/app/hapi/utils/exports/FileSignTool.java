@@ -476,8 +476,8 @@ public class FileSignTool {
                 new File(Files.createDirectories(Paths.get(destDir)).toUri());
 
         final File folder = new File(sourceDir);
-        final File[] streamFiles = folder.listFiles((dir, name) -> streamType.isStreamFile(name) || name.endsWith(
-                COMPRESSED_RECORD_STREAM_EXTENSION));
+        final File[] streamFiles = folder.listFiles(
+                (dir, name) -> streamType.isStreamFile(name) || name.endsWith(COMPRESSED_RECORD_STREAM_EXTENSION));
         if (streamFiles == null || streamFiles.length == 0) {
             LOGGER.error(MARKER, "No stream files found in {}", sourceDir);
         }
