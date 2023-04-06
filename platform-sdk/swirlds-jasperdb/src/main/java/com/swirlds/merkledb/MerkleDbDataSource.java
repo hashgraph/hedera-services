@@ -99,9 +99,6 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
      */
     private static final MerkleDbSettings settings = MerkleDbSettingsFactory.get();
 
-    /** Label for database component used in logging, stats, etc. */
-    private static final String MERKLEDB_COMPONENT = "merkledb";
-
     /** Count of open database instances */
     private static final LongAdder COUNT_OF_OPEN_DATABASES = new LongAdder();
 
@@ -271,14 +268,14 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
                 NUMBER_OF_MERGING_THREADS,
                 new ThreadConfiguration(getStaticThreadManager())
                         .setThreadGroup(threadGroup)
-                        .setComponent(MERKLEDB_COMPONENT)
+                        .setComponent(MerkleDb.MERKLEDB_COMPONENT)
                         .setThreadName("Merging")
                         .setExceptionHandler((t, ex) -> logger.error(
                                 EXCEPTION.getMarker(), "[{}] Uncaught exception during merging", tableName, ex))
                         .buildFactory());
         // create thread pool storing internal records
         storeInternalExecutor = Executors.newSingleThreadExecutor(new ThreadConfiguration(getStaticThreadManager())
-                .setComponent(MERKLEDB_COMPONENT)
+                .setComponent(MerkleDb.MERKLEDB_COMPONENT)
                 .setThreadGroup(threadGroup)
                 .setThreadName("Store Internal Records")
                 .setExceptionHandler((t, ex) ->
@@ -286,7 +283,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
                 .buildFactory());
         // create thread pool storing key-to-path mappings
         storeKeyToPathExecutor = Executors.newSingleThreadExecutor(new ThreadConfiguration(getStaticThreadManager())
-                .setComponent(MERKLEDB_COMPONENT)
+                .setComponent(MerkleDb.MERKLEDB_COMPONENT)
                 .setThreadGroup(threadGroup)
                 .setThreadName("Store Key to Path")
                 .setExceptionHandler((t, ex) -> logger.error(
@@ -294,7 +291,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
                 .buildFactory());
         // thread pool creating snapshots, it is unbounded in threads, but we use at most 7
         snapshotExecutor = Executors.newCachedThreadPool(new ThreadConfiguration(getStaticThreadManager())
-                .setComponent(MERKLEDB_COMPONENT)
+                .setComponent(MerkleDb.MERKLEDB_COMPONENT)
                 .setThreadGroup(threadGroup)
                 .setThreadName("Snapshot")
                 .setExceptionHandler(

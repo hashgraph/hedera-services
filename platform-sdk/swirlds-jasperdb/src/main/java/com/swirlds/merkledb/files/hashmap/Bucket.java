@@ -25,6 +25,7 @@ import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.VALUE_SIZE;
 import com.swirlds.common.utility.Units;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.virtualmap.VirtualKey;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.BufferOverflowException;
@@ -53,7 +54,7 @@ import org.apache.logging.log4j.Logger;
  * </ul>
  */
 @SuppressWarnings("unused")
-public final class Bucket<K extends VirtualKey<? super K>> {
+public final class Bucket<K extends VirtualKey<? super K>> implements Closeable {
     private static final Logger logger = LogManager.getLogger(Bucket.class);
 
     /** When increasing the capacity of a bucket, increase it by this many bytes. */
@@ -82,23 +83,47 @@ public final class Bucket<K extends VirtualKey<? super K>> {
      * entries, and entry data. Buffer is expanded as needed, when new entries are added. Buffer
      * limit is kept equal to the bucket size in bytes.
      */
-    private ByteBuffer bucketBuffer;
+    private volatile ByteBuffer bucketBuffer;
 
-    private KeySerializer<K> keySerializer;
+    private final KeySerializer<K> keySerializer;
     private ByteBuffer reusableBuffer;
+
+    private final ReusableBucketPool<K> bucketPool;
 
     /**
      * Create a new bucket with the default size.
      *
      * @param keySerializer The serializer responsible for converting keys to/from bytes
      */
-    Bucket(KeySerializer<K> keySerializer) {
-        setKeySerializer(keySerializer);
+    Bucket(final KeySerializer<K> keySerializer) {
+        this(keySerializer, null);
+    }
+
+    /**
+     * Create a new bucket with the default size.
+     *
+     * @param keySerializer The serializer responsible for converting keys to/from bytes
+     */
+    Bucket(final KeySerializer<K> keySerializer, final ReusableBucketPool<K> bucketPool) {
+        this.keySerializer = keySerializer;
+        this.keySerializationVersion = (int) keySerializer.getCurrentDataVersion();
         bucketBuffer = ByteBuffer.allocate(DEFAULT_BUCKET_BUFFER_SIZE);
         setSize(BUCKET_HEADER_SIZE);
         setBucketIndex(-1);
         reusableBuffer =
                 keySerializer.isVariableSize() ? ByteBuffer.allocate(keySerializer.getTypicalSerializedSize()) : null;
+        this.bucketPool = bucketPool;
+    }
+
+    @Override
+    public void close() throws IOException {
+        if (bucketPool != null) {
+            bucketPool.releaseBucket(this);
+        }
+    }
+
+    public ReusableBucketPool<K> getBucketPool() {
+        return bucketPool;
     }
 
     /**
@@ -115,25 +140,12 @@ public final class Bucket<K extends VirtualKey<? super K>> {
         setSize(BUCKET_HEADER_SIZE);
         // reset buffer
         bucketBuffer.clear();
+        bucketBuffer.limit(getSize());
         return this;
     }
 
     public KeySerializer<K> getKeySerializer() {
         return keySerializer;
-    }
-
-    /**
-     * Change this bucket over to use new key serializer. It is a no-op if called with the same key
-     * serializer we are configured with already.
-     *
-     * @param keySerializer The new key serializer
-     */
-    public void setKeySerializer(KeySerializer<K> keySerializer) {
-        if (keySerializer != this.keySerializer) {
-            // note, reusableDataFileOutputStream will grow as needed so no need to change its size
-            this.keySerializer = keySerializer;
-            this.keySerializationVersion = (int) keySerializer.getCurrentDataVersion();
-        }
     }
 
     /** Set the serialization version to use for keys */
@@ -269,7 +281,7 @@ public final class Bucket<K extends VirtualKey<? super K>> {
                     }
                 }
                 final int keySizeBytes = reusableBuffer.position();
-                final int newSize = result.entryOffset + KEY_HASHCODE_SIZE + VALUE_SIZE + keySizeBytes;
+                final int newSize = result.entryOffset + ENTRY_KEY_OFFSET + keySizeBytes;
                 ensureCapacity(newSize);
                 setSize(newSize);
                 // add a new entry
@@ -280,8 +292,7 @@ public final class Bucket<K extends VirtualKey<? super K>> {
                 reusableBuffer.flip();
                 bucketBuffer.put(reusableBuffer);
             } else {
-                final int newSize =
-                        result.entryOffset + KEY_HASHCODE_SIZE + VALUE_SIZE + keySerializer.getSerializedSize();
+                final int newSize = result.entryOffset + ENTRY_KEY_OFFSET + keySerializer.getSerializedSize();
                 ensureCapacity(newSize);
                 setSize(newSize);
                 // add a new entry

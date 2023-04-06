@@ -16,14 +16,16 @@
 
 package com.swirlds.merkledb.files.hashmap;
 
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
-import static com.swirlds.merkledb.files.DataFileCommon.NON_EXISTENT_DATA_LOCATION;
 import static com.swirlds.merkledb.files.DataFileCommon.formatSizeBytes;
 import static com.swirlds.merkledb.files.DataFileCommon.getSizeOfFiles;
 import static com.swirlds.merkledb.files.DataFileCommon.logMergeStats;
 
+import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.Units;
+import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.Snapshotable;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListDisk;
@@ -42,9 +44,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.LongSummaryStatistics;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.collections.api.list.MutableList;
 import org.eclipse.collections.api.tuple.primitive.IntObjectPair;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
@@ -121,6 +128,9 @@ public class HalfDiskHashMap<K extends VirtualKey<? super K>> implements AutoClo
      */
     private Thread writingThread;
 
+    /** Executor for parallel bucket reads/updates in {@link #endWriting()} */
+    private final ExecutorService flushExecutor;
+
     /**
      * Construct a new HalfDiskHashMap
      *
@@ -151,6 +161,14 @@ public class HalfDiskHashMap<K extends VirtualKey<? super K>> implements AutoClo
 
         this.mapSize = mapSize;
         this.storeName = storeName;
+        flushExecutor = Executors.newFixedThreadPool(
+                16,
+                new ThreadConfiguration(getStaticThreadManager())
+                        .setComponent(MerkleDb.MERKLEDB_COMPONENT)
+                        .setThreadName("HDHM Flush " + storeName)
+                        .setExceptionHandler((t, ex) -> logger.error(
+                                EXCEPTION.getMarker(), "[{}] Uncaught exception during flushing", storeName, ex))
+                        .buildFactory());
         Path indexFile = storeDir.resolve(storeName + BUCKET_INDEX_FILENAME_SUFFIX);
         // create bucket serializer
         this.bucketSerializer = new BucketSerializer<>(keySerializer);
@@ -411,45 +429,62 @@ public class HalfDiskHashMap<K extends VirtualKey<? super K>> implements AutoClo
                 oneTransactionsData.stream().mapToLong(BucketMutation::size).sum());
         // iterate over transaction cache and save it all to file
         if (!oneTransactionsData.isEmpty()) {
+            // for each changed bucket, write the new buckets to file but do not update index yet
+            final MutableList<IntObjectPair<BucketMutation<K>>> bucketUpdates =
+                    oneTransactionsData.keyValuesView().toList();
+            final int size = bucketUpdates.size();
+            final ReusableBucketPool<K> bucketPool = bucketSerializer.getBucketPool();
+            final BlockingQueue<ReadBucketResult> queue = new ArrayBlockingQueue<>(1024);
+            for (int i = 0; i < size; i++) {
+                final IntObjectPair<BucketMutation<K>> keyValue = bucketUpdates.get(i);
+                final int bucketIndex = keyValue.getOne();
+                final BucketMutation<K> bucketMap = keyValue.getTwo();
+                flushExecutor.execute(() -> {
+                    try {
+                        // The bucket will be closed on the lifecycle thread
+                        Bucket<K> bucket =
+                                fileCollection.readDataItemUsingIndex(bucketIndexToBucketLocation, bucketIndex);
+                        if (bucket == null) {
+                            // create a new bucket
+                            bucket = bucketPool.getBucket();
+                            bucket.setBucketIndex(bucketIndex);
+                        }
+                        // for each changed key in bucket, update bucket
+                        bucketMap.forEachKeyValue(bucket::putValue);
+                        queue.add(new ReadBucketResult(bucket, null));
+                    } catch (final Throwable e) {
+                        logger.error(MERKLE_DB.getMarker(), "Failed to read / update bucket", e);
+                        queue.add(new ReadBucketResult(null, e));
+                    }
+                });
+            }
             //  write to files
             fileCollection.startWriting();
-            // for each changed bucket, write the new buckets to file but do not update index yet
-            int oldBucketIndex = -1;
-            for (IntObjectPair<BucketMutation<K>> keyValue :
-                    oneTransactionsData.keyValuesView().toList().sortThis()) {
-                final int bucketIndex = keyValue.getOne();
-                if (bucketIndex < oldBucketIndex) {
-                    throw new IllegalStateException("Somehow we got our bucket indexes out of order: old="
-                            + oldBucketIndex
-                            + ", new ="
-                            + bucketIndex);
-                }
-                oldBucketIndex = bucketIndex;
-                final BucketMutation<K> bucketMap = keyValue.getTwo();
+            int processed = 0;
+            while (processed < size) {
+                final ReadBucketResult res;
                 try {
-                    Bucket<K> bucket = fileCollection.readDataItemUsingIndex(bucketIndexToBucketLocation, bucketIndex);
-                    if (bucket == null) {
-                        // create a new bucket
-                        bucket = bucketSerializer.getReusableEmptyBucket();
-                        bucket.setBucketIndex(bucketIndex);
-                    }
-                    final Bucket<K> finalBucket = bucket;
-                    // for each changed key in bucket, update bucket
-                    bucketMap.forEachKeyValue(finalBucket::putValue);
-                    if (finalBucket.getSize() == 0) {
+                    res = queue.take();
+                } catch (final InterruptedException e) {
+                    throw new RuntimeException("Interrupt while flushing HDHM", e);
+                }
+                if (res.error != null) {
+                    throw new RuntimeException(res.error);
+                }
+                try (@SuppressWarnings("unchecked")
+                        Bucket<K> bucket = res.bucket) {
+                    final int bucketIndex = bucket.getBucketIndex();
+                    if (bucket.getBucketEntryCount() == 0) {
                         // bucket is missing or empty, remove it from the index
-                        bucketIndexToBucketLocation.put(bucketIndex, NON_EXISTENT_DATA_LOCATION);
+                        bucketIndexToBucketLocation.remove(bucketIndex);
                     } else {
                         // save bucket
                         final long bucketLocation = fileCollection.storeDataItem(bucket);
                         // update bucketIndexToBucketLocation
                         bucketIndexToBucketLocation.put(bucketIndex, bucketLocation);
                     }
-                } catch (IllegalStateException e) {
-                    printStats();
-                    debugDumpTransactionCacheCondensed();
-                    debugDumpTransactionCache();
-                    throw e;
+                } finally {
+                    processed++;
                 }
             }
             // close files session
@@ -481,7 +516,9 @@ public class HalfDiskHashMap<K extends VirtualKey<? super K>> implements AutoClo
         final int bucketIndex = computeBucketIndex(keyHash);
         final Bucket<K> bucket = fileCollection.readDataItemUsingIndex(bucketIndexToBucketLocation, bucketIndex);
         if (bucket != null) {
-            return bucket.findValue(keyHash, key, notFoundValue);
+            try (bucket) {
+                return bucket.findValue(keyHash, key, notFoundValue);
+            }
         }
         return notFoundValue;
     }
@@ -559,5 +596,13 @@ public class HalfDiskHashMap<K extends VirtualKey<? super K>> implements AutoClo
      */
     private int computeBucketIndex(final int keyHash) {
         return (numOfBuckets - 1) & keyHash;
+    }
+
+    @SuppressWarnings("rawtypes")
+    private record ReadBucketResult(Bucket bucket, Throwable error) {
+        public ReadBucketResult {
+            assert (bucket != null) || (error != null);
+            assert (bucket == null) || (error == null);
+        }
     }
 }
