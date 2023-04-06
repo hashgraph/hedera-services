@@ -321,7 +321,7 @@ public class SignedStateManager implements SignedStateFinder {
      */
     private void removeOldUnsignedStates(@NonNull final Iterator<SignedState> iterator) {
 
-        // Any state older than this is unconditionally released.
+        // Any state older than this is unconditionally removed.
         final long earliestPermittedRound = getEarliestPermittedRound();
 
         while (iterator.hasNext()) {
