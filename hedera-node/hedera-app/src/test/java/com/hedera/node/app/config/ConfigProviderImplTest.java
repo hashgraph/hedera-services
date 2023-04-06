@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.hedera.node.app.config;
@@ -66,54 +65,54 @@ class ConfigProviderImplTest {
 
     @Test
     void testInitialVersion() {
-        //given
+        // given
         final var configProvider = new ConfigProviderImpl(propertySource);
 
-        //when
+        // when
         final var version = configProvider.getVersion();
 
-        //then
+        // then
         assertThat(version).isEqualTo(1);
     }
 
     @Test
     void testInitialConfig() {
-        //given
+        // given
         final var configProvider = new ConfigProviderImpl(propertySource);
 
-        //when
+        // when
         final var configuration = configProvider.getConfiguration();
 
-        //then
+        // then
         assertThat(configuration).isNotNull();
     }
 
     @Test
     void testVersionIncrease() {
-        //given
+        // given
         final var configProvider = new ConfigProviderImpl(propertySource);
 
-        //when
+        // when
         final var version1 = configProvider.getVersion();
         configProvider.update();
         final var version2 = configProvider.getVersion();
 
-        //then
+        // then
         assertThat(version1).isEqualTo(1);
         assertThat(version2).isEqualTo(2);
     }
 
     @Test
     void testUpdateCreatesNewConfig() {
-        //given
+        // given
         final var configProvider = new ConfigProviderImpl(propertySource);
 
-        //when
+        // when
         final var configuration1 = configProvider.getConfiguration();
         configProvider.update();
         final var configuration2 = configProvider.getConfiguration();
 
-        //then
+        // then
         assertThat(configuration1).isNotSameAs(configuration2);
     }
 }

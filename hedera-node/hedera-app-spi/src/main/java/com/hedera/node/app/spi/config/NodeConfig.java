@@ -62,5 +62,4 @@ public record NodeConfig(
         List<String> hapiThrottlesToSample,
         String sidecarDir,
         int workflowsPort,
-        int workflowsTlsPort) {
-}
+        int workflowsTlsPort) {}

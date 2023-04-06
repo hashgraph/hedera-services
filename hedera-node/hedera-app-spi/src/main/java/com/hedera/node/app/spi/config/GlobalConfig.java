@@ -23,5 +23,4 @@ import java.util.Set;
  * This class contains the properties that are part of the {@code GlobalStaticProperties} class in the mono-service
  * module.
  */
-public record GlobalConfig(Set<HederaFunctionality> workflowsEnabled) {
-}
+public record GlobalConfig(Set<HederaFunctionality> workflowsEnabled) {}

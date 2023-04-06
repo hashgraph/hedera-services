@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.hedera.node.app.config.internal;
@@ -228,7 +227,6 @@ public class ConfigurationAdaptor implements Configuration {
         return new GlobalConfig(propertySource.getTypedProperty(Set.class, PropertyNames.WORKFLOWS_ENABLED));
     }
 
-
     private GlobalDynamicConfig createGlobalDynamicConfig() {
 
         final AccountID fundingAccount = AccountID.newBuilder()
@@ -271,8 +269,8 @@ public class ConfigurationAdaptor implements Configuration {
                 propertySource.getTypedProperty(Boolean.class, PropertyNames.CONTRACTS_DYNAMIC_EVM_VERSION),
                 propertySource.getTypedProperty(Integer.class, PropertyNames.FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER),
                 propertySource.getTypedProperty(Integer.class, PropertyNames.AUTO_RENEW_NUM_OF_ENTITIES_TO_SCAN),
-                propertySource.getTypedProperty(Integer.class,
-                        PropertyNames.AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE),
+                propertySource.getTypedProperty(
+                        Integer.class, PropertyNames.AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE),
                 propertySource.getTypedProperty(Long.class, PropertyNames.AUTO_RENEW_GRACE_PERIOD),
                 propertySource.getTypedProperty(Long.class, PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION),
                 propertySource.getTypedProperty(Long.class, PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION),
@@ -304,16 +302,16 @@ public class ConfigurationAdaptor implements Configuration {
                 propertySource.getTypedProperty(Integer.class, PropertyNames.LEDGER_RECORDS_MAX_QUERYABLE_BY_ACCOUNT),
                 propertySource.getTypedProperty(Integer.class, PropertyNames.HEDERA_ALLOWANCES_MAX_TXN_LIMIT),
                 propertySource.getTypedProperty(Integer.class, PropertyNames.HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT),
-                propertySource.getTypedProperty(Boolean.class,
-                        PropertyNames.CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS),
+                propertySource.getTypedProperty(
+                        Boolean.class, PropertyNames.CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS),
                 propertySource.getTypedProperty(Boolean.class, PropertyNames.CONTRACTS_ALLOW_CREATE2),
                 propertySource.getTypedProperty(Boolean.class, PropertyNames.CONTRACTS_REDIRECT_TOKEN_CALLS),
                 propertySource.getTypedProperty(Boolean.class, PropertyNames.HEDERA_ALLOWANCES_IS_ENABLED),
                 propertySource.getTypedProperty(Boolean.class, PropertyNames.ENTITIES_LIMIT_TOKEN_ASSOCIATIONS),
-                propertySource.getTypedProperty(Boolean.class,
-                        PropertyNames.CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE),
-                propertySource.getTypedProperty(Boolean.class,
-                        PropertyNames.CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED),
+                propertySource.getTypedProperty(
+                        Boolean.class, PropertyNames.CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE),
+                propertySource.getTypedProperty(
+                        Boolean.class, PropertyNames.CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED),
                 propertySource.getTypedProperty(Long.class, PropertyNames.CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST),
                 propertySource.getTypedProperty(Long.class, PropertyNames.STAKING_REWARD_RATE),
                 propertySource.getTypedProperty(Long.class, PropertyNames.STAKING_START_THRESH),
@@ -321,8 +319,8 @@ public class ConfigurationAdaptor implements Configuration {
                 propertySource.getTypedProperty(Integer.class, PropertyNames.STAKING_FEES_STAKING_REWARD_PERCENT),
                 propertySource.getTypedProperty(Boolean.class, PropertyNames.CONTRACTS_ALLOW_AUTO_ASSOCIATIONS),
                 propertySource.getTypedProperty(Boolean.class, PropertyNames.STAKING_IS_ENABLED),
-                propertySource.getTypedProperty(Long.class,
-                        PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR),
+                propertySource.getTypedProperty(
+                        Long.class, PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR),
                 propertySource.getTypedProperty(Integer.class, PropertyNames.HEDERA_RECORD_STREAM_RECORD_FILE_VERSION),
                 propertySource.getTypedProperty(Integer.class, PropertyNames.HEDERA_RECORD_STREAM_SIG_FILE_VERSION),
                 propertySource.getTypedProperty(Long.class, PropertyNames.ACCOUNTS_MAX_NUM),
@@ -338,15 +336,15 @@ public class ConfigurationAdaptor implements Configuration {
                 propertySource.getTypedProperty(Boolean.class, PropertyNames.STAKING_REQUIRE_MIN_STAKE_TO_REWARD),
                 propertySource.getTypedProperty(Integer.class, PropertyNames.HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB),
                 propertySource.getTypedProperty(Boolean.class, PropertyNames.CONTRACTS_ITEMIZE_STORAGE_FEES),
-                propertySource.getTypedProperty(Boolean.class,
-                        PropertyNames.HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION),
+                propertySource.getTypedProperty(
+                        Boolean.class, PropertyNames.HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION),
                 propertySource.getTypedProperty(Boolean.class, PropertyNames.TOKENS_AUTO_CREATIONS_ENABLED),
-                propertySource.getTypedProperty(Boolean.class,
-                        PropertyNames.HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION),
+                propertySource.getTypedProperty(
+                        Boolean.class, PropertyNames.HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION),
                 propertySource.getTypedProperty(Boolean.class, PropertyNames.BALANCES_COMPRESS_ON_CREATION),
                 propertySource.getTypedProperty(Long.class, PropertyNames.TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC),
-                propertySource.getTypedProperty(Long.class,
-                        PropertyNames.TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO),
+                propertySource.getTypedProperty(
+                        Long.class, PropertyNames.TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO),
                 propertySource.getTypedProperty(Boolean.class, PropertyNames.LAZY_CREATION_ENABLED),
                 propertySource.getTypedProperty(Boolean.class, PropertyNames.CRYPTO_CREATE_WITH_ALIAS_ENABLED),
                 propertySource.getTypedProperty(Boolean.class, PropertyNames.CONTRACTS_ENFORCE_CREATION_THROTTLE),
