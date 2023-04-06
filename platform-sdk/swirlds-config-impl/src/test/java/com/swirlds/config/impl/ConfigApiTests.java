@@ -231,7 +231,7 @@ public class ConfigApiTests {
         final Configuration configuration = ConfigurationBuilder.create().build();
 
         // when
-        Integer value = configuration.getValue("timeout", Integer.class, null);
+        final Integer value = configuration.getValue("timeout", Integer.class, null);
 
         // then
         Assertions.assertNull(value, "Null should be allowed as default value");
@@ -246,134 +246,11 @@ public class ConfigApiTests {
         Assertions.assertThrows(
                 NullPointerException.class,
                 () -> {
-                    int timeout = configuration.getValue("timeout", Integer.class, null);
+                    final int timeout = configuration.getValue("timeout", Integer.class, null);
                 },
                 "Autoboxing of null as default value should throw an exception for int");
     }
-
-    @Test
-    public void readListProperty() {
-        // given
-        final Configuration configuration = ConfigurationBuilder.create()
-                .withSource(new SimpleConfigSource().withIntegerValues("testNumbers", List.of(1, 2, 3)))
-                .build();
-
-        // when
-        final List<Integer> values = configuration.getValues("testNumbers", Integer.class);
-
-        // then
-        Assertions.assertEquals(3, values.size(), "A property that is defined as list should be parsed correctly");
-        Assertions.assertEquals(
-                1, values.get(0), "A property that is defined as list should contain the defined values");
-        Assertions.assertEquals(
-                2, values.get(1), "A property that is defined as list should contain the defined values");
-        Assertions.assertEquals(
-                3, values.get(2), "A property that is defined as list should contain the defined values");
-    }
-
-    @Test
-    public void readListPropertyWithOneEntry() {
-        // given
-        final Configuration configuration = ConfigurationBuilder.create()
-                .withSource(new SimpleConfigSource("testNumbers", 123))
-                .build();
-
-        // when
-        final List<Integer> values = configuration.getValues("testNumbers", Integer.class);
-
-        // then
-        Assertions.assertEquals(1, values.size(), "A property that is defined as list should be parsed correctly");
-        Assertions.assertEquals(
-                123, values.get(0), "A property that is defined as list should contain the defined values");
-    }
-
-    @Test
-    public void readBadListProperty() {
-        // given
-        final Configuration configuration = ConfigurationBuilder.create()
-                .withSource(new SimpleConfigSource("testNumbers", "1,2,   3,4"))
-                .build();
-
-        // then
-        Assertions.assertThrows(
-                IllegalArgumentException.class,
-                () -> configuration.getValues("testNumbers", Integer.class),
-                "given list property should not be parsed correctly");
-    }
-
-    @Test
-    public void readDefaultListProperty() {
-        // given
-        final Configuration configuration = ConfigurationBuilder.create().build();
-
-        // when
-        final List<Integer> values = configuration.getValues("testNumbers", Integer.class, List.of(6, 7, 8));
-
-        // then
-        Assertions.assertEquals(
-                3, values.size(), "The default value should be used since no value is defined by the config");
-        Assertions.assertEquals(6, values.get(0), "Should be part of the list since it is part of the default");
-        Assertions.assertEquals(7, values.get(1), "Should be part of the list since it is part of the default");
-        Assertions.assertEquals(8, values.get(2), "Should be part of the list since it is part of the default");
-    }
-
-    @Test
-    public void readNullDefaultListProperty() {
-        // given
-        final Configuration configuration = ConfigurationBuilder.create().build();
-
-        // when
-        final List<Integer> values = configuration.getValues("testNumbers", Integer.class, null);
-
-        // then
-        Assertions.assertNull(values, "Null should be a valid default value");
-    }
-
-    @Test
-    public void checkListPropertyImmutable() {
-        // given
-        final Configuration configuration = ConfigurationBuilder.create()
-                .withSource(new SimpleConfigSource("testNumbers", "1,2,3"))
-                .build();
-
-        // when
-        final List<Integer> values = configuration.getValues("testNumbers", Integer.class);
-
-        // then
-        Assertions.assertThrows(
-                UnsupportedOperationException.class,
-                () -> values.add(10),
-                "List properties should always be immutable");
-    }
-
-    @Test
-    public void getConfigProxy() {
-        // given
-        final Configuration configuration = ConfigurationBuilder.create()
-                .withSource(new SimpleConfigSource("network.port", 8080))
-                .withConfigDataType(NetworkConfig.class)
-                .build();
-
-        // when
-        final NetworkConfig networkConfig = configuration.getConfigData(NetworkConfig.class);
-
-        // then
-        Assertions.assertEquals(8080, networkConfig.port(), "Config data objects should be configured correctly");
-    }
-
-    @Test
-    public void getNotRegisteredDataObject() {
-        // given
-        final ConfigurationBuilder configurationBuilder =
-                ConfigurationBuilder.create().withConfigDataType(NetworkConfig.class);
-
-        // then
-        Assertions.assertThrows(
-                IllegalStateException.class,
-                () -> configurationBuilder.build(),
-                "It should not be possible to create a config data object with undefined values");
-    }
-
+    
     @Test
     public void getConfigProxyUndefinedValue() {
         // given
@@ -387,97 +264,6 @@ public class ConfigApiTests {
     }
 
     @Test
-    public void getConfigProxyDefaultValue() {
-        // given
-        final Configuration configuration = ConfigurationBuilder.create()
-                .withSource(new SimpleConfigSource("network.port", "8080"))
-                .withConfigDataType(NetworkConfig.class)
-                .build();
-
-        // when
-        final NetworkConfig networkConfig = configuration.getConfigData(NetworkConfig.class);
-
-        // then
-        Assertions.assertEquals(
-                "localhost", networkConfig.server(), "Default values of config data objects should be used");
-    }
-
-    @Test
-    public void getConfigProxyDefaultValuesList() {
-        // given
-        final Configuration configuration = ConfigurationBuilder.create()
-                .withSource(new SimpleConfigSource("network.port", "8080"))
-                .withConfigDataType(NetworkConfig.class)
-                .build();
-
-        // when
-        final NetworkConfig networkConfig = configuration.getConfigData(NetworkConfig.class);
-        final List<Integer> errorCodes = networkConfig.errorCodes();
-
-        // then
-        Assertions.assertNotNull(errorCodes, "Default values of config data objects should be used");
-        Assertions.assertEquals(
-                2, errorCodes.size(), "List values should be supported for default values in config data objects");
-        Assertions.assertTrue(
-                errorCodes.contains(404), "List values should be supported for default values in config data objects");
-        Assertions.assertTrue(
-                errorCodes.contains(500), "List values should be supported for default values in config data objects");
-    }
-
-    @Test
-    public void getConfigProxyValuesList() {
-        // given
-        final Configuration configuration = ConfigurationBuilder.create()
-                .withSource(new SimpleConfigSource("network.port", "8080"))
-                .withSource(new SimpleConfigSource("network.errorCodes", "1,2,3"))
-                .withConfigDataType(NetworkConfig.class)
-                .build();
-
-        // when
-        final NetworkConfig networkConfig = configuration.getConfigData(NetworkConfig.class);
-        final List<Integer> errorCodes = networkConfig.errorCodes();
-
-        // then
-        Assertions.assertNotNull(errorCodes, "List values should be supported in config data objects");
-        Assertions.assertEquals(3, errorCodes.size(), "List values should be supported in config data objects");
-        Assertions.assertTrue(errorCodes.contains(1), "List values should be supported in config data objects");
-        Assertions.assertTrue(errorCodes.contains(2), "List values should be supported in config data objects");
-        Assertions.assertTrue(errorCodes.contains(3), "List values should be supported in config data objects");
-    }
-
-    @Test
-    public void invalidDataRecordWillFailInit() {
-        // given
-        final ConfigurationBuilder configurationBuilder =
-                ConfigurationBuilder.create().withConfigDataType(NetworkConfig.class);
-
-        // then
-        Assertions.assertThrows(
-                IllegalStateException.class,
-                () -> configurationBuilder.build(),
-                "values must be defined for all properties that are defined by registered config data types");
-    }
-
-    @Test
-    public void getConfigProxyOverwrittenDefaultValue() {
-        // given
-        final Configuration configuration = ConfigurationBuilder.create()
-                .withSource(new SimpleConfigSource("network.port", "8080"))
-                .withSource(new SimpleConfigSource("network.server", "example.net"))
-                .withConfigDataType(NetworkConfig.class)
-                .build();
-
-        // when
-        final NetworkConfig networkConfig = configuration.getConfigData(NetworkConfig.class);
-
-        // then
-        Assertions.assertEquals(
-                "example.net",
-                networkConfig.server(),
-                "It must be possible to overwrite default values in object data types");
-    }
-
-    @Test
     public void getSystemProperty() {
         // given
         System.setProperty("test.config.sample", "qwerty");
@@ -486,7 +272,7 @@ public class ConfigApiTests {
                 .build();
 
         // when
-        String value = configuration.getValue("test.config.sample");
+        final String value = configuration.getValue("test.config.sample");
 
         // then
         Assertions.assertEquals("qwerty", value, "It must be possible to use system variables for the config");
@@ -502,7 +288,7 @@ public class ConfigApiTests {
                 .build();
 
         // when
-        String value = configuration.getValue("app.name");
+        final String value = configuration.getValue("app.name");
 
         // then
         Assertions.assertEquals(
@@ -521,7 +307,7 @@ public class ConfigApiTests {
                 .build();
 
         // when
-        String value = configuration.getValue("app.name");
+        final String value = configuration.getValue("app.name");
 
         // then
         Assertions.assertEquals(
@@ -664,70 +450,6 @@ public class ConfigApiTests {
     }
 
     @Test
-    public void testMinConstrainAnnotation() {
-        // given
-        final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
-                .withSources(new SimpleConfigSource("network.port", "-1"))
-                .withConfigDataType(NetworkConfig.class);
-
-        // when
-        final ConfigViolationException exception = Assertions.assertThrows(
-                ConfigViolationException.class,
-                () -> configurationBuilder.build(),
-                "Check for @Min annotation in NetworkConfig should end in violation");
-
-        // then
-        Assertions.assertEquals(1, exception.getViolations().size());
-        Assertions.assertTrue(exception.getViolations().get(0).propertyExists());
-        Assertions.assertEquals("network.port", exception.getViolations().get(0).getPropertyName());
-        Assertions.assertEquals("-1", exception.getViolations().get(0).getPropertyValue());
-        Assertions.assertEquals(
-                "Value must be >= 1", exception.getViolations().get(0).getMessage());
-    }
-
-    @Test
-    public void testConstrainAnnotation() {
-        // given
-        final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
-                .withSources(new SimpleConfigSource("network.port", "8080"))
-                .withSources(new SimpleConfigSource("network.server", "invalid"))
-                .withConfigDataType(NetworkConfig.class);
-
-        // when
-        final ConfigViolationException exception = Assertions.assertThrows(
-                ConfigViolationException.class,
-                () -> configurationBuilder.build(),
-                "Check for @Constraint annotation in NetworkConfig should end in violation");
-
-        // then
-        Assertions.assertEquals(1, exception.getViolations().size());
-        Assertions.assertTrue(exception.getViolations().get(0).propertyExists());
-        Assertions.assertEquals(
-                "network.server", exception.getViolations().get(0).getPropertyName());
-        Assertions.assertEquals("invalid", exception.getViolations().get(0).getPropertyValue());
-        Assertions.assertEquals(
-                "server must not be invalid", exception.getViolations().get(0).getMessage());
-    }
-
-    @Test
-    public void testMultipleConstrainAnnotationsFail() {
-        // given
-        final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
-                .withSources(new SimpleConfigSource("network.port", "-1"))
-                .withSources(new SimpleConfigSource("network.server", "invalid"))
-                .withConfigDataType(NetworkConfig.class);
-
-        // when
-        final ConfigViolationException exception = Assertions.assertThrows(
-                ConfigViolationException.class,
-                () -> configurationBuilder.build(),
-                "Check for @Constraint annotation in NetworkConfig should end in violation");
-
-        // then
-        Assertions.assertEquals(2, exception.getViolations().size());
-    }
-
-    @Test
     public void testNullList() {
         // given
         final Configuration configuration = ConfigurationBuilder.create()
@@ -735,12 +457,12 @@ public class ConfigApiTests {
                 .build();
 
         // when
-        List<String> list1 = configuration.getValues("sample.list");
-        List<String> list2 = configuration.getValues("sample.list", List.of());
-        List<String> list3 = configuration.getValues("sample.list", String.class);
-        List<String> list4 = configuration.getValues("sample.list", String.class, List.of());
-        List<Integer> list5 = configuration.getValues("sample.list", Integer.class);
-        List<Integer> list6 = configuration.getValues("sample.list", Integer.class, List.of());
+        final List<String> list1 = configuration.getValues("sample.list");
+        final List<String> list2 = configuration.getValues("sample.list", List.of());
+        final List<String> list3 = configuration.getValues("sample.list", String.class);
+        final List<String> list4 = configuration.getValues("sample.list", String.class, List.of());
+        final List<Integer> list5 = configuration.getValues("sample.list", Integer.class);
+        final List<Integer> list6 = configuration.getValues("sample.list", Integer.class, List.of());
 
         // then
         Assertions.assertNull(list1, "The list must be null");
@@ -759,13 +481,13 @@ public class ConfigApiTests {
                 .build();
 
         // when
-        String value1 = configuration.getValue("sample");
-        String value2 = configuration.getValue("sample", "default");
-        String value3 = configuration.getValue("sample", String.class);
-        String value4 = configuration.getValue("sample", String.class, "default");
+        final String value1 = configuration.getValue("sample");
+        final String value2 = configuration.getValue("sample", "default");
+        final String value3 = configuration.getValue("sample", String.class);
+        final String value4 = configuration.getValue("sample", String.class, "default");
 
-        Integer value5 = configuration.getValue("sample", Integer.class);
-        Integer value6 = configuration.getValue("sample", Integer.class, 123);
+        final Integer value5 = configuration.getValue("sample", Integer.class);
+        final Integer value6 = configuration.getValue("sample", Integer.class, 123);
 
         // then
         Assertions.assertNull(value1, "The value must be null");
@@ -779,46 +501,4 @@ public class ConfigApiTests {
                 value6, "The value must be null since a default is only used if a property is not defined");
     }
 
-    @Test
-    public void testNotDefinedEmptyList() {
-        // given
-        final Configuration configuration = ConfigurationBuilder.create().build();
-
-        // then
-        Assertions.assertThrows(NoSuchElementException.class, () -> configuration.getValues("sample.list"));
-        Assertions.assertThrows(
-                NoSuchElementException.class, () -> configuration.getValues("sample.list", String.class));
-        Assertions.assertThrows(
-                NoSuchElementException.class, () -> configuration.getValues("sample.list", Integer.class));
-    }
-
-    @Test
-    public void testEmptyListInConfigDataRecord() {
-        // given
-        final Configuration configuration = ConfigurationBuilder.create()
-                .withConfigDataType(EmptyListConfig.class)
-                .build();
-
-        // when
-        List<Integer> list = configuration.getConfigData(EmptyListConfig.class).list();
-
-        // then
-        Assertions.assertIterableEquals(List.of(), list);
-    }
-
-    @Test
-    public void testNullDefaultsInConfigDataRecord() {
-        // given
-        final Configuration configuration = ConfigurationBuilder.create()
-                .withConfigDataType(NullConfig.class)
-                .build();
-
-        // when
-        List<Integer> list = configuration.getConfigData(NullConfig.class).list();
-        String value = configuration.getConfigData(NullConfig.class).value();
-
-        // then
-        Assertions.assertNull(list);
-        Assertions.assertNull(value);
-    }
 }

@@ -29,10 +29,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
- * Internal factory for config data objects. See {@link Configuration#getConfigData(Class)} for a detailed description on
- * config data objects.
+ * Internal factory for config data objects. See {@link Configuration#getConfigData(Class)} for a detailed description
+ * on config data objects.
  */
 class ConfigDataFactory {
 
@@ -89,14 +91,30 @@ class ConfigDataFactory {
                 final Class<?> genericType = getGenericListType(component);
                 return configuration.getValues(name, genericType, getDefaultValues(component));
             }
+            if (Objects.equals(Set.class, component.getType())) {
+                final Class<?> genericType = getGenericSetType(component);
+                return configuration.getValueSet(name, genericType, getDefaultValueSet(component));
+            }
             return configuration.getValue(name, valueType, getDefaultValue(component));
         } else {
             if (Objects.equals(List.class, component.getType())) {
                 final Class<?> genericType = getGenericListType(component);
                 return configuration.getValues(name, genericType);
             }
+            if (Objects.equals(Set.class, component.getType())) {
+                final Class<?> genericType = getGenericSetType(component);
+                return configuration.getValueSet(name, genericType);
+            }
             return configuration.getValue(name, valueType);
         }
+    }
+
+    private static <T> Class<T> getGenericSetType(final RecordComponent component) {
+        final ParameterizedType stringListType = (ParameterizedType) component.getGenericType();
+        if (!Objects.equals(Set.class, stringListType.getRawType())) {
+            throw new IllegalArgumentException("Only Set interface is supported");
+        }
+        return (Class<T>) ConfigReflectionUtils.getSingleGenericTypeArgument(stringListType);
     }
 
     @SuppressWarnings("unchecked")
@@ -106,6 +124,22 @@ class ConfigDataFactory {
             throw new IllegalArgumentException("Only List interface is supported");
         }
         return (Class<T>) ConfigReflectionUtils.getSingleGenericTypeArgument(stringListType);
+    }
+
+    private <T> Set<T> getDefaultValueSet(final RecordComponent component) {
+        CommonUtils.throwArgNull(component, "component");
+        final Class<?> type = getGenericSetType(component);
+        final Optional<String> rawDefaultValue = getRawDefaultValue(component);
+        if (rawDefaultValue.isEmpty()) {
+            throw new IllegalArgumentException("Default value not defined for parameter");
+        }
+        final String rawValue = rawDefaultValue.get();
+        if (Objects.equals(ConfigProperty.NULL_DEFAULT_VALUE, rawValue)) {
+            return null;
+        }
+        return (Set<T>) ConfigListUtils.createList(rawValue).stream()
+                .map(value -> converterService.convert(value, type))
+                .collect(Collectors.toSet());
     }
 
     @SuppressWarnings("unchecked")
