@@ -49,7 +49,7 @@ public class AddressAliasIdFuzzing extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(transferToKeyFuzzing());
+        return List.of(transferToEVMAddressFuzzing(), transferToKeyFuzzing(), addressAliasIdFuzzing());
     }
 
     private HapiSpec addressAliasIdFuzzing() {
