@@ -22,7 +22,6 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
-import com.hedera.node.app.spi.meta.QueryContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
@@ -164,22 +163,19 @@ public class QueryDispatcher {
      * @param storeFactory the {@link ReadableStoreFactory} that keeps all stores which are eventually needed
      * @param query the actual {@link Query}
      * @param header the {@link ResponseHeader} that should be used in the response, if it is successful
-     * @param queryContext
      * @return the {@link Response} with the requested answer
      */
     public Response getResponse(
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final Query query,
-            @NonNull final ResponseHeader header,
-            @NonNull final QueryContext queryContext) {
+            @NonNull final ResponseHeader header) {
         requireNonNull(storeFactory);
         requireNonNull(query);
         requireNonNull(header);
-        requireNonNull(queryContext);
 
         return switch (query.query().kind()) {
             case CONSENSUS_GET_TOPIC_INFO -> handlers.consensusGetTopicInfoHandler()
-                    .findResponse(query, header, storeFactory.createTopicStore(), queryContext);
+                    .findResponse(query, header, storeFactory.createTopicStore());
 
             case GET_BY_SOLIDITY_ID -> handlers.contractGetBySolidityIDHandler().findResponse(query, header);
             case CONTRACT_CALL_LOCAL -> handlers.contractCallLocalHandler().findResponse(query, header);
