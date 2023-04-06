@@ -43,8 +43,8 @@ The solidity interface for IHRC will be the following
 
 ```
 interface IHRC {
-    function associate() external returns (bool);
-    function dissociate() external returns (bool);
+    function associate() external returns (responseCode);
+    function dissociate() external returns (responseCode);
 }
 ```
 
@@ -53,12 +53,13 @@ interface IHRC {
 Override the existing `AbstractAssociatePrecompile` and `AbstractDissociatePrecompile` classes to handle this new use case
 of being called via the proxy contract.  The new overwritten classes will differ from the existing classes in that they will
 be passed the token id and the sender address as constructor arguments and construct the associate and dissociate operator 
-classes from these arguments.  The `getGasRequirement` method can be moved to the parent class as the functionality will be
-common to both the existing and new classes. The `getSuccessResultFor` and `getFailureResultFor` function need to be overridden
-in order to return a boolean value consistent with other similar ERC functions.
+classes from these arguments.  It will also need to send a value into the constructor of the parent class to signal that
+signature checking will not be required. 
+
+The `getGasRequirement` method can be moved to the parent class as the functionality will be
+common to both the existing and new classes. 
 
 The class `RedirectViewExecutor` will also be updated to include the cost to perform the `associate` and `dissociate` functions.
-
 
 ## Open Questions
 
@@ -67,11 +68,13 @@ Does a feature gate need to be added to control the accessibility to this functi
 ## Acceptance Tests
 
 ### Positive Tests
-- Create a contract that performs the `associate` and `dissociate` functions on a fungible token and ensure that the functions can be called successfully.
-- Create a contract that performs the `associate` and `dissociate` functions on an NFT and ensure that the functions can be called successfully.
+- Create a contract that performs the `associate` and `dissociate` functions on a fungible token and ensure that the functions can be called successfully by an EOA.
+- Create a contract that performs the `associate` and `dissociate` functions on an NFT and ensure that the functions can be called successfully by an EOA.
+- Create a contract that performs the `associate` and `dissociate` functions on a fungible token and ensure that the functions can be called successfully by a contract.
+- Create a contract that performs the `associate` and `dissociate` functions on an NFT and ensure that the functions can be called successfully by a contract.
+- Ensure that the `associate` and `dissociate` functions disregards the signature when called via the token facade.
 
 ### Negative Tests
-- Ensure that the `associate` and `dissociate` functions fail with an invalid signature.
 - Ensure that the `associate` fails if one tries to associate beyond `tokens.maxPerAccount` on a single account
 - Ensure that the `associate` fails if one tries to associate a token to the same account twice.
 - Ensure that the `dissociate` fails if one tries to dissociate a token from an account that is not associated with the token.
