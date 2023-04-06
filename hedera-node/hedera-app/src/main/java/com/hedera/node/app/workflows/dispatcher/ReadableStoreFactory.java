@@ -19,7 +19,7 @@ package com.hedera.node.app.workflows.dispatcher;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.admin.FreezeService;
-import com.hedera.node.app.service.admin.impl.ReadableSpecialFileStore;
+import com.hedera.node.app.service.admin.impl.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.schedule.ScheduleService;
@@ -80,9 +80,9 @@ public class ReadableStoreFactory {
      * @return a new {@link ReadableScheduleStore}
      */
     @NonNull
-    public ReadableSpecialFileStore createSpecialFileStore() {
+    public ReadableUpgradeFileStore createUpgradeFileStore() {
         final var freezeStates = state.createReadableStates(FreezeService.NAME);
-        return new ReadableSpecialFileStore(freezeStates);
+        return new ReadableUpgradeFileStore(freezeStates);
     }
 
     /**

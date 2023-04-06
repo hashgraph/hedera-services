@@ -28,7 +28,8 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.freeze.FreezeTransactionBody;
 import com.hedera.hapi.node.freeze.FreezeType;
-import com.hedera.node.app.service.admin.impl.ReadableSpecialFileStore;
+import com.hedera.node.app.service.admin.impl.ReadableUpgradeFileStore;
+import com.hedera.node.app.service.admin.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -63,7 +64,7 @@ public class FreezeHandler implements TransactionHandler {
     // it is necessary to check getStartHour, getStartMin, getEndHour, getEndMin, all of which are deprecated
     // because if any are present then we set a status of INVALID_FREEZE_TRANSACTION_BODY
     public void preHandle(
-            @NonNull final PreHandleContext context, @NonNull final ReadableSpecialFileStore specialFileStore) {
+            @NonNull final PreHandleContext context, @NonNull final ReadableUpgradeFileStore specialFileStore) {
         requireNonNull(context);
 
         FreezeTransactionBody freezeTxn = context.getTxn().freeze();
@@ -150,7 +151,7 @@ public class FreezeHandler implements TransactionHandler {
      * For freeze types PREPARE_UPGRADE, FREEZE_UPGRADE, and TELEMETRY_UPGRADE, the updateFile and fileHash fields must be set.
      * @throws PreCheckException if updateFile or fileHash are not set or don't pass sanity checks
      */
-    private void verifyUpdateFileAndHash(FreezeTransactionBody freezeTxn, ReadableSpecialFileStore specialFileStore)
+    private void verifyUpdateFileAndHash(FreezeTransactionBody freezeTxn, ReadableUpgradeFileStore specialFileStore)
             throws PreCheckException {
         final FileID updateFile = freezeTxn.updateFile();
 
@@ -163,5 +164,9 @@ public class FreezeHandler implements TransactionHandler {
         if (fileHash == null || Bytes.EMPTY.equals(fileHash) || fileHash.length() != UPDATE_FILE_HASH_LEN) {
             throw new PreCheckException(FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
         }
+    }
+
+    public void handle(FreezeTransactionBody freezeTxn, WritableUpgradeFileStore upgradeFileStore) {
+        // TODO: implement this
     }
 }

@@ -39,7 +39,7 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.freeze.FreezeTransactionBody;
 import com.hedera.hapi.node.freeze.FreezeType;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.admin.impl.ReadableSpecialFileStore;
+import com.hedera.node.app.service.admin.impl.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.accounts.AccountAccess;
@@ -60,7 +60,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class FreezeHandlerTest {
     @Mock
-    ReadableSpecialFileStore specialFileStore;
+    ReadableUpgradeFileStore specialFileStore;
 
     @Mock
     private AccountAccess keyLookup;
@@ -317,4 +317,6 @@ class FreezeHandlerTest {
         subject.preHandle(context, specialFileStore);
         assertEquals(INVALID_FREEZE_TRANSACTION_BODY, context.getStatus());
     }
+
+    //TODO: add tests for handler
 }

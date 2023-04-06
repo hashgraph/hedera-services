@@ -23,7 +23,9 @@ import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
+import com.hedera.hapi.node.freeze.FreezeTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.admin.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.mono.context.TransactionContext;
@@ -113,6 +115,7 @@ public class TransactionDispatcher {
                     txn, writableStoreFactory.createTopicStore());
             case TOKEN_PAUSE -> dispatchTokenPause(txn, writableStoreFactory.createTokenStore());
             case TOKEN_UNPAUSE -> dispatchTokenUnpause(txn, writableStoreFactory.createTokenStore());
+            case FREEZE -> dispatchFreeze(txn.freezeOrThrow(), writableStoreFactory.createUpgradeFileStore());
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
         }
     }
@@ -166,7 +169,7 @@ public class TransactionDispatcher {
             case FILE_DELETE -> handlers.fileDeleteHandler().preHandle(context);
             case FILE_APPEND -> handlers.fileAppendHandler().preHandle(context);
 
-            case FREEZE -> handlers.freezeHandler().preHandle(context, storeFactory.createSpecialFileStore());
+            case FREEZE -> handlers.freezeHandler().preHandle(context, storeFactory.createUpgradeFileStore());
 
             case UNCHECKED_SUBMIT -> handlers.networkUncheckedSubmitHandler().preHandle(context);
 
@@ -301,5 +304,12 @@ public class TransactionDispatcher {
         final var handler = handlers.tokenPauseHandler();
         handler.handle(tokenPause, tokenStore);
         tokenStore.commit();
+    }
+
+    private void dispatchFreeze(
+            @NonNull final FreezeTransactionBody freezeTxn, @NonNull final WritableUpgradeFileStore upgradeFileStore) {
+        final var handler = handlers.freezeHandler();
+        handler.handle(freezeTxn, upgradeFileStore);
+        upgradeFileStore.commit();
     }
 }

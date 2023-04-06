@@ -18,7 +18,7 @@ package com.hedera.node.app.service.admin.impl;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.service.admin.FreezeService;
-import com.hedera.node.app.service.admin.impl.codec.MonoSpecialFilesAdapterCodec;
+import com.hedera.node.app.service.admin.impl.codec.MonoUpgradeFilesAdapterCodec;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
@@ -43,7 +43,7 @@ public final class FreezeServiceImpl implements FreezeService {
             @Override
             @SuppressWarnings("rawtypes")
             public Set<StateDefinition> statesToCreate() {
-                return Set.of(StateDefinition.singleton(UPGRADE_FILES_KEY, new MonoSpecialFilesAdapterCodec()));
+                return Set.of(StateDefinition.singleton(UPGRADE_FILES_KEY, new MonoUpgradeFilesAdapterCodec()));
             }
         };
     }
